@@ -1,0 +1,12 @@
+node_modules/
+.env
+data/history.json
+data/auth.json
+data/setters.json
+server.out.log
+server.err.log
+tmp/
+wa1.html
+wa2.html
+debug.js
+test_qwen.js

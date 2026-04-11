@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maps Scraper Pro</title>
+  <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#a8c7fa"/>
+          </svg>
+          <h1>Maps Scraper Pro</h1>
+        </div>
+        <p class="auth-subtitle">Acceso por rol para admin y setters</p>
+      </div>
+
+      <form id="auth-form" class="auth-form">
+        <input type="email" id="auth-email" placeholder="Email" autocomplete="email" required>
+        <input type="password" id="auth-password" placeholder="Contraseña" autocomplete="current-password" required>
+        <button type="submit" class="btn-primary pill-btn" style="width:100%; justify-content:center;">Entrar</button>
+      </form>
+
+      <div id="invite-panel" class="invite-panel hidden">
+        <h3>Activar invitación</h3>
+        <form id="invite-form" class="auth-form">
+          <input type="hidden" id="invite-token">
+          <input type="password" id="invite-password" placeholder="Crear contraseña" autocomplete="new-password" required>
+          <input type="password" id="invite-password-confirm" placeholder="Repetir contraseña" autocomplete="new-password" required>
+          <button type="submit" class="pill-btn" style="width:100%; justify-content:center;">Crear acceso</button>
+        </form>
+      </div>
+
+      <div id="auth-message" class="auth-message"></div>
+    </div>
+  </div>
+
+  <div id="main-layout" class="ai-studio-layout hidden">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#a8c7fa"/>
+          </svg>
+          <h1>Maps Scraper Pro</h1>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button id="logout-btn" class="btn-table-action" style="font-size:12px; padding:6px 10px; color:#f85149;">Salir</button>
+          <button class="menu-toggle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#e3e3e3"><path d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6V8H21V6H3Z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-group-label" style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-bottom:8px;">Módulos de Búsqueda</div>
+          <a href="#" class="menu-item active" data-target="view-maps" data-roles="admin">
+            <span>📍 Google Maps (Actual)</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-social" data-roles="admin">
+            <span>📱 Redes (Zillow, Extracción LinkedIn) <span style="font-size:10px; background:#432900; color:#e3b341; padding:2px 6px; border-radius:10px; margin-left:6px;">PRO</span></span>
+          </a>
+        
+        <div class="menu-group-label" style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-top:24px; margin-bottom:8px;">Setters</div>
+          <a href="#" class="menu-item" data-target="view-crm">
+            <span>📊 Setteo (WhatsApp)</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-calls">
+            <span>📞 Llamadas (Sin WSP)</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-command" data-roles="admin">
+            <span>🎯 Centro de Comando</span>
+          </a>
+          <a href="#" class="menu-item" data-roles="admin">
+            <span>⚙️ Configuraciones de APIs</span>
+          </a>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div id="history-info" class="history-badge hidden"></div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- SELECTORES GLOBALES DE UBICACIÓN -->
+      <div class="global-location-panel" style="padding: 16px 32px 0; border-bottom: 0px solid var(--border-color);">
+           <div class="filters-row" style="margin-bottom: 0;">
+              <span class="agrupar-por">Filtro Geográfico</span>
+              
+              <div class="ai-input-group select-pill">
+                <select id="country-select">
+                  <option value="">País</option>
+                </select>
+              </div>
+              
+              <div class="ai-input-group select-pill">
+                <select id="city-select" disabled>
+                  <option value="">Ciudad</option>
+                </select>
+              </div>
+
+              <div id="selected-cities" class="selected-cities" style="margin-top: 0; margin-left: 12px;"></div>
+            </div>
+      </div>
+
+      <!-- VISTA 1: GOOGLE MAPS -->
+      <div id="view-maps" class="module-view active" data-roles="admin">
+        <div class="content-header">
+          <h2>Búsqueda de Leads (Google Maps)</h2>
+          <div class="header-actions">
+            <a href="#" class="text-link">Guía API Setup</a>
+            <button id="search-btn-top" class="btn-primary pill-btn" onclick="document.getElementById('search-btn').click()">
+              <span class="btn-text">+ Iniciar Extracción Maps</span>
+              <span class="loader hidden"></span>
+            </button>
+          </div>
+        </div>
+
+        <section class="search-panel">
+          <form id="scrape-form">
+            <div class="main-search-row">
+              <div class="ai-input-group expanded">
+                <textarea id="query" name="query" rows="2" placeholder="Una keyword por línea. Ej:&#10;clínica dental&#10;dentista&#10;consultorio odontológico" required style="resize:vertical; min-height:38px; font-family:inherit; font-size:inherit; padding:8px 12px; line-height:1.4;"></textarea>
+              </div>
+
+              <div class="ai-input-group">
+                <label for="start-page" class="floating-label">Desde Pág</label>
+                <input type="number" id="start-page" name="startPage" min="1" value="1" readonly title="Se calcula automáticamente en base a tu historial">
+              </div>
+
+              <div class="ai-input-group">
+                <label for="max-pages" class="floating-label">Págs a extraer</label>
+                <select id="max-pages" name="maxPages">
+                    <option value="1">1 (20 leads)</option>
+                    <option value="2">2 (40 leads)</option>
+                    <option value="3" selected>3 (60 leads)</option>
+                    <option value="5">5 (100 leads)</option>
+                    <option value="10">10 (200 leads)</option>
+                    <option value="25">25 (500 leads)</option>
+                    <option value="50">50 (1000 leads)</option>
+                </select>
+              </div>
+              
+              <button type="submit" id="search-btn" style="display: none;">Buscar</button>
+            </div>
+            
+            <input type="hidden" id="location" name="location">
+          </form>
+        </section>
+
+        <section class="results-panel">
+          <div class="results-toolbar">
+            <div class="toolbar-left">
+              <span id="results-count-wrapper">Mostrando <span id="results-count">0</span> leads</span>
+              <span id="filter-info" class="filter-info"></span>
+            </div>
+            <div class="toolbar-right">
+              <!-- Deep enrichment removido para optimizar costos de API -->
+              <label class="checkbox-label" title="Oculta los ya scrapeados" style="user-select:none; margin-right:8px;">
+                <input type="checkbox" id="hide-duplicates" checked> Solo nuevos
+              </label>
+              <label class="checkbox-label" title="Filtra teléfonos fijos y muestra solo probables celulares (WhatsApp)" style="user-select:none; margin-right:8px; color: #5bb974;">
+                <input type="checkbox" id="hide-landlines" checked> Solo Wsp
+              </label>
+              <button id="enrich-btn" class="btn-table-action" disabled data-roles="admin">🔍 Escanear Redes y Sitios Web (IA)</button>
+              <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">📋 Enviar a Setters</button>
+              <button id="download-csv" class="btn-table-action" disabled data-roles="admin">⬇ Exportar Base (CSV)</button>
+            </div>
+          </div>
+
+          <div id="enrich-progress" class="enrich-progress hidden">
+            <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+            <span id="progress-text">Analizando sitios web con Gemini/Qwen...</span>
+          </div>
+          
+          <div class="table-container">
+            <table id="results-table">
+              <thead>
+                <tr>
+                  <th style="width: 20%">Nombre clave</th>
+                  <th style="width: 15%">Proyecto / Ciudad</th>
+                  <th style="width: 10%">Rating / Disp.</th>
+                  <th style="width: 20%">Dueño IA</th>
+                  <th style="width: 25%">Teléfono (Maps vs Web)</th>
+                  <th style="width: 10%">Redes / Web</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="6" class="empty-state">
+                    <div class="empty-state-content">
+                      <h3>¿No encuentras tus resultados?</h3>
+                      <p>Esta lista solo muestra los resultados de búsquedas realizadas en Google Maps. Selecciona un país, y presiona "Iniciar Extracción Maps" arriba.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- VISTA 2: REDES (APIFY MOCKUP) -->
+      <div id="view-social" class="module-view hidden" data-roles="admin">
+        <div class="content-header">
+          <h2>Scraper Profundo de Redes (Apify)</h2>
+          <div class="header-actions">
+            <button id="apify-run-btn" class="btn-primary pill-btn">
+              <span class="btn-text">Ejecutar Extractor Instagram</span>
+            </button>
+          </div>
+        </div>
+
+        <section class="search-panel">
+          <p style="color:var(--text-secondary); margin-bottom:1.5rem; line-height:1.5; font-size:14px;">Inyecta el poder de <strong style="color:white">Apify Actors</strong> para escrapear directorios cerrados y perfiles corporativos reales. Usando tu token configurado en .env.</p>
+          
+          <div class="filters-row" style="margin-bottom: 20px;">
+            <div class="ai-input-group select-pill" style="width: 100%; max-width: 300px;">
+              <select id="apify-actor-type">
+                <option value="ig">📷 Instagram Profile Scraper</option>
+                <option value="hashtag">#️⃣ Instagram Hashtag Scraper</option>
+              </select>
+            </div>
+            <div class="ai-input-group expanded">
+              <input type="text" value="TOKEN: Configurado en .env" readonly style="background: rgba(255,255,255,0.05); color: #5bb974;">
+            </div>
+          </div>
+
+          <div class="main-search-row">
+            <div class="ai-input-group expanded">
+              <input type="text" id="apify-query" placeholder="Ej: #odontologosargentina o https://instagram.com/clinica_dental">
+            </div>
+            <div class="ai-input-group">
+              <input type="number" id="apify-max-items" value="20" style="width: 100px;">
+              <label class="floating-label">Nro Datos</label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tabla Real para Redes -->
+        <section class="results-panel">
+          <div id="apify-progress" class="enrich-progress hidden">
+            <div class="loader"></div>
+            <span id="apify-progress-text">Apify está procesando en la nube... (Esto puede tardar 1-2 min)</span>
+          </div>
+
+          <div class="table-container">
+            <table id="apify-table">
+              <thead>
+                <tr>
+                  <th style="width:25%">Perfil / URL</th>
+                  <th style="width:20%">Nombre Completo</th>
+                  <th style="width:25%">Bio / Descripción</th>
+                  <th style="width:15%">WhatsApp / Tel</th>
+                  <th style="width:15%">Seguidores</th>
+                </tr>
+              </thead>
+              <tbody id="apify-results-body">
+                <tr>
+                  <td colspan="5" class="empty-state">
+                    <div class="empty-state-content">
+                      <p>Ingresa un hashtag o URL y presiona "Ejecutar" para traer prospectos puros de Instagram.</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- VISTA 3: MÓDULO SETTERS v2 -->
+      <div id="view-crm" class="module-view hidden">
+        <div class="content-header">
+          <h2>Centro de Setters</h2>
+          <div class="header-actions">
+            <select id="setter-select" class="setter-select">
+              <option value="">Todos los setters</option>
+            </select>
+            <select id="variable-select" class="setter-select">
+              <option value="">Todas las variables</option>
+            </select>
+            <button id="export-setters-csv" class="btn-table-action" style="color:#5bb974;">⬇ Exportar CSV</button>
+            <button id="manage-variants-btn" class="btn-table-action" style="color:#e3b341;" data-roles="admin">Variantes</button>
+            <button id="session-btn" class="btn-primary pill-btn" disabled>
+              <span class="btn-text">Iniciar Sesión</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sesión activa banner -->
+        <div id="session-banner" class="session-banner hidden">
+          <span>🟢 Sesión activa — <strong id="session-setter-name"></strong></span>
+          <span id="session-timer" class="session-timer">00:00:00</span>
+          <button id="end-session-btn" class="btn-table-action" style="background:#f85149; color:white; border:none;">Cerrar Sesión</button>
+        </div>
+
+        <!-- KPI Dashboard -->
+        <div class="setter-stats" id="setter-stats">
+          <div class="stat-card"><span class="stat-num" id="stat-total">0</span><span class="stat-label">Total</span></div>
+          <div class="stat-card"><span class="stat-num" id="stat-conexiones">0</span><span class="stat-pct-sub" id="stat-pct-conexion">0%</span><span class="stat-label">Conexiones</span></div>
+          <div class="stat-card"><span class="stat-num" id="stat-apertura">0</span><span class="stat-pct-sub" id="stat-pct-apertura">0%</span><span class="stat-label">Apertura</span></div>
+          <div class="stat-card"><span class="stat-num" id="stat-calificacion">0</span><span class="stat-pct-sub" id="stat-pct-calificacion">0%</span><span class="stat-label">Calificación</span></div>
+          <div class="stat-card stat-card-accent"><span class="stat-num" id="stat-interesado">0</span><span class="stat-label">Interesados</span></div>
+          <div class="stat-card" style="border-color:#5bb974;"><span class="stat-num" id="stat-agendado" style="color:#5bb974;">0</span><span class="stat-label">Agendados</span></div>
+        </div>
+
+        <!-- Variante activa del setter -->
+        <div id="active-variant-box" class="variant-active-box hidden">
+          <div class="variant-active-header">
+            <span id="variant-active-name" class="variant-active-name">—</span>
+            <span class="variant-active-label">Variante asignada esta semana</span>
+          </div>
+          <div class="variant-messages">
+            <div class="vmsg"><span class="vmsg-label">1. Apertura:</span> <span id="vmsg-apertura">—</span> <button class="copy-block-btn" data-copy-target="vmsg-apertura">Copiar</button></div>
+            <div class="vmsg"><span class="vmsg-label">2. Problema:</span> <span id="vmsg-problema">—</span> <button class="copy-block-btn" data-copy-target="vmsg-problema">Copiar</button></div>
+            <div class="vmsg"><span class="vmsg-label">3. Prueba social:</span> <span id="vmsg-prueba">—</span> <button class="copy-block-btn" data-copy-target="vmsg-prueba">Copiar</button></div>
+            <div class="vmsg"><span class="vmsg-label">4. Cierre:</span> <span id="vmsg-cierre">—</span> <button class="copy-block-btn" data-copy-target="vmsg-cierre">Copiar</button></div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="pipeline-filters">
+          <button class="pipe-filter active" data-status="all">Todos</button>
+          <button class="pipe-filter" data-status="sin_contactar">📋 Sin contactar</button>
+          <button class="pipe-filter" data-status="enviada">📤 WSP Enviado</button>
+          <button class="pipe-filter" data-status="respondio">💬 Respondieron</button>
+          <button class="pipe-filter" data-status="interesado">🔥 Interesados</button>
+          <button class="pipe-filter" data-status="agendado">📅 Agendados</button>
+          <button class="pipe-filter" data-status="sin_wsp">🚫 Sin WSP</button>
+          <button class="pipe-filter" data-status="descartado">❌ Descartados</button>
+        </div>
+
+        <!-- Tabla de setteo -->
+        <section class="results-panel">
+          <div class="table-container">
+            <table id="setter-table">
+              <thead>
+                <tr>
+                  <th style="width:3%">#</th>
+                  <th style="width:5%">Fecha</th>
+                  <th style="width:14%">Nombre</th>
+                  <th style="width:9%">Teléfono</th>
+                  <th style="width:4%">Web</th>
+                  <th style="width:7%">Conexión</th>
+                  <th style="width:5%">Resp?</th>
+                  <th style="width:5%">Int?</th>
+                  <th style="width:4%">Var</th>
+                  <th style="width:14%">Notas</th>
+                  <th style="width:7%">Doctor</th>
+                  <th style="width:3%">IG</th>
+                  <th style="width:3%">24h</th>
+                  <th style="width:3%">48h</th>
+                  <th style="width:3%">72h</th>
+                  <th style="width:3%">7d</th>
+                  <th style="width:3%">15d</th>
+                  <th style="width:4%">Est</th>
+                </tr>
+              </thead>
+              <tbody id="setter-leads-body">
+                <tr>
+                  <td colspan="18" class="empty-state">
+                    <div class="empty-state-content">
+                      <h3>Sin leads en el pipeline</h3>
+                      <p>Importá leads desde Google Maps con "📋 Enviar a Setters".</p>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Modal de lead -->
+        <div id="lead-modal" class="lead-modal hidden">
+          <div class="lead-modal-content">
+            <div class="lead-modal-header">
+              <h3 id="modal-lead-name">—</h3>
+              <button id="modal-close" class="modal-close-btn">✕</button>
+            </div>
+            <div class="lead-modal-body">
+              <div class="lead-modal-info">
+                <div><strong>Teléfono:</strong> <span id="modal-phone">—</span></div>
+                <div><strong>Web:</strong> <span id="modal-web">—</span></div>
+                <div><strong>País / Ciudad:</strong> <span id="modal-city">—</span></div>
+                <div><strong>Email:</strong> <span id="modal-email">—</span></div>
+                <div><strong>Doctor:</strong> <span id="modal-owner">—</span></div>
+                <div><strong>Redes:</strong> <span id="modal-social">—</span></div>
+              </div>
+              <div class="lead-modal-status">
+                <label><strong>Estado:</strong></label>
+                <select id="modal-status-select">
+                  <option value="sin_contactar">📋 Sin contactar</option>
+                  <option value="contactado">📤 Contactado</option>
+                  <option value="respondio">💬 Respondió</option>
+                  <option value="interesado">🔥 Interesado</option>
+                  <option value="agendado">📅 Agendado</option>
+                  <option value="cerrado">✅ Cerrado</option>
+                  <option value="descartado">❌ Descartado</option>
+                </select>
+                <label style="margin-left:16px;"><strong>Decisor:</strong></label>
+                <select id="modal-decisor-select">
+                  <option value="">—</option>
+                  <option value="SI">SI</option>
+                  <option value="NO">NO</option>
+                </select>
+              </div>
+              <div class="lead-modal-notes">
+                <h4>Conversación / Notas</h4>
+                <div id="modal-notes-list" class="notes-list"></div>
+                <div class="note-input-row">
+                  <textarea id="modal-note-input" placeholder="Escribir nota de la conversación..." rows="2"></textarea>
+                  <button id="modal-add-note" class="btn-primary pill-btn" style="padding:8px 16px;">+ Nota</button>
+                </div>
+              </div>
+              <div class="lead-modal-actions">
+                <h4>Variable / Bloques</h4>
+                <div class="lead-variable-row" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                  <select id="lead-variable-select" class="setter-select" style="max-width:240px;">
+                    <option value="">Sin variable</option>
+                  </select>
+                  <button id="assign-variable-btn" class="btn-table-action">Asignar variable</button>
+                </div>
+                <div id="lead-variable-blocks" class="quick-message-grid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal de variantes -->
+          <div id="variants-modal" class="lead-modal hidden" data-roles="admin">
+          <div class="lead-modal-content" style="max-width:800px;">
+            <div class="lead-modal-header">
+              <h3>Gestión de Variantes</h3>
+              <button id="variants-modal-close" class="modal-close-btn">✕</button>
+            </div>
+            <div class="lead-modal-body">
+              <div id="variants-list"></div>
+              <hr style="border-color:var(--border-color); margin:16px 0;">
+              <h4 style="margin-bottom:12px;">Crear nueva variante</h4>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                <input type="text" id="new-var-name" placeholder="Nombre (ej: V1)" class="setter-input">
+                <input type="text" id="new-var-week" placeholder="Semana (ej: Semana 1)" class="setter-input">
+                <select id="new-var-setter" class="setter-input" style="grid-column:1/-1;">
+                  <option value="">Asignar a setter</option>
+                </select>
+              </div>
+              <div id="variant-block-editor"></div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                <button id="add-variant-block-btn" class="btn-table-action">+ Agregar bloque</button>
+                <button id="create-variant-btn" class="btn-primary pill-btn">+ Crear Variante</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VISTA 4: LLAMADAS (Sin WSP) -->
+      <div id="view-calls" class="module-view hidden">
+        <div class="content-header">
+          <h2>Base de Llamadas (Sin WhatsApp)</h2>
+          <div class="header-actions">
+            <select id="calls-setter-select" class="setter-select"><option value="">Todos</option></select>
+          </div>
+        </div>
+        <section class="results-panel">
+          <div class="table-container">
+            <table id="calls-table">
+              <thead>
+                <tr>
+                  <th style="width:5%">#</th>
+                  <th style="width:20%">Nombre</th>
+                  <th style="width:12%">Teléfono</th>
+                  <th style="width:15%">Ciudad</th>
+                  <th style="width:8%">Web</th>
+                  <th style="width:10%">Doctor</th>
+                  <th style="width:8%">Fecha</th>
+                  <th style="width:22%">Notas</th>
+                </tr>
+              </thead>
+              <tbody id="calls-leads-body">
+                <tr><td colspan="8" class="empty-state"><p>Leads sin WhatsApp aparecerán acá automáticamente.</p></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <!-- VISTA 5: CENTRO DE COMANDO -->
+      <div id="view-command" class="module-view hidden" data-roles="admin">
+        <div class="content-header">
+          <h2>Centro de Comando</h2>
+        </div>
+        <div class="setter-stats" id="cmd-stats"></div>
+        <section class="results-panel" style="padding:0 32px;">
+          <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+              <div>
+                <h3 style="margin:0 0 4px; font-size:15px;">Setters</h3>
+                <p style="margin:0; color:var(--text-secondary); font-size:12px;">Seleccioná un setter para ver o asignar sus variables.</p>
+              </div>
+            </div>
+            <div id="admin-setters-list" style="display:grid; gap:10px;"></div>
+          </div>
+          <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+              <div>
+                <h3 style="margin:0 0 4px; font-size:15px;">Variables del Setter</h3>
+                <p style="margin:0; color:var(--text-secondary); font-size:12px;">Creá variables y bloques ilimitados para cada setter.</p>
+              </div>
+              <select id="cmd-variable-setter-filter" class="setter-input" style="min-width:220px; max-width:280px;">
+                <option value="">Todos los setters</option>
+              </select>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <input id="cmd-variable-search" type="text" class="setter-input" placeholder="Buscar variable o bloque" style="min-width:260px; flex:1;">
+            </div>
+            <div id="admin-variable-summary" style="margin-top:12px; color:var(--text-secondary); font-size:12px;"></div>
+            <div id="admin-variable-list" style="margin-top:14px;"></div>
+          </div>
+          <div id="inline-variant-editor" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px; background:rgba(255,255,255,0.02);">
+            <h3 style="margin:0 0 8px; font-size:15px;">Editor de variables</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+              <input type="text" id="inline-var-name" placeholder="Nombre de variable" class="setter-input">
+              <input type="text" id="inline-var-week" placeholder="Semana / etiqueta" class="setter-input">
+              <select id="inline-var-setter" class="setter-input" style="grid-column:1/-1;">
+                <option value="">Asignar a setter</option>
+              </select>
+            </div>
+            <div id="inline-var-blocks"></div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+              <button id="inline-add-block-btn" type="button" class="btn-table-action">+ Agregar bloque</button>
+              <button id="inline-save-variable-btn" type="button" class="btn-primary pill-btn">+ Guardar variable</button>
+            </div>
+          </div>
+          <h3 style="margin:16px 0 12px; font-size:15px;">Rendimiento por Setter</h3>
+          <div class="table-container">
+            <table id="cmd-table">
+              <thead>
+                <tr>
+                  <th>Setter</th>
+                  <th>Total Leads</th>
+                  <th>Mensajes</th>
+                  <th>Conexiones</th>
+                  <th>% Conexión</th>
+                  <th>Respondieron</th>
+                  <th>% Apertura</th>
+                  <th>Calificados</th>
+                  <th>Interesados</th>
+                  <th>% Calificación</th>
+                  <th>Agendados</th>
+                  <th>Variante Activa</th>
+                </tr>
+              </thead>
+              <tbody id="cmd-table-body"></tbody>
+            </table>
+          </div>
+          <h3 style="margin:24px 0 12px; font-size:15px;">Rendimiento por Variante</h3>
+          <div class="table-container">
+            <table id="cmd-var-table">
+              <thead>
+                <tr>
+                  <th>Variante</th>
+                  <th>Total Leads</th>
+                  <th>Mensajes</th>
+                  <th>Conexiones</th>
+                  <th>Respondieron</th>
+                  <th>Calificados</th>
+                  <th>% Apertura</th>
+                  <th>Interesados</th>
+                  <th>% Calificación</th>
+                </tr>
+              </thead>
+              <tbody id="cmd-var-body"></tbody>
+            </table>
+          </div>
+          <h3 style="margin:24px 0 12px; font-size:15px;">Rendimiento por Bloque</h3>
+          <div class="table-container">
+            <table id="cmd-block-table">
+              <thead>
+                <tr>
+                  <th>Variable</th>
+                  <th>Bloque</th>
+                  <th>Usos</th>
+                  <th>Interesados</th>
+                  <th>% Interés</th>
+                </tr>
+              </thead>
+              <tbody id="cmd-block-body"></tbody>
+            </table>
+          </div>
+          <section class="admin-users-panel" data-roles="admin">
+            <h3 style="margin:24px 0 12px; font-size:15px;">Usuarios e invitaciones</h3>
+            <div class="admin-users-form">
+              <input id="invite-name" type="text" placeholder="Nombre del setter" class="setter-input">
+              <input id="invite-email" type="email" placeholder="Email del setter" class="setter-input">
+              <select id="invite-role" class="setter-input">
+                <option value="setter">Setter</option>
+                <option value="admin">Admin</option>
+              </select>
+              <button id="invite-user-btn" class="btn-primary pill-btn">+ Invitar y enviar email</button>
+            </div>
+            <div id="invite-result" class="hidden" style="margin-top:12px; padding:14px 18px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.2); border-radius:12px;">
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span id="invite-result-icon" style="font-size:18px;">✅</span>
+                <span id="invite-result-text" style="font-size:13px; color:var(--text-main);"></span>
+              </div>
+              <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <input id="invite-result-url" type="text" readonly class="setter-input" style="flex:1; min-width:250px; font-size:12px; cursor:text;">
+                <button id="invite-copy-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Copiar link</button>
+                <button id="invite-wa-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Enviar por WhatsApp</button>
+              </div>
+            </div>
+            <div class="table-container" style="margin-top:12px;">
+              <table id="users-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Setter</th>
+                    <th>Variables</th>
+                    <th>Invitación</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </div>
+
+    </main>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
