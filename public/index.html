@@ -635,6 +635,47 @@
               </table>
             </div>
           </section>
+          <!-- Base de Datos de Scraping -->
+          <div class="admin-variable-panel" style="margin-top:20px; margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
+              <div>
+                <h3 style="margin:0 0 4px; font-size:15px;">Base de Datos de Leads Scrapeados</h3>
+                <p style="margin:0; color:var(--text-secondary); font-size:12px;">Historial completo de todos los leads encontrados. Se usa para evitar scraping duplicado.</p>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <span id="history-total-badge" style="font-size:12px; color:var(--text-secondary);"></span>
+                <button id="history-dedup-btn" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados</button>
+                <button id="history-export-btn" class="btn-table-action" style="color:#5bb974;">Exportar CSV</button>
+                <label class="btn-table-action" style="color:#a8c7fa; cursor:pointer;">
+                  Importar CSV
+                  <input type="file" id="history-import-csv" accept=".csv" style="display:none;">
+                </label>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+              <input id="history-search" type="text" class="setter-input" placeholder="Buscar por nombre, dirección, query..." style="flex:1; min-width:260px;">
+              <button id="history-search-btn" class="btn-table-action">Buscar</button>
+            </div>
+            <div id="history-dedup-result" class="hidden" style="margin-bottom:12px; padding:10px 14px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.2); border-radius:8px; font-size:13px;"></div>
+            <div class="table-container" style="max-height:500px; overflow-y:auto;">
+              <table id="history-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Dirección</th>
+                    <th>Query</th>
+                    <th>Ubicación</th>
+                    <th>Fecha Scraping</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="history-table-body">
+                  <tr><td colspan="6" class="empty-state">Cargando historial...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="history-pagination" style="display:flex; justify-content:center; gap:8px; margin-top:12px; align-items:center;"></div>
+          </div>
         </section>
       </div>
 

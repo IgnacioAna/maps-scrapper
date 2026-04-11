@@ -2081,7 +2081,196 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
-    if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); });
+    if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
+
+    // ══════════════════════════════════════════════════════════════
+    // BASE DE DATOS DE HISTORIAL (Centro de Comando)
+    // ══════════════════════════════════════════════════════════════
+    let historyPage = 1;
+    const historyLimit = 50;
+    let historySearchText = '';
+
+    async function loadHistoryPanel(page = 1) {
+      if (currentUser?.role !== 'admin') return;
+      historyPage = page;
+      const params = new URLSearchParams({ page, limit: historyLimit });
+      if (historySearchText) params.set('search', historySearchText);
+
+      try {
+        const resp = await fetch(apiUrl('/api/admin/history?' + params));
+        const data = await resp.json();
+
+        const badge = document.getElementById('history-total-badge');
+        if (badge) badge.textContent = `${data.total.toLocaleString()} leads en base`;
+
+        const tbody = document.getElementById('history-table-body');
+        if (!tbody) return;
+
+        if (!data.entries || data.entries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No se encontraron leads.</td></tr>';
+        } else {
+          tbody.innerHTML = data.entries.map(e => {
+            const date = e.scrapedAt ? new Date(e.scrapedAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'2-digit' }) : '-';
+            return '<tr>' +
+              '<td style="font-weight:500;">' + escHtml(e.name || '') + '</td>' +
+              '<td style="font-size:12px; max-width:200px;">' + escHtml(e.address || '') + '</td>' +
+              '<td style="font-size:12px;">' + escHtml(e.query || '') + '</td>' +
+              '<td style="font-size:12px;">' + escHtml(e.location || '') + '</td>' +
+              '<td style="font-size:12px; white-space:nowrap;">' + date + '</td>' +
+              '<td><button class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteHistoryEntry(\'' + escHtml(e.key).replace(/'/g, "\\'") + '\')">Eliminar</button></td>' +
+            '</tr>';
+          }).join('');
+        }
+
+        // Paginación
+        const pagDiv = document.getElementById('history-pagination');
+        if (pagDiv) {
+          let html = '';
+          if (data.page > 1) html += '<button class="btn-table-action" onclick="window._loadHistoryPage(' + (data.page - 1) + ')">← Anterior</button>';
+          html += '<span style="font-size:12px; color:var(--text-secondary);">Página ' + data.page + ' de ' + data.totalPages + '</span>';
+          if (data.page < data.totalPages) html += '<button class="btn-table-action" onclick="window._loadHistoryPage(' + (data.page + 1) + ')">Siguiente →</button>';
+          pagDiv.innerHTML = html;
+        }
+      } catch (e) {
+        console.error('Error cargando historial:', e);
+      }
+    }
+
+    window._loadHistoryPage = (p) => loadHistoryPanel(p);
+
+    window._deleteHistoryEntry = async (key) => {
+      if (!confirm('¿Eliminar este lead del historial? Se podrá volver a scrapear.')) return;
+      try {
+        await fetch(apiUrl('/api/admin/history/entry'), { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
+        loadHistoryPanel(historyPage);
+      } catch (e) { console.error(e); }
+    };
+
+    // Buscar en historial
+    const histSearchInput = document.getElementById('history-search');
+    const histSearchBtn = document.getElementById('history-search-btn');
+    if (histSearchBtn) {
+      histSearchBtn.addEventListener('click', () => {
+        historySearchText = histSearchInput?.value?.trim() || '';
+        loadHistoryPanel(1);
+      });
+    }
+    if (histSearchInput) {
+      histSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { historySearchText = histSearchInput.value.trim(); loadHistoryPanel(1); }
+      });
+    }
+
+    // Limpiar duplicados
+    const dedupBtn = document.getElementById('history-dedup-btn');
+    if (dedupBtn) {
+      dedupBtn.addEventListener('click', async () => {
+        if (!confirm('¿Buscar y eliminar leads duplicados del historial?')) return;
+        dedupBtn.disabled = true;
+        dedupBtn.textContent = 'Limpiando...';
+        try {
+          const resp = await fetch(apiUrl('/api/admin/history/dedup'), { method: 'POST' });
+          const data = await resp.json();
+          const resultDiv = document.getElementById('history-dedup-result');
+          if (resultDiv) {
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = data.removed > 0
+              ? '✅ Se eliminaron <strong>' + data.removed + '</strong> duplicados. Quedan <strong>' + data.remaining + '</strong> leads únicos.'
+              : '✅ No se encontraron duplicados. Todos los <strong>' + data.remaining + '</strong> leads son únicos.';
+            setTimeout(() => resultDiv.classList.add('hidden'), 8000);
+          }
+          loadHistoryPanel(historyPage);
+        } catch (e) { console.error(e); alert('Error limpiando duplicados'); }
+        dedupBtn.disabled = false;
+        dedupBtn.textContent = 'Limpiar Duplicados';
+      });
+    }
+
+    // Exportar historial como CSV
+    const histExportBtn = document.getElementById('history-export-btn');
+    if (histExportBtn) {
+      histExportBtn.addEventListener('click', async () => {
+        try {
+          const resp = await fetch(apiUrl('/api/admin/history?page=1&limit=999999'));
+          const data = await resp.json();
+          if (!data.entries || data.entries.length === 0) return alert('No hay datos para exportar.');
+          const headers = ['Nombre', 'Dirección', 'Query', 'Ubicación', 'Fecha Scraping'];
+          const rows = data.entries.map(e => [
+            '"' + (e.name || '').replace(/"/g, '""') + '"',
+            '"' + (e.address || '').replace(/"/g, '""') + '"',
+            '"' + (e.query || '').replace(/"/g, '""') + '"',
+            '"' + (e.location || '').replace(/"/g, '""') + '"',
+            '"' + (e.scrapedAt || '').replace(/"/g, '""') + '"'
+          ]);
+          const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'historial_scraping_' + new Date().toISOString().slice(0, 10) + '.csv';
+          a.click();
+        } catch (e) { console.error(e); alert('Error exportando'); }
+      });
+    }
+
+    // Importar CSV al historial
+    const histImportInput = document.getElementById('history-import-csv');
+    if (histImportInput) {
+      histImportInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) return alert('CSV vacío o sin datos.');
+
+        // Parsear CSV (simple, asume comillas dobles)
+        function parseCSVLine(line) {
+          const cols = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') { inQuotes = !inQuotes; continue; }
+            if (ch === ',' && !inQuotes) { cols.push(current.trim()); current = ''; continue; }
+            current += ch;
+          }
+          cols.push(current.trim());
+          return cols;
+        }
+
+        const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\uFEFF/g, ''));
+        const nameIdx = header.findIndex(h => h.includes('nombre') || h.includes('name'));
+        const addrIdx = header.findIndex(h => h.includes('direc') || h.includes('address'));
+        const phoneIdx = header.findIndex(h => h.includes('tel') || h.includes('phone') || h.includes('celular'));
+
+        if (nameIdx === -1) return alert('El CSV debe tener una columna "Nombre" o "Name".');
+
+        const leads = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          if (!cols[nameIdx]) continue;
+          leads.push({
+            name: cols[nameIdx] || '',
+            address: addrIdx >= 0 ? (cols[addrIdx] || '') : '',
+            phone: phoneIdx >= 0 ? (cols[phoneIdx] || '') : ''
+          });
+        }
+
+        if (leads.length === 0) return alert('No se encontraron leads en el CSV.');
+        if (!confirm('Se importarán ' + leads.length + ' leads. Los duplicados serán ignorados automáticamente. ¿Continuar?')) return;
+
+        try {
+          const resp = await fetch(apiUrl('/api/admin/history/import'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leads })
+          });
+          const data = await resp.json();
+          alert('Importación completada:\n• Importados: ' + data.imported + '\n• Duplicados omitidos: ' + data.skipped + '\n• Total en base: ' + data.total);
+          loadHistoryPanel(1);
+        } catch (err) { console.error(err); alert('Error importando: ' + err.message); }
+        histImportInput.value = '';
+      });
+    }
 
     // Cargar módulo cuando se cambia a la vista
     const crmMenuItem = document.querySelector('[data-target="view-crm"]');

@@ -23,7 +23,7 @@ const ai = new OpenAI({
 });
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 const AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -590,6 +590,38 @@ app.post('/api/auth/accept-invite', (req, res) => {
   res.json({ user: publicUser(user) });
 });
 
+// ── Admin: Exportar toda la data (para backup pre-deploy) ──
+app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const history = loadHistory();
+    const auth = loadAuthData();
+    const setters = loadSettersData();
+    res.json({
+      exportedAt: new Date().toISOString(),
+      history,
+      auth,
+      setters
+    });
+  } catch (e) {
+    console.error('Export error:', e);
+    res.status(500).json({ error: 'Error exportando data' });
+  }
+});
+
+// ── Admin: Importar data (restore después de deploy) ──
+app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const { history, auth, setters } = req.body;
+    if (history) saveHistory(history);
+    if (auth) saveAuthData(auth);
+    if (setters) saveSettersData(setters);
+    res.json({ ok: true, message: 'Data importada correctamente' });
+  } catch (e) {
+    console.error('Import error:', e);
+    res.status(500).json({ error: 'Error importando data' });
+  }
+});
+
 // API de Apify (Buscador de Instagram Puro)
 app.post('/api/apify-scrape', requireAuth, requireRole('admin'), async (req, res) => {
   const { query, maxItems } = req.body;
@@ -675,6 +707,168 @@ app.post('/api/apify-scrape', requireAuth, requireRole('admin'), async (req, res
     res.status(500).json({ error: error.message || 'Error en actor de Apify' });
   }
 });
+// ── GET /api/admin/history — paginated history with search ──
+app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const history = loadHistory();
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.max(1, Math.min(500, parseInt(req.query.limit) || 50));
+    const search = (req.query.search || '').toLowerCase().trim();
+
+    // Convert entries object to array
+    let entries = Object.entries(history.entries).map(([key, val]) => ({
+      key,
+      name: val.name || '',
+      address: val.address || '',
+      scrapedAt: val.scrapedAt || val.addedAt || '',
+      query: val.query || '',
+      location: val.location || ''
+    }));
+
+    // Filter by search term
+    if (search) {
+      entries = entries.filter(e =>
+        e.name.toLowerCase().includes(search) ||
+        e.address.toLowerCase().includes(search) ||
+        e.query.toLowerCase().includes(search)
+      );
+    }
+
+    // Sort by scrapedAt descending (newest first)
+    entries.sort((a, b) => new Date(b.scrapedAt || 0) - new Date(a.scrapedAt || 0));
+
+    const total = entries.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const start = (page - 1) * limit;
+    const paged = entries.slice(start, start + limit);
+
+    res.json({ entries: paged, total, page, totalPages });
+  } catch (error) {
+    console.error('Error in /api/admin/history:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── POST /api/admin/history/import — import leads with deduplication ──
+app.post('/api/admin/history/import', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const { leads } = req.body;
+    if (!Array.isArray(leads)) return res.status(400).json({ error: 'leads must be an array' });
+
+    const history = loadHistory();
+    let imported = 0;
+    let skipped = 0;
+
+    // Build lookup sets from existing entries for fast dedup
+    const existingPhones = new Set();
+    const existingNameAddr = new Set();
+    for (const val of Object.values(history.entries)) {
+      const ph = normalizePhoneForDedup(val.phone);
+      if (ph) existingPhones.add(ph);
+      const nn = normalizeNameForDedup(val.name);
+      const na = normalizeAddressForDedup(val.address);
+      if (nn && na) existingNameAddr.add(nn + '|||' + na);
+    }
+
+    for (const lead of leads) {
+      const key = makeKey(lead);
+
+      // Check 1: exact key match
+      if (history.entries[key]) { skipped++; continue; }
+
+      // Check 2: phone match
+      const ph = normalizePhoneForDedup(lead.phone);
+      if (ph && existingPhones.has(ph)) { skipped++; continue; }
+
+      // Check 3: normalized name+address match
+      const nn = normalizeNameForDedup(lead.name);
+      const na = normalizeAddressForDedup(lead.address);
+      if (nn && na && existingNameAddr.has(nn + '|||' + na)) { skipped++; continue; }
+
+      // Add the lead
+      history.entries[key] = { ...lead, scrapedAt: lead.scrapedAt || new Date().toISOString() };
+      imported++;
+
+      // Update lookup sets so subsequent leads in this batch also dedup
+      if (ph) existingPhones.add(ph);
+      if (nn && na) existingNameAddr.add(nn + '|||' + na);
+    }
+
+    saveHistory(history);
+    res.json({ imported, skipped, total: Object.keys(history.entries).length });
+  } catch (error) {
+    console.error('Error in /api/admin/history/import:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── POST /api/admin/history/dedup — remove duplicates from existing history ──
+app.post('/api/admin/history/dedup', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const history = loadHistory();
+    const seenPhones = new Map();   // normalizedPhone -> key
+    const seenNameAddr = new Map();  // normalizedName|||normalizedAddr -> key
+    const keysToRemove = new Set();
+
+    // Sort entries by scrapedAt ascending so the oldest is kept
+    const sorted = Object.entries(history.entries).sort((a, b) => {
+      const dateA = new Date(a[1].scrapedAt || a[1].addedAt || 0);
+      const dateB = new Date(b[1].scrapedAt || b[1].addedAt || 0);
+      return dateA - dateB;
+    });
+
+    for (const [key, val] of sorted) {
+      let isDup = false;
+
+      // Check phone
+      const ph = normalizePhoneForDedup(val.phone);
+      if (ph) {
+        if (seenPhones.has(ph)) { isDup = true; }
+        else { seenPhones.set(ph, key); }
+      }
+
+      // Check name+address
+      const nn = normalizeNameForDedup(val.name);
+      const na = normalizeAddressForDedup(val.address);
+      if (nn && na) {
+        const naKey = nn + '|||' + na;
+        if (seenNameAddr.has(naKey)) { isDup = true; }
+        else { seenNameAddr.set(naKey, key); }
+      }
+
+      if (isDup) keysToRemove.add(key);
+    }
+
+    for (const key of keysToRemove) {
+      delete history.entries[key];
+    }
+
+    saveHistory(history);
+    res.json({ removed: keysToRemove.size, remaining: Object.keys(history.entries).length });
+  } catch (error) {
+    console.error('Error in /api/admin/history/dedup:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── DELETE /api/admin/history/entry — delete a specific entry ──
+app.delete('/api/admin/history/entry', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const { key } = req.body;
+    if (!key) return res.status(400).json({ error: 'key is required' });
+
+    const history = loadHistory();
+    if (!history.entries[key]) return res.status(404).json({ error: 'Entry not found' });
+
+    delete history.entries[key];
+    saveHistory(history);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error in DELETE /api/admin/history/entry:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.use(express.static(path.join(process.cwd(), "public")));
 
 // ── Historial persistente ──

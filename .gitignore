@@ -1,8 +1,6 @@
 node_modules/
 .env
-data/history.json
-data/auth.json
-data/setters.json
+# data/ ya NO se ignora — se sube al repo para persistir entre deploys
 server.out.log
 server.err.log
 tmp/
