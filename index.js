@@ -1444,6 +1444,7 @@ app.get('/api/setters/leads', (req, res) => {
 });
 
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
+  try {
   const { leads: incoming, assignTo } = req.body;
   if (!incoming || !Array.isArray(incoming) || incoming.length === 0) {
     return res.status(400).json({ error: "No hay leads para importar." });
@@ -1506,7 +1507,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
       facebook: lead.facebook || '',
       linkedin: lead.linkedin || '',
       email: lead.email || '',
-      doctor: (() => { const d = lead.owner || lead.aiRole || ''; return (d.includes('N/A') || d.includes('Sin identificar') || d.includes('no soportada') || d.includes('Requiere clave') || d.includes('pausada') || d.includes('sin contenido')) ? '' : d; })(),
+      doctor: (() => { const d = String(lead.owner || lead.aiRole || ''); return (d.includes('N/A') || d.includes('Sin identificar') || d.includes('no soportada') || d.includes('Requiere clave') || d.includes('pausada') || d.includes('sin contenido')) ? '' : d; })(),
       decisor: '',
       webWhatsApp: lead.webWhatsApp || '',
       aiWhatsApp: lead.aiWhatsApp || '',
@@ -1533,6 +1534,10 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
   }
   saveSettersData(data);
   res.json({ imported, skipped, total: Object.keys(data.leads).length });
+  } catch (err) {
+    console.error('Error en /api/setters/import:', err);
+    res.status(500).json({ error: err.message || 'Error importando leads' });
+  }
 });
 
 // Actualizar lead (campos múltiples)

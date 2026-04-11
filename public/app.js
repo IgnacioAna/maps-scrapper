@@ -1717,12 +1717,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       try {
         const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo }) });
+        if (!importResp.ok) {
+          const errData = await importResp.text();
+          console.error('Import error response:', importResp.status, errData);
+          alert('Error al importar (' + importResp.status + '): ' + errData);
+          return;
+        }
         const result = await importResp.json();
-        let summary = 'Importados: ' + result.imported + ' leads nuevos\nYa existían en setter: ' + result.skipped;
+        let summary = 'Importados: ' + (result.imported || 0) + ' leads nuevos\nYa existían en setter: ' + (result.skipped || 0);
         if (skippedOld > 0) summary += '\nYa scrapeados antes (no enviados): ' + skippedOld;
-        summary += '\nTotal en pipeline: ' + result.total;
+        summary += '\nTotal en pipeline: ' + (result.total || 0);
         alert(summary);
-      } catch (e) { console.error(e); alert('Error al importar.'); }
+      } catch (e) { console.error('Import exception:', e); alert('Error al importar: ' + e.message); }
     });
 
     // ── Vista Llamadas (Sin WSP) ──
