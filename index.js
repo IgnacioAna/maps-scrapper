@@ -62,32 +62,8 @@ function publicUser(user) {
 }
 
 function defaultAuthData() {
-  const now = new Date().toISOString();
   return {
-    users: [
-      {
-        id: "user_admin_ignacio",
-        email: "ignacio.scmdental@gmail.com",
-        name: "Ignacio",
-        role: "admin",
-        status: "active",
-        setterId: "",
-        password: createPasswordRecord(process.env.ADMIN_INITIAL_PASSWORD || "Ignacio2026!"),
-        createdAt: now,
-        updatedAt: now
-      },
-      {
-        id: "user_setter_paula",
-        email: "paulakroff@gmail.com",
-        name: "Paula",
-        role: "setter",
-        status: "active",
-        setterId: "setter_paula",
-        password: createPasswordRecord(process.env.PAULA_INITIAL_PASSWORD || "Paula2026!"),
-        createdAt: now,
-        updatedAt: now
-      }
-    ],
+    users: [],
     invites: [],
     sessions: []
   };
@@ -129,45 +105,28 @@ function ensureAuthSeeds() {
   const data = loadAuthData();
   const now = new Date().toISOString();
 
-  const ensureUser = (user) => {
-    const idx = data.users.findIndex((u) => u.email.toLowerCase() === user.email.toLowerCase());
-    if (idx === -1) {
-      data.users.push(user);
-      return;
+  // Solo crear admin si no existe ningún usuario admin
+  const hasAdmin = data.users.some((u) => u.role === "admin" && u.status === "active");
+  if (!hasAdmin) {
+    const adminPwd = process.env.ADMIN_PASSWORD;
+    if (!adminPwd) {
+      console.error("⚠️ ADMIN_PASSWORD no configurada en .env — No se puede crear el usuario admin.");
+      console.error("   Agregá ADMIN_PASSWORD=tu_contraseña en las variables de entorno.");
+    } else {
+      data.users.push({
+        id: "user_admin_ignacio",
+        email: process.env.ADMIN_EMAIL || "ignacio.scmdental@gmail.com",
+        name: process.env.ADMIN_NAME || "Ignacio",
+        role: "admin",
+        status: "active",
+        setterId: "",
+        password: createPasswordRecord(adminPwd),
+        createdAt: now,
+        updatedAt: now
+      });
+      console.log("✅ Usuario admin creado. Los setters se agregan desde el panel con invitaciones.");
     }
-    const existing = data.users[idx];
-    data.users[idx] = {
-      ...existing,
-      ...user,
-      password: existing.password || user.password,
-      createdAt: existing.createdAt || user.createdAt,
-      updatedAt: now
-    };
-  };
-
-  ensureUser({
-    id: "user_admin_ignacio",
-    email: "ignacio.scmdental@gmail.com",
-    name: "Ignacio",
-    role: "admin",
-    status: "active",
-    setterId: "",
-    password: createPasswordRecord(process.env.ADMIN_INITIAL_PASSWORD || "Ignacio2026!"),
-    createdAt: now,
-    updatedAt: now
-  });
-
-  ensureUser({
-    id: "user_setter_paula",
-    email: "paulakroff@gmail.com",
-    name: "Paula",
-    role: "setter",
-    status: "active",
-    setterId: "setter_paula",
-    password: createPasswordRecord(process.env.PAULA_INITIAL_PASSWORD || "Paula2026!"),
-    createdAt: now,
-    updatedAt: now
-  });
+  }
 
   if (!data.invites) data.invites = [];
   if (!data.sessions) data.sessions = [];
