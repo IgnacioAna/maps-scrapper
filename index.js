@@ -598,25 +598,41 @@ app.post('/api/apify-scrape', requireAuth, requireRole('admin'), async (req, res
   if (!apifyToken) return res.status(401).json({ error: 'Falta Token de APIFY en .env' });
 
   try {
-    const isUrl = query.startsWith('http') || query.startsWith('www');
+    const isUrl = query.startsWith('http') || query.startsWith('www') || query.startsWith('instagram.com');
     const isHashtag = query.startsWith('#');
-    
-    // El actor apify/instagram-scraper usa 'user' para buscar perfiles por palabra clave
-    const runInput = {
-        search: query.replace('#', ''),
-        searchType: isUrl ? "url" : (isHashtag ? "hashtag" : "user"),
-        resultsType: "details",
-        resultsLimit: parseInt(maxItems) || 20
-    };
+    const limit = parseInt(maxItems) || 20;
 
-    // 1. Iniciar el bot (Instagram Scraper) y esperar que termine (método síncrono run-sync-get-dataset-items)
-    // Usaremos el endpoint síncrono de Apify (bloquea hasta que termine, ideal para < 50 items)
-    const runUrl = `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}&format=json`;
-    
+    // El actor apify/instagram-scraper espera directUrls (array de URLs) o search + searchType
+    let runInput;
+    if (isUrl) {
+      // Si es una URL directa, usar directUrls
+      const url = query.startsWith('http') ? query : `https://${query}`;
+      runInput = {
+        directUrls: [url],
+        resultsType: "posts",
+        searchLimit: limit,
+        addParentData: false
+      };
+    } else {
+      // Búsqueda por hashtag o usuario
+      runInput = {
+        search: query.replace('#', ''),
+        searchType: isHashtag ? "hashtag" : "user",
+        resultsType: "details",
+        searchLimit: limit,
+        addParentData: false
+      };
+    }
+
+    // Endpoint síncrono: espera a que termine y devuelve el dataset directamente
+    // Timeout de 120s (Apify lo permite hasta 300s)
+    const runUrl = `https://api.apify.com/v2/acts/apify~instagram-scraper/run-sync-get-dataset-items?token=${apifyToken}&format=json&timeout=120`;
+
     const startResp = await fetch(runUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(runInput)
+        body: JSON.stringify(runInput),
+        signal: AbortSignal.timeout(130000)
     });
     
     // Si excede el tiempo del sync (normalmente 1-2 min), Apify devuelve error de timeout pero deja el dataset creado.
