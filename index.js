@@ -1494,9 +1494,18 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
 
     // Extraer teléfono limpio de URLs wa.me si viene así
     let cleanPhone = lead.phone || '';
+    let importedWaUrl = lead.whatsappUrl || '';
+    let importedOpenMsg = lead.openMessage || '';
     if (cleanPhone.includes('wa.me/')) {
       const waMatch = cleanPhone.match(/wa\.me\/(\d+)/);
-      if (waMatch) cleanPhone = waMatch[1];
+      if (waMatch) {
+        if (!importedWaUrl) importedWaUrl = cleanPhone.startsWith('http') ? cleanPhone : 'https://' + cleanPhone;
+        const textMatch = cleanPhone.match(/[?&]text=([^&]*)/);
+        if (textMatch && !importedOpenMsg) {
+          try { importedOpenMsg = decodeURIComponent(textMatch[1]); } catch(e) { importedOpenMsg = textMatch[1]; }
+        }
+        cleanPhone = waMatch[1];
+      }
     }
 
     const { country, city } = parseLocationParts(lead.locationSearched || lead.city || lead.country || '');
@@ -1519,7 +1528,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
       decisor: '',
       webWhatsApp: lead.webWhatsApp || '',
       aiWhatsApp: lead.aiWhatsApp || '',
-      openMessage: lead.openMessage || '',
+      openMessage: importedOpenMsg || lead.openMessage || '',
       assignedTo: setter ? setter.id : '',
       varianteId,
       conexion: '',
@@ -1532,7 +1541,8 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
       importedAt: now.toISOString(),
       lastContactAt: null
     });
-    baseLead.whatsappUrl = buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', baseLead.country || country || '', '');
+    // Si ya viene con URL de WhatsApp completa (del CSV), usarla; si no, construirla
+    baseLead.whatsappUrl = importedWaUrl || buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', baseLead.country || country || '', importedOpenMsg);
     data.leads[id] = {
       ...baseLead,
       followUps: baseLead.followUps || { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }

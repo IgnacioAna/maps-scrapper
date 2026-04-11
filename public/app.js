@@ -2204,15 +2204,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (nameIdx === -1) { alert('El CSV debe tener una columna "Nombre", "Name" o "Clínica".'); setterImportCsv.value = ''; return; }
 
-        // Extraer número de teléfono de una URL de wa.me
-        function extractPhoneFromWaUrl(val) {
-          if (!val) return '';
-          // Si es una URL wa.me, extraer solo los dígitos del path
+        // Extraer teléfono y mensaje de una URL de wa.me
+        function parseWaUrl(val) {
+          if (!val) return { phone: '', message: '', fullUrl: '' };
           const waMatch = val.match(/wa\.me\/(\d+)/);
-          if (waMatch) return waMatch[1];
-          // Si ya es un número, devolverlo limpio
+          if (waMatch) {
+            const phone = waMatch[1];
+            // Extraer el texto del mensaje si existe
+            let message = '';
+            const textMatch = val.match(/[?&]text=([^&]*)/);
+            if (textMatch) {
+              try { message = decodeURIComponent(textMatch[1]); } catch(e) { message = textMatch[1]; }
+            }
+            return { phone, message, fullUrl: val.startsWith('http') ? val : 'https://' + val };
+          }
+          // Si no es URL de wa.me, tratar como número
           const digits = val.replace(/\D/g, '');
-          return digits.length >= 7 ? digits : val;
+          return { phone: digits.length >= 7 ? digits : val, message: '', fullUrl: '' };
         }
 
         const leads = [];
@@ -2220,25 +2228,28 @@ document.addEventListener('DOMContentLoaded', async () => {
           const cols = parseCSVLine(lines[i]);
           if (!cols[nameIdx]) continue;
 
-          // Obtener teléfono: prioridad a columna phone, si no de la columna whatsapp
-          let phone = '';
-          if (phoneIdx >= 0 && cols[phoneIdx]) {
-            phone = extractPhoneFromWaUrl(cols[phoneIdx]);
-          } else if (waIdx >= 0 && cols[waIdx]) {
-            phone = extractPhoneFromWaUrl(cols[waIdx]);
+          // Obtener teléfono y mensaje: de columna phone o whatsapp
+          let phone = '', openMessage = '', whatsappUrl = '';
+          if (waIdx >= 0 && cols[waIdx]) {
+            const parsed = parseWaUrl(cols[waIdx]);
+            phone = parsed.phone;
+            openMessage = parsed.message;
+            whatsappUrl = parsed.fullUrl;
           }
-
-          // Obtener website: prioridad a columna website, si no alguna URL útil
-          let website = '';
-          if (websiteIdx >= 0 && cols[websiteIdx]) {
-            website = cols[websiteIdx];
+          if (!phone && phoneIdx >= 0 && cols[phoneIdx]) {
+            const parsed = parseWaUrl(cols[phoneIdx]);
+            phone = parsed.phone;
+            if (!openMessage && parsed.message) openMessage = parsed.message;
+            if (!whatsappUrl && parsed.fullUrl) whatsappUrl = parsed.fullUrl;
           }
 
           leads.push({
             name: cols[nameIdx] || '',
             phone: phone,
+            openMessage: openMessage,
+            whatsappUrl: whatsappUrl,
             address: addrIdx >= 0 ? (cols[addrIdx] || '') : '',
-            website: website,
+            website: websiteIdx >= 0 ? (cols[websiteIdx] || '') : '',
             rating: ratingIdx >= 0 ? (cols[ratingIdx] || '') : '',
             reviews: reviewsIdx >= 0 ? parseInt(cols[reviewsIdx]) || 0 : 0,
             type: typeIdx >= 0 ? (cols[typeIdx] || '') : '',
