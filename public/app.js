@@ -2139,6 +2139,117 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // ── Importar CSV a Setter ──
+    const setterImportCsv = document.getElementById('setter-import-csv');
+    if (setterImportCsv) {
+      setterImportCsv.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Cargar setters para el prompt
+        let settersList = [];
+        try {
+          const sResp = await fetch(apiUrl('/api/setters'));
+          const sData = await sResp.json();
+          settersList = sData.setters || [];
+        } catch (err) { console.error(err); }
+
+        const names = settersList.map(s => s.name).join('\n');
+        const input = prompt('¿A qué setter asignar estos leads?\n\n' + names + '\n\n(Escribí el nombre exacto o dejá vacío para no asignar):');
+        if (input === null) { setterImportCsv.value = ''; return; }
+
+        let assignTo = '';
+        if (input) {
+          const found = settersList.find(s => s.name.toLowerCase() === input.trim().toLowerCase());
+          assignTo = found ? found.id : input.trim();
+        }
+
+        // Parsear CSV
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { alert('CSV vacío o sin datos.'); setterImportCsv.value = ''; return; }
+
+        function parseCSVLine(line) {
+          const cols = [];
+          let current = '';
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (ch === '"') { inQuotes = !inQuotes; continue; }
+            if (ch === ',' && !inQuotes) { cols.push(current.trim()); current = ''; continue; }
+            current += ch;
+          }
+          cols.push(current.trim());
+          return cols;
+        }
+
+        const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\uFEFF/g, '').trim());
+        // Mapear columnas flexiblemente
+        const findCol = (...keywords) => header.findIndex(h => keywords.some(k => h.includes(k)));
+        const nameIdx = findCol('nombre', 'name');
+        const phoneIdx = findCol('tel', 'phone', 'celular', 'whatsapp');
+        const addrIdx = findCol('direc', 'address');
+        const websiteIdx = findCol('web', 'sitio', 'website', 'url');
+        const ratingIdx = findCol('rating', 'calificaci', 'puntuaci');
+        const reviewsIdx = findCol('review', 'reseñ', 'opinion');
+        const typeIdx = findCol('tipo', 'type', 'rubro', 'categor');
+        const locationIdx = findCol('ubic', 'location', 'ciudad', 'city');
+        const countryIdx = findCol('pais', 'country');
+        const emailIdx = findCol('email', 'correo', 'mail');
+        const igIdx = findCol('instagram', 'ig');
+        const fbIdx = findCol('facebook', 'fb');
+        const linkedinIdx = findCol('linkedin');
+        const ownerIdx = findCol('owner', 'doctor', 'dueño', 'responsable', 'decisor');
+
+        if (nameIdx === -1) { alert('El CSV debe tener una columna "Nombre" o "Name".'); setterImportCsv.value = ''; return; }
+
+        const leads = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          if (!cols[nameIdx]) continue;
+          leads.push({
+            name: cols[nameIdx] || '',
+            phone: phoneIdx >= 0 ? (cols[phoneIdx] || '') : '',
+            address: addrIdx >= 0 ? (cols[addrIdx] || '') : '',
+            website: websiteIdx >= 0 ? (cols[websiteIdx] || '') : '',
+            rating: ratingIdx >= 0 ? (cols[ratingIdx] || '') : '',
+            reviews: reviewsIdx >= 0 ? parseInt(cols[reviewsIdx]) || 0 : 0,
+            type: typeIdx >= 0 ? (cols[typeIdx] || '') : '',
+            locationSearched: locationIdx >= 0 ? (cols[locationIdx] || '') : '',
+            country: countryIdx >= 0 ? (cols[countryIdx] || '') : '',
+            email: emailIdx >= 0 ? (cols[emailIdx] || '') : '',
+            instagram: igIdx >= 0 ? (cols[igIdx] || '') : '',
+            facebook: fbIdx >= 0 ? (cols[fbIdx] || '') : '',
+            linkedin: linkedinIdx >= 0 ? (cols[linkedinIdx] || '') : '',
+            owner: ownerIdx >= 0 ? (cols[ownerIdx] || '') : ''
+          });
+        }
+
+        if (leads.length === 0) { alert('No se encontraron leads en el CSV.'); setterImportCsv.value = ''; return; }
+        if (!confirm('Se importarán ' + leads.length + ' leads' + (assignTo ? ' al setter seleccionado' : '') + '.\nLos duplicados serán ignorados automáticamente.\n\n¿Continuar?')) {
+          setterImportCsv.value = ''; return;
+        }
+
+        try {
+          const resp = await fetch(apiUrl('/api/setters/import'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leads, assignTo })
+          });
+          if (!resp.ok) {
+            const errText = await resp.text();
+            alert('Error al importar (' + resp.status + '): ' + errText);
+            setterImportCsv.value = '';
+            return;
+          }
+          const result = await resp.json();
+          alert('Importación completada:\n• Importados: ' + (result.imported || 0) + ' leads nuevos\n• Duplicados omitidos: ' + (result.skipped || 0) + '\n• Total en pipeline: ' + (result.total || 0));
+          loadCommandCenter();
+        } catch (err) { console.error(err); alert('Error importando: ' + err.message); }
+        setterImportCsv.value = '';
+      });
+    }
+
     // ══════════════════════════════════════════════════════════════
     // BASE DE DATOS DE HISTORIAL (Centro de Comando)
     // ══════════════════════════════════════════════════════════════
