@@ -2184,34 +2184,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const header = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/\uFEFF/g, '').trim());
-        // Mapear columnas flexiblemente
+        // Mapear columnas flexiblemente — busca por keywords parciales
         const findCol = (...keywords) => header.findIndex(h => keywords.some(k => h.includes(k)));
-        const nameIdx = findCol('nombre', 'name');
-        const phoneIdx = findCol('tel', 'phone', 'celular', 'whatsapp');
+        const nameIdx = findCol('nombre', 'name', 'clínica', 'clinica', 'empresa', 'negocio');
+        const phoneIdx = findCol('tel', 'phone', 'celular');
+        const waIdx = findCol('whatsapp', 'wa.me', 'wsp');
         const addrIdx = findCol('direc', 'address');
-        const websiteIdx = findCol('web', 'sitio', 'website', 'url');
+        const websiteIdx = findCol('página web', 'pagina web', 'website', 'sitio');
         const ratingIdx = findCol('rating', 'calificaci', 'puntuaci');
         const reviewsIdx = findCol('review', 'reseñ', 'opinion');
         const typeIdx = findCol('tipo', 'type', 'rubro', 'categor');
-        const locationIdx = findCol('ubic', 'location', 'ciudad', 'city');
-        const countryIdx = findCol('pais', 'country');
+        const locationIdx = findCol('ciudad', 'city', 'ubic', 'location');
+        const countryIdx = findCol('país', 'pais', 'country');
         const emailIdx = findCol('email', 'correo', 'mail');
         const igIdx = findCol('instagram', 'ig');
         const fbIdx = findCol('facebook', 'fb');
         const linkedinIdx = findCol('linkedin');
-        const ownerIdx = findCol('owner', 'doctor', 'dueño', 'responsable', 'decisor');
+        const ownerIdx = findCol('doctor', 'owner', 'dueño', 'responsable', 'decisor');
 
-        if (nameIdx === -1) { alert('El CSV debe tener una columna "Nombre" o "Name".'); setterImportCsv.value = ''; return; }
+        if (nameIdx === -1) { alert('El CSV debe tener una columna "Nombre", "Name" o "Clínica".'); setterImportCsv.value = ''; return; }
+
+        // Extraer número de teléfono de una URL de wa.me
+        function extractPhoneFromWaUrl(val) {
+          if (!val) return '';
+          // Si es una URL wa.me, extraer solo los dígitos del path
+          const waMatch = val.match(/wa\.me\/(\d+)/);
+          if (waMatch) return waMatch[1];
+          // Si ya es un número, devolverlo limpio
+          const digits = val.replace(/\D/g, '');
+          return digits.length >= 7 ? digits : val;
+        }
 
         const leads = [];
         for (let i = 1; i < lines.length; i++) {
           const cols = parseCSVLine(lines[i]);
           if (!cols[nameIdx]) continue;
+
+          // Obtener teléfono: prioridad a columna phone, si no de la columna whatsapp
+          let phone = '';
+          if (phoneIdx >= 0 && cols[phoneIdx]) {
+            phone = extractPhoneFromWaUrl(cols[phoneIdx]);
+          } else if (waIdx >= 0 && cols[waIdx]) {
+            phone = extractPhoneFromWaUrl(cols[waIdx]);
+          }
+
+          // Obtener website: prioridad a columna website, si no alguna URL útil
+          let website = '';
+          if (websiteIdx >= 0 && cols[websiteIdx]) {
+            website = cols[websiteIdx];
+          }
+
           leads.push({
             name: cols[nameIdx] || '',
-            phone: phoneIdx >= 0 ? (cols[phoneIdx] || '') : '',
+            phone: phone,
             address: addrIdx >= 0 ? (cols[addrIdx] || '') : '',
-            website: websiteIdx >= 0 ? (cols[websiteIdx] || '') : '',
+            website: website,
             rating: ratingIdx >= 0 ? (cols[ratingIdx] || '') : '',
             reviews: reviewsIdx >= 0 ? parseInt(cols[reviewsIdx]) || 0 : 0,
             type: typeIdx >= 0 ? (cols[typeIdx] || '') : '',

@@ -1491,12 +1491,20 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     if (incomingPhone) existingPhones.add(incomingPhone);
     if (incomingNameAddr) existingNameAddr.add(incomingNameAddr);
     maxNum++;
+
+    // Extraer teléfono limpio de URLs wa.me si viene así
+    let cleanPhone = lead.phone || '';
+    if (cleanPhone.includes('wa.me/')) {
+      const waMatch = cleanPhone.match(/wa\.me\/(\d+)/);
+      if (waMatch) cleanPhone = waMatch[1];
+    }
+
     const { country, city } = parseLocationParts(lead.locationSearched || lead.city || lead.country || '');
     const baseLead = ensureLeadDefaults({
       num: maxNum,
       fecha: now.toISOString().substring(0, 10),
       name: lead.name || 'Sin nombre',
-      phone: lead.phone || '',
+      phone: cleanPhone,
       website: lead.website || '',
       address: lead.address || '',
       city: lead.city || city || '',
