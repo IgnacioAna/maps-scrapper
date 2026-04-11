@@ -1644,6 +1644,86 @@ app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, re
   res.json({ ok: true });
 });
 
+// ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──
+app.post('/api/setters/dedup', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  const entries = Object.entries(data.leads);
+
+  // Ordenar por fecha de importación ascendente (más viejos primero)
+  // Si no tiene importedAt, se considera viejo (principio del tiempo)
+  entries.sort((a, b) => {
+    const dateA = a[1].importedAt || a[1].fecha || '2000-01-01';
+    const dateB = b[1].importedAt || b[1].fecha || '2000-01-01';
+    return dateA.localeCompare(dateB);
+  });
+
+  const seenPhones = new Map();    // phone(last8) → leadId
+  const seenNameAddr = new Map();  // normName_normAddr → leadId
+  const toDelete = [];
+
+  // Helper: un lead "trabajado" tiene interacciones, notas, o estado avanzado
+  function workScore(lead) {
+    let score = 0;
+    if (lead.interactions?.length) score += lead.interactions.length * 2;
+    if (lead.notes?.length) score += lead.notes.length;
+    if (lead.conexion === 'enviada') score += 3;
+    if (lead.respondio) score += 5;
+    if (lead.interes === 'si') score += 10;
+    if (lead.estado === 'agendado') score += 20;
+    if (lead.estado === 'respondio') score += 8;
+    return score;
+  }
+
+  for (const [id, lead] of entries) {
+    const phone = normalizePhoneForDedup(lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '');
+    const normName = normalizeNameForDedup(lead.name);
+    const normAddr = normalizeAddressForDedup(lead.address);
+    const nameAddrKey = normName && normAddr ? `${normName}_${normAddr}` : '';
+
+    let existingId = null;
+
+    // Buscar duplicado por teléfono
+    if (phone && seenPhones.has(phone)) {
+      existingId = seenPhones.get(phone);
+    }
+    // Buscar duplicado por nombre+dirección normalizado
+    if (!existingId && nameAddrKey && seenNameAddr.has(nameAddrKey)) {
+      existingId = seenNameAddr.get(nameAddrKey);
+    }
+
+    if (existingId) {
+      const existingLead = data.leads[existingId];
+      const existingScore = workScore(existingLead);
+      const currentScore = workScore(lead);
+
+      // Si el actual tiene MÁS trabajo que el existente, eliminar el existente y quedarse con este
+      if (currentScore > existingScore) {
+        toDelete.push(existingId);
+        // Reemplazar en los maps
+        if (phone) seenPhones.set(phone, id);
+        if (nameAddrKey) seenNameAddr.set(nameAddrKey, id);
+      } else {
+        // Eliminar el actual (más reciente y/o menos trabajado)
+        toDelete.push(id);
+      }
+    } else {
+      // No es duplicado, registrar
+      if (phone) seenPhones.set(phone, id);
+      if (nameAddrKey) seenNameAddr.set(nameAddrKey, id);
+    }
+  }
+
+  // Eliminar duplicados
+  for (const id of toDelete) {
+    delete data.leads[id];
+  }
+
+  if (toDelete.length > 0) saveSettersData(data);
+
+  const remaining = Object.keys(data.leads).length;
+  res.json({ removed: toDelete.length, remaining });
+});
+
 // ── KPI Stats ──
 app.get('/api/setters/stats', requireAuth, (req, res) => {
   const { setter } = req.query;

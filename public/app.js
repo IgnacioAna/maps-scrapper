@@ -1770,6 +1770,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<div class="stat-card stat-card-accent"><span class="stat-num">' + t.agendados + '</span><span class="stat-label">Agendados</span></div>' +
           '<div class="stat-card"><span class="stat-num">' + t.sinWsp + '</span><span class="stat-label">Sin WSP</span></div>';
 
+        // Badge total de leads
+        const totalBadge = document.getElementById('setter-leads-total-badge');
+        if (totalBadge) totalBadge.textContent = t.total + ' leads totales en setters';
+
         // Tabla por setter
         document.getElementById('cmd-table-body').innerHTML = data.perSetter.map(s =>
           '<tr>' +
@@ -2082,6 +2086,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
     if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
+
+    // Botón dedup de leads de setters
+    const setterDedupBtn = document.getElementById('setter-dedup-btn');
+    if (setterDedupBtn) {
+      setterDedupBtn.addEventListener('click', async () => {
+        if (!confirm('¿Buscar y eliminar leads duplicados de los setters?\n\nSe conserva el más antiguo o el que tenga más trabajo (interacciones, notas, etc). Los más recientes se eliminan.')) return;
+        setterDedupBtn.disabled = true;
+        setterDedupBtn.textContent = 'Limpiando...';
+        try {
+          const resp = await fetch(apiUrl('/api/setters/dedup'), { method: 'POST' });
+          const data = await resp.json();
+          const resultEl = document.getElementById('setter-dedup-result');
+          if (resultEl) {
+            resultEl.classList.remove('hidden');
+            resultEl.textContent = data.removed > 0
+              ? '✅ Se eliminaron ' + data.removed + ' duplicados. Quedan ' + data.remaining + ' leads únicos.'
+              : '✅ No hay duplicados. Los ' + data.remaining + ' leads son todos únicos.';
+            setTimeout(() => resultEl.classList.add('hidden'), 10000);
+          }
+          loadCommandCenter();
+        } catch (e) { console.error(e); alert('Error limpiando duplicados de setters'); }
+        setterDedupBtn.disabled = false;
+        setterDedupBtn.textContent = 'Limpiar Duplicados de Setters';
+      });
+    }
 
     // ══════════════════════════════════════════════════════════════
     // BASE DE DATOS DE HISTORIAL (Centro de Comando)
