@@ -1458,9 +1458,37 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
   const varianteId = setter ? setter.activeVariantId || '' : '';
   const now = new Date();
 
+  // Construir sets de dedup de leads existentes (todos los setters)
+  const existingPhones = new Set();
+  const existingNameAddr = new Set();
+  for (const key in data.leads) {
+    const l = data.leads[key];
+    const ph = normalizePhoneForDedup(l.phone || l.webWhatsApp || l.aiWhatsApp || '');
+    if (ph) existingPhones.add(ph);
+    const nn = normalizeNameForDedup(l.name);
+    const na = normalizeAddressForDedup(l.address);
+    if (nn && na) existingNameAddr.add(`${nn}_${na}`);
+  }
+
   for (const lead of incoming) {
     const id = `l_${(lead.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30)}_${(lead.phone || lead.website || '').replace(/\D/g, '').substring(0, 12)}`;
+
+    // Dedup por ID exacto
     if (data.leads[id]) { skipped++; continue; }
+
+    // Dedup por teléfono (últimos 8 dígitos)
+    const incomingPhone = normalizePhoneForDedup(lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '');
+    if (incomingPhone && existingPhones.has(incomingPhone)) { skipped++; continue; }
+
+    // Dedup por nombre+dirección normalizado
+    const incomingName = normalizeNameForDedup(lead.name);
+    const incomingAddr = normalizeAddressForDedup(lead.address);
+    const incomingNameAddr = incomingName && incomingAddr ? `${incomingName}_${incomingAddr}` : '';
+    if (incomingNameAddr && existingNameAddr.has(incomingNameAddr)) { skipped++; continue; }
+
+    // Registrar en sets para evitar duplicados intra-batch
+    if (incomingPhone) existingPhones.add(incomingPhone);
+    if (incomingNameAddr) existingNameAddr.add(incomingNameAddr);
     maxNum++;
     const { country, city } = parseLocationParts(lead.locationSearched || lead.city || lead.country || '');
     const baseLead = ensureLeadDefaults({

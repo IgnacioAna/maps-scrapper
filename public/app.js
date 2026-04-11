@@ -1687,20 +1687,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Enviar leads a setters desde Maps ──
     sendToSettersBtn.addEventListener('click', async () => {
       if (currentData.length === 0) return;
+
+      // Filtrar los que ya fueron scrapeados anteriormente (ya contactados)
+      const newLeads = currentData.filter(l => !l.alreadyScraped);
+      const skippedOld = currentData.length - newLeads.length;
+
+      if (newLeads.length === 0) {
+        alert('Todos los ' + currentData.length + ' leads ya fueron scrapeados anteriormente. No hay leads nuevos para enviar.');
+        return;
+      }
+
       // Cargar lista de setters
       const resp = await fetch(apiUrl('/api/setters'));
       const data = await resp.json();
       const names = (data.setters || []).map(s => s.name + ' (' + s.id + ')').join('\n');
-      const input = prompt('Asignar a qué setter?\n\n' + names + '\n\n(Escribí el nombre exacto o dejá vacío):');
+
+      let msg = 'Asignar a qué setter?\n\n' + names + '\n\n(Escribí el nombre exacto o dejá vacío)';
+      if (skippedOld > 0) {
+        msg = '⚠️ Se detectaron ' + skippedOld + ' leads ya scrapeados anteriormente.\nSolo se enviarán los ' + newLeads.length + ' leads NUEVOS.\n\n' + msg;
+      }
+
+      const input = prompt(msg);
+      if (input === null) return; // canceló
+
       let assignTo = '';
       if (input) {
         const found = (data.setters || []).find(s => s.name.toLowerCase() === input.trim().toLowerCase());
         assignTo = found ? found.id : input.trim();
       }
       try {
-        const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: currentData, assignTo }) });
+        const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo }) });
         const result = await importResp.json();
-        alert('Importados: ' + result.imported + ' leads nuevos\nYa existían: ' + result.skipped + '\nTotal en pipeline: ' + result.total);
+        let summary = 'Importados: ' + result.imported + ' leads nuevos\nYa existían en setter: ' + result.skipped;
+        if (skippedOld > 0) summary += '\nYa scrapeados antes (no enviados): ' + skippedOld;
+        summary += '\nTotal en pipeline: ' + result.total;
+        alert(summary);
       } catch (e) { console.error(e); alert('Error al importar.'); }
     });
 
