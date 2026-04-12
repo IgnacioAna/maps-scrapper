@@ -1558,6 +1558,21 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
   }
 });
 
+// ── Borrar todos los leads de un setter (para reimportar limpio) ──
+app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, res) => {
+  const { setter } = req.body;
+  const data = loadSettersData();
+  let removed = 0;
+  for (const id in data.leads) {
+    if (!setter || data.leads[id].assignedTo === setter) {
+      delete data.leads[id];
+      removed++;
+    }
+  }
+  if (removed > 0) saveSettersData(data);
+  res.json({ removed, remaining: Object.keys(data.leads).length });
+});
+
 // Actualizar lead (campos múltiples)
 app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   const data = loadSettersData();

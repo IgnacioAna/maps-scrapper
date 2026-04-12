@@ -2139,6 +2139,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // ── Borrar leads de un setter ──
+    const setterClearBtn = document.getElementById('setter-clear-btn');
+    if (setterClearBtn) {
+      setterClearBtn.addEventListener('click', async () => {
+        let settersList = [];
+        try {
+          const sResp = await fetch(apiUrl('/api/setters'));
+          const sData = await sResp.json();
+          settersList = sData.setters || [];
+        } catch (err) { console.error(err); }
+
+        const names = settersList.map(s => s.name).join('\n');
+        const input = prompt('¿De qué setter borrar TODOS los leads?\n\n' + names + '\n\n(Escribí el nombre exacto):');
+        if (!input) return;
+
+        const found = settersList.find(s => s.name.toLowerCase() === input.trim().toLowerCase());
+        if (!found) { alert('Setter no encontrado: ' + input); return; }
+
+        if (!confirm('⚠️ ATENCIÓN: Esto borrará TODOS los leads de ' + found.name + '.\n\nEsta acción no se puede deshacer. ¿Estás seguro?')) return;
+
+        try {
+          const resp = await fetch(apiUrl('/api/setters/leads-bulk'), {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ setter: found.id })
+          });
+          const data = await resp.json();
+          alert('Se borraron ' + data.removed + ' leads de ' + found.name + '.\nQuedan ' + data.remaining + ' leads en total.');
+          loadCommandCenter();
+        } catch (e) { console.error(e); alert('Error borrando leads'); }
+      });
+    }
+
     // ── Importar CSV a Setter ──
     const setterImportCsv = document.getElementById('setter-import-csv');
     if (setterImportCsv) {
