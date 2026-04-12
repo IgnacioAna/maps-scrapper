@@ -337,12 +337,10 @@
           <button class="pipe-filter" data-status="descartado">❌ Descartados</button>
         </div>
 
-        <!-- Filtro geográfico + acciones de setter -->
+        <!-- Buscador + acciones -->
         <div style="display:flex; align-items:center; gap:10px; padding:8px 0; flex-wrap:wrap;">
-          <span style="font-size:12px; color:var(--text-secondary);">Filtrar por:</span>
-          <input type="text" id="setter-country-filter" placeholder="País (ej: Uruguay)" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:12px; width:140px;">
-          <input type="text" id="setter-city-filter" placeholder="Ciudad" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:12px; width:140px;">
-          <button id="setter-geo-clear" class="btn-table-action" style="font-size:11px; padding:4px 10px;">Limpiar filtro</button>
+          <input type="text" id="setter-search" placeholder="Buscar lead (nombre, teléfono, ciudad, país, doctor...)" style="padding:6px 12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:13px; width:360px;">
+          <button id="setter-search-clear" class="btn-table-action" style="font-size:11px; padding:4px 10px;">Limpiar</button>
           <span style="flex:1;"></span>
           <span id="setter-leads-total-badge" style="font-size:12px; color:var(--text-secondary);"></span>
           <button id="setter-dedup-btn" class="btn-table-action" style="color:#e3b341;" data-roles="admin">Limpiar Duplicados</button>
@@ -711,6 +709,6 @@
     </main>
   </div>
 
-  <script type="module" src="/app.js?v=20260412c"></script>
+  <script type="module" src="/app.js?v=20260412d"></script>
 </body>
 </html>

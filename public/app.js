@@ -1175,14 +1175,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => l.estado === currentPipeFilter);
       }
 
-      // Filtro geográfico
-      const countryF = (document.getElementById('setter-country-filter')?.value || '').trim().toLowerCase();
-      const cityF = (document.getElementById('setter-city-filter')?.value || '').trim().toLowerCase();
-      if (countryF) {
-        filtered = filtered.filter(l => (l.country || '').toLowerCase().includes(countryF));
-      }
-      if (cityF) {
-        filtered = filtered.filter(l => (l.city || '').toLowerCase().includes(cityF) || (l.locationSearched || '').toLowerCase().includes(cityF));
+      // Buscador general
+      const searchQ = (document.getElementById('setter-search')?.value || '').trim().toLowerCase();
+      if (searchQ) {
+        filtered = filtered.filter(l => {
+          const haystack = [l.name, l.phone, l.webWhatsApp, l.aiWhatsApp, l.country, l.city, l.locationSearched, l.address, l.doctor, l.email, l.website, l.instagram].filter(Boolean).join(' ').toLowerCase();
+          return haystack.includes(searchQ);
+        });
       }
 
       if (filtered.length === 0) {
@@ -1521,17 +1520,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadSetterModule();
     });
 
-    // Filtros geográficos en setters
-    const setterCountryFilter = document.getElementById('setter-country-filter');
-    const setterCityFilter = document.getElementById('setter-city-filter');
-    const setterGeoClear = document.getElementById('setter-geo-clear');
-    let geoDebounce = null;
-    const onGeoFilter = () => { clearTimeout(geoDebounce); geoDebounce = setTimeout(() => { setterPage = 1; renderSetterLeads(); }, 300); };
-    if (setterCountryFilter) setterCountryFilter.addEventListener('input', onGeoFilter);
-    if (setterCityFilter) setterCityFilter.addEventListener('input', onGeoFilter);
-    if (setterGeoClear) setterGeoClear.addEventListener('click', () => {
-      if (setterCountryFilter) setterCountryFilter.value = '';
-      if (setterCityFilter) setterCityFilter.value = '';
+    // Buscador general en setters
+    const setterSearchInput = document.getElementById('setter-search');
+    const setterSearchClear = document.getElementById('setter-search-clear');
+    let searchDebounce = null;
+    if (setterSearchInput) setterSearchInput.addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(() => { setterPage = 1; renderSetterLeads(); }, 300);
+    });
+    if (setterSearchClear) setterSearchClear.addEventListener('click', () => {
+      if (setterSearchInput) setterSearchInput.value = '';
       setterPage = 1;
       renderSetterLeads();
     });
