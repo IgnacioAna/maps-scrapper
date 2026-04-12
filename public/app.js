@@ -1301,6 +1301,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.assign(setterLeads[idx], serverLead);
         // Si es sin_wsp, sacarlo de la lista del setter (va a llamadas)
         if (serverLead.conexion === 'sin_wsp') {
+          // Cerrar modal si estaba abierto para este lead
+          if (currentModalLeadId === id) {
+            document.getElementById('lead-modal')?.classList.add('hidden');
+            currentModalLeadId = null;
+          }
           setterLeads.splice(idx, 1);
         }
       }

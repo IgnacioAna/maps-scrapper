@@ -209,6 +209,7 @@ function ensureLeadDefaults(lead = {}) {
   if (!lead.whatsappUrl) lead.whatsappUrl = '';
   if (!lead.lastStage) lead.lastStage = '';
   if (!lead.lastVariantId) lead.lastVariantId = '';
+  if (lead.calificado === undefined) lead.calificado = false;
   return lead;
 }
 
@@ -1555,6 +1556,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
       conexion: '',
       apertura: '',
       respondio: false,
+      calificado: false,
       interes: null,
       estado: 'sin_contactar',
       notes: [],
@@ -2002,7 +2004,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
   const total = allLeads.length;
   const conexiones = allLeads.filter(l => l.conexion === 'enviada').length;
   const respondieron = allLeads.filter(l => l.respondio).length;
-  const calificados = allLeads.filter(l => (l.interactions || []).some((it) => it.action === 'qualified') || l.estado === 'respondio').length;
+  const calificados = allLeads.filter(l => l.calificado === true).length;
   const interesados = allLeads.filter(l => l.interes === 'si').length;
   const agendados = allLeads.filter(l => l.estado === 'agendado').length;
   const sinWsp = allLeads.filter(l => l.conexion === 'sin_wsp').length;
