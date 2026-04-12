@@ -345,10 +345,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const buildSetterWaUrl = (lead, stage = 'apertura') => {
+      // Si el lead tiene su propia URL de WhatsApp importada (del CSV), usarla directamente en apertura
+      if (stage === 'apertura' && lead?.whatsappUrl && lead.whatsappUrl.includes('wa.me/')) {
+        return lead.whatsappUrl;
+      }
       const phone = lead?.phone || lead?.webWhatsApp || lead?.aiWhatsApp || '';
       if (!phone) return '';
       const variant = getLeadVariant(lead);
-      const message = buildStageMessage(lead, variant, stage);
+      // Si el lead tiene openMessage propio y estamos en apertura, usar ese en vez del de la variante
+      const message = (stage === 'apertura' && lead?.openMessage) ? lead.openMessage : buildStageMessage(lead, variant, stage);
       const country = lead?.country || lead?.locationCountry || '';
       let digits = phone.replace(/\D/g, '');
       if (!digits) return '';
