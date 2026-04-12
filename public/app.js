@@ -1203,15 +1203,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!pagEl) {
         pagEl = document.createElement('div');
         pagEl.id = 'setter-pagination';
-        pagEl.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0;font-size:13px;';
+        pagEl.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:12px;padding:14px 0;font-size:13px;';
         setterLeadsBody.closest('table').after(pagEl);
       }
+      const pagBtnStyle = 'padding:6px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:500;transition:all .2s;';
+      const pagBtnDisabled = 'padding:6px 14px;border-radius:8px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);cursor:default;font-size:12px;font-weight:500;opacity:0.4;';
       if (totalPages > 1) {
-        pagEl.innerHTML = '<button class="btn btn-sm" ' + (setterPage <= 1 ? 'disabled' : '') + ' onclick="window._setterPageNav(-1)">&laquo; Ant</button>' +
-          '<span style="color:var(--text-secondary);">Pág ' + setterPage + ' de ' + totalPages + ' (' + filtered.length + ' leads)</span>' +
-          '<button class="btn btn-sm" ' + (setterPage >= totalPages ? 'disabled' : '') + ' onclick="window._setterPageNav(1)">Sig &raquo;</button>';
+        pagEl.innerHTML =
+          '<button style="' + (setterPage <= 1 ? pagBtnDisabled : pagBtnStyle) + '" ' + (setterPage <= 1 ? 'disabled' : '') + ' onclick="window._setterPageNav(-1)">&larr; Anterior</button>' +
+          '<span style="color:var(--text-secondary);font-size:12px;background:var(--bg-secondary);padding:5px 12px;border-radius:6px;border:1px solid var(--border-color);">' + setterPage + ' / ' + totalPages + '</span>' +
+          '<span style="color:var(--text-secondary);font-size:11px;">' + filtered.length + ' leads</span>' +
+          '<button style="' + (setterPage >= totalPages ? pagBtnDisabled : pagBtnStyle) + '" ' + (setterPage >= totalPages ? 'disabled' : '') + ' onclick="window._setterPageNav(1)">Siguiente &rarr;</button>';
       } else {
-        pagEl.innerHTML = '<span style="color:var(--text-secondary);">' + filtered.length + ' leads</span>';
+        pagEl.innerHTML = '<span style="color:var(--text-secondary);font-size:12px;">' + filtered.length + ' leads</span>';
       }
 
       setterLeadsBody.innerHTML = pageLeads.map(lead => {

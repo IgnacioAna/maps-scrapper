@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SCM Dental Setting App</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%2300e5ff'/%3E%3Cstop offset='100%25' stop-color='%230097a7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath fill='url(%23g)' d='M50 8l6 14h2l10-10 4 4-10 10v2l14 6v6l-14 6v2l10 10-4 4-10-10h-2l-6 14h-6l-6-14h-2l-10 10-4-4 10-10v-2L18 50v-6l14-6v-2L22 26l4-4 10 10h2l6-14h6z'/%3E%3Ccircle cx='50' cy='50' r='14' fill='none' stroke='white' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='8' fill='none' stroke='%2300e5ff' stroke-width='2'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
@@ -42,15 +43,17 @@
 
   <div id="main-layout" class="ai-studio-layout hidden">
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="#a8c7fa"/>
+      <div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
+        <div class="logo" style="display:flex;align-items:center;gap:10px;">
+          <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#00e5ff"/><stop offset="100%" stop-color="#0097a7"/></linearGradient></defs>
+            <path fill="url(#sg)" d="M50 8l6 14h2l10-10 4 4-10 10v2l14 6v6l-14 6v2l10 10-4 4-10-10h-2l-6 14h-6l-6-14h-2l-10 10-4-4 10-10v-2L18 50v-6l14-6v-2L22 26l4-4 10 10h2l6-14h6z"/>
+            <circle cx="50" cy="50" r="12" fill="none" stroke="white" stroke-width="4"/>
           </svg>
-          <h1>SCM Dental Setting App</h1>
+          <h1 style="font-size:15px;margin:0;white-space:nowrap;">SCM Dental</h1>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button id="logout-btn" class="btn-table-action" style="font-size:12px; padding:6px 10px; color:#f85149;">Salir</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button id="logout-btn" class="btn-table-action" style="font-size:11px;padding:4px 10px;color:#f85149;border:1px solid #f8514933;border-radius:6px;">Salir</button>
           <button class="menu-toggle">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#e3e3e3"><path d="M3 18H21V16H3V18ZM3 13H21V11H3V13ZM3 6V8H21V6H3Z"/></svg>
           </button>
@@ -709,6 +712,6 @@
     </main>
   </div>
 
-  <script type="module" src="/app.js?v=20260412d"></script>
+  <script type="module" src="/app.js?v=20260412e"></script>
 </body>
 </html>
