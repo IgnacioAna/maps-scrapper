@@ -25,7 +25,8 @@ const ai = new OpenAI({
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 
-const AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
+// AUTH_FILE se define después de DATA_DIR para usar el volume si está montado
+let AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 function ensureDataDir() {
@@ -872,8 +873,28 @@ app.delete('/api/admin/history/entry', requireAuth, requireRole('admin'), (req, 
 app.use(express.static(path.join(process.cwd(), "public"), { maxAge: 0, etag: false }));
 
 // ── Historial persistente ──
-const DATA_DIR = path.join(process.cwd(), "data");
+// Si hay un volume montado en /data (Railway), usarlo; si no, usar ./data local
+const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(process.cwd(), "data"));
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
+
+// Al arrancar: si el volume está vacío pero hay data en el repo, copiarla al volume
+function seedVolumeFromRepo() {
+  const repoData = path.join(process.cwd(), "data");
+  if (DATA_DIR === repoData) return; // no estamos usando volume
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  for (const file of ['history.json', 'auth.json', 'setters.json']) {
+    const volumePath = path.join(DATA_DIR, file);
+    const repoPath = path.join(repoData, file);
+    if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
+      console.log(`Copiando ${file} del repo al volume...`);
+      fs.copyFileSync(repoPath, volumePath);
+    }
+  }
+}
+seedVolumeFromRepo();
+// Reasignar paths de archivos para que usen el volume
+AUTH_FILE = path.join(DATA_DIR, "auth.json");
+console.log(`📁 Data dir: ${DATA_DIR}`);
 
 function loadHistory() {
   try {
