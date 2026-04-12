@@ -1336,11 +1336,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const notesList = document.getElementById('modal-notes-list');
       if (lead.notes && lead.notes.length > 0) {
-        notesList.innerHTML = lead.notes.map(n =>
+        notesList.innerHTML = lead.notes.map((n, idx) =>
           '<div class="note-item"><div class="note-item-header"><span>' + escHtml(n.by) + '</span><span>' +
           new Date(n.date).toLocaleString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) +
+          ' <button class="note-delete-btn" data-note-idx="' + idx + '" title="Borrar nota" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;padding:0 4px;">✕</button>' +
           '</span></div><div>' + escHtml(n.text) + '</div></div>'
         ).join('');
+        notesList.querySelectorAll('.note-delete-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const noteIdx = btn.getAttribute('data-note-idx');
+            if (!confirm('¿Borrar esta nota?')) return;
+            try {
+              await fetch(apiUrl('/api/setters/leads/' + leadId + '/note/' + noteIdx), { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+              await loadSetterModule();
+              window._openLeadModal(leadId);
+            } catch (err) { console.error(err); }
+          });
+        });
         notesList.scrollTop = notesList.scrollHeight;
       } else {
         notesList.innerHTML = '<p class="text-muted" style="font-size:12px; text-align:center; padding:16px;">Sin notas aún.</p>';
@@ -2162,16 +2175,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const found = settersList.find(s => s.name.toLowerCase() === input.trim().toLowerCase());
         if (!found) { alert('Setter no encontrado: ' + input); return; }
 
-        if (!confirm('⚠️ ATENCIÓN: Esto borrará TODOS los leads de ' + found.name + '.\n\nEsta acción no se puede deshacer. ¿Estás seguro?')) return;
+        const countryFilter = prompt('¿Filtrar por país? (ej: Uruguay, Bolivia)\n\nDejá vacío para borrar TODOS los leads de ' + found.name + ':');
+
+        const confirmMsg = countryFilter
+          ? '⚠️ ATENCIÓN: Esto borrará los leads de ' + found.name + ' que sean de "' + countryFilter + '".\n\nEsta acción no se puede deshacer. ¿Estás seguro?'
+          : '⚠️ ATENCIÓN: Esto borrará TODOS los leads de ' + found.name + '.\n\nEsta acción no se puede deshacer. ¿Estás seguro?';
+        if (!confirm(confirmMsg)) return;
 
         try {
+          const bodyObj = { setter: found.id };
+          if (countryFilter) bodyObj.country = countryFilter.trim();
           const resp = await fetch(apiUrl('/api/setters/leads-bulk'), {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ setter: found.id })
+            body: JSON.stringify(bodyObj)
           });
           const data = await resp.json();
-          alert('Se borraron ' + data.removed + ' leads de ' + found.name + '.\nQuedan ' + data.remaining + ' leads en total.');
+          const msg = countryFilter
+            ? 'Se borraron ' + data.removed + ' leads de "' + countryFilter + '" de ' + found.name + '.\nQuedan ' + data.remaining + ' leads en total.'
+            : 'Se borraron ' + data.removed + ' leads de ' + found.name + '.\nQuedan ' + data.remaining + ' leads en total.';
+          alert(msg);
           loadCommandCenter();
         } catch (e) { console.error(e); alert('Error borrando leads'); }
       });

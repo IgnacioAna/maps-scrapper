@@ -1579,16 +1579,23 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
   }
 });
 
-// ── Borrar todos los leads de un setter (para reimportar limpio) ──
+// ── Borrar leads de un setter con filtro opcional por país/ciudad ──
 app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, res) => {
-  const { setter } = req.body;
+  const { setter, country, city } = req.body;
   const data = loadSettersData();
   let removed = 0;
   for (const id in data.leads) {
-    if (!setter || data.leads[id].assignedTo === setter) {
-      delete data.leads[id];
-      removed++;
-    }
+    const lead = data.leads[id];
+    // Filtrar por setter
+    if (setter && lead.assignedTo !== setter) continue;
+    // Filtrar por país si se especificó
+    if (country && !(lead.country || '').toLowerCase().includes(country.toLowerCase())) continue;
+    // Filtrar por ciudad si se especificó
+    if (city && !(lead.city || '').toLowerCase().includes(city.toLowerCase()) && !(lead.locationSearched || '').toLowerCase().includes(city.toLowerCase())) continue;
+    // Si no se especificó setter ni country ni city, no borrar nada (protección)
+    if (!setter && !country && !city) continue;
+    delete data.leads[id];
+    removed++;
   }
   if (removed > 0) saveSettersData(data);
   res.json({ removed, remaining: Object.keys(data.leads).length });
@@ -1723,6 +1730,22 @@ app.post('/api/setters/leads/:id/note', requireAuth, (req, res) => {
   data.leads[req.params.id].lastContactAt = new Date().toISOString();
   saveSettersData(data);
   res.json({ ok: true, notes: data.leads[req.params.id].notes });
+});
+
+app.delete('/api/setters/leads/:id/note/:noteIndex', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+  const idx = parseInt(req.params.noteIndex, 10);
+  if (isNaN(idx) || idx < 0 || idx >= (lead.notes || []).length) {
+    return res.status(400).json({ error: "Índice de nota inválido." });
+  }
+  lead.notes.splice(idx, 1);
+  saveSettersData(data);
+  res.json({ ok: true, notes: lead.notes });
 });
 
 app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, res) => {
