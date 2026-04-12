@@ -1063,6 +1063,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let inlineDraftBlocks = [];
     let commandVariableSetterFilterValue = '';
     let commandVariableSearchValue = '';
+    let setterPage = 1;
+    const SETTER_PAGE_SIZE = 50;
 
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.copy-block-btn');
@@ -1173,10 +1175,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (filtered.length === 0) {
         setterLeadsBody.innerHTML = '<tr><td colspan="18" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
+        // Limpiar paginación
+        const pag = document.getElementById('setter-pagination');
+        if (pag) pag.innerHTML = '';
         return;
       }
 
-      setterLeadsBody.innerHTML = filtered.map(lead => {
+      // Paginación
+      const totalPages = Math.ceil(filtered.length / SETTER_PAGE_SIZE);
+      if (setterPage > totalPages) setterPage = totalPages;
+      const start = (setterPage - 1) * SETTER_PAGE_SIZE;
+      const pageLeads = filtered.slice(start, start + SETTER_PAGE_SIZE);
+
+      // Renderizar paginación
+      let pagEl = document.getElementById('setter-pagination');
+      if (!pagEl) {
+        pagEl = document.createElement('div');
+        pagEl.id = 'setter-pagination';
+        pagEl.style.cssText = 'display:flex;justify-content:center;align-items:center;gap:8px;padding:10px 0;font-size:13px;';
+        setterLeadsBody.closest('table').after(pagEl);
+      }
+      if (totalPages > 1) {
+        pagEl.innerHTML = '<button class="btn btn-sm" ' + (setterPage <= 1 ? 'disabled' : '') + ' onclick="window._setterPageNav(-1)">&laquo; Ant</button>' +
+          '<span style="color:var(--text-secondary);">Pág ' + setterPage + ' de ' + totalPages + ' (' + filtered.length + ' leads)</span>' +
+          '<button class="btn btn-sm" ' + (setterPage >= totalPages ? 'disabled' : '') + ' onclick="window._setterPageNav(1)">Sig &raquo;</button>';
+      } else {
+        pagEl.innerHTML = '<span style="color:var(--text-secondary);">' + filtered.length + ' leads</span>';
+      }
+
+      setterLeadsBody.innerHTML = pageLeads.map(lead => {
         const lastNote = lead.notes && lead.notes.length > 0 ? lead.notes[lead.notes.length - 1] : null;
         const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
         const visibleVariants = getVisibleVariables();
@@ -1248,15 +1275,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
     }
 
+    // Helper: actualizar lead en memoria local sin recargar todo
+    function _updateLeadLocal(id, updates) {
+      const lead = setterLeads.find(l => l.id === id);
+      if (lead) Object.assign(lead, updates);
+    }
+
     // Inline field update (conexion, interes)
     window._updateField = async (el, field) => {
       const id = el.dataset.id;
       const val = el.value;
       const body = {};
       body[field] = val || null;
+      _updateLeadLocal(id, body);
       try {
         await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        loadSetterModule();
       } catch (e) { console.error(e); }
     };
 
@@ -1265,18 +1298,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const id = el.dataset.id;
       const val = el.value;
       const body = { respondio: val === 'si' ? true : (val === 'no' ? false : false) };
+      _updateLeadLocal(id, body);
       try {
         await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        loadSetterModule();
       } catch (e) { console.error(e); }
     };
 
     window._updateVariant = async (el) => {
       const id = el.dataset.id;
       const value = el.value || null;
+      _updateLeadLocal(id, { varianteId: value });
       try {
         await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ varianteId: value }) });
-        loadSetterModule();
       } catch (e) { console.error(e); }
     };
 
@@ -1290,6 +1323,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify({ step })
         });
       } catch (e) { console.error(e); }
+    };
+
+    // Paginación setters
+    window._setterPageNav = (dir) => {
+      setterPage += dir;
+      renderSetterLeads();
     };
 
     // Modal de lead
@@ -1405,6 +1444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('.pipe-filter').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         currentPipeFilter = btn.dataset.status;
+        setterPage = 1;
         renderSetterLeads();
       });
     });
