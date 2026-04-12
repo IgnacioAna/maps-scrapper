@@ -869,7 +869,7 @@ app.delete('/api/admin/history/entry', requireAuth, requireRole('admin'), (req, 
   }
 });
 
-app.use(express.static(path.join(process.cwd(), "public")));
+app.use(express.static(path.join(process.cwd(), "public"), { maxAge: 0, etag: false }));
 
 // ── Historial persistente ──
 const DATA_DIR = path.join(process.cwd(), "data");
