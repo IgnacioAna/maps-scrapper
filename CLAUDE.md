@@ -1,4 +1,4 @@
-# Maps Scraper Pro - Instrucciones para IA
+# SCM Dental Setting App - Instrucciones para IA
 
 ## REGLA CRÍTICA DE DEPLOY
 

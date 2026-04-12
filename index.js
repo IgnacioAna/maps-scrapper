@@ -489,7 +489,7 @@ app.get('/api/auth/invites/:token', (req, res) => {
 async function sendInviteEmail(toEmail, toName, role, inviteUrl) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
-  const fromEmail = process.env.INVITE_FROM_EMAIL || 'Maps Scraper Pro <onboarding@resend.dev>';
+  const fromEmail = process.env.INVITE_FROM_EMAIL || 'SCM Dental Setting App <onboarding@resend.dev>';
   try {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -497,11 +497,11 @@ async function sendInviteEmail(toEmail, toName, role, inviteUrl) {
       body: JSON.stringify({
         from: fromEmail,
         to: [toEmail],
-        subject: `${toName}, te invitaron a Maps Scraper Pro`,
+        subject: `${toName}, te invitaron a SCM Dental Setting App`,
         html: `
           <div style="font-family:sans-serif; max-width:480px; margin:0 auto; padding:24px;">
             <h2 style="color:#1e1f20;">Hola ${toName}!</h2>
-            <p>Te invitaron a unirte a <strong>Maps Scraper Pro</strong> como <strong>${role}</strong>.</p>
+            <p>Te invitaron a unirte a <strong>SCM Dental Setting App</strong> como <strong>${role}</strong>.</p>
             <p>Hacé clic en el botón para crear tu contraseña y acceder:</p>
             <a href="${inviteUrl}" style="display:inline-block; background:#a8c7fa; color:#131314; padding:12px 24px; border-radius:100px; text-decoration:none; font-weight:600; margin:16px 0;">Crear mi acceso</a>
             <p style="color:#666; font-size:13px; margin-top:24px;">Si el botón no funciona, copiá este link:<br><a href="${inviteUrl}">${inviteUrl}</a></p>

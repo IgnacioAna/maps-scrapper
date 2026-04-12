@@ -2191,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const url = inviteResultUrl?.value || '';
         const name = inviteResultDiv?.dataset.inviteName || '';
         if (!url) return;
-        const msg = `Hola ${name}! Te invité a Maps Scraper Pro. Creá tu contraseña acá: ${url}`;
+        const msg = `Hola ${name}! Te invité a SCM Dental Setting App. Creá tu contraseña acá: ${url}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
       });
     }
