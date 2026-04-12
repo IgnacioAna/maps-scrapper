@@ -1280,7 +1280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '</select>' +
             (varName ? '<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">' + escHtml(varName.name) + '</div>' : '') +
           '</td>' +
-          '<td style="font-size:11px; color:var(--text-secondary);">' + (lastNote ? escHtml(lastNote.text).substring(0, 30) + (lastNote.text.length > 30 ? '...' : '') : '') + '</td>' +
+          '<td style="font-size:11px; color:var(--text-secondary);">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:#e3b341;font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text).substring(0, 25) + (lastNote.text.length > 25 ? '...' : '') : '') + '</td>' +
           '<td style="font-size:11px;">' + escHtml(doctorClean).substring(0, 14) + '</td>' +
           '<td style="text-align:center;">' +
             (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#e1306c;">IG</a>' : '') +

@@ -954,20 +954,20 @@ tr:hover td {
 .vmsg { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
 .vmsg-label { color: var(--text-main); font-weight: 600; min-width: 100px; display: inline-block; }
 
-/* Tabla setter - celdas compactas */
-#setter-table { font-size: 12px; }
-#setter-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 4px; }
-#setter-table td { padding: 6px 4px; vertical-align: middle; }
-#setter-table tbody tr { cursor: pointer; }
+/* Tabla setter */
+#setter-table { font-size: 13px; }
+#setter-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; padding: 10px 6px; color: var(--text-secondary); }
+#setter-table td { padding: 8px 6px; vertical-align: middle; }
+#setter-table tbody tr { cursor: pointer; border-bottom: 1px solid var(--border-color); }
 #setter-table tbody tr:hover { background: var(--bg-hover); }
 
 /* Follow-up checkboxes */
-.fu-cb { width: 14px; height: 14px; cursor: pointer; accent-color: #5bb974; }
+.fu-cb { width: 15px; height: 15px; cursor: pointer; accent-color: #5bb974; }
 
 /* Inline selects en tabla */
 .inline-select {
   background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border-color);
-  font-size: 11px; font-family: inherit; cursor: pointer; padding: 3px 4px; border-radius: 4px;
+  font-size: 12px; font-family: inherit; cursor: pointer; padding: 4px 6px; border-radius: 6px;
   -webkit-appearance: none; appearance: none;
 }
 .inline-select:focus { outline: 1px solid var(--primary-color); }
