@@ -1609,27 +1609,71 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  const allowed = ['conexion', 'apertura', 'respondio', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId'];
+  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId'];
   for (const field of allowed) {
     if (req.body[field] !== undefined) lead[field] = req.body[field];
   }
-  // Guardar fecha del primer contacto
-  if (req.body.conexion === 'enviada' && !lead.fechaContacto) {
-    lead.fechaContacto = new Date().toISOString().substring(0, 10);
-  }
-  if (req.body.varianteId !== undefined && req.body.varianteId !== lead.varianteId) {
-    incrementVariantUsage(data, req.body.varianteId || '');
-  }
-  // Si resetean conexion, limpiar fecha
-  if (req.body.conexion === '' || req.body.conexion === null) {
-    lead.fechaContacto = null;
-  }
-  if (req.body.conexion === 'enviada' || req.body.respondio || req.body.interes) {
+
+  // ── Cascada hacia adelante ──
+  if (req.body.conexion === 'enviada') {
+    if (!lead.fechaContacto) lead.fechaContacto = new Date().toISOString().substring(0, 10);
+    if (!lead.estado || lead.estado === 'sin_contactar') lead.estado = 'contactado';
     lead.lastContactAt = new Date().toISOString();
   }
-  // Si marcan sin_wsp, mover a estado sin_wsp
   if (req.body.conexion === 'sin_wsp') {
     lead.estado = 'sin_wsp';
+    lead.respondio = false;
+    lead.calificado = false;
+    lead.interes = null;
+  }
+  if (req.body.respondio === true) {
+    if (!lead.conexion) lead.conexion = 'enviada';
+    lead.estado = 'respondio';
+    lead.lastContactAt = new Date().toISOString();
+  }
+  if (req.body.calificado === true) {
+    if (!lead.conexion) lead.conexion = 'enviada';
+    if (!lead.respondio) lead.respondio = true;
+    if (lead.estado === 'sin_contactar' || lead.estado === 'contactado' || lead.estado === 'respondio') lead.estado = 'calificado';
+    lead.lastContactAt = new Date().toISOString();
+  }
+  if (req.body.interes === 'si') {
+    if (!lead.conexion) lead.conexion = 'enviada';
+    if (!lead.respondio) lead.respondio = true;
+    if (!lead.calificado) lead.calificado = true;
+    lead.estado = 'interesado';
+    lead.lastContactAt = new Date().toISOString();
+  }
+
+  // ── Cascada reversa ──
+  if (req.body.conexion === '' || req.body.conexion === null) {
+    lead.fechaContacto = null;
+    lead.respondio = false;
+    lead.calificado = false;
+    lead.interes = null;
+    lead.estado = 'sin_contactar';
+  }
+  if (req.body.respondio === false && req.body.conexion === undefined) {
+    lead.calificado = false;
+    lead.interes = null;
+    if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    else lead.estado = 'sin_contactar';
+  }
+  if (req.body.calificado === false && req.body.respondio === undefined && req.body.conexion === undefined) {
+    lead.interes = null;
+    if (lead.respondio) lead.estado = 'respondio';
+    else if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    else lead.estado = 'sin_contactar';
+  }
+  if ((req.body.interes === '' || req.body.interes === null || req.body.interes === 'no') && req.body.calificado === undefined && req.body.respondio === undefined && req.body.conexion === undefined) {
+    if (lead.calificado) lead.estado = 'calificado';
+    else if (lead.respondio) lead.estado = 'respondio';
+    else if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    else lead.estado = 'sin_contactar';
+  }
+
+  if (req.body.varianteId !== undefined && req.body.varianteId !== lead.varianteId) {
+    incrementVariantUsage(data, req.body.varianteId || '');
   }
   lead.whatsappUrl = buildWhatsAppUrl(lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '', lead.country || '', '');
   saveSettersData(data);
@@ -1850,7 +1894,7 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
   const conexiones = leads.filter(l => l.conexion === 'enviada').length;
   const sinWsp = leads.filter(l => l.conexion === 'sin_wsp').length;
   const respondieron = leads.filter(l => l.respondio).length;
-  const calificados = leads.filter(l => (l.interactions || []).some((it) => it.action === 'qualified') || l.estado === 'respondio').length;
+  const calificados = leads.filter(l => l.calificado === true).length;
   const interesados = leads.filter(l => l.interes === 'si').length;
   const agendados = leads.filter(l => l.estado === 'agendado').length;
   const cerrados = leads.filter(l => l.estado === 'cerrado').length;
@@ -1871,7 +1915,7 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
     const vLeads = leads.filter(l => l.varianteId === v.id);
     const vConex = vLeads.filter(l => l.conexion === 'enviada').length;
     const vResp = vLeads.filter(l => l.respondio).length;
-    const vCal = vLeads.filter(l => (l.interactions || []).some((it) => it.action === 'qualified') || l.estado === 'respondio').length;
+    const vCal = vLeads.filter(l => l.calificado === true).length;
     const vInt = vLeads.filter(l => l.interes === 'si').length;
     const vMsgs = vLeads.reduce((sum, lead) => sum + (Array.isArray(lead.interactions) ? lead.interactions.length : 0), 0);
     byVariant[v.id] = { name: v.name, total: vLeads.length, conexiones: vConex, respondieron: vResp, calificados: vCal, interesados: vInt, mensajes: vMsgs, usedCount: Number(v.usedCount) || 0 };
@@ -1900,7 +1944,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
     const total = leads.length;
     const conexiones = leads.filter(l => l.conexion === 'enviada').length;
     const respondieron = leads.filter(l => l.respondio).length;
-    const calificados = leads.filter(l => (l.interactions || []).some((it) => it.action === 'qualified') || l.estado === 'respondio').length;
+    const calificados = leads.filter(l => l.calificado === true).length;
     const interesados = leads.filter(l => l.interes === 'si').length;
     const agendados = leads.filter(l => l.estado === 'agendado').length;
     const activeVar = data.variants.find(v => v.setterId === s.id) || data.variants.find(v => v.id === s.activeVariantId);
@@ -1928,7 +1972,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
     const total = leads.length;
     const conexiones = leads.filter(l => l.conexion === 'enviada').length;
     const respondieron = leads.filter(l => l.respondio).length;
-    const calificados = leads.filter(l => (l.interactions || []).some((it) => it.action === 'qualified') || l.estado === 'respondio').length;
+    const calificados = leads.filter(l => l.calificado === true).length;
     const interesados = leads.filter(l => l.interes === 'si').length;
     const mensajes = leads.reduce((sum, lead) => sum + (Array.isArray(lead.interactions) ? lead.interactions.length : 0), 0);
     return {

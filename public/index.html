@@ -330,10 +330,28 @@
           <button class="pipe-filter" data-status="sin_contactar">📋 Sin contactar</button>
           <button class="pipe-filter" data-status="enviada">📤 WSP Enviado</button>
           <button class="pipe-filter" data-status="respondio">💬 Respondieron</button>
+          <button class="pipe-filter" data-status="calificado">📝 Calificados</button>
           <button class="pipe-filter" data-status="interesado">🔥 Interesados</button>
           <button class="pipe-filter" data-status="agendado">📅 Agendados</button>
           <button class="pipe-filter" data-status="sin_wsp">🚫 Sin WSP</button>
           <button class="pipe-filter" data-status="descartado">❌ Descartados</button>
+        </div>
+
+        <!-- Filtro geográfico + acciones de setter -->
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 0; flex-wrap:wrap;">
+          <span style="font-size:12px; color:var(--text-secondary);">Filtrar por:</span>
+          <input type="text" id="setter-country-filter" placeholder="País (ej: Uruguay)" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:12px; width:140px;">
+          <input type="text" id="setter-city-filter" placeholder="Ciudad" style="padding:5px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-secondary); color:var(--text-primary); font-size:12px; width:140px;">
+          <button id="setter-geo-clear" class="btn-table-action" style="font-size:11px; padding:4px 10px;">Limpiar filtro</button>
+          <span style="flex:1;"></span>
+          <span id="setter-leads-total-badge" style="font-size:12px; color:var(--text-secondary);"></span>
+          <button id="setter-dedup-btn" class="btn-table-action" style="color:#e3b341;" data-roles="admin">Limpiar Duplicados</button>
+          <label class="btn-table-action" style="color:#a8c7fa; cursor:pointer;" data-roles="admin">
+            📥 Importar CSV
+            <input type="file" id="setter-import-csv" accept=".csv" style="display:none;">
+          </label>
+          <button id="setter-clear-btn" class="btn-table-action" style="color:#f85149;" data-roles="admin">🗑 Borrar leads</button>
+          <span id="setter-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
         </div>
 
         <!-- Tabla de setteo -->
@@ -349,6 +367,7 @@
                   <th style="width:4%">Web</th>
                   <th style="width:7%">Conexión</th>
                   <th style="width:5%">Resp?</th>
+                  <th style="width:5%">Calif?</th>
                   <th style="width:5%">Int?</th>
                   <th style="width:4%">Var</th>
                   <th style="width:14%">Notas</th>
@@ -499,14 +518,14 @@
         </div>
         <div class="setter-stats" id="cmd-stats"></div>
         <div style="padding:4px 32px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-          <span id="setter-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
-          <button id="setter-dedup-btn" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de Setters</button>
+          <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
+          <button id="cmd-dedup-btn" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de Setters</button>
           <label class="btn-table-action" style="color:#a8c7fa; cursor:pointer;">
             📥 Importar CSV a Setter
-            <input type="file" id="setter-import-csv" accept=".csv" style="display:none;">
+            <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
           </label>
-          <button id="setter-clear-btn" class="btn-table-action" style="color:#f85149;">🗑 Borrar leads de Setter</button>
-          <span id="setter-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
+          <button id="cmd-clear-btn" class="btn-table-action" style="color:#f85149;">🗑 Borrar leads de Setter</button>
+          <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
         </div>
         <section class="results-panel" style="padding:0 32px;">
           <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
@@ -692,6 +711,6 @@
     </main>
   </div>
 
-  <script type="module" src="/app.js?v=20260411e"></script>
+  <script type="module" src="/app.js?v=20260412b"></script>
 </body>
 </html>

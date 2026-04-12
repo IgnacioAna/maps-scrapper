@@ -1164,7 +1164,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (currentPipeFilter === 'sin_wsp') {
         filtered = filtered.filter(l => l.conexion === 'sin_wsp');
       } else if (currentPipeFilter === 'respondio') {
-        filtered = filtered.filter(l => l.respondio && l.interes !== 'si');
+        filtered = filtered.filter(l => l.respondio && !l.calificado);
+      } else if (currentPipeFilter === 'calificado') {
+        filtered = filtered.filter(l => l.calificado && l.interes !== 'si');
       } else if (currentPipeFilter === 'interesado') {
         filtered = filtered.filter(l => l.interes === 'si');
       } else if (currentPipeFilter === 'sin_contactar') {
@@ -1173,8 +1175,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => l.estado === currentPipeFilter);
       }
 
+      // Filtro geográfico
+      const countryF = (document.getElementById('setter-country-filter')?.value || '').trim().toLowerCase();
+      const cityF = (document.getElementById('setter-city-filter')?.value || '').trim().toLowerCase();
+      if (countryF) {
+        filtered = filtered.filter(l => (l.country || '').toLowerCase().includes(countryF));
+      }
+      if (cityF) {
+        filtered = filtered.filter(l => (l.city || '').toLowerCase().includes(cityF) || (l.locationSearched || '').toLowerCase().includes(cityF));
+      }
+
       if (filtered.length === 0) {
-        setterLeadsBody.innerHTML = '<tr><td colspan="18" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
+        setterLeadsBody.innerHTML = '<tr><td colspan="19" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
         // Limpiar paginación
         const pag = document.getElementById('setter-pagination');
         if (pag) pag.innerHTML = '';
@@ -1227,6 +1239,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<option value="no"' + (lead.respondio === 'no' ? ' selected' : '') + '>NO</option>' +
           '</select>';
 
+        // Calificado: select inline
+        const calSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateCalif(this)" onclick="event.stopPropagation()">' +
+          '<option value=""' + (!lead.calificado ? ' selected' : '') + '>—</option>' +
+          '<option value="si"' + (lead.calificado === true ? ' selected' : '') + '>SI</option>' +
+          '</select>';
+
         // Interés: select inline
         const intSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateField(this, \'interes\')" onclick="event.stopPropagation()">' +
           '<option value=""' + (!lead.interes ? ' selected' : '') + '>—</option>' +
@@ -1235,7 +1253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '</select>';
 
         const estadoBadge = {
-          sin_contactar: '', contactado: '📤', respondio: '💬', interesado: '🔥',
+          sin_contactar: '', contactado: '📤', respondio: '💬', calificado: '📝', interesado: '🔥',
           agendado: '📅', cerrado: '✅', descartado: '❌'
         };
 
@@ -1250,6 +1268,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()">🌐</a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
           '<td style="text-align:center;">' + respSelect + '</td>' +
+          '<td style="text-align:center;">' + calSelect + '</td>' +
           '<td style="text-align:center;">' + intSelect + '</td>' +
           '<td style="color:#e3b341; font-size:11px;">' +
             '<select class="inline-select" data-id="' + escHtml(lead.id) + '" onchange="window._updateVariant(this)" onclick="event.stopPropagation()">' +
@@ -1275,10 +1294,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
     }
 
-    // Helper: actualizar lead en memoria local sin recargar todo
-    function _updateLeadLocal(id, updates) {
-      const lead = setterLeads.find(l => l.id === id);
-      if (lead) Object.assign(lead, updates);
+    // Helper: sync lead from server response and refresh UI
+    function _syncLeadAndRefresh(id, serverLead) {
+      const idx = setterLeads.findIndex(l => l.id === id);
+      if (idx >= 0 && serverLead) {
+        Object.assign(setterLeads[idx], serverLead);
+        // Si es sin_wsp, sacarlo de la lista del setter (va a llamadas)
+        if (serverLead.conexion === 'sin_wsp') {
+          setterLeads.splice(idx, 1);
+        }
+      }
+      _updateStatsLocal();
+      renderSetterLeads();
+    }
+
+    // Calcular stats locales desde setterLeads
+    function _updateStatsLocal() {
+      const leads = setterLeads;
+      const total = leads.length;
+      const conexiones = leads.filter(l => l.conexion === 'enviada').length;
+      const respondieron = leads.filter(l => l.respondio).length;
+      const interesados = leads.filter(l => l.interes === 'si').length;
+      const agendados = leads.filter(l => l.estado === 'agendado').length;
+      const calificados = leads.filter(l => l.calificado === true).length;
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-conexiones').textContent = conexiones;
+      document.getElementById('stat-pct-conexion').textContent = (total > 0 ? ((conexiones / total) * 100).toFixed(1) : '0.0') + '%';
+      document.getElementById('stat-apertura').textContent = respondieron;
+      document.getElementById('stat-pct-apertura').textContent = (conexiones > 0 ? ((respondieron / conexiones) * 100).toFixed(1) : '0.0') + '%';
+      document.getElementById('stat-calificacion').textContent = calificados;
+      document.getElementById('stat-pct-calificacion').textContent = (calificados > 0 ? ((interesados / calificados) * 100).toFixed(1) : '0.0') + '%';
+      document.getElementById('stat-interesado').textContent = interesados;
+      document.getElementById('stat-agendado').textContent = agendados;
     }
 
     // Inline field update (conexion, interes)
@@ -1287,9 +1334,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const val = el.value;
       const body = {};
       body[field] = val || null;
-      _updateLeadLocal(id, body);
       try {
-        await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await resp.json();
+        _syncLeadAndRefresh(id, data.lead);
       } catch (e) { console.error(e); }
     };
 
@@ -1297,19 +1345,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._updateResp = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
-      const body = { respondio: val === 'si' ? true : (val === 'no' ? false : false) };
-      _updateLeadLocal(id, body);
+      const body = { respondio: val === 'si' ? true : false };
       try {
-        await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await resp.json();
+        _syncLeadAndRefresh(id, data.lead);
+      } catch (e) { console.error(e); }
+    };
+
+    window._updateCalif = async (el) => {
+      const id = el.dataset.id;
+      const val = el.value;
+      const body = { calificado: val === 'si' ? true : false };
+      try {
+        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await resp.json();
+        _syncLeadAndRefresh(id, data.lead);
       } catch (e) { console.error(e); }
     };
 
     window._updateVariant = async (el) => {
       const id = el.dataset.id;
       const value = el.value || null;
-      _updateLeadLocal(id, { varianteId: value });
       try {
-        await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ varianteId: value }) });
+        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ varianteId: value }) });
+        const data = await resp.json();
+        _syncLeadAndRefresh(id, data.lead);
       } catch (e) { console.error(e); }
     };
 
@@ -1449,10 +1510,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    setterSelect.addEventListener('change', () => { loadSetterModule(); });
+    setterSelect.addEventListener('change', () => { setterPage = 1; loadSetterModule(); });
     variableSelect?.addEventListener('change', () => {
       currentVariableId = variableSelect.value || '';
       loadSetterModule();
+    });
+
+    // Filtros geográficos en setters
+    const setterCountryFilter = document.getElementById('setter-country-filter');
+    const setterCityFilter = document.getElementById('setter-city-filter');
+    const setterGeoClear = document.getElementById('setter-geo-clear');
+    let geoDebounce = null;
+    const onGeoFilter = () => { clearTimeout(geoDebounce); geoDebounce = setTimeout(() => { setterPage = 1; renderSetterLeads(); }, 300); };
+    if (setterCountryFilter) setterCountryFilter.addEventListener('input', onGeoFilter);
+    if (setterCityFilter) setterCityFilter.addEventListener('input', onGeoFilter);
+    if (setterGeoClear) setterGeoClear.addEventListener('click', () => {
+      if (setterCountryFilter) setterCountryFilter.value = '';
+      if (setterCityFilter) setterCityFilter.value = '';
+      setterPage = 1;
+      renderSetterLeads();
     });
 
     const renderVariantEditor = () => {
@@ -2386,6 +2462,37 @@ document.addEventListener('DOMContentLoaded', async () => {
           loadCommandCenter();
         } catch (err) { console.error(err); alert('Error importando: ' + err.message); }
         setterImportCsv.value = '';
+      });
+    }
+
+    // ── Centro de Comando: botones duplicados (cmd-*) ──
+    const cmdDedupBtn = document.getElementById('cmd-dedup-btn');
+    if (cmdDedupBtn) {
+      cmdDedupBtn.addEventListener('click', async () => {
+        if (!confirm('¿Buscar y eliminar leads duplicados de los setters?')) return;
+        cmdDedupBtn.disabled = true; cmdDedupBtn.textContent = 'Limpiando...';
+        try {
+          const resp = await fetch(apiUrl('/api/setters/dedup'), { method: 'POST' });
+          const data = await resp.json();
+          const r = document.getElementById('cmd-dedup-result');
+          if (r) { r.classList.remove('hidden'); r.textContent = data.removed > 0 ? '✅ ' + data.removed + ' duplicados eliminados.' : '✅ Sin duplicados.'; setTimeout(() => r.classList.add('hidden'), 10000); }
+          loadCommandCenter();
+        } catch (e) { console.error(e); alert('Error'); }
+        cmdDedupBtn.disabled = false; cmdDedupBtn.textContent = 'Limpiar Duplicados de Setters';
+      });
+    }
+    const cmdClearBtn = document.getElementById('cmd-clear-btn');
+    if (cmdClearBtn) {
+      cmdClearBtn.addEventListener('click', () => {
+        document.getElementById('setter-clear-btn')?.click();
+      });
+    }
+    const cmdImportCsv = document.getElementById('cmd-import-csv');
+    if (cmdImportCsv) {
+      cmdImportCsv.addEventListener('change', (e) => {
+        const mainInput = document.getElementById('setter-import-csv');
+        if (mainInput) { mainInput.files = e.target.files; mainInput.dispatchEvent(new Event('change')); }
+        cmdImportCsv.value = '';
       });
     }
 
