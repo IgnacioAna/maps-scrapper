@@ -1465,6 +1465,23 @@ app.get('/api/setters/leads', (req, res) => {
   res.json({ leads, setters: data.setters, variants: data.variants });
 });
 
+// Sin WSP - DEBE estar antes de las rutas con :id
+app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
+  const { setter } = req.query;
+  const data = loadSettersData();
+  let leads = Object.entries(data.leads)
+    .filter(([_, l]) => l.conexion === 'sin_wsp')
+    .map(([id, l]) => ({ id, ...l }));
+  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
+  if (authSetterId) {
+    leads = leads.filter((l) => l.assignedTo === authSetterId);
+  } else if (setter) {
+    leads = leads.filter(l => l.assignedTo === setter);
+  }
+  leads.sort((a, b) => (a.num || 0) - (b.num || 0));
+  res.json({ leads });
+});
+
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
   const { leads: incoming, assignTo } = req.body;
@@ -2072,22 +2089,7 @@ app.get('/api/setters/export', requireAuth, (req, res) => {
   res.send(csv);
 });
 
-// Leads sin WSP (para vista de llamadas)
-app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
-  const { setter } = req.query;
-  const data = loadSettersData();
-  let leads = Object.entries(data.leads)
-    .filter(([_, l]) => l.conexion === 'sin_wsp')
-    .map(([id, l]) => ({ id, ...l }));
-  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
-  if (authSetterId) {
-    leads = leads.filter((l) => l.assignedTo === authSetterId);
-  } else if (setter) {
-    leads = leads.filter(l => l.assignedTo === setter);
-  }
-  leads.sort((a, b) => (a.num || 0) - (b.num || 0));
-  res.json({ leads });
-});
+// (sin-wsp route moved above :id routes to avoid Express conflict)
 
 // ── Sesiones ──
 app.post('/api/setters/sessions/start', requireAuth, (req, res) => {
