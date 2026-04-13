@@ -1008,6 +1008,7 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
             address: item.address,
             website: item.website || "",
             type: item.type || "",
+            types: Array.isArray(item.types) ? item.types.join(', ') : (item.type || ""),
             unclaimed: item.unclaimed_listing ? "Sí (Oportunidad)" : "Reclamado",
             locationSearched: location || "General",
             country,
@@ -1106,29 +1107,34 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), async (req, res) => {
       }
     }
 
-    // Filtrar: remover resultados que claramente NO son del rubro buscado
+    // ── Filtro de relevancia: descartar resultados que no matchean la búsqueda ──
     // Google Maps en ciudades chicas devuelve negocios irrelevantes
-    const dentalKeywords = ['dent', 'odont', 'implant', 'ortod', 'oral', 'bucal', 'sonris', 'smile', 'tooth', 'teeth', 'muela', 'brack', 'endod', 'peridon', 'protesi', 'maxilo', 'clinic', 'clínic', 'consul'];
-    const excludeKeywords = ['veterinar', 'panaderi', 'panader', 'pizz', 'restaurant', 'helade', 'ferret', 'carpinter', 'mecánic', 'mecanico', 'taller de', 'moto ', 'motos ', 'abogad', 'estudio juríd', 'estudio juridic', 'psicólog', 'psicologo', 'peluquer', 'barberi', 'inmobiliar', 'inmueble', 'farmaci', 'kiosco', 'almacen', 'verdule', 'carnicer', 'zapatería', 'zapater', 'floreri', 'lavadero', 'estacion de servicio', 'combustible', 'lubricent', 'electricist', 'plomer', 'pinturerí'];
-
-    const isDentalQuery = queries.some(q => dentalKeywords.some(k => q.toLowerCase().includes(k)));
+    // Extraer palabras clave significativas de la búsqueda (ignorar preposiciones, artículos, etc.)
+    const stopWords = new Set(['en', 'de', 'del', 'la', 'las', 'el', 'los', 'un', 'una', 'y', 'o', 'a', 'con', 'para', 'por', 'que', 'como', 'the', 'in', 'and', 'or', 'for', 'near', 'best']);
+    // Extraer raíces de palabras (primeros 4+ chars) para matching flexible
+    // "dentales" -> "dent", "clínicas" -> "clin", "implantes" -> "impl", "odontología" -> "odon"
+    const queryWords = queries.flatMap(q => q.toLowerCase().split(/\s+/))
+      .filter(w => w.length > 2 && !stopWords.has(w))
+      .map(w => w.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    const queryRoots = queryWords.map(w => w.substring(0, Math.min(w.length, 4)));
 
     let relevanceFiltered = allResults;
     let irrelevantRemoved = 0;
-    if (isDentalQuery) {
+    if (queryRoots.length > 0) {
       relevanceFiltered = allResults.filter(item => {
-        const text = [item.name, item.type].join(' ').toLowerCase();
-        // Si el nombre/tipo contiene alguna keyword dental, mantener
-        if (dentalKeywords.some(k => text.includes(k))) return true;
-        // Si el nombre/tipo contiene keyword excluida, descartar
-        if (excludeKeywords.some(k => text.includes(k))) {
+        // Texto completo del resultado: nombre + tipo + tipos de Google
+        const text = [item.name, item.type, item.types].join(' ').toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        // El resultado es relevante si ALGUNA raíz de la búsqueda aparece en su nombre/tipo
+        // "dent" matchea "dentist", "dental", "dentales", "dentalaser", etc.
+        const isRelevant = queryRoots.some(root => text.includes(root));
+        if (!isRelevant) {
           irrelevantRemoved++;
           return false;
         }
-        // Si no matchea nada, mantener (puede ser relevante con nombre ambiguo)
         return true;
       });
-      if (irrelevantRemoved > 0) console.log(`🚫 Filtro de relevancia: ${irrelevantRemoved} resultados no-dentales descartados`);
+      if (irrelevantRemoved > 0) console.log(`🚫 Filtro de relevancia: ${irrelevantRemoved} resultados descartados (no matchean "${queries.join(', ')}")`);
     }
 
     // Filtrar: remover sin teléfono Y sin sitio web
