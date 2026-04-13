@@ -959,12 +959,20 @@ if (!apiKey || apiKey === "tu_clave_secreta_aqui" || apiKey === "your_api_key_he
 }
 
 // ── Función que busca en UNA ubicación con paginación ──
+// Incluye corte temprano: si una página tiene <30% resultados relevantes, deja de paginar
 async function searchLocation(query, location, maxPages, startPage = 1) {
   const results = [];
-  const limit = Math.min(Math.max(1, parseInt(maxPages)), 100); // Permitir hasta 100 pags por query
+  const limit = Math.min(Math.max(1, parseInt(maxPages)), 100);
   let hasMoreResults = false;
 
   const basePageOffset = Math.max(0, parseInt(startPage) - 1);
+
+  // Preparar raíces de relevancia para corte temprano
+  const stopWords = new Set(['en', 'de', 'del', 'la', 'las', 'el', 'los', 'un', 'una', 'y', 'o', 'a', 'con', 'para', 'por', 'que', 'como', 'the', 'in', 'and', 'or', 'for', 'near', 'best']);
+  const queryWords = query.toLowerCase().split(/\s+/)
+    .filter(w => w.length > 2 && !stopWords.has(w))
+    .map(w => w.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+  const queryRoots = queryWords.map(w => w.substring(0, Math.min(w.length, 4)));
 
   for (let i = 0; i < limit; i++) {
     const currentOffset = (basePageOffset + i) * 20;
@@ -998,23 +1006,47 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
     const localResults = json.local_results || [];
     if (localResults.length === 0) break;
 
-        const parsedData = localResults.map(item => {
-          const { country, city } = parseLocationParts(location || '');
-          return {
-            name: item.title,
-            phone: item.phone || "",
-            reviews: item.reviews,
-            rating: item.rating,
-            address: item.address,
-            website: item.website || "",
-            type: item.type || "",
-            types: Array.isArray(item.types) ? item.types.join(', ') : (item.type || ""),
-            unclaimed: item.unclaimed_listing ? "Sí (Oportunidad)" : "Reclamado",
-            locationSearched: location || "General",
-            country,
-            city
-          };
+    const parsedData = localResults.map(item => {
+      const { country, city } = parseLocationParts(location || '');
+      return {
+        name: item.title,
+        phone: item.phone || "",
+        reviews: item.reviews,
+        rating: item.rating,
+        address: item.address,
+        website: item.website || "",
+        type: item.type || "",
+        types: Array.isArray(item.types) ? item.types.join(', ') : (item.type || ""),
+        unclaimed: item.unclaimed_listing ? "Sí (Oportunidad)" : "Reclamado",
+        locationSearched: location || "General",
+        country,
+        city
+      };
+    });
+
+    // ── Corte temprano por relevancia: no gastar créditos en páginas basura ──
+    if (queryRoots.length > 0 && i > 0) { // Siempre aceptar la primera página
+      const relevantCount = parsedData.filter(item => {
+        const text = [item.name, item.type, item.types].join(' ').toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        return queryRoots.some(root => text.includes(root));
+      }).length;
+
+      const relevanceRatio = relevantCount / parsedData.length;
+      console.log(`   📊 Pág ${basePageOffset + i + 1}: ${relevantCount}/${parsedData.length} relevantes (${(relevanceRatio * 100).toFixed(0)}%)`);
+
+      if (relevanceRatio < 0.3) {
+        console.log(`   🛑 Corte temprano: <30% relevancia en pág ${basePageOffset + i + 1}. No se pedirán más páginas (ahorro de créditos SerpAPI).`);
+        // Igual agregar los pocos relevantes de esta última página
+        const relevantOnly = parsedData.filter(item => {
+          const text = [item.name, item.type, item.types].join(' ').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          return queryRoots.some(root => text.includes(root));
         });
+        results.push(...relevantOnly);
+        break;
+      }
+    }
 
     results.push(...parsedData);
 
