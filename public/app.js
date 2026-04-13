@@ -1169,6 +1169,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => l.calificado && l.interes !== 'si');
       } else if (currentPipeFilter === 'interesado') {
         filtered = filtered.filter(l => l.interes === 'si');
+      } else if (currentPipeFilter === 'seguimiento') {
+        filtered = filtered.filter(l => {
+          const fu = l.followUps || {};
+          return fu['24hs'] || fu['48hs'] || fu['72hs'] || fu['7d'] || fu['15d'];
+        });
       } else if (currentPipeFilter === 'sin_contactar') {
         filtered = filtered.filter(l => !l.conexion);
       } else if (currentPipeFilter !== 'all') {
