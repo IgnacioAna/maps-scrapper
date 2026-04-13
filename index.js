@@ -1106,9 +1106,34 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), async (req, res) => {
       }
     }
 
+    // Filtrar: remover resultados que claramente NO son del rubro buscado
+    // Google Maps en ciudades chicas devuelve negocios irrelevantes
+    const dentalKeywords = ['dent', 'odont', 'implant', 'ortod', 'oral', 'bucal', 'sonris', 'smile', 'tooth', 'teeth', 'muela', 'brack', 'endod', 'peridon', 'protesi', 'maxilo', 'clinic', 'clínic', 'consul'];
+    const excludeKeywords = ['veterinar', 'panaderi', 'panader', 'pizz', 'restaurant', 'helade', 'ferret', 'carpinter', 'mecánic', 'mecanico', 'taller de', 'moto ', 'motos ', 'abogad', 'estudio juríd', 'estudio juridic', 'psicólog', 'psicologo', 'peluquer', 'barberi', 'inmobiliar', 'inmueble', 'farmaci', 'kiosco', 'almacen', 'verdule', 'carnicer', 'zapatería', 'zapater', 'floreri', 'lavadero', 'estacion de servicio', 'combustible', 'lubricent', 'electricist', 'plomer', 'pinturerí'];
+
+    const isDentalQuery = queries.some(q => dentalKeywords.some(k => q.toLowerCase().includes(k)));
+
+    let relevanceFiltered = allResults;
+    let irrelevantRemoved = 0;
+    if (isDentalQuery) {
+      relevanceFiltered = allResults.filter(item => {
+        const text = [item.name, item.type].join(' ').toLowerCase();
+        // Si el nombre/tipo contiene alguna keyword dental, mantener
+        if (dentalKeywords.some(k => text.includes(k))) return true;
+        // Si el nombre/tipo contiene keyword excluida, descartar
+        if (excludeKeywords.some(k => text.includes(k))) {
+          irrelevantRemoved++;
+          return false;
+        }
+        // Si no matchea nada, mantener (puede ser relevante con nombre ambiguo)
+        return true;
+      });
+      if (irrelevantRemoved > 0) console.log(`🚫 Filtro de relevancia: ${irrelevantRemoved} resultados no-dentales descartados`);
+    }
+
     // Filtrar: remover sin teléfono Y sin sitio web
-    const contactableResults = allResults.filter(item => item.phone || item.website);
-    const removed = allResults.length - contactableResults.length;
+    const contactableResults = relevanceFiltered.filter(item => item.phone || item.website);
+    const removed = relevanceFiltered.length - contactableResults.length;
 
     // Separar nuevos de ya scrapeados
     const newResults = contactableResults.filter(item => !item.alreadyScraped);
