@@ -12,15 +12,25 @@ const apiKey = process.env.API_KEY;
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurar Qwen (a través de OpenRouter dado que la clave empieza con sk-or-v1-)
-const ai = new OpenAI({
-  apiKey: process.env.QWEN_API_KEY || "missing_key",
-  baseURL: "https://openrouter.ai/api/v1",
-  defaultHeaders: {
-    "HTTP-Referer": "http://localhost:3000", // OpenRouter requiere un referer
-    "X-Title": "GoogleScraper"
-  }
-});
+// Configurar IA para enriquecimiento: Mercury (Inception Labs) si hay API key, sino Qwen como fallback
+const mercuryKey = process.env.MERCURY_API_KEY;
+const qwenKey = process.env.QWEN_API_KEY;
+const ai = mercuryKey
+  ? new OpenAI({
+      apiKey: mercuryKey,
+      baseURL: "https://api.inceptionlabs.ai/v1"
+    })
+  : new OpenAI({
+      apiKey: qwenKey || "missing_key",
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "GoogleScraper"
+      }
+    });
+const AI_MODEL = mercuryKey ? 'mercury-2' : 'qwen/qwen3-14b:free';
+console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'Qwen (OpenRouter)'}`);
+
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -1719,10 +1729,17 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
     if (lead.estado === 'sin_contactar' || lead.estado === 'contactado' || lead.estado === 'respondio') lead.estado = 'calificado';
     lead.lastContactAt = new Date().toISOString();
   }
+  // calificado='no' → marcado explícitamente como no calificó (reversa + estado especial)
+  if (req.body.calificado === 'no') {
+    lead.interes = null;
+    if (lead.respondio) lead.estado = 'respondio';
+    else if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    else lead.estado = 'sin_contactar';
+  }
   if (req.body.interes === 'si') {
     if (!lead.conexion) lead.conexion = 'enviada';
     if (!lead.respondio) lead.respondio = true;
-    if (!lead.calificado) lead.calificado = true;
+    if (lead.calificado !== true) lead.calificado = true;
     lead.estado = 'interesado';
     lead.lastContactAt = new Date().toISOString();
   }
@@ -1741,14 +1758,14 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
     if (lead.conexion === 'enviada') lead.estado = 'contactado';
     else lead.estado = 'sin_contactar';
   }
-  if (req.body.calificado === false && req.body.respondio === undefined && req.body.conexion === undefined) {
+  if ((req.body.calificado === false) && req.body.respondio === undefined && req.body.conexion === undefined) {
     lead.interes = null;
     if (lead.respondio) lead.estado = 'respondio';
     else if (lead.conexion === 'enviada') lead.estado = 'contactado';
     else lead.estado = 'sin_contactar';
   }
   if ((req.body.interes === '' || req.body.interes === null || req.body.interes === 'no') && req.body.calificado === undefined && req.body.respondio === undefined && req.body.conexion === undefined) {
-    if (lead.calificado) lead.estado = 'calificado';
+    if (lead.calificado === true) lead.estado = 'calificado';
     else if (lead.respondio) lead.estado = 'respondio';
     else if (lead.conexion === 'enviada') lead.estado = 'contactado';
     else lead.estado = 'sin_contactar';
@@ -2306,7 +2323,7 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), async (req, res) => {
     const regexFoundWa = !!webWhatsApp;
     const regexFoundOwner = !!foundOwner;
     const textLength = singleLineHtml.length;
-    const shouldCallAI = process.env.QWEN_API_KEY && textLength > 500 && !(regexFoundWa && regexFoundOwner);
+    const shouldCallAI = (mercuryKey || qwenKey) && textLength > 500 && !(regexFoundWa && regexFoundOwner);
 
     if (shouldCallAI) {
       try {
@@ -2350,7 +2367,7 @@ Texto: ${textToAnalyze}`;
         for (let attempt = 1; attempt <= retries; attempt++) {
             try {
                 aiResponse = await ai.chat.completions.create({
-                    model: 'qwen/qwen3.6-plus:free',
+                    model: AI_MODEL,
                     messages: [{ role: 'user', content: prompt }],
                     temperature: 0.1,
                     response_format: { type: "json_object" }
@@ -2390,8 +2407,8 @@ Texto: ${textToAnalyze}`;
              aiRoleDescription = "Web no soportada por la IA";
         }
       }
-    } else if (!process.env.QWEN_API_KEY) {
-        aiRoleDescription = "Requiere clave de Qwen en .env";
+    } else if (!mercuryKey && !qwenKey) {
+        aiRoleDescription = "Requiere MERCURY_API_KEY o QWEN_API_KEY en Railway";
     } else if (textLength <= 500) {
         aiRoleDescription = "Página sin contenido útil";
     } else {

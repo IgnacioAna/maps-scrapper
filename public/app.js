@@ -1164,9 +1164,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (currentPipeFilter === 'sin_wsp') {
         filtered = filtered.filter(l => l.conexion === 'sin_wsp');
       } else if (currentPipeFilter === 'respondio') {
-        filtered = filtered.filter(l => l.respondio && !l.calificado);
+        filtered = filtered.filter(l => l.respondio && l.calificado !== true);
       } else if (currentPipeFilter === 'calificado') {
-        filtered = filtered.filter(l => l.calificado && l.interes !== 'si');
+        filtered = filtered.filter(l => l.calificado === true && l.interes !== 'si');
       } else if (currentPipeFilter === 'interesado') {
         filtered = filtered.filter(l => l.interes === 'si');
       } else if (currentPipeFilter === 'seguimiento') {
@@ -1247,10 +1247,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<option value="no"' + (lead.respondio === 'no' ? ' selected' : '') + '>NO</option>' +
           '</select>';
 
-        // Calificado: select inline
+        // Calificado: select inline (—=sin evaluar, SI=calificó, NO=no calificó)
+        const calificadoVal = lead.calificado === true ? 'si' : (lead.calificado === 'no' ? 'no' : '');
         const calSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateCalif(this)" onclick="event.stopPropagation()">' +
-          '<option value=""' + (!lead.calificado ? ' selected' : '') + '>—</option>' +
-          '<option value="si"' + (lead.calificado === true ? ' selected' : '') + '>SI</option>' +
+          '<option value=""' + (calificadoVal === '' ? ' selected' : '') + '>—</option>' +
+          '<option value="si"' + (calificadoVal === 'si' ? ' selected' : '') + '>SI</option>' +
+          '<option value="no"' + (calificadoVal === 'no' ? ' selected' : '') + '>NO</option>' +
           '</select>';
 
         // Interés: select inline
@@ -1369,7 +1371,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._updateCalif = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
-      const body = { calificado: val === 'si' ? true : false };
+      // 'si' → true, 'no' → 'no' (string para distinguir de sin evaluar), '' → false
+      const body = { calificado: val === 'si' ? true : (val === 'no' ? 'no' : false) };
       try {
         const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await resp.json();
