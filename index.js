@@ -893,7 +893,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -2453,6 +2453,160 @@ Texto: ${textToAnalyze}`;
   } catch (err) {
     console.error("Error en /api/enrich para URL:", url, "→", err.message);
     res.json({ instagram: "", linkedin: "", facebook: "", email: "", phone: "", owner: "", openMessage: makeOpeningMessage({ country, city }) });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── MÓDULO FAQ / BANCO DE RESPUESTAS ──
+// ══════════════════════════════════════════════════════════════
+const FAQ_FILE = path.join(DATA_DIR, "faqs.json");
+
+function loadFaqs() {
+  try {
+    if (fs.existsSync(FAQ_FILE)) return JSON.parse(fs.readFileSync(FAQ_FILE, "utf8"));
+  } catch (e) { console.error("Error leyendo faqs:", e); }
+  return { entries: [] };
+}
+
+function saveFaqs(data) {
+  try { fs.writeFileSync(FAQ_FILE, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("Error guardando faqs:", e); }
+}
+
+// GET /api/faqs — listar con búsqueda opcional
+app.get('/api/faqs', requireAuth, (req, res) => {
+  const { q = '', categoria = '' } = req.query;
+  const data = loadFaqs();
+  let entries = data.entries || [];
+  if (q.trim()) {
+    const lq = q.toLowerCase();
+    entries = entries.filter(e =>
+      e.pregunta?.toLowerCase().includes(lq) ||
+      e.respuesta?.toLowerCase().includes(lq) ||
+      (e.tags || []).some(t => t.toLowerCase().includes(lq))
+    );
+  }
+  if (categoria) entries = entries.filter(e => e.categoria === categoria);
+  // Ordenar: más usados primero
+  entries = [...entries].sort((a, b) => (b.usos || 0) - (a.usos || 0));
+  res.json({ entries });
+});
+
+// POST /api/faqs — crear entrada (admin)
+app.post('/api/faqs', requireAuth, requireRole('admin'), (req, res) => {
+  const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null } = req.body;
+  if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
+  const data = loadFaqs();
+  const entry = {
+    id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    pregunta: pregunta.trim(),
+    respuesta: respuesta.trim(),
+    categoria,
+    tags: Array.isArray(tags) ? tags : [],
+    variantId,
+    createdBy: req.auth.user.name || req.auth.user.email,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    usos: 0,
+    funcionaron: 0
+  };
+  data.entries.push(entry);
+  saveFaqs(data);
+  res.json({ entry });
+});
+
+// PUT /api/faqs/:id — editar (admin)
+app.put('/api/faqs/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadFaqs();
+  const idx = data.entries.findIndex(e => e.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
+  const { pregunta, respuesta, categoria, tags, variantId } = req.body;
+  if (pregunta !== undefined) data.entries[idx].pregunta = pregunta.trim();
+  if (respuesta !== undefined) data.entries[idx].respuesta = respuesta.trim();
+  if (categoria !== undefined) data.entries[idx].categoria = categoria;
+  if (tags !== undefined) data.entries[idx].tags = Array.isArray(tags) ? tags : [];
+  if (variantId !== undefined) data.entries[idx].variantId = variantId;
+  data.entries[idx].updatedAt = new Date().toISOString();
+  saveFaqs(data);
+  res.json({ entry: data.entries[idx] });
+});
+
+// DELETE /api/faqs/:id (admin)
+app.delete('/api/faqs/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadFaqs();
+  const idx = data.entries.findIndex(e => e.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
+  data.entries.splice(idx, 1);
+  saveFaqs(data);
+  res.json({ ok: true });
+});
+
+// PATCH /api/faqs/:id/uso — setter usó esta respuesta
+app.patch('/api/faqs/:id/uso', requireAuth, (req, res) => {
+  const data = loadFaqs();
+  const entry = data.entries.find(e => e.id === req.params.id);
+  if (!entry) return res.status(404).json({ error: 'No encontrado' });
+  entry.usos = (entry.usos || 0) + 1;
+  if (req.body.funcionó === true) entry.funcionaron = (entry.funcionaron || 0) + 1;
+  saveFaqs(data);
+  res.json({ ok: true, usos: entry.usos, funcionaron: entry.funcionaron });
+});
+
+// POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos
+app.post('/api/faqs/suggest', requireAuth, requireRole('admin'), async (req, res) => {
+  const { pregunta, variantId, contexto = '' } = req.body;
+  if (!pregunta?.trim()) return res.status(400).json({ error: 'pregunta requerida' });
+
+  if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
+
+  // Buscar FAQs similares como ejemplos few-shot
+  const data = loadFaqs();
+  const lp = pregunta.toLowerCase();
+  const similares = data.entries
+    .filter(e => e.respuesta && (
+      e.pregunta?.toLowerCase().split(' ').some(w => w.length > 3 && lp.includes(w)) ||
+      lp.split(' ').some(w => w.length > 3 && e.pregunta?.toLowerCase().includes(w))
+    ))
+    .sort((a, b) => (b.funcionaron || 0) - (a.funcionaron || 0))
+    .slice(0, 4);
+
+  // Buscar variante para contexto
+  let varianteTexto = '';
+  if (variantId) {
+    try {
+      const settersData = loadSettersData();
+      const variant = settersData.variants?.find(v => v.id === variantId);
+      if (variant?.blocks?.length) varianteTexto = variant.blocks.map(b => b.text || '').join('\n');
+    } catch {}
+  }
+
+  const ejemplosTexto = similares.length > 0
+    ? similares.map((e, i) => `Ejemplo ${i+1}:\nPregunta: ${e.pregunta}\nRespuesta: ${e.respuesta}`).join('\n\n')
+    : 'No hay ejemplos previos similares.';
+
+  const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) de forma profesional, cálida y breve.
+
+${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
+${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
+PREGUNTA/OBJECIÓN DEL LEAD: ${pregunta}
+
+EJEMPLOS DE RESPUESTAS EXITOSAS ANTERIORES:
+${ejemplosTexto}
+
+Genera UNA respuesta en español, en tono profesional pero cercano, de máximo 4 líneas. Usa [Nombre del Doctor] o [Nombre de la clínica] como placeholders si necesitás personalizar. Responde SOLO con el texto de la respuesta, sin explicaciones, sin comillas, sin formato markdown.`;
+
+  try {
+    const completion = await ai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.4,
+      max_tokens: 300
+    });
+    const sugerencia = completion.choices?.[0]?.message?.content?.trim() || '';
+    res.json({ sugerencia, ejemplosUsados: similares.length });
+  } catch (e) {
+    console.error('Error FAQ suggest IA:', e.message);
+    res.status(500).json({ error: 'Error de IA: ' + e.message });
   }
 });
 

@@ -76,6 +76,9 @@
           <a href="#" class="menu-item" data-target="view-calls">
             <span>📞 Llamadas (Sin WSP)</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-faqs">
+            <span>📚 Banco de Respuestas</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-command" data-roles="admin">
             <span>🎯 Centro de Comando</span>
           </a>
@@ -513,6 +516,73 @@
         </section>
       </div>
 
+      <!-- VISTA FAQ: BANCO DE RESPUESTAS -->
+      <div id="view-faqs" class="module-view hidden">
+        <div class="content-header">
+          <h2>📚 Banco de Respuestas</h2>
+          <div class="header-actions">
+            <input type="text" id="faq-search" placeholder="Buscar pregunta o palabra clave..." style="padding:8px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--surface-color);color:var(--text-primary);font-size:13px;width:280px;" oninput="window.loadFaqsModule && loadFaqsModule()">
+            <select id="faq-cat-filter" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-color);background:var(--surface-color);color:var(--text-primary);font-size:13px;" onchange="window.loadFaqsModule && loadFaqsModule()">
+              <option value="">Todas las categorías</option>
+              <option value="precio">💰 Precio</option>
+              <option value="objecion">🚫 Objeciones</option>
+              <option value="seguimiento">🔄 Seguimiento</option>
+              <option value="calificacion">📝 Calificación</option>
+              <option value="general">💬 General</option>
+            </select>
+            <button id="faq-new-btn" class="btn-primary pill-btn" data-roles="admin" onclick="window._faqOpenModal()">+ Nueva entrada</button>
+          </div>
+        </div>
+        <div id="faq-list" style="padding:24px 32px; display:grid; grid-template-columns:repeat(auto-fill,minmax(380px,1fr)); gap:16px;">
+          <p style="color:var(--text-secondary)">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- Modal FAQ -->
+      <div id="faq-modal" class="modal-overlay hidden" style="z-index:1100;">
+        <div class="modal-card" style="max-width:680px;width:95vw;">
+          <div class="modal-header">
+            <h3 id="faq-modal-title">Nueva entrada</h3>
+            <button onclick="document.getElementById('faq-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+            <input type="hidden" id="faq-edit-id">
+            <div>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Pregunta / Objeción del lead</label>
+              <input type="text" id="faq-pregunta" placeholder="Ej: ¿Cuánto cuesta el servicio?" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;box-sizing:border-box;">
+            </div>
+            <div style="display:flex;gap:12px;">
+              <div style="flex:1;">
+                <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Categoría</label>
+                <select id="faq-categoria" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;">
+                  <option value="general">💬 General</option>
+                  <option value="precio">💰 Precio</option>
+                  <option value="objecion">🚫 Objeción</option>
+                  <option value="seguimiento">🔄 Seguimiento</option>
+                  <option value="calificacion">📝 Calificación</option>
+                </select>
+              </div>
+              <div style="flex:1;">
+                <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Tags (separados por coma)</label>
+                <input type="text" id="faq-tags" placeholder="precio, costo, servicio" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;box-sizing:border-box;">
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <label style="font-size:12px;color:var(--text-secondary);">Respuesta sugerida</label>
+                <button id="faq-suggest-btn" class="btn-table-action" style="font-size:11px;padding:4px 10px;" onclick="window._faqSuggest()">✨ Generar con IA</button>
+              </div>
+              <textarea id="faq-respuesta" rows="6" placeholder="Escribí la respuesta que funciona para esta objeción..." style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
+              <div id="faq-suggest-status" style="font-size:11px;color:var(--text-secondary);margin-top:4px;"></div>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding:16px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border-color);">
+            <button onclick="document.getElementById('faq-modal').classList.add('hidden')" class="btn-table-action">Cancelar</button>
+            <button onclick="window._faqSave()" class="btn-primary pill-btn">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- VISTA 5: CENTRO DE COMANDO -->
       <div id="view-command" class="module-view hidden" data-roles="admin">
         <div class="content-header">
@@ -713,6 +783,6 @@
     </main>
   </div>
 
-  <script type="module" src="/app.js?v=20260419b"></script>
+  <script type="module" src="/app.js?v=20260419c"></script>
 </body>
 </html>

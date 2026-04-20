@@ -2290,6 +2290,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
     if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
 
+    const faqMenuItem = document.querySelector('[data-target="view-faqs"]');
+    if (faqMenuItem) faqMenuItem.addEventListener('click', () => { loadFaqsModule(); });
+
     // Botón dedup de leads de setters
     const setterDedupBtn = document.getElementById('setter-dedup-btn');
     if (setterDedupBtn) {
@@ -2741,3 +2744,171 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
   });
+
+  // ══════════════════════════════════════════════════════════════
+  // ── MÓDULO FAQ / BANCO DE RESPUESTAS ──
+  // ══════════════════════════════════════════════════════════════
+  const CAT_LABELS = { precio:'💰 Precio', objecion:'🚫 Objeción', seguimiento:'🔄 Seguimiento', calificacion:'📝 Calificación', general:'💬 General' };
+
+  window.loadFaqsModule = async function() {
+    const q = document.getElementById('faq-search')?.value || '';
+    const cat = document.getElementById('faq-cat-filter')?.value || '';
+    const list = document.getElementById('faq-list');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--text-secondary)">Cargando...</p>';
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set('q', q);
+      if (cat) params.set('categoria', cat);
+      const resp = await fetch(apiUrl('/api/faqs?' + params.toString()));
+      const data = await resp.json();
+      const entries = data.entries || [];
+      if (entries.length === 0) {
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-secondary);">' +
+          '<div style="font-size:40px;margin-bottom:12px;">📚</div>' +
+          '<p style="font-size:15px;">No hay entradas aún.</p>' +
+          (currentUser?.role === 'admin' ? '<p style="font-size:13px;">Hacé click en <strong>+ Nueva entrada</strong> para agregar la primera respuesta.</p>' : '') +
+          '</div>';
+        return;
+      }
+      list.innerHTML = entries.map(e => _renderFaqCard(e)).join('');
+      // Mostrar/ocultar botón nuevo según rol
+      const newBtn = document.getElementById('faq-new-btn');
+      if (newBtn) newBtn.style.display = currentUser?.role === 'admin' ? '' : 'none';
+    } catch(err) {
+      list.innerHTML = '<p style="color:#f85149;">Error cargando respuestas: ' + err.message + '</p>';
+    }
+  };
+
+  function _renderFaqCard(e) {
+    const isAdmin = currentUser?.role === 'admin';
+    const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
+    const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
+    const tags = (e.tags || []).map(t => `<span style="background:var(--border-color);padding:2px 6px;border-radius:10px;font-size:10px;">${escHtml(t)}</span>`).join(' ');
+    return `<div class="faq-card" style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;">
+          <span style="font-size:11px;color:var(--primary-color);font-weight:600;">${escHtml(catLabel)}</span>
+          <p style="font-size:14px;font-weight:600;margin:4px 0 0;color:var(--text-primary);">${escHtml(e.pregunta)}</p>
+        </div>
+        ${isAdmin ? `<div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn-table-action" style="font-size:11px;padding:3px 8px;" onclick="window._faqOpenModal('${escHtml(e.id)}')">✏️</button>
+          <button class="btn-table-action" style="font-size:11px;padding:3px 8px;color:#f85149;" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
+        </div>` : ''}
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-wrap;margin:0;">${escHtml(e.respuesta)}</p>
+      ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${tags}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <div style="font-size:11px;color:var(--text-secondary);">
+          ${e.usos > 0 ? `Usado ${e.usos}x · ${pctFuncionaron}% funcionó` : 'Sin usos aún'}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-table-action" style="font-size:11px;padding:4px 10px;color:#5bb974;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
+          ${!isAdmin ? `<button class="btn-table-action" style="font-size:11px;padding:4px 10px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  window._faqCopy = async (id, btn) => {
+    const card = btn.closest('.faq-card');
+    const texto = card?.querySelector('p:nth-of-type(2)')?.textContent || '';
+    if (texto && navigator.clipboard) {
+      await navigator.clipboard.writeText(texto).catch(() => {});
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado';
+      btn.style.color = '#25d366';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1800);
+    }
+    // Registrar uso
+    try { await fetch(apiUrl('/api/faqs/' + id + '/uso'), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:'{}' }); } catch {}
+  };
+
+  window._faqFeedback = async (id, funcionó) => {
+    try {
+      await fetch(apiUrl('/api/faqs/' + id + '/uso'), {
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ 'funcionó': funcionó })
+      });
+      loadFaqsModule();
+    } catch {}
+  };
+
+  window._faqOpenModal = async (id = null) => {
+    document.getElementById('faq-edit-id').value = id || '';
+    document.getElementById('faq-modal-title').textContent = id ? 'Editar entrada' : 'Nueva entrada';
+    document.getElementById('faq-pregunta').value = '';
+    document.getElementById('faq-respuesta').value = '';
+    document.getElementById('faq-tags').value = '';
+    document.getElementById('faq-categoria').value = 'general';
+    document.getElementById('faq-suggest-status').textContent = '';
+    if (id) {
+      try {
+        const resp = await fetch(apiUrl('/api/faqs'));
+        const data = await resp.json();
+        const entry = (data.entries || []).find(e => e.id === id);
+        if (entry) {
+          document.getElementById('faq-pregunta').value = entry.pregunta || '';
+          document.getElementById('faq-respuesta').value = entry.respuesta || '';
+          document.getElementById('faq-tags').value = (entry.tags || []).join(', ');
+          document.getElementById('faq-categoria').value = entry.categoria || 'general';
+        }
+      } catch {}
+    }
+    document.getElementById('faq-modal').classList.remove('hidden');
+    document.getElementById('faq-pregunta').focus();
+  };
+
+  window._faqSave = async () => {
+    const id = document.getElementById('faq-edit-id').value;
+    const pregunta = document.getElementById('faq-pregunta').value.trim();
+    const respuesta = document.getElementById('faq-respuesta').value.trim();
+    const categoria = document.getElementById('faq-categoria').value;
+    const tagsRaw = document.getElementById('faq-tags').value;
+    const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+    if (!pregunta || !respuesta) { alert('Completá la pregunta y la respuesta.'); return; }
+    try {
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? apiUrl('/api/faqs/' + id) : apiUrl('/api/faqs');
+      await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pregunta, respuesta, categoria, tags }) });
+      document.getElementById('faq-modal').classList.add('hidden');
+      loadFaqsModule();
+    } catch(err) { alert('Error guardando: ' + err.message); }
+  };
+
+  window._faqDelete = async (id) => {
+    if (!confirm('¿Eliminar esta entrada del banco de respuestas?')) return;
+    try {
+      await fetch(apiUrl('/api/faqs/' + id), { method:'DELETE' });
+      loadFaqsModule();
+    } catch(err) { alert('Error: ' + err.message); }
+  };
+
+  window._faqSuggest = async () => {
+    const pregunta = document.getElementById('faq-pregunta').value.trim();
+    const statusEl = document.getElementById('faq-suggest-status');
+    if (!pregunta) { alert('Primero escribí la pregunta/objeción.'); return; }
+    const btn = document.getElementById('faq-suggest-btn');
+    btn.textContent = '⏳ Generando...';
+    btn.disabled = true;
+    statusEl.textContent = 'Consultando IA...';
+    try {
+      const resp = await fetch(apiUrl('/api/faqs/suggest'), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ pregunta })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      document.getElementById('faq-respuesta').value = data.sugerencia || '';
+      statusEl.textContent = data.ejemplosUsados > 0
+        ? `✓ Generado basado en ${data.ejemplosUsados} respuesta(s) similar(es) del banco.`
+        : '✓ Generado sin ejemplos previos (el banco está vacío).';
+      statusEl.style.color = '#5bb974';
+    } catch(err) {
+      statusEl.textContent = '❌ ' + err.message;
+      statusEl.style.color = '#f85149';
+    } finally {
+      btn.textContent = '✨ Generar con IA';
+      btn.disabled = false;
+    }
+  };
