@@ -344,6 +344,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       return text || `Buenas, ¿cómo están?`;
     };
 
+    // Helper: copia el link al portapapeles al hacer click (sin bloquear el target="_blank")
+    // Muestra toast breve "Link copiado" y permite que el navegador abra WhatsApp normal
+    window._waClickCopy = (el, ev) => {
+      try {
+        if (ev) ev.stopPropagation();
+        const url = el.href || el.getAttribute('data-wa-url') || '';
+        if (url && navigator.clipboard) {
+          navigator.clipboard.writeText(url).then(() => {
+            // Toast mínimo
+            let t = document.getElementById('_wa-toast');
+            if (!t) {
+              t = document.createElement('div');
+              t.id = '_wa-toast';
+              t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#25d366;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity .2s;';
+              document.body.appendChild(t);
+            }
+            t.textContent = '✓ Link copiado — podés pegarlo en otro navegador';
+            t.style.opacity = '1';
+            clearTimeout(window._waToastTimer);
+            window._waToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+          }).catch(() => {});
+        }
+      } catch (e) { console.error(e); }
+      // NO llamar preventDefault → el link abre WhatsApp normalmente
+      return true;
+    };
+
     const buildSetterWaUrl = (lead, stage = 'apertura') => {
       // Si el lead tiene su propia URL de WhatsApp importada (del CSV), usarla directamente en apertura
       if (stage === 'apertura' && lead?.whatsappUrl && lead.whatsappUrl.includes('wa.me/')) {
@@ -1274,7 +1301,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
           '<td style="font-weight:500;">' + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div></td>' +
-          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:#5bb974;" onclick="event.stopPropagation();" title="Abrir WhatsApp con apertura">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
+          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:#5bb974;" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()">🌐</a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
           '<td style="text-align:center;">' + respSelect + '</td>' +
@@ -1419,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('modal-city').textContent = [lead.country, lead.city].filter(Boolean).join(' / ') || lead.address || '—';
       const bestPhone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
       const openUrl = buildSetterWaUrl(lead, 'apertura');
-      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:#5bb974;">' + escHtml(bestPhone) + ' 💬</a>' : '—';
+      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:#5bb974;" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link">' + escHtml(bestPhone) + ' 💬</a>' : '—';
       document.getElementById('modal-web').innerHTML = lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="text-link">' + escHtml(lead.website) + '</a>' : '—';
       document.getElementById('modal-email').textContent = lead.email || '—';
       document.getElementById('modal-owner').textContent = lead.doctor || '—';
