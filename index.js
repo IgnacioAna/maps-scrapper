@@ -2492,8 +2492,8 @@ app.get('/api/faqs', requireAuth, (req, res) => {
   res.json({ entries });
 });
 
-// POST /api/faqs — crear entrada (admin)
-app.post('/api/faqs', requireAuth, requireRole('admin'), (req, res) => {
+// POST /api/faqs — crear entrada (admin + setters)
+app.post('/api/faqs', requireAuth, (req, res) => {
   const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null } = req.body;
   if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
   const data = loadFaqs();
@@ -2505,6 +2505,7 @@ app.post('/api/faqs', requireAuth, requireRole('admin'), (req, res) => {
     tags: Array.isArray(tags) ? tags : [],
     variantId,
     createdBy: req.auth.user.name || req.auth.user.email,
+    createdById: req.auth.user.id,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     usos: 0,
@@ -2515,11 +2516,14 @@ app.post('/api/faqs', requireAuth, requireRole('admin'), (req, res) => {
   res.json({ entry });
 });
 
-// PUT /api/faqs/:id — editar (admin)
-app.put('/api/faqs/:id', requireAuth, requireRole('admin'), (req, res) => {
+// PUT /api/faqs/:id — editar (admin o el creador)
+app.put('/api/faqs/:id', requireAuth, (req, res) => {
   const data = loadFaqs();
   const idx = data.entries.findIndex(e => e.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
+  const isAdmin = req.auth.user.role === 'admin';
+  const isOwner = data.entries[idx].createdById === req.auth.user.id;
+  if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Solo podés editar tus propias entradas' });
   const { pregunta, respuesta, categoria, tags, variantId } = req.body;
   if (pregunta !== undefined) data.entries[idx].pregunta = pregunta.trim();
   if (respuesta !== undefined) data.entries[idx].respuesta = respuesta.trim();
@@ -2531,11 +2535,14 @@ app.put('/api/faqs/:id', requireAuth, requireRole('admin'), (req, res) => {
   res.json({ entry: data.entries[idx] });
 });
 
-// DELETE /api/faqs/:id (admin)
-app.delete('/api/faqs/:id', requireAuth, requireRole('admin'), (req, res) => {
+// DELETE /api/faqs/:id (admin o el creador)
+app.delete('/api/faqs/:id', requireAuth, (req, res) => {
   const data = loadFaqs();
   const idx = data.entries.findIndex(e => e.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
+  const isAdmin = req.auth.user.role === 'admin';
+  const isOwner = data.entries[idx].createdById === req.auth.user.id;
+  if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Solo podés borrar tus propias entradas' });
   data.entries.splice(idx, 1);
   saveFaqs(data);
   res.json({ ok: true });
@@ -2552,8 +2559,8 @@ app.patch('/api/faqs/:id/uso', requireAuth, (req, res) => {
   res.json({ ok: true, usos: entry.usos, funcionaron: entry.funcionaron });
 });
 
-// POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos
-app.post('/api/faqs/suggest', requireAuth, requireRole('admin'), async (req, res) => {
+// POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos (admin + setters)
+app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
   const { pregunta, variantId, contexto = '' } = req.body;
   if (!pregunta?.trim()) return res.status(400).json({ error: 'pregunta requerida' });
 

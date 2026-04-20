@@ -2767,14 +2767,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-secondary);">' +
           '<div style="font-size:40px;margin-bottom:12px;">📚</div>' +
           '<p style="font-size:15px;">No hay entradas aún.</p>' +
-          (currentUser?.role === 'admin' ? '<p style="font-size:13px;">Hacé click en <strong>+ Nueva entrada</strong> para agregar la primera respuesta.</p>' : '') +
+          '<p style="font-size:13px;">Hacé click en <strong>+ Nueva entrada</strong> para agregar la primera respuesta.</p>' +
           '</div>';
         return;
       }
       list.innerHTML = entries.map(e => _renderFaqCard(e)).join('');
-      // Mostrar/ocultar botón nuevo según rol
+      // Botón nuevo visible para todos
       const newBtn = document.getElementById('faq-new-btn');
-      if (newBtn) newBtn.style.display = currentUser?.role === 'admin' ? '' : 'none';
+      if (newBtn) newBtn.style.display = '';
     } catch(err) {
       list.innerHTML = '<p style="color:#f85149;">Error cargando respuestas: ' + err.message + '</p>';
     }
@@ -2782,16 +2782,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function _renderFaqCard(e) {
     const isAdmin = currentUser?.role === 'admin';
+    const isOwner = e.createdById === currentUser?.id;
+    const canEdit = isAdmin || isOwner;
     const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
     const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
     const tags = (e.tags || []).map(t => `<span style="background:var(--border-color);padding:2px 6px;border-radius:10px;font-size:10px;">${escHtml(t)}</span>`).join(' ');
+    const authorBadge = e.createdBy ? `<span style="font-size:10px;color:var(--text-secondary);">por ${escHtml(e.createdBy)}</span>` : '';
     return `<div class="faq-card" style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div style="flex:1;">
-          <span style="font-size:11px;color:var(--primary-color);font-weight:600;">${escHtml(catLabel)}</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--primary-color);font-weight:600;">${escHtml(catLabel)}</span>
+            ${authorBadge}
+          </div>
           <p style="font-size:14px;font-weight:600;margin:4px 0 0;color:var(--text-primary);">${escHtml(e.pregunta)}</p>
         </div>
-        ${isAdmin ? `<div style="display:flex;gap:6px;flex-shrink:0;">
+        ${canEdit ? `<div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="btn-table-action" style="font-size:11px;padding:3px 8px;" onclick="window._faqOpenModal('${escHtml(e.id)}')">✏️</button>
           <button class="btn-table-action" style="font-size:11px;padding:3px 8px;color:#f85149;" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
         </div>` : ''}
@@ -2804,7 +2810,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn-table-action" style="font-size:11px;padding:4px 10px;color:#5bb974;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
-          ${!isAdmin ? `<button class="btn-table-action" style="font-size:11px;padding:4px 10px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>` : ''}
+          <button class="btn-table-action" style="font-size:11px;padding:4px 10px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
         </div>
       </div>
     </div>`;
