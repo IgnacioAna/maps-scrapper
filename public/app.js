@@ -1544,6 +1544,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           setterLeads[idx].lastContactAt = data.lead?.lastContactAt || setterLeads[idx].lastContactAt;
         }
         _updateStatsLocal();
+        // Re-renderizar sólo si estamos en filtro "seguimiento" para que respete el filtro
+        if (currentPipeFilter === 'seguimiento') renderSetterLeads();
       } catch (e) { console.error(e); }
     };
 
@@ -2171,7 +2173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '</div>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
                   '<button type="button" class="btn-table-action" style="color:var(--primary-color); font-size:11px;" onclick="document.getElementById(\'cmd-variable-setter-filter\').value=\'' + escHtml(s.id) + '\'; document.getElementById(\'cmd-variable-setter-filter\').dispatchEvent(new Event(\'change\'));">Ver variables</button>' +
-                  '<button type="button" class="btn-table-action" style="color:#79b8ff; font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', \'' + escHtml(s.name).replace(/\'/g, "\\\'") + '\')">Editar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:#79b8ff; font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', decodeURIComponent(\'' + encodeURIComponent(s.name) + '\'))">Editar</button>' +
                   '<button type="button" class="btn-table-action" style="color:#e3b341; font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(s.id) + '\')">Duplicar</button>' +
                   '<button type="button" class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteSetter(\'' + escHtml(s.id) + '\')">Eliminar</button>' +
                 '</div>' +
@@ -3124,7 +3126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             (sizeKb ? '<span style="color:var(--text-secondary);">' + sizeKb + '</span>' : '') +
             (m.createdBy ? '<span style="color:var(--text-secondary);">· ' + escHtml(m.createdBy) + '</span>' : '') +
           '</div>' +
-          (m.hasFile ? '<a href="' + apiUrl('/api/training/' + m.id + '/download') + '" class="btn-table-action" style="text-align:center;text-decoration:none;color:var(--primary-color);padding:8px;">⬇ Descargar archivo</a>' : '') +
+          (m.hasFile ? '<button type="button" class="btn-table-action" style="text-align:center;color:var(--primary-color);padding:8px;" onclick="window._trainingDownload(\'' + escHtml(m.id) + '\', \'' + escHtml(m.fileName || 'archivo') + '\')">⬇ Descargar archivo</button>' : '') +
         '</div>';
       }).join('');
     } catch(err) {
@@ -3194,6 +3196,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('training-modal').classList.add('hidden');
       loadTrainingModule();
     } catch(err) { alert('Error: ' + err.message); }
+  };
+
+  window._trainingDownload = async (id, fileName) => {
+    try {
+      const resp = await fetch(apiUrl('/api/training/' + id + '/download'), { credentials: 'include' });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'archivo';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } catch(err) {
+      alert('Error descargando archivo: ' + err.message);
+    }
   };
 
   window._trainingDelete = async (id) => {
