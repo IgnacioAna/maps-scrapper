@@ -1840,30 +1840,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadVariantsModal() {
       const resp = await fetch(apiUrl('/api/setters/variants'));
       const data = await resp.json();
-      variantsList = data.variants || [];
+      let allVariants = data.variants || [];
+      const isAdmin = currentUser?.role === 'admin';
+      const mySetterId = currentUser?.setterId || '';
+      // Setters sólo ven sus propias variables
+      variantsList = isAdmin ? allVariants : allVariants.filter(v => v.setterId === mySetterId);
       const list = document.getElementById('variants-list');
       renderVariantEditor();
 
       if (variantsList.length === 0) {
-        list.innerHTML = '<p class="text-muted">No hay variantes creadas aún.</p>';
+        list.innerHTML = '<p class="text-muted">No hay variantes ' + (isAdmin ? 'creadas aún' : 'asignadas a vos aún') + '.</p>';
         return;
       }
 
       list.innerHTML = variantsList.map(v => {
+        const isOwner = isAdmin || v.setterId === mySetterId;
         const assignedSetters = settersList.filter(s => s.id === v.setterId).map(s => s.name).join(', ');
         return '<div class="variant-card">' +
           '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + (v.weekLabel ? ' — ' + escHtml(v.weekLabel) : '') + '</span>' +
-          '<button class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button></div>' +
+          (isOwner ? '<button class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' : '') + '</div>' +
           '<div class="variant-card-msgs">' +
             '<div><strong>1.</strong> ' + escHtml(v.messages.apertura || '—') + '</div>' +
             '<div><strong>2.</strong> ' + escHtml(v.messages.problema || '—') + '</div>' +
             '<div><strong>3.</strong> ' + escHtml(v.messages.pruebaSocial || '—') + '</div>' +
             '<div><strong>4.</strong> ' + escHtml(v.messages.cierrePregunta || '—') + '</div>' +
           '</div>' +
-          '<div class="variant-card-assign"><span style="color:var(--text-secondary);">Asignada a:</span> ' +
+          (isAdmin ? '<div class="variant-card-assign"><span style="color:var(--text-secondary);">Asignada a:</span> ' +
             (assignedSetters || '<span class="text-muted">Nadie</span>') +
             settersList.map(s => ' <button class="btn-table-action" style="font-size:10px; padding:2px 8px; color:var(--primary-color);" onclick="event.stopPropagation(); window._assignVariant(\'' + s.id + '\', \'' + v.id + '\')">' + escHtml(s.name) + '</button>').join('') +
-          '</div></div>';
+          '</div>' : '') + '</div>';
       }).join('');
     }
 
@@ -1923,6 +1928,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm('Eliminar este setter y dejar sus variables sin asignar?')) return;
       await fetch(apiUrl('/api/setters/team/' + setterId), { method: 'DELETE' });
       loadCommandCenter();
+    };
+
+    window._editSetter = async (setterId, currentName) => {
+      if (!setterId) return;
+      const newName = prompt('Nuevo nombre del setter:', currentName || '');
+      if (!newName || !newName.trim() || newName.trim() === currentName) return;
+      try {
+        const resp = await fetch(apiUrl('/api/setters/team/' + setterId), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newName.trim() })
+        });
+        if (!resp.ok) { const err = await resp.json().catch(() => ({})); alert('Error: ' + (err.error || 'no se pudo actualizar')); return; }
+        loadCommandCenter();
+      } catch (e) { alert('Error: ' + e.message); }
     };
 
     window._saveVariantBlocks = async (varId) => {
@@ -2123,6 +2142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '</div>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
                   '<button type="button" class="btn-table-action" style="color:var(--primary-color); font-size:11px;" onclick="document.getElementById(\'cmd-variable-setter-filter\').value=\'' + escHtml(s.id) + '\'; document.getElementById(\'cmd-variable-setter-filter\').dispatchEvent(new Event(\'change\'));">Ver variables</button>' +
+                  '<button type="button" class="btn-table-action" style="color:#79b8ff; font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', \'' + escHtml(s.name).replace(/\'/g, "\\\'") + '\')">Editar</button>' +
                   '<button type="button" class="btn-table-action" style="color:#e3b341; font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(s.id) + '\')">Duplicar</button>' +
                   '<button type="button" class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteSetter(\'' + escHtml(s.id) + '\')">Eliminar</button>' +
                 '</div>' +

@@ -1514,15 +1514,22 @@ app.get('/api/setters/variants', (req, res) => {
    res.json({ variants: data.variants.map(normalizeVariantRecord) });
 });
 
-app.post('/api/setters/variants', requireAuth, requireRole('admin'), (req, res) => {
+app.post('/api/setters/variants', requireAuth, (req, res) => {
   const { name, weekLabel, setterId, blocks = [], active = true } = req.body;
   if (!name) return res.status(400).json({ error: "Nombre requerido." });
+  const role = req.auth?.user?.role;
+  let finalSetterId = setterId || '';
+  if (role !== 'admin') {
+    // Setters sólo crean variantes asignadas a ellos mismos
+    finalSetterId = req.auth?.user?.setterId || '';
+    if (!finalSetterId) return res.status(403).json({ error: 'No tenés setter asignado.' });
+  }
   const data = loadSettersData();
   const variant = normalizeVariantRecord({
     id: `var_${Date.now()}`,
     name,
     weekLabel: weekLabel || '',
-    setterId: setterId || '',
+    setterId: finalSetterId,
     active,
     blocks,
     createdAt: new Date().toISOString()
@@ -1532,10 +1539,22 @@ app.post('/api/setters/variants', requireAuth, requireRole('admin'), (req, res) 
   res.json({ variant, variants: data.variants });
 });
 
-app.patch('/api/setters/variants/:id', requireAuth, requireRole('admin'), (req, res) => {
+app.patch('/api/setters/variants/:id', requireAuth, (req, res) => {
   const data = loadSettersData();
   const v = data.variants.find(v => v.id === req.params.id);
   if (!v) return res.status(404).json({ error: "Variante no encontrada." });
+  // Setters sólo pueden editar variantes asignadas a ellos
+  const role = req.auth?.user?.role;
+  if (role !== 'admin') {
+    const mySetterId = req.auth?.user?.setterId;
+    if (!mySetterId || v.setterId !== mySetterId) {
+      return res.status(403).json({ error: 'Sólo podés editar tus propias variables.' });
+    }
+    // Setters no pueden reasignar la variante a otro setter
+    if (req.body.setterId !== undefined && req.body.setterId !== mySetterId) {
+      return res.status(403).json({ error: 'No podés reasignar la variable.' });
+    }
+  }
   if (req.body.name) v.name = req.body.name;
   if (req.body.weekLabel) v.weekLabel = req.body.weekLabel;
   if (req.body.setterId !== undefined) v.setterId = req.body.setterId;
@@ -1548,8 +1567,17 @@ app.patch('/api/setters/variants/:id', requireAuth, requireRole('admin'), (req, 
   res.json({ variant: v });
 });
 
-app.delete('/api/setters/variants/:id', requireAuth, requireRole('admin'), (req, res) => {
+app.delete('/api/setters/variants/:id', requireAuth, (req, res) => {
   const data = loadSettersData();
+  const v = data.variants.find(x => x.id === req.params.id);
+  if (!v) return res.status(404).json({ error: 'Variante no encontrada.' });
+  const role = req.auth?.user?.role;
+  if (role !== 'admin') {
+    const mySetterId = req.auth?.user?.setterId;
+    if (!mySetterId || v.setterId !== mySetterId) {
+      return res.status(403).json({ error: 'Sólo podés eliminar tus propias variables.' });
+    }
+  }
   data.variants = data.variants.filter(v => v.id !== req.params.id);
   saveSettersData(data);
   res.json({ ok: true });
