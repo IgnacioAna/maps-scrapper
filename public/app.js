@@ -39,6 +39,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.getElementById('logout-btn');
     let currentUser = null;
 
+    // ── Timer anti-baneo WSP ──
+    (function setupWspTimer() {
+      const widget = document.getElementById('wsp-timer-widget');
+      const fab = document.getElementById('wsp-timer-fab');
+      const display = document.getElementById('wsp-timer-display');
+      const minInput = document.getElementById('wsp-timer-minutes');
+      const startBtn = document.getElementById('wsp-timer-start');
+      const stopBtn = document.getElementById('wsp-timer-stop');
+      if (!widget || !fab) return;
+      let endAt = 0, intervalId = null;
+      const saved = parseInt(localStorage.getItem('wspTimerMinutes') || '3', 10);
+      minInput.value = saved;
+      minInput.addEventListener('change', () => localStorage.setItem('wspTimerMinutes', minInput.value));
+
+      function tick() {
+        const rem = endAt - Date.now();
+        if (rem <= 0) {
+          display.textContent = '✅ LISTO';
+          display.style.color = '#5bb974';
+          clearInterval(intervalId); intervalId = null;
+          // Alarma sonora
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator(); const g = ctx.createGain();
+            osc.connect(g); g.connect(ctx.destination);
+            osc.frequency.value = 880; g.gain.value = 0.15;
+            osc.start();
+            setTimeout(() => { osc.frequency.value = 660; }, 200);
+            setTimeout(() => { osc.stop(); ctx.close(); }, 600);
+          } catch {}
+          // Notificación
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('⏱️ Timer WSP listo', { body: 'Ya podés mandar el próximo mensaje.' });
+          }
+          return;
+        }
+        const m = Math.floor(rem / 60000);
+        const s = Math.floor((rem % 60000) / 1000);
+        display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+        display.style.color = rem < 30000 ? '#e3b341' : 'var(--text-primary)';
+      }
+
+      startBtn.addEventListener('click', () => {
+        const mins = Math.max(0, parseFloat(minInput.value) || 0);
+        if (mins <= 0) return;
+        if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+        endAt = Date.now() + mins * 60000;
+        if (intervalId) clearInterval(intervalId);
+        intervalId = setInterval(tick, 500);
+        tick();
+      });
+      stopBtn.addEventListener('click', () => {
+        if (intervalId) clearInterval(intervalId);
+        intervalId = null;
+        display.textContent = '--:--';
+        display.style.color = 'var(--text-primary)';
+      });
+
+      // FAB toggle
+      fab.addEventListener('click', () => {
+        widget.style.display = 'flex';
+        fab.style.display = 'none';
+      });
+      const closeBtn = widget.querySelector('button[onclick]');
+      if (closeBtn) {
+        closeBtn.onclick = () => { widget.style.display = 'none'; fab.style.display = 'block'; };
+      }
+    })();
+
     // ── Sidebar colapsable ──
     const sidebarEl = document.querySelector('.sidebar');
     const menuToggleBtn = document.querySelector('.menu-toggle');
@@ -1192,7 +1261,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         sessionBtn.disabled = false;
         renderSetterLeads();
+        _showResumeLastLead();
       } catch (e) { console.error('Error cargando módulo setters:', e); }
+    }
+
+    function _showResumeLastLead() {
+      try {
+        const raw = localStorage.getItem('lastLeadWorked_' + (currentUser?.id || 'guest'));
+        if (!raw) return;
+        const info = JSON.parse(raw);
+        const exists = setterLeads.find(l => l.id === info.id);
+        const banner = document.getElementById('resume-last-lead');
+        if (!banner || !exists) return;
+        const mins = Math.round((Date.now() - (info.at || 0)) / 60000);
+        const ago = mins < 1 ? 'hace segundos' : mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins/60)}h`;
+        document.getElementById('resume-last-name').textContent = info.name || exists.name || '—';
+        document.getElementById('resume-last-ago').textContent = '(' + ago + ')';
+        banner.style.display = 'flex';
+        document.getElementById('resume-last-btn').onclick = () => window._openLeadModal(info.id);
+        document.getElementById('resume-last-dismiss').onclick = () => {
+          banner.style.display = 'none';
+          localStorage.removeItem('lastLeadWorked_' + (currentUser?.id || 'guest'));
+        };
+      } catch {}
     }
 
     function renderSetterLeads() {
@@ -1214,6 +1305,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } else if (currentPipeFilter === 'sin_contactar') {
         filtered = filtered.filter(l => !l.conexion);
+      } else if (currentPipeFilter === 'en_proceso') {
+        // En proceso = tiene algún avance pero no llegó a agendado ni está descartado/sin_wsp
+        filtered = filtered.filter(l => {
+          if (!l.conexion || l.conexion === 'sin_wsp') return false;
+          if (l.estado === 'agendado' || l.estado === 'descartado') return false;
+          return true;
+        });
       } else if (currentPipeFilter !== 'all') {
         filtered = filtered.filter(l => l.estado === currentPipeFilter);
       }
@@ -1451,6 +1549,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = setterLeads.find(l => l.id === leadId);
       if (!lead) return;
       currentModalLeadId = leadId;
+      // Guardar último lead trabajado (por usuario)
+      try { localStorage.setItem('lastLeadWorked_' + (currentUser?.id || 'guest'), JSON.stringify({ id: leadId, name: lead.name, at: Date.now() })); } catch {}
       const variant = getLeadVariant(lead);
 
       document.getElementById('modal-lead-name').textContent = lead.name;
