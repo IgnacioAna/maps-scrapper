@@ -408,19 +408,52 @@ function buildWhatsAppUrl(phone, country, message = '') {
   if (!phone) return '';
   let digits = String(phone).replace(/\D/g, '');
   if (!digits) return '';
-  const prefixMap = {
-    Argentina: '54', Chile: '56', Uruguay: '598', Colombia: '57', México: '52', Perú: '51', Ecuador: '593', Paraguay: '595', Bolivia: '591', Venezuela: '58', 'Costa Rica': '506', Panamá: '507', 'República Dominicana': '1', España: '34', 'Estados Unidos': '1', Brasil: '55'
+
+  // Normalizar país: sin acentos, lowercase, y aliases (CO, MX, etc.)
+  const normalize = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const countryAliases = {
+    argentina: '54', ar: '54',
+    chile: '56', cl: '56',
+    uruguay: '598', uy: '598',
+    colombia: '57', co: '57',
+    mexico: '52', mx: '52',
+    peru: '51', pe: '51',
+    ecuador: '593', ec: '593',
+    paraguay: '595', py: '595',
+    bolivia: '591', bo: '591',
+    venezuela: '58', ve: '58',
+    'costa rica': '506', cr: '506',
+    panama: '507', pa: '507',
+    'republica dominicana': '1', do: '1',
+    espana: '34', 'espana ': '34', es: '34',
+    'estados unidos': '1', us: '1', usa: '1',
+    brasil: '55', brazil: '55', br: '55'
   };
-  const prefix = prefixMap[country] || '';
+  const normalizedCountry = normalize(country);
+  const prefix = countryAliases[normalizedCountry] || '';
+
+  // Si ya viene con "+" internacional, respetar
   if (phone.trim().startsWith('+')) {
     return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
   }
+  // Si los dígitos ya empiezan con el prefijo del país, no duplicar
   if (prefix && digits.startsWith(prefix) && digits.length >= prefix.length + 8) {
     return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
   }
   if (digits.startsWith('0')) digits = digits.substring(1);
   if (prefix === '54' && !digits.startsWith('9') && digits.length >= 10) digits = `9${digits}`;
-  return `https://wa.me/${prefix || '1'}${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+
+  // Si no hay prefijo conocido, NO inventar +1. Intentar detectar por longitud
+  // o devolver tal cual con los dígitos raw (wa.me acepta sin +).
+  if (!prefix) {
+    // Dígitos largos (>=11) probablemente ya incluyen código de país
+    if (digits.length >= 11) {
+      return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+    }
+    // Si son cortos y no tenemos país, no podemos armar un link confiable
+    return '';
+  }
+  return `https://wa.me/${prefix}${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
 }
 
 function stageLabel(stage = '') {
@@ -2047,7 +2080,12 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
     const interesados = leads.filter(l => l.interes === 'si').length;
     const agendados = leads.filter(l => l.estado === 'agendado').length;
     const activeVar = data.variants.find(v => v.setterId === s.id) || data.variants.find(v => v.id === s.activeVariantId);
-    const mensajes = leads.reduce((sum, lead) => sum + (Array.isArray(lead.interactions) ? lead.interactions.length : 0), 0);
+    // "Mensajes" = leads con WSP enviado + interactions extra loggeadas (no double-count)
+    const mensajes = leads.reduce((sum, lead) => {
+      const base = lead.conexion === 'enviada' ? 1 : 0;
+      const extra = Array.isArray(lead.interactions) ? lead.interactions.filter(it => it.action !== 'open').length : 0;
+      return sum + base + extra;
+    }, 0);
     const aperturas = leads.reduce((sum, lead) => sum + (lead.interactions || []).filter((it) => it.action === 'open').length, 0);
     const calificaciones = leads.reduce((sum, lead) => sum + (lead.interactions || []).filter((it) => it.action === 'qualified').length, 0);
     const intereses = leads.reduce((sum, lead) => sum + (lead.interactions || []).filter((it) => it.action === 'interest').length, 0);
@@ -2073,7 +2111,12 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
     const respondieron = leads.filter(l => l.respondio).length;
     const calificados = leads.filter(l => l.calificado === true).length;
     const interesados = leads.filter(l => l.interes === 'si').length;
-    const mensajes = leads.reduce((sum, lead) => sum + (Array.isArray(lead.interactions) ? lead.interactions.length : 0), 0);
+    // "Mensajes" = leads con WSP enviado + interactions extra loggeadas (no double-count)
+    const mensajes = leads.reduce((sum, lead) => {
+      const base = lead.conexion === 'enviada' ? 1 : 0;
+      const extra = Array.isArray(lead.interactions) ? lead.interactions.filter(it => it.action !== 'open').length : 0;
+      return sum + base + extra;
+    }, 0);
     return {
       id: v.id, name: v.name, setterId: v.setterId || '', blocks: Array.isArray(v.blocks) ? v.blocks : [], total, conexiones, respondieron, calificados, interesados, mensajes,
       pctApertura: conexiones > 0 ? ((respondieron / conexiones) * 100).toFixed(1) : '0.0',
@@ -2108,7 +2151,11 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
 
   res.json({
     totals: { total, conexiones, respondieron, calificados, interesados, agendados, sinWsp,
-      mensajes: allLeads.reduce((sum, lead) => sum + (Array.isArray(lead.interactions) ? lead.interactions.length : 0), 0),
+      mensajes: allLeads.reduce((sum, lead) => {
+        const base = lead.conexion === 'enviada' ? 1 : 0;
+        const extra = Array.isArray(lead.interactions) ? lead.interactions.filter(it => it.action !== 'open').length : 0;
+        return sum + base + extra;
+      }, 0),
       pctConexion: total > 0 ? ((conexiones / total) * 100).toFixed(1) : '0.0',
       pctApertura: conexiones > 0 ? ((respondieron / conexiones) * 100).toFixed(1) : '0.0',
       pctCalificacion: calificados > 0 ? ((interesados / calificados) * 100).toFixed(1) : '0.0'

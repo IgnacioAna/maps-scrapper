@@ -39,6 +39,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const logoutBtn = document.getElementById('logout-btn');
     let currentUser = null;
 
+    // ── Sidebar colapsable ──
+    const sidebarEl = document.querySelector('.sidebar');
+    const menuToggleBtn = document.querySelector('.menu-toggle');
+    if (sidebarEl && menuToggleBtn) {
+      if (localStorage.getItem('sidebarCollapsed') === '1') sidebarEl.classList.add('collapsed');
+      menuToggleBtn.addEventListener('click', () => {
+        sidebarEl.classList.toggle('collapsed');
+        localStorage.setItem('sidebarCollapsed', sidebarEl.classList.contains('collapsed') ? '1' : '0');
+      });
+    }
+
     const authResp = await fetch(apiUrl('/api/auth/me'));
     const authState = await authResp.json();
     if (!authState.authenticated) {
@@ -1314,8 +1325,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             '</select>' +
             (varName ? '<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">' + escHtml(varName.name) + '</div>' : '') +
           '</td>' +
-          '<td style="font-size:11px; color:var(--text-secondary);">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:#e3b341;font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text).substring(0, 25) + (lastNote.text.length > 25 ? '...' : '') : '') + '</td>' +
-          '<td style="font-size:11px;">' + escHtml(doctorClean).substring(0, 14) + '</td>' +
+          '<td style="font-size:11px; color:var(--text-secondary); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (lastNote ? escHtml(lastNote.text) : '') + '">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:#e3b341;font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text) : '') + '</td>' +
+          '<td style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escHtml(doctorClean) + '">' + escHtml(doctorClean) + '</td>' +
           '<td style="text-align:center;">' +
             (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#e1306c;">IG</a>' : '') +
             (lead.facebook ? '<a href="' + escHtml(lead.facebook) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#1877f2; margin-left:4px;">FB</a>' : '') +
@@ -2062,16 +2073,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           '</tr>'
         ).join('');
 
-        document.getElementById('cmd-block-body').innerHTML = (data.perBlock || []).map(b =>
-          '<tr>' +
-          '<td style="font-weight:600; color:#e3b341;">' + escHtml(b.variantName) + '</td>' +
-          '<td>' + escHtml(b.label) + '</td>' +
-          '<td>' + (b.usedCount || 0) + '</td>' +
-          '<td>' + (b.interestedCount || 0) + '</td>' +
-          '<td style="color:var(--primary-color);">' + (b.pctInterest || '0.0') + '%</td>' +
-          '</tr>'
-        ).join('');
-
         const summary = document.getElementById('admin-variable-summary');
         if (summary) {
           const vars = data.perVariant || [];
@@ -2784,31 +2785,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     const canEdit = isAdmin || isOwner;
     const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
     const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
-    const tags = (e.tags || []).map(t => `<span style="background:var(--border-color);padding:2px 6px;border-radius:10px;font-size:10px;">${escHtml(t)}</span>`).join(' ');
-    const authorBadge = e.createdBy ? `<span style="font-size:10px;color:var(--text-secondary);">por ${escHtml(e.createdBy)}</span>` : '';
-    return `<div class="faq-card" style="background:var(--surface-color);border:1px solid var(--border-color);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+    const tags = (e.tags || []).map(t => `<span style="background:rgba(88,166,255,0.12);color:#79b8ff;padding:3px 8px;border-radius:10px;font-size:10px;border:1px solid rgba(88,166,255,0.25);">#${escHtml(t)}</span>`).join(' ');
+    const authorBadge = e.createdBy ? `<span style="font-size:10px;color:var(--text-secondary);">· ${escHtml(e.createdBy)}</span>` : '';
+    return `<div class="faq-card" style="background:linear-gradient(180deg, var(--surface-color) 0%, rgba(255,255,255,0.01) 100%);border:1px solid var(--border-color);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(0,0,0,0.2);transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:11px;color:var(--primary-color);font-weight:600;">${escHtml(catLabel)}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:11px;color:var(--primary-color);font-weight:700;letter-spacing:0.3px;text-transform:uppercase;">${escHtml(catLabel)}</span>
             ${authorBadge}
           </div>
-          <p style="font-size:14px;font-weight:600;margin:4px 0 0;color:var(--text-primary);">${escHtml(e.pregunta)}</p>
+          <p style="font-size:15px;font-weight:600;margin:6px 0 0;color:var(--text-primary);line-height:1.4;">${escHtml(e.pregunta)}</p>
         </div>
-        ${canEdit ? `<div style="display:flex;gap:6px;flex-shrink:0;">
-          <button class="btn-table-action" style="font-size:11px;padding:3px 8px;" onclick="window._faqOpenModal('${escHtml(e.id)}')">✏️</button>
-          <button class="btn-table-action" style="font-size:11px;padding:3px 8px;color:#f85149;" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
+        ${canEdit ? `<div style="display:flex;gap:4px;flex-shrink:0;">
+          <button class="btn-table-action" style="font-size:12px;padding:4px 8px;" title="Editar" onclick="window._faqOpenModal('${escHtml(e.id)}')">✏️</button>
+          <button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:#f85149;" title="Eliminar" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
         </div>` : ''}
       </div>
-      <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;white-space:pre-wrap;margin:0;">${escHtml(e.respuesta)}</p>
-      ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${tags}</div>` : ''}
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+      <div style="background:var(--bg-color);border-left:3px solid var(--primary-color);padding:10px 12px;border-radius:6px;">
+        <p style="font-size:13px;color:var(--text-primary);line-height:1.55;white-space:pre-wrap;margin:0;">${escHtml(e.respuesta)}</p>
+      </div>
+      ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${tags}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
         <div style="font-size:11px;color:var(--text-secondary);">
-          ${e.usos > 0 ? `Usado ${e.usos}x · ${pctFuncionaron}% funcionó` : 'Sin usos aún'}
+          ${e.usos > 0 ? `<strong style="color:var(--text-primary);">${e.usos}</strong> usos · <strong style="color:#5bb974;">${pctFuncionaron}%</strong> funcionó` : '<em>Sin usos aún</em>'}
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn-table-action" style="font-size:11px;padding:4px 10px;color:#5bb974;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
-          <button class="btn-table-action" style="font-size:11px;padding:4px 10px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:#5bb974;font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
         </div>
       </div>
     </div>`;

@@ -115,6 +115,37 @@ body {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+/* Sidebar colapsado: sólo íconos/emojis visibles */
+.sidebar.collapsed {
+  width: 64px;
+}
+.sidebar.collapsed .logo h1,
+.sidebar.collapsed .menu-group-label,
+.sidebar.collapsed #logout-btn,
+.sidebar.collapsed .sidebar-footer {
+  display: none !important;
+}
+.sidebar.collapsed .menu-item {
+  justify-content: center;
+  padding: 10px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  width: 40px;
+  margin: 4px auto;
+  font-size: 0;
+}
+.sidebar.collapsed .menu-item > span {
+  font-size: 18px;
+  width: 24px;
+  overflow: hidden;
+  display: inline-block;
+}
+.sidebar.collapsed .sidebar-header {
+  padding: 0 12px;
+  justify-content: center;
 }
 
 .sidebar-header {
