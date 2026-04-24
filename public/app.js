@@ -2743,8 +2743,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       mapsMenuItem?.click();
     }
 
-  });
-
   // ══════════════════════════════════════════════════════════════
   // ── MÓDULO FAQ / BANCO DE RESPUESTAS ──
   // ══════════════════════════════════════════════════════════════
@@ -2918,3 +2916,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.disabled = false;
     }
   };
+
+  });
