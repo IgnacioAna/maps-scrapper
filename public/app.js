@@ -1526,15 +1526,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); }
     };
 
-    // Follow-up toggle
+    // Follow-up toggle (determinístico: usa estado del checkbox)
     window._toggleFU = async (el) => {
       const id = el.dataset.id;
       const step = el.dataset.step;
+      const value = !!el.checked;
       try {
-        await fetch(apiUrl('/api/setters/leads/' + id + '/followup'), {
+        const resp = await fetch(apiUrl('/api/setters/leads/' + id + '/followup'), {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step })
+          body: JSON.stringify({ step, value })
         });
+        const data = await resp.json();
+        // Actualizar estado local para evitar desync
+        const idx = setterLeads.findIndex(l => l.id === id);
+        if (idx >= 0 && data.followUps) {
+          setterLeads[idx].followUps = data.followUps;
+          setterLeads[idx].lastContactAt = data.lead?.lastContactAt || setterLeads[idx].lastContactAt;
+        }
+        _updateStatsLocal();
       } catch (e) { console.error(e); }
     };
 
@@ -1843,8 +1852,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       let allVariants = data.variants || [];
       const isAdmin = currentUser?.role === 'admin';
       const mySetterId = currentUser?.setterId || '';
-      // Setters sólo ven sus propias variables
-      variantsList = isAdmin ? allVariants : allVariants.filter(v => v.setterId === mySetterId);
+      // Setters ven variables propias + las compartidas con ellos
+      variantsList = isAdmin ? allVariants : allVariants.filter(v => v.setterId === mySetterId || (Array.isArray(v.sharedWith) && v.sharedWith.includes(mySetterId)));
       const list = document.getElementById('variants-list');
       renderVariantEditor();
 
@@ -1928,6 +1937,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm('Eliminar este setter y dejar sus variables sin asignar?')) return;
       await fetch(apiUrl('/api/setters/team/' + setterId), { method: 'DELETE' });
       loadCommandCenter();
+    };
+
+    window._toggleShareVariant = async (varId, setterId, shared) => {
+      try {
+        // Obtener estado actual
+        const resp = await fetch(apiUrl('/api/setters/variants'));
+        const data = await resp.json();
+        const v = (data.variants || []).find(x => x.id === varId);
+        if (!v) return;
+        const current = Array.isArray(v.sharedWith) ? v.sharedWith : [];
+        let newShared;
+        if (shared && !current.includes(setterId)) newShared = [...current, setterId];
+        else if (!shared) newShared = current.filter(id => id !== setterId);
+        else newShared = current;
+        await fetch(apiUrl('/api/setters/variants/' + varId), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sharedWith: newShared })
+        });
+        loadCommandCenter();
+      } catch (e) { console.error(e); alert('Error: ' + e.message); }
     };
 
     window._editSetter = async (setterId, currentName) => {
@@ -2251,6 +2280,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '<span style="font-size:12px; color:var(--text-secondary);">Asignar rápido:</span>' +
                     setters.map(s => '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--primary-color);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'' + s.id + '\')">' + escHtml(s.name) + '</button>').join('') +
                     '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:#f85149;" onclick="window._assignVariantSetter(\'' + v.id + '\', \'\')">Quitar</button>' +
+                  '</div>' +
+                  '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px dashed var(--border-color);">' +
+                    '<span style="font-size:12px; color:var(--text-secondary);">🔗 Compartir también con:</span>' +
+                    setters.filter(s => s.id !== v.setterId).map(s => {
+                      const shared = Array.isArray(v.sharedWith) && v.sharedWith.includes(s.id);
+                      return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;background:' + (shared ? 'rgba(125,211,252,0.15)' : 'transparent') + ';padding:3px 8px;border-radius:10px;border:1px solid ' + (shared ? '#7dd3fc' : 'var(--border-color)') + ';">' +
+                        '<input type="checkbox" ' + (shared ? 'checked' : '') + ' onchange="window._toggleShareVariant(\'' + v.id + '\',\'' + s.id + '\',this.checked)">' + escHtml(s.name) + '</label>';
+                    }).join('') +
                   '</div>' +
                 '</div>' +
                 '<details style="margin-top:10px;">' +
@@ -3039,5 +3076,145 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.disabled = false;
     }
   };
+
+  // ══════════════════════════════════════════════════════════════
+  // ── CENTRO DE ENTRENAMIENTO ──
+  // ══════════════════════════════════════════════════════════════
+  window.loadTrainingModule = async function() {
+    const list = document.getElementById('training-list');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--text-secondary)">Cargando...</p>';
+    try {
+      const resp = await fetch(apiUrl('/api/training'));
+      const data = await resp.json();
+      const q = (document.getElementById('training-search')?.value || '').trim().toLowerCase();
+      const isAdmin = currentUser?.role === 'admin';
+      let materials = data.materials || [];
+      if (q) materials = materials.filter(m => (m.title + ' ' + (m.description||'') + ' ' + (m.extractedText||'')).toLowerCase().includes(q));
+      if (materials.length === 0) {
+        list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-secondary);">' +
+          '<div style="font-size:40px;margin-bottom:12px;">🎓</div>' +
+          '<p style="font-size:15px;">No hay materiales cargados aún.</p>' +
+          (isAdmin ? '<p style="font-size:13px;">Subí PDFs, docs o guiones para que los setters aprendan y la IA los use como base de verdad.</p>' : '') +
+          '</div>';
+        return;
+      }
+      list.innerHTML = materials.map(m => {
+        const sizeKb = m.sizeBytes ? (m.sizeBytes / 1024).toFixed(1) + ' KB' : '';
+        const icon = m.mimeType?.includes('pdf') ? '📄' :
+                     m.mimeType?.includes('word') || m.mimeType?.includes('doc') ? '📝' :
+                     m.mimeType?.includes('image') ? '🖼️' :
+                     m.mimeType?.includes('video') ? '🎬' :
+                     m.mimeType?.includes('audio') ? '🎧' : '📄';
+        const hasText = !!(m.extractedText || m.description);
+        return '<div style="background:linear-gradient(180deg, var(--surface-color) 0%, rgba(255,255,255,0.01) 100%);border:1px solid var(--border-color);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">' +
+            '<div style="flex:1;min-width:0;">' +
+              '<div style="font-size:28px;">' + icon + '</div>' +
+              '<p style="font-size:15px;font-weight:600;margin:6px 0 0;color:var(--text-primary);">' + escHtml(m.title) + '</p>' +
+              (m.description ? '<p style="font-size:12px;color:var(--text-secondary);margin:4px 0 0;">' + escHtml(m.description) + '</p>' : '') +
+            '</div>' +
+            (isAdmin ? '<div style="display:flex;gap:4px;flex-shrink:0;">' +
+              '<button class="btn-table-action" style="font-size:12px;padding:4px 8px;" title="Editar" onclick="window._trainingOpenModal(\'' + escHtml(m.id) + '\')">✏️</button>' +
+              '<button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:#f85149;" title="Eliminar" onclick="window._trainingDelete(\'' + escHtml(m.id) + '\')">🗑️</button>' +
+            '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">' +
+            (hasText ? '<span style="background:rgba(91,185,116,0.15);color:#5bb974;padding:2px 8px;border-radius:10px;">🤖 IA lo usa</span>' : '<span style="background:rgba(248,81,73,0.12);color:#f85149;padding:2px 8px;border-radius:10px;">⚠️ Sin texto IA</span>') +
+            (sizeKb ? '<span style="color:var(--text-secondary);">' + sizeKb + '</span>' : '') +
+            (m.createdBy ? '<span style="color:var(--text-secondary);">· ' + escHtml(m.createdBy) + '</span>' : '') +
+          '</div>' +
+          (m.hasFile ? '<a href="' + apiUrl('/api/training/' + m.id + '/download') + '" class="btn-table-action" style="text-align:center;text-decoration:none;color:var(--primary-color);padding:8px;">⬇ Descargar archivo</a>' : '') +
+        '</div>';
+      }).join('');
+    } catch(err) {
+      list.innerHTML = '<p style="color:#f85149;">Error cargando materiales: ' + err.message + '</p>';
+    }
+  };
+
+  window._trainingOpenModal = async (id = null) => {
+    document.getElementById('training-edit-id').value = id || '';
+    document.getElementById('training-modal-title').textContent = id ? 'Editar material' : 'Nuevo material';
+    document.getElementById('training-title').value = '';
+    document.getElementById('training-description').value = '';
+    document.getElementById('training-extracted').value = '';
+    document.getElementById('training-file').value = '';
+    document.getElementById('training-file-info').textContent = '';
+    if (id) {
+      try {
+        const resp = await fetch(apiUrl('/api/training'));
+        const data = await resp.json();
+        const m = (data.materials || []).find(x => x.id === id);
+        if (m) {
+          document.getElementById('training-title').value = m.title || '';
+          document.getElementById('training-description').value = m.description || '';
+          document.getElementById('training-extracted').value = m.extractedText || '';
+          if (m.fileName) document.getElementById('training-file-info').textContent = 'Archivo actual: ' + (m.originalFileName || m.fileName) + ' (no se puede reemplazar, sólo editar texto)';
+        }
+      } catch {}
+    }
+    document.getElementById('training-modal').classList.remove('hidden');
+    document.getElementById('training-title').focus();
+  };
+
+  window._trainingSave = async () => {
+    const id = document.getElementById('training-edit-id').value;
+    const title = document.getElementById('training-title').value.trim();
+    const description = document.getElementById('training-description').value.trim();
+    const extractedText = document.getElementById('training-extracted').value.trim();
+    const fileInput = document.getElementById('training-file');
+    if (!title) { alert('Completá el título.'); return; }
+    try {
+      if (id) {
+        // Edit — sólo metadata
+        await fetch(apiUrl('/api/training/' + id), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, extractedText })
+        });
+      } else {
+        const payload = { title, description, extractedText };
+        const file = fileInput.files?.[0];
+        if (file) {
+          if (file.size > 10 * 1024 * 1024) { alert('Archivo supera 10MB.'); return; }
+          const buf = await file.arrayBuffer();
+          // Convertir a base64 eficientemente
+          let binary = '';
+          const bytes = new Uint8Array(buf);
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+          payload.fileBase64 = btoa(binary);
+          payload.fileName = file.name;
+          payload.mimeType = file.type;
+        }
+        const resp = await fetch(apiUrl('/api/training'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) { const err = await resp.json().catch(()=>({})); alert('Error: ' + (err.error || 'no se pudo subir')); return; }
+      }
+      document.getElementById('training-modal').classList.add('hidden');
+      loadTrainingModule();
+    } catch(err) { alert('Error: ' + err.message); }
+  };
+
+  window._trainingDelete = async (id) => {
+    if (!confirm('¿Eliminar este material?')) return;
+    try {
+      await fetch(apiUrl('/api/training/' + id), { method: 'DELETE' });
+      loadTrainingModule();
+    } catch(err) { alert('Error: ' + err.message); }
+  };
+
+  // File info preview
+  document.getElementById('training-file')?.addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    const info = document.getElementById('training-file-info');
+    if (f) info.textContent = `${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+    else info.textContent = '';
+  });
+
+  // Auto-cargar cuando se abre la vista
+  document.querySelector('[data-target="view-training"]')?.addEventListener('click', () => {
+    setTimeout(() => loadTrainingModule(), 50);
+  });
 
   });

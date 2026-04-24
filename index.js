@@ -268,6 +268,7 @@ function normalizeVariantRecord(variant = {}) {
     weekLabel: String(variant.weekLabel || '').trim(),
     active: variant.active !== false,
     setterId: String(variant.setterId || variant.ownerSetterId || '').trim(),
+    sharedWith: Array.isArray(variant.sharedWith) ? variant.sharedWith.filter(Boolean).map(String) : [],
     usedCount: Number.isFinite(Number(variant.usedCount)) ? Number(variant.usedCount) : 0,
     blocks,
     messages,
@@ -926,7 +927,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -1502,6 +1503,7 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
   data.setters = data.setters.filter(s => s.id !== req.params.id);
   data.variants = data.variants.map((variant) => {
     if (variant.setterId === req.params.id) variant.setterId = '';
+    if (Array.isArray(variant.sharedWith)) variant.sharedWith = variant.sharedWith.filter(id => id !== req.params.id);
     return variant;
   });
   saveSettersData(data);
@@ -1558,6 +1560,10 @@ app.patch('/api/setters/variants/:id', requireAuth, (req, res) => {
   if (req.body.name) v.name = req.body.name;
   if (req.body.weekLabel) v.weekLabel = req.body.weekLabel;
   if (req.body.setterId !== undefined) v.setterId = req.body.setterId;
+  // sharedWith: sólo admin puede modificarlo
+  if (req.body.sharedWith !== undefined && role === 'admin') {
+    v.sharedWith = Array.isArray(req.body.sharedWith) ? req.body.sharedWith.filter(Boolean).map(String) : [];
+  }
   if (req.body.blocks) v.blocks = req.body.blocks.map((block, index) => normalizeBlockRecord(block, index)).filter((block) => block.text);
   if (req.body.messages) v.blocks = variantBlocksFromMessages({ ...v.messages, ...req.body.messages });
   if (req.body.active !== undefined) v.active = req.body.active;
@@ -1905,7 +1911,7 @@ app.post('/api/setters/leads/:id/interaction', requireAuth, (req, res) => {
 
 // Follow-up toggle
 app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
-  const { step } = req.body;
+  const { step, value } = req.body;
   const valid = ['24hs', '48hs', '72hs', '7d', '15d'];
   if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
   const data = loadSettersData();
@@ -1915,10 +1921,15 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
   if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
-  lead.followUps[step] = !lead.followUps[step];
+  // Si viene value explícito, usarlo (determinístico). Si no, toggle (legacy).
+  if (typeof value === 'boolean') {
+    lead.followUps[step] = value;
+  } else {
+    lead.followUps[step] = !lead.followUps[step];
+  }
   lead.lastContactAt = new Date().toISOString();
   saveSettersData(data);
-  res.json({ ok: true, followUps: lead.followUps });
+  res.json({ ok: true, followUps: lead.followUps, lead: { id: req.params.id, ...lead } });
 });
 
 // Notas
@@ -2107,7 +2118,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
     const calificados = leads.filter(l => l.calificado === true).length;
     const interesados = leads.filter(l => l.interes === 'si').length;
     const agendados = leads.filter(l => l.estado === 'agendado').length;
-    const activeVar = data.variants.find(v => v.setterId === s.id) || data.variants.find(v => v.id === s.activeVariantId);
+    const activeVar = data.variants.find(v => v.setterId === s.id || (Array.isArray(v.sharedWith) && v.sharedWith.includes(s.id))) || data.variants.find(v => v.id === s.activeVariantId);
     // "Mensajes" = leads con WSP enviado + interactions extra loggeadas (no double-count)
     const mensajes = leads.reduce((sum, lead) => {
       const base = lead.conexion === 'enviada' ? 1 : 0;
@@ -2666,8 +2677,24 @@ app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
     ? similares.map((e, i) => `Ejemplo ${i+1}:\nPregunta: ${e.pregunta}\nRespuesta: ${e.respuesta}`).join('\n\n')
     : 'No hay ejemplos previos similares.';
 
-  const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) de forma profesional, cálida y breve.
+  // Incluir material del Centro de Entrenamiento como contexto base
+  let trainingContext = '';
+  try {
+    const tData = loadTraining();
+    const chunks = (tData.materials || [])
+      .map(m => {
+        const body = (m.extractedText || m.description || '').trim();
+        if (!body) return '';
+        return `- ${m.title}:\n${body.substring(0, 1200)}`;
+      })
+      .filter(Boolean);
+    if (chunks.length > 0) {
+      trainingContext = `\nMATERIAL DE ENTRENAMIENTO DE LA AGENCIA (usá esta info como base de verdad sobre SCM Dental):\n${chunks.join('\n\n')}\n`;
+    }
+  } catch {}
 
+  const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) de forma profesional, cálida y breve.
+${trainingContext}
 ${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
 ${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
 PREGUNTA/OBJECIÓN DEL LEAD: ${pregunta}
@@ -2675,7 +2702,7 @@ PREGUNTA/OBJECIÓN DEL LEAD: ${pregunta}
 EJEMPLOS DE RESPUESTAS EXITOSAS ANTERIORES:
 ${ejemplosTexto}
 
-Genera UNA respuesta en español, en tono profesional pero cercano, de máximo 4 líneas. Usa [Nombre del Doctor] o [Nombre de la clínica] como placeholders si necesitás personalizar. Responde SOLO con el texto de la respuesta, sin explicaciones, sin comillas, sin formato markdown.`;
+Genera UNA respuesta en español, en tono profesional pero cercano, de máximo 4 líneas. Usa [Nombre del Doctor] o [Nombre de la clínica] como placeholders si necesitás personalizar. Respetá los hechos del material de entrenamiento si aplican. Responde SOLO con el texto de la respuesta, sin explicaciones, sin comillas, sin formato markdown.`;
 
   try {
     const completion = await ai.chat.completions.create({
@@ -2690,6 +2717,120 @@ Genera UNA respuesta en español, en tono profesional pero cercano, de máximo 4
     console.error('Error FAQ suggest IA:', e.message);
     res.status(500).json({ error: 'Error de IA: ' + e.message });
   }
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── CENTRO DE ENTRENAMIENTO ──
+// Archivos PDF/DOC/TXT/imagen + texto descriptivo para que los
+// setters nuevos aprendan. Se guarda binario en /data/training/
+// y metadata en training.json. El texto descriptivo se usa como
+// contexto adicional para la IA del Banco de Respuestas.
+// ══════════════════════════════════════════════════════════════
+const TRAINING_FILE = path.join(DATA_DIR, 'training.json');
+const TRAINING_DIR = path.join(DATA_DIR, 'training');
+
+function loadTraining() {
+  try {
+    if (!fs.existsSync(TRAINING_FILE)) return { materials: [] };
+    return JSON.parse(fs.readFileSync(TRAINING_FILE, 'utf8'));
+  } catch { return { materials: [] }; }
+}
+function saveTraining(data) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(TRAINING_FILE, JSON.stringify(data, null, 2), 'utf8');
+}
+
+// GET list
+app.get('/api/training', requireAuth, (_req, res) => {
+  const data = loadTraining();
+  // No devolver base64 en list — sólo metadata
+  const materials = (data.materials || []).map(m => ({
+    id: m.id, title: m.title, description: m.description || '',
+    extractedText: m.extractedText || '',
+    fileName: m.fileName || '', mimeType: m.mimeType || '',
+    sizeBytes: m.sizeBytes || 0,
+    createdBy: m.createdBy || '', createdAt: m.createdAt,
+    hasFile: !!m.fileName
+  }));
+  res.json({ materials });
+});
+
+// POST upload (admin)
+app.post('/api/training', requireAuth, requireRole('admin'), (req, res) => {
+  const { title, description = '', extractedText = '', fileName = '', mimeType = '', fileBase64 = '' } = req.body || {};
+  if (!title?.trim()) return res.status(400).json({ error: 'Título requerido.' });
+  if (!description.trim() && !extractedText.trim() && !fileBase64) {
+    return res.status(400).json({ error: 'Subí un archivo o agregá descripción/texto.' });
+  }
+  const data = loadTraining();
+  const id = `train_${Date.now()}`;
+  let storedFileName = '';
+  let sizeBytes = 0;
+  if (fileBase64 && fileName) {
+    try {
+      if (!fs.existsSync(TRAINING_DIR)) fs.mkdirSync(TRAINING_DIR, { recursive: true });
+      const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      storedFileName = `${id}_${safeName}`;
+      const buffer = Buffer.from(fileBase64, 'base64');
+      sizeBytes = buffer.length;
+      // Límite 10MB
+      if (sizeBytes > 10 * 1024 * 1024) return res.status(400).json({ error: 'Archivo supera 10MB.' });
+      fs.writeFileSync(path.join(TRAINING_DIR, storedFileName), buffer);
+    } catch (e) {
+      return res.status(500).json({ error: 'Error guardando archivo: ' + e.message });
+    }
+  }
+  const material = {
+    id, title: title.trim(),
+    description: description.trim(),
+    extractedText: extractedText.trim(),
+    fileName: storedFileName,
+    originalFileName: fileName,
+    mimeType, sizeBytes,
+    createdBy: req.auth?.user?.name || req.auth?.user?.email || 'Admin',
+    createdAt: new Date().toISOString()
+  };
+  data.materials = data.materials || [];
+  data.materials.push(material);
+  saveTraining(data);
+  res.json({ ok: true, material: { ...material, hasFile: !!material.fileName } });
+});
+
+// GET download
+app.get('/api/training/:id/download', requireAuth, (req, res) => {
+  const data = loadTraining();
+  const m = (data.materials || []).find(x => x.id === req.params.id);
+  if (!m || !m.fileName) return res.status(404).json({ error: 'Archivo no encontrado.' });
+  const filePath = path.join(TRAINING_DIR, m.fileName);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo faltante en disco.' });
+  res.setHeader('Content-Type', m.mimeType || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `attachment; filename="${m.originalFileName || m.fileName}"`);
+  fs.createReadStream(filePath).pipe(res);
+});
+
+// PATCH update (admin)
+app.patch('/api/training/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadTraining();
+  const m = (data.materials || []).find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: 'Material no encontrado.' });
+  if (req.body.title !== undefined) m.title = String(req.body.title).trim();
+  if (req.body.description !== undefined) m.description = String(req.body.description).trim();
+  if (req.body.extractedText !== undefined) m.extractedText = String(req.body.extractedText).trim();
+  saveTraining(data);
+  res.json({ ok: true });
+});
+
+// DELETE (admin)
+app.delete('/api/training/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadTraining();
+  const m = (data.materials || []).find(x => x.id === req.params.id);
+  if (!m) return res.status(404).json({ error: 'No encontrado.' });
+  if (m.fileName) {
+    try { fs.unlinkSync(path.join(TRAINING_DIR, m.fileName)); } catch {}
+  }
+  data.materials = data.materials.filter(x => x.id !== req.params.id);
+  saveTraining(data);
+  res.json({ ok: true });
 });
 
 // Global error handler — atrapa errores no capturados en rutas async

@@ -86,6 +86,9 @@
           <a href="#" class="menu-item" data-target="view-faqs">
             <span>📚 Banco de Respuestas</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-training">
+            <span>🎓 Centro de Entrenamiento</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-command" data-roles="admin">
             <span>🎯 Centro de Comando</span>
           </a>
@@ -598,6 +601,56 @@
         </div>
       </div>
 
+      <!-- VISTA: CENTRO DE ENTRENAMIENTO -->
+      <div id="view-training" class="module-view hidden">
+        <div class="content-header">
+          <h2>🎓 Centro de Entrenamiento</h2>
+          <div class="header-actions">
+            <input type="text" id="training-search" placeholder="Buscar material..." style="padding:8px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--surface-color);color:var(--text-primary);font-size:13px;width:260px;" oninput="window.loadTrainingModule && loadTrainingModule()">
+            <button class="btn-primary pill-btn" data-roles="admin" onclick="window._trainingOpenModal()">+ Subir material</button>
+          </div>
+        </div>
+        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Material de referencia para setters. PDFs, docs, videos, guiones. El contenido descriptivo/texto se usa como base de verdad por la IA del Banco de Respuestas.</p>
+        <div id="training-list" style="padding:0 32px 32px; display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;">
+          <p style="color:var(--text-secondary)">Cargando...</p>
+        </div>
+      </div>
+
+      <!-- Modal subir material -->
+      <div id="training-modal" class="modal-overlay hidden" style="z-index:1100;">
+        <div class="modal-card" style="max-width:680px;width:95vw;">
+          <div class="modal-header">
+            <h3 id="training-modal-title">Nuevo material</h3>
+            <button onclick="document.getElementById('training-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+            <input type="hidden" id="training-edit-id">
+            <div>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Título *</label>
+              <input type="text" id="training-title" placeholder="Ej: Guión llamada fría clínicas dentales" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Descripción corta</label>
+              <input type="text" id="training-description" placeholder="Ej: Guión completo para primera llamada" style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:14px;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Archivo (PDF, DOC, TXT, imagen — máx 10MB)</label>
+              <input type="file" id="training-file" accept=".pdf,.doc,.docx,.txt,.md,.png,.jpg,.jpeg,.mp4,.mp3" style="width:100%;font-size:13px;">
+              <div id="training-file-info" style="font-size:11px; color:var(--text-secondary); margin-top:4px;"></div>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">📖 Contenido para la IA (pegar texto del material para que aprenda)</label>
+              <textarea id="training-extracted" rows="8" placeholder="Pegá acá el texto del PDF/doc, o escribí un resumen. Esto es lo que la IA del Banco de Respuestas va a usar como base de verdad cuando genere respuestas." style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Sin este texto la IA no puede usar el material. Los PDFs no se extraen automáticamente.</div>
+            </div>
+          </div>
+          <div class="modal-footer" style="padding:16px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--border-color);">
+            <button onclick="document.getElementById('training-modal').classList.add('hidden')" class="btn-table-action">Cancelar</button>
+            <button onclick="window._trainingSave()" class="btn-primary pill-btn">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- VISTA 5: CENTRO DE COMANDO -->
       <div id="view-command" class="module-view hidden" data-roles="admin">
         <div class="content-header">
@@ -801,6 +854,6 @@
   </div>
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
-  <script type="module" src="/app.js?v=20260423d"></script>
+  <script type="module" src="/app.js?v=20260424a"></script>
 </body>
 </html>
