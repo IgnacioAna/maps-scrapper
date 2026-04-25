@@ -121,6 +121,10 @@ body {
 /* Sidebar colapsado: sólo íconos/emojis visibles */
 .sidebar.collapsed {
   width: 68px;
+  overflow-x: hidden;
+}
+.sidebar.collapsed .menu-group {
+  overflow-x: hidden;
 }
 .sidebar.collapsed .logo h1,
 .sidebar.collapsed .menu-group-label,
@@ -131,24 +135,23 @@ body {
 .sidebar.collapsed .menu-item {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-start;
+  padding: 0 0 0 14px;
   margin: 6px auto;
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  font-size: 0;
   position: relative;
   gap: 0;
-  overflow: visible;
+  overflow: hidden;
+  white-space: nowrap;
 }
-.sidebar.collapsed .menu-item > span:first-child {
+.sidebar.collapsed .menu-item > span {
   font-size: 20px;
   line-height: 1;
   display: inline-block;
-}
-.sidebar.collapsed .menu-item > *:not(:first-child) {
-  display: none !important;
+  width: auto;
+  flex-shrink: 0;
 }
 .sidebar.collapsed .menu-item:hover::after {
   content: attr(data-label);
