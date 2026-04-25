@@ -3301,8 +3301,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           </span>
         </div>
         <div style="height:2px; width:36px; background:linear-gradient(90deg, #A78BFA, transparent); margin-bottom:12px;"></div>
-        <div style="color:var(--text-primary); font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
-        <div style="color:var(--text-secondary); font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
+        <div style="color:#E6EDF3; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
+        <div style="color:#B8C2CC; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
           <span style="font-size:11px; color:var(--text-secondary);">⏱ ~${m.minutes} min</span>
           <span style="font-size:11px; color:#5bb974; background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">🤖 IA lo usa</span>

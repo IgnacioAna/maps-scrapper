@@ -46,7 +46,21 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(PORT=3099 timeout 6 node index.js)"
+      "Bash(PORT=3099 timeout 6 node index.js)",
+      "Bash(grep -oE \"\\(--accent|--accent-soft|--text-primary|--text-secondary|--text-muted|--success|--warning|--danger\\)[^;{,]*\" public/onboarding/files/scm-onboarding-modulo1.html)",
+      "Bash(node --check public/onboarding/quiz.js)",
+      "Bash(PORT=3099 node index.js)",
+      "Bash(curl -s \"http://localhost:3099/onboarding/files/scm-onboarding-modulo1.html\")",
+      "Bash(curl -s \"http://localhost:3099/onboarding/quiz-data.json\")",
+      "Bash(curl -s \"http://localhost:3099/onboarding/quiz.js\")",
+      "Bash(curl -s \"http://localhost:3099/onboarding/1\")",
+      "Bash(grep -n \"app.use\\(express.static\\\\|app.get\\(/\\\\^\\\\\\\\\\\\\\\\/onboarding\\\\|app.get\\('/onboarding\" index.js)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:3099/onboarding/1\")",
+      "Bash(pkill -f \"node index\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3099 -ErrorAction SilentlyContinue | Select-Object LocalAddress, OwningProcess\")",
+      "PowerShell(Stop-Process -Id 15996 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force)",
+      "PowerShell(\"Done\")"
     ]
   }
 }

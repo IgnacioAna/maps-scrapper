@@ -1,0 +1,64 @@
+{
+  "_descripcion": "Quiz oficial del onboarding SCM. Cada módulo: 5 preguntas multiple-choice con 3 opciones. Aprobás con 4 correctas. 'correcta' es el índice 0-based.",
+  "modulo1": {
+    "preguntas": [
+      {
+        "pregunta": "¿Cuál es el problema principal que SCM resuelve para las clínicas dentales?",
+        "opciones": [
+          "a) Diseñar páginas web bonitas",
+          "b) Llenar la agenda con pacientes que sí se presentan al turno",
+          "c) Vender productos de higiene dental"
+        ],
+        "correcta": 1,
+        "explicacion": "SCM existe para que las clínicas tengan agenda llena de pacientes calificados que efectivamente vienen al turno, no para tareas de diseño o venta de productos."
+      },
+      {
+        "pregunta": "¿Por qué la clínica dental promedio no resuelve esto sola?",
+        "opciones": [
+          "a) Porque no quiere más pacientes",
+          "b) Porque el dueño es dentista, no marketer, y no tiene tiempo ni sistema",
+          "c) Porque las redes sociales no funcionan en odontología"
+        ],
+        "correcta": 1,
+        "explicacion": "El dentista promedio es excelente clínicamente pero no tiene formación ni tiempo para construir un sistema de adquisición de pacientes. Por eso terceriza."
+      },
+      {
+        "pregunta": "¿Qué es lo que efectivamente compra la clínica cuando contrata SCM?",
+        "opciones": [
+          "a) Anuncios en Facebook",
+          "b) Tiempo de hacerlo bien sin tener que aprenderlo",
+          "c) Una página web nueva"
+        ],
+        "correcta": 1,
+        "explicacion": "La clínica compra tiempo y resultado: que alguien que sabe haga el trabajo de captar y calificar pacientes mientras el dentista atiende su consulta."
+      },
+      {
+        "pregunta": "¿Qué pasa si llega un paciente que no se presenta al turno (no-show)?",
+        "opciones": [
+          "a) Es problema solo del paciente",
+          "b) Es una pérdida de tiempo y plata para la clínica que afecta la rentabilidad",
+          "c) Mejora las métricas de la clínica"
+        ],
+        "correcta": 1,
+        "explicacion": "Un no-show es tiempo del consultorio bloqueado más costos operativos sin ingreso. Es uno de los problemas más caros que SCM ayuda a reducir mediante calificación."
+      },
+      {
+        "pregunta": "¿Cuál es la diferencia entre un lead y un paciente calificado?",
+        "opciones": [
+          "a) No hay diferencia, son sinónimos",
+          "b) El lead muestra interés inicial; el paciente calificado tiene intención real, capacidad y se va a presentar",
+          "c) El paciente calificado es más barato de conseguir"
+        ],
+        "correcta": 1,
+        "explicacion": "Un lead es alguien que respondió. Un calificado es alguien con intención real, posibilidad económica y compromiso de venir. La calificación es lo que hacés vos como setter."
+      }
+    ]
+  },
+  "modulo2": { "preguntas": [] },
+  "modulo3": { "preguntas": [] },
+  "modulo4": { "preguntas": [] },
+  "modulo5": { "preguntas": [] },
+  "modulo6": { "preguntas": [] },
+  "modulo7": { "preguntas": [] },
+  "modulo8": { "preguntas": [] }
+}

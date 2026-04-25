@@ -1009,9 +1009,30 @@ app.get('/api/onboarding/modules', (_req, res) => {
   res.json({ modules: ONBOARDING_MODULES, total: ONBOARDING_MODULES.length });
 });
 
-// Wrapper page: /onboarding/:num — encierra el HTML del módulo en un iframe con topbar
-app.get('/onboarding/:num', (req, res) => {
-  const num = parseInt(req.params.num, 10);
+// Middleware manual: intercepta /onboarding/files/*.html para inyectar el quiz
+// y deja pasar /onboarding/quiz.js, /onboarding/quiz-data.json, etc al express.static
+app.use((req, res, next) => {
+  const m = req.path.match(/^\/onboarding\/files\/scm-onboarding-modulo(\d+)\.html$/);
+  if (!m || req.method !== 'GET') return next();
+  const num = parseInt(m[1], 10);
+  const filePath = path.join(ONBOARDING_DIR, `scm-onboarding-modulo${num}.html`);
+  if (!fs.existsSync(filePath)) return next();
+  try {
+    let html = fs.readFileSync(filePath, 'utf8');
+    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260424a"></script>\n`;
+    html = html.includes('</body>') ? html.replace('</body>', inject + '</body>') : html + inject;
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    res.set('Cache-Control', 'no-cache');
+    return res.send(html);
+  } catch (e) { return next(e); }
+});
+
+// Wrapper page: /onboarding/N — encierra el HTML del módulo en un iframe con topbar
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const m = req.path.match(/^\/onboarding\/(\d+)$/);
+  if (!m) return next();
+  const num = parseInt(m[1], 10);
   const mod = ONBOARDING_MODULES.find(m => m.num === num);
   if (!mod) return res.status(404).send('Módulo no encontrado');
   const titleEsc = mod.title.replace(/"/g, '&quot;');
@@ -1033,10 +1054,9 @@ app.get('/onboarding/:num', (req, res) => {
   .crumb{color:#8b94a8;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .crumb strong{color:#fff;font-weight:600;}
   .crumb .num-pill{background:rgba(167,139,250,0.15);color:#A78BFA;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;margin-right:8px;}
-  .mark-btn{padding:9px 18px;background:#A78BFA;color:#0E1117;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.2s;}
-  .mark-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(167,139,250,0.4);}
-  .mark-btn.read{background:#5bb974;color:#0E1117;cursor:default;}
-  .mark-btn.read:hover{transform:none;box-shadow:none;}
+  .status-pill{padding:8px 14px;border-radius:10px;font-weight:600;font-size:12px;letter-spacing:0.3px;display:inline-flex;align-items:center;gap:6px;}
+  .status-pill.pending{background:rgba(210,153,34,0.15);color:#D29922;border:1px solid rgba(210,153,34,0.3);}
+  .status-pill.passed{background:rgba(63,185,80,0.15);color:#3FB950;border:1px solid rgba(63,185,80,0.3);}
   iframe{width:100%;height:calc(100vh - 60px);border:none;display:block;background:#0E1117;}
   @media (max-width:600px){.crumb{font-size:12px;} .back-link span.label{display:none;}}
 </style>
@@ -1044,7 +1064,7 @@ app.get('/onboarding/:num', (req, res) => {
 <div class="topbar">
   <a class="back-link" href="/?view=training" title="Volver al Centro de Entrenamiento">← <span class="label">Volver</span></a>
   <div class="crumb"><span class="num-pill">Módulo ${num} de 8</span><strong>${titleEsc}</strong> · ${subtitleEsc}</div>
-  <button class="mark-btn" id="scm-mark-btn">✅ Marcar como leído</button>
+  <span class="status-pill pending" id="scm-status-pill">🎯 Quiz pendiente</span>
 </div>
 <iframe id="scm-mod-iframe" src="/onboarding/files/scm-onboarding-modulo${num}.html"></iframe>
 <script>
@@ -1052,24 +1072,18 @@ app.get('/onboarding/:num', (req, res) => {
     var N = ${num};
     var KEY = 'scm_onboarding_progress';
     function getP(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
-    function saveRead(){
-      var p = getP(); p[N] = true; localStorage.setItem(KEY, JSON.stringify(p));
-      var btn = document.getElementById('scm-mark-btn');
-      btn.textContent = '✅ Leído'; btn.classList.add('read'); btn.disabled = true;
+    function setPassed(){
+      var pill = document.getElementById('scm-status-pill');
+      pill.textContent = '✅ Quiz aprobado';
+      pill.classList.remove('pending'); pill.classList.add('passed');
     }
-    if (getP()[N]) saveRead();
-    document.getElementById('scm-mark-btn').addEventListener('click', saveRead);
-    // Auto-marcar cuando el iframe esté cerca del final del scroll
-    var iframe = document.getElementById('scm-mod-iframe');
-    iframe.addEventListener('load', function(){
-      try {
-        var doc = iframe.contentDocument; var win = iframe.contentWindow;
-        if (!doc || !win) return;
-        win.addEventListener('scroll', function(){
-          var scrollPct = (win.scrollY + win.innerHeight) / doc.documentElement.scrollHeight;
-          if (scrollPct > 0.92 && !getP()[N]) saveRead();
-        }, { passive: true });
-      } catch(e){}
+    if (getP()[N]) setPassed();
+    // El quiz dentro del iframe nos avisa al aprobar
+    window.addEventListener('message', function(e){
+      if (e.data && e.data.type === 'scm_quiz_passed' && e.data.module === N) {
+        var p = getP(); p[N] = true; localStorage.setItem(KEY, JSON.stringify(p));
+        setPassed();
+      }
     });
   })();
 </script>
