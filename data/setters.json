@@ -72560,7 +72560,7 @@
       "aiWhatsApp": "",
       "openMessage": "Buenas, ¿cómo vienen hoy?",
       "assignedTo": "setter_leandro",
-      "varianteId": "",
+      "varianteId": null,
       "conexion": "enviada",
       "apertura": "",
       "respondio": true,

@@ -3136,8 +3136,14 @@ function verifyCredentialsHelper(email, password) {
 function userIdFromSetterIdHelper(setterId) {
   if (!setterId) return null;
   const data = loadAuthData();
-  const user = data.users.find((u) => u.setterId === setterId && u.status === "active");
-  return user?.id || null;
+  // 1) buscar user con role=setter cuyo setterId matchea
+  const setterUser = data.users.find((u) => u.setterId === setterId && u.status === "active");
+  if (setterUser) return setterUser.id;
+  // 2) si no hay user setter para ese refId (caso típico: admin operando una
+  //    cuenta a su propio nombre), rutear al único admin activo
+  const admins = data.users.filter((u) => u.role === "admin" && u.status === "active");
+  if (admins.length === 1) return admins[0].id;
+  return null;
 }
 
 // En tests, NODE_ENV=test → no levantamos listener, sólo exportamos `app`.
