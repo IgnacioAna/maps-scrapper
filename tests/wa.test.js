@@ -156,10 +156,9 @@ describe("accounts CRUD", () => {
 
 describe("routines CRUD", () => {
   let routineId = "";
-  it("crear routine con messages y targets", async () => {
+  it("crear routine sin phases usa default", async () => {
     const r = await api("POST", "/api/wa/routines", {
       name: "R1",
-      dailyMessages: 5,
       messages: ["hola", "que tal"],
       targets: ["549111"],
       autoReply: true,
@@ -169,13 +168,43 @@ describe("routines CRUD", () => {
     expect(r.body.messages).toEqual(["hola", "que tal"]);
     expect(r.body.targets).toEqual(["549111"]);
     expect(r.body.autoReply).toBe(true);
+    expect(r.body.hardMaxDailyMessages).toBe(2000);
+    expect(r.body.hardMinDripMs).toBe(3000);
     routineId = r.body.id;
   });
 
+  it("crear routine con phases custom", async () => {
+    const r = await api("POST", "/api/wa/routines", {
+      name: "R-custom",
+      phases: [
+        { name: "F1", untilDay: 3, dailyMessages: 10, dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
+        { name: "F2", untilDay: null, dailyMessages: 100, dripMinMs: 5000, dripMaxMs: 10000, allowAutomation: true },
+      ],
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.phases).toHaveLength(2);
+    expect(r.body.phases[0].dailyMessages).toBe(10);
+  });
+
+  it("crear routine con drip < 3000 → 400", async () => {
+    const r = await api("POST", "/api/wa/routines", {
+      name: "R-bad",
+      phases: [{ untilDay: null, dailyMessages: 50, dripMinMs: 1000, dripMaxMs: 2000, allowAutomation: true }],
+    });
+    expect(r.status).toBe(400);
+  });
+
+  it("crear routine con dailyMessages > 2000 → 400", async () => {
+    const r = await api("POST", "/api/wa/routines", {
+      name: "R-toobig",
+      phases: [{ untilDay: null, dailyMessages: 3000, dripMinMs: 5000, dripMaxMs: 10000, allowAutomation: true }],
+    });
+    expect(r.status).toBe(400);
+  });
+
   it("update routine", async () => {
-    const r = await api("PUT", `/api/wa/routines/${routineId}`, { name: "R1 v2", dailyMessages: 10 });
+    const r = await api("PUT", `/api/wa/routines/${routineId}`, { name: "R1 v2" });
     expect(r.body.name).toBe("R1 v2");
-    expect(r.body.dailyMessages).toBe(10);
   });
 
   it("attach a un account creado al vuelo", async () => {
@@ -188,6 +217,33 @@ describe("routines CRUD", () => {
   it("delete routine", async () => {
     const r = await api("DELETE", `/api/wa/routines/${routineId}`);
     expect(r.status).toBe(200);
+  });
+});
+
+describe("warming day & phases", () => {
+  let accountId = "";
+  let routineId = "";
+  it("setup", async () => {
+    const a = (await api("POST", "/api/wa/accounts", { label: "Phase test" })).body;
+    accountId = a.id;
+    await api("POST", `/api/wa/accounts/${a.id}/assign`, { kind: "setter", refId: "setter_test" });
+    const rt = (await api("POST", "/api/wa/routines", { name: "Phase R" })).body;
+    routineId = rt.id;
+    await api("POST", "/api/wa/routines/attach", { accountId: a.id, routineId });
+  });
+
+  it("reset-warming inicializa el contador", async () => {
+    const r = await api("POST", `/api/wa/accounts/${accountId}/reset-warming`);
+    expect(r.status).toBe(200);
+    expect(r.body.routineStartedAt).toBeTruthy();
+    expect(r.body.staggerOffsetMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it("mark-banned setea pauseUntil", async () => {
+    const r = await api("POST", `/api/wa/accounts/${accountId}/mark-banned`, { cooldownDays: 3 });
+    expect(r.status).toBe(200);
+    expect(r.body.status).toBe("BANNED_TEMP");
+    expect(r.body.pauseUntil).toBeTruthy();
   });
 });
 

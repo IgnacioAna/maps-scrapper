@@ -7,6 +7,8 @@ import {
   listRoutines, getRoutine, createRoutine, updateRoutine, deleteRoutine,
   listEvents, eventsByHour,
   appendEvent,
+  effectivePhases, currentPhaseFor, warmingDayOf,
+  startWarming, markBannedTemporarily, resetWarming, incrementCounter,
 } from "./data.js";
 import { sendToUser, getPresenceList, isUserOnline } from "./gateway.js";
 
@@ -14,6 +16,72 @@ function readPositiveInt(value, def, max) {
   const n = parseInt(value, 10);
   if (!Number.isFinite(n) || n < 1) return def;
   return Math.min(n, max);
+}
+
+const HARD_MAX_DAILY = 2000;
+const HARD_MIN_DRIP_MS = 3000;
+
+// Valida y clampa una fase. Devuelve [error, sanitizedPhase].
+function sanitizePhase(p) {
+  if (!p || typeof p !== "object") return ["fase inválida"];
+  const dailyMessages = parseInt(p.dailyMessages, 10);
+  const dripMinMs = parseInt(p.dripMinMs, 10);
+  const dripMaxMs = parseInt(p.dripMaxMs, 10);
+  if (!Number.isFinite(dailyMessages) || dailyMessages < 1 || dailyMessages > HARD_MAX_DAILY) {
+    return [`dailyMessages debe estar entre 1 y ${HARD_MAX_DAILY}`];
+  }
+  if (!Number.isFinite(dripMinMs) || dripMinMs < HARD_MIN_DRIP_MS) {
+    return [`dripMinMs debe ser >= ${HARD_MIN_DRIP_MS}`];
+  }
+  if (!Number.isFinite(dripMaxMs) || dripMaxMs < dripMinMs) {
+    return ["dripMaxMs debe ser >= dripMinMs"];
+  }
+  return [null, {
+    name: p.name ? String(p.name) : "",
+    untilDay: p.untilDay === null || p.untilDay === undefined ? null : parseInt(p.untilDay, 10),
+    dailyMessages,
+    dripMinMs,
+    dripMaxMs,
+    allowAutomation: !!p.allowAutomation,
+  }];
+}
+
+function sanitizeRoutine(input) {
+  if (!input || typeof input.name !== "string" || !input.name.trim()) {
+    return ["name es requerido"];
+  }
+  const out = {
+    name: input.name.trim(),
+    hourStart: clampInt(input.hourStart, 0, 23, 9),
+    hourEnd: clampInt(input.hourEnd, 0, 23, 19),
+    timezone: typeof input.timezone === "string" && input.timezone ? input.timezone : "America/Argentina/Buenos_Aires",
+    messages: Array.isArray(input.messages) ? input.messages.map(String).filter(Boolean) : [],
+    targets: Array.isArray(input.targets) ? input.targets.map((t) => String(t).replace(/[^\d]/g, "")).filter(Boolean) : [],
+    autoReply: !!input.autoReply,
+    autoReplies: Array.isArray(input.autoReplies) ? input.autoReplies.map(String).filter(Boolean) : [],
+    hardMaxDailyMessages: clampInt(input.hardMaxDailyMessages, 1, HARD_MAX_DAILY, HARD_MAX_DAILY),
+    hardMinDripMs: Math.max(parseInt(input.hardMinDripMs, 10) || HARD_MIN_DRIP_MS, HARD_MIN_DRIP_MS),
+    banCooldownDays: clampInt(input.banCooldownDays, 1, 30, 4),
+    minDeliveryRatePct: clampInt(input.minDeliveryRatePct, 50, 100, 90),
+  };
+  if (Array.isArray(input.phases) && input.phases.length > 0) {
+    const sanitized = [];
+    for (const p of input.phases) {
+      const [err, ok] = sanitizePhase(p);
+      if (err) return [err];
+      sanitized.push(ok);
+    }
+    out.phases = sanitized;
+  } else {
+    out.phases = [];
+  }
+  return [null, out];
+}
+
+function clampInt(v, min, max, def) {
+  const n = parseInt(v, 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.max(min, Math.min(max, n));
 }
 
 export function registerWaRoutes(app, deps) {
@@ -111,11 +179,15 @@ export function registerWaRoutes(app, deps) {
   });
 
   app.post("/api/wa/routines", requireAuth, requireRole("admin"), (req, res) => {
-    res.json(createRoutine(req.body || {}));
+    const [err, payload] = sanitizeRoutine(req.body || {});
+    if (err) return res.status(400).json({ error: err });
+    res.json(createRoutine(payload));
   });
 
   app.put("/api/wa/routines/:id", requireAuth, requireRole("admin"), (req, res) => {
-    const updated = updateRoutine(req.params.id, req.body || {});
+    const [err, payload] = sanitizeRoutine(req.body || {});
+    if (err) return res.status(400).json({ error: err });
+    const updated = updateRoutine(req.params.id, payload);
     if (!updated) return res.status(404).json({ error: "no encontrado" });
     res.json(updated);
   });
@@ -172,37 +244,86 @@ export function registerWaRoutes(app, deps) {
     res.json({ ok: true });
   });
 
-  function buildRoutineConfig(routine) {
+  // Construye config completo para el desktop. Calcula fase actual de la cuenta
+  // basado en el día de warming (tiempo desde routineStartedAt). Aplica caps.
+  function buildRoutineConfig(routine, account) {
+    const day = warmingDayOf(account);
+    const phase = currentPhaseFor(routine, day);
+    const hardMaxDaily = routine.hardMaxDailyMessages ?? 2000;
+    const hardMinDrip = routine.hardMinDripMs ?? 3000;
     return {
       id: routine.id,
       name: routine.name,
-      dailyMessages: routine.dailyMessages,
-      hourStart: routine.hourStart,
-      hourEnd: routine.hourEnd,
-      humanDelayMinMs: routine.humanDelayMinMs,
-      humanDelayMaxMs: routine.humanDelayMaxMs,
-      timezone: routine.timezone,
+      hourStart: routine.hourStart ?? 9,
+      hourEnd: routine.hourEnd ?? 19,
+      timezone: routine.timezone || "America/Argentina/Buenos_Aires",
       messages: routine.messages || [],
       targets: (routine.targets || []).map((p) => ({ phone: String(p) })),
       autoReply: !!routine.autoReply,
       autoReplies: routine.autoReplies || [],
+      // Fase y caps
+      warmingDay: day,
+      currentPhase: {
+        ...phase,
+        // clamps:
+        dailyMessages: Math.min(phase.dailyMessages, hardMaxDaily),
+        dripMinMs: Math.max(phase.dripMinMs, hardMinDrip),
+        dripMaxMs: Math.max(phase.dripMaxMs, hardMinDrip),
+      },
+      phases: effectivePhases(routine),
+      hardMaxDailyMessages: hardMaxDaily,
+      hardMinDripMs: hardMinDrip,
+      banCooldownDays: routine.banCooldownDays ?? 4,
+      minDeliveryRatePct: routine.minDeliveryRatePct ?? 90,
+      pendingThresholdMs: routine.pendingThresholdMs ?? 5 * 60 * 1000,
+      // estado de la cuenta
+      account: {
+        id: account.id,
+        routineStartedAt: account.routineStartedAt,
+        staggerOffsetMs: account.staggerOffsetMs || 0,
+        msgsSentToday: account.msgsSentToday || 0,
+        pauseUntil: account.pauseUntil,
+      },
     };
   }
 
   app.post("/api/wa/commands/start-routine", requireAuth, requireRole("admin"), (req, res) => {
-    const account = getAccount(req.body?.accountId);
+    let account = getAccount(req.body?.accountId);
     if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
     if (!account.routineId) return res.status(400).json({ error: "cuenta sin routine" });
     const routine = getRoutine(account.routineId);
     if (!routine) return res.status(404).json({ error: "routine no encontrada" });
     const userId = ownerUserIdOfAccount(account);
     if (!userId) return res.status(400).json({ error: "cuenta sin asignar a setter" });
+    // Si la cuenta NO tenía routineStartedAt, lo seteamos (día 1 arranca acá)
+    if (!account.routineStartedAt || req.body?.resume === false) {
+      account = startWarming(account.id);
+    }
     sendToUser(userId, "routine:start", {
       accountId: account.id,
       routineId: routine.id,
-      config: buildRoutineConfig(routine),
+      config: buildRoutineConfig(routine, account),
     });
-    res.json({ ok: true });
+    res.json({ ok: true, warmingDay: warmingDayOf(account), staggerOffsetMs: account.staggerOffsetMs });
+  });
+
+  app.post("/api/wa/accounts/:id/reset-warming", requireAuth, requireRole("admin"), (req, res) => {
+    const acc = resetWarming(req.params.id);
+    if (!acc) return res.status(404).json({ error: "cuenta no encontrada" });
+    appendEvent({ accountId: acc.id, userId: req.auth.user.id, type: "warming-reset" });
+    res.json(acc);
+  });
+
+  app.post("/api/wa/accounts/:id/mark-banned", requireAuth, requireRole("admin"), (req, res) => {
+    const acc = getAccount(req.params.id);
+    if (!acc) return res.status(404).json({ error: "cuenta no encontrada" });
+    const cooldown = req.body?.cooldownDays || 4;
+    const updated = markBannedTemporarily(acc.id, cooldown);
+    appendEvent({ accountId: acc.id, userId: req.auth.user.id, type: "ban-marked", payload: { cooldownDays: cooldown } });
+    // notif al setter dueño
+    const userId = ownerUserIdOfAccount(acc);
+    if (userId) sendToUser(userId, "routine:stop", { accountId: acc.id });
+    res.json(updated);
   });
 
   app.post("/api/wa/commands/stop-routine", requireAuth, requireRole("admin"), (req, res) => {
@@ -234,7 +355,9 @@ export function registerWaRoutes(app, deps) {
           if (!account.routineId) { errors.push({ accountId: id, error: "sin routine" }); continue; }
           const routine = getRoutine(account.routineId);
           if (!routine) { errors.push({ accountId: id, error: "routine no existe" }); continue; }
-          sendToUser(userId, "routine:start", { accountId: id, routineId: routine.id, config: buildRoutineConfig(routine) });
+          let acc = account;
+          if (!acc.routineStartedAt) acc = startWarming(acc.id);
+          sendToUser(userId, "routine:start", { accountId: id, routineId: routine.id, config: buildRoutineConfig(routine, acc) });
         }
         dispatched += 1;
       } catch (e) {

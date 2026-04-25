@@ -112,8 +112,45 @@ function setLiveIndicator(on) {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────
-const STATUS_LABEL = { CONNECTED: "Conectado", DISCONNECTED: "Desconectado", QR_PENDING: "Esperando QR", BANNED: "Baneado" };
-const STATUS_COLOR = { CONNECTED: "#10b981", DISCONNECTED: "#6b7280", QR_PENDING: "#f59e0b", BANNED: "#ef4444" };
+const STATUS_LABEL = {
+  CONNECTED: "Conectado",
+  DISCONNECTED: "Desconectado",
+  QR_PENDING: "Esperando QR",
+  BANNED: "Baneado",
+  BANNED_TEMP: "Cooldown",
+};
+const STATUS_COLOR = {
+  CONNECTED: "#10b981",
+  DISCONNECTED: "#6b7280",
+  QR_PENDING: "#f59e0b",
+  BANNED: "#ef4444",
+  BANNED_TEMP: "#fb923c",
+};
+
+// Curva oficial goghl.ai. Usada como default si la rutina no tiene phases.
+function defaultPhasesUI() {
+  return [
+    { name: "Fase 1 — Configuración inicial",  untilDay: 2,    dailyMessages: 12,  dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
+    { name: "Fase 2 — Aumento gradual",        untilDay: 5,    dailyMessages: 28,  dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
+    { name: "Fase 3 — Construyendo reputación", untilDay: 10,  dailyMessages: 75,  dripMinMs: 10000, dripMaxMs: 15000, allowAutomation: true  },
+    { name: "Fase 4 — Escalando",              untilDay: 14,   dailyMessages: 250, dripMinMs: 5000,  dripMaxMs: 10000, allowAutomation: true  },
+    { name: "Fase 5 — Operación completa",     untilDay: null, dailyMessages: 750, dripMinMs: 3000,  dripMaxMs: 5000,  allowAutomation: true  },
+  ];
+}
+
+function warmingDayOfAccount(account) {
+  if (!account.routineStartedAt) return 0;
+  const days = Math.floor((Date.now() - new Date(account.routineStartedAt).getTime()) / (24 * 60 * 60 * 1000));
+  return Math.max(1, days + 1);
+}
+
+function currentPhaseFor(routine, day) {
+  const phases = (routine?.phases?.length ? routine.phases : defaultPhasesUI());
+  for (const p of phases) {
+    if (p.untilDay === null || p.untilDay === undefined || day <= p.untilDay) return p;
+  }
+  return phases[phases.length - 1];
+}
 
 function escHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 
@@ -177,7 +214,14 @@ function renderAccountsAdmin() {
   const view = $("#view-wa-accounts");
   if (!view) return;
   const rows = _accounts.map((a) => {
-    const setter = a.assignment?.kind === "setter" ? findSetterName(a.assignment.refId) : "—";
+    const routine = _routines.find((r) => r.id === a.routineId);
+    const day = warmingDayOfAccount(a);
+    const phase = routine ? currentPhaseFor(routine, day) : null;
+    const phaseCell = !a.routineStartedAt
+      ? '<span style="color:#888;">— sin iniciar</span>'
+      : (a.status === "BANNED_TEMP" && a.pauseUntil
+          ? `<span style="color:#fb923c;">Cooldown hasta ${new Date(a.pauseUntil).toLocaleString()}</span>`
+          : `<span title="${escHtml(phase?.name || '')}">Día ${day} · ${phase ? `${phase.dailyMessages}msg/d` : '—'}</span>`);
     const routineOpts = ['<option value="">—</option>']
       .concat(_routines.map((r) => `<option value="${r.id}" ${a.routineId === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`))
       .join("");
@@ -190,6 +234,7 @@ function renderAccountsAdmin() {
       <td>${escHtml(a.label)}</td>
       <td>${escHtml(a.phone || "—")}</td>
       <td>${statusBadge(a.status)}</td>
+      <td style="font-size:12px;">${phaseCell}</td>
       <td><select class="wa-assign-setter" data-id="${a.id}" style="width:130px;">${setterOpts}</select></td>
       <td><select class="wa-attach-routine" data-id="${a.id}" style="width:130px;">${routineOpts}</select></td>
       <td style="white-space:nowrap;">
@@ -197,6 +242,7 @@ function renderAccountsAdmin() {
         <button class="btn-table-action" data-act="msg" data-id="${a.id}">Mensaje</button>
         <button class="btn-table-action" data-act="start" data-id="${a.id}" style="color:#10b981;">▶ Warm</button>
         <button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:#f59e0b;">⏸</button>
+        <button class="btn-table-action" data-act="reset" data-id="${a.id}" title="Reiniciar warming desde día 1" style="color:#a8c7fa;">↺</button>
         <button class="btn-table-action" data-act="del" data-id="${a.id}" style="color:#ef4444;">🗑</button>
       </td>
     </tr>`;
@@ -220,8 +266,8 @@ function renderAccountsAdmin() {
           <button class="btn-table-action" id="wa-bulk-clear">Limpiar</button>
         </div>` : ""}
       <table class="leads-table" style="width:100%;">
-        <thead><tr><th width="32"></th><th>Cuenta</th><th>Tel</th><th>Estado</th><th>Setter</th><th>Rutina</th><th>Acciones</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">Sin cuentas todavía. Creá una con "+ Nueva cuenta"</td></tr>`}</tbody>
+        <thead><tr><th width="32"></th><th>Cuenta</th><th>Tel</th><th>Estado</th><th>Día / Fase</th><th>Setter</th><th>Rutina</th><th>Acciones</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">Sin cuentas todavía. Creá una con "+ Nueva cuenta"</td></tr>`}</tbody>
       </table>
     </div>
   `;
@@ -266,7 +312,13 @@ function renderAccountsAdmin() {
       if (act === "open") await api("/api/wa/commands/open", { method: "POST", body: JSON.stringify({ accountId: id }) });
       else if (act === "start") await api("/api/wa/commands/start-routine", { method: "POST", body: JSON.stringify({ accountId: id }) });
       else if (act === "stop") await api("/api/wa/commands/stop-routine", { method: "POST", body: JSON.stringify({ accountId: id }) });
-      else if (act === "del") {
+      else if (act === "reset") {
+        if (!confirm("¿Reiniciar warming desde día 1? Esto resetea el progreso de la fase.")) return;
+        await api(`/api/wa/accounts/${id}/reset-warming`, { method: "POST" });
+        await loadInitialData();
+        renderAccountsAdmin();
+        return;
+      } else if (act === "del") {
         if (!confirm("¿Borrar cuenta?")) return;
         await api(`/api/wa/accounts/${id}`, { method: "DELETE" });
         await loadInitialData();
@@ -300,18 +352,21 @@ async function openCreateAccountDialog() {
 function renderRoutines() {
   const view = $("#view-wa-routines");
   if (!view) return;
-  const rows = _routines.map((r) => `
+  const rows = _routines.map((r) => {
+    const phases = (r.phases?.length ? r.phases : defaultPhasesUI());
+    const summary = phases.map((p) => `${p.untilDay ?? '∞'}d:${p.dailyMessages}`).join(' → ');
+    return `
     <tr>
       <td>${escHtml(r.name)}</td>
-      <td>${r.dailyMessages}</td>
-      <td>${r.hourStart}h–${r.hourEnd}h</td>
+      <td style="font-size:11px;color:var(--text-secondary,#888);">${escHtml(summary)}</td>
+      <td>${r.hourStart ?? 9}h–${r.hourEnd ?? 19}h</td>
       <td>${(r.messages || []).length} / ${(r.targets || []).length}</td>
       <td>${r.autoReply ? "✓" : "—"}</td>
       <td>
         <button class="btn-table-action" data-rt-act="edit" data-id="${r.id}">Editar</button>
         <button class="btn-table-action" data-rt-act="del" data-id="${r.id}" style="color:#ef4444;">🗑</button>
       </td>
-    </tr>`).join("");
+    </tr>`;}).join("");
   view.innerHTML = `
     <div class="content-header">
       <h2>Rutinas de Warming</h2>
@@ -319,7 +374,7 @@ function renderRoutines() {
     </div>
     <div style="padding:0 32px 32px;">
       <table class="leads-table" style="width:100%;">
-        <thead><tr><th>Nombre</th><th>Msg/día</th><th>Horario</th><th>Msg / Targets</th><th>Auto-reply</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Curva (días → msg/día)</th><th>Horario</th><th>Msg / Targets</th><th>Auto-reply</th><th>Acciones</th></tr></thead>
         <tbody>${rows || `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">Sin rutinas. Creá una con "+ Nueva rutina"</td></tr>`}</tbody>
       </table>
     </div>
@@ -342,31 +397,77 @@ function renderRoutines() {
 function openRoutineDialog(routine) {
   const isEdit = !!routine;
   const r = routine || {
-    name: "", dailyMessages: 20, hourStart: 9, hourEnd: 21,
-    humanDelayMinMs: 30000, humanDelayMaxMs: 180000,
+    name: "", hourStart: 9, hourEnd: 19,
     timezone: "America/Argentina/Buenos_Aires",
+    phases: [],
     messages: [], targets: [], autoReply: false, autoReplies: [],
   };
-  // Modal liviano: usamos prompt-style con un dialog construido a mano
+  // estado mutable de fases dentro del dialog
+  let phases = (Array.isArray(r.phases) && r.phases.length > 0) ? structuredClone(r.phases) : defaultPhasesUI();
+
+  function renderPhases() {
+    const tbody = overlay.querySelector("#rt-phases-tbody");
+    tbody.innerHTML = phases.map((p, i) => `
+      <tr data-i="${i}">
+        <td><input data-f="name" value="${escHtml(p.name || '')}" style="width:100%;"></td>
+        <td><input data-f="untilDay" type="number" value="${p.untilDay ?? ''}" placeholder="∞" style="width:60px;"></td>
+        <td><input data-f="dailyMessages" type="number" value="${p.dailyMessages}" min="1" max="2000" style="width:80px;"></td>
+        <td><input data-f="dripMinMs" type="number" value="${p.dripMinMs}" min="3000" step="1000" style="width:90px;"></td>
+        <td><input data-f="dripMaxMs" type="number" value="${p.dripMaxMs}" min="3000" step="1000" style="width:90px;"></td>
+        <td style="text-align:center;"><input data-f="allowAutomation" type="checkbox" ${p.allowAutomation ? "checked" : ""}></td>
+        <td><button class="btn-table-action" data-rmphase="${i}" style="color:#ef4444;">×</button></td>
+      </tr>
+    `).join("");
+    tbody.querySelectorAll("input[data-f]").forEach((inp) => {
+      inp.addEventListener("change", (e) => {
+        const tr = e.target.closest("tr");
+        const i = +tr.dataset.i;
+        const f = e.target.dataset.f;
+        if (f === "allowAutomation") phases[i][f] = e.target.checked;
+        else if (f === "untilDay") phases[i][f] = e.target.value === "" ? null : parseInt(e.target.value, 10);
+        else if (f === "name") phases[i][f] = e.target.value;
+        else phases[i][f] = parseInt(e.target.value, 10);
+      });
+    });
+    tbody.querySelectorAll("button[data-rmphase]").forEach((b) => {
+      b.addEventListener("click", () => { phases.splice(+b.dataset.rmphase, 1); renderPhases(); });
+    });
+  }
+
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;";
   overlay.innerHTML = `
-    <div style="background:var(--bg-secondary,#1a1f29);border:1px solid var(--border-color,#2a3441);border-radius:8px;padding:24px;max-width:600px;width:90%;max-height:90vh;overflow:auto;">
+    <div style="background:var(--bg-secondary,#1a1f29);border:1px solid var(--border-color,#2a3441);border-radius:8px;padding:24px;max-width:860px;width:95%;max-height:92vh;overflow:auto;">
       <h3 style="margin-top:0;">${isEdit ? "Editar rutina" : "Nueva rutina"}</h3>
-      <div style="display:grid;gap:12px;">
-        <label>Nombre <input id="rt-name" value="${escHtml(r.name)}" style="width:100%;"></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-          <label>Msg/día <input id="rt-daily" type="number" value="${r.dailyMessages}" min="1"></label>
-          <label>Hora inicio <input id="rt-hs" type="number" value="${r.hourStart}" min="0" max="23"></label>
-          <label>Hora fin <input id="rt-he" type="number" value="${r.hourEnd}" min="0" max="23"></label>
+      <div style="display:grid;gap:14px;">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr;gap:8px;">
+          <label>Nombre<input id="rt-name" value="${escHtml(r.name)}" style="width:100%;"></label>
+          <label>Hora inicio<input id="rt-hs" type="number" value="${r.hourStart ?? 9}" min="0" max="23"></label>
+          <label>Hora fin<input id="rt-he" type="number" value="${r.hourEnd ?? 19}" min="0" max="23"></label>
+          <label>Timezone<input id="rt-tz" value="${escHtml(r.timezone || 'America/Argentina/Buenos_Aires')}" style="width:100%;"></label>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-          <label>Delay min (ms) <input id="rt-dmin" type="number" value="${r.humanDelayMinMs}" min="1000" step="5000"></label>
-          <label>Delay max (ms) <input id="rt-dmax" type="number" value="${r.humanDelayMaxMs}" min="1000" step="5000"></label>
+
+        <div style="border:1px solid var(--border-color,#2a3441);border-radius:6px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong>Curva de calentamiento por fases (goghl.ai)</strong>
+            <div>
+              <button class="btn-table-action" id="rt-default-curve">Aplicar curva default</button>
+              <button class="btn-table-action" id="rt-add-phase" style="color:#10b981;">+ fase</button>
+            </div>
+          </div>
+          <small style="color:var(--text-secondary,#888);">
+            Cada fase aplica HASTA su <em>untilDay</em> (vacío = sin límite, fase final).
+            <em>allowAutomation</em>=off significa que el setter debe operar manualmente, sin envíos automáticos.
+            Drip mín/máx en milisegundos. Hard cap: 2000 msg/día, drip ≥ 3000ms.
+          </small>
+          <table style="width:100%;margin-top:10px;font-size:12px;">
+            <thead><tr><th align="left">Nombre</th><th>Hasta día</th><th>Msg/día</th><th>Drip min</th><th>Drip max</th><th>Auto</th><th></th></tr></thead>
+            <tbody id="rt-phases-tbody"></tbody>
+          </table>
         </div>
-        <label>Timezone <input id="rt-tz" value="${escHtml(r.timezone)}" style="width:100%;"></label>
+
         <label>Mensajes (uno por línea)<textarea id="rt-msgs" rows="5" style="width:100%;font-family:inherit;">${escHtml((r.messages || []).join("\n"))}</textarea></label>
-        <label>Targets (teléfonos, uno por línea)<textarea id="rt-tgts" rows="4" style="width:100%;font-family:inherit;">${escHtml((r.targets || []).join("\n"))}</textarea></label>
+        <label>Targets (teléfonos, uno por línea, solo dígitos con país)<textarea id="rt-tgts" rows="4" style="width:100%;font-family:inherit;">${escHtml((r.targets || []).join("\n"))}</textarea></label>
         <label><input type="checkbox" id="rt-ar" ${r.autoReply ? "checked" : ""}> Auto-responder mensajes entrantes</label>
         <label>Respuestas automáticas (una por línea)<textarea id="rt-ars" rows="3" style="width:100%;font-family:inherit;">${escHtml((r.autoReplies || []).join("\n"))}</textarea></label>
       </div>
@@ -376,18 +477,22 @@ function openRoutineDialog(routine) {
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  renderPhases();
   const close = () => overlay.remove();
   overlay.querySelector("#rt-cancel").addEventListener("click", close);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector("#rt-default-curve").addEventListener("click", () => { phases = defaultPhasesUI(); renderPhases(); });
+  overlay.querySelector("#rt-add-phase").addEventListener("click", () => {
+    phases.push({ name: "Nueva fase", untilDay: null, dailyMessages: 100, dripMinMs: 5000, dripMaxMs: 10000, allowAutomation: true });
+    renderPhases();
+  });
   overlay.querySelector("#rt-save").addEventListener("click", async () => {
     const payload = {
       name: overlay.querySelector("#rt-name").value.trim() || "Sin nombre",
-      dailyMessages: +overlay.querySelector("#rt-daily").value,
       hourStart: +overlay.querySelector("#rt-hs").value,
       hourEnd: +overlay.querySelector("#rt-he").value,
-      humanDelayMinMs: +overlay.querySelector("#rt-dmin").value,
-      humanDelayMaxMs: +overlay.querySelector("#rt-dmax").value,
       timezone: overlay.querySelector("#rt-tz").value.trim(),
+      phases,
       messages: overlay.querySelector("#rt-msgs").value.split("\n").map((s) => s.trim()).filter(Boolean),
       targets: overlay.querySelector("#rt-tgts").value.split("\n").map((s) => s.trim().replace(/[^\d]/g, "")).filter(Boolean),
       autoReply: overlay.querySelector("#rt-ar").checked,

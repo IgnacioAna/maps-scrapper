@@ -57,16 +57,79 @@ export function createAccount(input) {
     id: `wa_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     label: String(input.label || "").trim() || "Cuenta sin nombre",
     phone: null,
+    // status: DISCONNECTED | QR_PENDING | CONNECTED | BANNED | BANNED_TEMP
     status: "DISCONNECTED",
-    // tag: "pool" | "setter:<id>" | "client:<id>"
     assignment: null,
     routineId: null,
     notes: input.notes || "",
+    // Warming state
+    routineStartedAt: null, // ISO al disparar start-routine
+    pauseUntil: null, // ISO si está en cooldown post-ban
+    staggerOffsetMs: 0, // offset random para no patear todos los WS al mismo tiempo
+    // Counters diarios para tasa de respuesta y ban detection
+    dailyKey: null, // YYYY-MM-DD del último reset
+    msgsSentToday: 0,
+    responsesToday: 0,
+    pendingCount: 0, // cuantos mensajes están en estado pendiente
+    deliveryFails: 0, // contador rolling de fallas
+    lastBannedAt: null, // ISO del último ban
     createdAt: new Date().toISOString(),
   };
   data.accounts.push(account);
   saveJson(FILES.accounts, data);
   return account;
+}
+
+export function warmingDayOf(account, now = Date.now()) {
+  if (!account.routineStartedAt) return 0;
+  const start = new Date(account.routineStartedAt).getTime();
+  const days = Math.floor((now - start) / (24 * 60 * 60 * 1000));
+  return Math.max(1, days + 1); // día 1 = primer día
+}
+
+export function startWarming(accountId, opts = {}) {
+  // Stagger automático: random 0-3h, así múltiples cuentas no arrancan a la vez
+  const staggerOffsetMs = Math.floor(Math.random() * 3 * 60 * 60 * 1000);
+  return updateAccount(accountId, {
+    routineStartedAt: new Date().toISOString(),
+    pauseUntil: null,
+    staggerOffsetMs,
+    msgsSentToday: 0,
+    responsesToday: 0,
+    pendingCount: 0,
+    deliveryFails: 0,
+    dailyKey: new Date().toISOString().slice(0, 10),
+    ...opts,
+  });
+}
+
+export function markBannedTemporarily(accountId, cooldownDays = 4) {
+  const until = new Date(Date.now() + cooldownDays * 24 * 60 * 60 * 1000).toISOString();
+  return updateAccount(accountId, {
+    status: "BANNED_TEMP",
+    pauseUntil: until,
+    lastBannedAt: new Date().toISOString(),
+  });
+}
+
+export function resetWarming(accountId) {
+  return startWarming(accountId, { status: "DISCONNECTED" });
+}
+
+export function incrementCounter(accountId, field, by = 1) {
+  const acc = getAccount(accountId);
+  if (!acc) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const patch = {};
+  if (acc.dailyKey !== today) {
+    patch.dailyKey = today;
+    patch.msgsSentToday = 0;
+    patch.responsesToday = 0;
+    patch.pendingCount = 0;
+    patch.deliveryFails = 0;
+  }
+  patch[field] = (patch[field] !== undefined ? patch[field] : (acc[field] || 0)) + by;
+  return updateAccount(accountId, patch);
 }
 
 export function updateAccount(id, patch) {
@@ -110,18 +173,53 @@ export function getRoutine(id) {
   return listRoutines().find((r) => r.id === id);
 }
 
+// Curva oficial goghl.ai. untilDay=null = fase final (operación completa).
+// allowAutomation=false en fases iniciales fuerza al engine a NO mandar
+// mensajes automáticos (sólo el setter manualmente puede operar la cuenta).
+export function defaultPhases() {
+  return [
+    { name: "Fase 1 — Configuración inicial", untilDay: 2, dailyMessages: 12, dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
+    { name: "Fase 2 — Aumento gradual",       untilDay: 5, dailyMessages: 28, dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
+    { name: "Fase 3 — Construyendo reputación", untilDay: 10, dailyMessages: 75, dripMinMs: 10000, dripMaxMs: 15000, allowAutomation: true },
+    { name: "Fase 4 — Escalando",             untilDay: 14, dailyMessages: 250, dripMinMs: 5000, dripMaxMs: 10000, allowAutomation: true },
+    { name: "Fase 5 — Operación completa",    untilDay: null, dailyMessages: 750, dripMinMs: 3000, dripMaxMs: 5000, allowAutomation: true },
+  ];
+}
+
 const ROUTINE_DEFAULTS = {
-  dailyMessages: 20,
+  // Curva por fases (lo más importante). Si está vacía, se usa defaultPhases().
+  phases: [],
+  // Horario laboral (recomendado 9-19 por goghl.ai).
   hourStart: 9,
-  hourEnd: 21,
-  humanDelayMinMs: 30000,
-  humanDelayMaxMs: 180000,
+  hourEnd: 19,
   timezone: "America/Argentina/Buenos_Aires",
   messages: [],
   targets: [],
   autoReply: false,
   autoReplies: [],
+  // Hard caps inviolables (goghl.ai)
+  hardMaxDailyMessages: 2000,
+  hardMinDripMs: 3000,
+  maxDailyIncreasePct: 20,
+  // Post-ban cooldown
+  banCooldownDays: 4,
+  // Ban detector: tasa de entrega mínima antes de pausar
+  minDeliveryRatePct: 90,
+  pendingThresholdMs: 5 * 60 * 1000, // 5 min
 };
+
+export function effectivePhases(routine) {
+  if (Array.isArray(routine.phases) && routine.phases.length > 0) return routine.phases;
+  return defaultPhases();
+}
+
+export function currentPhaseFor(routine, warmingDay) {
+  const phases = effectivePhases(routine);
+  for (const p of phases) {
+    if (p.untilDay === null || warmingDay <= p.untilDay) return p;
+  }
+  return phases[phases.length - 1];
+}
 
 export function createRoutine(input) {
   const data = loadJson(FILES.routines, { routines: [] });
