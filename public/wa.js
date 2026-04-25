@@ -94,18 +94,18 @@ function setLiveIndicator(on) {
     if (!footer) return;
     dot = document.createElement("div");
     dot.id = "wa-live-dot";
-    dot.style.cssText = "display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary,#888);margin-top:8px;";
-    dot.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#666;"></span><span class="wa-live-label">offline</span>';
+    dot.style.cssText = "display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-secondary,var(--text-tertiary));margin-top:8px;";
+    dot.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:var(--text-faint);"></span><span class="wa-live-label">offline</span>';
     footer.appendChild(dot);
   }
   const circle = dot.querySelector("span");
   const label = dot.querySelector(".wa-live-label");
   if (on) {
-    circle.style.background = "#10b981";
-    circle.style.boxShadow = "0 0 6px #10b981";
+    circle.style.background = "var(--success)";
+    circle.style.boxShadow = "0 0 6px var(--success)";
     label.textContent = "live";
   } else {
-    circle.style.background = "#666";
+    circle.style.background = "var(--text-faint)";
     circle.style.boxShadow = "none";
     label.textContent = "offline";
   }
@@ -119,12 +119,13 @@ const STATUS_LABEL = {
   BANNED: "Baneado",
   BANNED_TEMP: "Cooldown",
 };
-const STATUS_COLOR = {
-  CONNECTED: "#10b981",
-  DISCONNECTED: "#6b7280",
-  QR_PENDING: "#f59e0b",
-  BANNED: "#ef4444",
-  BANNED_TEMP: "#fb923c",
+// Mapea status → clase chip del design system
+const STATUS_CHIP = {
+  CONNECTED: "chip-success",
+  DISCONNECTED: "chip-neutral",
+  QR_PENDING: "chip-warning",
+  BANNED: "chip-danger",
+  BANNED_TEMP: "chip-warning",
 };
 
 // Curva oficial goghl.ai. Usada como default si la rutina no tiene phases.
@@ -155,9 +156,9 @@ function currentPhaseFor(routine, day) {
 function escHtml(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
 
 function statusBadge(status) {
-  const color = STATUS_COLOR[status] || "#666";
+  const cls = STATUS_CHIP[status] || "chip-neutral";
   const label = STATUS_LABEL[status] || status;
-  return `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${color}22;color:${color};font-size:11px;font-weight:500;">${escHtml(label)}</span>`;
+  return `<span class="chip ${cls}">${escHtml(label)}</span>`;
 }
 
 function findSetterName(refId) {
@@ -179,7 +180,7 @@ async function renderDashboard() {
       api("/api/wa/stats/events-by-hour?hours=24"),
     ]);
   } catch (err) {
-    view.innerHTML = `<div style="padding:24px;color:#ef4444;">Error: ${escHtml(err.message)}</div>`;
+    view.innerHTML = `<div style="padding:24px;color:var(--danger);">Error: ${escHtml(err.message)}</div>`;
     return;
   }
   const cards = [
@@ -192,17 +193,17 @@ async function renderDashboard() {
   const max = Math.max(1, ...hourly.map((h) => h.total));
   const chart = hourly.map((h, i) => {
     const ph = (h.total / max) * 100;
-    return `<div title="${new Date(h.hour).toLocaleString()}: ${h.total}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;"><div style="width:80%;background:#6366f1;opacity:${h.total ? 0.85 : 0.15};height:${ph}%;border-radius:2px 2px 0 0;"></div></div>`;
+    return `<div title="${new Date(h.hour).toLocaleString()}: ${h.total}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;"><div style="width:80%;background:var(--accent);opacity:${h.total ? 0.85 : 0.15};height:${ph}%;border-radius:2px 2px 0 0;"></div></div>`;
   }).join("");
   view.innerHTML = `
-    <div class="content-header"><h2>Dashboard WhatsApp</h2><button class="btn-table-action" id="wa-dash-refresh">Refrescar</button></div>
+    <div class="content-header"><h2>Dashboard WhatsApp</h2><button class="btn btn-secondary" id="wa-dash-refresh">Refrescar</button></div>
+    <div class="setter-stats">
+      ${cards.map((c, i) => `<div class="stat-card${i === 0 ? ' is-highlight' : ''}"><div class="stat-num">${escHtml(c.num)}</div><div class="stat-label">${escHtml(c.lbl)}</div></div>`).join("")}
+    </div>
     <div style="padding:0 32px 32px;">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
-        ${cards.map((c) => `<div style="background:var(--bg-secondary,#1a1f29);border:1px solid var(--border-color,#2a3441);border-radius:8px;padding:18px 22px;min-width:160px;"><div style="font-size:28px;font-weight:bold;">${escHtml(c.num)}</div><div style="font-size:12px;color:var(--text-secondary,#888);margin-top:4px;">${escHtml(c.lbl)}</div></div>`).join("")}
-      </div>
-      <div style="background:var(--bg-secondary,#1a1f29);border:1px solid var(--border-color,#2a3441);border-radius:8px;padding:20px;">
-        <div style="font-size:13px;color:var(--text-secondary,#888);margin-bottom:12px;">Eventos por hora — últimas 24h</div>
-        <div style="display:flex;height:120px;gap:2px;">${chart}</div>
+      <div class="card">
+        <div class="card-stat-label" style="margin-bottom:12px;">Eventos por hora — últimas 24h</div>
+        <div style="display:flex;height:120px;gap:2px;align-items:flex-end;">${chart}</div>
       </div>
     </div>
   `;
@@ -218,9 +219,9 @@ function renderAccountsAdmin() {
     const day = warmingDayOfAccount(a);
     const phase = routine ? currentPhaseFor(routine, day) : null;
     const phaseCell = !a.routineStartedAt
-      ? '<span style="color:#888;">— sin iniciar</span>'
+      ? '<span style="color:var(--text-tertiary);">— sin iniciar</span>'
       : (a.status === "BANNED_TEMP" && a.pauseUntil
-          ? `<span style="color:#fb923c;">Cooldown hasta ${new Date(a.pauseUntil).toLocaleString()}</span>`
+          ? `<span style="color:var(--warning);">Cooldown hasta ${new Date(a.pauseUntil).toLocaleString()}</span>`
           : `<span title="${escHtml(phase?.name || '')}">Día ${day} · ${phase ? `${phase.dailyMessages}msg/d` : '—'}</span>`);
     const routineOpts = ['<option value="">—</option>']
       .concat(_routines.map((r) => `<option value="${r.id}" ${a.routineId === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`))
@@ -240,10 +241,10 @@ function renderAccountsAdmin() {
       <td style="white-space:nowrap;">
         <button class="btn-table-action" data-act="open" data-id="${a.id}">Abrir</button>
         <button class="btn-table-action" data-act="msg" data-id="${a.id}">Mensaje</button>
-        <button class="btn-table-action" data-act="start" data-id="${a.id}" style="color:#10b981;">▶ Warm</button>
-        <button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:#f59e0b;">⏸</button>
-        <button class="btn-table-action" data-act="reset" data-id="${a.id}" title="Reiniciar warming desde día 1" style="color:#a8c7fa;">↺</button>
-        <button class="btn-table-action" data-act="del" data-id="${a.id}" style="color:#ef4444;">🗑</button>
+        <button class="btn-table-action" data-act="start" data-id="${a.id}" style="color:var(--success);">▶ Warm</button>
+        <button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:var(--warning);">⏸</button>
+        <button class="btn-table-action" data-act="reset" data-id="${a.id}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
+        <button class="btn-table-action" data-act="del" data-id="${a.id}" style="color:var(--danger);">🗑</button>
       </td>
     </tr>`;
   }).join("");
@@ -256,18 +257,18 @@ function renderAccountsAdmin() {
     </div>
     <div style="padding:0 32px 32px;">
       ${selCount > 0 ? `
-        <div style="display:flex;align-items:center;gap:8px;background:#312e81;border:1px solid #4338ca;border-radius:6px;padding:10px 14px;margin-bottom:12px;">
+        <div class="alert alert-info" style="margin-bottom:12px;align-items:center;">
           <span><strong>${selCount}</strong> seleccionadas</span>
-          <select id="wa-bulk-action" style="margin-left:auto;">
+          <select id="wa-bulk-action" style="margin-left:auto;width:200px;">
             <option value="open">Abrir</option><option value="close">Cerrar</option>
             <option value="start-routine">Iniciar warming</option><option value="stop-routine">Detener warming</option>
           </select>
-          <button class="btn-table-action" id="wa-bulk-run" style="color:#10b981;">Ejecutar</button>
-          <button class="btn-table-action" id="wa-bulk-clear">Limpiar</button>
+          <button class="btn btn-primary btn-sm" id="wa-bulk-run">Ejecutar</button>
+          <button class="btn btn-ghost btn-sm" id="wa-bulk-clear">Limpiar</button>
         </div>` : ""}
       <table class="leads-table" style="width:100%;">
         <thead><tr><th width="32"></th><th>Cuenta</th><th>Tel</th><th>Estado</th><th>Día / Fase</th><th>Setter</th><th>Rutina</th><th>Acciones</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">Sin cuentas todavía. Creá una con "+ Nueva cuenta"</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-secondary,var(--text-tertiary));">Sin cuentas todavía. Creá una con "+ Nueva cuenta"</td></tr>`}</tbody>
       </table>
     </div>
   `;
@@ -358,13 +359,13 @@ function renderRoutines() {
     return `
     <tr>
       <td>${escHtml(r.name)}</td>
-      <td style="font-size:11px;color:var(--text-secondary,#888);">${escHtml(summary)}</td>
+      <td style="font-size:11px;color:var(--text-secondary,var(--text-tertiary));">${escHtml(summary)}</td>
       <td>${r.hourStart ?? 9}h–${r.hourEnd ?? 19}h</td>
       <td>${(r.messages || []).length} / ${(r.targets || []).length}</td>
       <td>${r.autoReply ? "✓" : "—"}</td>
       <td>
         <button class="btn-table-action" data-rt-act="edit" data-id="${r.id}">Editar</button>
-        <button class="btn-table-action" data-rt-act="del" data-id="${r.id}" style="color:#ef4444;">🗑</button>
+        <button class="btn-table-action" data-rt-act="del" data-id="${r.id}" style="color:var(--danger);">🗑</button>
       </td>
     </tr>`;}).join("");
   view.innerHTML = `
@@ -375,7 +376,7 @@ function renderRoutines() {
     <div style="padding:0 32px 32px;">
       <table class="leads-table" style="width:100%;">
         <thead><tr><th>Nombre</th><th>Curva (días → msg/día)</th><th>Horario</th><th>Msg / Targets</th><th>Auto-reply</th><th>Acciones</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">Sin rutinas. Creá una con "+ Nueva rutina"</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-secondary,var(--text-tertiary));">Sin rutinas. Creá una con "+ Nueva rutina"</td></tr>`}</tbody>
       </table>
     </div>
   `;
@@ -415,7 +416,7 @@ function openRoutineDialog(routine) {
         <td><input data-f="dripMinMs" type="number" value="${p.dripMinMs}" min="3000" step="1000" style="width:90px;"></td>
         <td><input data-f="dripMaxMs" type="number" value="${p.dripMaxMs}" min="3000" step="1000" style="width:90px;"></td>
         <td style="text-align:center;"><input data-f="allowAutomation" type="checkbox" ${p.allowAutomation ? "checked" : ""}></td>
-        <td><button class="btn-table-action" data-rmphase="${i}" style="color:#ef4444;">×</button></td>
+        <td><button class="btn-table-action" data-rmphase="${i}" style="color:var(--danger);">×</button></td>
       </tr>
     `).join("");
     tbody.querySelectorAll("input[data-f]").forEach((inp) => {
@@ -437,43 +438,43 @@ function openRoutineDialog(routine) {
   const overlay = document.createElement("div");
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:9999;";
   overlay.innerHTML = `
-    <div style="background:var(--bg-secondary,#1a1f29);border:1px solid var(--border-color,#2a3441);border-radius:8px;padding:24px;max-width:860px;width:95%;max-height:92vh;overflow:auto;">
-      <h3 style="margin-top:0;">${isEdit ? "Editar rutina" : "Nueva rutina"}</h3>
-      <div style="display:grid;gap:14px;">
-        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr;gap:8px;">
-          <label>Nombre<input id="rt-name" value="${escHtml(r.name)}" style="width:100%;"></label>
-          <label>Hora inicio<input id="rt-hs" type="number" value="${r.hourStart ?? 9}" min="0" max="23"></label>
-          <label>Hora fin<input id="rt-he" type="number" value="${r.hourEnd ?? 19}" min="0" max="23"></label>
-          <label>Timezone<input id="rt-tz" value="${escHtml(r.timezone || 'America/Argentina/Buenos_Aires')}" style="width:100%;"></label>
+    <div class="modal-card" style="max-width:880px;width:95%;max-height:92vh;overflow:auto;animation:none;">
+      <div class="modal-header"><h3>${isEdit ? "Editar rutina" : "Nueva rutina"}</h3></div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr;gap:12px;">
+          <label class="rt-field"><span>Nombre</span><input id="rt-name" value="${escHtml(r.name)}"></label>
+          <label class="rt-field"><span>Hora inicio</span><input id="rt-hs" type="number" value="${r.hourStart ?? 9}" min="0" max="23"></label>
+          <label class="rt-field"><span>Hora fin</span><input id="rt-he" type="number" value="${r.hourEnd ?? 19}" min="0" max="23"></label>
+          <label class="rt-field"><span>Timezone</span><input id="rt-tz" value="${escHtml(r.timezone || 'America/Argentina/Buenos_Aires')}"></label>
         </div>
 
-        <div style="border:1px solid var(--border-color,#2a3441);border-radius:6px;padding:14px;">
+        <div class="card" style="padding:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <strong>Curva de calentamiento por fases (goghl.ai)</strong>
-            <div>
-              <button class="btn-table-action" id="rt-default-curve">Aplicar curva default</button>
-              <button class="btn-table-action" id="rt-add-phase" style="color:#10b981;">+ fase</button>
+            <strong>Curva de calentamiento por fases</strong>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" id="rt-default-curve">Aplicar curva default</button>
+              <button class="btn btn-secondary btn-sm" id="rt-add-phase">+ fase</button>
             </div>
           </div>
-          <small style="color:var(--text-secondary,#888);">
-            Cada fase aplica HASTA su <em>untilDay</em> (vacío = sin límite, fase final).
-            <em>allowAutomation</em>=off significa que el setter debe operar manualmente, sin envíos automáticos.
+          <p style="color:var(--text-tertiary);font-size:var(--text-xs);line-height:1.55;margin-bottom:12px;">
+            Cada fase aplica hasta su <em>untilDay</em> (vacío = sin límite, fase final).
+            <em>allowAutomation</em> = off significa que el setter debe operar manualmente, sin envíos automáticos.
             Drip mín/máx en milisegundos. Hard cap: 2000 msg/día, drip ≥ 3000ms.
-          </small>
-          <table style="width:100%;margin-top:10px;font-size:12px;">
-            <thead><tr><th align="left">Nombre</th><th>Hasta día</th><th>Msg/día</th><th>Drip min</th><th>Drip max</th><th>Auto</th><th></th></tr></thead>
+          </p>
+          <table>
+            <thead><tr><th>Nombre</th><th>Hasta día</th><th>Msg/día</th><th>Drip min</th><th>Drip max</th><th>Auto</th><th></th></tr></thead>
             <tbody id="rt-phases-tbody"></tbody>
           </table>
         </div>
 
-        <label>Mensajes (uno por línea)<textarea id="rt-msgs" rows="5" style="width:100%;font-family:inherit;">${escHtml((r.messages || []).join("\n"))}</textarea></label>
-        <label>Targets (teléfonos, uno por línea, solo dígitos con país)<textarea id="rt-tgts" rows="4" style="width:100%;font-family:inherit;">${escHtml((r.targets || []).join("\n"))}</textarea></label>
-        <label><input type="checkbox" id="rt-ar" ${r.autoReply ? "checked" : ""}> Auto-responder mensajes entrantes</label>
-        <label>Respuestas automáticas (una por línea)<textarea id="rt-ars" rows="3" style="width:100%;font-family:inherit;">${escHtml((r.autoReplies || []).join("\n"))}</textarea></label>
+        <label class="rt-field"><span>Mensajes (uno por línea)</span><textarea id="rt-msgs" rows="5">${escHtml((r.messages || []).join("\n"))}</textarea></label>
+        <label class="rt-field"><span>Targets (teléfonos, uno por línea, solo dígitos con país)</span><textarea id="rt-tgts" rows="4">${escHtml((r.targets || []).join("\n"))}</textarea></label>
+        <label class="checkbox-label"><input type="checkbox" id="rt-ar" ${r.autoReply ? "checked" : ""}> Auto-responder mensajes entrantes</label>
+        <label class="rt-field"><span>Respuestas automáticas (una por línea)</span><textarea id="rt-ars" rows="3">${escHtml((r.autoReplies || []).join("\n"))}</textarea></label>
       </div>
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px;">
-        <button class="btn-table-action" id="rt-cancel">Cancelar</button>
-        <button class="btn-primary pill-btn" id="rt-save">Guardar</button>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="rt-cancel">Cancelar</button>
+        <button class="btn btn-primary" id="rt-save">Guardar</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -523,13 +524,13 @@ function renderMyWhatsapps() {
   view.innerHTML = `
     <div class="content-header"><h2>Mis WhatsApps</h2></div>
     <div style="padding:0 32px 32px;">
-      <p style="color:var(--text-secondary,#888);margin-bottom:16px;">
+      <p style="color:var(--text-secondary,var(--text-tertiary));margin-bottom:16px;">
         Para operar tus cuentas, abrí la app desktop wa-multi en tu PC.
         Los comandos del admin van a llegar automáticamente.
       </p>
       <table class="leads-table" style="width:100%;">
         <thead><tr><th>Cuenta</th><th>Teléfono</th><th>Estado</th><th>Rutina</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary,#888);">No tenés cuentas asignadas todavía</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary,var(--text-tertiary));">No tenés cuentas asignadas todavía</td></tr>`}</tbody>
       </table>
     </div>
   `;
