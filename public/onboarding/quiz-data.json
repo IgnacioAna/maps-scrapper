@@ -1,64 +1,458 @@
 {
-  "_descripcion": "Quiz oficial del onboarding SCM. Cada módulo: 5 preguntas multiple-choice con 3 opciones. Aprobás con 4 correctas. 'correcta' es el índice 0-based.",
+  "_info": {
+    "descripcion": "Preguntas del quiz del Onboarding SCM",
+    "total_modulos": 8,
+    "preguntas_por_modulo": 5,
+    "total_preguntas": 40,
+    "aprobacion": "4 de 5 correctas (80%)",
+    "formato_correcta": "índice 0-based del array de opciones (0=a, 1=b, 2=c)"
+  },
+
   "modulo1": {
+    "titulo": "El proyecto",
     "preguntas": [
       {
-        "pregunta": "¿Cuál es el problema principal que SCM resuelve para las clínicas dentales?",
+        "pregunta": "¿Por qué la base de datos de una clínica vale más que conseguir un paciente nuevo desde cero?",
         "opciones": [
-          "a) Diseñar páginas web bonitas",
-          "b) Llenar la agenda con pacientes que sí se presentan al turno",
-          "c) Vender productos de higiene dental"
+          "Porque los pacientes viejos pagan más rápido que los nuevos",
+          "Porque ya superaron las barreras de confianza, información y costo",
+          "Porque la publicidad para conseguir nuevos no funciona en clínicas dentales"
         ],
         "correcta": 1,
-        "explicacion": "SCM existe para que las clínicas tengan agenda llena de pacientes calificados que efectivamente vienen al turno, no para tareas de diseño o venta de productos."
+        "explicacion": "El paciente que ya pasó por la clínica ya generó confianza, ya conoce los tratamientos y ya pagó alguna vez. Esas tres barreras son las que un lead nuevo todavía tiene que superar. Volvé a la sección 'Por qué la base de datos vale más que un lead frío'."
       },
       {
-        "pregunta": "¿Por qué la clínica dental promedio no resuelve esto sola?",
+        "pregunta": "Un prospecto te escribe '¿esto cómo funciona exactamente, explicame las fases del sistema?'. ¿Qué hacés?",
         "opciones": [
-          "a) Porque no quiere más pacientes",
-          "b) Porque el dueño es dentista, no marketer, y no tiene tiempo ni sistema",
-          "c) Porque las redes sociales no funcionan en odontología"
+          "Le explico las 3 fases (reactivación, post-turno, retención) en detalle por chat",
+          "Le digo que es mejor verlo en una llamada corta con Ignacio y le ofrezco horarios",
+          "Le mando un PDF completo con toda la información para que la lea tranquilo"
         ],
         "correcta": 1,
-        "explicacion": "El dentista promedio es excelente clínicamente pero no tiene formación ni tiempo para construir un sistema de adquisición de pacientes. Por eso terceriza."
+        "explicacion": "Tu trabajo es generar curiosidad, no satisfacerla. Si explicás todo por chat, ya no hay razón para la llamada. La llamada existe para mostrar el sistema en contexto."
       },
       {
-        "pregunta": "¿Qué es lo que efectivamente compra la clínica cuando contrata SCM?",
+        "pregunta": "¿Qué vende SCM, en una línea?",
         "opciones": [
-          "a) Anuncios en Facebook",
-          "b) Tiempo de hacerlo bien sin tener que aprenderlo",
-          "c) Una página web nueva"
+          "Marketing y publicidad para clínicas dentales",
+          "Una herramienta de IA que automatiza el WhatsApp de la clínica",
+          "Una forma sistemática de recuperar dinero ya generado en clínicas que están perdiendo plata sin saber por dónde"
         ],
-        "correcta": 1,
-        "explicacion": "La clínica compra tiempo y resultado: que alguien que sabe haga el trabajo de captar y calificar pacientes mientras el dentista atiende su consulta."
+        "correcta": 2,
+        "explicacion": "SCM no vende mensajes ni automatizaciones. La forma de presentarlo a un dueño de clínica es siempre desde el ángulo del dinero perdido en pacientes que ya están en su base. Volvé a la sección 'La regla central'."
       },
       {
-        "pregunta": "¿Qué pasa si llega un paciente que no se presenta al turno (no-show)?",
+        "pregunta": "¿Cuáles son las cinco fugas que casi nadie trabaja en una clínica?",
         "opciones": [
-          "a) Es problema solo del paciente",
-          "b) Es una pérdida de tiempo y plata para la clínica que afecta la rentabilidad",
-          "c) Mejora las métricas de la clínica"
+          "Pacientes que no volvieron, consultas sin agenda, presupuestos sin respuesta, no-shows abandonados, tratamientos a medio terminar",
+          "Falta de publicidad, mala atención, precios altos, ubicación mala, equipo desmotivado",
+          "Web desactualizada, redes sin contenido, falta de promociones, sin convenios, sin sucursales"
         ],
-        "correcta": 1,
-        "explicacion": "Un no-show es tiempo del consultorio bloqueado más costos operativos sin ingreso. Es uno de los problemas más caros que SCM ayuda a reducir mediante calificación."
+        "correcta": 0,
+        "explicacion": "Las cinco fugas son todas situaciones donde el paciente YA está en contacto con la clínica pero se pierde por falta de seguimiento. Volvé a la sección 'Las cinco fugas que casi nadie trabaja'."
       },
       {
-        "pregunta": "¿Cuál es la diferencia entre un lead y un paciente calificado?",
+        "pregunta": "Un dueño te pregunta '¿esto realmente funciona, tenés casos?'. ¿Qué le contestás?",
         "opciones": [
-          "a) No hay diferencia, son sinónimos",
-          "b) El lead muestra interés inicial; el paciente calificado tiene intención real, capacidad y se va a presentar",
-          "c) El paciente calificado es más barato de conseguir"
+          "Le tiro las métricas exactas que tengo: 'tenemos un cliente con 71 citas en 6 semanas con 1.859 mensajes'",
+          "Le digo que sí, tenemos clientes activos generando agendas todas las semanas, y le ofrezco una llamada con Ignacio para que se los muestre con detalle",
+          "Le mando capturas de WhatsApp del cliente actual para que las vea él mismo"
         ],
         "correcta": 1,
-        "explicacion": "Un lead es alguien que respondió. Un calificado es alguien con intención real, posibilidad económica y compromiso de venir. La calificación es lo que hacés vos como setter."
+        "explicacion": "Cuando preguntan '¿tenés casos?', la respuesta es simple: sí. Pero los casos se muestran en contexto durante la llamada, no se sueltan números o capturas por chat. Tu trabajo es generar curiosidad sobre los casos, no satisfacerla por escrito."
       }
     ]
   },
-  "modulo2": { "preguntas": [] },
-  "modulo3": { "preguntas": [] },
-  "modulo4": { "preguntas": [] },
-  "modulo5": { "preguntas": [] },
-  "modulo6": { "preguntas": [] },
-  "modulo7": { "preguntas": [] },
-  "modulo8": { "preguntas": [] }
+
+  "modulo2": {
+    "titulo": "Tu rol",
+    "preguntas": [
+      {
+        "pregunta": "¿Cuál es tu trabajo real como setter?",
+        "opciones": [
+          "Cerrar la venta del sistema con el cliente",
+          "Abrir conversaciones, detectar interés real y llevar oportunidades a llamada con Ignacio",
+          "Convencer al cliente de que contrate SCM por chat"
+        ],
+        "correcta": 1,
+        "explicacion": "Tu rol no es cerrar ventas. Es abrir bien la puerta. El cierre lo hace Ignacio en la llamada. Sin buena prospección y conversación de tu parte, no hay llamada valiosa para cerrar."
+      },
+      {
+        "pregunta": "¿Cuál es la regla del dolor operativo?",
+        "opciones": [
+          "Hay que dar mucho valor gratis al cliente para que después compre",
+          "La palanca que mueve a un dueño de clínica no es 'darle valor', es identificar (o hacer visible) el dolor operativo que ya tiene",
+          "Hay que mostrarle al cliente todas las funcionalidades del sistema para que entienda el valor"
+        ],
+        "correcta": 1,
+        "explicacion": "A los dueños de clínica no les interesa contenido educativo ni 'tips'. Les importa lo que pasa en su operación todos los días: tiempo del equipo perdido, pacientes que se caen, plata que no entra. Volvé a la sección 'La regla del dolor'."
+      },
+      {
+        "pregunta": "Un lead te dice 'tenemos algo armado pero no es muy bueno'. ¿Qué hacés?",
+        "opciones": [
+          "Lo descarto porque ya tiene algo armado",
+          "Le hago una pregunta más para ver si lo manejan con sistema o manual desde el equipo",
+          "Le explico inmediatamente cómo nuestro sistema es mejor que el que tienen"
+        ],
+        "correcta": 1,
+        "explicacion": "Hay reconocimiento pero no urgencia. Profundizá una pregunta más antes de mover a llamada. Si responde 'yo lo hago' o 'la chica de recepción', el dolor aparece solo. NO descartes y NO te pongas a vender de inmediato."
+      },
+      {
+        "pregunta": "¿Cuál es el volumen mínimo recomendado de mensajes nuevos por día?",
+        "opciones": [
+          "30 mensajes por día",
+          "60 mensajes por día",
+          "120 mensajes por día"
+        ],
+        "correcta": 2,
+        "explicacion": "120 mensajes por día es el mínimo. Por debajo de eso, los números no cierran. Es un trabajo de volumen sostenido, no de mensajes ocasionales."
+      },
+      {
+        "pregunta": "Cuando arrancás el día, ¿cuál es la primera prioridad?",
+        "opciones": [
+          "Mandar mensajes nuevos para sumar volumen rápido",
+          "Responder conversaciones abiertas del día anterior",
+          "Cargar la planilla con lo del día anterior"
+        ],
+        "correcta": 1,
+        "explicacion": "Si alguien te respondió ayer y vos no contestás hasta mañana, lo perdiste. La velocidad de primera respuesta es lo que más afecta tu tasa de conversión. Primero responder, después seguimientos, después volumen nuevo."
+      }
+    ]
+  },
+
+  "modulo3": {
+    "titulo": "Sistema operativo",
+    "preguntas": [
+      {
+        "pregunta": "¿Qué pasa cuando enviás el mensaje de calificación de tu variante?",
+        "opciones": [
+          "El sistema lo marca automáticamente como 'Calificado'",
+          "Tenés que marcarlo manualmente como 'Calificado' en el panel",
+          "El sistema lo deja en 'En proceso' hasta que el lead responda"
+        ],
+        "correcta": 0,
+        "explicacion": "El sistema marca automáticamente como 'Calificado' cuando enviás el mensaje de calificación. No tenés que hacer nada manual para eso."
+      },
+      {
+        "pregunta": "¿Quién decide qué variante usás?",
+        "opciones": [
+          "Vos elegís la variante que mejor te funcione",
+          "Ignacio asigna las variantes desde el Centro de Comando",
+          "Cada setter alterna entre variantes según el lead"
+        ],
+        "correcta": 1,
+        "explicacion": "Las variantes las asigna Ignacio. Vos no elegís ni cambiás por tu cuenta. La consistencia es lo que permite medir cuál variante convierte mejor. Si pensás que tu variante no funciona, decíselo a Ignacio, NO la cambies vos."
+      },
+      {
+        "pregunta": "Para una cuenta de WhatsApp recién calentada (3+ semanas), ¿cuál es el ritmo recomendado?",
+        "opciones": [
+          "1 mensaje cada 30 segundos como máximo",
+          "1 mensaje cada 1-2 minutos",
+          "1 mensaje cada 5 minutos como mínimo"
+        ],
+        "correcta": 1,
+        "explicacion": "Cuenta calentada (3+ semanas): 1 mensaje cada 1-2 minutos. Cuenta nueva: cada 2-3 min. Cuenta consolidada (1+ mes): cada 30-60 segundos. Variá los tiempos para que parezca humano, no exactamente cada N segundos."
+      },
+      {
+        "pregunta": "Te aparece una pregunta del lead que no sabés cómo responder y no encontrás respuesta en el Banco de Respuestas. ¿Qué hacés?",
+        "opciones": [
+          "Invento una respuesta razonable para no quedar mal",
+          "Le digo al lead que le voy a chequear con el equipo y le respondo en un rato",
+          "Ignoro el mensaje y espero que el lead se olvide de la pregunta"
+        ],
+        "correcta": 1,
+        "explicacion": "NO inventes nunca. Inventar una respuesta es peor que decir 'déjame chequear'. Si decís algo erróneo y después se descubre, perdés credibilidad y perdés el lead. Después le preguntás a Ignacio o consultás el manual."
+      },
+      {
+        "pregunta": "El timer anti-baneo, ¿quién lo prende?",
+        "opciones": [
+          "El sistema lo activa automáticamente al abrir el panel",
+          "Lo prendés vos manualmente cuando vas a empezar a mandar mensajes",
+          "Lo prende Ignacio desde el Centro de Comando"
+        ],
+        "correcta": 1,
+        "explicacion": "El timer lo prendés vos manualmente. Te ayuda a controlar el ritmo de envíos para no quemar la cuenta. NO es opcional, es protección. Una cuenta quemada significa días de productividad perdidos."
+      }
+    ]
+  },
+
+  "modulo4": {
+    "titulo": "Conversación",
+    "preguntas": [
+      {
+        "pregunta": "¿Cuál es el único objetivo del mensaje de apertura?",
+        "opciones": [
+          "Vender el sistema y mostrar todos los beneficios",
+          "Que el lead te responda. Nada más",
+          "Detectar el dolor operativo del cliente"
+        ],
+        "correcta": 1,
+        "explicacion": "La apertura NO vende, NO explica, NO menciona el precio, NO detecta dolor. Es un mensaje neutro diseñado para bajar la fricción y generar primera respuesta. Es estrategia anti-baneo, no estilo."
+      },
+      {
+        "pregunta": "Un lead te dice '¿de qué se trata?' después de tu mensaje de calificación. ¿Qué hacés?",
+        "opciones": [
+          "Le explico de qué se trata el sistema en detalle por chat",
+          "Le ofrezco directamente una llamada con dos opciones de horario",
+          "Le mando un mensaje largo explicando las 3 fases del sistema"
+        ],
+        "correcta": 1,
+        "explicacion": "Curiosidad sin compromiso es señal verde para llamada. NO le tirés todo. Movelo a llamada con dos opciones de horario concretas (ej: '¿martes 10am o miércoles 4pm?')."
+      },
+      {
+        "pregunta": "Un lead te tira el precio en pleno chat: '¿cuánto cuesta?'. ¿Qué hacés?",
+        "opciones": [
+          "Le tiro un número aproximado para que tenga una idea",
+          "Le digo que depende de cómo trabajen hoy y le ofrezco una llamada con Ignacio",
+          "Le digo que es muy caro y que tiene que ver si está dispuesto a invertir"
+        ],
+        "correcta": 1,
+        "explicacion": "Redirigís precio a llamada sin sonar evasivo. NO le tirés número específico. El precio se discute en llamada con Ignacio. Si vos bajás precio en WhatsApp, le decís al lead que el precio era inflado."
+      },
+      {
+        "pregunta": "¿Cuándo NO conviene apurarse a responder al lead?",
+        "opciones": [
+          "Nunca. Siempre hay que responder lo más rápido posible",
+          "Después del mensaje de calificación o cuando ya agendaste la llamada",
+          "Cuando el lead te respondió por primera vez"
+        ],
+        "correcta": 1,
+        "explicacion": "Hay momentos donde más rápido es peor: después del mensaje de calificación (parecés ansioso), cuando agendaste la llamada (no le sigas mandando mensajes), o cuando dijo 'déjame pensarlo' (dale 24-48hs). En esos casos, esperar es estrategia."
+      },
+      {
+        "pregunta": "Un lead te dice 'no me interesa'. ¿Qué hacés?",
+        "opciones": [
+          "Le insisto explicándole los beneficios del sistema",
+          "Le pregunto qué parte no le interesa para entender su objeción",
+          "Cierro con elegancia: 'De una, no hay drama. Si más adelante querés ver, escribime. Éxitos.'"
+        ],
+        "correcta": 2,
+        "explicacion": "Si te dijo no, te dijo no. Insistir te quema con esa persona para siempre. Un cierre profesional sin insistencia te deja la puerta abierta para retomar en 6 meses si su situación cambia."
+      }
+    ]
+  },
+
+  "modulo5": {
+    "titulo": "Canales y warmeo",
+    "preguntas": [
+      {
+        "pregunta": "¿Por qué hay que calentar (warmear) un número nuevo de WhatsApp antes de mandar volumen?",
+        "opciones": [
+          "Porque WhatsApp tiene algoritmos para detectar y banear números con comportamiento de spam",
+          "Porque al principio los mensajes salen más caros",
+          "Porque el sistema necesita tiempo para configurar la cuenta"
+        ],
+        "correcta": 0,
+        "explicacion": "Cada número nuevo necesita warmeo sin excepción. Si no calentás, te arriesgás a baneo temporal o permanente, mensajes que nunca llegan, o ser marcado como spam. Una cuenta quemada significa días de productividad perdidos."
+      },
+      {
+        "pregunta": "En la fase 1 del warmeo (días 1-2), ¿cuál es el volumen máximo recomendado?",
+        "opciones": [
+          "10-15 mensajes por día a contactos personales que respondan",
+          "50 mensajes por día con leads frescos",
+          "100 mensajes por día para acelerar el proceso"
+        ],
+        "correcta": 0,
+        "explicacion": "Fase 1 (días 1-2): 10-15 mensajes/día, no más, a contactos personales o conocidos que vayan a responder. La meta es 50%+ de tasa de respuesta. Saltar fases por ansiedad termina en cuenta baneada."
+      },
+      {
+        "pregunta": "¿Cuál es la herramienta clave para mantener flujo constante de leads?",
+        "opciones": [
+          "Hootsuite",
+          "Instant Data Scraper (extensión de Chrome)",
+          "ChatGPT"
+        ],
+        "correcta": 1,
+        "explicacion": "Instant Data Scraper es una extensión de Chrome para extraer listas (likes, seguidores, comentarios) y bajarlas rápido. Bien usada, te permite armar bases de datos en minutos. Si no sabés usarla, escribile a Ignacio."
+      },
+      {
+        "pregunta": "¿Cuándo es mejor armar la base de leads para la semana?",
+        "opciones": [
+          "Todos los días un poco antes de empezar a mandar",
+          "Los domingos, para llegar al lunes con combustible",
+          "Solo cuando se te acaban los leads en plena semana"
+        ],
+        "correcta": 1,
+        "explicacion": "Los domingos armás la base, durante la semana solo ejecutás. Si mezclás todo (buscar + filtrar + mandar + responder) el trabajo se vuelve lento, pesado y desordenado. La prospección no se improvisa, se prepara."
+      },
+      {
+        "pregunta": "Un lead vive más activo en LinkedIn que en Instagram. ¿Qué hacés?",
+        "opciones": [
+          "Lo abordo igual por Instagram porque es mi canal preferido",
+          "Lo abordo por LinkedIn porque es donde tengo más chances de respuesta",
+          "Lo descarto porque solo trabajo Instagram"
+        ],
+        "correcta": 1,
+        "explicacion": "El canal es una herramienta, la oportunidad es el objetivo. NO te enamores de una plataforma. Si un lead vive en LinkedIn, es ahí donde lo abordás. La rigidez de canal te hace perder leads."
+      }
+    ]
+  },
+
+  "modulo6": {
+    "titulo": "Tracking",
+    "preguntas": [
+      {
+        "pregunta": "¿Por qué importa el tracking diario?",
+        "opciones": [
+          "Porque sin orden no podés saber qué retomar y se te escapan oportunidades",
+          "Porque es un requisito burocrático del sistema",
+          "Porque genera reportes para la empresa"
+        ],
+        "correcta": 0,
+        "explicacion": "El tracking no está para llenar planillas. Está para que no se te escapen oportunidades, para saber qué retomar y para sostener volumen sin caos. Una charla abierta no puede depender de la memoria."
+      },
+      {
+        "pregunta": "¿Cuántas conversaciones por día tenés que subir al Drive como evidencia?",
+        "opciones": [
+          "Solo las que terminaron en agendamiento",
+          "Mínimo 5 por día (mezcla de buenas y con fricción)",
+          "Todas las del día sin excepción"
+        ],
+        "correcta": 1,
+        "explicacion": "Mínimo 5 conversaciones por día, ideal: 2 buenas + 3 con fricción/objeción/no respondió. Que se vea el contexto, no recortes mínimos. Esta evidencia es lo que entrena al sistema y al equipo."
+      },
+      {
+        "pregunta": "Tu tasa de respuesta bajó esta semana sin razón aparente. ¿Qué deberías mirar primero?",
+        "opciones": [
+          "La calidad del opener y de la base que estás trabajando",
+          "Si tu cuenta de WhatsApp está bloqueada",
+          "Si Ignacio cambió las variantes sin avisarte"
+        ],
+        "correcta": 0,
+        "explicacion": "Tasa de respuesta = calidad del opener + calidad de la base. Si baja la respuesta, ese es el primer lugar a mirar. Si responden pero no agendan, el problema está en la conversación."
+      },
+      {
+        "pregunta": "¿Cuál es la métrica que más importa de todas?",
+        "opciones": [
+          "Mensajes enviados por día",
+          "Tasa de respuesta",
+          "Llamadas agendadas con Ignacio"
+        ],
+        "correcta": 2,
+        "explicacion": "Mandar 200 mensajes/día sin agendamientos no sirve. El número final que importa son las llamadas. Todo lo demás son métricas intermedias para entender dónde se cae el proceso."
+      },
+      {
+        "pregunta": "¿Cuál es el error más común que tira abajo el tracking?",
+        "opciones": [
+          "Trackear de a ratos o confiar en la memoria 'después lo anoto'",
+          "Hacer planillas demasiado simples",
+          "Subir muy pocas conversaciones al Drive"
+        ],
+        "correcta": 0,
+        "explicacion": "'Después lo anoto' = no lo anotás. Si trackeás un día sí y dos no, los datos no sirven. Anotá en el momento, con el chat fresco. La constancia es lo que hace funcional al tracking."
+      }
+    ]
+  },
+
+  "modulo7": {
+    "titulo": "Objeciones",
+    "preguntas": [
+      {
+        "pregunta": "¿Qué significa la regla V → R → R?",
+        "opciones": [
+          "Validar lo que dijo el lead, Reframear el ángulo, Redirigir a llamada",
+          "Verificar el lead, Responder rápido, Recibir el pago",
+          "Verificar la objeción, Repetir el argumento, Resolver por chat"
+        ],
+        "correcta": 0,
+        "explicacion": "Validar (acknowledge sin discutir) → Reframear (mostrar otra perspectiva sin negar) → Redirigir (volver al objetivo: la llamada). Tres pasos que aplican a CUALQUIER objeción, conocida o nueva."
+      },
+      {
+        "pregunta": "Un lead te dice 'pasame info y la veo'. ¿Qué hacés?",
+        "opciones": [
+          "Le mando un PDF completo con toda la información del sistema",
+          "Le digo que la info útil es personalizada y le ofrezco una llamada corta",
+          "Le mando varios mensajes con cada parte del sistema explicada"
+        ],
+        "correcta": 1,
+        "explicacion": "Le decís que la info útil es personalizada (lo cual es cierto). Eso justifica naturalmente la llamada en lugar de un PDF genérico que no se lee. 'Pasame info' suele ser una forma educada de patear la conversación."
+      },
+      {
+        "pregunta": "Un lead te dice 'ya trabajo con alguien de marketing'. ¿Qué hacés?",
+        "opciones": [
+          "Le explico por qué nuestro sistema es mejor que cualquier agencia de marketing",
+          "Le digo que esto no es marketing ni publicidad, es complementario, y le ofrezco una llamada para mostrarle cómo funciona",
+          "Lo descarto porque ya tiene algo trabajando"
+        ],
+        "correcta": 1,
+        "explicacion": "NO competís con su agencia, diferenciás. SCM no es marketing, es un sistema que trabaja la base de pacientes que ya tiene. Eso saca el conflicto y abre la posibilidad de que sea un servicio adicional."
+      },
+      {
+        "pregunta": "Un lead te dice 'eso lo ve mi socio, no yo'. ¿Qué hacés?",
+        "opciones": [
+          "Sigo vendiendo a esta persona para que después le pase la info al socio",
+          "Pregunto si me puede pasar contacto del socio o si prefiere coordinarlo él directamente",
+          "Lo descarto porque no es decisor"
+        ],
+        "correcta": 1,
+        "explicacion": "No te quedés vendiendo a alguien que no decide. Llegá al decisor real. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada con el socio para evitar el ida y vuelta."
+      },
+      {
+        "pregunta": "Un lead te dice 'es caro, está fuera de presupuesto'. ¿Qué hacés?",
+        "opciones": [
+          "Le ofrezco un descuento por chat para cerrar la operación",
+          "Le pregunto '¿caro en relación a qué?' y le ofrezco una llamada para ver los números reales",
+          "Le digo que el sistema tiene mucho valor y vale lo que cuesta"
+        ],
+        "correcta": 1,
+        "explicacion": "'¿Caro en relación a qué?' no es agresiva, es lógica. Hace que el lead piense en el costo del problema actual en lugar del costo del sistema. NO discutas precio por chat. NUNCA bajes precio en WhatsApp: eso le dice al lead que el precio era inflado."
+      }
+    ]
+  },
+
+  "modulo8": {
+    "titulo": "Glosario",
+    "preguntas": [
+      {
+        "pregunta": "¿Qué significa 'base dormida' en el contexto de SCM?",
+        "opciones": [
+          "Pacientes que están durmiendo cuando reciben los mensajes",
+          "El conjunto de pacientes que ya pasaron por la clínica pero dejaron de tener contacto",
+          "Una base de datos que el sistema todavía no procesó"
+        ],
+        "correcta": 1,
+        "explicacion": "Base dormida = pacientes/leads que ya pasaron por la clínica o mostraron interés, pero dejaron de tener contacto. Es donde está la mayor oportunidad: gente que ya conoce la clínica y solo espera un mensaje en el momento correcto."
+      },
+      {
+        "pregunta": "¿Qué es el 'dolor operativo' que tenés que detectar?",
+        "opciones": [
+          "El dolor físico que sienten los pacientes durante los tratamientos",
+          "El problema real que tiene el dueño de la clínica en su día a día (tiempo perdido, pacientes que se caen, plata que no entra)",
+          "El estrés que genera tener que pagar un sistema nuevo"
+        ],
+        "correcta": 1,
+        "explicacion": "Dolor operativo es lo que pasa dentro de la operación de la clínica todos los días: equipo perdiendo tiempo en tareas manuales, pacientes que se caen entre las grietas, no-shows, plata que no entra por no escribir un mensaje a tiempo."
+      },
+      {
+        "pregunta": "Cuando se dice que un lead es 'no-fit', ¿qué significa?",
+        "opciones": [
+          "Que no le gustó el mensaje que le mandaste",
+          "Que no encaja con lo que ofrecemos (por tamaño, tipo de servicio, no es decisor, etc.)",
+          "Que su clínica está cerrada"
+        ],
+        "correcta": 1,
+        "explicacion": "No-fit = lead que no encaja. Puede ser por tamaño de clínica, tipo de servicio, no decisor, etc. Se descarta profesionalmente. NO es un rechazo personal ni una discusión, es un filtro lógico."
+      },
+      {
+        "pregunta": "¿Qué es el 'Banco de Respuestas'?",
+        "opciones": [
+          "El sistema bancario que procesa los pagos del cliente",
+          "Una base de preguntas frecuentes con respuestas oficiales que la IA genera a partir de los manuales",
+          "Una base de datos con números de teléfono de potenciales clientes"
+        ],
+        "correcta": 1,
+        "explicacion": "El Banco de Respuestas usa el Centro de Entrenamiento (donde están los manuales) como fuente de verdad. La IA genera respuestas a partir de ese material. Cuando no sabés qué responder, lo consultás. Si la respuesta no estaba, le avisás a Ignacio para sumarla."
+      },
+      {
+        "pregunta": "Cuando alguien menciona 'el caso Sofía', ¿a qué se refiere?",
+        "opciones": [
+          "A una empleada del equipo SCM",
+          "A la clínica de la doctora Sofía Campanella en Uruguay, cliente activo y caso de referencia",
+          "A un caso teórico de ejemplo en los manuales"
+        ],
+        "correcta": 1,
+        "explicacion": "El caso Sofía es un cliente real activo en Uruguay (clínica de la doctora Sofía Campanella). Genera agendas reales todas las semanas. Sirve como prueba social: 'sí, tenemos clientes activos'. Los números los muestra Ignacio en la llamada."
+      }
+    ]
+  }
 }

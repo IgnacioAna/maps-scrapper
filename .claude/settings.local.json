@@ -60,7 +60,9 @@
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3099 -ErrorAction SilentlyContinue | Select-Object LocalAddress, OwningProcess\")",
       "PowerShell(Stop-Process -Id 15996 -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Stop-Process -Force)",
-      "PowerShell(\"Done\")"
+      "PowerShell(\"Done\")",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('public/onboarding/quiz-data.json','utf8'\\)\\); for\\(let i=1;i<=8;i++\\){const m=d['modulo'+i]; console.log\\('M'+i, m.titulo, '-', m.preguntas.length, 'preguntas'\\);}\")",
+      "Bash(git commit *)"
     ]
   }
 }
