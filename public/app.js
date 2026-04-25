@@ -1859,15 +1859,52 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     endSessionBtn.addEventListener('click', async () => {
       if (!activeSession) return;
+      let summary = null;
       try {
-        await fetch(apiUrl('/api/setters/sessions/end'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setter: activeSession.setter }) });
+        const r = await fetch(apiUrl('/api/setters/sessions/end'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setter: activeSession.setter }) });
+        const d = await r.json();
+        summary = d?.session?.summary || null;
+        var aiText = d?.session?.aiSummary || null;
       } catch (e) { console.error(e); }
       clearInterval(sessionTimerInterval);
       sessionBanner.classList.add('hidden');
       sessionBtn.disabled = false;
       sessionBtn.querySelector('.btn-text').textContent = 'Iniciar Sesión';
       activeSession = null;
+      if (summary) showSessionSummaryModal(summary, aiText);
     });
+
+    // Modal con resumen post-sesión
+    function showSessionSummaryModal(s, aiText) {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal-card" style="max-width:560px;">
+          <div class="modal-header">
+            <h3>Resumen de tu sesión</h3>
+            <button class="modal-close-btn" data-close>×</button>
+          </div>
+          <div class="modal-body">
+            <div class="session-summary-grid">
+              <div class="session-summary-stat"><div class="session-summary-num">${s.durationMin}m</div><div class="session-summary-lbl">Duración</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.connections}</div><div class="session-summary-lbl">Conexiones</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.replies}</div><div class="session-summary-lbl">Respondieron</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.qualified}</div><div class="session-summary-lbl">Calificados</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.interested}</div><div class="session-summary-lbl">Interesados</div></div>
+              <div class="session-summary-stat is-highlight"><div class="session-summary-num">${s.scheduled}</div><div class="session-summary-lbl">Agendados</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.notesAdded}</div><div class="session-summary-lbl">Notas</div></div>
+              <div class="session-summary-stat"><div class="session-summary-num">${s.sinWsp}</div><div class="session-summary-lbl">Sin WSP</div></div>
+            </div>
+            ${aiText ? `<div class="session-summary-ai"><div class="session-summary-ai-label">Análisis</div><p>${escHtml(aiText).replace(/\n/g, '<br>')}</p></div>` : ''}
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-primary" data-close>Cerrar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.querySelectorAll('[data-close]').forEach((el) => el.addEventListener('click', () => overlay.remove()));
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+    }
 
     // ── Variantes modal ──
     document.getElementById('manage-variants-btn').addEventListener('click', () => { loadVariantsModal(); variantsModal.classList.remove('hidden'); });
@@ -1893,19 +1930,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       list.innerHTML = variantsList.map(v => {
         const isOwner = isAdmin || v.setterId === mySetterId;
         const assignedSetters = settersList.filter(s => s.id === v.setterId).map(s => s.name).join(', ');
+        const blocks = [
+          { label: 'Apertura',     text: v.messages?.apertura },
+          { label: 'Problema',     text: v.messages?.problema },
+          { label: 'Prueba social', text: v.messages?.pruebaSocial },
+          { label: 'Cierre',       text: v.messages?.cierrePregunta },
+        ];
         return '<div class="variant-card">' +
-          '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + (v.weekLabel ? ' — ' + escHtml(v.weekLabel) : '') + '</span>' +
-          (isOwner ? '<button class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' : '') + '</div>' +
-          '<div class="variant-card-msgs">' +
-            '<div><strong>1.</strong> ' + escHtml(v.messages.apertura || '—') + '</div>' +
-            '<div><strong>2.</strong> ' + escHtml(v.messages.problema || '—') + '</div>' +
-            '<div><strong>3.</strong> ' + escHtml(v.messages.pruebaSocial || '—') + '</div>' +
-            '<div><strong>4.</strong> ' + escHtml(v.messages.cierrePregunta || '—') + '</div>' +
+          '<div class="variant-card-header">' +
+            '<span class="variant-card-name">' + escHtml(v.name) + (v.weekLabel ? ' <span class="variant-card-week">' + escHtml(v.weekLabel) + '</span>' : '') + '</span>' +
+            (isOwner ? '<button class="btn btn-danger btn-sm" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' : '') +
           '</div>' +
-          (isAdmin ? '<div class="variant-card-assign"><span style="color:var(--text-secondary);">Asignada a:</span> ' +
-            (assignedSetters || '<span class="text-muted">Nadie</span>') +
-            settersList.map(s => ' <button class="btn-table-action" style="font-size:10px; padding:2px 8px; color:var(--primary-color);" onclick="event.stopPropagation(); window._assignVariant(\'' + s.id + '\', \'' + v.id + '\')">' + escHtml(s.name) + '</button>').join('') +
-          '</div>' : '') + '</div>';
+          '<div class="variant-card-blocks">' +
+            blocks.map(b => '<div class="variant-card-block">' +
+              '<div class="variant-card-block-label">' + b.label + '</div>' +
+              '<div class="variant-card-block-text">' + escHtml(b.text || '—') + '</div>' +
+            '</div>').join('') +
+          '</div>' +
+          (isAdmin ? '<div class="variant-card-assign">' +
+            '<span class="variant-card-assign-label">Asignada a:</span>' +
+            ' <strong class="variant-card-assign-value">' + (assignedSetters || 'Nadie') + '</strong>' +
+            '<div class="variant-card-assign-buttons">' +
+              settersList.map(s => '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window._assignVariant(\'' + s.id + '\', \'' + v.id + '\')">' + escHtml(s.name) + '</button>').join('') +
+            '</div>' +
+          '</div>' : '') +
+        '</div>';
       }).join('');
     }
 

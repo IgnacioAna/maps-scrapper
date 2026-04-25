@@ -708,11 +708,20 @@ input:-webkit-autofill:active {
 
 /* ════════════════════════════════════════════════════════════════
    GLOBAL LOCATION PANEL + FILTERS
+   Sólo se muestra cuando hay una vista activa que lo necesita
+   (Maps, Redes). En Setteo, Llamadas, Comando, etc. queda oculto.
 ═════════════════════════════════════════════════════════════════ */
 
 .global-location-panel {
   padding: var(--space-4) var(--space-8) var(--space-2);
   border-bottom: 0;
+  display: none; /* default: oculto, se muestra abajo según vista activa */
+}
+
+/* Mostrar el filtro sólo cuando Maps o Redes están activos */
+body:has(#view-maps.active) .global-location-panel,
+body:has(#view-social.active) .global-location-panel {
+  display: block;
 }
 
 .filters-row {
@@ -1287,6 +1296,121 @@ td.empty-state .empty-state-content::before {
   margin-bottom: var(--space-3);
 }
 
+/* ────── Modal "Gestión de Variantes": cards por variante ────── */
+#variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.variant-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.variant-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.variant-card-name {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  letter-spacing: var(--tracking-tight);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.variant-card-week {
+  display: inline-block;
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-strong);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
+  font-weight: var(--weight-semibold);
+}
+
+.variant-card-blocks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 720px) {
+  .variant-card-blocks { grid-template-columns: 1fr; }
+}
+
+.variant-card-block {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.variant-card-block-label {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+}
+
+.variant-card-block-text {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.variant-card-assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.variant-card-assign-label {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  font-weight: var(--weight-semibold);
+}
+
+.variant-card-assign-value {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.variant-card-assign-buttons {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
 .copy-block-btn {
   background: transparent;
   border: 1px solid var(--border-default);
@@ -1407,14 +1531,49 @@ td.empty-state .empty-state-content::before {
 
 .lead-modal-notes,
 .notes-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  display: block;
+  width: 100%;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.lead-modal-notes h4,
+.notes-list h4 {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  font-weight: var(--weight-semibold);
+  margin: 0 0 var(--space-3);
+}
+
+.lead-modal-notes .note,
+.notes-list .note {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.lead-modal-notes .note:last-child,
+.notes-list .note:last-child {
+  border-bottom: none;
 }
 
 .note-input-row {
   display: flex;
   gap: var(--space-2);
+  margin-top: var(--space-3);
+  width: 100%;
+}
+
+.note-input-row textarea,
+.note-input-row input {
+  flex: 1;
+  min-height: 60px;
+  resize: vertical;
 }
 
 .lead-modal-actions,
@@ -1936,6 +2095,79 @@ td.empty-state .empty-state-content::before {
 .rt-field textarea {
   width: 100%;
   font-family: inherit;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SESSION SUMMARY MODAL (al cerrar sesión de setter)
+═════════════════════════════════════════════════════════════════ */
+
+.session-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+@media (max-width: 540px) {
+  .session-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.session-summary-stat {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  text-align: center;
+}
+
+.session-summary-stat.is-highlight {
+  background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 100%);
+  border-color: var(--accent-strong);
+}
+
+.session-summary-num {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}
+
+.session-summary-stat.is-highlight .session-summary-num {
+  color: var(--accent);
+}
+
+.session-summary-lbl {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  font-weight: var(--weight-semibold);
+  margin-top: var(--space-1);
+}
+
+.session-summary-ai {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.session-summary-ai-label {
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.session-summary-ai p {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
 }
 
 /* ════════════════════════════════════════════════════════════════

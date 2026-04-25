@@ -96485,6 +96485,18 @@
       "setter": "setter_tiago",
       "startedAt": "2026-04-25T05:23:58.789Z",
       "endedAt": "2026-04-25T05:24:03.397Z"
+    },
+    {
+      "id": "s_1777127809587",
+      "setter": "setter_leandro",
+      "startedAt": "2026-04-25T14:36:49.588Z",
+      "endedAt": "2026-04-25T14:36:55.166Z"
+    },
+    {
+      "id": "s_1777127829071",
+      "setter": "setter_leandro",
+      "startedAt": "2026-04-25T14:37:09.071Z",
+      "endedAt": null
     }
   ]
 }

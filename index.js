@@ -2449,15 +2449,108 @@ app.post('/api/setters/sessions/start', requireAuth, (req, res) => {
   res.json({ session });
 });
 
-app.post('/api/setters/sessions/end', requireAuth, (req, res) => {
+app.post('/api/setters/sessions/end', requireAuth, async (req, res) => {
   const { setter } = req.body;
   const data = loadSettersData();
   const effectiveSetter = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : setter;
   const active = data.sessions.find(s => s.setter === effectiveSetter && !s.endedAt);
   if (!active) return res.status(404).json({ error: "No hay sesión activa." });
   active.endedAt = new Date().toISOString();
+
+  // Resumen de la sesión: contar interacciones del setter en este período
+  const start = new Date(active.startedAt).getTime();
+  const end = new Date(active.endedAt).getTime();
+  const durationMin = Math.max(1, Math.round((end - start) / 60000));
+
+  const leads = Object.values(data.leads || {});
+  const setterLeads = leads.filter((l) => l.assignedTo === effectiveSetter);
+  let connections = 0, replies = 0, qualified = 0, interested = 0, scheduled = 0, notesAdded = 0, sinWsp = 0;
+  const interactionsSnap = [];
+  for (const lead of setterLeads) {
+    if (Array.isArray(lead.interactions)) {
+      for (const it of lead.interactions) {
+        const t = new Date(it.createdAt).getTime();
+        if (t >= start && t <= end) {
+          interactionsSnap.push({ leadName: lead.name, action: it.action, stage: it.stage, at: it.createdAt });
+          if (it.action === 'open') connections += 1;
+          if (it.action === 'qualified') qualified += 1;
+          if (it.action === 'interest') interested += 1;
+        }
+      }
+    }
+    if (Array.isArray(lead.notes)) {
+      for (const n of lead.notes) {
+        if (n.date && new Date(n.date).getTime() >= start && new Date(n.date).getTime() <= end) {
+          notesAdded += 1;
+        }
+      }
+    }
+    // Contadores aproximados según último estado
+    const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+    if (lc >= start && lc <= end) {
+      if (lead.respondio) replies += 1;
+      if (lead.estado === 'agendado') scheduled += 1;
+      if (lead.conexion === 'sin_wsp') sinWsp += 1;
+    }
+  }
+
+  active.summary = {
+    durationMin,
+    connections,
+    replies,
+    qualified,
+    interested,
+    scheduled,
+    notesAdded,
+    sinWsp,
+    totalInteractions: interactionsSnap.length,
+  };
+
+  // Resumen narrativo con IA (best-effort, no bloquea si falla)
+  active.aiSummary = null;
+  try {
+    if (qwenKey || mercuryKey) {
+      const interactionsList = interactionsSnap.slice(0, 25).map((i) => `- ${new Date(i.at).toLocaleString()}: ${i.action} → ${i.leadName}`).join("\n");
+      const prompt = `Sos un coach de un equipo de prospección por WhatsApp. Hacé un mini-resumen (3-5 lineas, español rioplatense, tono cordial pero directo) de la sesión de un setter llamado ${effectiveSetter}.
+Datos:
+- Duración: ${durationMin} min
+- Conexiones enviadas: ${connections}
+- Respondieron: ${replies}
+- Calificados: ${qualified}
+- Interesados: ${interested}
+- Agendados: ${scheduled}
+- Notas agregadas: ${notesAdded}
+- Marcados sin WhatsApp: ${sinWsp}
+- Total interacciones: ${interactionsSnap.length}
+Interacciones (primeras 25):
+${interactionsList || '(ninguna)'}
+
+Escribí: 1) un resumen ejecutivo de qué hizo, 2) un destacado positivo si lo hay, 3) una sugerencia concreta para la próxima sesión. Sin emojis, sin saludos, máximo 5 lineas.`;
+      const completion = await ai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 280,
+      });
+      active.aiSummary = completion.choices?.[0]?.message?.content?.trim() || null;
+    }
+  } catch (err) {
+    console.warn("[sessions/end] IA summary falló:", err.message);
+  }
+
   saveSettersData(data);
   res.json({ session: active });
+});
+
+// Listar sesiones (admin ve todas, setter ve las suyas)
+app.get('/api/setters/sessions', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const sessions = data.sessions || [];
+  const isSetter = req.auth?.user?.role === 'setter';
+  const setterId = req.auth?.user?.setterId;
+  const filtered = isSetter ? sessions.filter((s) => s.setter === setterId) : sessions;
+  // ordenar más recientes primero
+  const sorted = [...filtered].sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+  res.json({ sessions: sorted.slice(0, 50) });
 });
 
 // ── Calendario ──
