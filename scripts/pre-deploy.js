@@ -103,6 +103,30 @@ async function main() {
     console.log(`  setters.json guardado`);
   }
 
+  // 5. Bajar data del módulo WA (si existe el endpoint)
+  try {
+    const waResp = await fetch(`${baseUrl}/api/wa/admin/export`, { headers: { Cookie: cookies } });
+    if (waResp.ok) {
+      const waData = await waResp.json();
+      if (waData.accounts) {
+        fs.writeFileSync(path.join(DATA_DIR, "wa_accounts.json"), JSON.stringify(waData.accounts, null, 2));
+        console.log(`  wa_accounts.json guardado (${(waData.accounts.accounts || []).length} cuentas)`);
+      }
+      if (waData.routines) {
+        fs.writeFileSync(path.join(DATA_DIR, "wa_routines.json"), JSON.stringify(waData.routines, null, 2));
+        console.log(`  wa_routines.json guardado (${(waData.routines.routines || []).length} rutinas)`);
+      }
+      if (waData.events) {
+        fs.writeFileSync(path.join(DATA_DIR, "wa_events.json"), JSON.stringify(waData.events, null, 2));
+        console.log(`  wa_events.json guardado`);
+      }
+    } else if (waResp.status !== 404) {
+      console.warn(`  ⚠ módulo WA respondió ${waResp.status}, skipping wa_*.json`);
+    }
+  } catch (e) {
+    console.warn(`  ⚠ módulo WA no disponible (${e.message}), skipping wa_*.json`);
+  }
+
   console.log("\n Backup completo. Ahora podés commitear y pushear.\n");
 }
 

@@ -5,6 +5,7 @@ import fs from "fs";
 import express from "express";
 import OpenAI from "openai";
 import crypto from "crypto";
+import { mountWa } from "./src/wa/index.js";
 
 dotenv.config();
 const apiKey = process.env.API_KEY;
@@ -1104,7 +1105,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -3031,7 +3032,32 @@ app.use((err, _req, res, _next) => {
   }
 });
 
-app.listen(PORT, () => {
+// ── Módulo WhatsApp Multi-Account ────────────────────────────────────────
+// Helpers que reusa el módulo WA (auth, datos)
+function verifyCredentialsHelper(email, password) {
+  const data = loadAuthData();
+  const user = data.users.find((u) => u.email.toLowerCase() === String(email).toLowerCase().trim() && u.status === "active");
+  if (!user || !verifyPassword(password, user.password)) return null;
+  return { user };
+}
+function userIdFromSetterIdHelper(setterId) {
+  if (!setterId) return null;
+  const data = loadAuthData();
+  const user = data.users.find((u) => u.setterId === setterId && u.status === "active");
+  return user?.id || null;
+}
+
+const server = app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
   console.log("👉 Abre ese enlace en tu navegador para usar el panel de extracción.");
+});
+
+mountWa(app, server, {
+  dataDir: DATA_DIR,
+  jwtSecret: process.env.JWT_SECRET || (process.env.ADMIN_PASSWORD || "change-me-in-prod") + "_wa",
+  requireAuth,
+  requireRole,
+  getSessionFromRequest,
+  verifyCredentials: verifyCredentialsHelper,
+  userIdFromSetterId: userIdFromSetterIdHelper,
 });
