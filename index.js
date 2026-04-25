@@ -3047,10 +3047,14 @@ function userIdFromSetterIdHelper(setterId) {
   return user?.id || null;
 }
 
-const server = app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
-  console.log("👉 Abre ese enlace en tu navegador para usar el panel de extracción.");
-});
+// En tests, NODE_ENV=test → no levantamos listener, sólo exportamos `app`.
+let server = null;
+if (process.env.NODE_ENV !== "test") {
+  server = app.listen(PORT, () => {
+    console.log(`🚀 Servidor ejecutándose en http://localhost:${PORT}`);
+    console.log("👉 Abre ese enlace en tu navegador para usar el panel de extracción.");
+  });
+}
 
 mountWa(app, server, {
   dataDir: DATA_DIR,
@@ -3061,3 +3065,5 @@ mountWa(app, server, {
   verifyCredentials: verifyCredentialsHelper,
   userIdFromSetterId: userIdFromSetterIdHelper,
 });
+
+export { app };

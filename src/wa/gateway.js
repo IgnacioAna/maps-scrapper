@@ -108,6 +108,7 @@ export function isUserOnline(userId) {
 }
 
 export function getPresenceList() {
+  if (!io) return []; // en tests sin WS no hay presence
   return Array.from(presence.entries()).map(([userId, p]) => ({
     userId,
     online: p.sockets.size > 0,
@@ -118,7 +119,7 @@ export function getPresenceList() {
 }
 
 export function sendToUser(userId, event, payload) {
-  if (!io) return false;
+  if (!io) return false; // en tests / sin WS, los comandos se aceptan pero no se despachan
   io.to(`user:${userId}`).emit(event, payload);
   return true;
 }

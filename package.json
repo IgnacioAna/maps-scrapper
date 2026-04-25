@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "pre-deploy": "node scripts/pre-deploy.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:wa": "node scripts/smoke-wa.mjs"
   },
   "engines": {
     "node": ">=20.0.0"
@@ -24,6 +26,8 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.5"
   }
 }
