@@ -422,6 +422,26 @@ function makeWhatsAppMessage(variant, stage, lead = {}) {
   return text || 'Buenas, ¿cómo están?';
 }
 
+// Lista de prefijos internacionales conocidos, ordenados por longitud DESC para
+// matchear primero los más específicos (598 antes que 5, 593 antes que 5, etc.).
+// Sirve para detectar si los dígitos crudos ya traen un código de país sin "+".
+const KNOWN_INTL_PREFIXES = [
+  '598', '593', '595', '591', '506', '507',
+  '54', '56', '57', '52', '51', '58', '34', '55',
+  '44', '49', '33', '39', '61', '64', '81', '82', '86', '91',
+  '1'
+];
+
+function digitsHaveKnownPrefix(digits) {
+  if (!digits) return false;
+  for (const p of KNOWN_INTL_PREFIXES) {
+    if (digits.startsWith(p) && digits.length >= p.length + 8 && digits.length <= p.length + 12) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function buildWhatsAppUrl(phone, country, message = '') {
   if (!phone) return '';
   let digits = String(phone).replace(/\D/g, '');
@@ -443,8 +463,8 @@ function buildWhatsAppUrl(phone, country, message = '') {
     'costa rica': '506', cr: '506',
     panama: '507', pa: '507',
     'republica dominicana': '1', do: '1',
-    espana: '34', 'espana ': '34', es: '34',
-    'estados unidos': '1', us: '1', usa: '1',
+    espana: '34', spain: '34', es: '34',
+    'estados unidos': '1', 'united states': '1', us: '1', usa: '1',
     brasil: '55', brazil: '55', br: '55'
   };
   const normalizedCountry = normalize(country);
@@ -464,6 +484,12 @@ function buildWhatsAppUrl(phone, country, message = '') {
   // Si no hay prefijo conocido, NO inventar +1. Intentar detectar por longitud
   // o devolver tal cual con los dígitos raw (wa.me acepta sin +).
   if (!prefix) {
+    // Si los dígitos ya tienen CUALQUIER prefijo internacional conocido
+    // (lead sin country o country mal cargado), usar tal cual. Evita el bug
+    // histórico de prefijar con `1` un número que ya traía 34/54/52/etc.
+    if (digitsHaveKnownPrefix(digits)) {
+      return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+    }
     // Dígitos largos (>=11) probablemente ya incluyen código de país
     if (digits.length >= 11) {
       return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
@@ -3165,4 +3191,4 @@ mountWa(app, server, {
   userIdFromSetterId: userIdFromSetterIdHelper,
 });
 
-export { app };
+export { app, buildWhatsAppUrl, digitsHaveKnownPrefix };

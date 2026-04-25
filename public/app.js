@@ -19,6 +19,23 @@ const COUNTRY_CODES = {
   "Brasil": "55"
 };
 
+// Lista de prefijos conocidos ordenada por longitud DESC para matchear los más
+// específicos primero (ej: 598 antes que 5). Usado para detectar si un número
+// ya viene con prefijo internacional aunque no sepamos el country del lead.
+const KNOWN_PREFIXES = Object.values(COUNTRY_CODES)
+  .filter((p, i, arr) => arr.indexOf(p) === i)
+  .sort((a, b) => b.length - a.length);
+
+function digitsAlreadyHavePrefix(digits) {
+  if (!digits) return false;
+  for (const p of KNOWN_PREFIXES) {
+    if (digits.startsWith(p) && digits.length >= p.length + 8 && digits.length <= p.length + 12) {
+      return true;
+    }
+  }
+  return false;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const API_BASE_URL = window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')
       ? window.location.origin
@@ -493,6 +510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const prefix = COUNTRY_CODES[country] || '';
       if (phone.trim().startsWith('+')) return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
       if (prefix && digits.startsWith(prefix) && digits.length >= prefix.length + 8) return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
+      // Si ya tiene un prefijo internacional conocido aunque no sepamos el country, usar tal cual
+      if (digitsAlreadyHavePrefix(digits)) return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
       if (digits.startsWith('0')) digits = digits.substring(1);
       if (prefix === '54' && !digits.startsWith('9') && digits.length >= 10) digits = '9' + digits;
       return `https://wa.me/${prefix || '1'}${digits}?text=${encodeURIComponent(message)}`;
@@ -552,6 +571,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
             return;
           }
+          if (digitsAlreadyHavePrefix(digits)) {
+            window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank');
+            return;
+          }
           if (digits.startsWith('0')) digits = digits.substring(1);
           if (prefix === '54' && !digits.startsWith('9') && digits.length >= 10) digits = '9' + digits;
           window.open(`https://wa.me/${prefix || '1'}${digits}?text=${encodeURIComponent(text)}`, '_blank');
@@ -583,6 +606,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Detectar si el número YA contiene el código de país (sin +)
         // Ej: "5491134567890" ya tiene el 54 de Argentina
         if (digits.startsWith(prefix) && digits.length >= (prefix.length + 8)) {
+            return `https://wa.me/${digits}`;
+        }
+
+        // Si ya arranca con CUALQUIER prefijo conocido (aunque no coincida con
+        // el country del lead, ej. lead sin country o country mal cargado), usar tal cual
+        if (digitsAlreadyHavePrefix(digits)) {
             return `https://wa.me/${digits}`;
         }
 
