@@ -42,7 +42,10 @@
       "WebFetch(domain:chat.inceptionlabs.ai)",
       "WebFetch(domain:openrouter.ai)",
       "WebFetch(domain:www.inceptionlabs.ai)",
-      "Bash(node --check public/app.js)"
+      "Bash(node --check public/app.js)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

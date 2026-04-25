@@ -171,8 +171,24 @@ function getSessionFromRequest(req) {
   return { session, user };
 }
 
+// Mapa en memoria: userId → { lastSeen, ip, userAgent, name, email, role }
+const onlinePresence = new Map();
+
 function attachAuth(req, _res, next) {
   req.auth = getSessionFromRequest(req);
+  if (req.auth?.user) {
+    const u = req.auth.user;
+    const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
+    onlinePresence.set(u.id, {
+      userId: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      lastSeen: Date.now(),
+      ip,
+      userAgent: (req.headers['user-agent'] || '').slice(0, 200)
+    });
+  }
   next();
 }
 
@@ -482,6 +498,39 @@ function clearAuthCookie(res) {
 app.get('/api/auth/me', (req, res) => {
   if (!req.auth?.user) return res.json({ authenticated: false });
   res.json({ authenticated: true, user: publicUser(req.auth.user) });
+});
+
+// Quién está conectado (solo admin)
+app.get('/api/auth/online', requireRole('admin'), (req, res) => {
+  const now = Date.now();
+  const ONLINE_THRESHOLD = 2 * 60 * 1000; // 2 min
+  const RECENT_THRESHOLD = 30 * 60 * 1000; // 30 min
+
+  const data = loadAuthData();
+  const allUsers = data.users.filter(u => u.status === 'active').map(u => {
+    const presence = onlinePresence.get(u.id);
+    const age = presence ? now - presence.lastSeen : Infinity;
+    let status = 'offline';
+    if (age < ONLINE_THRESHOLD) status = 'online';
+    else if (age < RECENT_THRESHOLD) status = 'recent';
+    return {
+      id: u.id,
+      name: u.name,
+      email: u.email,
+      role: u.role,
+      status,
+      lastSeen: presence?.lastSeen || null,
+      ip: presence?.ip || null,
+      userAgent: presence?.userAgent || null
+    };
+  });
+  // Ordenar: online > recent > offline; dentro de cada grupo, lastSeen desc
+  allUsers.sort((a, b) => {
+    const order = { online: 0, recent: 1, offline: 2 };
+    if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
+    return (b.lastSeen || 0) - (a.lastSeen || 0);
+  });
+  res.json({ users: allUsers, generatedAt: now });
 });
 
 app.post('/api/auth/login', (req, res) => {

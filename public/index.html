@@ -92,6 +92,9 @@
           <a href="#" class="menu-item" data-target="view-command" data-roles="admin">
             <span>🎯 Centro de Comando</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-online" data-roles="admin">
+            <span>🟢 Quién está conectado</span>
+          </a>
           <a href="#" class="menu-item" data-roles="admin">
             <span>⚙️ Configuraciones de APIs</span>
           </a>
@@ -601,6 +604,18 @@
         </div>
       </div>
 
+      <!-- VISTA: QUIÉN ESTÁ CONECTADO -->
+      <div id="view-online" class="module-view hidden">
+        <div class="content-header">
+          <h2>🟢 Quién está conectado</h2>
+          <div class="header-actions">
+            <button class="btn-primary pill-btn" onclick="window.loadOnlineUsers && loadOnlineUsers()">↻ Refrescar</button>
+          </div>
+        </div>
+        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Usuarios activos en los últimos 2 min · Auto-refresca cada 15 seg.</p>
+        <div id="online-users-list" style="padding:0 32px 32px;"></div>
+      </div>
+
       <!-- VISTA: CENTRO DE ENTRENAMIENTO -->
       <div id="view-training" class="module-view hidden">
         <div class="content-header">
@@ -837,7 +852,7 @@
   </div>
 
   <!-- Timer flotante anti-baneo WSP -->
-  <div id="wsp-timer-widget" style="position:fixed; bottom:20px; right:20px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; box-shadow:0 4px 20px rgba(0,0,0,0.4); display:none; flex-direction:column; gap:8px; z-index:900; min-width:220px;">
+  <div id="wsp-timer-widget" style="position:fixed; bottom:20px; right:20px; background:#1c2230; border:1px solid #2d3548; border-radius:12px; padding:14px 16px; box-shadow:0 8px 32px rgba(0,0,0,0.6); display:none; flex-direction:column; gap:10px; z-index:900; min-width:240px; backdrop-filter:none;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong style="font-size:12px; color:var(--primary-color);">⏱️ Timer anti-baneo</strong>
       <button onclick="document.getElementById('wsp-timer-widget').style.display='none'" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px;">✕</button>
@@ -854,6 +869,6 @@
   </div>
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
-  <script type="module" src="/app.js?v=20260424b"></script>
+  <script type="module" src="/app.js?v=20260424c"></script>
 </body>
 </html>

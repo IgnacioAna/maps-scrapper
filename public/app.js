@@ -59,16 +59,37 @@ document.addEventListener('DOMContentLoaded', async () => {
           display.textContent = '✅ LISTO';
           display.style.color = '#5bb974';
           clearInterval(intervalId); intervalId = null;
-          // Alarma sonora
+          // Alarma sonora — 3 beeps secuenciales más fuertes
           try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = ctx.createOscillator(); const g = ctx.createGain();
-            osc.connect(g); g.connect(ctx.destination);
-            osc.frequency.value = 880; g.gain.value = 0.15;
-            osc.start();
-            setTimeout(() => { osc.frequency.value = 660; }, 200);
-            setTimeout(() => { osc.stop(); ctx.close(); }, 600);
-          } catch {}
+            if (ctx.state === 'suspended') ctx.resume();
+            const beep = (freq, startMs, durMs) => {
+              const osc = ctx.createOscillator();
+              const g = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.value = freq;
+              osc.connect(g); g.connect(ctx.destination);
+              const t0 = ctx.currentTime + startMs/1000;
+              g.gain.setValueAtTime(0, t0);
+              g.gain.linearRampToValueAtTime(0.4, t0 + 0.02);
+              g.gain.setValueAtTime(0.4, t0 + (durMs/1000) - 0.05);
+              g.gain.linearRampToValueAtTime(0, t0 + durMs/1000);
+              osc.start(t0);
+              osc.stop(t0 + durMs/1000);
+            };
+            beep(880, 0, 250);
+            beep(1100, 300, 250);
+            beep(880, 600, 400);
+            setTimeout(() => ctx.close(), 1500);
+          } catch(e) { console.warn('Alarma falló:', e); }
+          // Vibración móvil
+          try { if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]); } catch {}
+          // Flash visual del display
+          let flashes = 0;
+          const flashId = setInterval(() => {
+            display.style.background = flashes % 2 === 0 ? 'rgba(91,185,116,0.3)' : 'transparent';
+            if (++flashes > 6) { clearInterval(flashId); display.style.background = 'transparent'; }
+          }, 250);
           // Notificación
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('⏱️ Timer WSP listo', { body: 'Ya podés mandar el próximo mensaje.' });
@@ -112,6 +133,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarEl = document.querySelector('.sidebar');
     const menuToggleBtn = document.querySelector('.menu-toggle');
     if (sidebarEl && menuToggleBtn) {
+      // Poner data-label en cada menu-item para tooltips en colapsado
+      sidebarEl.querySelectorAll('.menu-item').forEach(item => {
+        const label = item.textContent.trim().replace(/^[^\w¿áéíóú]+/i, '').trim();
+        if (label && !item.dataset.label) item.dataset.label = label;
+      });
       if (localStorage.getItem('sidebarCollapsed') === '1') sidebarEl.classList.add('collapsed');
       menuToggleBtn.addEventListener('click', () => {
         sidebarEl.classList.toggle('collapsed');
@@ -3235,6 +3261,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Auto-cargar cuando se abre la vista
   document.querySelector('[data-target="view-training"]')?.addEventListener('click', () => {
     setTimeout(() => loadTrainingModule(), 50);
+  });
+
+  // ── Quién está conectado (admin) ──
+  let onlineRefreshTimer = null;
+  window.loadOnlineUsers = async () => {
+    const list = document.getElementById('online-users-list');
+    if (!list) return;
+    try {
+      const resp = await fetch(apiUrl('/api/auth/online'));
+      if (!resp.ok) {
+        list.innerHTML = '<p style="color:#f85149;">Error: ' + resp.status + '</p>';
+        return;
+      }
+      const data = await resp.json();
+      if (!data.users || data.users.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-secondary);">No hay usuarios.</p>';
+        return;
+      }
+      const fmtAge = (ts) => {
+        if (!ts) return 'Nunca conectado';
+        const sec = Math.floor((Date.now() - ts) / 1000);
+        if (sec < 60) return `Hace ${sec}s`;
+        if (sec < 3600) return `Hace ${Math.floor(sec/60)} min`;
+        if (sec < 86400) return `Hace ${Math.floor(sec/3600)}h`;
+        return `Hace ${Math.floor(sec/86400)}d`;
+      };
+      const dot = (st) => st === 'online' ? '🟢' : st === 'recent' ? '🟡' : '⚪';
+      const stColor = (st) => st === 'online' ? '#5bb974' : st === 'recent' ? '#e3b341' : '#666';
+      const stLabel = (st) => st === 'online' ? 'Online' : st === 'recent' ? 'Reciente' : 'Offline';
+      const onlineCount = data.users.filter(u => u.status === 'online').length;
+      list.innerHTML =
+        `<div style="margin-bottom:14px; padding:12px 16px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px;">
+          <strong style="color:#5bb974;">🟢 ${onlineCount}</strong> ${onlineCount === 1 ? 'usuario conectado ahora' : 'usuarios conectados ahora'} · ${data.users.length} totales
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">` +
+        data.users.map(u => {
+          const browser = (u.userAgent || '').match(/(Chrome|Firefox|Safari|Edge|Opera)/)?.[1] || '?';
+          const os = (u.userAgent || '').match(/(Windows|Mac OS X|Linux|Android|iPhone)/)?.[1] || '?';
+          return `<div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <strong style="color:var(--text-primary); font-size:14px;">${dot(u.status)} ${escHtml(u.name)}</strong>
+              <span style="background:${stColor(u.status)}22; color:${stColor(u.status)}; padding:3px 10px; border-radius:10px; font-size:11px; font-weight:600;">${stLabel(u.status)}</span>
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:#79b8ff;">${u.role}</span></div>
+            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Última actividad: <strong style="color:var(--text-primary);">${fmtAge(u.lastSeen)}</strong></div>
+            ${u.ip ? `<div style="font-size:11px; color:var(--text-secondary);">IP: <code style="background:var(--bg-color); padding:1px 6px; border-radius:4px;">${escHtml(u.ip)}</code> · ${browser}/${os}</div>` : ''}
+          </div>`;
+        }).join('') + '</div>';
+    } catch(err) {
+      list.innerHTML = '<p style="color:#f85149;">Error: ' + err.message + '</p>';
+    }
+  };
+  document.querySelector('[data-target="view-online"]')?.addEventListener('click', () => {
+    setTimeout(() => loadOnlineUsers(), 50);
+    if (onlineRefreshTimer) clearInterval(onlineRefreshTimer);
+    onlineRefreshTimer = setInterval(() => {
+      const v = document.getElementById('view-online');
+      if (v && !v.classList.contains('hidden')) loadOnlineUsers();
+      else { clearInterval(onlineRefreshTimer); onlineRefreshTimer = null; }
+    }, 15000);
   });
 
   });
