@@ -246,14 +246,14 @@
         "explicacion": "Cada número nuevo necesita warmeo sin excepción. Si no calentás, te arriesgás a baneo temporal o permanente, mensajes que nunca llegan, o ser marcado como spam. Una cuenta quemada significa días de productividad perdidos."
       },
       {
-        "pregunta": "En la fase 1 del warmeo (días 1-2), ¿cuál es el volumen máximo recomendado?",
+        "pregunta": "En la fase 1 del warmeo SCM (días 1-2), ¿cuál es el volumen máximo recomendado?",
         "opciones": [
-          "10-15 mensajes por día a contactos personales que respondan",
+          "12 mensajes por día a leads, con delays de 60-120 segundos entre cada uno",
           "50 mensajes por día con leads frescos",
           "100 mensajes por día para acelerar el proceso"
         ],
         "correcta": 0,
-        "explicacion": "Fase 1 (días 1-2): 10-15 mensajes/día, no más, a contactos personales o conocidos que vayan a responder. La meta es 50%+ de tasa de respuesta. Saltar fases por ansiedad termina en cuenta baneada."
+        "explicacion": "Curva SCM Fase 1 (días 1-2): 12 mensajes/día como máximo, mandados directo a leads del panel, con delay 60-120s entre uno y otro. NO mandes a amigos: vas directo a leads pero con volumen bajo y delays largos. Recomendación complementaria: sumate a 3-5 grupos de WhatsApp en estos primeros días."
       },
       {
         "pregunta": "¿Cuál es la herramienta clave para mantener flujo constante de leads?",
