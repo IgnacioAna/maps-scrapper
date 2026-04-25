@@ -640,6 +640,68 @@ input[type="checkbox"], input[type="radio"] {
   height: 16px;
 }
 
+/* Follow-up checkboxes en tabla de setteo: cuadraditos custom para que no se
+   vean como cuadrado blanco del browser default. */
+input.fu-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  transition: var(--transition-fast);
+}
+
+input.fu-cb:hover {
+  border-color: var(--accent);
+}
+
+input.fu-cb:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+input.fu-cb:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 6px;
+  height: 10px;
+  border: solid var(--bg-app);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Social chips (IG/FB/IN) en tabla — mini-chips clickeables */
+.social-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  min-width: 26px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  margin: 0 2px;
+  transition: var(--transition-fast);
+}
+
+.social-chip:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-strong);
+}
+
 /* <option> nativos: en muchos browsers no respetan background del padre.
    Forzamos colores oscuros para que el dropdown abierto se vea bien. */
 option {

@@ -1398,8 +1398,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Conexión: select inline
         const conSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateField(this, \'conexion\')" onclick="event.stopPropagation()">' +
           '<option value=""' + (!lead.conexion ? ' selected' : '') + '>—</option>' +
-          '<option value="enviada"' + (lead.conexion === 'enviada' ? ' selected' : '') + ' style="color:var(--success);">Enviada</option>' +
-          '<option value="sin_wsp"' + (lead.conexion === 'sin_wsp' ? ' selected' : '') + ' style="color:var(--danger);">Sin WSP</option>' +
+          '<option value="enviada"' + (lead.conexion === 'enviada' ? ' selected' : '') + '>Enviada</option>' +
+          '<option value="sin_wsp"' + (lead.conexion === 'sin_wsp' ? ' selected' : '') + '>Sin WSP</option>' +
           '</select>';
 
         // Respondió: select inline
@@ -1424,10 +1424,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<option value="no"' + (lead.interes === 'no' ? ' selected' : '') + '>NO</option>' +
           '</select>';
 
-        const estadoBadge = {
-          sin_contactar: '', contactado: '📤', respondio: '💬', calificado: '📝', interesado: '🔥',
-          agendado: '📅', cerrado: '✅', descartado: '❌'
+        // Mapeo estado → chip semántico del DS
+        const estadoChipClass = {
+          sin_contactar: '', contactado: 'chip-info', respondio: 'chip-info',
+          calificado: 'chip-accent', interesado: 'chip-warning',
+          agendado: 'chip-success', cerrado: 'chip-success', descartado: 'chip-danger'
         };
+        const estadoLabel = {
+          sin_contactar: '', contactado: 'Cont', respondio: 'Resp',
+          calificado: 'Calif', interesado: 'Int', agendado: 'Agnd',
+          cerrado: 'OK', descartado: 'X'
+        };
+        const estadoChip = lead.estado && estadoChipClass[lead.estado]
+          ? '<span class="chip ' + estadoChipClass[lead.estado] + '">' + estadoLabel[lead.estado] + '</span>'
+          : '';
 
         // Fecha: mostrar fecha de contacto si existe, sino fecha de import
         const displayDate = lead.fechaContacto || (lead.fecha || '').substring(5);
@@ -1437,7 +1447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
           '<td style="font-weight:500;">' + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div></td>' +
           '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
-          '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()">🌐</a>' : '') + '</td>' +
+          '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" title="Abrir sitio web"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
           '<td style="text-align:center;">' + respSelect + '</td>' +
           '<td style="text-align:center;">' + calSelect + '</td>' +
@@ -1451,17 +1461,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (lastNote ? escHtml(lastNote.text) : '') + '">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:var(--warning);font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text) : '') + '</td>' +
           '<td style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escHtml(doctorClean) + '">' + escHtml(doctorClean) + '</td>' +
-          '<td style="text-align:center;">' +
-            (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--accent);">IG</a>' : '') +
-            (lead.facebook ? '<a href="' + escHtml(lead.facebook) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--info); margin-left:4px;">FB</a>' : '') +
-            (lead.linkedin ? '<a href="' + escHtml(lead.linkedin) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--accent); margin-left:4px;">IN</a>' : '') +
+          '<td style="text-align:center; white-space:nowrap;">' +
+            (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="social-chip" onclick="event.stopPropagation()" title="Instagram">IG</a>' : '') +
+            (lead.facebook ? '<a href="' + escHtml(lead.facebook) + '" target="_blank" class="social-chip" onclick="event.stopPropagation()" title="Facebook">FB</a>' : '') +
+            (lead.linkedin ? '<a href="' + escHtml(lead.linkedin) + '" target="_blank" class="social-chip" onclick="event.stopPropagation()" title="LinkedIn">IN</a>' : '') +
           '</td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="24hs" ' + (fu['24hs'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="48hs" ' + (fu['48hs'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="72hs" ' + (fu['72hs'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="7d" ' + (fu['7d'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="15d" ' + (fu['15d'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
-          '<td style="text-align:center;">' + (estadoBadge[lead.estado] || '') + '</td>' +
+          '<td style="text-align:center;">' + estadoChip + '</td>' +
         '</tr>';
       }).join('');
     }
