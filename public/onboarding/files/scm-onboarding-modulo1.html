@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Coherente con tu sistema */
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    font-weight: 400;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+
+  /* === Layout === */
+  .container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* === Sidebar interno del módulo (TOC) === */
+  .toc {
+    padding: 36px 24px 36px 32px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    border-right: 1px solid var(--border-soft);
+  }
+
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .toc-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .brand-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bg);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0;
+    box-shadow: 0 0 20px var(--violet-glow);
+  }
+
+  .brand-text {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+
+  .toc-tag {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 36px;
+    margin-left: 34px;
+    letter-spacing: 0.02em;
+  }
+
+  .toc-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    font-weight: 600;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
+  .toc-list {
+    list-style: none;
+  }
+
+  .toc-list .toc-item {
+    margin-bottom: 1px;
+  }
+
+  .toc-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    color: var(--text-mute);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+
+  .toc-link:hover {
+    background: var(--bg-card);
+    color: var(--text-soft);
+  }
+
+  .toc-link.active {
+    background: var(--violet-bg);
+    color: var(--violet);
+    font-weight: 500;
+  }
+
+  .toc-num {
+    font-size: 10px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    width: 16px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .toc-link.active .toc-num { color: var(--violet); }
+
+  /* === Main === */
+  .main {
+    padding: 56px 64px 120px;
+    max-width: 760px;
+  }
+
+  /* Header del módulo */
+  .module-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--violet-bg);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--violet);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 28px;
+  }
+
+  .module-tag::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--violet);
+    box-shadow: 0 0 8px var(--violet);
+  }
+
+  h1.module-title {
+    font-size: 44px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  h1.module-title .accent {
+    color: var(--violet);
+    font-weight: 700;
+  }
+
+  .module-deck {
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--text-soft);
+    font-weight: 400;
+    max-width: 600px;
+    margin-bottom: 40px;
+  }
+
+  .module-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-bottom: 56px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+
+  .module-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Section markers */
+  .section-marker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 64px;
+    margin-bottom: 16px;
+  }
+
+  .section-marker-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--violet);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .section-marker-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 600;
+    color: var(--text-faint);
+  }
+
+  h2.section-title {
+    font-size: 30px;
+    line-height: 1.2;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+    color: var(--text);
+  }
+
+  h3.subsection-title {
+    font-size: 19px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: 40px;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+
+  h4.minor-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+    color: var(--violet);
+    margin-top: 28px;
+    margin-bottom: 8px;
+  }
+
+  /* Body text */
+  p {
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    color: var(--text-soft);
+  }
+
+  p.lead {
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--text);
+    font-weight: 400;
+    margin-bottom: 24px;
+  }
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  em {
+    font-style: italic;
+    color: var(--text);
+  }
+
+  /* === Componentes === */
+
+  /* Pull quote / Idea central */
+  .pull {
+    margin: 40px -8px;
+    padding: 28px 32px;
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%);
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pull::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--violet) 0%, transparent 100%);
+  }
+
+  .pull-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--violet);
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pull-label::before {
+    content: '◆';
+    font-size: 9px;
+  }
+
+  .pull-text {
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .pull-text em {
+    color: var(--violet);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* Cards de fugas */
+  .leaks {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 32px 0;
+  }
+
+  .leak-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px 22px 20px;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .leak-card:hover {
+    border-color: var(--violet);
+    background: var(--bg-card-hover);
+    transform: translateY(-1px);
+  }
+
+  .leak-card-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--violet);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .leak-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    line-height: 1.35;
+  }
+
+  .leak-card-body {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-mute);
+  }
+
+  .leak-card.summary {
+    background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%);
+    border-color: rgba(167, 139, 250, 0.2);
+    grid-column: 1 / -1;
+  }
+
+  .leak-card.summary .leak-card-num {
+    color: var(--violet);
+  }
+
+  .leak-card.summary .leak-card-title {
+    font-size: 16px;
+  }
+
+  .leak-card.summary .leak-card-body em {
+    color: var(--violet);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* Numbered list editorial */
+  ol.numbered {
+    list-style: none;
+    counter-reset: item;
+    margin: 24px 0;
+  }
+
+  ol.numbered li {
+    counter-increment: item;
+    padding: 14px 16px 14px 56px;
+    position: relative;
+    margin-bottom: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    line-height: 1.6;
+    color: var(--text-soft);
+    font-size: 14px;
+  }
+
+  ol.numbered li::before {
+    content: counter(item);
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: var(--violet-bg);
+    color: var(--violet);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Aside / Highlight */
+  .aside {
+    background: var(--bg-card);
+    border-left: 3px solid var(--violet);
+    padding: 16px 20px;
+    margin: 24px 0;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-soft);
+  }
+
+  .aside strong {
+    color: var(--violet);
+  }
+
+  /* Si / No table */
+  .role-table {
+    margin: 32px 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .role-table-header {
+    padding: 16px 24px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    font-weight: 600;
+  }
+
+  .role-row {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    gap: 20px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border-soft);
+    align-items: center;
+  }
+
+  .role-row:last-child { border-bottom: none; }
+
+  .role-tag {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+
+  .role-tag.si {
+    color: var(--green);
+    background: rgba(63, 185, 80, 0.1);
+  }
+
+  .role-tag.no {
+    color: var(--rose);
+    background: rgba(248, 81, 73, 0.1);
+  }
+
+  .role-text {
+    font-size: 14px;
+    color: var(--text-soft);
+    line-height: 1.5;
+  }
+
+  /* Rule callout final */
+  .rule-callout {
+    margin: 56px 0 32px;
+    padding: 32px 32px;
+    background:
+      radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%),
+      var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .rule-callout::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--violet), transparent);
+    opacity: 0.5;
+  }
+
+  .rule-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+    color: var(--violet);
+    margin-bottom: 16px;
+  }
+
+  .rule-label::before {
+    content: '★';
+    font-size: 11px;
+  }
+
+  .rule-text {
+    font-size: 21px;
+    line-height: 1.45;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  .rule-text em {
+    color: var(--violet);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  /* Footer del módulo */
+  .module-footer {
+    margin-top: 80px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .footer-info {
+    font-size: 12px;
+    color: var(--text-faint);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .next-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 18px;
+    background: var(--violet-bg);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--violet);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .next-button:hover {
+    background: var(--violet);
+    color: var(--bg);
+    border-color: var(--violet);
+  }
+
+  .next-button-arrow {
+    transition: transform 0.2s;
+  }
+
+  .next-button:hover .next-button-arrow {
+    transform: translateX(3px);
+  }
+
+  /* Responsive */
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc {
+      position: static;
+      height: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border-soft);
+      padding: 24px;
+    }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+
+  /* Smooth fade in */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .module-tag,
+  h1.module-title,
+  .module-deck,
+  .module-meta {
+    animation: fadeUp 0.5s ease-out backwards;
+  }
+
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- TOC interno -->
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m1" class="toc-link active"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m2" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m3" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m4" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m5" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m6" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m7" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m8" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#problema" class="toc-link">Problema real</a></li>
+      <li class="toc-item"><a href="#fugas" class="toc-link">Las cinco fugas</a></li>
+      <li class="toc-item"><a href="#base-dormida" class="toc-link">Base dormida</a></li>
+      <li class="toc-item"><a href="#oferta" class="toc-link">Qué ofrecemos</a></li>
+      <li class="toc-item"><a href="#evidencia" class="toc-link">Evidencia</a></li>
+      <li class="toc-item"><a href="#regla" class="toc-link">La regla central</a></li>
+    </ul>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <span class="module-tag">Módulo 01 · Lectura inicial</span>
+
+    <h1 class="module-title">El proyecto.<br>Por qué <span class="accent">existe SCM</span>.</h1>
+
+    <p class="module-deck">Lo que necesitás entender antes de mandar el primer mensaje. Qué problema resolvemos, cómo lo planteamos, y por qué tiene sentido.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~6 min</span>
+      <span class="module-meta-item">🎯 Objetivo: que entiendas el negocio</span>
+      <span class="module-meta-item">📍 Fundamental</span>
+    </div>
+
+    <!-- 01 PROBLEMA -->
+    <section id="problema">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">Situación · El problema real</span>
+      </div>
+      <h2 class="section-title">Las clínicas no pierden plata por donde creen.</h2>
+
+      <p class="lead">Las clínicas pierden dinero todos los días con los pacientes que <strong>ya tienen adentro</strong>. No solo cuando no consiguen pacientes nuevos.</p>
+
+      <p>Hay dos tipos de fuga de ingresos en una clínica. Una se ve y otra no.</p>
+
+      <p>La <strong>visible</strong> aparece cuando la agenda baja, cuando la publicidad no convierte, cuando el ticket promedio cae. Frente a esto, el dueño reacciona: contrata más marketing, abre nuevos canales, lanza promos.</p>
+
+      <p>La <strong>invisible</strong> es donde se pierde más dinero. Pacientes que ya pasaron por la clínica y nadie les vuelve a escribir. Consultas que no agendaron y quedaron en el aire. Tratamientos que se cayeron a la mitad sin seguimiento.</p>
+
+      <div class="aside">
+        Esa segunda fuga es la que casi nadie trabaja sistemáticamente. Y es la más grande.
+      </div>
+    </section>
+
+    <!-- 02 LAS FUGAS -->
+    <section id="fugas">
+      <div class="section-marker">
+        <span class="section-marker-num">02</span>
+        <span class="section-marker-label">Diagnóstico · Las cinco fugas</span>
+      </div>
+      <h2 class="section-title">Lo que pasa adentro de toda clínica.</h2>
+
+      <p>Cuando hablás con un dueño de clínica, vas a encontrar siempre alguna combinación de estas cinco situaciones. Son universales:</p>
+
+      <div class="leaks">
+        <div class="leak-card">
+          <div class="leak-card-num">01 / 05</div>
+          <div class="leak-card-title">Pacientes que no volvieron</div>
+          <div class="leak-card-body">Vinieron una o dos veces, se enfriaron, y nadie los contactó de nuevo.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">02 / 05</div>
+          <div class="leak-card-title">Consultas sin agenda</div>
+          <div class="leak-card-body">Escribieron, llamaron o entraron a la web. Mostraron interés. Nunca agendaron.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">03 / 05</div>
+          <div class="leak-card-title">Presupuestos en el aire</div>
+          <div class="leak-card-body">Recibieron una cotización, dijeron "lo voy a pensar", y nadie volvió a contactarlos.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">04 / 05</div>
+          <div class="leak-card-title">No-shows abandonados</div>
+          <div class="leak-card-body">Tenían turno y no se presentaron. Nadie escribió para entender qué pasó.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">05 / 05</div>
+          <div class="leak-card-title">Tratamientos a medio terminar</div>
+          <div class="leak-card-body">Empezaron una ortodoncia o tratamiento largo y se cayeron en el medio.</div>
+        </div>
+        <div class="leak-card summary">
+          <div class="leak-card-num">→ El patrón común</div>
+          <div class="leak-card-title">Toda esta gente <em>ya conoce la clínica</em>.</div>
+          <div class="leak-card-body">Ya generó confianza. Ya pasó por la puerta. Pero está dormida porque nadie la contacta de forma sistemática.</div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">¿Por qué pasa esto en casi todas las clínicas?</h3>
+      <p>No es porque el dueño no quiera hacer seguimiento. Es porque el seguimiento manual es agotador y nadie del equipo tiene tiempo de hacerlo bien.</p>
+      <p>La recepcionista atiende el mostrador. La asistente coordina turnos. El profesional está con pacientes. Y los mensajes de seguimiento se postergan, se olvidan, o se hacen mal.</p>
+      <p>El resultado: la clínica funciona en piloto automático con los pacientes que entran, pero <strong>no recupera</strong> a los que ya tiene del lado de adentro.</p>
+    </section>
+
+    <!-- 03 IDEA CENTRAL -->
+    <section id="base-dormida">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">La idea central</span>
+      </div>
+      <h2 class="section-title">Por qué la base de datos vale más que un lead frío.</h2>
+
+      <p class="lead">Esta es la idea que sostiene todo el negocio. Si la entendés, todo lo demás se vuelve más fácil.</p>
+
+      <div class="pull">
+        <div class="pull-label">El principio</div>
+        <p class="pull-text">Es <em>mucho más fácil y barato</em> hacer que vuelva alguien que ya conoce la clínica que conseguir un paciente nuevo desde cero.</p>
+      </div>
+
+      <p>La razón es simple: el paciente que ya pasó por la clínica ya superó <strong>tres barreras</strong> que un paciente nuevo todavía tiene que superar.</p>
+
+      <ol class="numbered">
+        <li><strong>Confianza.</strong> Sabe que la clínica existe, dónde queda, cómo atienden, qué precios manejan.</li>
+        <li><strong>Información.</strong> Ya entiende qué tratamientos ofrecen y qué le hicieron antes.</li>
+        <li><strong>Costo.</strong> Ya pagó alguna vez. La fricción del primer pago ya pasó.</li>
+      </ol>
+
+      <p>Cuando una clínica trata de captar un paciente nuevo desde cero, tiene que pagar publicidad, esperar que alguien haga clic, conseguir que se anime a escribir, generar confianza desde cero. Eso cuesta tiempo y plata.</p>
+
+      <p>Cuando una clínica reactiva a alguien que ya conoce, solo tiene que <strong>mandarle un mensaje en el momento correcto</strong>. Eso no cuesta casi nada.</p>
+
+      <div class="aside">
+        Lo que vendemos no es marketing. No es publicidad. No es una herramienta de IA. Vendemos una forma sistemática de <strong>recuperar dinero que la clínica ya generó</strong> pero está perdiendo por falta de seguimiento.
+      </div>
+    </section>
+
+    <!-- 04 LA OFERTA -->
+    <section id="oferta">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">La solución · Qué ofrecemos</span>
+      </div>
+      <h2 class="section-title">Un sistema que opera sobre la base de la clínica.</h2>
+
+      <p class="lead">SCM es un sistema que toma la base de datos de una clínica y convierte pacientes y oportunidades dormidas en agenda real, sin que el equipo tenga que hacer trabajo manual.</p>
+
+      <p>No es un servicio aislado. No es "mandamos mensajes". Es un sistema continuo que contacta, califica y agenda con inteligencia artificial.</p>
+
+      <h3 class="subsection-title">Las tres fases del sistema</h3>
+      <p>Tu cliente puede entrar al sistema por cualquiera de estas tres puertas. Las tres son complementarias:</p>
+
+      <h4 class="minor-title">Fase 1 · Reactivación de la base</h4>
+      <p>Tomamos la base de pacientes históricos, consultas no cerradas y presupuestos que no avanzaron, y los contactamos con IA. La IA se presenta como parte del equipo, detecta interés y agenda turnos directamente. Es la fase que más rápido muestra resultados.</p>
+
+      <h4 class="minor-title">Fase 2 · Seguimiento post-turno</h4>
+      <p>Cuando el paciente va al turno, entra automáticamente en un ciclo de seguimiento. Recordatorios, indicaciones, confirmaciones. Mantiene el vínculo entre visita y visita.</p>
+
+      <h4 class="minor-title">Fase 3 · Retención permanente</h4>
+      <p>Cuando llega el momento de revisión o control, el sistema contacta automáticamente. Si un paciente lleva varios meses sin volver, lo detecta y lo busca. El paciente nunca se pierde de vista.</p>
+
+      <h3 class="subsection-title">Las dos vías de ejecución</h3>
+      <p>El sistema se ejecuta principalmente por dos canales:</p>
+
+      <h4 class="minor-title">WhatsApp con IA</h4>
+      <p>La vía principal. La IA conversa con el paciente por WhatsApp como si fuera alguien del equipo. Más rápida de implementar y la más vendida.</p>
+
+      <h4 class="minor-title">Llamadas con IA</h4>
+      <p>Una IA llama por teléfono con voz natural. Mayor impacto pero requiere más configuración. Útil cuando el público responde mejor por teléfono.</p>
+
+      <div class="aside">
+        Cuando un lead te pregunte <strong>"¿cómo funciona?"</strong>, no le expliques las fases ni los canales en detalle. Esa explicación va en la llamada con Ignacio. Tu trabajo es generar curiosidad, no satisfacerla.
+      </div>
+    </section>
+
+    <!-- 05 EVIDENCIA -->
+    <section id="evidencia">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Evidencia</span>
+      </div>
+      <h2 class="section-title">El sistema funciona. Tenemos clientes activos para probarlo.</h2>
+
+      <p>Cuando un prospecto te pregunte <strong>"¿esto realmente funciona?"</strong> o <strong>"¿tienen casos?"</strong>, la respuesta corta es:</p>
+
+      <div class="aside">
+        <strong>Sí.</strong> Tenemos clientes activos hoy. El sistema está generando agendas reales todas las semanas. Los números los ve Ignacio en la llamada porque depende del caso de cada clínica.
+      </div>
+
+      <p>No te tirés a explicar números específicos por chat. No es tu rol. Tu rol es transmitir <strong>confianza</strong> en que el sistema funciona y mover la conversación a la llamada donde Ignacio muestra los resultados con detalle.</p>
+
+      <h4 class="minor-title">Por qué esto importa para vos</h4>
+      <p>No estás vendiendo una promesa. Estás abriendo conversaciones para un sistema que ya está produciendo resultados verificables con clínicas reales. Eso te da posición. Hablás desde algo que existe, no desde una idea.</p>
+    </section>
+
+    <!-- 06 LA REGLA -->
+    <section id="regla">
+      <div class="section-marker">
+        <span class="section-marker-num">06</span>
+        <span class="section-marker-label">Lo que tenés que recordar</span>
+      </div>
+
+      <div class="rule-callout">
+        <div class="rule-label">La regla central</div>
+        <p class="rule-text">SCM no vende mensajes ni automatizaciones. Vende una forma sistemática de <em>recuperar dinero ya generado</em> en clínicas que están perdiendo plata sin saber por dónde.</p>
+      </div>
+
+      <p>Cuando hablás con un prospecto, ese es el ángulo. No le hables de IA, ni de tecnología, ni de "transformar el negocio". Hablale de <strong>pacientes que ya están en su base y se están yendo a otro lado por falta de un mensaje</strong>.</p>
+
+      <p>Si entendés esto, todo lo demás del entrenamiento se vuelve mucho más fácil de aprender.</p>
+
+      <h3 class="subsection-title">Tu rol como setter, en una pantalla.</h3>
+
+      <div class="role-table">
+        <div class="role-table-header">Lo que SÍ y lo que NO te toca</div>
+
+        <div class="role-row">
+          <span class="role-tag si">SÍ</span>
+          <span class="role-text">Abrir conversaciones con clínicas</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SÍ</span>
+          <span class="role-text">Detectar interés real y dolor operativo</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SÍ</span>
+          <span class="role-text">Agendar llamadas con Ignacio</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Vender ni cerrar por chat</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Explicar todo el sistema en detalle</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Tirar precios ni negociar</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Discutir objeciones por escrito</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 01 / 08</span>
+        <span>·</span>
+        <span>Última actualización: Abr 2026</span>
+      </span>
+      <a href="#m2" class="next-button">
+        Módulo 02 — Tu rol
+        <span class="next-button-arrow">→</span>
+      </a>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => {
+      if (sec.offsetTop <= scrollY) current = sec.id;
+    });
+    // Only update internal section nav, not main module nav
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ['m1','m2','m3','m4','m5','m6','m7','m8'].includes(href);
+      if (isModuleNav) return;
+      if (href === current) {
+        link.classList.add('active');
+      } else if (link.classList.contains('active') && !isModuleNav) {
+        link.classList.remove('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+
+</body>
+</html>

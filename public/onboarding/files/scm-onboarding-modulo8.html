@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 08</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; font-weight: 400; font-size: 15px; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  .container { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+  .toc { padding: 36px 24px 36px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--border-soft); }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .toc-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 700; font-size: 11px; box-shadow: 0 0 20px var(--violet-glow); }
+  .brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .toc-tag { font-size: 11px; color: var(--text-faint); margin-bottom: 36px; margin-left: 34px; letter-spacing: 0.02em; }
+  .toc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+  .toc-list { list-style: none; }
+  .toc-list .toc-item { margin-bottom: 1px; }
+  .toc-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: var(--text-mute); text-decoration: none; font-size: 13px; font-weight: 400; transition: all 0.15s; line-height: 1.4; }
+  .toc-link:hover { background: var(--bg-card); color: var(--text-soft); }
+  .toc-link.active { background: var(--violet-bg); color: var(--violet); font-weight: 500; }
+  .toc-num { font-size: 10px; color: var(--text-faint); flex-shrink: 0; width: 16px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .toc-link.active .toc-num { color: var(--violet); }
+  .main { padding: 56px 64px 120px; max-width: 760px; }
+  .module-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+  .module-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  h1.module-title { font-size: 44px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; color: var(--text); }
+  h1.module-title .accent { color: var(--violet); font-weight: 700; }
+  .module-deck { font-size: 18px; line-height: 1.5; color: var(--text-soft); font-weight: 400; max-width: 600px; margin-bottom: 40px; }
+  .module-meta { display: flex; gap: 20px; font-size: 12px; color: var(--text-faint); margin-bottom: 56px; padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .module-meta-item { display: flex; align-items: center; gap: 6px; }
+  .section-marker { display: flex; align-items: center; gap: 12px; margin-top: 64px; margin-bottom: 16px; }
+  .section-marker-num { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; }
+  .section-marker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; color: var(--text-faint); }
+  h2.section-title { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--text); }
+  h3.subsection-title { font-size: 19px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; margin-top: 40px; margin-bottom: 14px; color: var(--text); }
+  h4.minor-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; color: var(--violet); margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text-soft); }
+  p.lead { font-size: 18px; line-height: 1.55; color: var(--text); font-weight: 400; margin-bottom: 24px; }
+  strong { color: var(--text); font-weight: 600; }
+  em { font-style: italic; color: var(--text); }
+  .pull { margin: 40px -8px; padding: 28px 32px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(167, 139, 250, 0.15); border-radius: 12px; position: relative; overflow: hidden; }
+  .pull::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--violet) 0%, transparent 100%); }
+  .pull-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--violet); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .pull-label::before { content: '◆'; font-size: 9px; }
+  .pull-text { font-size: 19px; line-height: 1.5; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+  .pull-text em { color: var(--violet); font-style: normal; font-weight: 600; }
+  .leaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 32px 0; }
+  .leak-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 22px 20px; transition: all 0.2s; position: relative; }
+  .leak-card:hover { border-color: var(--violet); background: var(--bg-card-hover); transform: translateY(-1px); }
+  .leak-card-num { font-size: 11px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .leak-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.35; }
+  .leak-card-body { font-size: 13px; line-height: 1.55; color: var(--text-mute); }
+  .leak-card.summary { background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%); border-color: rgba(167, 139, 250, 0.2); grid-column: 1 / -1; }
+  .leak-card.summary .leak-card-title { font-size: 16px; }
+  .leak-card.summary .leak-card-body em { color: var(--violet); font-style: normal; font-weight: 600; }
+  ol.numbered { list-style: none; counter-reset: item; margin: 24px 0; }
+  ol.numbered li { counter-increment: item; padding: 14px 16px 14px 56px; position: relative; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; color: var(--text-soft); font-size: 14px; }
+  ol.numbered li::before { content: counter(item); position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--violet-bg); color: var(--violet); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .aside { background: var(--bg-card); border-left: 3px solid var(--violet); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .aside strong { color: var(--violet); }
+  .role-table { margin: 32px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .role-table-header { padding: 16px 24px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; }
+  .role-row { display: grid; grid-template-columns: 60px 1fr; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--border-soft); align-items: center; }
+  .role-row:last-child { border-bottom: none; }
+  .role-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; padding: 4px 8px; border-radius: 4px; width: fit-content; }
+  .role-tag.si { color: var(--green); background: rgba(63, 185, 80, 0.1); }
+  .role-tag.no { color: var(--rose); background: rgba(248, 81, 73, 0.1); }
+  .role-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .rule-callout { margin: 56px 0 32px; padding: 32px 32px; background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%), var(--bg-card); border: 1px solid var(--border); border-radius: 14px; position: relative; overflow: hidden; }
+  .rule-callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--violet), transparent); opacity: 0.5; }
+  .rule-label { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--violet); margin-bottom: 16px; }
+  .rule-label::before { content: '★'; font-size: 11px; }
+  .rule-text { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; letter-spacing: -0.015em; }
+  .rule-text em { color: var(--violet); font-style: normal; font-weight: 700; }
+  .module-footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .footer-info { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; }
+  .next-button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
+  .next-button-arrow { transition: transform 0.2s; }
+  .next-button:hover .next-button-arrow { transform: translateX(3px); }
+  /* Componentes adicionales para módulos siguientes */
+  .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+  .chat-msg:last-child { margin-bottom: 0; }
+  .chat-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; min-width: 50px; text-align: center; }
+  .chat-tag.lead { background: rgba(110, 118, 129, 0.15); color: var(--text-mute); }
+  .chat-tag.you { background: var(--violet-bg); color: var(--violet); }
+  .chat-text { color: var(--text-soft); }
+  .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
+  /* Step block */
+  .step-grid { display: grid; gap: 12px; margin: 24px 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
+  .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  /* Objection card */
+  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
+  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
+  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
+  .obj-row:last-child { border-bottom: none; }
+  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
+  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
+  .obj-content em { color: var(--text); font-style: italic; }
+  /* Term (glossary) */
+  .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+  .term-block:last-child { border-bottom: none; }
+  .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  /* Stats card */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  /* Warning */
+  .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .warning strong { color: var(--rose); }
+  /* Success */
+  .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .success strong { color: var(--green); }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m01" class="toc-link"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m03" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m04" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m06" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m07" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m08" class="toc-link active"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#oferta" class="toc-link">La oferta</a></li>
+      <li class="toc-item"><a href="#rol" class="toc-link">Rol del setter</a></li>
+      <li class="toc-item"><a href="#conversacion" class="toc-link">Conversación</a></li>
+      <li class="toc-item"><a href="#sistema" class="toc-link">Sistema operativo</a></li>
+      <li class="toc-item"><a href="#metricas" class="toc-link">Métricas</a></li>
+      <li class="toc-item"><a href="#comerciales" class="toc-link">Conceptos comerciales</a></li>
+      <li class="toc-item"><a href="#caso" class="toc-link">Caso de referencia</a></li>
+      <li class="toc-item"><a href="#equipo" class="toc-link">Equipo</a></li>
+      <li class="toc-item"><a href="#reglas" class="toc-link">Reglas con nombre</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <span class="module-tag">Módulo 08 · Lectura</span>
+
+    <h1 class="module-title">Glosario.<br>El <span class="accent">vocabulario común</span> del equipo SCM.</h1>
+
+    <p class="module-deck">Términos, conceptos y reglas operativas que vas a escuchar todo el tiempo. Para consulta rápida cuando algo no te queda claro.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~6 min</span>
+      <span class="module-meta-item">🎯 Vocabulario común del equipo</span>
+      <span class="module-meta-item">📍 Consulta</span>
+    </div>
+
+
+    <div class="aside">
+      <strong>Cómo usar este módulo:</strong> Es para consulta rápida. Cuando aparezca un término que no estás seguro qué significa exactamente en el contexto de SCM, abrí el glosario y buscalo. Está organizado por categorías para que sea más rápido encontrar lo que buscás.
+    </div>
+
+    <section id="oferta">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">La oferta</span>
+      </div>
+      <h2 class="section-title">Conceptos de qué vendemos.</h2>
+
+      <div class="term-block">
+        <div class="term-name">SCM</div>
+        <div class="term-def">Es el nombre del sistema. Significa Sistema de Reactivación y Retención de Pacientes. Vende una forma sistemática de recuperar dinero ya generado en clínicas, no marketing ni publicidad.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Reactivación</div>
+        <div class="term-def">Acción de contactar a un paciente o lead que estaba dormido (no respondió en mucho tiempo o no agendó turno) y traerlo de vuelta a la clínica. Es la base del sistema.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Base dormida</div>
+        <div class="term-def">El conjunto de pacientes/leads que ya pasaron por la clínica o mostraron interés alguna vez, pero que dejaron de tener contacto. <strong>Es donde está la mayor oportunidad.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Retención</div>
+        <div class="term-def">Mantener vivo el vínculo con el paciente entre visitas y a lo largo del tiempo. Es la fase 3 del sistema (recordatorios de revisión, seguimiento post-tratamiento).</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Las cinco fugas</div>
+        <div class="term-def">Los cinco lugares donde casi toda clínica pierde plata sin verlo: pacientes que no volvieron, consultas sin agenda, presupuestos sin respuesta, no-shows abandonados, tratamientos a medio terminar.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Las tres fases del sistema</div>
+        <div class="term-def">(1) Reactivación de la base. (2) Seguimiento post-turno. (3) Retención permanente. Las tres son complementarias y un cliente puede entrar por cualquiera.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Las dos vías de ejecución</div>
+        <div class="term-def">Los dos canales principales por donde el sistema opera: WhatsApp con IA (la principal) y Llamadas con IA (mayor impacto pero más config).</div>
+      </div>
+    </section>
+
+    <section id="rol">
+      <div class="section-marker">
+        <span class="section-marker-num">02</span>
+        <span class="section-marker-label">Rol del setter</span>
+      </div>
+      <h2 class="section-title">Términos del trabajo diario.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Setter</div>
+        <div class="term-def">La persona que abre conversaciones con prospectos, califica el interés y agenda llamadas con Ignacio para el cierre. Vos.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Prospección</div>
+        <div class="term-def">El trabajo de buscar y abrir conversaciones con leads que todavía no nos conocen. Volumen + variantes + ritmo.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Calificar</div>
+        <div class="term-def">Determinar si un lead es candidato real o no. Detectar si tiene dolor operativo, si es decisor, si su clínica encaja con lo que ofrecemos.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Decisor</div>
+        <div class="term-def">La persona que tiene poder de decisión en la clínica. Generalmente el dueño o socio. <strong>Si no estás hablando con el decisor, estás perdiendo tiempo.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Agendamiento</div>
+        <div class="term-def">El acto de cerrar la conversación con un horario confirmado para llamada con Ignacio. Es tu objetivo final.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Apertura</div>
+        <div class="term-def">(1) El primer mensaje que le mandás a un lead frío. (2) También se usa como métrica: porcentaje de leads que respondieron a tu mensaje.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Mindset del setter</div>
+        <div class="term-def">La actitud correcta: no tomarte cada "no" como personal, entender que es trabajo de filtrado, sostener volumen sin pánico, confiar en el sistema.</div>
+      </div>
+    </section>
+
+    <section id="conversacion">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">Conversación</span>
+      </div>
+      <h2 class="section-title">Términos del proceso de chat.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Las cinco fases</div>
+        <div class="term-def">Las etapas por las que pasa toda conversación buena: (1) Apertura, (2) Conexión, (3) Calificación, (4) Interés, (5) Llamada.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Mensaje de apertura</div>
+        <div class="term-def">El primer mensaje neutro al lead frío. Su único objetivo es generar respuesta. NO vende.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Mensaje de calificación</div>
+        <div class="term-def">El mensaje clave de la conversación: una observación general + una pregunta específica que destapa dolor.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Dolor operativo</div>
+        <div class="term-def">El problema real que tiene el dueño de la clínica en su día a día (no en su filosofía). Tiempo perdido del equipo, pacientes que se caen, no-shows, plata que no entra.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla del dolor</div>
+        <div class="term-def">La palanca que mueve a un dueño de clínica no es darle valor, es identificar (o hacer visible) el dolor operativo que ya tiene. <strong>La regla más importante del trabajo.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Hacer visible el dolor</div>
+        <div class="term-def">Cuando el dolor no aparece solo, lo ayudás a verlo con preguntas, no con afirmaciones. Las preguntas no generan defensa.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">V → R → R</div>
+        <div class="term-def">Validar → Reframear → Redirigir. La fórmula para manejar cualquier objeción. Validás lo que dijo, cambiás el ángulo, redirigís a llamada.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Mover a llamada</div>
+        <div class="term-def">El movimiento de cierre del chat: dejar de discutir/explicar y proponer una llamada con dos opciones de horario.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Cerrar el chat</div>
+        <div class="term-def">Cuando ya agendaste la llamada (o cuando el lead dijo definitivamente que no), cortás la conversación con un mensaje corto y profesional.</div>
+      </div>
+    </section>
+
+    <section id="sistema">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">Sistema operativo</span>
+      </div>
+      <h2 class="section-title">Términos del panel y herramientas.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Centro de Setters</div>
+        <div class="term-def">Tu panel principal de trabajo. Donde ves la lista de leads asignados, las métricas en tiempo real y filtrás por estado.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Setteo (WhatsApp)</div>
+        <div class="term-def">El módulo del sistema donde trabajás los leads por WhatsApp. La mayor parte de tu día va a estar acá.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Llamadas (Sin WSP)</div>
+        <div class="term-def">El módulo para casos donde el lead no tiene WhatsApp y hay que llamarlo por teléfono.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Banco de Respuestas</div>
+        <div class="term-def">La base de preguntas frecuentes con sus respuestas oficiales. Cuando no sabés qué responder, abrís el banco, buscás y adaptás.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Centro de Entrenamiento</div>
+        <div class="term-def">Donde están todos los manuales y materiales de formación, incluido este documento. Fuente de verdad del sistema.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Variantes</div>
+        <div class="term-def">Conjuntos completos de mensajes (4 bloques cada uno: apertura, conexión, calificación, llamada). Cada setter recibe una asignada y la trabaja consistentemente.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Var I, Var II, Var III, Var IV</div>
+        <div class="term-def">Las cuatro variantes del sistema. Las maneja Ignacio en el Centro de Comando, no las elegís vos.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Timer anti-baneo</div>
+        <div class="term-def">Cronómetro que prendés vos manualmente para autorregularte el ritmo de envíos. <strong>No es opcional, es protección.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Estados de un lead</div>
+        <div class="term-def">Sin contactar / En proceso / WSP enviado / Respondieron / Calificados / Interesados / Agendados / En seguimiento / Sin WSP / Descartados.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Checkboxes 24H/48H/72H/7D/15D</div>
+        <div class="term-def">Marcadores que usás para programar y registrar seguimientos en distintos plazos. Te dicen cuándo volver a escribir.</div>
+      </div>
+    </section>
+
+    <section id="metricas">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Métricas</span>
+      </div>
+      <h2 class="section-title">Lo que medimos.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Total</div>
+        <div class="term-def">Cantidad total de leads que tenés asignados.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">% Conexión</div>
+        <div class="term-def">Porcentaje de leads que recibieron el mensaje de apertura sobre el total.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">% Apertura</div>
+        <div class="term-def">Porcentaje de leads que respondieron al mensaje sobre las conexiones. <strong>Mide la calidad del opener.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">% Calificación</div>
+        <div class="term-def">Porcentaje de leads que recibieron el mensaje de calificación sobre los que respondieron.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Interesados</div>
+        <div class="term-def">Cantidad de leads que marcaste manualmente como con interés real.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Agendados</div>
+        <div class="term-def">Cantidad de leads que confirmaron llamada con Ignacio. <strong>La métrica que más importa.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Tasa de respuesta</div>
+        <div class="term-def">Cuántos respondieron sobre cuántos enviaste. Indicador de calidad del opener y de la base.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Volumen diario</div>
+        <div class="term-def">Cantidad de mensajes nuevos que mandás por día. Referencia: 120/día mínimo.</div>
+      </div>
+    </section>
+
+    <section id="comerciales">
+      <div class="section-marker">
+        <span class="section-marker-num">06</span>
+        <span class="section-marker-label">Conceptos comerciales</span>
+      </div>
+      <h2 class="section-title">Términos del proceso de venta.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Llamada de venta</div>
+        <div class="term-def">La llamada con Ignacio donde se cierra la operación. Vos no vendés, agendás esa llamada.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Lead frío</div>
+        <div class="term-def">Un prospecto al que nunca le hablamos antes. Mayor fricción, requiere apertura neutra.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Lead tibio</div>
+        <div class="term-def">Un prospecto que ya respondió y mostró algo de interés pero no agendó todavía. Está en seguimiento.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Lead caliente</div>
+        <div class="term-def">Un prospecto que mostró interés claro y está cerca de agendar (o ya agendó).</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">No-fit</div>
+        <div class="term-def">Un lead que no encaja con lo que ofrecemos. Puede ser por tamaño de clínica, tipo de servicio, no decisor, etc. Se descarta profesionalmente.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Seguimiento</div>
+        <div class="term-def">Volver a escribir a un lead que respondió pero no avanzó. Distintos plazos según el contexto.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Descalificar</div>
+        <div class="term-def">Cuando determinás que un lead no es candidato y lo movés a "Descartados". Solo se hace por razón real, no por orgullo.</div>
+      </div>
+    </section>
+
+    <section id="caso">
+      <div class="section-marker">
+        <span class="section-marker-num">07</span>
+        <span class="section-marker-label">Caso de referencia</span>
+      </div>
+      <h2 class="section-title">El caso Sofía: prueba social.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Caso Sofía / Clínica Sofía</div>
+        <div class="term-def">Cliente activo en Uruguay. La clínica de la doctora Sofía Campanella. Caso de referencia que demuestra que el sistema funciona.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Métricas Sofía</div>
+        <div class="term-def">Período 6 semanas: <strong>1.859 mensajes enviados, 71 citas generadas, 3,8% de conversión, pico de 9 citas en un solo día.</strong> Los números son munición real de prueba social.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Cómo usarlo en chat</div>
+        <div class="term-def">Si te preguntan "¿esto funciona?" o "¿tienen casos?": "Sí, tenemos clientes activos hoy. El sistema está generando agendas reales todas las semanas. Los números los ve Ignacio en la llamada porque depende del caso de cada clínica."</div>
+      </div>
+
+      <div class="aside">
+        <strong>Importante:</strong> los números de Sofía sirven como base de confianza para vos como setter, pero NO los tirás todos por chat. La llamada con Ignacio es donde se muestran en contexto.
+      </div>
+    </section>
+
+    <section id="equipo">
+      <div class="section-marker">
+        <span class="section-marker-num">08</span>
+        <span class="section-marker-label">Equipo SCM</span>
+      </div>
+      <h2 class="section-title">Quién es quién.</h2>
+
+      <div class="term-block">
+        <div class="term-name">Ignacio</div>
+        <div class="term-def">Fundador de SCM. Quien cierra las llamadas de venta. Tu referente para escalar dudas, pedir ayuda, reportar problemas con cuentas, o sumar nuevas objeciones al sistema.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Centro de Comando</div>
+        <div class="term-def">Panel administrativo donde Ignacio asigna variantes, ve métricas globales del equipo y gestiona setters. <strong>No lo ves vos.</strong></div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Drive del equipo</div>
+        <div class="term-def">Carpeta compartida donde se suben las capturas de conversaciones diarias para entrenar el sistema y que el equipo aprenda de casos reales.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">Discord del equipo</div>
+        <div class="term-def">Canal de comunicación donde compartís el link de tu carpeta de evidencias diaria.</div>
+      </div>
+    </section>
+
+    <section id="reglas">
+      <div class="section-marker">
+        <span class="section-marker-num">09</span>
+        <span class="section-marker-label">Reglas operativas con nombre</span>
+      </div>
+      <h2 class="section-title">Las reglas que tienen nombre propio.</h2>
+
+      <div class="term-block">
+        <div class="term-name">La regla del dolor</div>
+        <div class="term-def">La palanca que mueve a un dueño es identificar dolor operativo, no dar valor. Es la regla central del trabajo.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla de las 5 fases</div>
+        <div class="term-def">Toda conversación pasa por 5 momentos en orden: apertura → conexión → calificación → interés → llamada. Si te salteás uno, la conversación se cae.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla de V → R → R</div>
+        <div class="term-def">Para manejar cualquier objeción: Validar → Reframear → Redirigir. Tres pasos.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla del volumen mínimo</div>
+        <div class="term-def">120 mensajes por día es el mínimo. Por debajo de eso, los números no cierran.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla de constancia</div>
+        <div class="term-def">Mejor 100 mensajes todos los días que 200 un día y 0 al siguiente. La constancia es lo que hace funcional al sistema.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla del seguimiento</div>
+        <div class="term-def">Después de 3 mensajes sin respuesta, dejá de insistir. Más insistencia te quema la cuenta y baja tu tasa general.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla de la velocidad</div>
+        <div class="term-def">Velocidad de primera respuesta = la métrica oculta más importante. Contestá dentro de las 2 horas, idealmente menos.</div>
+      </div>
+      <div class="term-block">
+        <div class="term-name">La regla de no cerrar por chat</div>
+        <div class="term-def">NO intentes cerrar la venta en WhatsApp. NO tirés precios. NO discutas objeciones largo. Para eso existe la llamada con Ignacio.</div>
+      </div>
+    </section>
+
+    <div class="rule-callout">
+      <div class="rule-label">Para llevarte</div>
+      <p class="rule-text">El glosario es <em>tu diccionario operativo</em>. Cuando aparezca un término que no estás seguro qué significa exactamente en el contexto de SCM, volvé acá. <em>No tenés que memorizarlo todo</em>: tenés que saber dónde buscar.</p>
+    </div>
+
+
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 08 / 08</span>
+        <span>·</span>
+        <span>SCM Onboarding</span>
+      </span>
+      <span class="footer-info">Final del onboarding</span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => { if (sec.offsetTop <= scrollY) current = sec.id; });
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ["m01","m02","m03","m04","m05","m06","m07","m08"].includes(href);
+      if (isModuleNav) return;
+      if (href === current) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>

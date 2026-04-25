@@ -626,6 +626,28 @@
           </div>
         </div>
         <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Material de referencia para setters. PDFs, docs, videos, guiones. El contenido descriptivo/texto se usa como base de verdad por la IA del Banco de Respuestas.</p>
+
+        <!-- Onboarding oficial (hardcoded) -->
+        <div style="padding:0 32px;">
+          <div id="onboarding-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04)); border:1px solid rgba(167,139,250,0.3); border-radius:12px; margin-bottom:14px;">
+            <div>
+              <div style="font-size:11px; color:#A78BFA; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">📘 Onboarding oficial del equipo</div>
+              <div id="onboarding-subheader" style="font-size:13px; color:var(--text-secondary); margin-top:3px;">8 módulos · ~46 min total · 0 de 8 completados</div>
+            </div>
+            <div id="onboarding-progress-bar" style="width:140px; height:8px; background:rgba(167,139,250,0.15); border-radius:4px; overflow:hidden;">
+              <div id="onboarding-progress-fill" style="width:0%; height:100%; background:linear-gradient(90deg, #A78BFA, #5bb974); transition:width 0.3s;"></div>
+            </div>
+          </div>
+          <div id="onboarding-cards" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-bottom:28px;"></div>
+        </div>
+
+        <!-- Material adicional subido por el equipo -->
+        <div style="padding:0 32px;">
+          <div style="display:flex; align-items:center; gap:10px; margin:8px 0 14px; color:var(--text-secondary); font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">
+            <span>📂 Material adicional</span>
+            <div style="flex:1; height:1px; background:var(--border-color);"></div>
+          </div>
+        </div>
         <div id="training-list" style="padding:0 32px 32px; display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;">
           <p style="color:var(--text-secondary)">Cargando...</p>
         </div>
@@ -869,6 +891,6 @@
   </div>
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
-  <script type="module" src="/app.js?v=20260424d"></script>
+  <script type="module" src="/app.js?v=20260424e"></script>
 </body>
 </html>

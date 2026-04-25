@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; font-weight: 400; font-size: 15px; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  .container { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+  .toc { padding: 36px 24px 36px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--border-soft); }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .toc-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 700; font-size: 11px; box-shadow: 0 0 20px var(--violet-glow); }
+  .brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .toc-tag { font-size: 11px; color: var(--text-faint); margin-bottom: 36px; margin-left: 34px; letter-spacing: 0.02em; }
+  .toc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+  .toc-list { list-style: none; }
+  .toc-list .toc-item { margin-bottom: 1px; }
+  .toc-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: var(--text-mute); text-decoration: none; font-size: 13px; font-weight: 400; transition: all 0.15s; line-height: 1.4; }
+  .toc-link:hover { background: var(--bg-card); color: var(--text-soft); }
+  .toc-link.active { background: var(--violet-bg); color: var(--violet); font-weight: 500; }
+  .toc-num { font-size: 10px; color: var(--text-faint); flex-shrink: 0; width: 16px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .toc-link.active .toc-num { color: var(--violet); }
+  .main { padding: 56px 64px 120px; max-width: 760px; }
+  .module-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+  .module-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  h1.module-title { font-size: 44px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; color: var(--text); }
+  h1.module-title .accent { color: var(--violet); font-weight: 700; }
+  .module-deck { font-size: 18px; line-height: 1.5; color: var(--text-soft); font-weight: 400; max-width: 600px; margin-bottom: 40px; }
+  .module-meta { display: flex; gap: 20px; font-size: 12px; color: var(--text-faint); margin-bottom: 56px; padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .module-meta-item { display: flex; align-items: center; gap: 6px; }
+  .section-marker { display: flex; align-items: center; gap: 12px; margin-top: 64px; margin-bottom: 16px; }
+  .section-marker-num { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; }
+  .section-marker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; color: var(--text-faint); }
+  h2.section-title { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--text); }
+  h3.subsection-title { font-size: 19px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; margin-top: 40px; margin-bottom: 14px; color: var(--text); }
+  h4.minor-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; color: var(--violet); margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text-soft); }
+  p.lead { font-size: 18px; line-height: 1.55; color: var(--text); font-weight: 400; margin-bottom: 24px; }
+  strong { color: var(--text); font-weight: 600; }
+  em { font-style: italic; color: var(--text); }
+  .pull { margin: 40px -8px; padding: 28px 32px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(167, 139, 250, 0.15); border-radius: 12px; position: relative; overflow: hidden; }
+  .pull::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--violet) 0%, transparent 100%); }
+  .pull-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--violet); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .pull-label::before { content: '◆'; font-size: 9px; }
+  .pull-text { font-size: 19px; line-height: 1.5; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+  .pull-text em { color: var(--violet); font-style: normal; font-weight: 600; }
+  .leaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 32px 0; }
+  .leak-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 22px 20px; transition: all 0.2s; position: relative; }
+  .leak-card:hover { border-color: var(--violet); background: var(--bg-card-hover); transform: translateY(-1px); }
+  .leak-card-num { font-size: 11px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .leak-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.35; }
+  .leak-card-body { font-size: 13px; line-height: 1.55; color: var(--text-mute); }
+  .leak-card.summary { background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%); border-color: rgba(167, 139, 250, 0.2); grid-column: 1 / -1; }
+  .leak-card.summary .leak-card-title { font-size: 16px; }
+  .leak-card.summary .leak-card-body em { color: var(--violet); font-style: normal; font-weight: 600; }
+  ol.numbered { list-style: none; counter-reset: item; margin: 24px 0; }
+  ol.numbered li { counter-increment: item; padding: 14px 16px 14px 56px; position: relative; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; color: var(--text-soft); font-size: 14px; }
+  ol.numbered li::before { content: counter(item); position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--violet-bg); color: var(--violet); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .aside { background: var(--bg-card); border-left: 3px solid var(--violet); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .aside strong { color: var(--violet); }
+  .role-table { margin: 32px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .role-table-header { padding: 16px 24px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; }
+  .role-row { display: grid; grid-template-columns: 60px 1fr; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--border-soft); align-items: center; }
+  .role-row:last-child { border-bottom: none; }
+  .role-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; padding: 4px 8px; border-radius: 4px; width: fit-content; }
+  .role-tag.si { color: var(--green); background: rgba(63, 185, 80, 0.1); }
+  .role-tag.no { color: var(--rose); background: rgba(248, 81, 73, 0.1); }
+  .role-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .rule-callout { margin: 56px 0 32px; padding: 32px 32px; background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%), var(--bg-card); border: 1px solid var(--border); border-radius: 14px; position: relative; overflow: hidden; }
+  .rule-callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--violet), transparent); opacity: 0.5; }
+  .rule-label { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--violet); margin-bottom: 16px; }
+  .rule-label::before { content: '★'; font-size: 11px; }
+  .rule-text { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; letter-spacing: -0.015em; }
+  .rule-text em { color: var(--violet); font-style: normal; font-weight: 700; }
+  .module-footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .footer-info { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; }
+  .next-button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
+  .next-button-arrow { transition: transform 0.2s; }
+  .next-button:hover .next-button-arrow { transform: translateX(3px); }
+  /* Componentes adicionales para módulos siguientes */
+  .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+  .chat-msg:last-child { margin-bottom: 0; }
+  .chat-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; min-width: 50px; text-align: center; }
+  .chat-tag.lead { background: rgba(110, 118, 129, 0.15); color: var(--text-mute); }
+  .chat-tag.you { background: var(--violet-bg); color: var(--violet); }
+  .chat-text { color: var(--text-soft); }
+  .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
+  /* Step block */
+  .step-grid { display: grid; gap: 12px; margin: 24px 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
+  .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  /* Objection card */
+  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
+  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
+  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
+  .obj-row:last-child { border-bottom: none; }
+  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
+  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
+  .obj-content em { color: var(--text); font-style: italic; }
+  /* Term (glossary) */
+  .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+  .term-block:last-child { border-bottom: none; }
+  .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  /* Stats card */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  /* Warning */
+  .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .warning strong { color: var(--rose); }
+  /* Success */
+  .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .success strong { color: var(--green); }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m01" class="toc-link"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m03" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m04" class="toc-link active"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m06" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m07" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m08" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#logica" class="toc-link">La lógica</a></li>
+      <li class="toc-item"><a href="#apertura" class="toc-link">Apertura</a></li>
+      <li class="toc-item"><a href="#conexion" class="toc-link">Conexión</a></li>
+      <li class="toc-item"><a href="#calificacion" class="toc-link">Calificación</a></li>
+      <li class="toc-item"><a href="#llamada" class="toc-link">Movimiento a llamada</a></li>
+      <li class="toc-item"><a href="#tuerce" class="toc-link">Cuando se tuerce</a></li>
+      <li class="toc-item"><a href="#ritmo" class="toc-link">Ritmo y timing</a></li>
+      <li class="toc-item"><a href="#reglas" class="toc-link">Reglas de oro</a></li>
+      <li class="toc-item"><a href="#completa" class="toc-link">Conversación completa</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <span class="module-tag">Módulo 04 · Lectura</span>
+
+    <h1 class="module-title">Conversación.<br>Cómo se mueve una <span class="accent">charla buena</span>, paso a paso.</h1>
+
+    <p class="module-deck">Las cinco fases de una conversación con ejemplos reales para cada momento. El módulo más práctico del entrenamiento.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~12 min</span>
+      <span class="module-meta-item">🎯 Cómo conversar bien con ejemplos reales</span>
+      <span class="module-meta-item">📍 El más práctico</span>
+    </div>
+
+
+    <div class="aside">
+      <strong>Cómo usar este módulo:</strong> Es el más práctico de todos. No te enseña teoría, te enseña cómo se ve una conversación real cuando funciona. Léelo entero la primera vez. Después volvé a las secciones específicas cuando aparezca una situación parecida en una conversación real.
+    </div>
+
+    <section id="logica">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">La lógica del proceso</span>
+      </div>
+      <h2 class="section-title">Las cinco fases de una conversación.</h2>
+
+      <p>Toda conversación buena pasa por cinco momentos en el orden correcto. Si te salteás uno o lo hacés en otro orden, generalmente la conversación se cae.</p>
+
+      <div class="step-grid" style="grid-template-columns: repeat(5, 1fr); gap: 8px;">
+        <div class="step-card" style="grid-template-columns: 1fr; text-align: center; padding: 16px 12px;">
+          <div class="step-num" style="margin: 0 auto 8px;">1</div>
+          <div class="step-content">
+            <div class="step-title" style="font-size: 14px;">Apertura</div>
+            <p style="font-size: 11px; color: var(--text-mute); margin: 0;">Que respondan</p>
+          </div>
+        </div>
+        <div class="step-card" style="grid-template-columns: 1fr; text-align: center; padding: 16px 12px;">
+          <div class="step-num" style="margin: 0 auto 8px;">2</div>
+          <div class="step-content">
+            <div class="step-title" style="font-size: 14px;">Conexión</div>
+            <p style="font-size: 11px; color: var(--text-mute); margin: 0;">Contexto</p>
+          </div>
+        </div>
+        <div class="step-card" style="grid-template-columns: 1fr; text-align: center; padding: 16px 12px;">
+          <div class="step-num" style="margin: 0 auto 8px;">3</div>
+          <div class="step-content">
+            <div class="step-title" style="font-size: 14px;">Calificación</div>
+            <p style="font-size: 11px; color: var(--text-mute); margin: 0;">Detectar dolor</p>
+          </div>
+        </div>
+        <div class="step-card" style="grid-template-columns: 1fr; text-align: center; padding: 16px 12px;">
+          <div class="step-num" style="margin: 0 auto 8px;">4</div>
+          <div class="step-content">
+            <div class="step-title" style="font-size: 14px;">Interés</div>
+            <p style="font-size: 11px; color: var(--text-mute); margin: 0;">Curiosidad</p>
+          </div>
+        </div>
+        <div class="step-card" style="grid-template-columns: 1fr; text-align: center; padding: 16px 12px; background: var(--violet-bg); border-color: rgba(167, 139, 250, 0.3);">
+          <div class="step-num" style="margin: 0 auto 8px;">5</div>
+          <div class="step-content">
+            <div class="step-title" style="font-size: 14px;">Llamada</div>
+            <p style="font-size: 11px; color: var(--violet); margin: 0;">Agendar</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="aside">
+        Cada fase tiene un objetivo único. Si tratás de hacer dos cosas a la vez (ej: vender en la apertura), la conversación se rompe.
+      </div>
+    </section>
+
+    <section id="apertura">
+      <div class="section-marker">
+        <span class="section-marker-num">02</span>
+        <span class="section-marker-label">Fase 1 · Apertura</span>
+      </div>
+      <h2 class="section-title">El primer mensaje. Su único objetivo: que respondan.</h2>
+
+      <p>La apertura es el mensaje pre-armado de la variante asignada. <strong>NO vende, NO explica, NO menciona el precio, NO detecta dolor.</strong> Es un mensaje neutro diseñado para bajar la fricción y generar primera respuesta.</p>
+
+      <h3 class="subsection-title">Por qué es así (esto es importante).</h3>
+
+      <p>WhatsApp y Meta detectan mensajes de venta de entrada. Si tu primer mensaje a un número desconocido es un pitch, dos cosas pasan:</p>
+
+      <ol class="numbered">
+        <li><strong>Riesgo de baneo.</strong> Los algoritmos marcan el mensaje como spam y bajan tu reputación.</li>
+        <li><strong>Tasa de respuesta baja.</strong> La gente ignora mensajes que parecen venta automática.</li>
+      </ol>
+
+      <p>Una apertura neutra hace que la persona responda de forma natural. Y cuando responde, se abre una conversación. Y dentro de una conversación, el algoritmo te trata distinto.</p>
+
+      <div class="rule-callout">
+        <div class="rule-label">Punto clave</div>
+        <p class="rule-text">La apertura neutra no es estilo, es <em>estrategia anti-baneo</em>. Y es lo que permite que después tu mensaje de calificación sea efectivo.</p>
+      </div>
+
+      <h3 class="subsection-title">Ejemplos de aperturas que funcionan.</h3>
+
+      <p>Las variantes específicas las maneja Ignacio en el sistema, pero el espíritu es siempre el mismo:</p>
+
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, te hago una consulta rápida"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Hola, ¿hay alguien para una consulta?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, ¿podés un minuto?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Hola, te quería preguntar algo puntual sobre la clínica"</span></div>
+      </div>
+
+      <h3 class="subsection-title">Lo que NO va en una apertura.</h3>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--rose);">Mensajes largos.</strong> <span style="color: var(--text-mute);">Un párrafo extenso de entrada se ignora.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--rose);">Pitch comercial.</strong> <span style="color: var(--text-mute);">"Te ayudo a escalar tu clínica con IA" mata la conversación antes de empezar.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--rose);">Palabras vacías.</strong> <span style="color: var(--text-mute);">"Escalar", "transformar", "automatizar", "potenciar" suenan a marketing genérico.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--rose);">Halagos forzados.</strong> <span style="color: var(--text-mute);">"Vi que tenés una clínica increíble" sin contexto suena falso.</span></li>
+        <li style="padding: 10px 0; font-size: 14px;"><strong style="color: var(--rose);">Preguntas comerciales.</strong> <span style="color: var(--text-mute);">"¿Tenés problemas con tus pacientes?" en frío genera defensa.</span></li>
+      </ul>
+    </section>
+
+    <section id="conexion">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">Fase 2 · Conexión</span>
+      </div>
+      <h2 class="section-title">El segundo mensaje, cuando el lead respondió.</h2>
+
+      <p>Cuando un lead te responde, el algoritmo de WhatsApp ya te trata distinto. Pasaste de "mensaje en frío" a "conversación abierta". Ahora podés mandar un mensaje un poco más sustancioso, pero todavía sin pitch.</p>
+
+      <h3 class="subsection-title">Cómo se ve en la práctica.</h3>
+
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, te hago una consulta rápida"</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Sí, decime"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Te escribo porque trabajamos con clínicas y veo seguido un mismo problema, te quería preguntar algo puntual"</span></div>
+        <div class="chat-note">Mensaje de conexión: contexto mínimo + apertura para la pregunta de calificación. No vende todavía.</div>
+      </div>
+
+      <h3 class="subsection-title">Variantes según cómo respondió el lead.</h3>
+
+      <h4 class="minor-title">Si respondió cortante o desconfiado</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"¿Quién sos?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Sí, perdón. Soy [tu nombre], trabajo con un equipo que ayuda a clínicas dentales con un sistema de seguimiento de pacientes. Te quería hacer una pregunta corta sobre cómo trabajan ustedes, ¿te interesa que te cuente o mejor hablamos otro día?"</span></div>
+        <div class="chat-note">Le das la opción de cortar. Eso baja la guardia.</div>
+      </div>
+
+      <h4 class="minor-title">Si respondió interesado</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Hola sí, ¿qué necesitás?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, gracias por responder. Trabajo con clínicas dentales y vi que tienen consultorio en [ciudad]. Te quería hacer una pregunta sobre cómo manejan hoy ciertos temas, ¿te molesta?"</span></div>
+        <div class="chat-note">Mostrás que sabés algo específico de la clínica (la ciudad). Eso saca el mensaje del modo "automático".</div>
+      </div>
+
+      <h4 class="minor-title">Si respondió tibio o con duda</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Hola"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, gracias por responder. Trabajamos con un sistema que ayuda a clínicas a recuperar pacientes que dejaron de ir. ¿Tienen ese tipo de pacientes en la base?"</span></div>
+        <div class="chat-note">Vas un poco más directo porque la respuesta fue mínima. Necesitás generar más engagement.</div>
+      </div>
+    </section>
+
+    <section id="calificacion">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">Fase 3 · Calificación</span>
+      </div>
+      <h2 class="section-title">El mensaje más importante de toda la conversación.</h2>
+
+      <p class="lead">Es donde detectás si hay dolor real, si hay base para trabajar, y si vale la pena llevar a llamada.</p>
+
+      <h3 class="subsection-title">Cómo se ve un buen mensaje de calificación.</h3>
+
+      <p>La estructura que funciona: <strong>una observación general + una pregunta específica que destapa dolor.</strong></p>
+
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Te escribo porque vemos que en muchas clínicas hay pacientes que pidieron presupuesto, hicieron una consulta o se atendieron alguna vez, pero dejaron de venir y nadie les escribe. ¿Cómo manejan eso ustedes hoy?"</span></div>
+      </div>
+
+      <p>Esa pregunta hace tres cosas a la vez:</p>
+
+      <ol class="numbered">
+        <li>Identifica un problema concreto que el lead reconoce.</li>
+        <li>Le pide que reflexione sobre su propia operación.</li>
+        <li>La respuesta te dice si hay dolor o no.</li>
+      </ol>
+
+      <h3 class="subsection-title">Tipos de respuestas y qué significan.</h3>
+
+      <h4 class="minor-title">Respuesta tipo A — Dolor visible</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Sí, es un quilombo. No hacemos seguimiento, se nos pierde un montón."</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Y la verdad que no, lo intentamos hacer manual pero no damos abasto."</span></div>
+        <div class="chat-note"><strong style="color: var(--green);">DOLOR CLARO.</strong> Movés directo a llamada. No expliques más, agendá.</div>
+      </div>
+
+      <h4 class="minor-title">Respuesta tipo B — Dolor parcial</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Tenemos algo armado pero no es muy bueno."</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Entiendo. Y eso, ¿lo manejás vos o tenés a alguien del equipo dedicado?"</span></div>
+        <div class="chat-note">Hay reconocimiento pero no urgencia. Profundizá una pregunta más antes de mover a llamada. Si responde "yo lo hago" o "la chica de recepción", el dolor aparece solo.</div>
+      </div>
+
+      <h4 class="minor-title">Respuesta tipo C — Dolor ausente o defensa</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Lo tenemos cubierto, gracias."</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenísimo. Por curiosidad, ¿hoy lo trabajan con un sistema o más manual desde el equipo?"</span></div>
+        <div class="chat-note">Posible no-fit O respuesta defensiva. Una pregunta más para confirmar. Si responde "manual desde el equipo", probablemente sí hay dolor pero no lo está viendo. Si responde "tenemos sistema", quizás es no-fit.</div>
+      </div>
+
+      <h4 class="minor-title">Respuesta tipo D — Pregunta directa</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"¿De qué se trata?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Te explico mejor en una llamada corta de 20 minutos, así te muestro cómo lo estamos haciendo con otros consultorios. ¿Te queda mejor martes o miércoles?"</span></div>
+        <div class="chat-note">Curiosidad sin compromiso. NO le tirés todo. Mové a llamada. La curiosidad es señal verde.</div>
+      </div>
+    </section>
+
+    <section id="llamada">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Fase 4-5 · Movimiento a llamada</span>
+      </div>
+      <h2 class="section-title">Cuándo agendar y cómo agendarlo.</h2>
+
+      <h3 class="subsection-title">Las tres señales para mover a llamada.</h3>
+
+      <ol class="numbered">
+        <li><strong>Reconoció el problema.</strong> Dijo "sí, tenemos ese tema" o "es un dolor de cabeza".</li>
+        <li><strong>Preguntó cómo funciona.</strong> Mostró curiosidad genuina.</li>
+        <li><strong>Pidió detalles específicos.</strong> Preguntó por precio, por tiempos, por implementación.</li>
+      </ol>
+
+      <div class="success">
+        Cuando aparece cualquiera de las tres, pasás a llamada inmediatamente. <strong>NO sigas explicando por chat.</strong>
+      </div>
+
+      <h3 class="subsection-title">Cómo proponer la llamada.</h3>
+
+      <p>La fórmula que funciona: ofrecer <strong>dos opciones de horario</strong>. No dejes la pregunta abierta tipo "¿cuándo te queda?" porque genera fricción.</p>
+
+      <h4 class="minor-title">Versión directa</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Te propongo armar una llamada corta de 20 minutos para mostrarte cómo lo estamos haciendo. ¿Te queda mejor mañana a las 10 o el jueves a las 4?"</span></div>
+      </div>
+
+      <h4 class="minor-title">Versión con justificación</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Mirá, esto se ve mejor en una llamada corta. Son 20 minutos, te muestro el sistema funcionando con un cliente nuestro y vos vés si encaja o no. ¿Mañana 10am o jueves 4pm te sirve?"</span></div>
+      </div>
+
+      <h4 class="minor-title">Versión cuando hay dudas</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Entiendo. Justo eso es lo que cubrimos en la llamada con Ignacio. Te muestra el sistema, los números reales, y vos decidís si hace sentido. Sin compromiso. ¿Te ofrezco mañana 10am o jueves 4pm?"</span></div>
+      </div>
+
+      <h3 class="subsection-title">Si te dice "sí" pero sin confirmar horario.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Sí, dale, agendemos"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Genial. ¿Te queda mejor mañana 10am o jueves 4pm?"</span></div>
+        <div class="chat-note">NO dejes el horario abierto. Volvé a las dos opciones concretas hasta que confirme una.</div>
+      </div>
+
+      <h3 class="subsection-title">Cuando elige horario.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Mañana 10am está bien"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Listo. Te paso el link de Google Meet en un minuto. ¿A qué número te lo mando, este o tenés otro?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Perfecto, te paso link. Mañana hablamos. Cualquier cosa avisame por acá."</span></div>
+        <div class="chat-note">Cerrás logística rápido. Confirmás canal. Mandás el link inmediatamente para que quede agendado.</div>
+      </div>
+    </section>
+
+    <section id="tuerce">
+      <div class="section-marker">
+        <span class="section-marker-num">06</span>
+        <span class="section-marker-label">Cuando se tuerce</span>
+      </div>
+      <h2 class="section-title">Qué hacer cuando la conversación se sale del camino.</h2>
+
+      <p>No todas las conversaciones siguen el camino lineal apertura → conexión → calificación → llamada. A veces se tuercen. Acá tenés escenarios típicos y cómo manejarlos.</p>
+
+      <h3 class="subsection-title">Te tira el precio antes de tiempo.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"¿Cuánto cuesta?"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Depende bastante de cómo trabajen hoy seguimiento y base. Justamente eso lo vemos en la llamada con Ignacio. ¿Te ofrezco mañana 10am o jueves 4pm para que te quede claro?"</span></div>
+        <div class="chat-note">Redirigís precio a llamada sin sonar evasivo. NO le tirés número específico.</div>
+      </div>
+
+      <h3 class="subsection-title">Quiere que le mandes "info".</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Pasame info y la veo"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Sí, igual depende de cómo trabajen hoy. Si te mando info genérica capaz no aplica para tu caso. ¿Te ofrezco una llamada corta para entender la situación específica y ahí te paso lo que sí aplica?"</span></div>
+        <div class="chat-note">Le decís que la info que querés mandarle es personalizada, lo cual es cierto. Eso justifica la llamada en lugar de un PDF genérico.</div>
+      </div>
+
+      <h3 class="subsection-title">Dice que ya trabaja con alguien.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Ya tengo alguien de marketing"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenísimo. Igual esto no es marketing ni publicidad. Es un sistema que trabaja la base de pacientes que ya tenés y que hoy probablemente nadie está siguiendo. Es complementario. ¿Te interesa que te muestre cómo funciona?"</span></div>
+        <div class="chat-note">No competís. Diferenciás. Marcás que es algo distinto a lo que ya tiene.</div>
+      </div>
+
+      <h3 class="subsection-title">Está apurado o "no tengo tiempo".</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"No tengo tiempo ahora"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"De una. ¿Te escribo el lunes y vemos si cuadra hablar de esto con calma?"</span></div>
+        <div class="chat-note">Marcás un seguimiento concreto. NO insistís. Mejor cerrar con elegancia y volver.</div>
+      </div>
+
+      <h3 class="subsection-title">Te dice "no me interesa".</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"No me interesa"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"De una, no hay drama. Si más adelante querés ver cómo trabajar mejor la base de pacientes, escribime. Éxitos."</span></div>
+        <div class="chat-note">Cierre limpio, profesional. NO insistas. Te deja la puerta abierta para retomar más adelante.</div>
+      </div>
+
+      <h3 class="subsection-title">Te pide hablar con quien decide.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Esto lo ve mi socio, no yo"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Entiendo. ¿Me podés pasar contacto de tu socio o preferís coordinarlo vos directamente?"</span></div>
+        <div class="chat-note">No te quedés vendiendo a alguien que no decide. Llegá al decisor.</div>
+      </div>
+
+      <h3 class="subsection-title">Aparece dolor pero no es el que esperabas.</h3>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Sí, tengo problema, pero más con confirmación de turnos que con seguimiento"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Eso también lo trabajamos. Justamente el sistema cubre confirmaciones automáticas, no-shows y reactivación. ¿Te muestro en una llamada corta cómo se vería para tu caso?"</span></div>
+        <div class="chat-note">NO descartes. Adaptás la propuesta al dolor que apareció. El sistema cubre varios frentes.</div>
+      </div>
+    </section>
+
+    <section id="ritmo">
+      <div class="section-marker">
+        <span class="section-marker-num">07</span>
+        <span class="section-marker-label">Ritmo y timing</span>
+      </div>
+      <h2 class="section-title">Cuándo responder rápido y cuándo no apurarte.</h2>
+
+      <h3 class="subsection-title">Velocidad de respuesta.</h3>
+
+      <p>Cuando el lead te responde, le tenés que contestar dentro de las próximas <strong>dos horas</strong>. Idealmente menos.</p>
+
+      <p>La razón: la persona que te respondió está en el momento. Si esperás un día, perdiste el momentum. Cuando vuelvas a escribir, ya está pensando en otra cosa.</p>
+
+      <div class="rule-callout">
+        <div class="rule-label">La métrica oculta</div>
+        <p class="rule-text">Velocidad de primera respuesta = <em>la métrica que más afecta tu conversión</em>. Más que cualquier otra cosa.</p>
+      </div>
+
+      <h3 class="subsection-title">Cuándo NO apurarte.</h3>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 12px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Después del mensaje de calificación.</strong> <span style="color: var(--text-mute);">Si el lead respondió y vos volvés con otro mensaje 30 segundos después, pareces ansioso. Esperá unos minutos.</span></li>
+        <li style="padding: 12px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Cuando agendaste la llamada.</strong> <span style="color: var(--text-mute);">No le sigas mandando mensajes después. Confirmás y cortás.</span></li>
+        <li style="padding: 12px 0; font-size: 14px;"><strong style="color: var(--text);">Cuando dijo "déjame pensarlo".</strong> <span style="color: var(--text-mute);">Dale al menos 24-48 horas antes del seguimiento.</span></li>
+      </ul>
+
+      <h3 class="subsection-title">Seguimientos en el tiempo.</h3>
+
+      <p>Si el lead respondió pero no avanzó, usás los checkboxes del sistema (24H / 48H / 72H / 7D / 15D) para programar seguimientos.</p>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--violet);">24 horas:</strong> <span style="color: var(--text-soft);">"Hola, ¿pudiste pensar lo que te comenté?"</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--violet);">72 horas:</strong> <span style="color: var(--text-soft);">Recuperás el hilo con un mensaje suave de seguimiento.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--violet);">7 días:</strong> <span style="color: var(--text-soft);">Último intento, podés agregar valor adicional o un dato nuevo.</span></li>
+        <li style="padding: 10px 0; font-size: 14px;"><strong style="color: var(--violet);">15 días:</strong> <span style="color: var(--text-soft);">Si no respondió, descartá o pasá a archivo de retomar en 3 meses.</span></li>
+      </ul>
+
+      <div class="warning">
+        Después de 3 mensajes sin respuesta, <strong>dejá de insistir</strong>. Más insistencia te quema y baja tu tasa de respuesta general.
+      </div>
+    </section>
+
+    <section id="reglas">
+      <div class="section-marker">
+        <span class="section-marker-num">08</span>
+        <span class="section-marker-label">Reglas de oro</span>
+      </div>
+      <h2 class="section-title">Diez reglas que aplican a cualquier conversación.</h2>
+
+      <p>Si tenés que olvidar todo lo demás, recordá estas:</p>
+
+      <ol class="numbered">
+        <li><strong>La apertura no vende.</strong> Su único trabajo es generar respuesta. Pitch en apertura = baneo.</li>
+        <li><strong>Mensajes cortos siempre.</strong> Si tu mensaje tiene más de 3 líneas, lo más probable es que no lo lean.</li>
+        <li><strong>Una sola pregunta por mensaje.</strong> Si en un mensaje hacés tres preguntas, el lead responde una y se olvida de las otras.</li>
+        <li><strong>No expliques de más.</strong> Tu trabajo no es educar. Es generar curiosidad para que la llamada tenga sentido.</li>
+        <li><strong>NO copies y pegues exactamente lo que tenés en templates.</strong> Los templates son base. Adaptalos al tono de la conversación.</li>
+        <li><strong>Respondé en el idioma y registro del lead.</strong> Si te habló formal, formal. Si relajado, relajado.</li>
+        <li><strong>Cuando hay dolor visible, mové a llamada inmediatamente.</strong> No sigas profundizando por chat.</li>
+        <li><strong>NO discutas objeciones por chat.</strong> Una objeción se acknowledge, se reframea suave, y se mueve a llamada.</li>
+        <li><strong>Confirmá horarios concretos, no abiertos.</strong> "¿Cuándo te queda mejor?" genera fricción. "Mañana 10am o jueves 4pm" cierra.</li>
+        <li><strong>Cuando un lead se cae, dejá la puerta abierta.</strong> Cierres limpios sin insistencia te dejan reaparecer en 3 meses.</li>
+      </ol>
+    </section>
+
+    <section id="completa">
+      <div class="section-marker">
+        <span class="section-marker-num">09</span>
+        <span class="section-marker-label">Una conversación completa</span>
+      </div>
+      <h2 class="section-title">De principio a fin, así se ve cuando funciona.</h2>
+
+      <p>Para que veas las fases conectadas, acá una conversación entera que termina en agendamiento.</p>
+
+      <h4 class="minor-title">Apertura</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Buenas, te hago una consulta rápida"</span></div>
+      </div>
+
+      <h4 class="minor-title">Conexión (lead respondió)</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Sí, dame un segundo"</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Dale, decime"</span></div>
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Gracias por contestar. Trabajamos con clínicas dentales y veo seguido un mismo problema, te quería preguntar algo puntual"</span></div>
+      </div>
+
+      <h4 class="minor-title">Calificación</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Muchas clínicas tienen pacientes que pidieron presupuesto, vinieron una vez o consultaron, pero nadie les volvió a escribir. ¿Cómo manejan eso ustedes hoy?"</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Y la verdad no muy bien. Lo intentamos hacer pero no damos abasto"</span></div>
+      </div>
+
+      <h4 class="minor-title">Detección de interés</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Entiendo, eso pasa seguido. Justamente lo que hacemos es montar un sistema que se ocupa de eso, sin que tu equipo tenga que perseguir a nadie."</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Ah, ¿y cómo funciona?"</span></div>
+      </div>
+
+      <h4 class="minor-title">Movimiento a llamada</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Es más fácil mostrártelo en una llamada corta de 20 minutos. Ignacio te muestra el sistema funcionando con un cliente nuestro. ¿Te queda mejor mañana 10am o jueves 4pm?"</span></div>
+        <div class="chat-msg"><span class="chat-tag lead">Lead</span><span class="chat-text">"Mañana 10am dale"</span></div>
+      </div>
+
+      <h4 class="minor-title">Cierre</h4>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Perfecto, te paso el link de Google Meet ahora. Mañana hablamos."</span></div>
+        <div class="chat-note">Conversación cerrada en 8 mensajes. Sin pitch. Sin discusión. Sin precio.</div>
+      </div>
+
+      <div class="success">
+        Esa es la forma de una conversación que funciona. <strong>Corta, con foco, y movida a llamada apenas aparece interés.</strong>
+      </div>
+    </section>
+
+    <div class="rule-callout">
+      <div class="rule-label">Para llevarte</div>
+      <p class="rule-text">Toda conversación tiene <em>5 fases en orden</em>. La apertura no vende, solo busca respuesta. La calificación es donde se gana o se pierde. <em>Cuando aparece dolor o curiosidad, movés a llamada inmediatamente</em>.</p>
+    </div>
+
+
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 04 / 08</span>
+        <span>·</span>
+        <span>SCM Onboarding</span>
+      </span>
+      <a href="#m05" class="next-button">Módulo 05 — Canales y warmeo<span class="next-button-arrow">→</span></a>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => { if (sec.offsetTop <= scrollY) current = sec.id; });
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ["m01","m02","m03","m04","m05","m06","m07","m08"].includes(href);
+      if (isModuleNav) return;
+      if (href === current) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>

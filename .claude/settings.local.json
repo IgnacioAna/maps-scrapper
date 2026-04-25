@@ -45,7 +45,8 @@
       "Bash(node --check public/app.js)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(PORT=3099 timeout 6 node index.js)"
     ]
   }
 }

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 03</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; font-weight: 400; font-size: 15px; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  .container { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+  .toc { padding: 36px 24px 36px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--border-soft); }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .toc-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 700; font-size: 11px; box-shadow: 0 0 20px var(--violet-glow); }
+  .brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .toc-tag { font-size: 11px; color: var(--text-faint); margin-bottom: 36px; margin-left: 34px; letter-spacing: 0.02em; }
+  .toc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+  .toc-list { list-style: none; }
+  .toc-list .toc-item { margin-bottom: 1px; }
+  .toc-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: var(--text-mute); text-decoration: none; font-size: 13px; font-weight: 400; transition: all 0.15s; line-height: 1.4; }
+  .toc-link:hover { background: var(--bg-card); color: var(--text-soft); }
+  .toc-link.active { background: var(--violet-bg); color: var(--violet); font-weight: 500; }
+  .toc-num { font-size: 10px; color: var(--text-faint); flex-shrink: 0; width: 16px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .toc-link.active .toc-num { color: var(--violet); }
+  .main { padding: 56px 64px 120px; max-width: 760px; }
+  .module-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+  .module-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  h1.module-title { font-size: 44px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; color: var(--text); }
+  h1.module-title .accent { color: var(--violet); font-weight: 700; }
+  .module-deck { font-size: 18px; line-height: 1.5; color: var(--text-soft); font-weight: 400; max-width: 600px; margin-bottom: 40px; }
+  .module-meta { display: flex; gap: 20px; font-size: 12px; color: var(--text-faint); margin-bottom: 56px; padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .module-meta-item { display: flex; align-items: center; gap: 6px; }
+  .section-marker { display: flex; align-items: center; gap: 12px; margin-top: 64px; margin-bottom: 16px; }
+  .section-marker-num { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; }
+  .section-marker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; color: var(--text-faint); }
+  h2.section-title { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--text); }
+  h3.subsection-title { font-size: 19px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; margin-top: 40px; margin-bottom: 14px; color: var(--text); }
+  h4.minor-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; color: var(--violet); margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text-soft); }
+  p.lead { font-size: 18px; line-height: 1.55; color: var(--text); font-weight: 400; margin-bottom: 24px; }
+  strong { color: var(--text); font-weight: 600; }
+  em { font-style: italic; color: var(--text); }
+  .pull { margin: 40px -8px; padding: 28px 32px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(167, 139, 250, 0.15); border-radius: 12px; position: relative; overflow: hidden; }
+  .pull::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--violet) 0%, transparent 100%); }
+  .pull-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--violet); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .pull-label::before { content: '◆'; font-size: 9px; }
+  .pull-text { font-size: 19px; line-height: 1.5; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+  .pull-text em { color: var(--violet); font-style: normal; font-weight: 600; }
+  .leaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 32px 0; }
+  .leak-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 22px 20px; transition: all 0.2s; position: relative; }
+  .leak-card:hover { border-color: var(--violet); background: var(--bg-card-hover); transform: translateY(-1px); }
+  .leak-card-num { font-size: 11px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .leak-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.35; }
+  .leak-card-body { font-size: 13px; line-height: 1.55; color: var(--text-mute); }
+  .leak-card.summary { background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%); border-color: rgba(167, 139, 250, 0.2); grid-column: 1 / -1; }
+  .leak-card.summary .leak-card-title { font-size: 16px; }
+  .leak-card.summary .leak-card-body em { color: var(--violet); font-style: normal; font-weight: 600; }
+  ol.numbered { list-style: none; counter-reset: item; margin: 24px 0; }
+  ol.numbered li { counter-increment: item; padding: 14px 16px 14px 56px; position: relative; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; color: var(--text-soft); font-size: 14px; }
+  ol.numbered li::before { content: counter(item); position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--violet-bg); color: var(--violet); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .aside { background: var(--bg-card); border-left: 3px solid var(--violet); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .aside strong { color: var(--violet); }
+  .role-table { margin: 32px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .role-table-header { padding: 16px 24px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; }
+  .role-row { display: grid; grid-template-columns: 60px 1fr; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--border-soft); align-items: center; }
+  .role-row:last-child { border-bottom: none; }
+  .role-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; padding: 4px 8px; border-radius: 4px; width: fit-content; }
+  .role-tag.si { color: var(--green); background: rgba(63, 185, 80, 0.1); }
+  .role-tag.no { color: var(--rose); background: rgba(248, 81, 73, 0.1); }
+  .role-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .rule-callout { margin: 56px 0 32px; padding: 32px 32px; background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%), var(--bg-card); border: 1px solid var(--border); border-radius: 14px; position: relative; overflow: hidden; }
+  .rule-callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--violet), transparent); opacity: 0.5; }
+  .rule-label { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--violet); margin-bottom: 16px; }
+  .rule-label::before { content: '★'; font-size: 11px; }
+  .rule-text { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; letter-spacing: -0.015em; }
+  .rule-text em { color: var(--violet); font-style: normal; font-weight: 700; }
+  .module-footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .footer-info { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; }
+  .next-button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
+  .next-button-arrow { transition: transform 0.2s; }
+  .next-button:hover .next-button-arrow { transform: translateX(3px); }
+  /* Componentes adicionales para módulos siguientes */
+  .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+  .chat-msg:last-child { margin-bottom: 0; }
+  .chat-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; min-width: 50px; text-align: center; }
+  .chat-tag.lead { background: rgba(110, 118, 129, 0.15); color: var(--text-mute); }
+  .chat-tag.you { background: var(--violet-bg); color: var(--violet); }
+  .chat-text { color: var(--text-soft); }
+  .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
+  /* Step block */
+  .step-grid { display: grid; gap: 12px; margin: 24px 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
+  .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  /* Objection card */
+  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
+  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
+  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
+  .obj-row:last-child { border-bottom: none; }
+  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
+  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
+  .obj-content em { color: var(--text); font-style: italic; }
+  /* Term (glossary) */
+  .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+  .term-block:last-child { border-bottom: none; }
+  .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  /* Stats card */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  /* Warning */
+  .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .warning strong { color: var(--rose); }
+  /* Success */
+  .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .success strong { color: var(--green); }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m01" class="toc-link"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m03" class="toc-link active"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m04" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m06" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m07" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m08" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#vista" class="toc-link">Vista general</a></li>
+      <li class="toc-item"><a href="#panel" class="toc-link">Centro de Setters</a></li>
+      <li class="toc-item"><a href="#flujo" class="toc-link">Flujo de un lead</a></li>
+      <li class="toc-item"><a href="#variantes" class="toc-link">Las variantes</a></li>
+      <li class="toc-item"><a href="#timer" class="toc-link">Timer anti-baneo</a></li>
+      <li class="toc-item"><a href="#banco" class="toc-link">Banco de Respuestas</a></li>
+      <li class="toc-item"><a href="#dudas" class="toc-link">Dudas comunes</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <span class="module-tag">Módulo 03 · Lectura</span>
+
+    <h1 class="module-title">Sistema operativo.<br>Cómo usar tu <span class="accent">panel de trabajo</span>.</h1>
+
+    <p class="module-deck">Guía de referencia del Centro de Setters: cómo se mueve un lead, qué hacen las variantes, el timer y el Banco de Respuestas.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~8 min</span>
+      <span class="module-meta-item">🎯 Cómo usar tu panel de trabajo</span>
+      <span class="module-meta-item">📍 Operativo</span>
+    </div>
+
+
+    <div class="aside">
+      <strong>Cómo usar este módulo:</strong> No está pensado para leerlo de corrido y memorizarlo. Está pensado para que lo abras cuando tengas una duda concreta sobre el sistema mientras estás trabajando. Léelo una vez completo cuando arranques. Después, vuelvé solo a la sección que necesites.
+    </div>
+
+    <section id="vista">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">Vista general</span>
+      </div>
+      <h2 class="section-title">Qué ves cuando abrís el sistema.</h2>
+
+      <p>Cuando entrás al sistema, vas a tener acceso a estos módulos en el menú lateral:</p>
+
+      <h4 class="minor-title">Módulos visibles para vos</h4>
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 12px 0; border-bottom: 1px solid var(--border-soft);"><strong style="color: var(--text);">Setteo (WhatsApp).</strong> <span style="color: var(--text-mute); font-size: 14px;">Tu panel principal. Es donde vas a pasar la mayor parte del día.</span></li>
+        <li style="padding: 12px 0; border-bottom: 1px solid var(--border-soft);"><strong style="color: var(--text);">Llamadas (Sin WSP).</strong> <span style="color: var(--text-mute); font-size: 14px;">Solo para casos donde el lead no tiene WhatsApp y hay que llamar.</span></li>
+        <li style="padding: 12px 0; border-bottom: 1px solid var(--border-soft);"><strong style="color: var(--text);">Banco de Respuestas.</strong> <span style="color: var(--text-mute); font-size: 14px;">Tu lugar de consulta cuando no sabés qué responder.</span></li>
+        <li style="padding: 12px 0;"><strong style="color: var(--text);">Centro de Entrenamiento.</strong> <span style="color: var(--text-mute); font-size: 14px;">Donde están todos los manuales y materiales, incluido este documento.</span></li>
+      </ul>
+
+      <div class="aside">
+        Cada setter ve solo sus leads asignados. No vas a ver leads de otros setters ni vas a poder modificar lo que ellos hicieron. Tu panel es tu área de trabajo.
+      </div>
+    </section>
+
+    <section id="panel">
+      <div class="section-marker">
+        <span class="section-marker-num">02</span>
+        <span class="section-marker-label">El panel principal</span>
+      </div>
+      <h2 class="section-title">Centro de Setters: tu lugar de trabajo.</h2>
+
+      <h3 class="subsection-title">Las métricas que ves arriba.</h3>
+
+      <p>En la parte superior del Centro de Setters tenés un dashboard con métricas en tiempo real. Estos son los números que vos generás durante el día.</p>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value">Total</div>
+          <div class="stat-label">Leads asignados</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Conexión</div>
+          <div class="stat-label">% que recibió mensaje</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Apertura</div>
+          <div class="stat-label">% que respondió</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Calificación</div>
+          <div class="stat-label">% que recibió mensaje califica</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Interesados</div>
+          <div class="stat-label">Marcaste como interés</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Agendados</div>
+          <div class="stat-label">Llamada confirmada</div>
+        </div>
+      </div>
+
+      <div class="aside">
+        Mirá estas métricas al arrancar y al cerrar el día. Te dicen exactamente cómo viene tu rendimiento. <strong>Agendados es la métrica que más importa.</strong>
+      </div>
+
+      <h3 class="subsection-title">Los estados de los leads.</h3>
+
+      <p>Debajo de las métricas tenés botones para filtrar la lista por estado. Cada lead pasa por estos estados:</p>
+
+      <div class="role-table">
+        <div class="role-table-header">Estados de un lead</div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">Sin contactar</span>
+          <span class="role-text">Leads nuevos a los que todavía no se les mandó el mensaje de apertura.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">En proceso</span>
+          <span class="role-text">Leads que ya recibieron el mensaje pero todavía no respondieron.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">WSP enviado</span>
+          <span class="role-text">Leads donde se confirmó el envío del mensaje por WhatsApp.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--violet); font-size: 13px;">Respondieron</span>
+          <span class="role-text">Leads que respondieron a tu mensaje. Acá empieza tu trabajo de conversación.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">Calificados</span>
+          <span class="role-text">Leads a los que ya les mandaste el mensaje de calificación. Pasan automáticamente.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--violet); font-size: 13px;">Interesados</span>
+          <span class="role-text">Leads que mostraron interés real. Lo marcás vos manualmente.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--green); font-size: 13px;">Agendados</span>
+          <span class="role-text">Leads que confirmaron llamada con Ignacio. Tu objetivo final.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">En seguimiento</span>
+          <span class="role-text">Leads que respondieron pero todavía no se decidieron. Necesitan que les escribas más adelante.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 13px;">Sin WSP</span>
+          <span class="role-text">Leads donde el número no tiene WhatsApp. Acá va el trabajo de llamadas si aplica.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 140px 1fr;">
+          <span style="font-weight: 600; color: var(--rose); font-size: 13px;">Descartados</span>
+          <span class="role-text">Leads que ya no se siguen trabajando (no fit, no decisor, etc.).</span>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Las columnas de la lista.</h3>
+
+      <p>Cada lead aparece en una fila con varias columnas. Las más importantes:</p>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Nombre y teléfono.</strong> <span style="color: var(--text-mute);">El número en verde tiene WhatsApp; en rojo no lo tiene.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Web.</strong> <span style="color: var(--text-mute);">Si la clínica tiene página web, aparece un ícono. Conviene revisarla rápido antes de mandar el mensaje.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">RESP / CALIF / INT.</strong> <span style="color: var(--text-mute);">Si respondió, recibió calificación, mostró interés.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">VAR.</strong> <span style="color: var(--text-mute);">Qué variante tiene asignada (Var I, Var II, etc.).</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">NOTAS.</strong> <span style="color: var(--text-mute);">Espacio para anotar lo que veas. Importante para no olvidarte detalles entre días.</span></li>
+        <li style="padding: 10px 0; font-size: 14px;"><strong style="color: var(--text);">24H / 48H / 72H / 7D / 15D.</strong> <span style="color: var(--text-mute);">Checkboxes para marcar seguimientos hechos.</span></li>
+      </ul>
+    </section>
+
+    <section id="flujo">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">El flujo de un lead</span>
+      </div>
+      <h2 class="section-title">Cómo se mueve un lead, paso a paso.</h2>
+
+      <p>Cada lead atraviesa un ciclo. Si entendés bien este ciclo, sabés exactamente qué hacer en cada momento.</p>
+
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Lead nuevo asignado</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Ignacio te asigna leads. Aparecen en tu lista con estado "Sin contactar".</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Mandar mensaje de apertura</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Apretás el botón de apertura sobre el lead. El sistema te abre WhatsApp directamente con el mensaje pre-escrito de la variante asignada. Vos solo apretás enviar.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">El lead respondió</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Cuando el lead te contesta, leés la respuesta sin apurarte y mandás el mensaje de calificación cuando el contexto lo permita.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Calificación enviada</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Cuando enviás el mensaje de calificación, el sistema marca al lead como "Calificado" automáticamente. Esperás respuesta sin insistir.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Hubo interés</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Si el lead muestra interés real (preguntó cómo funciona, dijo que le interesa), marcás "Interés: SI" en el sistema. NO trates de cerrar por chat. NO le tirés precio.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">6</div>
+          <div class="step-content">
+            <div class="step-title">Agendar la llamada</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Le proponés llamada con Ignacio con dos opciones de horario. Cuando confirma, marcás "Agendado" y le pasás los datos a Ignacio.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">7</div>
+          <div class="step-content">
+            <div class="step-title">Seguimiento si no avanzó</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Si el lead respondió pero no quiso agendar, lo movés a "En seguimiento" y usás los checkboxes (24H / 48H / 72H / 7D / 15D) para programar cuándo volver a escribir.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="variantes">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">Las variantes</span>
+      </div>
+      <h2 class="section-title">Qué son y cómo funcionan.</h2>
+
+      <p>Una <strong>variante</strong> es un conjunto completo de mensajes que se le va mandando a un lead a lo largo de la conversación. Cada variante tiene 4 bloques principales:</p>
+
+      <ol class="numbered">
+        <li><strong>Apertura.</strong> El primer mensaje al lead frío.</li>
+        <li><strong>Mensaje cuando responde.</strong> El siguiente, que abre la calificación.</li>
+        <li><strong>Mensaje de calificación.</strong> El que detecta interés real y empuja hacia la llamada.</li>
+        <li><strong>Empuje a llamada.</strong> El cierre del chat para agendar.</li>
+      </ol>
+
+      <h3 class="subsection-title">Por qué hay varias.</h3>
+
+      <p>El sistema prueba diferentes versiones (Var I, Var II, Var III, Var IV) para ver cuál convierte mejor en cada tipo de base. Una puede ser más directa, otra más conversacional, otra arranca con pregunta. Las métricas de cada variante se ven en el Centro de Comando.</p>
+
+      <h3 class="subsection-title">Quién decide qué variante usás.</h3>
+
+      <p>Las variantes las asigna Ignacio. Vos no elegís. Cada setter recibe una variante asignada (puede ser distinta para cada uno) y la trabaja consistentemente para que los datos sean comparables.</p>
+
+      <div class="warning">
+        Si pensás que tu variante no está funcionando bien, decíselo a Ignacio. <strong>NO la cambies por tu cuenta.</strong> La consistencia es lo que permite medir cuál variante convierte mejor.
+      </div>
+    </section>
+
+    <section id="timer">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Timer anti-baneo</span>
+      </div>
+      <h2 class="section-title">El cronómetro que protege tu cuenta.</h2>
+
+      <p>El timer anti-baneo es un cronómetro que <strong>vos prendés manualmente</strong>. Te ayuda a controlar el ritmo de envíos para no quemar la cuenta.</p>
+
+      <p>La idea es simple: configurás cada cuántos minutos querés mandar un mensaje, le das Start, y el timer va marcando el tiempo. Cuando termina la cuenta regresiva, vuelve a empezar.</p>
+
+      <h3 class="subsection-title">Cómo se usa.</h3>
+
+      <ol class="numbered">
+        <li>Configurás el intervalo (ej: 1 minuto entre mensajes).</li>
+        <li>Apretás Start.</li>
+        <li>Mandás un mensaje.</li>
+        <li>Esperás a que termine el contador antes de mandar el siguiente.</li>
+        <li>Cuando termines la sesión, apretás Stop.</li>
+      </ol>
+
+      <h3 class="subsection-title">Ritmo recomendado por antigüedad de cuenta.</h3>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Cuenta nueva (primeras 2 semanas):</strong> <span style="color: var(--text-mute);">1 mensaje cada 2-3 minutos.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Cuenta calentada (3+ semanas):</strong> <span style="color: var(--text-mute);">1 mensaje cada 1-2 minutos.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Cuenta consolidada (1+ mes):</strong> <span style="color: var(--text-mute);">1 mensaje cada 30-60 segundos.</span></li>
+        <li style="padding: 10px 0; font-size: 14px;"><strong style="color: var(--rose);">Nunca:</strong> <span style="color: var(--text-mute);">mandar dos mensajes seguidos sin pausa.</span></li>
+      </ul>
+
+      <div class="warning">
+        WhatsApp y Meta detectan patrones automatizados. Si mandás 30 mensajes en 5 minutos sin pausa, te bloquean. <strong>Una cuenta quemada significa días de productividad perdidos.</strong> El timer no es opcional, es protección.
+      </div>
+
+      <div class="aside">
+        <strong>Variá los tiempos.</strong> No mandes siempre exactamente cada 60 segundos. A veces 50, a veces 70, a veces 90. La regularidad perfecta parece automatización. La variación parece humano.
+      </div>
+    </section>
+
+    <section id="banco">
+      <div class="section-marker">
+        <span class="section-marker-num">06</span>
+        <span class="section-marker-label">Banco de Respuestas</span>
+      </div>
+      <h2 class="section-title">Tu lugar de consulta cuando no sabés qué responder.</h2>
+
+      <p>El Banco de Respuestas es una base de preguntas frecuentes con sus respuestas oficiales. Cuando un lead te hace una pregunta que no sabés cómo responder, abrís el Banco, buscás la pregunta o palabra clave, y aparece la respuesta sugerida.</p>
+
+      <h3 class="subsection-title">Cómo se nutre.</h3>
+
+      <p>El Banco usa el Centro de Entrenamiento (donde están los manuales como este) como <strong>fuente de verdad</strong>. La IA del banco genera respuestas a partir de ese material. Y a medida que aparecen preguntas nuevas en las conversaciones, se van cargando para mejorar el sistema.</p>
+
+      <h3 class="subsection-title">Cómo lo usás vos.</h3>
+
+      <ol class="numbered">
+        <li>Abrís el Banco de Respuestas.</li>
+        <li>Buscás la pregunta o una palabra clave (ej: "implementación", "plazos", "funcionamiento").</li>
+        <li>Leés la respuesta sugerida.</li>
+        <li>La adaptás al tono de la conversación y la mandás.</li>
+        <li>Si la respuesta no estaba o estaba incompleta, le avisás a Ignacio para que la sume.</li>
+      </ol>
+
+      <div class="warning">
+        <strong>NO copiar y pegar literal.</strong> Las respuestas del Banco son una guía, no un texto exacto. Adaptalas al tono que ya estás usando con ese lead. Si copiás y pegás literal, suena robótico y se nota.
+      </div>
+
+      <h3 class="subsection-title">Cuando no sepas y no esté en el Banco.</h3>
+
+      <p>Si te aparece una pregunta que no sabés y no encontrás respuesta en el Banco, <strong>NO inventes</strong>. Decile al lead:</p>
+
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Esa es una buena pregunta, déjame chequearla con el equipo y te respondo en un rato."</span></div>
+      </div>
+
+      <p>Después le preguntás a Ignacio o consultás el manual. Y le respondés cuando tengas la info correcta.</p>
+
+      <div class="aside">
+        Inventar una respuesta es peor que decir "déjame chequear". Si decís algo erróneo y después se descubre, perdés credibilidad y perdés el lead.
+      </div>
+    </section>
+
+    <section id="dudas">
+      <div class="section-marker">
+        <span class="section-marker-num">07</span>
+        <span class="section-marker-label">Dudas comunes</span>
+      </div>
+      <h2 class="section-title">Las preguntas que más nos hacen los setters nuevos.</h2>
+
+      <h4 class="minor-title">¿Cómo paso un lead a "Calificado"?</h4>
+      <p>No tenés que hacer nada manual. Cuando enviás el mensaje de calificación de tu variante, el sistema lo marca automáticamente como "Calificado".</p>
+
+      <h4 class="minor-title">¿Cómo marco que un lead mostró interés?</h4>
+      <p>Lo marcás vos manualmente en la columna "INT?". Cuando ves en la conversación que el lead preguntó cómo funciona, dijo que le interesa, o pidió más detalles, lo marcás como SI.</p>
+
+      <h4 class="minor-title">¿Y si el lead nunca respondió?</h4>
+      <p>Lo dejás en "En proceso" durante las primeras 24 horas. Después podés mandarle un seguimiento corto. Si después de 7 días sigue sin contestar, generalmente conviene moverlo a "Descartados".</p>
+
+      <h4 class="minor-title">¿Puedo ver los chats de otros setters?</h4>
+      <p>No. Cada setter ve solo sus leads. Si querés ver ejemplos de buenas conversaciones, las que están subidas en el Drive del equipo (las que se suben todos los días).</p>
+
+      <h4 class="minor-title">¿Qué hago si un lead me pide hablar con Ignacio directamente?</h4>
+      <p>Le decís que justamente para eso es la llamada que le estás proponiendo. NO le pasás contacto directo de Ignacio sin antes agendar.</p>
+
+      <h4 class="minor-title">¿Qué hago si el lead pregunta el precio en el primer mensaje?</h4>
+      <p>Eso lo cubrimos en detalle en el Módulo 7 (Objeciones). En resumen: NO le tirás un número específico. Le decís que depende del caso y que en la llamada queda claro.</p>
+
+      <h4 class="minor-title">¿Qué hago si la cuenta de WhatsApp se bloquea o se cae?</h4>
+      <p>Avisás a Ignacio inmediatamente. <strong>NO intentes resolverlo solo.</strong> Mientras tanto, no mandes mensajes desde otra cuenta sin que él te indique.</p>
+    </section>
+
+    <div class="rule-callout">
+      <div class="rule-label">Para llevarte</div>
+      <p class="rule-text">El sistema es tu aliado, no algo que tenés que memorizar. <em>Volvé a este módulo</em> cuando aparezca una duda concreta. <em>El timer y el Banco</em> son tus dos protecciones diarias.</p>
+    </div>
+
+
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 03 / 08</span>
+        <span>·</span>
+        <span>SCM Onboarding</span>
+      </span>
+      <a href="#m04" class="next-button">Módulo 04 — Conversación<span class="next-button-arrow">→</span></a>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => { if (sec.offsetTop <= scrollY) current = sec.id; });
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ["m01","m02","m03","m04","m05","m06","m07","m08"].includes(href);
+      if (isModuleNav) return;
+      if (href === current) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>

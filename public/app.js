@@ -3258,10 +3258,74 @@ document.addEventListener('DOMContentLoaded', async () => {
     else info.textContent = '';
   });
 
+  // ── Onboarding oficial (8 módulos hardcoded) ──
+  const ONBOARDING_PROGRESS_KEY = 'scm_onboarding_progress';
+  function getOnboardingProgress() {
+    try { return JSON.parse(localStorage.getItem(ONBOARDING_PROGRESS_KEY) || '{}'); } catch { return {}; }
+  }
+  window.renderOnboardingCards = async () => {
+    const cardsEl = document.getElementById('onboarding-cards');
+    const subEl = document.getElementById('onboarding-subheader');
+    const fillEl = document.getElementById('onboarding-progress-fill');
+    if (!cardsEl) return;
+    let modules = [];
+    try {
+      const r = await fetch(apiUrl('/api/onboarding/modules'));
+      const data = await r.json();
+      modules = data.modules || [];
+    } catch {
+      cardsEl.innerHTML = '<p style="color:#f85149;">No pude cargar los módulos.</p>';
+      return;
+    }
+    const progress = getOnboardingProgress();
+    const completados = modules.filter(m => progress[m.num]).length;
+    const totalMin = modules.reduce((sum, m) => sum + (m.minutes || 0), 0);
+    if (subEl) subEl.textContent = `${modules.length} módulos · ~${totalMin} min total · ${completados} de ${modules.length} completados`;
+    if (fillEl) fillEl.style.width = (completados / modules.length * 100).toFixed(0) + '%';
+
+    cardsEl.innerHTML = modules.map(m => {
+      const leido = !!progress[m.num];
+      const numStr = String(m.num).padStart(2, '0');
+      return `<a href="/onboarding/${m.num}" class="onboarding-card" style="
+        text-decoration:none; display:block;
+        background:var(--surface-color); border:1px solid ${leido ? 'rgba(91,185,116,0.4)' : 'var(--border-color)'};
+        border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden;
+        transition:all 0.2s; cursor:pointer;
+      "
+      onmouseover="this.style.borderColor='#A78BFA'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(167,139,250,0.15)';"
+      onmouseout="this.style.borderColor='${leido ? 'rgba(91,185,116,0.4)' : 'var(--border-color)'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+        <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-size:28px; font-weight:700; color:#A78BFA; line-height:1; letter-spacing:-0.5px;">${numStr}</div>
+          <span style="font-size:11px; color:${leido ? '#5bb974' : '#79b8ff'}; background:${leido ? 'rgba(91,185,116,0.15)' : 'rgba(121,184,255,0.12)'}; padding:3px 10px; border-radius:10px; font-weight:600;">
+            ${leido ? '✅ Leído' : '🔵 Sin leer'}
+          </span>
+        </div>
+        <div style="height:2px; width:36px; background:linear-gradient(90deg, #A78BFA, transparent); margin-bottom:12px;"></div>
+        <div style="color:var(--text-primary); font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
+        <div style="color:var(--text-secondary); font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
+          <span style="font-size:11px; color:var(--text-secondary);">⏱ ~${m.minutes} min</span>
+          <span style="font-size:11px; color:#5bb974; background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">🤖 IA lo usa</span>
+          <span style="color:#A78BFA; font-size:14px;">→</span>
+        </div>
+      </a>`;
+    }).join('');
+  };
+
   // Auto-cargar cuando se abre la vista
   document.querySelector('[data-target="view-training"]')?.addEventListener('click', () => {
-    setTimeout(() => loadTrainingModule(), 50);
+    setTimeout(() => { loadTrainingModule(); renderOnboardingCards(); }, 50);
   });
+
+  // ?view=training — viene desde la pantalla de un módulo al hacer "Volver"
+  if (new URLSearchParams(window.location.search).get('view') === 'training') {
+    setTimeout(() => {
+      const link = document.querySelector('[data-target="view-training"]');
+      if (link) link.click();
+      // Limpiar el query param
+      window.history.replaceState({}, '', window.location.pathname);
+    }, 100);
+  }
 
   // ── Quién está conectado (admin) ──
   let onlineRefreshTimer = null;

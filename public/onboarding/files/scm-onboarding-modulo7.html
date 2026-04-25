@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 07</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; font-weight: 400; font-size: 15px; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  .container { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+  .toc { padding: 36px 24px 36px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--border-soft); }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .toc-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 700; font-size: 11px; box-shadow: 0 0 20px var(--violet-glow); }
+  .brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .toc-tag { font-size: 11px; color: var(--text-faint); margin-bottom: 36px; margin-left: 34px; letter-spacing: 0.02em; }
+  .toc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+  .toc-list { list-style: none; }
+  .toc-list .toc-item { margin-bottom: 1px; }
+  .toc-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: var(--text-mute); text-decoration: none; font-size: 13px; font-weight: 400; transition: all 0.15s; line-height: 1.4; }
+  .toc-link:hover { background: var(--bg-card); color: var(--text-soft); }
+  .toc-link.active { background: var(--violet-bg); color: var(--violet); font-weight: 500; }
+  .toc-num { font-size: 10px; color: var(--text-faint); flex-shrink: 0; width: 16px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .toc-link.active .toc-num { color: var(--violet); }
+  .main { padding: 56px 64px 120px; max-width: 760px; }
+  .module-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+  .module-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  h1.module-title { font-size: 44px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; color: var(--text); }
+  h1.module-title .accent { color: var(--violet); font-weight: 700; }
+  .module-deck { font-size: 18px; line-height: 1.5; color: var(--text-soft); font-weight: 400; max-width: 600px; margin-bottom: 40px; }
+  .module-meta { display: flex; gap: 20px; font-size: 12px; color: var(--text-faint); margin-bottom: 56px; padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .module-meta-item { display: flex; align-items: center; gap: 6px; }
+  .section-marker { display: flex; align-items: center; gap: 12px; margin-top: 64px; margin-bottom: 16px; }
+  .section-marker-num { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; }
+  .section-marker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; color: var(--text-faint); }
+  h2.section-title { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--text); }
+  h3.subsection-title { font-size: 19px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; margin-top: 40px; margin-bottom: 14px; color: var(--text); }
+  h4.minor-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; color: var(--violet); margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text-soft); }
+  p.lead { font-size: 18px; line-height: 1.55; color: var(--text); font-weight: 400; margin-bottom: 24px; }
+  strong { color: var(--text); font-weight: 600; }
+  em { font-style: italic; color: var(--text); }
+  .pull { margin: 40px -8px; padding: 28px 32px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(167, 139, 250, 0.15); border-radius: 12px; position: relative; overflow: hidden; }
+  .pull::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--violet) 0%, transparent 100%); }
+  .pull-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--violet); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .pull-label::before { content: '◆'; font-size: 9px; }
+  .pull-text { font-size: 19px; line-height: 1.5; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+  .pull-text em { color: var(--violet); font-style: normal; font-weight: 600; }
+  .leaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 32px 0; }
+  .leak-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 22px 20px; transition: all 0.2s; position: relative; }
+  .leak-card:hover { border-color: var(--violet); background: var(--bg-card-hover); transform: translateY(-1px); }
+  .leak-card-num { font-size: 11px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .leak-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.35; }
+  .leak-card-body { font-size: 13px; line-height: 1.55; color: var(--text-mute); }
+  .leak-card.summary { background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%); border-color: rgba(167, 139, 250, 0.2); grid-column: 1 / -1; }
+  .leak-card.summary .leak-card-title { font-size: 16px; }
+  .leak-card.summary .leak-card-body em { color: var(--violet); font-style: normal; font-weight: 600; }
+  ol.numbered { list-style: none; counter-reset: item; margin: 24px 0; }
+  ol.numbered li { counter-increment: item; padding: 14px 16px 14px 56px; position: relative; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; color: var(--text-soft); font-size: 14px; }
+  ol.numbered li::before { content: counter(item); position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--violet-bg); color: var(--violet); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .aside { background: var(--bg-card); border-left: 3px solid var(--violet); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .aside strong { color: var(--violet); }
+  .role-table { margin: 32px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .role-table-header { padding: 16px 24px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; }
+  .role-row { display: grid; grid-template-columns: 60px 1fr; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--border-soft); align-items: center; }
+  .role-row:last-child { border-bottom: none; }
+  .role-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; padding: 4px 8px; border-radius: 4px; width: fit-content; }
+  .role-tag.si { color: var(--green); background: rgba(63, 185, 80, 0.1); }
+  .role-tag.no { color: var(--rose); background: rgba(248, 81, 73, 0.1); }
+  .role-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .rule-callout { margin: 56px 0 32px; padding: 32px 32px; background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%), var(--bg-card); border: 1px solid var(--border); border-radius: 14px; position: relative; overflow: hidden; }
+  .rule-callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--violet), transparent); opacity: 0.5; }
+  .rule-label { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--violet); margin-bottom: 16px; }
+  .rule-label::before { content: '★'; font-size: 11px; }
+  .rule-text { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; letter-spacing: -0.015em; }
+  .rule-text em { color: var(--violet); font-style: normal; font-weight: 700; }
+  .module-footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .footer-info { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; }
+  .next-button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
+  .next-button-arrow { transition: transform 0.2s; }
+  .next-button:hover .next-button-arrow { transform: translateX(3px); }
+  /* Componentes adicionales para módulos siguientes */
+  .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+  .chat-msg:last-child { margin-bottom: 0; }
+  .chat-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; min-width: 50px; text-align: center; }
+  .chat-tag.lead { background: rgba(110, 118, 129, 0.15); color: var(--text-mute); }
+  .chat-tag.you { background: var(--violet-bg); color: var(--violet); }
+  .chat-text { color: var(--text-soft); }
+  .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
+  /* Step block */
+  .step-grid { display: grid; gap: 12px; margin: 24px 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
+  .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  /* Objection card */
+  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
+  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
+  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
+  .obj-row:last-child { border-bottom: none; }
+  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
+  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
+  .obj-content em { color: var(--text); font-style: italic; }
+  /* Term (glossary) */
+  .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+  .term-block:last-child { border-bottom: none; }
+  .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  /* Stats card */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  /* Warning */
+  .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .warning strong { color: var(--rose); }
+  /* Success */
+  .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .success strong { color: var(--green); }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m01" class="toc-link"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m03" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m04" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m06" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m07" class="toc-link active"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m08" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#regla-vrr" class="toc-link">Regla V-R-R</a></li>
+      <li class="toc-item"><a href="#obj1" class="toc-link">01 Pasame info</a></li>
+      <li class="toc-item"><a href="#obj2" class="toc-link">02 Cuánto cuesta</a></li>
+      <li class="toc-item"><a href="#obj3" class="toc-link">03 Ya trabajo con alguien</a></li>
+      <li class="toc-item"><a href="#obj4" class="toc-link">04 Eso ya lo hacemos</a></li>
+      <li class="toc-item"><a href="#obj5" class="toc-link">05 No tengo tiempo</a></li>
+      <li class="toc-item"><a href="#obj6" class="toc-link">06 No me interesa</a></li>
+      <li class="toc-item"><a href="#obj7" class="toc-link">07 Lo ve otra persona</a></li>
+      <li class="toc-item"><a href="#obj8" class="toc-link">08 No usamos WhatsApp</a></li>
+      <li class="toc-item"><a href="#obj9" class="toc-link">09 Es caro</a></li>
+      <li class="toc-item"><a href="#obj10" class="toc-link">10 Mandame casos</a></li>
+      <li class="toc-item"><a href="#reglas" class="toc-link">Reglas de oro</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <span class="module-tag">Módulo 07 · Lectura</span>
+
+    <h1 class="module-title">Objeciones.<br>Las 10 que más vas a <span class="accent">escuchar</span> y cómo manejarlas.</h1>
+
+    <p class="module-deck">Sin discutir, sin perder al lead, y sin sonar a vendedor. Consulta rápida cuando aparezca una objeción concreta.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~10 min</span>
+      <span class="module-meta-item">🎯 Manejar las 10 objeciones más comunes</span>
+      <span class="module-meta-item">📍 Consulta rápida</span>
+    </div>
+
+
+    <div class="aside">
+      <strong>Cómo usar este módulo:</strong> Es para consulta rápida. Cada objeción está armada como una tarjeta con cuatro partes: por qué aparece, tu respuesta, si insiste, y por qué funciona. Cuando aparezca una objeción que no estás seguro cómo manejar, abrí este documento, buscá la objeción, leé la tarjeta y respondé.
+    </div>
+
+    <div class="rule-callout">
+      <div class="rule-label">Verdad central</div>
+      <p class="rule-text">Las objeciones <em>no son rechazos</em>. Son pedidos de información o señales de duda. Si las manejás bien, la mayoría terminan en agendamiento.</p>
+    </div>
+
+    <section id="regla-vrr">
+      <div class="section-marker">
+        <span class="section-marker-num">00</span>
+        <span class="section-marker-label">La regla general</span>
+      </div>
+      <h2 class="section-title">V → R → R: Validar, Reframear, Redirigir.</h2>
+
+      <p>Antes de entrar en objeciones específicas, este es el patrón que se aplica a <strong>todas</strong>. Tres pasos en orden:</p>
+
+      <h4 class="minor-title">1. Validar</h4>
+      <p>Lo primero es reconocer lo que dijo. NO lo contradigas, no lo discutas. Solo acknowledge.</p>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Entiendo" / "Tiene sentido" / "Es una preocupación válida"</span></div>
+      </div>
+
+      <h4 class="minor-title">2. Reframear</h4>
+      <p>Cambiar el ángulo desde el cual está mirando el problema. NO negás lo que dijo, le mostrás otra perspectiva.</p>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"Justamente por eso..." / "Lo que la mayoría no ve es..." / "Por eso lo planteamos así..."</span></div>
+      </div>
+
+      <h4 class="minor-title">3. Redirigir</h4>
+      <p>Volver al objetivo: agendar la llamada. La objeción se resuelve mejor en conversación que por chat.</p>
+      <div class="chat-block">
+        <div class="chat-msg"><span class="chat-tag you">Vos</span><span class="chat-text">"¿Te ofrezco mañana 10am o jueves 4pm para verlo en detalle?"</span></div>
+      </div>
+
+      <div class="success">
+        <strong>Validar → Reframear → Redirigir.</strong> Tres pasos. Si te olvidás todo lo demás, recordá esto.
+      </div>
+    </section>
+
+    <section id="obj1">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">Las 10 objeciones</span>
+      </div>
+      <h2 class="section-title">Las que vas a escuchar todo el tiempo.</h2>
+
+      <p>Estas son las objeciones más comunes. Cada tarjeta es independiente. Volvé a la que necesites cuando aparezca.</p>
+
+      
+      <div class="obj-card" id="obj1">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 01</div>
+          <div class="obj-quote">"Pasame info / Mandame algo por escrito"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Generalmente significa: <strong>"no quiero hablar mucho ahora, dame algo para sacarte de encima"</strong>. Es una forma educada de patear la conversación. Si le mandás un PDF largo, no lo lee.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Sí, igual depende bastante de cómo trabajen hoy. Si te mando info genérica capaz no aplica para tu caso. ¿Te ofrezco una llamada corta para entender la situación específica y ahí te paso lo que sí aplica?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si insiste con que prefiere texto, mandale UN mensaje de 2-3 líneas resumen. NUNCA un PDF largo. Y agendá una llamada de 20 minutos para revisar después.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">Le decís que la info útil es personalizada (lo cual es cierto). Eso justifica naturalmente la llamada en lugar de un PDF genérico que no se lee.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj2">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 02</div>
+          <div class="obj-quote">"¿Cuánto sale? / Pasame el precio"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">El lead quiere filtrar rápido. Si decís un número sin contexto, te compara con cualquier otra cosa y se va. Si no decís nada, te tildan de evasivo.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Depende bastante de cómo trabajen hoy seguimiento y base. Justamente eso lo vemos en la llamada con Ignacio. ¿Te ofrezco mañana 10am o jueves 4pm?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si insiste pidiendo un rango: "Depende del caso. Por eso justamente la llamada existe, ahí Ignacio te muestra qué aplica para tu clínica específica y queda claro el número."</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content"><strong>NO regateás precio por chat</strong> porque ahí no hay forma de que entienda el valor. La llamada es el espacio donde el precio tiene contexto.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj3">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 03</div>
+          <div class="obj-quote">"Ya trabajo con alguien de marketing"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Está marcando territorio para sacarte rápido. Cree que vos vendés lo mismo que ya tiene. Si entrás a competir con su agencia, perdés.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Buenísimo. Igual esto no es marketing ni publicidad. Es un sistema que trabaja la base de pacientes que ya tenés y que hoy probablemente nadie está siguiendo. Es complementario. ¿Te interesa ver cómo funciona?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice "no necesito nada más": <em>"De una. Si más adelante querés ver cómo trabajar mejor lo que ya tenés en la base, escribime."</em> Cierre limpio, sin discusión.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">NO competís con su agencia. Diferenciás. Marcás que es algo distinto. Eso saca el conflicto y abre la posibilidad de que sea un servicio adicional, no un reemplazo.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj4">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 04</div>
+          <div class="obj-quote">"Eso ya lo hacemos"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Probablemente lo hacen mal o lo hacen manual desde el equipo. <strong>"Lo hacemos"</strong> suele ser <strong>"alguien lo intenta a veces"</strong>. No lo desafíes de frente.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Buenísimo. Hoy lo tienen trabajado con un sistema armado o más manual desde el equipo?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice manual: <em>"Buenísimo, eso ya es más de lo que hacen otras clínicas. Justamente lo que hacemos es montar el sistema para que no dependa de que alguien se acuerde. ¿Te interesa que te muestre cómo se ve?"</em><br><br>Si dice "con sistema": preguntá qué sistema. Probablemente sea no-fit y descartás profesionalmente.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">La pregunta no los desafía, los hace pensar. Cuando responden "manual", se dan cuenta solos del costo. Y vos quedás del lado de "buenísimo" en lugar de "a vos te falta".</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj5">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 05</div>
+          <div class="obj-quote">"No tengo tiempo ahora"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Puede ser verdad o puede ser excusa elegante. En cualquier caso, insistir te quema. Lo que tenés que hacer es marcar un próximo paso concreto.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"De una. ¿Te escribo el lunes y vemos si cuadra hablar de esto con calma?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice "sí, escribime": confirmás día y hora aproximada. NO le mandás nada antes. Si dice "no sé, ya veré": cerrás con <em>"perfecto, cualquier cosa estoy por acá"</em> y dejás que sea él quien retome.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">Marcás un seguimiento concreto sin presionar. Eso te deja la conversación abierta sin quemarla. La mayoría de "no tengo tiempo" son reales y se vuelven a abrir si los manejás bien.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj6">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 06</div>
+          <div class="obj-quote">"No me interesa"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Si vino seco y cortante, no lo presiones. Insistir te queda mal y te quema con esa persona para siempre. Salí bien parado.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"De una, no hay drama. Si más adelante querés ver cómo trabajar mejor la base de pacientes o automatizar ese seguimiento, escribime. Éxitos."</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">No hay "si insiste". Si te dijo no, te dijo no. Cerrás con dignidad y descartás del sistema.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">Un cierre profesional sin insistencia te deja la puerta abierta para retomar en 6 meses si su situación cambia. Insistir te cierra esa puerta para siempre.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj7">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 07</div>
+          <div class="obj-quote">"Eso lo ve otra persona / Tengo que consultarlo"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">El lead te está diciendo que <strong>no es decisor</strong> o que necesita aprobación. Si seguís vendiéndole a él, perdés tiempo. Tu trabajo es llegar al decisor real.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Perfecto. ¿Con quién tendría más sentido verlo entonces para no hacerte perder tiempo? ¿Me podés pasar contacto o preferís coordinarlo vos?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice que lo coordina él: <em>"Dale, ¿qué día les queda a los dos juntos esta semana? Una llamada corta de 20 minutos."</em><br><br>Si dice que prefiere consultar primero solo: <em>"Buenísimo. Igual te aviso que en la llamada Ignacio resuelve dudas mejor que cualquier resumen escrito. ¿Te conviene que la armemos directamente con los dos?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">No te quedás vendiendo a alguien que no decide. Llegás al decisor. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada para evitar el ida y vuelta.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj8">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 08</div>
+          <div class="obj-quote">"No usamos WhatsApp / No quiero automatizar"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">El lead está cerrando una puerta antes de entender qué ofrecemos. Probablemente piensa que vamos a mandar spam a sus pacientes. <strong>No discutas, mostrale otra puerta.</strong></div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Se entiende. Igual no necesariamente tiene que ir por WhatsApp. También trabajamos con llamadas con IA o seguimiento por otras vías según cómo se maneje mejor la clínica. ¿Te muestro las opciones en una llamada?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice "no quiero IA en absoluto": probablemente es no-fit cultural. Cierre limpio: <em>"De una, se respeta. Si más adelante querés ver cómo trabajar mejor seguimiento de pacientes, escribime."</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">Le abrís alternativas en lugar de defender una sola opción. "WhatsApp" o "automatización" son palabras que asustan, pero "sistema de seguimiento" suena distinto. Vos elegís cómo lo presentás.</div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj9">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 09</div>
+          <div class="obj-quote">"Es caro / Está fuera de presupuesto"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">Casi siempre significa <strong>"no veo el valor todavía"</strong>. Si baja precio sin haber mostrado el ROI, perdés. Si defendés el precio sin entender la objeción real, también.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"Entiendo. ¿Caro en relación a qué? Te pregunto porque depende mucho de cuánto está perdiendo la clínica hoy con los pacientes que no vuelven. ¿Te ofrezco la llamada y vemos los números reales?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si dice que el problema es flujo de caja: <em>"Justamente por eso adaptamos las opciones de pago según el caso. Lo vemos en la llamada con Ignacio."</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">La pregunta "¿caro en relación a qué?" no es agresiva, es lógica. Hace que el lead piense en el costo del problema actual en lugar del costo del sistema. <strong>Vos NO discutís precio. Eso es para la llamada.</strong></div>
+        </div>
+      </div>
+
+      
+      <div class="obj-card" id="obj10">
+        <div class="obj-header">
+          <div class="obj-num">Objeción 10</div>
+          <div class="obj-quote">"Mandame casos / Quiero referencias"</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué aparece</div>
+          <div class="obj-content">El lead pide pruebas. Es una <strong>buena señal</strong>: muestra interés. Pero si le pasás una lista, va a hacer due diligence solo y se va. Hay que mostrar pruebas pero llevar a llamada.</div>
+        </div>
+        <div class="obj-row" style="background: var(--violet-bg);">
+          <div class="obj-label">Tu respuesta</div>
+          <div class="obj-content"><em>"De una. Tengo capturas reales del sistema funcionando con un cliente nuestro, además de los números de agendamiento de las últimas semanas. Te lo muestro en la llamada para que lo veas en contexto. ¿Mañana 10am o jueves 4pm?"</em></div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Si insiste</div>
+          <div class="obj-content">Si insiste en algo escrito: mandá UN número clave (ej: <em>"con un solo cliente, el sistema generó decenas de citas en pocas semanas"</em>) como teaser, y agendá la llamada para ver el detalle. NO le mandes capturas sueltas por chat: pierden valor.</div>
+        </div>
+        <div class="obj-row">
+          <div class="obj-label">Por qué funciona</div>
+          <div class="obj-content">Demostrás que tenés pruebas pero las anclás a la llamada. El número de teaser despierta curiosidad sin satisfacerla. La llamada existe para mostrar lo concreto en contexto.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="reglas">
+      <div class="section-marker">
+        <span class="section-marker-num">99</span>
+        <span class="section-marker-label">Reglas de oro</span>
+      </div>
+      <h2 class="section-title">Las 7 reglas al manejar cualquier objeción.</h2>
+
+      <ol class="numbered">
+        <li><strong>NO discutas.</strong> Cuando entrás a discutir, perdés. Tu trabajo es mover a llamada, no ganar el debate.</li>
+        <li><strong>NO expliques de más.</strong> La explicación larga por chat parece desesperación. Mensajes cortos transmiten seguridad.</li>
+        <li><strong>NO bajes el precio por chat.</strong> El precio se discute en llamada con Ignacio. Si vos bajás precio en WhatsApp, le decís al lead que el precio era inflado.</li>
+        <li><strong>Una objeción ≠ una pelea.</strong> Es señal de duda, no rechazo. Si el lead siguió escribiendo, todavía hay oportunidad.</li>
+        <li><strong>Cuando dudás, redirigí a llamada.</strong> "Eso lo cubrimos mejor en la llamada con Ignacio. ¿Mañana 10am o jueves 4pm?"</li>
+        <li><strong>Validá ANTES de contrarrestar.</strong> Nunca arranques con "pero...". Siempre con "entiendo" o "tiene sentido".</li>
+        <li><strong>Si te quedás sin respuesta, decilo honestamente.</strong> "Esa es una buena pregunta, déjame chequearla con el equipo y te respondo en un rato." Es mil veces mejor que inventar.</li>
+      </ol>
+
+      <h3 class="subsection-title">Cuando aparezca una objeción que no está acá.</h3>
+
+      <p>Va a pasar. Cuando pase:</p>
+
+      <ol class="numbered">
+        <li><strong>Aplicá V → R → R.</strong> La fórmula funciona para cualquier objeción.</li>
+        <li><strong>Si no estás seguro, redirigí a llamada.</strong> "Esa es una buena pregunta. Es justamente algo que vemos mejor en la llamada con Ignacio."</li>
+        <li><strong>Anotala y subila al equipo.</strong> Cuando termines la conversación, subila al Drive como "objeción nueva detectada". Avisá a Ignacio para que la sumemos al manual.</li>
+      </ol>
+
+      <div class="success">
+        Cada objeción nueva que detectás y reportás <strong>mejora el sistema para todos</strong>. Es una de las formas más útiles de aportar al equipo.
+      </div>
+    </section>
+
+    <div class="rule-callout">
+      <div class="rule-label">Para llevarte</div>
+      <p class="rule-text">Las objeciones son <em>señales de duda, no rechazos</em>. V → R → R aplica a todas. Tu objetivo siempre es mover a llamada, no ganar la discusión. <em>Mensajes cortos. NO discutas. NO expliques de más. NO bajes precio.</em></p>
+    </div>
+
+
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 07 / 08</span>
+        <span>·</span>
+        <span>SCM Onboarding</span>
+      </span>
+      <a href="#m08" class="next-button">Módulo 08 — Glosario<span class="next-button-arrow">→</span></a>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => { if (sec.offsetTop <= scrollY) current = sec.id; });
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ["m01","m02","m03","m04","m05","m06","m07","m08"].includes(href);
+      if (isModuleNav) return;
+      if (href === current) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>

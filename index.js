@@ -964,6 +964,120 @@ app.delete('/api/admin/history/entry', requireAuth, requireRole('admin'), (req, 
   }
 });
 
+// ── Onboarding oficial del equipo ──
+const ONBOARDING_MODULES = [
+  { num: 1, slug: 'el-proyecto', title: 'El proyecto', subtitle: 'Por qué existe SCM', minutes: 7 },
+  { num: 2, slug: 'tu-rol', title: 'Tu rol como setter', subtitle: 'Qué se espera de vos', minutes: 5 },
+  { num: 3, slug: 'sistema-operativo', title: 'Sistema operativo', subtitle: 'Cómo usar tu panel de trabajo', minutes: 6 },
+  { num: 4, slug: 'conversacion', title: 'Conversación', subtitle: 'Cómo se mueve una charla buena, paso a paso', minutes: 7 },
+  { num: 5, slug: 'canales-warmeo', title: 'Canales y warmeo', subtitle: 'Por dónde prospectar y cómo no quemar cuentas', minutes: 6 },
+  { num: 6, slug: 'tracking', title: 'Tracking', subtitle: 'Cómo organizar tu trabajo diario', minutes: 4 },
+  { num: 7, slug: 'objeciones', title: 'Objeciones', subtitle: 'Las 10 que más vas a escuchar y cómo manejarlas', minutes: 6 },
+  { num: 8, slug: 'glosario', title: 'Glosario', subtitle: 'El vocabulario común del equipo SCM', minutes: 5 }
+];
+const ONBOARDING_DIR = path.join(process.cwd(), 'public', 'onboarding', 'files');
+const onboardingTextCache = new Map(); // num → plain text
+
+function extractPlainText(html) {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function loadOnboardingText() {
+  for (const mod of ONBOARDING_MODULES) {
+    try {
+      const filePath = path.join(ONBOARDING_DIR, `scm-onboarding-modulo${mod.num}.html`);
+      if (fs.existsSync(filePath)) {
+        const html = fs.readFileSync(filePath, 'utf8');
+        onboardingTextCache.set(mod.num, extractPlainText(html));
+      }
+    } catch (e) { console.warn(`No pude extraer onboarding ${mod.num}:`, e.message); }
+  }
+  console.log(`📘 Onboarding cargado: ${onboardingTextCache.size}/${ONBOARDING_MODULES.length} módulos`);
+}
+loadOnboardingText();
+
+// API: metadata de los 8 módulos
+app.get('/api/onboarding/modules', (_req, res) => {
+  res.json({ modules: ONBOARDING_MODULES, total: ONBOARDING_MODULES.length });
+});
+
+// Wrapper page: /onboarding/:num — encierra el HTML del módulo en un iframe con topbar
+app.get('/onboarding/:num', (req, res) => {
+  const num = parseInt(req.params.num, 10);
+  const mod = ONBOARDING_MODULES.find(m => m.num === num);
+  if (!mod) return res.status(404).send('Módulo no encontrado');
+  const titleEsc = mod.title.replace(/"/g, '&quot;');
+  const subtitleEsc = mod.subtitle.replace(/"/g, '&quot;');
+  const html = `<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Módulo ${num} · ${titleEsc}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#0E1117;font-family:'Inter',system-ui,sans-serif;color:#fff;height:100%;}
+  .topbar{position:sticky;top:0;height:60px;background:rgba(14,17,23,0.95);backdrop-filter:blur(8px);border-bottom:1px solid #1f2430;display:flex;align-items:center;padding:0 24px;gap:18px;z-index:1000;}
+  .back-link{display:inline-flex;align-items:center;gap:8px;color:#A78BFA;text-decoration:none;font-size:14px;font-weight:500;padding:8px 14px;border-radius:8px;transition:background 0.15s;}
+  .back-link:hover{background:rgba(167,139,250,0.1);}
+  .crumb{color:#8b94a8;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .crumb strong{color:#fff;font-weight:600;}
+  .crumb .num-pill{background:rgba(167,139,250,0.15);color:#A78BFA;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600;margin-right:8px;}
+  .mark-btn{padding:9px 18px;background:#A78BFA;color:#0E1117;border:none;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.2s;}
+  .mark-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(167,139,250,0.4);}
+  .mark-btn.read{background:#5bb974;color:#0E1117;cursor:default;}
+  .mark-btn.read:hover{transform:none;box-shadow:none;}
+  iframe{width:100%;height:calc(100vh - 60px);border:none;display:block;background:#0E1117;}
+  @media (max-width:600px){.crumb{font-size:12px;} .back-link span.label{display:none;}}
+</style>
+</head><body>
+<div class="topbar">
+  <a class="back-link" href="/?view=training" title="Volver al Centro de Entrenamiento">← <span class="label">Volver</span></a>
+  <div class="crumb"><span class="num-pill">Módulo ${num} de 8</span><strong>${titleEsc}</strong> · ${subtitleEsc}</div>
+  <button class="mark-btn" id="scm-mark-btn">✅ Marcar como leído</button>
+</div>
+<iframe id="scm-mod-iframe" src="/onboarding/files/scm-onboarding-modulo${num}.html"></iframe>
+<script>
+  (function(){
+    var N = ${num};
+    var KEY = 'scm_onboarding_progress';
+    function getP(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
+    function saveRead(){
+      var p = getP(); p[N] = true; localStorage.setItem(KEY, JSON.stringify(p));
+      var btn = document.getElementById('scm-mark-btn');
+      btn.textContent = '✅ Leído'; btn.classList.add('read'); btn.disabled = true;
+    }
+    if (getP()[N]) saveRead();
+    document.getElementById('scm-mark-btn').addEventListener('click', saveRead);
+    // Auto-marcar cuando el iframe esté cerca del final del scroll
+    var iframe = document.getElementById('scm-mod-iframe');
+    iframe.addEventListener('load', function(){
+      try {
+        var doc = iframe.contentDocument; var win = iframe.contentWindow;
+        if (!doc || !win) return;
+        win.addEventListener('scroll', function(){
+          var scrollPct = (win.scrollY + win.innerHeight) / doc.documentElement.scrollHeight;
+          if (scrollPct > 0.92 && !getP()[N]) saveRead();
+        }, { passive: true });
+      } catch(e){}
+    });
+  })();
+</script>
+</body></html>`;
+  res.set('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
 app.use(express.static(path.join(process.cwd(), "public"), { maxAge: 0, etag: false }));
 
 // ── Historial persistente ──
@@ -2742,8 +2856,21 @@ app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
     }
   } catch {}
 
+  // Inyectar onboarding oficial del equipo (resumen por módulo)
+  let onboardingContext = '';
+  try {
+    const oChunks = ONBOARDING_MODULES.map(m => {
+      const text = onboardingTextCache.get(m.num);
+      if (!text) return '';
+      return `[Módulo ${m.num} — ${m.title}: ${m.subtitle}]\n${text.substring(0, 1500)}`;
+    }).filter(Boolean);
+    if (oChunks.length > 0) {
+      onboardingContext = `\nONBOARDING OFICIAL DEL EQUIPO SCM (base de verdad sobre cómo trabaja el equipo y el sistema):\n${oChunks.join('\n\n')}\n`;
+    }
+  } catch {}
+
   const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) de forma profesional, cálida y breve.
-${trainingContext}
+${onboardingContext}${trainingContext}
 ${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
 ${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
 PREGUNTA/OBJECIÓN DEL LEAD: ${pregunta}

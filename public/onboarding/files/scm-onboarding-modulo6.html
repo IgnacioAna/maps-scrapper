@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SCM · Onboarding · Módulo 06</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0E1117;
+    --bg-card: #161B22;
+    --bg-card-hover: #1C232E;
+    --bg-elevated: #1F2632;
+    --border: #21262D;
+    --border-soft: #1A1F26;
+    --text: #E6EDF3;
+    --text-soft: #B8C2CC;
+    --text-mute: #8B949E;
+    --text-faint: #6E7681;
+    --violet: #A78BFA;
+    --violet-soft: #8B5CF6;
+    --violet-bg: rgba(167, 139, 250, 0.08);
+    --violet-bg-hover: rgba(167, 139, 250, 0.15);
+    --violet-glow: rgba(167, 139, 250, 0.2);
+    --green: #3FB950;
+    --amber: #D29922;
+    --rose: #F85149;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); line-height: 1.6; font-weight: 400; font-size: 15px; -webkit-font-smoothing: antialiased; font-feature-settings: 'cv11', 'ss01'; }
+  .container { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; max-width: 1280px; margin: 0 auto; }
+  .toc { padding: 36px 24px 36px 32px; position: sticky; top: 0; height: 100vh; overflow-y: auto; border-right: 1px solid var(--border-soft); }
+  .toc::-webkit-scrollbar { width: 4px; }
+  .toc::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .toc-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 6px; background: linear-gradient(135deg, var(--violet) 0%, var(--violet-soft) 100%); display: flex; align-items: center; justify-content: center; color: var(--bg); font-weight: 700; font-size: 11px; box-shadow: 0 0 20px var(--violet-glow); }
+  .brand-text { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+  .toc-tag { font-size: 11px; color: var(--text-faint); margin-bottom: 36px; margin-left: 34px; letter-spacing: 0.02em; }
+  .toc-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; margin-bottom: 12px; margin-top: 24px; }
+  .toc-list { list-style: none; }
+  .toc-list .toc-item { margin-bottom: 1px; }
+  .toc-link { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 6px; color: var(--text-mute); text-decoration: none; font-size: 13px; font-weight: 400; transition: all 0.15s; line-height: 1.4; }
+  .toc-link:hover { background: var(--bg-card); color: var(--text-soft); }
+  .toc-link.active { background: var(--violet-bg); color: var(--violet); font-weight: 500; }
+  .toc-num { font-size: 10px; color: var(--text-faint); flex-shrink: 0; width: 16px; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .toc-link.active .toc-num { color: var(--violet); }
+  .main { padding: 56px 64px 120px; max-width: 760px; }
+  .module-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.2); border-radius: 999px; font-size: 11px; font-weight: 500; color: var(--violet); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 28px; }
+  .module-tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  h1.module-title { font-size: 44px; line-height: 1.1; font-weight: 700; letter-spacing: -0.025em; margin-bottom: 14px; color: var(--text); }
+  h1.module-title .accent { color: var(--violet); font-weight: 700; }
+  .module-deck { font-size: 18px; line-height: 1.5; color: var(--text-soft); font-weight: 400; max-width: 600px; margin-bottom: 40px; }
+  .module-meta { display: flex; gap: 20px; font-size: 12px; color: var(--text-faint); margin-bottom: 56px; padding-bottom: 24px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .module-meta-item { display: flex; align-items: center; gap: 6px; }
+  .section-marker { display: flex; align-items: center; gap: 12px; margin-top: 64px; margin-bottom: 16px; }
+  .section-marker-num { width: 28px; height: 28px; border-radius: 6px; background: var(--bg-card); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; }
+  .section-marker-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; font-weight: 600; color: var(--text-faint); }
+  h2.section-title { font-size: 30px; line-height: 1.2; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; color: var(--text); }
+  h3.subsection-title { font-size: 19px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; margin-top: 40px; margin-bottom: 14px; color: var(--text); }
+  h4.minor-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 600; color: var(--violet); margin-top: 28px; margin-bottom: 8px; }
+  p { font-size: 15px; line-height: 1.7; margin-bottom: 16px; color: var(--text-soft); }
+  p.lead { font-size: 18px; line-height: 1.55; color: var(--text); font-weight: 400; margin-bottom: 24px; }
+  strong { color: var(--text); font-weight: 600; }
+  em { font-style: italic; color: var(--text); }
+  .pull { margin: 40px -8px; padding: 28px 32px; background: linear-gradient(135deg, rgba(167, 139, 250, 0.05) 0%, rgba(139, 92, 246, 0.02) 100%); border: 1px solid rgba(167, 139, 250, 0.15); border-radius: 12px; position: relative; overflow: hidden; }
+  .pull::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: linear-gradient(180deg, var(--violet) 0%, transparent 100%); }
+  .pull-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--violet); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .pull-label::before { content: '◆'; font-size: 9px; }
+  .pull-text { font-size: 19px; line-height: 1.5; color: var(--text); font-weight: 500; letter-spacing: -0.01em; }
+  .pull-text em { color: var(--violet); font-style: normal; font-weight: 600; }
+  .leaks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 32px 0; }
+  .leak-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 22px 22px 20px; transition: all 0.2s; position: relative; }
+  .leak-card:hover { border-color: var(--violet); background: var(--bg-card-hover); transform: translateY(-1px); }
+  .leak-card-num { font-size: 11px; font-weight: 600; color: var(--violet); font-variant-numeric: tabular-nums; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .leak-card-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.35; }
+  .leak-card-body { font-size: 13px; line-height: 1.55; color: var(--text-mute); }
+  .leak-card.summary { background: linear-gradient(135deg, var(--violet-bg) 0%, rgba(167, 139, 250, 0.02) 100%); border-color: rgba(167, 139, 250, 0.2); grid-column: 1 / -1; }
+  .leak-card.summary .leak-card-title { font-size: 16px; }
+  .leak-card.summary .leak-card-body em { color: var(--violet); font-style: normal; font-weight: 600; }
+  ol.numbered { list-style: none; counter-reset: item; margin: 24px 0; }
+  ol.numbered li { counter-increment: item; padding: 14px 16px 14px 56px; position: relative; margin-bottom: 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; line-height: 1.6; color: var(--text-soft); font-size: 14px; }
+  ol.numbered li::before { content: counter(item); position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: var(--violet-bg); color: var(--violet); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .aside { background: var(--bg-card); border-left: 3px solid var(--violet); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .aside strong { color: var(--violet); }
+  .role-table { margin: 32px 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .role-table-header { padding: 16px 24px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); font-weight: 600; }
+  .role-row { display: grid; grid-template-columns: 60px 1fr; gap: 20px; padding: 14px 24px; border-bottom: 1px solid var(--border-soft); align-items: center; }
+  .role-row:last-child { border-bottom: none; }
+  .role-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; text-align: center; padding: 4px 8px; border-radius: 4px; width: fit-content; }
+  .role-tag.si { color: var(--green); background: rgba(63, 185, 80, 0.1); }
+  .role-tag.no { color: var(--rose); background: rgba(248, 81, 73, 0.1); }
+  .role-text { font-size: 14px; color: var(--text-soft); line-height: 1.5; }
+  .rule-callout { margin: 56px 0 32px; padding: 32px 32px; background: radial-gradient(circle at top right, rgba(167, 139, 250, 0.1) 0%, transparent 60%), var(--bg-card); border: 1px solid var(--border); border-radius: 14px; position: relative; overflow: hidden; }
+  .rule-callout::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--violet), transparent); opacity: 0.5; }
+  .rule-label { display: inline-flex; align-items: center; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; font-weight: 700; color: var(--violet); margin-bottom: 16px; }
+  .rule-label::before { content: '★'; font-size: 11px; }
+  .rule-text { font-size: 21px; line-height: 1.45; color: var(--text); font-weight: 500; letter-spacing: -0.015em; }
+  .rule-text em { color: var(--violet); font-style: normal; font-weight: 700; }
+  .module-footer { margin-top: 80px; padding-top: 32px; border-top: 1px solid var(--border-soft); display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .footer-info { font-size: 12px; color: var(--text-faint); display: flex; align-items: center; gap: 8px; }
+  .next-button { display: inline-flex; align-items: center; gap: 10px; padding: 11px 18px; background: var(--violet-bg); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
+  .next-button-arrow { transition: transform 0.2s; }
+  .next-button:hover .next-button-arrow { transform: translateX(3px); }
+  /* Componentes adicionales para módulos siguientes */
+  .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+  .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
+  .chat-msg:last-child { margin-bottom: 0; }
+  .chat-tag { flex-shrink: 0; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 4px; min-width: 50px; text-align: center; }
+  .chat-tag.lead { background: rgba(110, 118, 129, 0.15); color: var(--text-mute); }
+  .chat-tag.you { background: var(--violet-bg); color: var(--violet); }
+  .chat-text { color: var(--text-soft); }
+  .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
+  .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
+  /* Step block */
+  .step-grid { display: grid; gap: 12px; margin: 24px 0; }
+  .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
+  .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  /* Objection card */
+  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
+  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
+  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
+  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
+  .obj-row:last-child { border-bottom: none; }
+  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
+  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
+  .obj-content em { color: var(--text); font-style: italic; }
+  /* Term (glossary) */
+  .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
+  .term-block:last-child { border-bottom: none; }
+  .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  /* Stats card */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
+  /* Warning */
+  .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .warning strong { color: var(--rose); }
+  /* Success */
+  .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
+  .success strong { color: var(--green); }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; }
+    .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
+    .main { padding: 32px 24px 80px; }
+    h1.module-title { font-size: 32px; }
+    .leaks { grid-template-columns: 1fr; }
+    .pull-text, .rule-text { font-size: 17px; }
+  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
+  .module-tag { animation-delay: 0s; }
+  h1.module-title { animation-delay: 0.08s; }
+  .module-deck { animation-delay: 0.16s; }
+  .module-meta { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <aside class="toc">
+    <div class="toc-brand">
+      <div class="brand-dot">S</div>
+      <span class="brand-text">Onboarding</span>
+    </div>
+    <p class="toc-tag">Equipo de Setting · SCM</p>
+
+    <p class="toc-section-label">Módulos</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#m01" class="toc-link"><span class="toc-num">01</span>El proyecto</a></li>
+      <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
+      <li class="toc-item"><a href="#m03" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
+      <li class="toc-item"><a href="#m04" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m06" class="toc-link active"><span class="toc-num">06</span>Tracking</a></li>
+      <li class="toc-item"><a href="#m07" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
+      <li class="toc-item"><a href="#m08" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
+    </ul>
+
+    <p class="toc-section-label">En este módulo</p>
+    <ul class="toc-list">
+      <li class="toc-item"><a href="#principio" class="toc-link">Sin orden no hay sistema</a></li>
+      <li class="toc-item"><a href="#estados" class="toc-link">Qué registrar</a></li>
+      <li class="toc-item"><a href="#ritual" class="toc-link">Ritual diario</a></li>
+      <li class="toc-item"><a href="#metricas" class="toc-link">Métricas a mirar</a></li>
+      <li class="toc-item"><a href="#errores" class="toc-link">Errores comunes</a></li>
+    </ul>
+  </aside>
+
+  <main class="main">
+
+    <span class="module-tag">Módulo 06 · Lectura</span>
+
+    <h1 class="module-title">Tracking.<br>Cómo <span class="accent">organizar tu trabajo</span> diario.</h1>
+
+    <p class="module-deck">Sin orden, no hay sistema. Cómo registrar lo que hacés cada día para no perder oportunidades.</p>
+
+    <div class="module-meta">
+      <span class="module-meta-item">⏱ Lectura ~5 min</span>
+      <span class="module-meta-item">🎯 Cómo organizar tu trabajo diario</span>
+      <span class="module-meta-item">📍 Operativo</span>
+    </div>
+
+
+    <section id="principio">
+      <div class="section-marker">
+        <span class="section-marker-num">01</span>
+        <span class="section-marker-label">El principio</span>
+      </div>
+      <h2 class="section-title">Sin orden, no hay sistema.</h2>
+
+      <p class="lead">Podés tener buenos mensajes, una oferta fuerte y ganas de trabajar. Pero si no ordenás lo que pasa en las conversaciones, terminás trabajando a ciegas.</p>
+
+      <div class="pull">
+        <div class="pull-label">El verdadero rol del tracking</div>
+        <p class="pull-text">El tracking <em>no está para llenar planillas</em>. Está para que no se te escapen oportunidades, para saber qué retomar y para sostener volumen sin caos.</p>
+      </div>
+
+      <h3 class="subsection-title">Qué problemas resuelve el tracking.</h3>
+
+      <ol class="numbered">
+        <li><strong>Olvidarte de leads abiertos.</strong> Charlas que respondieron pero quedaron colgadas y nunca se retomaron.</li>
+        <li><strong>Escribir dos veces sin sentido.</strong> Volver a contactar sin recordar qué pasó antes.</li>
+        <li><strong>Perder la lectura del trabajo real.</strong> No saber si estás generando interés, agendando, o solo mandando mensajes.</li>
+      </ol>
+    </section>
+
+    <section id="estados">
+      <div class="section-marker">
+        <span class="section-marker-num">02</span>
+        <span class="section-marker-label">Qué registrar</span>
+      </div>
+      <h2 class="section-title">Lo mínimo que tenés que poder saber de cada lead.</h2>
+
+      <p>No hace falta un CRM gigante. Hace falta una lógica mínima. Cada vez que abrís una conversación, esa charla tiene que quedar en algún estado claro.</p>
+
+      <h4 class="minor-title">Mínimo no negociable</h4>
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si respondió o no respondió</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si mostró interés</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si quedó para seguimiento</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si pasó a llamada</li>
+        <li style="padding: 8px 0; font-size: 14px; color: var(--text-soft);">→ Si no aplicaba</li>
+      </ul>
+
+      <div class="aside">
+        Con eso ya cambiás completamente la calidad del trabajo. Si después querés sumar más detalle, perfecto. <strong>Pero lo mínimo tiene que existir.</strong>
+      </div>
+
+      <h3 class="subsection-title">El seguimiento no se improvisa.</h3>
+
+      <p>Una charla abierta no puede depender de la memoria. Si alguien respondió, mostró interés o dejó una puerta medio abierta, eso tiene que quedar marcado.</p>
+
+      <p>Muchas oportunidades no aparecen en el primer intercambio. Aparecen cuando retomás bien. <strong>Y para retomar bien, primero tenés que saber qué pasó.</strong></p>
+    </section>
+
+    <section id="ritual">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">El ritual diario</span>
+      </div>
+      <h2 class="section-title">Lo que hacés todos los días sin excepción.</h2>
+
+      <p>Si trackeás todos los días, mejorás todos los días. Acá está el ritual:</p>
+
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Revisar la planilla del sistema</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Todos los días al arrancar. Ver mensajes enviados, respuestas, interés, llamadas agendadas. Detectar dónde se está cayendo más.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Carpeta de Drive con evidencias</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Subir <strong style="color: var(--violet);">mínimo 5 conversaciones por día</strong> (capturas). Ideal: 2 buenas + 3 con fricción/objeción/no respondió. Que se vea el contexto, no recortes mínimos.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Compartir por Discord</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Al final del día, pasás el link de la carpeta por Discord para que el equipo pueda revisarlo.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Revisión y ajustes para mañana</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Fin del día: nos juntamos, miramos métricas + chats y dejamos claro qué hay que ajustar para mañana.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="success">
+        Esta evidencia diaria es lo que <strong>entrena al sistema y al equipo</strong>. Cada chat que subís hace que el Banco de Respuestas mejore y que la próxima conversación de cualquier setter sea mejor.
+      </div>
+    </section>
+
+    <section id="metricas">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">Métricas a mirar</span>
+      </div>
+      <h2 class="section-title">Qué números te dicen cómo viene el trabajo.</h2>
+
+      <p>El tracking no es solo para guardar info. También sirve para leer cómo viene el trabajo:</p>
+
+      <div class="role-table">
+        <div class="role-table-header">Métricas operativas</div>
+        <div class="role-row" style="grid-template-columns: 180px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 14px;">Mensajes enviados</span>
+          <span class="role-text">Volumen del día. Referencia: 120/día mínimo.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 180px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 14px;">Tasa de respuesta</span>
+          <span class="role-text">Cuántos respondieron sobre cuántos enviaste. Mide calidad de opener y de la base.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 180px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 14px;">Conversaciones con interés</span>
+          <span class="role-text">Cuántas mostraron señales claras de oportunidad real.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 180px 1fr;">
+          <span style="font-weight: 600; color: var(--violet); font-size: 14px;">Llamadas agendadas</span>
+          <span class="role-text"><strong>La métrica que más importa.</strong> Es lo que define tu rendimiento.</span>
+        </div>
+        <div class="role-row" style="grid-template-columns: 180px 1fr;">
+          <span style="font-weight: 600; color: var(--text); font-size: 14px;">Dónde se cae</span>
+          <span class="role-text">¿Es en apertura? ¿En calificación? ¿En el cierre del chat? Eso te dice qué mejorar.</span>
+        </div>
+      </div>
+
+      <div class="aside">
+        Esto te ayuda a corregir <strong>con cabeza, no por sensación</strong>. Si tu tasa de respuesta baja, es probablemente la base. Si responden pero no agendan, es la conversación.
+      </div>
+    </section>
+
+    <section id="errores">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Errores comunes</span>
+      </div>
+      <h2 class="section-title">Lo que tira abajo el tracking.</h2>
+
+      <h4 class="minor-title">Hacer un sistema tan pesado que nadie lo usa</h4>
+      <p>Si te armás 30 campos para llenar por lead, no vas a hacerlo. Mejor un tracking simple que se use, que uno perfecto que nadie actualiza.</p>
+
+      <h4 class="minor-title">Trackear de a ratos</h4>
+      <p>Si trackeás un día sí y dos no, los datos no sirven. La constancia es lo que hace funcional al tracking.</p>
+
+      <h4 class="minor-title">Confiar en la memoria</h4>
+      <p>"Después lo anoto" = no lo anotás. Anotá en el momento, con el chat fresco. Cinco segundos por lead.</p>
+
+      <h4 class="minor-title">No subir los chats al Drive</h4>
+      <p>Sin evidencia, no podemos mejorar el sistema. Es la única forma de que el Banco de Respuestas crezca con casos reales.</p>
+
+      <h4 class="minor-title">Mirar solo volumen</h4>
+      <p>Mandar 200 mensajes/día sin agendamientos no sirve. El número final que importa son las llamadas. Todo lo demás son métricas intermedias.</p>
+    </section>
+
+    <div class="rule-callout">
+      <div class="rule-label">Para llevarte</div>
+      <p class="rule-text">El tracking <em>no es burocracia</em>, es la diferencia entre trabajar a ciegas o con dirección. <em>Mejor simple y constante</em> que perfecto y abandonado. <em>5 chats al Drive todos los días</em>, sin excepción.</p>
+    </div>
+
+
+    <footer class="module-footer">
+      <span class="footer-info">
+        <span>Módulo 06 / 08</span>
+        <span>·</span>
+        <span>SCM Onboarding</span>
+      </span>
+      <a href="#m07" class="next-button">Módulo 07 — Objeciones<span class="next-button-arrow">→</span></a>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('section[id]');
+  const tocLinks = document.querySelectorAll('.toc-link[href^="#"]');
+  function setActive() {
+    let current = '';
+    const scrollY = window.scrollY + 140;
+    sections.forEach(sec => { if (sec.offsetTop <= scrollY) current = sec.id; });
+    tocLinks.forEach(link => {
+      const href = link.getAttribute('href').substring(1);
+      const isModuleNav = ["m01","m02","m03","m04","m05","m06","m07","m08"].includes(href);
+      if (isModuleNav) return;
+      if (href === current) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }
+  window.addEventListener('scroll', setActive);
+  setActive();
+</script>
+</body>
+</html>
