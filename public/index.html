@@ -98,6 +98,20 @@
           <a href="#" class="menu-item" data-roles="admin">
             <span>⚙️ Configuraciones de APIs</span>
           </a>
+
+        <div class="menu-group-label" style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px; margin-top:24px; margin-bottom:8px;">WhatsApp Multi-Cuenta</div>
+          <a href="#" class="menu-item" data-target="view-wa-dashboard" data-roles="admin">
+            <span>📊 Dashboard WA</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-wa-accounts" data-roles="admin">
+            <span>📞 Cuentas WA</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-wa-routines" data-roles="admin">
+            <span>🎯 Rutinas Warming</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-wa-mywhats" data-roles="setter">
+            <span>📞 Mis WhatsApps</span>
+          </a>
       </nav>
       
       <div class="sidebar-footer">
@@ -870,6 +884,12 @@
         </section>
       </div>
 
+      <!-- VISTAS WA — renderizadas dinámicamente por wa.js -->
+      <div id="view-wa-dashboard" class="module-view hidden" data-roles="admin"></div>
+      <div id="view-wa-accounts" class="module-view hidden" data-roles="admin"></div>
+      <div id="view-wa-routines" class="module-view hidden" data-roles="admin"></div>
+      <div id="view-wa-mywhats" class="module-view hidden" data-roles="setter"></div>
+
     </main>
   </div>
 
@@ -891,6 +911,8 @@
   </div>
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
-  <script type="module" src="/app.js?v=20260424f"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="/app.js?v=20260425a"></script>
+  <script type="module" src="/wa.js?v=20260425a"></script>
 </body>
 </html>
