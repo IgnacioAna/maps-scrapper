@@ -128,14 +128,17 @@ const STATUS_CHIP = {
   BANNED_TEMP: "chip-warning",
 };
 
-// Curva oficial goghl.ai. Usada como default si la rutina no tiene phases.
+// Curva pragmática SCM. Volumen bajo + delays largos al inicio, automation
+// activado desde día 1 (no requiere mandar a amigos primero). Escalado gradual.
+// Recomendación complementaria: sumar el número a 3-5 grupos de WhatsApp los
+// primeros días para mejorar reputación.
 function defaultPhasesUI() {
   return [
-    { name: "Fase 1 — Configuración inicial",  untilDay: 2,    dailyMessages: 12,  dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
-    { name: "Fase 2 — Aumento gradual",        untilDay: 5,    dailyMessages: 28,  dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
-    { name: "Fase 3 — Construyendo reputación", untilDay: 10,  dailyMessages: 75,  dripMinMs: 10000, dripMaxMs: 15000, allowAutomation: true  },
-    { name: "Fase 4 — Escalando",              untilDay: 14,   dailyMessages: 250, dripMinMs: 5000,  dripMaxMs: 10000, allowAutomation: true  },
-    { name: "Fase 5 — Operación completa",     untilDay: null, dailyMessages: 750, dripMinMs: 3000,  dripMaxMs: 5000,  allowAutomation: true  },
+    { name: "Fase 1 — Arranque",         untilDay: 2,    dailyMessages: 12,  dripMinMs: 60000, dripMaxMs: 120000, allowAutomation: true },
+    { name: "Fase 2 — Aumento gradual",  untilDay: 5,    dailyMessages: 30,  dripMinMs: 30000, dripMaxMs: 60000,  allowAutomation: true },
+    { name: "Fase 3 — Construcción",     untilDay: 10,   dailyMessages: 80,  dripMinMs: 15000, dripMaxMs: 30000,  allowAutomation: true },
+    { name: "Fase 4 — Escalando",        untilDay: 14,   dailyMessages: 200, dripMinMs: 8000,  dripMaxMs: 15000,  allowAutomation: true },
+    { name: "Fase 5 — Operación normal", untilDay: null, dailyMessages: 400, dripMinMs: 5000,  dripMaxMs: 12000,  allowAutomation: true },
   ];
 }
 

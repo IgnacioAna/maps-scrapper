@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rem = endAt - Date.now();
         if (rem <= 0) {
           display.textContent = '✅ LISTO';
-          display.style.color = '#5bb974';
+          display.style.color = 'var(--success)';
           clearInterval(intervalId); intervalId = null;
           // Alarma sonora — 3 beeps secuenciales más fuertes
           try {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const m = Math.floor(rem / 60000);
         const s = Math.floor((rem % 60000) / 1000);
         display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-        display.style.color = rem < 30000 ? '#e3b341' : 'var(--text-primary)';
+        display.style.color = rem < 30000 ? 'var(--warning)' : 'var(--text-primary)';
       }
 
       startBtn.addEventListener('click', () => {
@@ -355,7 +355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Extraer formato corto ("Ciudad, País" -> "Ciudad") para el badge
         const shortname = city.split(',')[0].trim();
         return `<span class="city-tag">${shortname} <button type="button" class="remove-city" data-idx="${idx}">✕</button></span>`
-      }).join('') + `<button type="button" class="btn-table-action" style="border:none; color: #f85149" id="clear-cities">Limpiar todo</button>`;
+      }).join('') + `<button type="button" class="btn-table-action" style="border:none; color: var(--danger)" id="clear-cities">Limpiar todo</button>`;
 
       selectedCitiesDiv.querySelectorAll('.remove-city').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -463,7 +463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!t) {
               t = document.createElement('div');
               t.id = '_wa-toast';
-              t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#25d366;color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity .2s;';
+              t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity .2s;';
               document.body.appendChild(t);
             }
             t.textContent = '✓ Link copiado — podés pegarlo en otro navegador';
@@ -689,7 +689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       searchBtn.disabled = true;
       downloadBtn.disabled = true;
       enrichBtn.disabled = true;
-      enrichBtn.textContent = '🔍 IA & Redes';
+      enrichBtn.textContent = 'Escanear con IA';
       enrichProgress.classList.add('hidden');
       filterInfo.textContent = '';
       const queryLines = query.split('\n').filter(q => q.trim());
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           spans.push(`<span class="text-success">${data.newCount} nuevos</span>`);
         }
         if (data.dedupRemoved > 0) {
-          spans.push(`<span style="color:#d29922;">${data.dedupRemoved} duplicados removidos</span>`);
+          spans.push(`<span style="color:var(--warning);">${data.dedupRemoved} duplicados removidos</span>`);
         }
         if (data.removedNoContact > 0) {
           spans.push(`<span>${data.removedNoContact} sin contacto</span>`);
@@ -749,7 +749,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
       } catch (error) {
         console.error(error);
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#f85149; padding: 2rem;">Error: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger); padding: 2rem;">Error: ${error.message}</td></tr>`;
       } finally {
         document.querySelector('#search-btn-top .btn-text').classList.remove('hidden');
         loader.classList.add('hidden');
@@ -971,13 +971,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           ownerLine = `<span class="truncate-text" title="${escHtml(item.aiRole)}" style="color:var(--primary-color)">${escHtml(item.aiRole)}</span>`;
           if (item.ownerInstagram || item.ownerLinkedin || item.ownerFacebook) {
              ownerLine += `<div style="display:flex; gap:6px; margin-top:4px;">`;
-             if (item.ownerInstagram) ownerLine += `<a href="${escHtml(item.ownerInstagram)}" target="_blank" class="icon-link" title="Instagram del Dueño" style="color:#e1306c; font-size:12px">IG</a>`;
-             if (item.ownerLinkedin) ownerLine += `<a href="${escHtml(item.ownerLinkedin)}" target="_blank" class="icon-link" title="LinkedIn del Dueño" style="color:#a8c7fa; font-size:12px">IN</a>`;
-             if (item.ownerFacebook) ownerLine += `<a href="${escHtml(item.ownerFacebook)}" target="_blank" class="icon-link" title="Facebook del Dueño" style="color:#1877f2; font-size:12px">FB</a>`;
+             if (item.ownerInstagram) ownerLine += `<a href="${escHtml(item.ownerInstagram)}" target="_blank" class="icon-link" title="Instagram del Dueño" style="color:var(--accent); font-size:12px">IG</a>`;
+             if (item.ownerLinkedin) ownerLine += `<a href="${escHtml(item.ownerLinkedin)}" target="_blank" class="icon-link" title="LinkedIn del Dueño" style="color:var(--accent); font-size:12px">IN</a>`;
+             if (item.ownerFacebook) ownerLine += `<a href="${escHtml(item.ownerFacebook)}" target="_blank" class="icon-link" title="Facebook del Dueño" style="color:var(--info); font-size:12px">FB</a>`;
              ownerLine += `</div>`;
           }
         } else if (item.owner) {
-          ownerLine = `<span class="truncate-text" title="${escHtml(item.owner)}" style="color:#d2a8ff">${escHtml(item.owner)}</span>`;
+          ownerLine = `<span class="truncate-text" title="${escHtml(item.owner)}" style="color:var(--accent-hover)">${escHtml(item.owner)}</span>`;
         } else if (item.aiRole === "N/A - Sin identificar") {
           ownerLine = `<span class="text-muted truncate-text">IA no encontró directivo</span>`;
         }
@@ -996,7 +996,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let bestWebWa = item.webWhatsApp || item.aiWhatsApp;
         if (bestWebWa) {
             const webWaLink = buildWaStr(bestWebWa, countrySelect.value);
-            webWaHtml = `<div style="font-size:13px; margin-top:4px" title="WhatsApp verificado en la web">🌐 <a href="${escHtml(webWaLink)}" target="_blank" class="text-link" style="color: #5bb974; font-weight:600;">+WA Web</a></div>`;
+            webWaHtml = `<div style="font-size:13px; margin-top:4px" title="WhatsApp verificado en la web">🌐 <a href="${escHtml(webWaLink)}" target="_blank" class="text-link" style="color: var(--success); font-weight:600;">+WA Web</a></div>`;
         }
 
         return `
@@ -1025,12 +1025,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           </td>
           <td>
             <div style="display:flex; gap:8px;">
-              ${item.unclaimed === "Sí (Oportunidad)" ? '<span title="Oportunidad: Perfil de negocio no reclamado!" style="color:#e3b341; cursor:help;">⚠️</span>' : ''}
+              ${item.unclaimed === "Sí (Oportunidad)" ? '<span title="Oportunidad: Perfil de negocio no reclamado!" style="color:var(--warning); cursor:help;">⚠️</span>' : ''}
               ${item.instagram ? `<a href="${escHtml(item.instagram)}" target="_blank" class="icon-link" title="Instagram">IG</a>` : ''}
               ${item.facebook ? `<a href="${escHtml(item.facebook)}" target="_blank" class="icon-link" title="Facebook">FB</a>` : ''}
               ${item.linkedin ? `<a href="${escHtml(item.linkedin)}" target="_blank" class="icon-link" title="LinkedIn">IN</a>` : ''}
               ${item.website ? `<a href="${escHtml(item.website)}" target="_blank" class="icon-link" title="Sitio Web">🌐</a>` : ''}
-              ${item.email ? `<a href="mailto:${escHtml(item.email)}" class="icon-link" title="Email" style="color:#d2a8ff">✉</a>` : ''}
+              ${item.email ? `<a href="mailto:${escHtml(item.email)}" class="icon-link" title="Email" style="color:var(--accent-hover)">✉</a>` : ''}
             </div>
           </td>
         </tr>`;
@@ -1117,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
           console.error('Apify Frontend Error:', error);
           const displayMsg = error.message.includes('{') ? error.message : `Error al conectar con Apify: ${error.message}`;
-          apifyResultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#f85149; padding:40px;">${displayMsg}</td></tr>`;
+          apifyResultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:40px;">${displayMsg}</td></tr>`;
         } finally {
           apifyRunBtn.disabled = false;
           apifyRunBtn.textContent = 'Ejecutar Extractor Instagram';
@@ -1143,7 +1143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>
             ${item.phone ? `
               <div style="display:flex; align-items:center; gap:8px;">
-                <span style="color:#5bb974">📱 ${escHtml(item.phone)}</span>
+                <span style="color:var(--success)">📱 ${escHtml(item.phone)}</span>
                 <a href="https://wa.me/${escHtml(String(item.phone).replace(/\D/g,''))}" target="_blank" title="Abrir WhatsApp" style="text-decoration:none;">💬</a>
               </div>
             ` : '<span style="color:var(--text-secondary)">No detectado</span>'}
@@ -1398,8 +1398,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Conexión: select inline
         const conSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateField(this, \'conexion\')" onclick="event.stopPropagation()">' +
           '<option value=""' + (!lead.conexion ? ' selected' : '') + '>—</option>' +
-          '<option value="enviada"' + (lead.conexion === 'enviada' ? ' selected' : '') + ' style="color:#5bb974;">Enviada</option>' +
-          '<option value="sin_wsp"' + (lead.conexion === 'sin_wsp' ? ' selected' : '') + ' style="color:#f85149;">Sin WSP</option>' +
+          '<option value="enviada"' + (lead.conexion === 'enviada' ? ' selected' : '') + ' style="color:var(--success);">Enviada</option>' +
+          '<option value="sin_wsp"' + (lead.conexion === 'sin_wsp' ? ' selected' : '') + ' style="color:var(--danger);">Sin WSP</option>' +
           '</select>';
 
         // Respondió: select inline
@@ -1436,25 +1436,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
           '<td style="font-weight:500;">' + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div></td>' +
-          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:#5bb974;" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
+          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()">🌐</a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
           '<td style="text-align:center;">' + respSelect + '</td>' +
           '<td style="text-align:center;">' + calSelect + '</td>' +
           '<td style="text-align:center;">' + intSelect + '</td>' +
-          '<td style="color:#e3b341; font-size:11px;">' +
+          '<td style="color:var(--warning); font-size:11px;">' +
             '<select class="inline-select" data-id="' + escHtml(lead.id) + '" onchange="window._updateVariant(this)" onclick="event.stopPropagation()">' +
             '<option value="">—</option>' +
             visibleVariants.map(v => '<option value="' + escHtml(v.id) + '"' + (lead.varianteId === v.id ? ' selected' : '') + '>' + escHtml(v.name) + '</option>').join('') +
             '</select>' +
             (varName ? '<div style="font-size:10px; color:var(--text-secondary); margin-top:2px;">' + escHtml(varName.name) + '</div>' : '') +
           '</td>' +
-          '<td style="font-size:11px; color:var(--text-secondary); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (lastNote ? escHtml(lastNote.text) : '') + '">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:#e3b341;font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text) : '') + '</td>' +
+          '<td style="font-size:11px; color:var(--text-secondary); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + (lastNote ? escHtml(lastNote.text) : '') + '">' + (lastNote ? (lead.notes.length > 1 ? '<span style="color:var(--warning);font-size:10px;" title="' + lead.notes.length + ' notas">(' + lead.notes.length + ') </span>' : '') + escHtml(lastNote.text) : '') + '</td>' +
           '<td style="font-size:11px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escHtml(doctorClean) + '">' + escHtml(doctorClean) + '</td>' +
           '<td style="text-align:center;">' +
-            (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#e1306c;">IG</a>' : '') +
-            (lead.facebook ? '<a href="' + escHtml(lead.facebook) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#1877f2; margin-left:4px;">FB</a>' : '') +
-            (lead.linkedin ? '<a href="' + escHtml(lead.linkedin) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:#a8c7fa; margin-left:4px;">IN</a>' : '') +
+            (lead.instagram ? '<a href="' + escHtml(lead.instagram) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--accent);">IG</a>' : '') +
+            (lead.facebook ? '<a href="' + escHtml(lead.facebook) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--info); margin-left:4px;">FB</a>' : '') +
+            (lead.linkedin ? '<a href="' + escHtml(lead.linkedin) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" style="color:var(--accent); margin-left:4px;">IN</a>' : '') +
           '</td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="24hs" ' + (fu['24hs'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
           '<td style="text-align:center;"><input type="checkbox" class="fu-cb" data-id="' + lead.id + '" data-step="48hs" ' + (fu['48hs'] ? 'checked' : '') + ' onclick="event.stopPropagation(); window._toggleFU(this)"></td>' +
@@ -1594,7 +1594,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('modal-city').textContent = [lead.country, lead.city].filter(Boolean).join(' / ') || lead.address || '—';
       const bestPhone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
       const openUrl = buildSetterWaUrl(lead, 'apertura');
-      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:#5bb974;" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link">' + escHtml(bestPhone) + ' 💬</a>' : '—';
+      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link">' + escHtml(bestPhone) + ' 💬</a>' : '—';
       document.getElementById('modal-web').innerHTML = lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="text-link">' + escHtml(lead.website) + '</a>' : '—';
       document.getElementById('modal-email').textContent = lead.email || '—';
       document.getElementById('modal-owner').textContent = lead.doctor || '—';
@@ -1630,7 +1630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notesList.innerHTML = lead.notes.map((n, idx) =>
           '<div class="note-item"><div class="note-item-header"><span>' + escHtml(n.by) + '</span><span>' +
           new Date(n.date).toLocaleString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) +
-          ' <button class="note-delete-btn" data-note-idx="' + idx + '" title="Borrar nota" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;padding:0 4px;">✕</button>' +
+          ' <button class="note-delete-btn" data-note-idx="' + idx + '" title="Borrar nota" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 4px;">✕</button>' +
           '</span></div><div>' + escHtml(n.text) + '</div></div>'
         ).join('');
         notesList.querySelectorAll('.note-delete-btn').forEach(btn => {
@@ -1729,7 +1729,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="variant-block-card" data-index="${idx}" style="margin-bottom:8px;">
           <div class="variant-block-head">
             <input class="setter-input" data-field="label" data-index="${idx}" value="${escHtml(block.label || '')}" placeholder="Etiqueta del bloque">
-            <button type="button" class="btn-table-action" style="color:#f85149;" data-remove-block="${idx}">Eliminar</button>
+            <button type="button" class="btn-table-action" style="color:var(--danger);" data-remove-block="${idx}">Eliminar</button>
           </div>
           <textarea class="setter-input" data-field="text" data-index="${idx}" rows="3" style="width:100%;">${escHtml(block.text || '')}</textarea>
         </div>
@@ -1758,7 +1758,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="variant-block-card" style="margin-bottom:8px;">
           <div class="variant-block-head">
             <input class="setter-input" data-inline-field="label" data-inline-index="${idx}" value="${escHtml(block.label || '')}" placeholder="Etiqueta del bloque">
-            <button type="button" class="btn-table-action" style="color:#f85149;" data-inline-remove="${idx}">Eliminar</button>
+            <button type="button" class="btn-table-action" style="color:var(--danger);" data-inline-remove="${idx}">Eliminar</button>
           </div>
           <textarea class="setter-input" data-inline-field="text" data-inline-index="${idx}" rows="3" style="width:100%;">${escHtml(block.text || '')}</textarea>
         </div>
@@ -1895,7 +1895,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const assignedSetters = settersList.filter(s => s.id === v.setterId).map(s => s.name).join(', ');
         return '<div class="variant-card">' +
           '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + (v.weekLabel ? ' — ' + escHtml(v.weekLabel) : '') + '</span>' +
-          (isOwner ? '<button class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' : '') + '</div>' +
+          (isOwner ? '<button class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' : '') + '</div>' +
           '<div class="variant-card-msgs">' +
             '<div><strong>1.</strong> ' + escHtml(v.messages.apertura || '—') + '</div>' +
             '<div><strong>2.</strong> ' + escHtml(v.messages.problema || '—') + '</div>' +
@@ -2177,8 +2177,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td>' + (s.calificados || 0) + '</td>' +
           '<td>' + s.interesados + '</td>' +
           '<td style="color:var(--primary-color);">' + s.pctCalificacion + '%</td>' +
-          '<td style="color:#5bb974; font-weight:600;">' + s.agendados + '</td>' +
-          '<td style="color:#e3b341;">' + escHtml(s.activeVariant) + '</td>' +
+          '<td style="color:var(--success); font-weight:600;">' + s.agendados + '</td>' +
+          '<td style="color:var(--warning);">' + escHtml(s.activeVariant) + '</td>' +
           '</tr>'
         ).join('');
 
@@ -2199,9 +2199,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '</div>' +
                 '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
                   '<button type="button" class="btn-table-action" style="color:var(--primary-color); font-size:11px;" onclick="document.getElementById(\'cmd-variable-setter-filter\').value=\'' + escHtml(s.id) + '\'; document.getElementById(\'cmd-variable-setter-filter\').dispatchEvent(new Event(\'change\'));">Ver variables</button>' +
-                  '<button type="button" class="btn-table-action" style="color:#79b8ff; font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', decodeURIComponent(\'' + encodeURIComponent(s.name) + '\'))">Editar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:#e3b341; font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(s.id) + '\')">Duplicar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteSetter(\'' + escHtml(s.id) + '\')">Eliminar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', decodeURIComponent(\'' + encodeURIComponent(s.name) + '\'))">Editar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(s.id) + '\')">Duplicar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + escHtml(s.id) + '\')">Eliminar</button>' +
                 '</div>' +
               '</div>' +
             '</div>';
@@ -2238,7 +2238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         document.getElementById('cmd-var-body').innerHTML = filteredVariants.map(v =>
           '<tr>' +
-          '<td style="font-weight:600; color:#e3b341;">' + escHtml(v.name) + '</td>' +
+          '<td style="font-weight:600; color:var(--warning);">' + escHtml(v.name) + '</td>' +
           '<td>' + v.total + '</td>' +
           '<td>' + (v.mensajes || 0) + '</td>' +
           '<td>' + v.conexiones + '</td>' +
@@ -2286,8 +2286,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               return '<div class="variant-card" style="margin-top:10px;">' +
                 '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + '</span>' +
                 '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
-                  '<button type="button" class="btn-table-action" style="color:#e3b341; font-size:11px;" onclick="window._duplicateVariant(\'' + v.id + '\')">Duplicar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateVariant(\'' + v.id + '\')">Duplicar</button>' +
+                  '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteVariant(\'' + v.id + '\')">Eliminar</button>' +
                 '</div></div>' +
                 '<div style="display:grid; gap:8px; margin-top:8px; font-size:12px; color:var(--text-secondary);">' +
                   '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
@@ -2307,7 +2307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">' +
                     '<span style="font-size:12px; color:var(--text-secondary);">Asignar rápido:</span>' +
                     setters.map(s => '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--primary-color);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'' + s.id + '\')">' + escHtml(s.name) + '</button>').join('') +
-                    '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:#f85149;" onclick="window._assignVariantSetter(\'' + v.id + '\', \'\')">Quitar</button>' +
+                    '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--danger);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'\')">Quitar</button>' +
                   '</div>' +
                   '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px dashed var(--border-color);">' +
                     '<span style="font-size:12px; color:var(--text-secondary);">🔗 Compartir también con:</span>' +
@@ -2388,7 +2388,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td>' + escHtml(user.setterId || '') + '</td>' +
           '<td>' + (user.role === 'setter' ? varCount : '—') + '</td>' +
           '<td>' + (inv ? 'Pendiente' : '—') + '</td>' +
-          '<td>' + (user.role === 'setter' ? '<button type="button" class="btn-table-action" style="color:#e3b341; font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(user.setterId || '') + '\')">Duplicar</button>' : '—') + '</td>' +
+          '<td>' + (user.role === 'setter' ? '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(user.setterId || '') + '\')">Duplicar</button>' : '—') + '</td>' +
         '</tr>';
       }).join('');
     }
@@ -2761,7 +2761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               '<td style="font-size:12px;">' + escHtml(e.query || '') + '</td>' +
               '<td style="font-size:12px;">' + escHtml(e.location || '') + '</td>' +
               '<td style="font-size:12px; white-space:nowrap;">' + date + '</td>' +
-              '<td><button class="btn-table-action" style="color:#f85149; font-size:11px;" onclick="window._deleteHistoryEntry(\'' + escHtml(e.key).replace(/'/g, "\\'") + '\')">Eliminar</button></td>' +
+              '<td><button class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteHistoryEntry(\'' + escHtml(e.key).replace(/'/g, "\\'") + '\')">Eliminar</button></td>' +
             '</tr>';
           }).join('');
         }
@@ -2960,7 +2960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const newBtn = document.getElementById('faq-new-btn');
       if (newBtn) newBtn.style.display = '';
     } catch(err) {
-      list.innerHTML = '<p style="color:#f85149;">Error cargando respuestas: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error cargando respuestas: ' + err.message + '</p>';
     }
   };
 
@@ -2970,7 +2970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const canEdit = isAdmin || isOwner;
     const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
     const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
-    const tags = (e.tags || []).map(t => `<span style="background:rgba(88,166,255,0.12);color:#79b8ff;padding:3px 8px;border-radius:10px;font-size:10px;border:1px solid rgba(88,166,255,0.25);">#${escHtml(t)}</span>`).join(' ');
+    const tags = (e.tags || []).map(t => `<span style="background:rgba(88,166,255,0.12);color:var(--info);padding:3px 8px;border-radius:10px;font-size:10px;border:1px solid rgba(88,166,255,0.25);">#${escHtml(t)}</span>`).join(' ');
     const authorBadge = e.createdBy ? `<span style="font-size:10px;color:var(--text-secondary);">· ${escHtml(e.createdBy)}</span>` : '';
     return `<div class="faq-card" style="background:linear-gradient(180deg, var(--surface-color) 0%, rgba(255,255,255,0.01) 100%);border:1px solid var(--border-color);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(0,0,0,0.2);transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--primary-color)'" onmouseout="this.style.borderColor='var(--border-color)'">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
@@ -2983,7 +2983,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         ${canEdit ? `<div style="display:flex;gap:4px;flex-shrink:0;">
           <button class="btn-table-action" style="font-size:12px;padding:4px 8px;" title="Editar" onclick="window._faqOpenModal('${escHtml(e.id)}')">✏️</button>
-          <button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:#f85149;" title="Eliminar" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
+          <button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:var(--danger);" title="Eliminar" onclick="window._faqDelete('${escHtml(e.id)}')">🗑️</button>
         </div>` : ''}
       </div>
       <div style="background:var(--bg-color);border-left:3px solid var(--primary-color);padding:10px 12px;border-radius:6px;">
@@ -2992,10 +2992,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${tags}</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04);">
         <div style="font-size:11px;color:var(--text-secondary);">
-          ${e.usos > 0 ? `<strong style="color:var(--text-primary);">${e.usos}</strong> usos · <strong style="color:#5bb974;">${pctFuncionaron}%</strong> funcionó` : '<em>Sin usos aún</em>'}
+          ${e.usos > 0 ? `<strong style="color:var(--text-primary);">${e.usos}</strong> usos · <strong style="color:var(--success);">${pctFuncionaron}%</strong> funcionó` : '<em>Sin usos aún</em>'}
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:#5bb974;font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--success);font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
           <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
         </div>
       </div>
@@ -3009,7 +3009,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await navigator.clipboard.writeText(texto).catch(() => {});
       const orig = btn.textContent;
       btn.textContent = '✓ Copiado';
-      btn.style.color = '#25d366';
+      btn.style.color = 'var(--success)';
       setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1800);
     }
     // Registrar uso
@@ -3095,10 +3095,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       statusEl.textContent = data.ejemplosUsados > 0
         ? `✓ Generado basado en ${data.ejemplosUsados} respuesta(s) similar(es) del banco.`
         : '✓ Generado sin ejemplos previos (el banco está vacío).';
-      statusEl.style.color = '#5bb974';
+      statusEl.style.color = 'var(--success)';
     } catch(err) {
       statusEl.textContent = '❌ ' + err.message;
-      statusEl.style.color = '#f85149';
+      statusEl.style.color = 'var(--danger)';
     } finally {
       btn.textContent = '✨ Generar con IA';
       btn.disabled = false;
@@ -3144,11 +3144,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             '</div>' +
             (isAdmin ? '<div style="display:flex;gap:4px;flex-shrink:0;">' +
               '<button class="btn-table-action" style="font-size:12px;padding:4px 8px;" title="Editar" onclick="window._trainingOpenModal(\'' + escHtml(m.id) + '\')">✏️</button>' +
-              '<button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:#f85149;" title="Eliminar" onclick="window._trainingDelete(\'' + escHtml(m.id) + '\')">🗑️</button>' +
+              '<button class="btn-table-action" style="font-size:12px;padding:4px 8px;color:var(--danger);" title="Eliminar" onclick="window._trainingDelete(\'' + escHtml(m.id) + '\')">🗑️</button>' +
             '</div>' : '') +
           '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">' +
-            (hasText ? '<span style="background:rgba(91,185,116,0.15);color:#5bb974;padding:2px 8px;border-radius:10px;">🤖 IA lo usa</span>' : '<span style="background:rgba(248,81,73,0.12);color:#f85149;padding:2px 8px;border-radius:10px;">⚠️ Sin texto IA</span>') +
+            (hasText ? '<span style="background:rgba(91,185,116,0.15);color:var(--success);padding:2px 8px;border-radius:10px;">🤖 IA lo usa</span>' : '<span style="background:rgba(248,81,73,0.12);color:var(--danger);padding:2px 8px;border-radius:10px;">⚠️ Sin texto IA</span>') +
             (sizeKb ? '<span style="color:var(--text-secondary);">' + sizeKb + '</span>' : '') +
             (m.createdBy ? '<span style="color:var(--text-secondary);">· ' + escHtml(m.createdBy) + '</span>' : '') +
           '</div>' +
@@ -3156,7 +3156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '</div>';
       }).join('');
     } catch(err) {
-      list.innerHTML = '<p style="color:#f85149;">Error cargando materiales: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error cargando materiales: ' + err.message + '</p>';
     }
   };
 
@@ -3274,7 +3274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const data = await r.json();
       modules = data.modules || [];
     } catch {
-      cardsEl.innerHTML = '<p style="color:#f85149;">No pude cargar los módulos.</p>';
+      cardsEl.innerHTML = '<p style="color:var(--danger);">No pude cargar los módulos.</p>';
       return;
     }
     const progress = getOnboardingProgress();
@@ -3292,21 +3292,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden;
         transition:all 0.2s; cursor:pointer;
       "
-      onmouseover="this.style.borderColor='#A78BFA'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(167,139,250,0.15)';"
+      onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(167,139,250,0.15)';"
       onmouseout="this.style.borderColor='${leido ? 'rgba(91,185,116,0.4)' : 'var(--border-color)'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
-          <div style="font-size:28px; font-weight:700; color:#A78BFA; line-height:1; letter-spacing:-0.5px;">${numStr}</div>
-          <span style="font-size:11px; color:${leido ? '#5bb974' : '#79b8ff'}; background:${leido ? 'rgba(91,185,116,0.15)' : 'rgba(121,184,255,0.12)'}; padding:3px 10px; border-radius:10px; font-weight:600;">
+          <div style="font-size:28px; font-weight:700; color:var(--accent); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
+          <span style="font-size:11px; color:${leido ? 'var(--success)' : 'var(--info)'}; background:${leido ? 'rgba(91,185,116,0.15)' : 'rgba(121,184,255,0.12)'}; padding:3px 10px; border-radius:10px; font-weight:600;">
             ${leido ? '✅ Leído' : '🔵 Sin leer'}
           </span>
         </div>
-        <div style="height:2px; width:36px; background:linear-gradient(90deg, #A78BFA, transparent); margin-bottom:12px;"></div>
+        <div style="height:2px; width:36px; background:linear-gradient(90deg, var(--accent), transparent); margin-bottom:12px;"></div>
         <div style="color:#E6EDF3; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
         <div style="color:#B8C2CC; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
           <span style="font-size:11px; color:var(--text-secondary);">⏱ ~${m.minutes} min</span>
-          <span style="font-size:11px; color:#5bb974; background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">🤖 IA lo usa</span>
-          <span style="color:#A78BFA; font-size:14px;">→</span>
+          <span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">🤖 IA lo usa</span>
+          <span style="color:var(--accent); font-size:14px;">→</span>
         </div>
       </a>`;
     }).join('');
@@ -3335,7 +3335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const resp = await fetch(apiUrl('/api/auth/online'));
       if (!resp.ok) {
-        list.innerHTML = '<p style="color:#f85149;">Error: ' + resp.status + '</p>';
+        list.innerHTML = '<p style="color:var(--danger);">Error: ' + resp.status + '</p>';
         return;
       }
       const data = await resp.json();
@@ -3352,12 +3352,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `Hace ${Math.floor(sec/86400)}d`;
       };
       const dot = (st) => st === 'online' ? '🟢' : st === 'recent' ? '🟡' : '⚪';
-      const stColor = (st) => st === 'online' ? '#5bb974' : st === 'recent' ? '#e3b341' : '#666';
+      const stColor = (st) => st === 'online' ? 'var(--success)' : st === 'recent' ? 'var(--warning)' : '#666';
       const stLabel = (st) => st === 'online' ? 'Online' : st === 'recent' ? 'Reciente' : 'Offline';
       const onlineCount = data.users.filter(u => u.status === 'online').length;
       list.innerHTML =
         `<div style="margin-bottom:14px; padding:12px 16px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px;">
-          <strong style="color:#5bb974;">🟢 ${onlineCount}</strong> ${onlineCount === 1 ? 'usuario conectado ahora' : 'usuarios conectados ahora'} · ${data.users.length} totales
+          <strong style="color:var(--success);">🟢 ${onlineCount}</strong> ${onlineCount === 1 ? 'usuario conectado ahora' : 'usuarios conectados ahora'} · ${data.users.length} totales
         </div>
         <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">` +
         data.users.map(u => {
@@ -3368,13 +3368,13 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong style="color:var(--text-primary); font-size:14px;">${dot(u.status)} ${escHtml(u.name)}</strong>
               <span style="background:${stColor(u.status)}22; color:${stColor(u.status)}; padding:3px 10px; border-radius:10px; font-size:11px; font-weight:600;">${stLabel(u.status)}</span>
             </div>
-            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:#79b8ff;">${u.role}</span></div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:var(--info);">${u.role}</span></div>
             <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Última actividad: <strong style="color:var(--text-primary);">${fmtAge(u.lastSeen)}</strong></div>
             ${u.ip ? `<div style="font-size:11px; color:var(--text-secondary);">IP: <code style="background:var(--bg-color); padding:1px 6px; border-radius:4px;">${escHtml(u.ip)}</code> · ${browser}/${os}</div>` : ''}
           </div>`;
         }).join('') + '</div>';
     } catch(err) {
-      list.innerHTML = '<p style="color:#f85149;">Error: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error: ' + err.message + '</p>';
     }
   };
   document.querySelector('[data-target="view-online"]')?.addEventListener('click', () => {

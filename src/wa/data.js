@@ -173,16 +173,21 @@ export function getRoutine(id) {
   return listRoutines().find((r) => r.id === id);
 }
 
-// Curva oficial goghl.ai. untilDay=null = fase final (operación completa).
-// allowAutomation=false en fases iniciales fuerza al engine a NO mandar
-// mensajes automáticos (sólo el setter manualmente puede operar la cuenta).
+// Curva pragmática SCM (adaptada de goghl.ai).
+// Diferencia con goghl.ai original: NO requiere mandar a amigos/conocidos
+// los primeros 10-15 días. El setter arranca a mandar a leads desde día 1
+// con volumen bajo + delays largos, y va escalando. Más realista para una
+// operación comercial donde nadie va a "calentar mandándole a su amigo".
+//
+// Recomendación complementaria (no forzada por el engine): sumar el número
+// a 3-5 grupos de WhatsApp en los primeros días para mejorar la reputación.
 export function defaultPhases() {
   return [
-    { name: "Fase 1 — Configuración inicial", untilDay: 2, dailyMessages: 12, dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
-    { name: "Fase 2 — Aumento gradual",       untilDay: 5, dailyMessages: 28, dripMinMs: 15000, dripMaxMs: 20000, allowAutomation: false },
-    { name: "Fase 3 — Construyendo reputación", untilDay: 10, dailyMessages: 75, dripMinMs: 10000, dripMaxMs: 15000, allowAutomation: true },
-    { name: "Fase 4 — Escalando",             untilDay: 14, dailyMessages: 250, dripMinMs: 5000, dripMaxMs: 10000, allowAutomation: true },
-    { name: "Fase 5 — Operación completa",    untilDay: null, dailyMessages: 750, dripMinMs: 3000, dripMaxMs: 5000, allowAutomation: true },
+    { name: "Fase 1 — Arranque",         untilDay: 2,    dailyMessages: 12,  dripMinMs: 60000, dripMaxMs: 120000, allowAutomation: true },
+    { name: "Fase 2 — Aumento gradual",  untilDay: 5,    dailyMessages: 30,  dripMinMs: 30000, dripMaxMs: 60000,  allowAutomation: true },
+    { name: "Fase 3 — Construcción",     untilDay: 10,   dailyMessages: 80,  dripMinMs: 15000, dripMaxMs: 30000,  allowAutomation: true },
+    { name: "Fase 4 — Escalando",        untilDay: 14,   dailyMessages: 200, dripMinMs: 8000,  dripMaxMs: 15000,  allowAutomation: true },
+    { name: "Fase 5 — Operación normal", untilDay: null, dailyMessages: 400, dripMinMs: 5000,  dripMaxMs: 12000,  allowAutomation: true },
   ];
 }
 
