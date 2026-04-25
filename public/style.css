@@ -102,6 +102,7 @@
   --border-color: var(--border-default);
   --font-family: var(--font-sans);
   --surface-color: var(--bg-surface);
+  --bg-secondary: var(--bg-input);
   --text-primary-color: var(--text-primary);
 }
 
@@ -272,33 +273,64 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--space-4);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
   gap: var(--space-2);
 }
 
+.logo,
+.logo-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: var(--space-1);
+  margin-left: -4px;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+  color: inherit;
+  font-family: inherit;
+}
+
+.logo-toggle:hover { background: var(--bg-hover); }
+
 .logo-mark {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--radius-md);
   background: linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: var(--weight-bold);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--bg-app);
   flex-shrink: 0;
+  transition: var(--transition-fast);
 }
+
+.logo-toggle:hover .logo-mark { transform: scale(1.06); }
 
 .logo h1 {
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-normal);
   color: var(--text-primary);
+}
+
+/* En sidebar colapsado: la S queda centrada y es el toggle. Oculto el menu-toggle redundante. */
+.sidebar.collapsed .sidebar-header {
+  padding: 0;
+  justify-content: center;
+}
+
+.sidebar.collapsed .logo-toggle {
+  margin: 0;
+  padding: var(--space-2);
+}
+
+.sidebar.collapsed .menu-toggle {
+  display: none;
 }
 
 .menu-toggle {
@@ -606,6 +638,72 @@ input[type="checkbox"], input[type="radio"] {
   accent-color: var(--accent);
   width: 16px;
   height: 16px;
+}
+
+/* <option> nativos: en muchos browsers no respetan background del padre.
+   Forzamos colores oscuros para que el dropdown abierto se vea bien. */
+option {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Selects compactos en tablas (inline-select) */
+.inline-select,
+table select,
+td select {
+  height: 28px;
+  font-size: var(--text-xs);
+  padding: 0 var(--space-6) 0 var(--space-2);
+  background-color: var(--bg-input);
+  background-position: right var(--space-2) center;
+  width: auto;
+  min-width: 84px;
+  max-width: 120px;
+}
+
+/* Inputs tipo "buscador" con icono dentro: aseguramos que no haya bg blanco */
+input[type="search"],
+input.search-input {
+  background: var(--bg-input);
+  color: var(--text-primary);
+}
+
+/* Override para autofill (Chrome pone bg blanco en autofill) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px var(--bg-input) inset !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  caret-color: var(--text-primary);
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Inputs de búsqueda específicos del legacy HTML (tienen styles inline). Los normalizamos. */
+#setter-search,
+#faq-search,
+#training-search,
+#history-search,
+#cmd-variable-search,
+#wsp-search {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 0 var(--space-3) !important;
+  height: 32px !important;
+  font-size: var(--text-sm) !important;
+  font-family: inherit !important;
+}
+
+#setter-search:focus,
+#faq-search:focus,
+#training-search:focus,
+#history-search:focus,
+#cmd-variable-search:focus,
+#wsp-search:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-soft) !important;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -1026,26 +1124,34 @@ tbody tr:hover td {
   border-color: var(--accent-strong);
 }
 
-.stat-num {
+.stat-num,
+.stat-card .stat-num,
+.stat-card[style] .stat-num {
   font-size: var(--text-3xl);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-tight);
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--text-primary);
+  color: var(--text-primary) !important; /* override de inline styles legacy */
+}
+
+/* Sólo "Agendados" puede tener el highlight (card con .stat-card-accent) */
+.stat-card-accent .stat-num,
+.stat-card.is-highlight .stat-num {
+  color: var(--accent) !important;
 }
 
 .stat-label {
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: var(--text-tertiary);
+  color: var(--text-tertiary) !important;
   font-weight: var(--weight-semibold);
 }
 
 .stat-pct-sub {
   font-size: var(--text-xs);
-  color: var(--text-tertiary);
+  color: var(--text-tertiary) !important;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1083,11 +1189,23 @@ tbody tr:hover td {
 ═════════════════════════════════════════════════════════════════ */
 
 .variant-active-box {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, transparent 60%), var(--bg-surface);
+  border: 1px solid var(--accent-strong);
   border-radius: var(--radius-lg);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5);
   margin: var(--space-4) var(--space-8);
+  position: relative;
+}
+
+.variant-active-box::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
 }
 
 .variant-active-header {
@@ -1101,7 +1219,8 @@ tbody tr:hover td {
 .variant-active-name {
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
-  color: var(--text-primary);
+  color: var(--accent) !important; /* override inline styles legacy */
+  letter-spacing: var(--tracking-tight);
 }
 
 .variant-active-label {
@@ -1183,7 +1302,7 @@ tbody tr:hover td {
   background: var(--bg-surface);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
-  max-width: 720px;
+  max-width: 920px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
@@ -1279,15 +1398,62 @@ tbody tr:hover td {
 }
 
 .lead-variable-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.lead-variable-blocks {
+.lead-variable-row > :first-child {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--text-tertiary);
+  font-weight: var(--weight-semibold);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.lead-variable-blocks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+.lead-variable-blocks > div,
+.variant-block-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.lead-variable-blocks > div > strong:first-child,
+.lead-variable-blocks > div > b:first-child,
+.variant-block-card > strong:first-child,
+.variant-block-card > b:first-child {
+  display: block;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  color: var(--accent);
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-1);
+}
+
+.lead-variable-blocks > div button,
+.variant-block-card button {
+  align-self: flex-start;
 }
 
 .quick-message-grid {

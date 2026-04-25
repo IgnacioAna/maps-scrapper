@@ -564,4 +564,15 @@ document.addEventListener("click", (e) => {
   }, 50);
 });
 
+// La S (logo-toggle) replica el click del botón hamburguesa para que funcione
+// como toggle del sidebar. Esto permite que en colapsado la S sea el único
+// elemento visible y sirva para reabrir.
+document.addEventListener("click", (e) => {
+  const t = e.target.closest(".logo-toggle");
+  if (!t) return;
+  e.preventDefault();
+  const burger = document.querySelector(".menu-toggle");
+  if (burger) burger.click();
+});
+
 console.log("[wa] modulo cargado");
