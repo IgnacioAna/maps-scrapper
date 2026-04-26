@@ -4,7 +4,7 @@
       "id": "wa_1777129407605_6dmfeo",
       "label": "Test Ignacio",
       "phone": null,
-      "status": "DISCONNECTED",
+      "status": "CONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_evelio"
