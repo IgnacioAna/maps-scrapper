@@ -4201,4 +4201,153 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, { once: true });
   }
 
+  // ─── Vista Sistema (admin) ───
+  let systemRefreshTimer = null;
+
+  window.loadSystemHealth = async () => {
+    try {
+      const r = await fetch(apiUrl('/api/admin/health'));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      renderSystemHealth(data);
+    } catch (e) {
+      const grid = document.getElementById('system-stats-grid');
+      if (grid) grid.innerHTML = '<p style="color:var(--danger);">Error: ' + e.message + '</p>';
+    }
+  };
+
+  function renderSystemHealth(data) {
+    const banner = document.getElementById('system-status-banner');
+    const grid = document.getElementById('system-stats-grid');
+    const sidebarBadge = document.getElementById('system-health-badge');
+    const status = data.status || 'unknown';
+    const colors = {
+      healthy: { bg: 'var(--success-soft)', color: 'var(--success)', text: '✅ Sistema saludable' },
+      degraded: { bg: 'var(--warning-soft)', color: 'var(--warning)', text: '⚠️ Sistema con warnings' },
+      unhealthy: { bg: 'var(--danger-soft)', color: 'var(--danger)', text: '🔴 Sistema en problemas' }
+    };
+    const c = colors[status] || colors.degraded;
+    if (banner) {
+      banner.style.display = 'block';
+      banner.style.background = c.bg;
+      banner.style.color = c.color;
+      banner.style.border = '1px solid ' + c.color;
+      banner.innerHTML = '<strong>' + c.text + '</strong> · uptime: ' + Math.floor(data.checks.server.uptimeSeconds / 60) + ' min · generado: ' + new Date(data.generatedAt).toLocaleTimeString('es-AR');
+    }
+    if (sidebarBadge) {
+      sidebarBadge.style.display = 'inline-block';
+      sidebarBadge.style.background = c.bg;
+      sidebarBadge.style.color = c.color;
+      sidebarBadge.textContent = '●';
+      sidebarBadge.title = c.text;
+    }
+    if (!grid) return;
+    const ck = data.checks;
+    const card = (title, body, color) => '<div style="background:var(--bg-surface); border:1px solid ' + (color || 'var(--border-subtle)') + '; border-radius:12px; padding:16px 18px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:10px;">' + title + '</div>' + body + '</div>';
+    let html = '';
+    html += card('📊 Datos en el sistema', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+      '<span style="color:var(--text-tertiary);">Leads:</span><span style="color:var(--text-primary); font-weight:600;">' + (ck.counts.leads || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Sin WSP:</span><span>' + (ck.counts.sinWsp || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Interesados:</span><span style="color:var(--success);">' + (ck.counts.interesados || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Agendados:</span><span style="color:var(--success);">' + (ck.counts.agendados || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">History:</span><span>' + (ck.counts.historyEntries || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Setters:</span><span>' + (ck.counts.setters || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Variantes:</span><span>' + (ck.counts.variants || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Usuarios:</span><span>' + (ck.counts.users || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Sesiones:</span><span>' + (ck.counts.activeSessions || 0) + '</span>' +
+    '</div>');
+    const calOverdueColor = (ck.counts.calendarAtrasados || 0) > 0 ? 'var(--danger)' : 'var(--success)';
+    html += card('📅 Calendario', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+      '<span style="color:var(--text-tertiary);">Pendientes:</span><span style="color:var(--accent); font-weight:600;">' + (ck.counts.calendarPendientes || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Atrasadas:</span><span style="color:' + calOverdueColor + '; font-weight:600;">' + (ck.counts.calendarAtrasados || 0) + '</span>' +
+    '</div>', calOverdueColor);
+    const aiOk = ck.ai.mercury || ck.ai.qwen;
+    html += card('🤖 IA', '<div style="font-size:13px;">' +
+      '<div>Mercury: <span style="color:' + (ck.ai.mercury ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.mercury ? '✅ activa' : '❌ no configurada') + '</span></div>' +
+      '<div>Qwen (fallback): <span style="color:' + (ck.ai.qwen ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.qwen ? '✅ activa' : '❌ no configurada') + '</span></div>' +
+    '</div>', aiOk ? null : 'var(--danger)');
+    const bkColor = ck.backups.ok ? null : 'var(--warning)';
+    let bkBody = '<div style="font-size:13px;"><div>Total snapshots: <strong>' + (ck.backups.count || 0) + '</strong></div>';
+    if (ck.backups.latest) {
+      bkBody += '<div style="color:var(--text-tertiary); margin-top:4px;">Último: hace ' + ck.backups.latest.ageHours + ' hs</div>';
+      bkBody += '<div style="color:var(--text-faint); font-size:11px; margin-top:2px; word-break:break-all;">' + escHtml(ck.backups.latest.name) + '</div>';
+    } else {
+      bkBody += '<div style="color:var(--warning);">Sin backups todavía</div>';
+    }
+    bkBody += '</div>';
+    html += card('💾 Backups', bkBody, bkColor);
+    const errCount = ck.errors.last24hCount || 0;
+    const errColor = errCount > 50 ? 'var(--danger)' : (errCount > 10 ? 'var(--warning)' : null);
+    let errBody = '<div style="font-size:13px;"><div>Últimas 24h: <strong style="color:' + (errColor || 'var(--success)') + ';">' + errCount + ' errores</strong></div>';
+    if (ck.errors.latest) {
+      errBody += '<div style="color:var(--text-tertiary); margin-top:8px; font-size:12px; padding:8px; background:var(--bg-input); border-radius:6px; border-left:3px solid var(--danger);"><div style="color:var(--danger); font-weight:600; margin-bottom:2px;">Último error:</div><div style="word-break:break-word;">' + escHtml((ck.errors.latest.message || '').substring(0, 200)) + '</div>' + (ck.errors.latest.path ? '<div style="color:var(--text-faint); font-size:11px; margin-top:2px;">' + escHtml(ck.errors.latest.path) + '</div>' : '') + '</div>';
+    }
+    errBody += '</div>';
+    html += card('🐛 Errores', errBody, errColor);
+    let filesBody = '<div style="display:grid; grid-template-columns:1fr auto; gap:4px 12px; font-size:12px;">';
+    for (const [name, info] of Object.entries(ck.data.files || {})) {
+      if (!info) continue;
+      filesBody += '<span style="color:var(--text-secondary); font-family:var(--font-mono);">' + escHtml(name) + '</span>';
+      filesBody += '<span style="color:var(--text-primary); font-weight:600;">' + info.sizeMb + ' MB</span>';
+    }
+    filesBody += '</div>';
+    html += card('📁 Archivos del data/', filesBody);
+    grid.innerHTML = html;
+  }
+
+  document.getElementById('system-refresh-btn')?.addEventListener('click', () => loadSystemHealth());
+  document.getElementById('system-backup-now-btn')?.addEventListener('click', async () => {
+    const btn = document.getElementById('system-backup-now-btn');
+    btn.disabled = true; btn.textContent = '💾 Creando...';
+    try {
+      const r = await fetch(apiUrl('/api/admin/backups/now'), { method: 'POST' });
+      const d = await r.json();
+      if (d.ok) {
+        btn.textContent = '✅ Backup creado';
+        await loadSystemHealth();
+        setTimeout(() => { btn.textContent = '💾 Backup ahora'; btn.disabled = false; }, 2500);
+      } else { alert('Error: ' + (d.error || 'desconocido')); btn.textContent = '💾 Backup ahora'; btn.disabled = false; }
+    } catch (e) { btn.textContent = '💾 Backup ahora'; alert('Error: ' + e.message); btn.disabled = false; }
+  });
+  document.getElementById('system-report-preview-btn')?.addEventListener('click', async () => {
+    try {
+      const r = await fetch(apiUrl('/api/admin/weekly-report/preview'));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      const iframe = document.getElementById('report-preview-iframe');
+      iframe.srcdoc = d.html;
+      document.getElementById('report-preview-modal').classList.remove('hidden');
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+  document.getElementById('system-report-send-btn')?.addEventListener('click', async () => {
+    const to = window.prompt('Enviar reporte a (email):', currentUser?.email || '');
+    if (!to) return;
+    const btn = document.getElementById('system-report-send-btn');
+    btn.disabled = true; btn.textContent = '📨 Enviando...';
+    try {
+      const r = await fetch(apiUrl('/api/admin/weekly-report/send'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to })
+      });
+      const d = await r.json();
+      if (d.sent || d.ok) {
+        btn.textContent = '✅ Enviado';
+        setTimeout(() => { btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }, 2500);
+      } else { alert('No se pudo enviar: ' + (d.reason || d.error || 'desconocido')); btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }
+    } catch (e) { alert('Error: ' + e.message); btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }
+  });
+  document.querySelector('[data-target="view-system"]')?.addEventListener('click', () => {
+    setTimeout(() => loadSystemHealth(), 50);
+    if (systemRefreshTimer) clearInterval(systemRefreshTimer);
+    systemRefreshTimer = setInterval(() => {
+      const v = document.getElementById('view-system');
+      if (v && !v.classList.contains('hidden')) loadSystemHealth();
+      else { clearInterval(systemRefreshTimer); systemRefreshTimer = null; }
+    }, 30000);
+  });
+  // Auto-load del badge al boot (admin) sin abrir la vista
+  if (currentUser?.role === 'admin') {
+    setTimeout(() => loadSystemHealth(), 2000);
+  }
+
   });
