@@ -4,6 +4,12 @@ node_modules/
 # pero los .bak* sí: son safety nets locales, no se trackean
 data/*.bak
 data/*.bak-*
+# Backups automáticos (cron 6 hs) — viven solo en disco local del server
+data/backups/
+# Logs y state local, nunca commitear
+data/error.log
+data/error.log.old
+data/reports.json
 server.out.log
 server.err.log
 tmp/

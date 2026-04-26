@@ -36,6 +36,10 @@ console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 
+// Liveness probe público para Railway / monitoreo externo (light, sin auth, sin tocar disco).
+app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
 // ── Rate limiting in-memory (simple sliding window) ──
 // Sin Redis: para single-instance es suficiente. Map por key con timestamps.
 const rateLimitStore = new Map();
