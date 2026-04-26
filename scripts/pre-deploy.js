@@ -94,22 +94,15 @@ async function main() {
     const authPath = path.join(DATA_DIR, "auth.json");
     fs.writeFileSync(authPath, JSON.stringify(data.auth, null, 2));
     const users = (data.auth.users || []).length;
-    console.log(`  auth.json guardado (${users} usuarios)`);
+    const invites = (data.auth.invites || []).length;
+    const sessions = (data.auth.sessions || []).length;
+    console.log(`  auth.json guardado (${users} users, ${invites} invites, ${sessions} sessions)`);
   }
 
   if (data.setters) {
     const settersPath = path.join(DATA_DIR, "setters.json");
     fs.writeFileSync(settersPath, JSON.stringify(data.setters, null, 2));
     console.log(`  setters.json guardado`);
-  }
-
-  if (data.auth) {
-    const authPath = path.join(DATA_DIR, "auth.json");
-    fs.writeFileSync(authPath, JSON.stringify(data.auth, null, 2));
-    const users = (data.auth.users || []).length;
-    const invites = (data.auth.invites || []).length;
-    const sessions = (data.auth.sessions || []).length;
-    console.log(`  auth.json guardado (${users} users, ${invites} invites, ${sessions} sessions)`);
   }
 
   if (data.faqs) {
