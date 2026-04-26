@@ -500,6 +500,88 @@ describe("calls · centro de comando metrics", () => {
   });
 });
 
+describe("admin · backups", () => {
+  it("GET /api/admin/backups requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.get("/api/admin/backups");
+    expect(r.status).toBe(403);
+  });
+
+  it("GET /api/admin/backups devuelve array", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/admin/backups");
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.backups)).toBe(true);
+  });
+
+  it("POST /api/admin/backups/now crea un backup manual", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/admin/backups/now");
+    expect(r.status).toBe(200);
+    expect(r.body.ok).toBe(true);
+    expect(r.body.copied).toBeGreaterThan(0);
+  });
+
+  it("POST /api/admin/backups/now requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.post("/api/admin/backups/now");
+    expect(r.status).toBe(403);
+  });
+});
+
+describe("admin · error log", () => {
+  it("GET /api/admin/errors/recent requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.get("/api/admin/errors/recent");
+    expect(r.status).toBe(403);
+  });
+
+  it("GET /api/admin/errors/recent devuelve estructura esperada", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/admin/errors/recent");
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.errors)).toBe(true);
+    expect(typeof r.body.total).toBe("number");
+  });
+});
+
+describe("imports · validación de leads", () => {
+  it("POST /api/setters/import rechaza array vacío (400)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/import").send({ leads: [], assignTo: "" });
+    expect(r.status).toBe(400);
+  });
+
+  it("POST /api/setters/import rechaza más de 10000 leads (413)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const tooMany = Array.from({ length: 10001 }, (_, i) => ({ name: `Lead ${i}`, phone: `+5491111${i}` }));
+    const r = await agent.post("/api/setters/import").send({ leads: tooMany, assignTo: "" });
+    expect(r.status).toBe(413);
+  });
+
+  it("POST /api/setters/import rechaza lead sin name ni phone (400)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/import").send({
+      leads: [
+        { name: "Valid", phone: "+5491111111" },
+        { website: "http://nada.com" } // sin name ni phone
+      ],
+      assignTo: ""
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/Lead #2/);
+  });
+});
+
 describe("auth · presencia online (admin only)", () => {
   // /api/auth/online usa sesión por cookie (no Bearer JWT). Usamos agent para persistirla.
   it("GET /api/auth/online sin auth → 401", async () => {

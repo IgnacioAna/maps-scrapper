@@ -36,6 +36,46 @@ console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
 
+// ── Rate limiting in-memory (simple sliding window) ──
+// Sin Redis: para single-instance es suficiente. Map por key con timestamps.
+const rateLimitStore = new Map();
+function rateLimit({ windowMs, max, keyFn }) {
+  return (req, res, next) => {
+    const key = keyFn(req);
+    if (!key) return next();
+    const now = Date.now();
+    const arr = (rateLimitStore.get(key) || []).filter(t => now - t < windowMs);
+    if (arr.length >= max) {
+      const retryAfter = Math.ceil((windowMs - (now - arr[0])) / 1000);
+      res.set('Retry-After', String(retryAfter));
+      return res.status(429).json({ error: `Demasiados intentos. Probá en ${retryAfter}s.`, retryAfter });
+    }
+    arr.push(now);
+    rateLimitStore.set(key, arr);
+    next();
+  };
+}
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [k, arr] of rateLimitStore.entries()) {
+      const fresh = arr.filter(t => now - t < 60 * 60 * 1000);
+      if (fresh.length === 0) rateLimitStore.delete(k);
+      else rateLimitStore.set(k, fresh);
+    }
+  }, 10 * 60 * 1000);
+}
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 5,
+  keyFn: (req) => 'login:' + ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim())
+});
+const aiLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 30,
+  keyFn: (req) => 'ai:' + (req.auth?.user?.id || ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim()))
+});
+
 // AUTH_FILE se define después de DATA_DIR para usar el volume si está montado
 let AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
@@ -577,7 +617,7 @@ app.get('/api/auth/online', requireRole('admin'), (req, res) => {
   res.json({ users: allUsers, generatedAt: now });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos.' });
 
@@ -730,6 +770,38 @@ app.post('/api/auth/accept-invite', (req, res) => {
 });
 
 // ── Admin: Exportar toda la data (para backup pre-deploy) ──
+// Backups admin: listar y trigger manual
+app.get('/api/admin/backups', requireAuth, requireRole('admin'), (_req, res) => {
+  try {
+    if (!fs.existsSync(BACKUPS_DIR)) return res.json({ backups: [] });
+    const list = fs.readdirSync(BACKUPS_DIR)
+      .filter(n => fs.statSync(path.join(BACKUPS_DIR, n)).isDirectory())
+      .sort()
+      .reverse()
+      .map(name => {
+        const dir = path.join(BACKUPS_DIR, name);
+        const files = fs.readdirSync(dir);
+        const sizeBytes = files.reduce((s, f) => s + fs.statSync(path.join(dir, f)).size, 0);
+        const stat = fs.statSync(dir);
+        return {
+          name,
+          createdAt: stat.mtime.toISOString(),
+          fileCount: files.length,
+          sizeBytes,
+          sizeMb: (sizeBytes / 1024 / 1024).toFixed(2),
+          reason: name.split('_').slice(-1)[0] || 'auto'
+        };
+      });
+    res.json({ backups: list, dir: BACKUPS_DIR });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/backups/now', requireAuth, requireRole('admin'), (req, res) => {
+  const result = makeBackup('manual');
+  if (!result.ok) return res.status(500).json(result);
+  res.json(result);
+});
+
 app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) => {
   try {
     const history = loadHistory();
@@ -1260,6 +1332,83 @@ seedVolumeFromRepo();
 // Reasignar paths de archivos para que usen el volume
 AUTH_FILE = path.join(DATA_DIR, "auth.json");
 console.log(`📁 Data dir: ${DATA_DIR}`);
+
+// ── Error logging persistente ──
+// Escribe errores a data/error.log (rotación a .old cuando llega a 5MB).
+// Endpoint admin para ver últimos N errores. Trail útil cuando algo falla en prod.
+const ERROR_LOG = path.join(DATA_DIR, 'error.log');
+const ERROR_LOG_MAX_BYTES = 5 * 1024 * 1024;
+
+function logError(err, context = {}) {
+  try {
+    const entry = {
+      ts: new Date().toISOString(),
+      message: err?.message || String(err),
+      stack: err?.stack || null,
+      ...context
+    };
+    const line = JSON.stringify(entry) + '\n';
+    // Rotación si pasa el límite
+    if (fs.existsSync(ERROR_LOG) && fs.statSync(ERROR_LOG).size > ERROR_LOG_MAX_BYTES) {
+      fs.renameSync(ERROR_LOG, ERROR_LOG + '.old');
+    }
+    fs.appendFileSync(ERROR_LOG, line, 'utf8');
+  } catch (writeErr) {
+    console.error('No pude escribir al error log:', writeErr.message);
+  }
+  console.error('🔴', err?.message || err, context.path ? `[${context.path}]` : '');
+}
+
+// Capturar excepciones no atrapadas y rejections (no tirar el server, loguearlas)
+process.on('uncaughtException', (err) => logError(err, { source: 'uncaughtException' }));
+process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? reason : new Error(String(reason)), { source: 'unhandledRejection' }));
+
+// ── Backups automáticos del data/ ──
+// Snapshot cada 6 horas a data/backups/{ISO_timestamp}/. Mantiene últimos 28 (1 semana).
+// Permite recovery si una corrupción rompe los JSON principales.
+const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
+const BACKUP_INTERVAL_HOURS = 6;
+const BACKUP_KEEP = 28;
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json'];
+
+function makeBackup(reason = 'auto') {
+  try {
+    if (!fs.existsSync(BACKUPS_DIR)) fs.mkdirSync(BACKUPS_DIR, { recursive: true });
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const dir = path.join(BACKUPS_DIR, `${stamp}_${reason}`);
+    fs.mkdirSync(dir, { recursive: true });
+    let copied = 0;
+    let totalBytes = 0;
+    for (const f of BACKUP_FILES) {
+      const src = path.join(DATA_DIR, f);
+      if (fs.existsSync(src)) {
+        const dst = path.join(dir, f);
+        fs.copyFileSync(src, dst);
+        totalBytes += fs.statSync(src).size;
+        copied++;
+      }
+    }
+    // Cleanup: mantener solo los últimos BACKUP_KEEP
+    const all = fs.readdirSync(BACKUPS_DIR).filter(n => fs.statSync(path.join(BACKUPS_DIR, n)).isDirectory()).sort();
+    if (all.length > BACKUP_KEEP) {
+      const toDelete = all.slice(0, all.length - BACKUP_KEEP);
+      for (const old of toDelete) {
+        fs.rmSync(path.join(BACKUPS_DIR, old), { recursive: true, force: true });
+      }
+    }
+    console.log(`💾 Backup ${reason}: ${copied} archivos, ${(totalBytes/1024/1024).toFixed(2)} MB → ${path.basename(dir)} (total snapshots: ${Math.min(all.length, BACKUP_KEEP)})`);
+    return { ok: true, dir: path.basename(dir), copied, totalBytes };
+  } catch (e) {
+    console.error('❌ Error en backup:', e.message);
+    return { ok: false, error: e.message };
+  }
+}
+
+// Backup inicial al boot + cron cada 6 hs
+if (process.env.NODE_ENV !== 'test') {
+  setTimeout(() => makeBackup('boot'), 30000); // 30s después del boot
+  setInterval(() => makeBackup('cron'), BACKUP_INTERVAL_HOURS * 60 * 60 * 1000);
+}
 
 function loadHistory() {
   try {
@@ -1970,6 +2119,19 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
   const { leads: incoming, assignTo } = req.body;
   if (!incoming || !Array.isArray(incoming) || incoming.length === 0) {
     return res.status(400).json({ error: "No hay leads para importar." });
+  }
+  // Validación: max 10000 leads por batch + cada lead debe tener al menos name o phone
+  if (incoming.length > 10000) {
+    return res.status(413).json({ error: `Demasiados leads en un solo batch (max 10000, recibidos ${incoming.length}).` });
+  }
+  const malformed = incoming.findIndex((l) => {
+    if (!l || typeof l !== 'object') return true;
+    const hasName = typeof l.name === 'string' && l.name.trim().length > 0;
+    const hasPhone = typeof l.phone === 'string' && l.phone.trim().length > 0;
+    return !hasName && !hasPhone;
+  });
+  if (malformed >= 0) {
+    return res.status(400).json({ error: `Lead #${malformed + 1} inválido: requiere al menos 'name' o 'phone' string no vacío.` });
   }
   const data = loadSettersData();
   let imported = 0, skipped = 0;
@@ -3468,7 +3630,7 @@ RESPUESTA: ${respuesta || '(vacía)'}`;
 });
 
 // POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos (admin + setters)
-app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
+app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
   const { pregunta, variantId, contexto = '', categoria = '' } = req.body;
   if (!pregunta?.trim()) return res.status(400).json({ error: 'pregunta requerida' });
 
@@ -3734,6 +3896,29 @@ function userIdFromSetterIdHelper(setterId) {
   if (admins.length === 1) return admins[0].id;
   return null;
 }
+
+// Endpoint admin para ver errores recientes
+app.get('/api/admin/errors/recent', requireAuth, requireRole('admin'), (_req, res) => {
+  try {
+    if (!fs.existsSync(ERROR_LOG)) return res.json({ errors: [], total: 0 });
+    const content = fs.readFileSync(ERROR_LOG, 'utf8');
+    const lines = content.split('\n').filter(Boolean);
+    const recent = lines.slice(-100).reverse().map(l => { try { return JSON.parse(l); } catch { return { raw: l }; } });
+    res.json({ errors: recent, total: lines.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Express error handler global (DEBE ir DESPUÉS de todas las rutas)
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+  logError(err, {
+    path: req.path,
+    method: req.method,
+    userId: req.auth?.user?.id,
+    role: req.auth?.user?.role
+  });
+  res.status(err.status || 500).json({ error: err.message || 'Error interno' });
+});
 
 // En tests, NODE_ENV=test → no levantamos listener, sólo exportamos `app`.
 let server = null;

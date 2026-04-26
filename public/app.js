@@ -1680,6 +1680,41 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       renderBlocks(getVariantById(lead.varianteId || currentVariableId), lead);
 
+      // Historial de llamadas (si lo hay)
+      const callLogContainer = document.getElementById('modal-call-log');
+      if (callLogContainer) {
+        const callLog = Array.isArray(lead.callLog) ? lead.callLog.slice().reverse() : [];
+        if (callLog.length > 0) {
+          const outcomeLabels = {
+            answered_interested: { label: '✅ Interesado', color: 'var(--success)' },
+            answered_not_interested: { label: '❌ No interesado', color: 'var(--danger)' },
+            no_answer: { label: '📵 No atendió', color: 'var(--text-tertiary)' },
+            voicemail: { label: '📭 Buzón', color: 'var(--warning)' },
+            wrong_number: { label: '🔢 Equivocado', color: 'var(--danger)' },
+            invalid_number: { label: '🚫 No existe', color: 'var(--danger)' },
+            callback_later: { label: '🔄 Postpuesto', color: 'var(--info)' },
+            scheduled_with_admin: { label: '📅 Agendó con Ignacio', color: 'var(--accent)' }
+          };
+          callLogContainer.innerHTML =
+            '<div style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:8px;">📞 Historial de llamadas (' + callLog.length + ')</div>' +
+            '<div style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;">' +
+            callLog.map(c => {
+              const o = outcomeLabels[c.outcome] || { label: c.outcome, color: 'var(--text-secondary)' };
+              const ts = c.ts ? new Date(c.ts).toLocaleString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '';
+              return '<div style="background:var(--bg-input); border-left:3px solid ' + o.color + '; padding:8px 12px; border-radius:6px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">' +
+                  '<span style="color:' + o.color + '; font-weight:600; font-size:12px;">' + escHtml(o.label) + '</span>' +
+                  '<span style="color:var(--text-tertiary); font-size:11px;">' + escHtml(ts) + '</span>' +
+                '</div>' +
+                (c.notes ? '<div style="color:var(--text-secondary); font-size:12px; margin-top:4px; line-height:1.4;">' + escHtml(c.notes) + '</div>' : '') +
+              '</div>';
+            }).join('') + '</div>';
+          callLogContainer.style.display = 'block';
+        } else {
+          callLogContainer.style.display = 'none';
+        }
+      }
+
       const notesList = document.getElementById('modal-notes-list');
       if (lead.notes && lead.notes.length > 0) {
         notesList.innerHTML = lead.notes.map((n, idx) =>
