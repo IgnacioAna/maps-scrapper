@@ -1,6 +1,9 @@
 node_modules/
 .env
 # data/ ya NO se ignora — se sube al repo para persistir entre deploys
+# pero los .bak* sí: son safety nets locales, no se trackean
+data/*.bak
+data/*.bak-*
 server.out.log
 server.err.log
 tmp/
@@ -9,3 +12,5 @@ wa2.html
 debug.js
 test_qwen.js
 .env.local
+# Archivo personal con notas/credenciales scratch — nunca subirlo
+Scapper.txt
