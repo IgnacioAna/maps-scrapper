@@ -610,3 +610,71 @@ describe("auth · presencia online (admin only)", () => {
     expect(["online", "recent", "offline"]).toContain(admin.status);
   });
 });
+
+describe("admin · healthcheck", () => {
+  it("GET /api/admin/health requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.get("/api/admin/health");
+    expect(r.status).toBe(403);
+  });
+
+  it("GET /api/admin/health devuelve estructura completa", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/admin/health");
+    expect(r.status).toBe(200);
+    expect(["healthy", "degraded", "unhealthy"]).toContain(r.body.status);
+    expect(r.body.checks).toBeDefined();
+    expect(r.body.checks.server.uptimeSeconds).toBeGreaterThanOrEqual(0);
+    expect(r.body.checks.data).toBeDefined();
+    expect(r.body.checks.data.dir).toBeTruthy();
+    expect(r.body.checks.counts).toBeDefined();
+    expect(typeof r.body.checks.counts.leads).toBe("number");
+    expect(r.body.checks.ai).toBeDefined();
+    expect(r.body.checks.backups).toBeDefined();
+    expect(r.body.checks.errors).toBeDefined();
+    expect(typeof r.body.checks.errors.last24hCount).toBe("number");
+  });
+});
+
+describe("admin · weekly report", () => {
+  it("GET /api/admin/weekly-report/preview requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.get("/api/admin/weekly-report/preview");
+    expect(r.status).toBe(403);
+  });
+
+  it("GET /api/admin/weekly-report/preview devuelve data + html", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/admin/weekly-report/preview");
+    expect(r.status).toBe(200);
+    expect(r.body.data).toBeDefined();
+    expect(r.body.data.period).toBeDefined();
+    expect(r.body.data.period.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(r.body.data.period.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(r.body.data.wsp).toBeDefined();
+    expect(r.body.data.calls).toBeDefined();
+    expect(r.body.data.calendar).toBeDefined();
+    expect(Array.isArray(r.body.data.perSetter)).toBe(true);
+    expect(typeof r.body.html).toBe("string");
+    expect(r.body.html).toContain("Reporte semanal SCM");
+  });
+
+  it("POST /api/admin/weekly-report/send sin RESEND_API_KEY → 500 con reason", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/admin/weekly-report/send").send({ to: "test@test.com" });
+    expect(r.status).toBe(500);
+    expect(r.body.reason).toMatch(/RESEND/i);
+  });
+
+  it("POST /api/admin/weekly-report/send requiere admin (403 setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.post("/api/admin/weekly-report/send").send({ to: "test@test.com" });
+    expect(r.status).toBe(403);
+  });
+});
