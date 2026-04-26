@@ -1261,6 +1261,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         settersList = stats.setters || [];
         variantsList = stats.variants || [];
 
+        // Repopular filtro de país con los leads cargados
+        if (typeof window._populateSetterCountryFilter === 'function') {
+          window._populateSetterCountryFilter();
+        }
+
         // Poblar selector de setters (preservar selección)
         const currentVal = setterSelect.value;
         setterSelect.innerHTML = '<option value="">Todos los setters</option>';
@@ -1385,6 +1390,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } else if (currentPipeFilter !== 'all') {
         filtered = filtered.filter(l => l.estado === currentPipeFilter);
+      }
+
+      // Filtro por país (preferencia local del setter)
+      const countryFilter = (document.getElementById('setter-country-filter')?.value || '').trim();
+      if (countryFilter) {
+        filtered = filtered.filter(l => (l.country || '').trim() === countryFilter);
       }
 
       // Buscador general
@@ -1810,6 +1821,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       setterPage = 1;
       renderSetterLeads();
     });
+
+    // Filtro de país (preferencia por usuario, persistida en localStorage)
+    const setterCountryFilter = document.getElementById('setter-country-filter');
+    if (setterCountryFilter) {
+      const savedKey = 'setter_country_filter_' + (currentUser?.id || 'anon');
+      const saved = localStorage.getItem(savedKey) || '';
+      // Populate al cargar leads
+      window._populateSetterCountryFilter = () => {
+        const countries = [...new Set((setterLeads || []).map(l => (l.country || '').trim()).filter(Boolean))].sort();
+        const flagMap = { 'colombia':'🇨🇴', 'argentina':'🇦🇷', 'méxico':'🇲🇽', 'mexico':'🇲🇽', 'chile':'🇨🇱', 'perú':'🇵🇪', 'peru':'🇵🇪', 'bolivia':'🇧🇴', 'uruguay':'🇺🇾', 'paraguay':'🇵🇾', 'ecuador':'🇪🇨', 'venezuela':'🇻🇪', 'españa':'🇪🇸', 'espana':'🇪🇸' };
+        const cur = setterCountryFilter.value;
+        setterCountryFilter.innerHTML = '<option value="">🌎 Todos los países</option>' +
+          countries.map(c => {
+            const flag = flagMap[c.toLowerCase()] || '';
+            return `<option value="${escHtml(c)}">${flag} ${escHtml(c)}</option>`;
+          }).join('');
+        // Restaurar selección: la actual o la guardada
+        if (cur && countries.includes(cur)) setterCountryFilter.value = cur;
+        else if (saved && countries.includes(saved)) setterCountryFilter.value = saved;
+      };
+      setterCountryFilter.addEventListener('change', (e) => {
+        localStorage.setItem(savedKey, e.target.value);
+        setterPage = 1;
+        renderSetterLeads();
+      });
+    }
 
     const renderVariantEditor = () => {
       const editor = document.getElementById('variant-block-editor');
@@ -3898,32 +3935,109 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── Llamadas agendadas (admin) ───
   let scheduledCallsCache = [];
+  let knownOverdueIds = new Set();
+  const ORIGINAL_TITLE = document.title || 'SCM';
 
-  window.loadScheduledCalls = async () => {
+  window.loadScheduledCalls = async (silent = false) => {
     const list = document.getElementById('scheduled-calls-list');
-    if (!list) return;
-    list.innerHTML = '<p style="color:var(--text-tertiary); padding:40px 0; text-align:center;">Cargando...</p>';
+    if (list && !silent) list.innerHTML = '<p style="color:var(--text-tertiary); padding:40px 0; text-align:center;">Cargando...</p>';
     try {
       const r = await fetch(apiUrl('/api/setters/calendar/enriched'));
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
       scheduledCallsCache = data.calendar || [];
-      renderScheduledCalls();
+      if (list && !silent) renderScheduledCalls();
+      detectAndNotifyOverdue();
       updateScheduledBadge();
     } catch (e) {
-      list.innerHTML = '<p style="color:var(--danger); padding:40px 0; text-align:center;">Error: ' + e.message + '</p>';
+      if (list && !silent) list.innerHTML = '<p style="color:var(--danger); padding:40px 0; text-align:center;">Error: ' + e.message + '</p>';
     }
   };
 
+  function detectAndNotifyOverdue() {
+    const now = Date.now();
+    const overdue = scheduledCallsCache.filter(e =>
+      e.calendarioEstado === 'pendiente' &&
+      e.fecha &&
+      new Date(e.fecha).getTime() < now
+    );
+    // Detectar nuevas atrasadas (no vistas antes en esta sesión)
+    const newlyOverdue = overdue.filter(e => !knownOverdueIds.has(e.id));
+    if (newlyOverdue.length > 0 && knownOverdueIds.size > 0) {
+      // No notificar en el primer load (knownOverdueIds.size > 0 evita el ruido inicial)
+      try {
+        if ('Notification' in window) {
+          if (Notification.permission === 'granted') {
+            const e = newlyOverdue[0];
+            new Notification('📅 Llamada agendada atrasada', {
+              body: `${e.nombre || e.lead?.name || 'Lead'} · agendó: ${e.setterName || '?'}`,
+              icon: '/favicon.ico',
+              tag: 'scm-overdue-' + e.id
+            });
+          } else if (Notification.permission === 'default') {
+            Notification.requestPermission();
+          }
+        }
+        playOverdueChime();
+      } catch {}
+    }
+    // Actualizar set
+    knownOverdueIds = new Set(overdue.map(e => e.id));
+  }
+
+  function playOverdueChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 660;
+      o.connect(g); g.connect(ctx.destination);
+      const t0 = ctx.currentTime;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(0.18, t0 + 0.02);
+      g.gain.linearRampToValueAtTime(0, t0 + 0.4);
+      o.start(t0); o.stop(t0 + 0.4);
+      setTimeout(() => ctx.close(), 600);
+    } catch {}
+  }
+
   function updateScheduledBadge() {
-    const upcoming = scheduledCallsCache.filter(e => e.calendarioEstado === 'pendiente');
+    const now = Date.now();
+    const overdue = scheduledCallsCache.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < now);
+    const upcomingSoon = scheduledCallsCache.filter(e => {
+      if (e.calendarioEstado !== 'pendiente' || !e.fecha) return false;
+      const diff = new Date(e.fecha).getTime() - now;
+      return diff > 0 && diff < 30 * 60 * 1000; // próxima media hora
+    });
+    const totalPending = scheduledCallsCache.filter(e => e.calendarioEstado === 'pendiente').length;
+
     const badge = document.getElementById('scheduled-badge');
     if (!badge) return;
-    if (upcoming.length > 0) {
-      badge.textContent = upcoming.length;
+
+    if (overdue.length > 0) {
+      badge.textContent = overdue.length;
       badge.style.display = 'inline-block';
+      badge.style.background = 'var(--danger-soft)';
+      badge.style.color = 'var(--danger)';
+      badge.title = `${overdue.length} agendamientos atrasados`;
+      document.title = `🔴 (${overdue.length}) ${ORIGINAL_TITLE}`;
+    } else if (upcomingSoon.length > 0) {
+      badge.textContent = upcomingSoon.length;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'var(--warning-soft)';
+      badge.style.color = 'var(--warning)';
+      badge.title = `${upcomingSoon.length} agendamientos en los próximos 30 min`;
+      document.title = `🟡 (${upcomingSoon.length}) ${ORIGINAL_TITLE}`;
+    } else if (totalPending > 0) {
+      badge.textContent = totalPending;
+      badge.style.display = 'inline-block';
+      badge.style.background = 'var(--accent-soft)';
+      badge.style.color = 'var(--accent)';
+      badge.title = `${totalPending} pendientes`;
+      document.title = ORIGINAL_TITLE;
     } else {
       badge.style.display = 'none';
+      document.title = ORIGINAL_TITLE;
     }
   }
 
@@ -4016,9 +4130,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('scheduled-filter-status')?.addEventListener('change', () => renderScheduledCalls());
 
-  // Cargar badge al iniciar (admin) sin abrir la vista
+  // Cargar badge al iniciar (admin) sin abrir la vista + polling cada 60s
   if (currentUser?.role === 'admin') {
     setTimeout(() => loadScheduledCalls(), 1000);
+    // Polling: revalida estado cada minuto. Detecta cuando una pendiente pasa a atrasada.
+    setInterval(() => loadScheduledCalls(true), 60 * 1000);
+    // Pedir permiso de Notification al primer click del usuario (browsers requieren gesture)
+    document.addEventListener('click', function reqNotif() {
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch {}
+      document.removeEventListener('click', reqNotif);
+    }, { once: true });
   }
 
   });

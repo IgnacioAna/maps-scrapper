@@ -404,6 +404,9 @@
         <div class="setter-toolbar">
           <input type="text" id="setter-search" autocomplete="off" placeholder="Buscar lead (nombre, teléfono, ciudad, país, doctor...)">
           <button id="setter-search-clear" class="btn btn-ghost btn-sm">Limpiar</button>
+          <select id="setter-country-filter" class="btn btn-ghost btn-sm" style="min-width:160px;">
+            <option value="">🌎 Todos los países</option>
+          </select>
           <span style="flex:1;"></span>
           <span id="setter-leads-total-badge" class="setter-total-badge"></span>
           <button id="setter-dedup-btn" class="btn btn-secondary btn-sm" data-roles="admin">Limpiar duplicados</button>
@@ -1052,7 +1055,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260426d"></script>
+  <script type="module" src="/app.js?v=20260426e"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
