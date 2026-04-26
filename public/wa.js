@@ -377,8 +377,13 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
           <span>Enviar a varios (uno por línea)</span>
         </label>
 
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+          <input type="checkbox" id="wa-send-rotate" style="margin:0;">
+          <span>Rotar variantes (separar mensajes con --- en líneas propias) — anti-detección spam</span>
+        </label>
+
         <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Mensaje</label>
-        <textarea id="wa-send-text" rows="5" placeholder="Hola {{nombre}}, ¿cómo estás?" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
+        <textarea id="wa-send-text" rows="5" placeholder="Hola, ¿cómo estás?&#10;---&#10;Buenas, te escribo desde…&#10;---&#10;Hola! Una consulta rápida…" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
 
         <div id="wa-send-status" style="font-size:12px; color:var(--text-secondary); min-height:18px;"></div>
       </div>
@@ -408,7 +413,8 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
   });
 
   goBtn.addEventListener('click', async () => {
-    const phoneRaw = overlay.querySelector('#wa-send-phone').value.trim();
+    const rotateCb   = overlay.querySelector('#wa-send-rotate');
+    const phoneRaw   = overlay.querySelector('#wa-send-phone').value.trim();
     const text = textInput.value.trim();
     if (!phoneRaw || !text) {
       status.textContent = 'Faltan teléfono o mensaje';
@@ -425,6 +431,12 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
       return;
     }
 
+    // Parsear variantes de mensaje (separadas por --- en línea propia)
+    const variants = rotateCb.checked
+      ? text.split(/\n\s*---\s*\n/).map(v => v.trim()).filter(Boolean)
+      : [text];
+    if (variants.length === 0) variants.push(text);
+
     // Guardar últimos para próximo uso
     localStorage.setItem('wa-last-phone', phones[0]);
     localStorage.setItem('wa-last-text', text);
@@ -432,12 +444,23 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
     goBtn.disabled = true;
     status.style.color = 'var(--text-secondary)';
 
+    // Función de pick aleatorio sin repetir 2 veces seguidas si hay >1 variantes
+    let lastIdx = -1;
+    const pickVariant = () => {
+      if (variants.length === 1) return variants[0];
+      let idx;
+      do { idx = Math.floor(Math.random() * variants.length); } while (idx === lastIdx);
+      lastIdx = idx;
+      return variants[idx];
+    };
+
     let ok = 0, fail = 0;
     for (let i = 0; i < phones.length; i++) {
       const p = phones[i];
-      status.textContent = `Enviando ${i + 1}/${phones.length} → ${p}…`;
+      const msg = pickVariant();
+      status.textContent = `Enviando ${i + 1}/${phones.length} → ${p}${variants.length > 1 ? ` (variante ${lastIdx + 1})` : ''}…`;
       try {
-        await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text }) });
+        await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text: msg }) });
         ok++;
       } catch (err) {
         fail++;
