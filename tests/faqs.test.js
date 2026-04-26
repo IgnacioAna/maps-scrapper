@@ -35,6 +35,9 @@ fs.writeFileSync(
   }, null, 2)
 );
 
+// Forzar banco de FAQs vacío para que seedVolumeFromRepo no traiga el seed real del repo.
+fs.writeFileSync(path.join(tmpData, "faqs.json"), JSON.stringify({ entries: [] }, null, 2));
+
 const { app } = await import("../index.js");
 
 let cookie = "";

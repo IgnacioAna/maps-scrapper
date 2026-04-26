@@ -3212,12 +3212,14 @@ app.patch('/api/faqs/:id/uso', requireAuth, (req, res) => {
 });
 
 // — Retrieval helpers para el Banco de Respuestas —
+// Nota: las palabras interrogativas (quien, donde, cuando, como, cual, porque) NO están
+// en stopwords a propósito — son señales fuertes de intención del lead y permiten matchear
+// "Y a vos quién te conoce?" con "¿Quién sos?".
 const FAQ_STOPWORDS_ES = new Set([
   'que','de','la','el','los','las','un','una','unos','unas','y','o','u','a','en','con','por','para','del','al',
   'es','son','soy','eres','ser','este','esta','estos','estas','eso','esa','esto','mi','tu','su','sus','mis','tus',
-  'me','te','se','le','les','nos','lo','si','no','ya','muy','mas','pero','como','cuando','donde','porque',
-  'tambien','hay','ha','he','han','fue','fui','sera','sin','sobre','entre','hasta','desde','vos','usted','ustedes',
-  'tipo','algo','alguien','nada','cual','cuales','quien','quienes'
+  'me','te','se','le','les','nos','lo','si','no','ya','muy','mas','pero','tambien','hay','ha','he','han','fue',
+  'fui','sera','sin','sobre','entre','hasta','desde','vos','usted','ustedes','tipo','algo','alguien','nada'
 ]);
 
 function _faqNormalize(s) {
@@ -3339,7 +3341,7 @@ app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
   // Retrieval: scoring por tokens + tags + categoría + efectividad histórica
   const data = loadFaqs();
   const qTokens = _faqTokens(pregunta);
-  const SCORE_THRESHOLD = 0.15;
+  const SCORE_THRESHOLD = 0.10;
   const MAX_EXAMPLES = 8;
   const scored = (data.entries || [])
     .filter(e => e.respuesta && e.pregunta)
@@ -3417,14 +3419,25 @@ Devolvé SOLO el/los bloque(s) de texto, nada más.`;
       model: AI_MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.4,
-      max_tokens: 350
+      max_tokens: 500
     });
     let sugerencia = completion.choices?.[0]?.message?.content?.trim() || '';
     // Normalizar: colapsar 3+ saltos a doble salto, máximo 2 bloques
     sugerencia = sugerencia.replace(/\n{3,}/g, '\n\n');
-    const bloques = sugerencia.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
-    if (bloques.length > 2) sugerencia = bloques.slice(0, 2).join('\n\n');
-    else sugerencia = bloques.join('\n\n');
+    let bloques = sugerencia.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    if (bloques.length > 2) bloques = bloques.slice(0, 2);
+    sugerencia = bloques.join('\n\n');
+
+    // Fallback: si la IA devolvió algo vacío o trunco pero TENEMOS un match fuerte
+    // del banco, usar la respuesta literal del top match en vez de devolver vacío.
+    let usedFallback = false;
+    if ((!sugerencia || bloques.length === 0) && scored.length > 0) {
+      console.warn('FAQ suggest: IA devolvió vacío. Usando fallback del banco para:', pregunta.substring(0, 80));
+      sugerencia = scored[0].entry.respuesta;
+      bloques = sugerencia.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+      usedFallback = true;
+    }
+
     const ejemplos = scored.map(x => ({
       id: x.entry.id,
       pregunta: x.entry.pregunta,
@@ -3432,9 +3445,10 @@ Devolvé SOLO el/los bloque(s) de texto, nada más.`;
     }));
     res.json({
       sugerencia,
-      bloques: sugerencia.split(/\n\n+/),
+      bloques,
       ejemplosUsados: similares.length,
-      ejemplos
+      ejemplos,
+      usedFallback
     });
   } catch (e) {
     console.error('Error FAQ suggest IA:', e.message);
