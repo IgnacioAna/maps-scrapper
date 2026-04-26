@@ -1130,7 +1130,19 @@ app.use((req, res, next) => {
   .status-pill{padding:8px 14px;border-radius:10px;font-weight:600;font-size:12px;letter-spacing:0.3px;display:inline-flex;align-items:center;gap:6px;}
   .status-pill.pending{background:rgba(210,153,34,0.15);color:#D29922;border:1px solid rgba(210,153,34,0.3);}
   .status-pill.passed{background:rgba(63,185,80,0.15);color:#3FB950;border:1px solid rgba(63,185,80,0.3);}
+  .status-pill.locked{background:rgba(126,132,148,0.15);color:#8b94a8;border:1px solid rgba(126,132,148,0.3);}
   iframe{width:100%;height:calc(100vh - 60px);border:none;display:block;background:#0E1117;}
+  .locked-screen{display:flex;align-items:center;justify-content:center;height:calc(100vh - 60px);padding:32px;}
+  .locked-card{max-width:520px;background:#161B22;border:1px solid #21262D;border-radius:16px;padding:40px;text-align:center;}
+  .locked-icon{font-size:56px;line-height:1;margin-bottom:16px;}
+  .locked-title{font-size:22px;font-weight:700;color:#E6EDF3;margin:0 0 12px;}
+  .locked-desc{color:#B8C2CC;font-size:15px;line-height:1.6;margin:0 0 28px;}
+  .locked-desc strong{color:#A78BFA;}
+  .locked-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .locked-btn{padding:12px 22px;background:#A78BFA;color:#0E1117;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px;border:none;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;transition:all 0.15s;}
+  .locked-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(167,139,250,0.3);}
+  .locked-btn.secondary{background:transparent;color:#A78BFA;border:1px solid #21262D;}
+  .locked-btn.secondary:hover{background:rgba(167,139,250,0.08);border-color:#A78BFA;}
   @media (max-width:600px){.crumb{font-size:12px;} .back-link span.label{display:none;}}
 </style>
 </head><body>
@@ -1139,18 +1151,48 @@ app.use((req, res, next) => {
   <div class="crumb"><span class="num-pill">Módulo ${num} de 8</span><strong>${titleEsc}</strong> · ${subtitleEsc}</div>
   <span class="status-pill pending" id="scm-status-pill">🎯 Quiz pendiente</span>
 </div>
-<iframe id="scm-mod-iframe" src="/onboarding/files/scm-onboarding-modulo${num}.html"></iframe>
+<div id="scm-content"></div>
 <script>
   (function(){
     var N = ${num};
     var KEY = 'scm_onboarding_progress';
+    var content = document.getElementById('scm-content');
+    var pill = document.getElementById('scm-status-pill');
     function getP(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; } }
     function setPassed(){
-      var pill = document.getElementById('scm-status-pill');
       pill.textContent = '✅ Quiz aprobado';
-      pill.classList.remove('pending'); pill.classList.add('passed');
+      pill.classList.remove('pending', 'locked'); pill.classList.add('passed');
     }
-    if (getP()[N]) setPassed();
+    function setLocked(){
+      pill.textContent = '🔒 Bloqueado';
+      pill.classList.remove('pending', 'passed'); pill.classList.add('locked');
+    }
+
+    var progress = getP();
+
+    // Gate progresivo: módulo N requiere N-1 aprobado (módulo 1 siempre disponible)
+    if (N > 1 && !progress[N - 1]) {
+      setLocked();
+      content.innerHTML = '<div class="locked-screen"><div class="locked-card">' +
+        '<div class="locked-icon">🔒</div>' +
+        '<h1 class="locked-title">Módulo ' + N + ' bloqueado</h1>' +
+        '<p class="locked-desc">Para acceder a este módulo necesitás aprobar primero el <strong>quiz del módulo ' + (N - 1) + '</strong>. El onboarding está pensado para hacerse en orden — cada módulo construye sobre el anterior.</p>' +
+        '<div class="locked-actions">' +
+          '<a class="locked-btn" href="/onboarding/' + (N - 1) + '">Ir al módulo ' + (N - 1) + ' →</a>' +
+          '<a class="locked-btn secondary" href="/?view=training">Volver al índice</a>' +
+        '</div>' +
+      '</div></div>';
+      return;
+    }
+
+    // Desbloqueado: insertar iframe del módulo
+    var iframe = document.createElement('iframe');
+    iframe.id = 'scm-mod-iframe';
+    iframe.src = '/onboarding/files/scm-onboarding-modulo' + N + '.html';
+    content.appendChild(iframe);
+
+    if (progress[N]) setPassed();
+
     // El quiz dentro del iframe nos avisa al aprobar
     window.addEventListener('message', function(e){
       if (e.data && e.data.type === 'scm_quiz_passed' && e.data.module === N) {
@@ -2988,23 +3030,74 @@ app.patch('/api/faqs/:id/uso', requireAuth, (req, res) => {
   res.json({ ok: true, usos: entry.usos, funcionaron: entry.funcionaron });
 });
 
+// — Retrieval helpers para el Banco de Respuestas —
+const FAQ_STOPWORDS_ES = new Set([
+  'que','de','la','el','los','las','un','una','unos','unas','y','o','u','a','en','con','por','para','del','al',
+  'es','son','soy','eres','ser','este','esta','estos','estas','eso','esa','esto','mi','tu','su','sus','mis','tus',
+  'me','te','se','le','les','nos','lo','si','no','ya','muy','mas','pero','como','cuando','donde','porque',
+  'tambien','hay','ha','he','han','fue','fui','sera','sin','sobre','entre','hasta','desde','vos','usted','ustedes',
+  'tipo','algo','alguien','nada','cual','cuales','quien','quienes'
+]);
+
+function _faqNormalize(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+    .replace(/[^a-z0-9\s]/g, ' ');
+}
+function _faqTokens(s) {
+  const set = new Set();
+  for (const t of _faqNormalize(s).split(/\s+/)) {
+    if (t.length >= 3 && !FAQ_STOPWORDS_ES.has(t)) set.add(t);
+  }
+  return set;
+}
+function _faqScore(entry, qTokens, opts = {}) {
+  const eTokens = _faqTokens((entry.pregunta || '') + ' ' + (entry.respuesta || ''));
+  if (qTokens.size === 0 || eTokens.size === 0) return 0;
+  let inter = 0;
+  for (const t of qTokens) if (eTokens.has(t)) inter++;
+  if (inter === 0) return 0;
+  // Cosine sobre sets de tokens
+  let score = inter / Math.sqrt(qTokens.size * eTokens.size);
+  // Boost por tag coincidente con tokens de la query
+  let tagHits = 0;
+  for (const tag of (entry.tags || [])) {
+    for (const tok of _faqNormalize(tag).split(/\s+/)) {
+      if (tok && qTokens.has(tok)) { tagHits++; break; }
+    }
+  }
+  score += Math.min(tagHits, 3) * 0.08;
+  // Boost por categoría coincidente
+  if (opts.categoria && entry.categoria && entry.categoria === opts.categoria) score += 0.10;
+  // Boost por efectividad histórica
+  const usos = entry.usos || 0;
+  const ok = entry.funcionaron || 0;
+  if (usos > 0) score += Math.min(ok / usos, 1) * 0.15;
+  // Pequeño boost por popularidad bruta
+  score += Math.min(usos / 20, 1) * 0.05;
+  return score;
+}
+
 // POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos (admin + setters)
 app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
-  const { pregunta, variantId, contexto = '' } = req.body;
+  const { pregunta, variantId, contexto = '', categoria = '' } = req.body;
   if (!pregunta?.trim()) return res.status(400).json({ error: 'pregunta requerida' });
 
   if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
 
-  // Buscar FAQs similares como ejemplos few-shot
+  // Retrieval: scoring por tokens + tags + categoría + efectividad histórica
   const data = loadFaqs();
-  const lp = pregunta.toLowerCase();
-  const similares = data.entries
-    .filter(e => e.respuesta && (
-      e.pregunta?.toLowerCase().split(' ').some(w => w.length > 3 && lp.includes(w)) ||
-      lp.split(' ').some(w => w.length > 3 && e.pregunta?.toLowerCase().includes(w))
-    ))
-    .sort((a, b) => (b.funcionaron || 0) - (a.funcionaron || 0))
-    .slice(0, 4);
+  const qTokens = _faqTokens(pregunta);
+  const SCORE_THRESHOLD = 0.15;
+  const MAX_EXAMPLES = 8;
+  const scored = (data.entries || [])
+    .filter(e => e.respuesta && e.pregunta)
+    .map(e => ({ entry: e, score: _faqScore(e, qTokens, { categoria }) }))
+    .filter(x => x.score >= SCORE_THRESHOLD)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_EXAMPLES);
+  const similares = scored.map(x => x.entry);
 
   // Buscar variante para contexto
   let varianteTexto = '';
@@ -3049,26 +3142,50 @@ app.post('/api/faqs/suggest', requireAuth, async (req, res) => {
     }
   } catch {}
 
-  const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) de forma profesional, cálida y breve.
+  const prompt = `Eres un asistente de ventas de SCM Dental, una agencia que ayuda a clínicas dentales a conseguir más pacientes. Tu trabajo es responder objeciones o preguntas de dueños de clínicas dentales (leads) por WhatsApp.
 ${onboardingContext}${trainingContext}
 ${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
 ${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
 PREGUNTA/OBJECIÓN DEL LEAD: ${pregunta}
 
-EJEMPLOS DE RESPUESTAS EXITOSAS ANTERIORES:
+EJEMPLOS DE RESPUESTAS DEL BANCO (priorizá el estilo, tono y argumentos de estos ejemplos — son respuestas validadas del equipo):
 ${ejemplosTexto}
 
-Genera UNA respuesta en español, en tono profesional pero cercano, de máximo 4 líneas. Usa [Nombre del Doctor] o [Nombre de la clínica] como placeholders si necesitás personalizar. Respetá los hechos del material de entrenamiento si aplican. Responde SOLO con el texto de la respuesta, sin explicaciones, sin comillas, sin formato markdown.`;
+REGLAS DE FORMATO (críticas):
+- Devolvé 1 o 2 bloques de mensaje, separados por UNA línea en blanco (un único \\n\\n entre bloques).
+- Cada bloque máximo 2-3 frases (idealmente menos de 280 caracteres).
+- Si la respuesta es corta, usá un solo bloque. Si necesita un cierre con pregunta o CTA, usá un segundo bloque corto.
+- Tono cercano, profesional, en español rioplatense neutro. Sin emojis salvo que el ejemplo los use.
+- Sin markdown, sin viñetas, sin comillas, sin "Hola" ni saludo inicial (ya están en conversación).
+- Usá [Nombre del Doctor] o [Nombre de la clínica] como placeholders SOLO si hace falta personalizar.
+- Respetá los hechos del material de entrenamiento y onboarding. No inventes precios, plazos ni features.
+
+Devolvé SOLO el/los bloque(s) de texto, nada más.`;
 
   try {
     const completion = await ai.chat.completions.create({
       model: AI_MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.4,
-      max_tokens: 300
+      max_tokens: 350
     });
-    const sugerencia = completion.choices?.[0]?.message?.content?.trim() || '';
-    res.json({ sugerencia, ejemplosUsados: similares.length });
+    let sugerencia = completion.choices?.[0]?.message?.content?.trim() || '';
+    // Normalizar: colapsar 3+ saltos a doble salto, máximo 2 bloques
+    sugerencia = sugerencia.replace(/\n{3,}/g, '\n\n');
+    const bloques = sugerencia.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    if (bloques.length > 2) sugerencia = bloques.slice(0, 2).join('\n\n');
+    else sugerencia = bloques.join('\n\n');
+    const ejemplos = scored.map(x => ({
+      id: x.entry.id,
+      pregunta: x.entry.pregunta,
+      score: Number(x.score.toFixed(3))
+    }));
+    res.json({
+      sugerencia,
+      bloques: sugerencia.split(/\n\n+/),
+      ejemplosUsados: similares.length,
+      ejemplos
+    });
   } catch (e) {
     console.error('Error FAQ suggest IA:', e.message);
     res.status(500).json({ error: 'Error de IA: ' + e.message });

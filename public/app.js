@@ -3373,20 +3373,54 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     cardsEl.innerHTML = modules.map(m => {
       const leido = !!progress[m.num];
+      // Bloqueado si el módulo anterior no está aprobado (módulo 1 siempre desbloqueado)
+      const bloqueado = m.num > 1 && !progress[m.num - 1];
       const numStr = String(m.num).padStart(2, '0');
+
+      let borderColor = 'var(--border-color)';
+      let estadoChip;
+      if (bloqueado) {
+        borderColor = 'var(--border-color)';
+        estadoChip = `<span style="font-size:11px; color:var(--text-tertiary, #7E8494); background:rgba(126,132,148,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">🔒 Bloqueado</span>`;
+      } else if (leido) {
+        borderColor = 'rgba(91,185,116,0.4)';
+        estadoChip = `<span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.15); padding:3px 10px; border-radius:10px; font-weight:600;">✅ Leído</span>`;
+      } else {
+        estadoChip = `<span style="font-size:11px; color:var(--info); background:rgba(121,184,255,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">🔵 Sin leer</span>`;
+      }
+
+      // Bloqueado: no es <a>, sin click, opacity reducido
+      if (bloqueado) {
+        return `<div class="onboarding-card locked" title="Aprobá el quiz del módulo ${m.num - 1} para desbloquear este" style="
+          display:block; background:var(--surface-color); border:1px dashed var(--border-color);
+          border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden;
+          opacity:0.55; cursor:not-allowed;
+        ">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
+            <div style="font-size:28px; font-weight:700; color:var(--text-tertiary, #7E8494); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
+            ${estadoChip}
+          </div>
+          <div style="height:2px; width:36px; background:linear-gradient(90deg, var(--text-tertiary, #7E8494), transparent); margin-bottom:12px;"></div>
+          <div style="color:#B8C2CC; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
+          <div style="color:#7E8494; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">Aprobá primero el quiz del módulo ${m.num - 1}</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
+            <span style="font-size:11px; color:var(--text-tertiary, #7E8494);">⏱ ~${m.minutes} min</span>
+            <span style="color:var(--text-tertiary, #7E8494); font-size:14px;">🔒</span>
+          </div>
+        </div>`;
+      }
+
       return `<a href="/onboarding/${m.num}" class="onboarding-card" style="
         text-decoration:none; display:block;
-        background:var(--surface-color); border:1px solid ${leido ? 'rgba(91,185,116,0.4)' : 'var(--border-color)'};
+        background:var(--surface-color); border:1px solid ${borderColor};
         border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden;
         transition:all 0.2s; cursor:pointer;
       "
       onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(167,139,250,0.15)';"
-      onmouseout="this.style.borderColor='${leido ? 'rgba(91,185,116,0.4)' : 'var(--border-color)'}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+      onmouseout="this.style.borderColor='${borderColor}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
           <div style="font-size:28px; font-weight:700; color:var(--accent); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
-          <span style="font-size:11px; color:${leido ? 'var(--success)' : 'var(--info)'}; background:${leido ? 'rgba(91,185,116,0.15)' : 'rgba(121,184,255,0.12)'}; padding:3px 10px; border-radius:10px; font-weight:600;">
-            ${leido ? '✅ Leído' : '🔵 Sin leer'}
-          </span>
+          ${estadoChip}
         </div>
         <div style="height:2px; width:36px; background:linear-gradient(90deg, var(--accent), transparent); margin-bottom:12px;"></div>
         <div style="color:#E6EDF3; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>

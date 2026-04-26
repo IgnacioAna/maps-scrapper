@@ -87,19 +87,34 @@ describe("onboarding · metadata pública", () => {
 });
 
 describe("onboarding · wrapper /onboarding/N", () => {
-  it("GET /onboarding/3 devuelve HTML 200 con topbar y iframe", async () => {
+  it("GET /onboarding/3 devuelve HTML 200 con topbar y referencia al módulo", async () => {
     const r = await request(app).get("/onboarding/3");
     expect(r.status).toBe(200);
     expect(r.headers["content-type"]).toMatch(/text\/html/);
     expect(r.text).toContain("Volver al Centro de Entrenamiento");
-    expect(r.text).toContain('id="scm-mod-iframe"');
-    expect(r.text).toContain("/onboarding/files/scm-onboarding-modulo3.html");
+    // El iframe se crea dinámicamente desde el script (post-gate). El src se arma con concat.
+    expect(r.text).toContain("scm-mod-iframe");
+    expect(r.text).toContain("/onboarding/files/scm-onboarding-modulo");
   });
 
   it("wrapper inyecta el status pill que escucha postMessage del quiz", async () => {
     const r = await request(app).get("/onboarding/1");
     expect(r.text).toContain("scm-status-pill");
     expect(r.text).toContain("scm_quiz_passed"); // listener
+  });
+
+  it("wrapper trae logica de gate progresivo (locked screen para módulo > 1 sin aprobar el anterior)", async () => {
+    const r = await request(app).get("/onboarding/4");
+    // El gate vive en el script inline — debe referenciar el módulo anterior
+    expect(r.text).toContain("locked-screen");
+    expect(r.text).toContain("locked-card");
+    expect(r.text).toMatch(/N\s*>\s*1\s*&&\s*!progress\[N\s*-\s*1\]/);
+  });
+
+  it("módulo 1 nunca debe estar bloqueado por gate (es el punto de entrada)", async () => {
+    const r = await request(app).get("/onboarding/1");
+    // El gate condiciona `N > 1` — módulo 1 siempre pasa
+    expect(r.text).toContain("N > 1");
   });
 
   it("GET /onboarding/99 (módulo inexistente) devuelve 404", async () => {
