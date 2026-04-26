@@ -1337,7 +1337,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('resume-last-name').textContent = info.name || exists.name || '—';
         document.getElementById('resume-last-ago').textContent = '(' + ago + ')';
         banner.style.display = 'flex';
-        document.getElementById('resume-last-btn').onclick = () => window._openLeadModal(info.id);
+        document.getElementById('resume-last-btn').onclick = () => {
+          // No abrimos la tarjeta del último lead — saltamos a "Sin contactar" para
+          // seguir avanzando con los próximos que faltan mandar.
+          currentPipeFilter = 'sin_contactar';
+          setterPage = 1;
+          document.querySelectorAll('.pipe-filter').forEach(b => {
+            b.classList.toggle('active', b.dataset.status === 'sin_contactar');
+          });
+          renderSetterLeads();
+          // Scroll a la tabla del pipeline
+          const tableEl = document.querySelector('#view-crm .leads-table-container, #view-crm .leads-table, #view-crm table');
+          if (tableEl) tableEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
         document.getElementById('resume-last-dismiss').onclick = () => {
           banner.style.display = 'none';
           localStorage.removeItem('lastLeadWorked_' + (currentUser?.id || 'guest'));
