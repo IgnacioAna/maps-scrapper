@@ -821,7 +821,33 @@
           <h2>Centro de Comando</h2>
         </div>
         <div class="setter-stats" id="cmd-stats"></div>
-        <div style="padding:4px 32px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+
+        <!-- Sección de métricas de llamadas (admin) -->
+        <div id="cmd-calls-section" style="padding:0 32px; margin-top:8px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">📞 Llamadas</span>
+            <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+          </div>
+          <div class="setter-stats" id="cmd-call-stats"></div>
+          <div style="overflow-x:auto; margin-top:14px;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;" id="cmd-calls-per-setter-table">
+              <thead>
+                <tr style="text-align:left; border-bottom:1px solid var(--border-subtle); color:var(--text-tertiary); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
+                  <th style="padding:8px 10px;">Setter</th>
+                  <th style="padding:8px 10px;">Leads en Llamadas</th>
+                  <th style="padding:8px 10px;">Total llamadas</th>
+                  <th style="padding:8px 10px;">Hoy</th>
+                  <th style="padding:8px 10px;">Interesados</th>
+                  <th style="padding:8px 10px;">Agendados con Ignacio</th>
+                  <th style="padding:8px 10px;">% Conversión</th>
+                </tr>
+              </thead>
+              <tbody id="cmd-calls-per-setter-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="padding:4px 32px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px;">
           <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
           <button id="cmd-dedup-btn" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de Setters</button>
           <label class="btn-table-action" style="color:#a8c7fa; cursor:pointer;">
@@ -1025,7 +1051,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260426b"></script>
+  <script type="module" src="/app.js?v=20260426c"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

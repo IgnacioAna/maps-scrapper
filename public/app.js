@@ -2502,6 +2502,43 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<div class="stat-card stat-card-accent"><span class="stat-num">' + t.agendados + '</span><span class="stat-label">Agendados</span></div>' +
           '<div class="stat-card"><span class="stat-num">' + t.sinWsp + '</span><span class="stat-label">Sin WSP</span></div>';
 
+        // Stats de llamadas
+        const ct = data.callTotals || {};
+        const callStatsEl = document.getElementById('cmd-call-stats');
+        if (callStatsEl) {
+          callStatsEl.innerHTML =
+            '<div class="stat-card"><span class="stat-num">' + (ct.leadsEnLlamadas || 0) + '</span><span class="stat-label">Leads en Llamadas</span></div>' +
+            '<div class="stat-card"><span class="stat-num">' + (ct.totalLlamadas || 0) + '</span><span class="stat-label">Total llamadas</span></div>' +
+            '<div class="stat-card"><span class="stat-num">' + (ct.llamadasHoy || 0) + '</span><span class="stat-pct-sub">' + (ct.pctAtendidasHoy || '0.0') + '% atendidas</span><span class="stat-label">Llamadas hoy</span></div>' +
+            '<div class="stat-card"><span class="stat-num">' + (ct.atendidasHistorico || 0) + '</span><span class="stat-label">Atendidas (total)</span></div>' +
+            '<div class="stat-card"><span class="stat-num">' + (ct.interesadosHistorico || 0) + '</span><span class="stat-label">Interesados</span></div>' +
+            '<div class="stat-card stat-card-accent"><span class="stat-num">' + (ct.agendadosConAdmin || 0) + '</span><span class="stat-pct-sub">' + (ct.pctConversion || '0.0') + '% conv.</span><span class="stat-label">Agendados con Ignacio</span></div>' +
+            '<div class="stat-card"><span class="stat-num" style="color:var(--warning);">' + (ct.agendamientoPendientes || 0) + '</span><span class="stat-label">Pendientes (cola)</span></div>' +
+            '<div class="stat-card"><span class="stat-num" style="color:var(--success);">' + (ct.agendamientoRealizados || 0) + '</span><span class="stat-label">Realizados</span></div>' +
+            '<div class="stat-card"><span class="stat-num" style="color:var(--danger);">' + (ct.numerosMuertos || 0) + '</span><span class="stat-pct-sub">' + (ct.pctNumerosMuertos || '0.0') + '%</span><span class="stat-label">Números muertos</span></div>';
+        }
+
+        // Tabla por setter (calls)
+        const callsBody = document.getElementById('cmd-calls-per-setter-body');
+        if (callsBody) {
+          const callsPerSetter = data.callsPerSetter || [];
+          if (callsPerSetter.length === 0) {
+            callsBody.innerHTML = '<tr><td colspan="7" style="padding:18px; text-align:center; color:var(--text-tertiary);">No hay actividad de llamadas todavía.</td></tr>';
+          } else {
+            callsBody.innerHTML = callsPerSetter.map(s =>
+              '<tr style="border-bottom:1px solid var(--border-subtle);">' +
+              '<td style="padding:10px; font-weight:600;">' + escHtml(s.name) + '</td>' +
+              '<td style="padding:10px;">' + s.leadsAsignados + '</td>' +
+              '<td style="padding:10px;">' + s.totalLlamadas + '</td>' +
+              '<td style="padding:10px;">' + s.llamadasHoy + '</td>' +
+              '<td style="padding:10px;">' + s.interesados + '</td>' +
+              '<td style="padding:10px; color:var(--success); font-weight:600;">' + s.agendados + '</td>' +
+              '<td style="padding:10px; color:var(--accent);">' + s.pctConversion + '%</td>' +
+              '</tr>'
+            ).join('');
+          }
+        }
+
         // Badge total de leads
         const totalBadge = document.getElementById('setter-leads-total-badge');
         if (totalBadge) totalBadge.textContent = t.total + ' leads totales en setters';

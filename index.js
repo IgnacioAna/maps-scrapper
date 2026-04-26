@@ -2648,6 +2648,57 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
   const agendados = allLeads.filter(l => l.estado === 'agendado').length;
   const sinWsp = allLeads.filter(l => l.conexion === 'sin_wsp').length;
 
+  // ── Métricas de llamadas (cross-cuts con WSP, agregado separado) ──
+  const today = new Date().toISOString().substring(0, 10);
+  const callLeads = allLeads.filter(l => l.conexion === 'sin_wsp');
+  const totalCalls = callLeads.reduce((s, l) => s + (Array.isArray(l.callLog) ? l.callLog.length : 0), 0);
+  let callsToday = 0, answeredToday = 0;
+  let callsWithAnswered = 0, callsWithInterested = 0, callsScheduledWithAdmin = 0;
+  let phoneDead = 0;
+  for (const l of callLeads) {
+    if (Array.isArray(l.callLog)) {
+      for (const c of l.callLog) {
+        if ((c.ts || '').substring(0, 10) === today) {
+          callsToday++;
+          if (['answered_interested', 'answered_not_interested', 'scheduled_with_admin'].includes(c.outcome)) answeredToday++;
+        }
+        if (c.outcome === 'answered_interested') callsWithInterested++;
+        if (['answered_interested', 'answered_not_interested'].includes(c.outcome)) callsWithAnswered++;
+        if (c.outcome === 'scheduled_with_admin') callsScheduledWithAdmin++;
+      }
+    }
+    if (['wrong', 'invalid'].includes(l.phoneStatus)) phoneDead++;
+  }
+  const calendarEntries = Array.isArray(data.calendar) ? data.calendar : [];
+  const callScheduledPending = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'pendiente').length;
+  const callScheduledRealized = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'realizada').length;
+  const callScheduledNoShow = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'no_show').length;
+
+  // Métricas de llamadas por setter
+  const callsPerSetter = data.setters.map(s => {
+    const leads = callLeads.filter(l => l.assignedTo === s.id);
+    const totalLogs = leads.reduce((sum, l) => sum + (Array.isArray(l.callLog) ? l.callLog.length : 0), 0);
+    let callsTodaySetter = 0, interesadosSetter = 0, agendadosSetter = 0;
+    for (const l of leads) {
+      if (Array.isArray(l.callLog)) {
+        for (const c of l.callLog) {
+          if ((c.ts || '').substring(0, 10) === today) callsTodaySetter++;
+          if (c.outcome === 'answered_interested') interesadosSetter++;
+          if (c.outcome === 'scheduled_with_admin') agendadosSetter++;
+        }
+      }
+    }
+    return {
+      id: s.id, name: s.name,
+      leadsAsignados: leads.length,
+      totalLlamadas: totalLogs,
+      llamadasHoy: callsTodaySetter,
+      interesados: interesadosSetter,
+      agendados: agendadosSetter,
+      pctConversion: totalLogs > 0 ? ((agendadosSetter / totalLogs) * 100).toFixed(1) : '0.0'
+    };
+  }).filter(s => s.leadsAsignados > 0 || s.totalLlamadas > 0);
+
   res.json({
     totals: { total, conexiones, respondieron, calificados, interesados, agendados, sinWsp,
       mensajes: allLeads.reduce((sum, lead) => {
@@ -2659,6 +2710,24 @@ app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) =>
       pctApertura: conexiones > 0 ? ((respondieron / conexiones) * 100).toFixed(1) : '0.0',
       pctCalificacion: calificados > 0 ? ((interesados / calificados) * 100).toFixed(1) : '0.0'
     },
+    callTotals: {
+      leadsEnLlamadas: callLeads.length,
+      totalLlamadas: totalCalls,
+      llamadasHoy: callsToday,
+      pctAtendidasHoy: callsToday > 0 ? ((answeredToday / callsToday) * 100).toFixed(1) : '0.0',
+      atendidasHistorico: callsWithAnswered,
+      interesadosHistorico: callsWithInterested,
+      agendadosConAdmin: callsScheduledWithAdmin,
+      numerosMuertos: phoneDead,
+      agendamientoPendientes: callScheduledPending,
+      agendamientoRealizados: callScheduledRealized,
+      agendamientoNoShows: callScheduledNoShow,
+      // Conversion rate: agendamientos / total llamadas que tuvieron contacto
+      pctConversion: callsWithAnswered > 0 ? ((callsScheduledWithAdmin / callsWithAnswered) * 100).toFixed(1) : '0.0',
+      // Tasa de números muertos: % de leads en Llamadas con phoneStatus muerto
+      pctNumerosMuertos: callLeads.length > 0 ? ((phoneDead / callLeads.length) * 100).toFixed(1) : '0.0'
+    },
+    callsPerSetter,
     perSetter, perVariant, perBlock,
     setters: data.setters,
     variants: data.variants.map(normalizeVariantRecord)

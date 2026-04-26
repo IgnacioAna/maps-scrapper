@@ -447,6 +447,59 @@ describe("calls · scheduled calendar (admin)", () => {
   });
 });
 
+describe("calls · centro de comando metrics", () => {
+  it("GET /api/setters/command incluye callTotals con métricas de llamadas", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/setters/command");
+    expect(r.status).toBe(200);
+    expect(r.body.callTotals).toBeDefined();
+    const ct = r.body.callTotals;
+    expect(typeof ct.leadsEnLlamadas).toBe("number");
+    expect(typeof ct.totalLlamadas).toBe("number");
+    expect(typeof ct.llamadasHoy).toBe("number");
+    expect(typeof ct.atendidasHistorico).toBe("number");
+    expect(typeof ct.interesadosHistorico).toBe("number");
+    expect(typeof ct.agendadosConAdmin).toBe("number");
+    expect(typeof ct.numerosMuertos).toBe("number");
+    expect(typeof ct.agendamientoPendientes).toBe("number");
+    expect(typeof ct.pctConversion).toBe("string");
+    expect(typeof ct.pctNumerosMuertos).toBe("string");
+  });
+
+  it("GET /api/setters/command incluye callsPerSetter con conversion", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/setters/command");
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.callsPerSetter)).toBe(true);
+    if (r.body.callsPerSetter.length > 0) {
+      const s = r.body.callsPerSetter[0];
+      expect(typeof s.id).toBe("string");
+      expect(typeof s.name).toBe("string");
+      expect(typeof s.totalLlamadas).toBe("number");
+      expect(typeof s.agendados).toBe("number");
+      expect(typeof s.pctConversion).toBe("string");
+    }
+  });
+
+  it("callTotals.numerosMuertos cuenta phoneStatus wrong/invalid", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    // De los tests anteriores, "Test Wrong" debería estar marcado phoneStatus='wrong'
+    const r = await agent.get("/api/setters/command");
+    expect(r.body.callTotals.numerosMuertos).toBeGreaterThanOrEqual(1);
+  });
+
+  it("callTotals.agendadosConAdmin > 0 si hubo scheduled_with_admin", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/setters/command");
+    // El test 'POST /call-disposition con scheduled_with_admin' creó al menos 1
+    expect(r.body.callTotals.agendadosConAdmin).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("auth · presencia online (admin only)", () => {
   // /api/auth/online usa sesión por cookie (no Bearer JWT). Usamos agent para persistirla.
   it("GET /api/auth/online sin auth → 401", async () => {
