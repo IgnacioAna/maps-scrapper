@@ -117,6 +117,27 @@ describe("onboarding · wrapper /onboarding/N", () => {
     expect(r.text).toContain("N > 1");
   });
 
+  it("wrapper sin auth tiene IS_ADMIN=false (gate activo)", async () => {
+    const r = await request(app).get("/onboarding/4");
+    expect(r.text).toContain("var IS_ADMIN = false");
+  });
+
+  it("wrapper con sesión admin tiene IS_ADMIN=true (gate bypasseado)", async () => {
+    const agent = request.agent(app);
+    const login = await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    expect(login.status).toBe(200);
+    const r = await agent.get("/onboarding/4");
+    expect(r.text).toContain("var IS_ADMIN = true");
+  });
+
+  it("wrapper con sesión setter tiene IS_ADMIN=false (gate activo para setters)", async () => {
+    const agent = request.agent(app);
+    const login = await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    expect(login.status).toBe(200);
+    const r = await agent.get("/onboarding/4");
+    expect(r.text).toContain("var IS_ADMIN = false");
+  });
+
   it("GET /onboarding/99 (módulo inexistente) devuelve 404", async () => {
     const r = await request(app).get("/onboarding/99");
     expect(r.status).toBe(404);

@@ -3025,6 +3025,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.loadFaqsModule = async function() {
     const q = document.getElementById('faq-search')?.value || '';
     const cat = document.getElementById('faq-cat-filter')?.value || '';
+    const sort = document.getElementById('faq-sort')?.value || 'usos';
     const list = document.getElementById('faq-list');
     if (!list) return;
     list.innerHTML = '<p style="color:var(--text-secondary)">Cargando...</p>';
@@ -3032,6 +3033,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams();
       if (q) params.set('q', q);
       if (cat) params.set('categoria', cat);
+      if (sort) params.set('sort', sort);
       const resp = await fetch(apiUrl('/api/faqs?' + params.toString()));
       const data = await resp.json();
       const entries = data.entries || [];
@@ -3122,6 +3124,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('faq-tags').value = '';
     document.getElementById('faq-categoria').value = 'general';
     document.getElementById('faq-suggest-status').textContent = '';
+    const dup = document.getElementById('faq-dup-warning');
+    if (dup) { dup.classList.add('hidden'); dup.innerHTML = ''; }
     if (id) {
       try {
         const resp = await fetch(apiUrl('/api/faqs'));
@@ -3139,7 +3143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('faq-pregunta').focus();
   };
 
-  window._faqSave = async () => {
+  window._faqSave = async (forceSave = false) => {
     const id = document.getElementById('faq-edit-id').value;
     const pregunta = document.getElementById('faq-pregunta').value.trim();
     const respuesta = document.getElementById('faq-respuesta').value.trim();
@@ -3147,6 +3151,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tagsRaw = document.getElementById('faq-tags').value;
     const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
     if (!pregunta || !respuesta) { alert('Completá la pregunta y la respuesta.'); return; }
+    // Check de duplicados antes de guardar (skip si el usuario ya confirmó)
+    if (!forceSave) {
+      try {
+        const dRes = await fetch(apiUrl('/api/faqs/check-duplicate'), {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ pregunta, respuesta, categoria, excludeId: id || '' })
+        });
+        const dData = await dRes.json();
+        if ((dData.duplicates || []).length > 0) {
+          const warn = document.getElementById('faq-dup-warning');
+          if (warn) {
+            const items = dData.duplicates.map(d =>
+              `<li style="margin:4px 0;"><strong>${escHtml(d.pregunta)}</strong> <span style="color:var(--text-secondary);">· ${escHtml(d.categoria || 'general')} · score ${d.score}</span></li>`
+            ).join('');
+            warn.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">⚠ Posibles duplicados en el banco:</div>
+              <ul style="margin:0 0 8px 16px;padding:0;">${items}</ul>
+              <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn btn-ghost btn-sm" onclick="document.getElementById('faq-dup-warning').classList.add('hidden')">Revisar</button>
+                <button class="btn btn-primary btn-sm" onclick="window._faqSave(true)">Guardar igual</button>
+              </div>`;
+            warn.classList.remove('hidden');
+          }
+          return;
+        }
+      } catch {}
+    }
     try {
       const method = id ? 'PUT' : 'POST';
       const url = id ? apiUrl('/api/faqs/' + id) : apiUrl('/api/faqs');
@@ -3154,6 +3184,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('faq-modal').classList.add('hidden');
       loadFaqsModule();
     } catch(err) { alert('Error guardando: ' + err.message); }
+  };
+
+  window._faqSuggestTags = async () => {
+    const pregunta = document.getElementById('faq-pregunta').value.trim();
+    const respuesta = document.getElementById('faq-respuesta').value.trim();
+    if (!pregunta) { alert('Primero escribí la pregunta/objeción.'); return; }
+    const btn = document.getElementById('faq-suggest-tags-btn');
+    const orig = btn.textContent;
+    btn.textContent = '⏳';
+    btn.disabled = true;
+    try {
+      const resp = await fetch(apiUrl('/api/faqs/suggest-tags'), {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ pregunta, respuesta })
+      });
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      if (data.categoria) document.getElementById('faq-categoria').value = data.categoria;
+      if (Array.isArray(data.tags) && data.tags.length) {
+        const existing = document.getElementById('faq-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...existing, ...data.tags]));
+        document.getElementById('faq-tags').value = merged.join(', ');
+      }
+    } catch(err) {
+      alert('Error sugiriendo tags: ' + err.message);
+    } finally {
+      btn.textContent = orig;
+      btn.disabled = false;
+    }
   };
 
   window._faqDelete = async (id) => {
@@ -3371,10 +3430,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (subEl) subEl.textContent = `${modules.length} módulos · ~${totalMin} min total · ${completados} de ${modules.length} completados`;
     if (fillEl) fillEl.style.width = (completados / modules.length * 100).toFixed(0) + '%';
 
+    const esAdmin = currentUser?.role === 'admin';
     cardsEl.innerHTML = modules.map(m => {
       const leido = !!progress[m.num];
       // Bloqueado si el módulo anterior no está aprobado (módulo 1 siempre desbloqueado)
-      const bloqueado = m.num > 1 && !progress[m.num - 1];
+      // Admin: nada está bloqueado (acceso libre a todo el onboarding)
+      const bloqueado = !esAdmin && m.num > 1 && !progress[m.num - 1];
       const numStr = String(m.num).padStart(2, '0');
 
       let borderColor = 'var(--border-color)';

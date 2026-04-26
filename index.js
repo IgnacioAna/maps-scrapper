@@ -1092,7 +1092,7 @@ app.use((req, res, next) => {
   if (!fs.existsSync(filePath)) return next();
   try {
     let html = fs.readFileSync(filePath, 'utf8');
-    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260425a"></script>\n`;
+    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260425b"></script>\n`;
     html = html.includes('</body>') ? html.replace('</body>', inject + '</body>') : html + inject;
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');
@@ -1108,6 +1108,9 @@ app.use((req, res, next) => {
   const num = parseInt(m[1], 10);
   const mod = ONBOARDING_MODULES.find(m => m.num === num);
   if (!mod) return res.status(404).send('Módulo no encontrado');
+  // Admin bypass del gate progresivo: detectamos rol via cookie session
+  const session = getSessionFromRequest(req);
+  const isAdmin = session?.user?.role === 'admin';
   const titleEsc = mod.title.replace(/"/g, '&quot;');
   const subtitleEsc = mod.subtitle.replace(/"/g, '&quot;');
   const html = `<!DOCTYPE html>
@@ -1131,6 +1134,7 @@ app.use((req, res, next) => {
   .status-pill.pending{background:rgba(210,153,34,0.15);color:#D29922;border:1px solid rgba(210,153,34,0.3);}
   .status-pill.passed{background:rgba(63,185,80,0.15);color:#3FB950;border:1px solid rgba(63,185,80,0.3);}
   .status-pill.locked{background:rgba(126,132,148,0.15);color:#8b94a8;border:1px solid rgba(126,132,148,0.3);}
+  .status-pill.admin{background:rgba(167,139,250,0.15);color:#A78BFA;border:1px solid rgba(167,139,250,0.3);}
   iframe{width:100%;height:calc(100vh - 60px);border:none;display:block;background:#0E1117;}
   .locked-screen{display:flex;align-items:center;justify-content:center;height:calc(100vh - 60px);padding:32px;}
   .locked-card{max-width:520px;background:#161B22;border:1px solid #21262D;border-radius:16px;padding:40px;text-align:center;}
@@ -1155,6 +1159,7 @@ app.use((req, res, next) => {
 <script>
   (function(){
     var N = ${num};
+    var IS_ADMIN = ${isAdmin ? 'true' : 'false'};
     var KEY = 'scm_onboarding_progress';
     var content = document.getElementById('scm-content');
     var pill = document.getElementById('scm-status-pill');
@@ -1167,11 +1172,16 @@ app.use((req, res, next) => {
       pill.textContent = '🔒 Bloqueado';
       pill.classList.remove('pending', 'passed'); pill.classList.add('locked');
     }
+    function setAdminMode(){
+      pill.textContent = '👑 Admin · libre';
+      pill.classList.remove('pending', 'locked', 'passed'); pill.classList.add('admin');
+    }
 
     var progress = getP();
 
     // Gate progresivo: módulo N requiere N-1 aprobado (módulo 1 siempre disponible)
-    if (N > 1 && !progress[N - 1]) {
+    // Admin bypass: si sos admin, no hay gate. Todo libre.
+    if (!IS_ADMIN && N > 1 && !progress[N - 1]) {
       setLocked();
       content.innerHTML = '<div class="locked-screen"><div class="locked-card">' +
         '<div class="locked-icon">🔒</div>' +
@@ -1191,7 +1201,8 @@ app.use((req, res, next) => {
     iframe.src = '/onboarding/files/scm-onboarding-modulo' + N + '.html';
     content.appendChild(iframe);
 
-    if (progress[N]) setPassed();
+    if (IS_ADMIN) setAdminMode();
+    else if (progress[N]) setPassed();
 
     // El quiz dentro del iframe nos avisa al aprobar
     window.addEventListener('message', function(e){
@@ -2945,8 +2956,11 @@ function saveFaqs(data) {
 }
 
 // GET /api/faqs — listar con búsqueda opcional
+//   sort=usos      (default, más usados primero)
+//   sort=top       (mejor ratio funcionaron/usos; requiere usos>=2 para puntuar)
+//   sort=recientes (por updatedAt desc)
 app.get('/api/faqs', requireAuth, (req, res) => {
-  const { q = '', categoria = '' } = req.query;
+  const { q = '', categoria = '', sort = 'usos' } = req.query;
   const data = loadFaqs();
   let entries = data.entries || [];
   if (q.trim()) {
@@ -2958,8 +2972,18 @@ app.get('/api/faqs', requireAuth, (req, res) => {
     );
   }
   if (categoria) entries = entries.filter(e => e.categoria === categoria);
-  // Ordenar: más usados primero
-  entries = [...entries].sort((a, b) => (b.usos || 0) - (a.usos || 0));
+  if (sort === 'top') {
+    const eff = e => (e.usos || 0) >= 2 ? (e.funcionaron || 0) / (e.usos || 1) : -1;
+    entries = [...entries].sort((a, b) => {
+      const ea = eff(a), eb = eff(b);
+      if (eb !== ea) return eb - ea;
+      return (b.usos || 0) - (a.usos || 0);
+    });
+  } else if (sort === 'recientes') {
+    entries = [...entries].sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  } else {
+    entries = [...entries].sort((a, b) => (b.usos || 0) - (a.usos || 0));
+  }
   res.json({ entries });
 });
 
@@ -3078,6 +3102,75 @@ function _faqScore(entry, qTokens, opts = {}) {
   score += Math.min(usos / 20, 1) * 0.05;
   return score;
 }
+
+// POST /api/faqs/check-duplicate — encuentra entradas similares al crear/editar
+// Body: { pregunta, respuesta?, categoria?, excludeId? }
+app.post('/api/faqs/check-duplicate', requireAuth, (req, res) => {
+  const { pregunta = '', respuesta = '', categoria = '', excludeId = '' } = req.body || {};
+  if (!pregunta.trim() && !respuesta.trim()) return res.json({ duplicates: [], threshold: 0.4 });
+  const data = loadFaqs();
+  const qTokens = _faqTokens(pregunta + ' ' + respuesta);
+  const THRESHOLD = 0.4;
+  const dupes = (data.entries || [])
+    .filter(e => e.id !== excludeId && e.pregunta && e.respuesta)
+    .map(e => ({ entry: e, score: _faqScore(e, qTokens, { categoria }) }))
+    .filter(x => x.score >= THRESHOLD)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map(x => ({
+      id: x.entry.id,
+      pregunta: x.entry.pregunta,
+      respuesta: x.entry.respuesta,
+      categoria: x.entry.categoria,
+      score: Number(x.score.toFixed(3))
+    }));
+  res.json({ duplicates: dupes, threshold: THRESHOLD });
+});
+
+// POST /api/faqs/suggest-tags — IA sugiere categoria + tags para una FAQ
+// Body: { pregunta, respuesta }
+app.post('/api/faqs/suggest-tags', requireAuth, async (req, res) => {
+  const { pregunta = '', respuesta = '' } = req.body || {};
+  if (!pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida' });
+  if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
+
+  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
+Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
+{"categoria":"<una de: precio|objecion|seguimiento|calificacion|general>","tags":["palabra1","palabra2","palabra3"]}
+
+Reglas:
+- "categoria": elegí UNA sola, la más representativa.
+- "tags": 2 a 5 palabras clave en minúsculas, sin acentos, sin números, sin espacios (usá guiones si es compuesto). Apuntan a temas, objeciones o triggers (ej: "caro", "ya-tengo-marketing", "competencia", "horarios", "agenda").
+- No inventes contenido ni agregues texto fuera del JSON. Sin markdown, sin comillas externas, sin explicación.
+
+PREGUNTA: ${pregunta}
+RESPUESTA: ${respuesta || '(vacía)'}`;
+
+  try {
+    const completion = await ai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 150
+    });
+    const raw = completion.choices?.[0]?.message?.content?.trim() || '';
+    const m = raw.match(/\{[\s\S]*\}/);
+    let parsed = {};
+    if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
+    const validCats = new Set(['precio','objecion','seguimiento','calificacion','general']);
+    const categoria = validCats.has(parsed.categoria) ? parsed.categoria : 'general';
+    const tags = Array.isArray(parsed.tags)
+      ? parsed.tags
+          .map(t => String(t).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9-]/g, '').trim())
+          .filter(t => t.length >= 2 && t.length <= 30)
+          .slice(0, 5)
+      : [];
+    res.json({ categoria, tags });
+  } catch (e) {
+    console.error('Error FAQ suggest-tags IA:', e.message);
+    res.status(500).json({ error: 'Error de IA: ' + e.message });
+  }
+});
 
 // POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos (admin + setters)
 app.post('/api/faqs/suggest', requireAuth, async (req, res) => {

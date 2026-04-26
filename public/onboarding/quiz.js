@@ -239,6 +239,93 @@
     saveAttempt(correctas, passed);
     if (passed) markModuleRead();
     renderResult(correctas, passed);
+    if (passed) {
+      // Detectar si completó TODOS los módulos para confetti épico
+      const progress = getJSON(PROGRESS_KEY);
+      const totalDone = Object.values(progress).filter(Boolean).length;
+      const todosListos = totalDone >= 8;
+      setTimeout(() => fireConfetti(todosListos ? 'epic' : 'normal'), 100);
+      try { playSuccessSound(todosListos); } catch {}
+    }
+  }
+
+  // ─── Confetti ───
+  function fireConfetti(mode) {
+    const canvas = document.createElement('canvas');
+    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:99999;';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const colors = mode === 'epic'
+      ? ['#A78BFA', '#3FB950', '#FBBF24', '#F472B6', '#60A5FA', '#FB923C', '#A78BFA', '#3FB950']
+      : ['#A78BFA', '#3FB950', '#FBBF24', '#60A5FA'];
+    const count = mode === 'epic' ? 220 : 110;
+    const duration = mode === 'epic' ? 4500 : 2800;
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: -20 - Math.random() * canvas.height * 0.3,
+        vx: (Math.random() - 0.5) * 6,
+        vy: 2 + Math.random() * 5,
+        r: 4 + Math.random() * 6,
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        shape: Math.random() < 0.5 ? 'rect' : 'circle',
+      });
+    }
+    const start = Date.now();
+    function frame() {
+      const t = Date.now() - start;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const fade = t > duration - 800 ? Math.max(0, (duration - t) / 800) : 1;
+      for (const p of particles) {
+        p.vy += 0.12;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rotV;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.globalAlpha = fade;
+        ctx.fillStyle = p.color;
+        if (p.shape === 'rect') ctx.fillRect(-p.r, -p.r * 0.5, p.r * 2, p.r);
+        else { ctx.beginPath(); ctx.arc(0, 0, p.r * 0.6, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+      }
+      if (t < duration) requestAnimationFrame(frame);
+      else canvas.remove();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function playSuccessSound(epic) {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === 'suspended') ac.resume();
+    const beep = (freq, startMs, durMs, gain) => {
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = 'sine';
+      o.frequency.value = freq;
+      o.connect(g); g.connect(ac.destination);
+      const t0 = ac.currentTime + startMs / 1000;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(gain, t0 + 0.02);
+      g.gain.setValueAtTime(gain, t0 + durMs / 1000 - 0.05);
+      g.gain.linearRampToValueAtTime(0, t0 + durMs / 1000);
+      o.start(t0); o.stop(t0 + durMs / 1000);
+    };
+    // Acorde mayor ascendente: C-E-G (do-mi-sol)
+    beep(523, 0, 180, 0.18);     // C5
+    beep(659, 80, 180, 0.18);    // E5
+    beep(784, 160, 320, 0.22);   // G5
+    if (epic) {
+      beep(1047, 480, 500, 0.25); // C6 final
+      beep(1318, 480, 500, 0.18); // E6
+    }
+    setTimeout(() => ac.close(), epic ? 1500 : 800);
   }
 
   function renderResult(score, passed) {
@@ -250,14 +337,35 @@
     const nextN = N + 1;
     const hasNext = nextN <= 8;
 
+    // Detectar fin del onboarding completo
+    const progressNow = getJSON(PROGRESS_KEY);
+    const totalDone = Object.values(progressNow).filter(Boolean).length;
+    const todosListos = passed && totalDone >= 8;
+    const score5 = score === total;
+
+    let title, subtitle;
+    if (todosListos) {
+      title = '🏆 ¡Completaste todo el onboarding!';
+      subtitle = 'Aprobaste los 8 módulos. Ya tenés todas las herramientas para arrancar a settear con criterio. Ahora vamos por las clínicas.';
+    } else if (passed && score5) {
+      title = '🎉 ¡Perfecto! 5 de 5';
+      subtitle = `Aprobaste el módulo ${N} sin fallar ninguna. ${hasNext ? 'A por el siguiente.' : '¡Casi terminás el onboarding!'}`;
+    } else if (passed) {
+      title = '🎉 ¡Aprobaste!';
+      subtitle = `Módulo ${N} marcado como completado. ${hasNext ? 'Seguí con el módulo ' + (N + 1) + '.' : 'Te falta solo este último tramo.'}`;
+    } else {
+      title = '📚 Te faltó. Repasá lo que fallaste';
+      subtitle = `Necesitás <strong>${PASS_THRESHOLD}</strong> correctas para aprobar.`;
+    }
+
     let html = `
-      <div class="scm-result ${passed ? 'passed' : 'failed'}">
-        <div class="scm-result-icon">${passed ? '🎉' : '📚'}</div>
-        <h2 class="scm-result-title">${passed ? '¡Aprobaste! Módulo marcado como leído' : 'Te faltó. Repasá lo que fallaste'}</h2>
-        <p class="scm-result-score">Respondiste <strong>${score} de ${total}</strong> correctas${passed ? '' : ' · Necesitás ' + PASS_THRESHOLD + ' para aprobar'}</p>
+      <div class="scm-result ${passed ? (todosListos ? 'passed epic' : 'passed') : 'failed'}">
+        <h2 class="scm-result-title" style="font-size:${todosListos ? '26px' : '22px'};">${title}</h2>
+        <p class="scm-result-score">Respondiste <strong>${score} de ${total}</strong> correctas</p>
+        <p class="scm-result-subtitle" style="color:var(--text-soft, #B8C2CC); font-size:14px; line-height:1.5; margin: 8px 0 22px; max-width:520px; margin-left:auto; margin-right:auto;">${subtitle}</p>
         <div class="scm-actions">
           ${passed
-            ? `<button class="scm-quiz-btn" id="scm-back">← Volver al Centro de Entrenamiento</button>` +
+            ? `<button class="scm-quiz-btn" id="scm-back">${todosListos ? '🏠 Volver al inicio' : '← Volver al Centro de Entrenamiento'}</button>` +
               (hasNext ? `<a href="/onboarding/${nextN}" class="scm-quiz-btn" style="text-decoration:none;">Siguiente módulo →</a>` : '')
             : `<button class="scm-quiz-btn" id="scm-retry">Reintentar el quiz</button>` +
               `<button class="scm-quiz-btn secondary" id="scm-reread">Volver a leer el módulo</button>`

@@ -565,6 +565,11 @@
               <option value="calificacion">Calificación</option>
               <option value="general">General</option>
             </select>
+            <select id="faq-sort" onchange="window.loadFaqsModule && loadFaqsModule()" title="Ordenar">
+              <option value="usos">Más usadas</option>
+              <option value="top">Más efectivas</option>
+              <option value="recientes">Más recientes</option>
+            </select>
             <button id="faq-new-btn" class="btn btn-primary" onclick="window._faqOpenModal()">+ Nueva entrada</button>
           </div>
         </div>
@@ -598,7 +603,10 @@
                 </select>
               </label>
               <label class="form-field">
-                <span>Palabras clave (separadas por coma)</span>
+                <div class="form-field-label-row">
+                  <span>Palabras clave (separadas por coma)</span>
+                  <button id="faq-suggest-tags-btn" class="btn btn-ghost btn-sm" onclick="window._faqSuggestTags()" title="La IA propone categoría y tags a partir de la pregunta y respuesta">✨ Sugerir tags</button>
+                </div>
                 <input type="text" id="faq-tags" autocomplete="off" placeholder="ej: caro, descuento, seguro">
               </label>
             </div>
@@ -610,6 +618,7 @@
               <textarea id="faq-respuesta" rows="6" placeholder="Escribí la respuesta que funciona para esta objeción..."></textarea>
               <div id="faq-suggest-status" class="form-field-help"></div>
             </label>
+            <div id="faq-dup-warning" class="hidden" style="margin-top:10px;padding:10px 12px;background:rgba(255,176,32,0.08);border:1px solid rgba(255,176,32,0.3);border-radius:8px;font-size:12px;color:var(--text-primary);"></div>
           </div>
           <div class="modal-footer">
             <button onclick="document.getElementById('faq-modal').classList.add('hidden')" class="btn btn-ghost">Cancelar</button>
@@ -912,7 +921,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260425l"></script>
+  <script type="module" src="/app.js?v=20260425m"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
