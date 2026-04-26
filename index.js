@@ -237,7 +237,24 @@ function ensureLeadDefaults(lead = {}) {
   if (!lead.lastStage) lead.lastStage = '';
   if (!lead.lastVariantId) lead.lastVariantId = '';
   if (lead.calificado === undefined) lead.calificado = false;
+  // Llamadas: clasificación automática y log
+  if (!lead.wspProbability) lead.wspProbability = computeWspProbability(lead);
+  if (!lead.phoneStatus) lead.phoneStatus = '';   // '', 'wrong', 'invalid', 'voicemail'
+  if (!Array.isArray(lead.callLog)) lead.callLog = [];
+  if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
+  if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
   return lead;
+}
+
+// Clasifica si el lead es candidato a WhatsApp o sólo a llamada,
+// usando los campos que YA salen del enrichment (regex + IA).
+function computeWspProbability(lead = {}) {
+  const hasWaWeb = !!(lead.webWhatsApp && String(lead.webWhatsApp).trim());
+  const hasWaAi = !!(lead.aiWhatsApp && String(lead.aiWhatsApp).trim());
+  if (hasWaWeb || hasWaAi) return 'high';
+  const hasPhone = !!(lead.phone && String(lead.phone).replace(/\D/g, '').length >= 7);
+  if (hasPhone) return 'low'; // teléfono pero ninguna señal de WSP → llamada
+  return 'unknown';
 }
 
 function normalizeBlockRecord(block = {}, index = 0) {
@@ -1685,6 +1702,29 @@ function loadSettersData() {
         }
         saveSettersData(raw);
       }
+      // Migración (one-shot) de clasificación WSP — SOLO INFORMATIVA, no toca el pipeline.
+      // Computa wspProbability para cada lead y agrega defaults nuevos para llamadas.
+      // NO mueve leads a "Sin WSP" automáticamente (la heurística tiene muchos falsos
+      // positivos: muchas clínicas tienen WSP aunque no haya wa.me en su web).
+      if (!raw.__wspClassified) {
+        let reclassified = 0;
+        for (const key in raw.leads) {
+          const l = raw.leads[key];
+          if (!l.wspProbability) {
+            l.wspProbability = computeWspProbability(l);
+            reclassified++;
+          }
+          if (!l.phoneStatus) l.phoneStatus = '';
+          if (!Array.isArray(l.callLog)) l.callLog = [];
+          if (typeof l.callAttempts !== 'number') l.callAttempts = 0;
+          if (!l.callbackAt) l.callbackAt = '';
+        }
+        raw.__wspClassified = true;
+        saveSettersData(raw);
+        if (reclassified > 0) {
+          console.log(`📞 wspProbability calculada para ${reclassified} leads (informativa, sin auto-ruteo).`);
+        }
+      }
       if (!raw.variants) raw.variants = [];
       if (!raw.calendar) raw.calendar = [];
       if (!raw.sessions) raw.sessions = [];
@@ -2026,6 +2066,12 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     });
     // Si ya viene con URL de WhatsApp completa (del CSV), usarla; si no, construirla
     baseLead.whatsappUrl = importedWaUrl || buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', baseLead.country || country || '', importedOpenMsg);
+    // Re-evaluar wspProbability con los datos finales. Esto es info SOLO INFORMATIVA:
+    // NO auto-ruteamos porque la heurística (sin wa.me en web) tiene muchos falsos
+    // positivos — la mayoría de las clínicas SÍ tienen WSP aunque no lo pongan en su web.
+    // El setter sigue marcando "Sin WSP" manualmente cuando confirma que el número no
+    // responde por WSP, igual que hoy.
+    baseLead.wspProbability = computeWspProbability(baseLead);
     data.leads[id] = {
       ...baseLead,
       followUps: baseLead.followUps || { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }
@@ -2270,6 +2316,117 @@ app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, re
   const data = loadSettersData();
   if (data.leads[req.params.id]) { delete data.leads[req.params.id]; saveSettersData(data); }
   res.json({ ok: true });
+});
+
+// Disposition de una llamada — endpoint específico de Llamadas.
+// Recibe { outcome, notes?, callbackAt?, scheduled? } y aplica los cambios de estado
+// + log de la llamada + opcional creación de evento en el calendario (agenda con admin).
+const CALL_OUTCOMES = new Set([
+  'answered_interested',     // ✅ Atendió + Interesado → calificado, queda en Llamadas
+  'answered_not_interested', // ❌ Atendió + No interesado → descarta
+  'no_answer',               // 📵 No atendió → contador +1, sigue
+  'voicemail',               // 📭 Buzón → marca phoneStatus + sigue
+  'wrong_number',            // 🔢 Número equivocado → descarta + flag
+  'invalid_number',          // 🚫 No existe → descarta + flag
+  'callback_later',          // 🔄 Volver a llamar (con fecha) → oculta hasta fecha
+  'scheduled_with_admin'     // 📅 Agendó llamada de ventas con admin → crea evento en calendar
+]);
+
+app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+
+  const { outcome, notes, callbackAt, scheduled } = req.body || {};
+  if (!CALL_OUTCOMES.has(outcome)) {
+    return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
+  }
+
+  // Asegurar arrays/campos
+  if (!Array.isArray(lead.callLog)) lead.callLog = [];
+  if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
+
+  const now = new Date().toISOString();
+  const logEntry = {
+    ts: now,
+    outcome,
+    by: req.auth?.user?.id || '',
+    notes: (notes || '').toString().slice(0, 500)
+  };
+  lead.callLog.push(logEntry);
+  lead.callAttempts += 1;
+  lead.lastContactAt = now;
+  // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
+  if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
+
+  let calendarEntry = null;
+
+  switch (outcome) {
+    case 'answered_interested':
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'interesado';
+      // Sigue en Llamadas con chip verde, esperando agendamiento
+      break;
+
+    case 'answered_not_interested':
+      lead.respondio = true;
+      lead.interes = 'no';
+      lead.estado = 'descartado';
+      break;
+
+    case 'no_answer':
+      // Solo contador + log, no cambia estado
+      break;
+
+    case 'voicemail':
+      lead.phoneStatus = 'voicemail';
+      break;
+
+    case 'wrong_number':
+      lead.phoneStatus = 'wrong';
+      lead.estado = 'descartado';
+      break;
+
+    case 'invalid_number':
+      lead.phoneStatus = 'invalid';
+      lead.estado = 'descartado';
+      break;
+
+    case 'callback_later':
+      // callbackAt debe venir en ISO. Si no, default a +24hs
+      lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      break;
+
+    case 'scheduled_with_admin':
+      // Crea entrada en data.calendar reusando el mismo formato que /api/setters/calendar
+      if (!Array.isArray(data.calendar)) data.calendar = [];
+      const sched = scheduled || {};
+      calendarEntry = {
+        id: `cal_${Date.now()}`,
+        leadId: req.params.id,
+        fecha: sched.fecha || new Date(Date.now() + 24*60*60*1000).toISOString(),
+        nombre: sched.nombre || lead.name || '',
+        calendarioEstado: 'pendiente',
+        valorProyecto: 0,
+        comision: 0,
+        setterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
+        sourceCall: true
+      };
+      data.calendar.push(calendarEntry);
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'agendado';
+      break;
+  }
+
+  saveSettersData(data);
+  res.json({ ok: true, lead, calendarEntry });
 });
 
 // ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──

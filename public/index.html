@@ -540,32 +540,95 @@
       <!-- VISTA 4: LLAMADAS (Sin WSP) -->
       <div id="view-calls" class="module-view hidden">
         <div class="content-header">
-          <h2>Base de Llamadas (Sin WhatsApp)</h2>
+          <h2>Llamadas</h2>
           <div class="header-actions">
-            <select id="calls-setter-select" class="setter-select"><option value="">Todos</option></select>
+            <select id="calls-setter-select" class="setter-select" data-roles="admin"><option value="">Todos</option></select>
+            <select id="calls-country-filter" class="setter-select" style="min-width:160px;"><option value="">🌎 Todos los países</option></select>
+            <input type="text" id="calls-search" placeholder="🔍 Buscar nombre/tel..." style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
           </div>
         </div>
-        <section class="results-panel">
-          <div class="table-container">
-            <table id="calls-table">
-              <thead>
-                <tr>
-                  <th style="width:5%">#</th>
-                  <th style="width:20%">Nombre</th>
-                  <th style="width:12%">Teléfono</th>
-                  <th style="width:15%">Ciudad</th>
-                  <th style="width:8%">Web</th>
-                  <th style="width:10%">Doctor</th>
-                  <th style="width:8%">Fecha</th>
-                  <th style="width:22%">Notas</th>
-                </tr>
-              </thead>
-              <tbody id="calls-leads-body">
-                <tr><td colspan="8" class="empty-state"><p>Leads sin WhatsApp aparecerán acá automáticamente.</p></td></tr>
-              </tbody>
-            </table>
+
+        <!-- Stats bar -->
+        <section style="padding: 0 32px;">
+          <div id="calls-stats-bar" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:18px;">
+            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Llamadas hoy</div>
+              <div id="calls-stat-today" style="font-size:24px; font-weight:700; color:var(--text-primary); margin-top:4px;">—</div>
+            </div>
+            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">% Atendidas</div>
+              <div id="calls-stat-answered" style="font-size:24px; font-weight:700; color:var(--success); margin-top:4px;">—</div>
+            </div>
+            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Agendadas</div>
+              <div id="calls-stat-scheduled" style="font-size:24px; font-weight:700; color:var(--accent); margin-top:4px;">—</div>
+            </div>
+            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Pendientes</div>
+              <div id="calls-stat-pending" style="font-size:24px; font-weight:700; color:var(--text-primary); margin-top:4px;">—</div>
+            </div>
+            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Números muertos</div>
+              <div id="calls-stat-dead" style="font-size:24px; font-weight:700; color:var(--danger); margin-top:4px;">—</div>
+            </div>
           </div>
         </section>
+
+        <section class="results-panel">
+          <div id="calls-list" style="padding: 0 32px 40px; display:flex; flex-direction:column; gap:10px;">
+            <p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">Cargando...</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- Modal: agendar llamada de ventas con admin -->
+      <div id="call-schedule-modal" class="modal-overlay hidden" style="z-index:1200;">
+        <div class="modal-card" style="max-width:480px; width:95vw;">
+          <div class="modal-header">
+            <h3>📅 Agendar llamada de ventas</h3>
+            <button onclick="document.getElementById('call-schedule-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div style="padding:20px 24px;">
+            <p style="color:var(--text-secondary); font-size:13px; margin:0 0 18px; line-height:1.5;">El lead se marca como <strong style="color:var(--success);">interesado + agendado</strong> y se crea una entrada en el calendario para coordinar la llamada de ventas con Ignacio.</p>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Nombre del lead</label>
+                <input type="text" id="call-sched-nombre" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Fecha y hora de la llamada con Ignacio</label>
+                <input type="datetime-local" id="call-sched-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+              </div>
+              <div>
+                <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Notas de la llamada (qué dijo, qué le interesó)</label>
+                <textarea id="call-sched-notas" rows="3" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit; resize:vertical;"></textarea>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:22px; justify-content:flex-end;">
+              <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-schedule-modal').classList.add('hidden')">Cancelar</button>
+              <button class="btn-primary pill-btn" id="call-sched-confirm">✅ Confirmar agendamiento</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: programar callback -->
+      <div id="call-callback-modal" class="modal-overlay hidden" style="z-index:1200;">
+        <div class="modal-card" style="max-width:420px; width:95vw;">
+          <div class="modal-header">
+            <h3>🔄 Volver a llamar después</h3>
+            <button onclick="document.getElementById('call-callback-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div style="padding:20px 24px;">
+            <p style="color:var(--text-secondary); font-size:13px; margin:0 0 16px;">El lead va a aparecer recién a partir de esta fecha.</p>
+            <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Cuándo</label>
+            <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+            <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
+              <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
+              <button class="btn-primary pill-btn" id="call-cb-confirm">Programar</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- VISTA FAQ: BANCO DE RESPUESTAS -->
@@ -938,7 +1001,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260425n"></script>
+  <script type="module" src="/app.js?v=20260426a"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
