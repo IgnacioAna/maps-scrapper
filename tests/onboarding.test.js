@@ -178,6 +178,22 @@ describe("onboarding · assets estáticos NO interceptados", () => {
       }
     }
   });
+
+  it("quiz-data.json: bancoExtra (si existe) tiene el mismo shape que preguntas", async () => {
+    const r = await request(app).get("/onboarding/quiz-data.json");
+    const data = JSON.parse(r.text);
+    for (let n = 1; n <= 8; n++) {
+      const mod = data[`modulo${n}`];
+      if (!mod.bancoExtra) continue; // bancoExtra es opcional
+      expect(Array.isArray(mod.bancoExtra), `modulo${n}.bancoExtra`).toBe(true);
+      for (const q of mod.bancoExtra) {
+        expect(Array.isArray(q.opciones)).toBe(true);
+        expect(q.opciones.length).toBe(3);
+        expect(q.correcta).toBeGreaterThanOrEqual(0);
+        expect(q.correcta).toBeLessThanOrEqual(2);
+      }
+    }
+  });
 });
 
 describe("auth · presencia online (admin only)", () => {

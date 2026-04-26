@@ -1031,6 +1031,52 @@ function loadOnboardingText() {
 }
 loadOnboardingText();
 
+// Validación del quiz-data.json al boot — alerta de schema, no bloquea el arranque.
+// Estructura esperada: { moduloN: { titulo, preguntas: [{ pregunta, opciones[3], correcta 0..2, explicacion }], bancoExtra?: [...] } }
+function validateQuizData() {
+  const quizPath = path.join(process.cwd(), 'public', 'onboarding', 'quiz-data.json');
+  if (!fs.existsSync(quizPath)) {
+    console.warn('⚠️  quiz-data.json no encontrado — el quiz mostrará "Quiz en preparación"');
+    return { ok: false, errors: ['archivo no encontrado'] };
+  }
+  let data;
+  try { data = JSON.parse(fs.readFileSync(quizPath, 'utf8')); }
+  catch (e) {
+    console.error('❌ quiz-data.json inválido (JSON parse error):', e.message);
+    return { ok: false, errors: [e.message] };
+  }
+  const errors = [];
+  let totalPreguntas = 0;
+  let totalExtras = 0;
+  for (const mod of ONBOARDING_MODULES) {
+    const key = `modulo${mod.num}`;
+    const m = data[key];
+    if (!m) { errors.push(`${key}: falta el bloque entero`); continue; }
+    const validatePool = (poolName, arr) => {
+      if (!Array.isArray(arr)) { errors.push(`${key}.${poolName}: no es array`); return 0; }
+      arr.forEach((q, i) => {
+        const where = `${key}.${poolName}[${i}]`;
+        if (typeof q.pregunta !== 'string' || !q.pregunta.trim()) errors.push(`${where}.pregunta vacía o no string`);
+        if (!Array.isArray(q.opciones) || q.opciones.length !== 3) errors.push(`${where}.opciones debe ser array de 3`);
+        else q.opciones.forEach((o, j) => { if (typeof o !== 'string' || !o.trim()) errors.push(`${where}.opciones[${j}] vacía`); });
+        if (typeof q.correcta !== 'number' || q.correcta < 0 || q.correcta > 2) errors.push(`${where}.correcta debe ser 0..2`);
+        if (typeof q.explicacion !== 'string') errors.push(`${where}.explicacion debe ser string`);
+      });
+      return arr.length;
+    };
+    totalPreguntas += validatePool('preguntas', m.preguntas);
+    if (m.bancoExtra !== undefined) totalExtras += validatePool('bancoExtra', m.bancoExtra);
+  }
+  if (errors.length > 0) {
+    console.warn(`⚠️  quiz-data.json tiene ${errors.length} problemas de schema:`);
+    errors.slice(0, 10).forEach(e => console.warn('   -', e));
+    if (errors.length > 10) console.warn(`   ... y ${errors.length - 10} más`);
+  }
+  console.log(`📝 Quiz cargado: ${totalPreguntas} preguntas base${totalExtras ? ` + ${totalExtras} en bancos extra` : ''} (${ONBOARDING_MODULES.length} módulos)`);
+  return { ok: errors.length === 0, errors, totalPreguntas, totalExtras };
+}
+validateQuizData();
+
 // API: metadata de los 8 módulos
 app.get('/api/onboarding/modules', (_req, res) => {
   res.json({ modules: ONBOARDING_MODULES, total: ONBOARDING_MODULES.length });
@@ -1046,7 +1092,7 @@ app.use((req, res, next) => {
   if (!fs.existsSync(filePath)) return next();
   try {
     let html = fs.readFileSync(filePath, 'utf8');
-    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260424a"></script>\n`;
+    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260425a"></script>\n`;
     html = html.includes('</body>') ? html.replace('</body>', inject + '</body>') : html + inject;
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');

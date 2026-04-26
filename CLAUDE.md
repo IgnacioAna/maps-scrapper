@@ -143,8 +143,19 @@ Construído como **read-only oficial** + integración con la IA del Banco de Res
 
 ### Archivos
 - `public/onboarding/files/scm-onboarding-modulo{1..8}.html` — los 8 módulos en HTML autocontenido (CSS embebido, fuente Inter). **NO se modifican vía edits programáticos: para actualizar contenido, reemplazar el archivo completo.**
-- `public/onboarding/quiz.js` — quiz autocontenido (~290 líneas) que se inyecta al final de cada módulo
-- `public/onboarding/quiz-data.json` — 40 preguntas (8 módulos × 5), formato `{ moduloN: { titulo, preguntas: [{ pregunta, opciones[3], correcta, explicacion }] } }`. Aprueba con ≥4/5.
+- `public/onboarding/quiz.js` — quiz autocontenido (~340 líneas) que se inyecta al final de cada módulo
+- `public/onboarding/quiz-data.json` — 40 preguntas base (8 módulos × 5), formato:
+  ```
+  { moduloN: {
+      titulo,
+      preguntas: [{ pregunta, opciones[3], correcta 0..2, explicacion }],  // 5 preguntas base
+      bancoExtra: [...]  // OPCIONAL: si existe, el quiz mezcla preguntas+bancoExtra y muestra 5 al azar cada intento
+    }
+  }
+  ```
+  - Aprueba con ≥4/5
+  - Si hay `bancoExtra`, cada intento randomiza qué 5 preguntas se muestran y también el orden de las opciones dentro de cada pregunta
+  - El boot del server **valida el schema** en `validateQuizData()` y loguea: `📝 Quiz cargado: N preguntas base [+ M en bancos extra] (8 módulos)` o warnings si hay problemas (no bloquea el arranque)
 
 ### Rutas backend (`index.js`)
 - `GET /api/onboarding/modules` - metadata de los 8 (público)
@@ -242,7 +253,7 @@ Comandos:
 6. **Import CSV** no chequea history.json (intencionalmente)
 7. **Scraping** sí chequea history.json (estricto, no duplicar)
 8. **express.json limit** está en 50mb para imports grandes
-9. **`leads` en setters.json es un MAP**, no un array (normalizado 2026-04-25)
+9. **`leads` en setters.json es un MAP**, no un array (normalizado 2026-04-25). Lo mismo `history.entries` en history.json. Para contar usar `Object.keys(x).length`, NO `x.length`.
 10. **Los 8 HTMLs del onboarding NO se editan via tooling** — para actualizar contenido reemplazar el archivo completo. La inyección del quiz es server-side.
 11. **Auth dual**: cookie session (`gs_session`) para el navegador, JWT Bearer para WA/desktop. NO mezclar.
 12. **Tests**: si agregás endpoints, sumá tests en `tests/`. El patrón de setup está en `wa.test.js` y `onboarding.test.js`.

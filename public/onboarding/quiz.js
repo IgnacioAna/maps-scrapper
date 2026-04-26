@@ -108,12 +108,46 @@
   function escHtml(str) { return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
   let quizData = null;
-  let preguntas = [];
+  let allPool = [];   // pool completo: preguntas + bancoExtra
+  let preguntas = []; // 5 preguntas activas (sampleadas del pool en cada intento si pool > 5)
   let respuestas = []; // index seleccionado por pregunta, null si no contestada
   let rootEl = null;
+  const QUIZ_LEN = 5;
+
+  // Fisher-Yates inmutable
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Reordena las opciones de una pregunta y ajusta el índice de "correcta"
+  function shuffleOptions(q) {
+    if (!Array.isArray(q.opciones)) return q;
+    const correctText = q.opciones[q.correcta];
+    const shuffled = shuffle(q.opciones);
+    return { ...q, opciones: shuffled, correcta: shuffled.indexOf(correctText) };
+  }
+
+  // Construye el set de 5 preguntas para este intento
+  function samplePreguntas() {
+    if (allPool.length === 0) return [];
+    let picked;
+    if (allPool.length <= QUIZ_LEN) {
+      // Pool igual o menor que 5: usamos todo (en orden estable para preservar narrativa del módulo)
+      picked = allPool.slice();
+    } else {
+      // Pool grande: muestra aleatoria de 5
+      picked = shuffle(allPool).slice(0, QUIZ_LEN);
+    }
+    return picked.map(shuffleOptions);
+  }
 
   function renderIntro() {
-    if (!preguntas.length) {
+    if (allPool.length === 0) {
       rootEl.innerHTML = `
         <div class="scm-quiz-card intro">
           <div class="scm-quiz-kicker">🎯 Quiz del módulo</div>
@@ -122,6 +156,8 @@
         </div>`;
       return;
     }
+    const cantQuiz = Math.min(QUIZ_LEN, allPool.length);
+    const hayExtra = allPool.length > QUIZ_LEN;
     const attempts = getJSON(ATTEMPTS_KEY)['modulo' + N];
     const yaAprobado = attempts && attempts.aprobado;
     rootEl.innerHTML = `
@@ -129,14 +165,16 @@
         <div class="scm-quiz-kicker">🎯 Quiz del módulo</div>
         <h2 class="scm-quiz-title">${yaAprobado ? '¡Ya aprobaste este módulo!' : 'Probá lo que aprendiste'}</h2>
         <p class="scm-quiz-desc">${yaAprobado
-          ? 'Última nota: ' + (attempts.ultimo_score || 0) + '/5 · ' + (attempts.intentos || 1) + ' intento' + ((attempts.intentos || 1) > 1 ? 's' : '') + '. Podés volver a hacerlo si querés.'
-          : 'Para marcar este módulo como completado, contestá las ' + preguntas.length + ' preguntas. Necesitás <strong>' + PASS_THRESHOLD + ' correctas</strong> para aprobar.'}</p>
+          ? 'Última nota: ' + (attempts.ultimo_score || 0) + '/' + cantQuiz + ' · ' + (attempts.intentos || 1) + ' intento' + ((attempts.intentos || 1) > 1 ? 's' : '') + '. Podés volver a hacerlo si querés.'
+          : 'Para marcar este módulo como completado, contestá las ' + cantQuiz + ' preguntas. Necesitás <strong>' + PASS_THRESHOLD + ' correctas</strong> para aprobar.'}${hayExtra ? ' <em style="color:var(--text-soft, #B8C2CC);">Cada intento mezcla preguntas distintas del banco (' + allPool.length + ' totales).</em>' : ''}</p>
         <button class="scm-quiz-btn" id="scm-start-quiz">${yaAprobado ? 'Rehacer el quiz' : 'Empezar el quiz'} →</button>
       </div>`;
     document.getElementById('scm-start-quiz').addEventListener('click', startQuiz);
   }
 
   function startQuiz() {
+    // Re-samplear cada intento: si hay bancoExtra, agarra 5 distintas; siempre randomiza orden de opciones
+    preguntas = samplePreguntas();
     respuestas = new Array(preguntas.length).fill(null);
     renderQuestions();
     setTimeout(() => {
@@ -276,7 +314,9 @@
       .then(data => {
         quizData = data;
         const moduleData = data['modulo' + N];
-        preguntas = (moduleData && Array.isArray(moduleData.preguntas)) ? moduleData.preguntas : [];
+        const base = (moduleData && Array.isArray(moduleData.preguntas)) ? moduleData.preguntas : [];
+        const extra = (moduleData && Array.isArray(moduleData.bancoExtra)) ? moduleData.bancoExtra : [];
+        allPool = base.concat(extra);
         renderIntro();
       })
       .catch(err => {
