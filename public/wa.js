@@ -349,177 +349,159 @@ async function openCreateAccountDialog() {
   } catch (err) { alert("Error: " + err.message); }
 }
 
-// Modal para enviar mensaje desde el panel WA. Soporta:
-// - Pre-llenar telefono (de localStorage o param)
-// - Mandar a 1 numero o a varios (uno por linea)
-// - Status visual de envio (cola)
-async function openSendMessageModal(accountId, prefillPhone = '', prefillText = '') {
+// Modal de envio estilo "campaña": lista de numeros + lista de mensajes que
+// se rotan entre los numeros (1 mensaje por destinatario). Inspirado en como
+// funciona el bot de Instagram (Prime Outbound).
+async function openSendMessageModal(accountId) {
   const account = (_accounts || []).find(a => a.id === accountId);
   const accountLabel = account?.label || 'Cuenta';
-  const lastPhone = prefillPhone || localStorage.getItem('wa-last-phone') || '';
-  const lastText  = prefillText  || localStorage.getItem('wa-last-text')  || '';
+  const lastPhones = localStorage.getItem('wa-last-phones') || '';
+  const lastMsgs   = localStorage.getItem('wa-last-msgs')   || '';
 
-  // Crear overlay
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
-    <div class="modal-card" style="max-width:600px;">
+    <div class="modal-card" style="max-width:680px;">
       <div class="modal-header">
-        <h3>Enviar mensaje · ${escHtml(accountLabel)}</h3>
+        <h3>Enviar mensajes · ${escHtml(accountLabel)}</h3>
         <button class="modal-close-btn" data-close>×</button>
       </div>
       <div class="modal-body">
-        <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Teléfono (con código país, solo dígitos)</label>
-        <input id="wa-send-phone" type="text" value="${escHtml(lastPhone)}" placeholder="Ej: 5491134567890" style="width:100%; margin-bottom:14px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+          <div>
+            <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+              <strong>Números destino</strong> (uno por línea, con código país)
+            </label>
+            <textarea id="wa-send-phones" rows="8"
+              placeholder="5491134567890&#10;5491198765432&#10;5491155553344"
+              style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:13px; font-family:monospace; resize:vertical;">${escHtml(lastPhones)}</textarea>
+            <div id="wa-phones-count" style="font-size:11px; color:var(--text-secondary); margin-top:4px;"></div>
+          </div>
+          <div>
+            <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+              <strong>Mensajes de apertura</strong> (uno por línea, se rotan)
+            </label>
+            <textarea id="wa-send-msgs" rows="8"
+              placeholder="Hola, ¿cómo estás?&#10;Buenas, te escribo por…&#10;Hola! Una consulta rápida"
+              style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:13px; font-family:inherit; resize:vertical;">${escHtml(lastMsgs)}</textarea>
+            <div id="wa-msgs-count" style="font-size:11px; color:var(--text-secondary); margin-top:4px;"></div>
+          </div>
+        </div>
 
-        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
-          <input type="checkbox" id="wa-send-multi" style="margin:0;">
-          <span>Enviar a varios (uno por línea)</span>
-        </label>
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border-radius:6px;">
+          <label style="display:flex; align-items:center; gap:6px; font-size:12px;">
+            <input type="radio" name="wa-rotation" value="random" checked> <span>Aleatorio (sin repetir 2 veces seguidas)</span>
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-size:12px;">
+            <input type="radio" name="wa-rotation" value="roundrobin"> <span>Round-robin (en orden 1→2→3→1…)</span>
+          </label>
+        </div>
 
-        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
-          <input type="checkbox" id="wa-send-multimsg" style="margin:0;">
-          <span>Cada línea = mensaje separado (manda múltiples mensajes seguidos al mismo número)</span>
-        </label>
-
-        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
-          <input type="checkbox" id="wa-send-rotate" style="margin:0;">
-          <span>Rotar variantes (separar con --- en líneas propias) — anti-detección spam para batch a varios números</span>
-        </label>
-
-        <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Mensaje</label>
-        <textarea id="wa-send-text" rows="5" placeholder="Hola, ¿cómo estás?&#10;Te escribo desde…&#10;¿Tenés un minuto?" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
-
+        <div id="wa-send-preview" style="font-size:11px; color:var(--text-secondary); margin-bottom:6px; min-height:14px;"></div>
         <div id="wa-send-status" style="font-size:12px; color:var(--text-secondary); min-height:18px;"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" data-close>Cancelar</button>
-        <button id="wa-send-go" class="btn btn-primary">Enviar</button>
+        <button id="wa-send-go" class="btn btn-primary">Enviar campaña</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
 
-  const phoneInput = overlay.querySelector('#wa-send-phone');
-  const textInput  = overlay.querySelector('#wa-send-text');
-  const multiCb    = overlay.querySelector('#wa-send-multi');
-  const status     = overlay.querySelector('#wa-send-status');
-  const goBtn      = overlay.querySelector('#wa-send-go');
+  const phonesTA = overlay.querySelector('#wa-send-phones');
+  const msgsTA   = overlay.querySelector('#wa-send-msgs');
+  const phonesCount = overlay.querySelector('#wa-phones-count');
+  const msgsCount   = overlay.querySelector('#wa-msgs-count');
+  const previewEl   = overlay.querySelector('#wa-send-preview');
+  const status      = overlay.querySelector('#wa-send-status');
+  const goBtn       = overlay.querySelector('#wa-send-go');
+
+  const parsePhones = () => phonesTA.value.split('\n').map(p => p.replace(/\D/g, '')).filter(p => p.length >= 8);
+  const parseMsgs   = () => msgsTA.value.split('\n').map(m => m.trim()).filter(Boolean);
+
+  const updateCounts = () => {
+    const ph = parsePhones();
+    const ms = parseMsgs();
+    phonesCount.textContent = `${ph.length} número${ph.length !== 1 ? 's' : ''} válido${ph.length !== 1 ? 's' : ''}`;
+    msgsCount.textContent   = `${ms.length} mensaje${ms.length !== 1 ? 's' : ''} de apertura`;
+    if (ph.length > 0 && ms.length > 0) {
+      previewEl.textContent = `Cada número va a recibir 1 mensaje. Mensajes se ${ph.length === 1 ? 'eligen aleatoriamente' : `rotan entre los ${ms.length}`}.`;
+    } else {
+      previewEl.textContent = '';
+    }
+  };
+  phonesTA.addEventListener('input', updateCounts);
+  msgsTA.addEventListener('input', updateCounts);
+  updateCounts();
 
   const close = () => overlay.remove();
   overlay.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
-  // Toggle multi: cambia el textarea phone a multi-line cuando se activa
-  multiCb.addEventListener('change', () => {
-    if (multiCb.checked) {
-      // Convertir input a textarea visual
-      phoneInput.outerHTML = `<textarea id="wa-send-phone" rows="3" placeholder="Un número por línea&#10;5491134567890&#10;5491198765432" style="width:100%; margin-bottom:14px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(phoneInput.value)}</textarea>`;
-    }
-  });
-
   goBtn.addEventListener('click', async () => {
-    const rotateCb   = overlay.querySelector('#wa-send-rotate');
-    const multiMsgCb = overlay.querySelector('#wa-send-multimsg');
-    const phoneRaw   = overlay.querySelector('#wa-send-phone').value.trim();
-    const text = textInput.value.trim();
-    if (!phoneRaw || !text) {
-      status.textContent = 'Faltan teléfono o mensaje';
+    const phones = parsePhones();
+    const msgs   = parseMsgs();
+    if (phones.length === 0 || msgs.length === 0) {
+      status.textContent = 'Faltan números o mensajes';
       status.style.color = 'var(--danger)';
       return;
     }
-    const phones = multiCb.checked
-      ? phoneRaw.split('\n').map(p => p.replace(/\D/g, '')).filter(p => p.length >= 8)
-      : [phoneRaw.replace(/\D/g, '')].filter(p => p.length >= 8);
+    const rotationMode = overlay.querySelector('input[name="wa-rotation"]:checked').value;
 
-    if (phones.length === 0) {
-      status.textContent = 'No hay números válidos (mínimo 8 dígitos)';
-      status.style.color = 'var(--danger)';
-      return;
-    }
-
-    // Parsear variantes de mensaje (separadas por --- en línea propia, para rotacion)
-    const variants = rotateCb.checked
-      ? text.split(/\n\s*---\s*\n/).map(v => v.trim()).filter(Boolean)
-      : [text];
-    if (variants.length === 0) variants.push(text);
-
-    // Guardar últimos para próximo uso
-    localStorage.setItem('wa-last-phone', phones[0]);
-    localStorage.setItem('wa-last-text', text);
+    localStorage.setItem('wa-last-phones', phonesTA.value);
+    localStorage.setItem('wa-last-msgs', msgsTA.value);
 
     goBtn.disabled = true;
     status.style.color = 'var(--text-secondary)';
 
-    // Función de pick aleatorio sin repetir 2 veces seguidas si hay >1 variantes
+    // Picker segun modo
     let lastIdx = -1;
-    const pickVariant = () => {
-      if (variants.length === 1) return variants[0];
+    let rrIdx = 0;
+    const pickMsg = () => {
+      if (msgs.length === 1) return { msg: msgs[0], idx: 0 };
+      if (rotationMode === 'roundrobin') {
+        const idx = rrIdx % msgs.length;
+        rrIdx++;
+        return { msg: msgs[idx], idx };
+      }
+      // aleatorio sin repetir consecutivo
       let idx;
-      do { idx = Math.floor(Math.random() * variants.length); } while (idx === lastIdx);
+      do { idx = Math.floor(Math.random() * msgs.length); } while (idx === lastIdx);
       lastIdx = idx;
-      return variants[idx];
+      return { msg: msgs[idx], idx };
     };
 
-    // Si "cada línea = mensaje separado", el mensaje seleccionado se splittea
-    // en lineas y cada una se manda como mensaje individual al mismo numero.
-    // Pausa entre mensajes al mismo numero: 3-7s (humano que tipea y manda).
-    const splitIntoLines = (msg) => msg.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-
-    let ok = 0, fail = 0, totalSends = 0, totalDone = 0;
-    // Total de envios para mostrar progreso correcto cuando es multi-mensaje
-    if (multiMsgCb.checked) {
-      for (let i = 0; i < phones.length; i++) {
-        const sample = pickVariant(); lastIdx = -1; // reset preview
-        totalSends += splitIntoLines(sample).length;
-      }
-    } else {
-      totalSends = phones.length;
-    }
-    lastIdx = -1; // reset para el real loop
-
+    let ok = 0, fail = 0;
     for (let i = 0; i < phones.length; i++) {
       const p = phones[i];
-      const msgFull = pickVariant();
-      const messages = multiMsgCb.checked ? splitIntoLines(msgFull) : [msgFull];
-
-      for (let j = 0; j < messages.length; j++) {
-        const msg = messages[j];
-        totalDone++;
-        const variantTag = variants.length > 1 ? ` (var ${lastIdx + 1})` : '';
-        const lineTag = messages.length > 1 ? ` [linea ${j + 1}/${messages.length}]` : '';
-        status.textContent = `Enviando ${totalDone}/${totalSends} → ${p}${variantTag}${lineTag}…`;
-        try {
-          await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text: msg }) });
-          ok++;
-        } catch (err) {
-          fail++;
-          console.error('send error', p, err);
-        }
-        // Pausa entre lineas al MISMO numero: 3-7s (humano natural)
-        if (j < messages.length - 1) {
-          const wait = 3000 + Math.floor(Math.random() * 4000);
-          status.textContent = `Esperando ${Math.round(wait/1000)}s entre líneas…`;
-          await new Promise(r => setTimeout(r, wait));
-        }
+      const { msg, idx } = pickMsg();
+      const tag = msgs.length > 1 ? ` (msg ${idx + 1}/${msgs.length})` : '';
+      status.textContent = `Enviando ${i + 1}/${phones.length} → ${p}${tag}…`;
+      try {
+        await api("/api/wa/commands/send-message", {
+          method: "POST",
+          body: JSON.stringify({ accountId, phone: p, text: msg })
+        });
+        ok++;
+      } catch (err) {
+        fail++;
+        console.error('send error', p, err);
       }
-
-      // Pausa anti-ban entre numeros distintos (8-15s aleatorio)
+      // Pausa anti-ban entre números (8-15s)
       if (i < phones.length - 1) {
         const wait = 8000 + Math.floor(Math.random() * 7000);
-        status.textContent = `Esperando ${Math.round(wait/1000)}s antes del siguiente número…`;
+        status.textContent = `Esperando ${Math.round(wait/1000)}s antes del siguiente…`;
         await new Promise(r => setTimeout(r, wait));
       }
     }
 
-    status.textContent = `Listo: ${ok} OK, ${fail} fallaron`;
+    status.textContent = `Listo: ${ok} OK · ${fail} fallaron · ${phones.length} números totales`;
     status.style.color = fail === 0 ? 'var(--success)' : 'var(--warning)';
     goBtn.textContent = 'Cerrar';
     goBtn.disabled = false;
     goBtn.onclick = close;
   });
 
-  // Foco inicial: si ya hay phone, ir directo a textarea
-  setTimeout(() => (lastPhone ? textInput : phoneInput).focus(), 50);
+  setTimeout(() => phonesTA.focus(), 50);
 }
 
 // ── ROUTINES ──────────────────────────────────────────────────────────────
