@@ -237,7 +237,24 @@ function ensureLeadDefaults(lead = {}) {
   if (!lead.lastStage) lead.lastStage = '';
   if (!lead.lastVariantId) lead.lastVariantId = '';
   if (lead.calificado === undefined) lead.calificado = false;
+  // Llamadas: clasificación automática y log
+  if (!lead.wspProbability) lead.wspProbability = computeWspProbability(lead);
+  if (!lead.phoneStatus) lead.phoneStatus = '';   // '', 'wrong', 'invalid', 'voicemail'
+  if (!Array.isArray(lead.callLog)) lead.callLog = [];
+  if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
+  if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
   return lead;
+}
+
+// Clasifica si el lead es candidato a WhatsApp o sólo a llamada,
+// usando los campos que YA salen del enrichment (regex + IA).
+function computeWspProbability(lead = {}) {
+  const hasWaWeb = !!(lead.webWhatsApp && String(lead.webWhatsApp).trim());
+  const hasWaAi = !!(lead.aiWhatsApp && String(lead.aiWhatsApp).trim());
+  if (hasWaWeb || hasWaAi) return 'high';
+  const hasPhone = !!(lead.phone && String(lead.phone).replace(/\D/g, '').length >= 7);
+  if (hasPhone) return 'low'; // teléfono pero ninguna señal de WSP → llamada
+  return 'unknown';
 }
 
 function normalizeBlockRecord(block = {}, index = 0) {
@@ -1685,6 +1702,29 @@ function loadSettersData() {
         }
         saveSettersData(raw);
       }
+      // Migración (one-shot) de clasificación WSP — SOLO INFORMATIVA, no toca el pipeline.
+      // Computa wspProbability para cada lead y agrega defaults nuevos para llamadas.
+      // NO mueve leads a "Sin WSP" automáticamente (la heurística tiene muchos falsos
+      // positivos: muchas clínicas tienen WSP aunque no haya wa.me en su web).
+      if (!raw.__wspClassified) {
+        let reclassified = 0;
+        for (const key in raw.leads) {
+          const l = raw.leads[key];
+          if (!l.wspProbability) {
+            l.wspProbability = computeWspProbability(l);
+            reclassified++;
+          }
+          if (!l.phoneStatus) l.phoneStatus = '';
+          if (!Array.isArray(l.callLog)) l.callLog = [];
+          if (typeof l.callAttempts !== 'number') l.callAttempts = 0;
+          if (!l.callbackAt) l.callbackAt = '';
+        }
+        raw.__wspClassified = true;
+        saveSettersData(raw);
+        if (reclassified > 0) {
+          console.log(`📞 wspProbability calculada para ${reclassified} leads (informativa, sin auto-ruteo).`);
+        }
+      }
       if (!raw.variants) raw.variants = [];
       if (!raw.calendar) raw.calendar = [];
       if (!raw.sessions) raw.sessions = [];
@@ -2026,6 +2066,12 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     });
     // Si ya viene con URL de WhatsApp completa (del CSV), usarla; si no, construirla
     baseLead.whatsappUrl = importedWaUrl || buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', baseLead.country || country || '', importedOpenMsg);
+    // Re-evaluar wspProbability con los datos finales. Esto es info SOLO INFORMATIVA:
+    // NO auto-ruteamos porque la heurística (sin wa.me en web) tiene muchos falsos
+    // positivos — la mayoría de las clínicas SÍ tienen WSP aunque no lo pongan en su web.
+    // El setter sigue marcando "Sin WSP" manualmente cuando confirma que el número no
+    // responde por WSP, igual que hoy.
+    baseLead.wspProbability = computeWspProbability(baseLead);
     data.leads[id] = {
       ...baseLead,
       followUps: baseLead.followUps || { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }
