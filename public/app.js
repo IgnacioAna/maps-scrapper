@@ -3824,4 +3824,129 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 15000);
   });
 
+  // ─── Llamadas agendadas (admin) ───
+  let scheduledCallsCache = [];
+
+  window.loadScheduledCalls = async () => {
+    const list = document.getElementById('scheduled-calls-list');
+    if (!list) return;
+    list.innerHTML = '<p style="color:var(--text-tertiary); padding:40px 0; text-align:center;">Cargando...</p>';
+    try {
+      const r = await fetch(apiUrl('/api/setters/calendar/enriched'));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const data = await r.json();
+      scheduledCallsCache = data.calendar || [];
+      renderScheduledCalls();
+      updateScheduledBadge();
+    } catch (e) {
+      list.innerHTML = '<p style="color:var(--danger); padding:40px 0; text-align:center;">Error: ' + e.message + '</p>';
+    }
+  };
+
+  function updateScheduledBadge() {
+    const upcoming = scheduledCallsCache.filter(e => e.calendarioEstado === 'pendiente');
+    const badge = document.getElementById('scheduled-badge');
+    if (!badge) return;
+    if (upcoming.length > 0) {
+      badge.textContent = upcoming.length;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  function renderScheduledCalls() {
+    const list = document.getElementById('scheduled-calls-list');
+    if (!list) return;
+    const filterStatus = document.getElementById('scheduled-filter-status').value;
+    const now = Date.now();
+
+    let entries = scheduledCallsCache.slice();
+    if (filterStatus === 'upcoming') entries = entries.filter(e => e.calendarioEstado === 'pendiente');
+    else if (filterStatus !== 'all') entries = entries.filter(e => e.calendarioEstado === filterStatus);
+
+    if (entries.length === 0) {
+      list.innerHTML = '<p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">No hay llamadas agendadas con esos filtros.</p>';
+      return;
+    }
+
+    const stateColors = {
+      pendiente: { bg: 'var(--warning-soft)', color: 'var(--warning)', label: 'Pendiente' },
+      realizada: { bg: 'var(--success-soft)', color: 'var(--success)', label: '✅ Realizada' },
+      no_show:   { bg: 'var(--danger-soft)', color: 'var(--danger)', label: '👻 No-show' },
+      cancelada: { bg: 'rgba(126,132,148,0.15)', color: 'var(--text-tertiary)', label: '❌ Cancelada' },
+      reagendada:{ bg: 'var(--info-soft)', color: 'var(--info)', label: '🔄 Reagendada' }
+    };
+
+    list.innerHTML = entries.map(e => {
+      const fecha = e.fecha ? new Date(e.fecha) : null;
+      const fechaStr = fecha ? fecha.toLocaleString('es-AR', { weekday:'short', day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Sin fecha';
+      const isPast = fecha && fecha.getTime() < now;
+      const lead = e.lead;
+      const sc = stateColors[e.calendarioEstado] || stateColors.pendiente;
+      const overdueStyle = (isPast && e.calendarioEstado === 'pendiente') ? 'border-left:3px solid var(--danger);' : '';
+      let telLink = '';
+      if (lead?.phone) {
+        let d = String(lead.phone).replace(/\D/g, '');
+        const m = { 'colombia':'57','argentina':'54','méxico':'52','mexico':'52','chile':'56','perú':'51','peru':'51','bolivia':'591','uruguay':'598' };
+        const k = String(lead.country || '').toLowerCase().trim();
+        if (d.length >= 7 && d.length <= 10 && m[k]) d = m[k] + d;
+        telLink = '+' + d;
+      }
+      return `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${overdueStyle} border-radius:12px; padding:16px 20px; display:grid; grid-template-columns: 1fr auto auto; gap:14px; align-items:center;">
+        <div style="min-width:0;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
+            <strong style="color:var(--text-primary); font-size:15px;">${escHtml(e.nombre || lead?.name || '(sin nombre)')}</strong>
+            <span style="background:${sc.bg}; color:${sc.color}; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600;">${sc.label}</span>
+            ${isPast && e.calendarioEstado === 'pendiente' ? '<span style="background:var(--danger-soft); color:var(--danger); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600;">⚠️ ATRASADA</span>' : ''}
+            ${e.sourceCall ? '<span style="background:var(--accent-soft); color:var(--accent); padding:2px 8px; border-radius:6px; font-size:10px;">desde llamada</span>' : ''}
+          </div>
+          <div style="font-size:13px; color:var(--text-secondary); margin-bottom:3px;">📆 <strong>${escHtml(fechaStr)}</strong> · agendó: <strong>${escHtml(e.setterName || e.setterId || '?')}</strong></div>
+          ${lead ? `<div style="font-size:12px; color:var(--text-tertiary);">📞 ${escHtml(lead.phone || '')} · ${escHtml(lead.city || '')}${lead.city && lead.country ? ' / ' : ''}${escHtml(lead.country || '')}${lead.doctor && !String(lead.doctor).includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}${lead.callAttempts ? ` · ${lead.callAttempts} intento${lead.callAttempts>1?'s':''}` : ''}</div>` : ''}
+          ${e.notas ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:6px; padding:8px 10px; background:var(--bg-input); border-radius:6px;">📝 ${escHtml(e.notas)}</div>` : ''}
+        </div>
+        ${telLink ? `<a href="tel:${escHtml(telLink)}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:9px 16px; font-weight:600; font-size:12px;">📞 Llamar</a>` : ''}
+        <select onchange="window._updateScheduledStatus('${escHtml(e.id)}', this.value)" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:160px; cursor:pointer; font-family:inherit;">
+          <option value="">— Cambiar estado —</option>
+          <option value="realizada">✅ Marcar realizada</option>
+          <option value="no_show">👻 No-show</option>
+          <option value="cancelada">❌ Cancelar</option>
+          <option value="reagendada">🔄 Reagendar (cambiar fecha)</option>
+          <option value="pendiente">↩️ Volver a pendiente</option>
+        </select>
+      </div>`;
+    }).join('');
+  }
+
+  window._updateScheduledStatus = async (entryId, status) => {
+    if (!status) return;
+    let body = { calendarioEstado: status };
+    if (status === 'reagendada') {
+      const newDate = window.prompt('Nueva fecha y hora (formato ISO, ej: 2026-05-01T14:30):', '');
+      if (!newDate) return;
+      const parsed = new Date(newDate);
+      if (isNaN(parsed.getTime())) { alert('Fecha inválida'); return; }
+      body.fecha = parsed.toISOString();
+    }
+    try {
+      const r = await fetch(apiUrl('/api/setters/calendar/' + entryId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      await loadScheduledCalls();
+    } catch (e) { alert('Error: ' + e.message); }
+  };
+
+  document.querySelector('[data-target="view-scheduled-calls"]')?.addEventListener('click', () => {
+    setTimeout(() => loadScheduledCalls(), 50);
+  });
+  document.getElementById('scheduled-filter-status')?.addEventListener('change', () => renderScheduledCalls());
+
+  // Cargar badge al iniciar (admin) sin abrir la vista
+  if (currentUser?.role === 'admin') {
+    setTimeout(() => loadScheduledCalls(), 1000);
+  }
+
   });

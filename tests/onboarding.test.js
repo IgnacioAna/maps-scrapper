@@ -336,6 +336,115 @@ describe("calls · disposition endpoint", () => {
     expect(r.status).toBe(200);
     expect(r.body.lead.callbackAt).toBe(futureDate);
   });
+
+  it("POST /call-disposition con 'voicemail' setea phoneStatus pero no descarta", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const imp = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test Voicemail", phone: "+57 300 7777777", country: "Colombia" }],
+      assignTo: ""
+    });
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test Voicemail");
+    await agent.patch("/api/setters/leads/" + lead.id).send({ conexion: "sin_wsp" });
+    const r = await agent.post("/api/setters/leads/" + lead.id + "/call-disposition").send({ outcome: "voicemail" });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.phoneStatus).toBe("voicemail");
+    expect(r.body.lead.estado).not.toBe("descartado");
+  });
+
+  it("POST /call-disposition lead inexistente → 404", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/leads/lead_xyz_no_existe/call-disposition").send({ outcome: "no_answer" });
+    expect(r.status).toBe(404);
+  });
+
+  it("POST /call-disposition guarda notas en el callLog", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const imp = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test Notes", phone: "+57 300 6666666", country: "Colombia" }],
+      assignTo: ""
+    });
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test Notes");
+    await agent.patch("/api/setters/leads/" + lead.id).send({ conexion: "sin_wsp" });
+    const r = await agent.post("/api/setters/leads/" + lead.id + "/call-disposition").send({
+      outcome: "answered_interested",
+      notes: "Le interesa pero quiere pensarlo"
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.callLog[0].notes).toBe("Le interesa pero quiere pensarlo");
+  });
+
+  it("POST /call-disposition trunca notas largas a 500 chars", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const imp = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test LongNotes", phone: "+57 300 4444444", country: "Colombia" }],
+      assignTo: ""
+    });
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test LongNotes");
+    await agent.patch("/api/setters/leads/" + lead.id).send({ conexion: "sin_wsp" });
+    const longNote = "a".repeat(1000);
+    const r = await agent.post("/api/setters/leads/" + lead.id + "/call-disposition").send({
+      outcome: "no_answer",
+      notes: longNote
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.callLog[0].notes.length).toBe(500);
+  });
+});
+
+describe("calls · scheduled calendar (admin)", () => {
+  it("GET /api/setters/calendar/enriched devuelve entries con info del lead", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.get("/api/setters/calendar/enriched");
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.calendar)).toBe(true);
+    const fromCall = r.body.calendar.find(e => e.sourceCall === true);
+    expect(fromCall).toBeDefined();
+    expect(fromCall.lead).toBeDefined();
+    expect(fromCall.lead.phone).toBeTruthy();
+  });
+
+  it("PATCH /api/setters/calendar/:id actualiza calendarioEstado", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const list = await agent.get("/api/setters/calendar/enriched");
+    const entry = list.body.calendar.find(e => e.sourceCall === true);
+    expect(entry).toBeDefined();
+    const r = await agent.patch("/api/setters/calendar/" + entry.id).send({ calendarioEstado: "realizada" });
+    expect(r.status).toBe(200);
+    expect(r.body.entry.calendarioEstado).toBe("realizada");
+  });
+
+  it("PATCH /api/setters/calendar/:id rechaza estado inválido (400)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const list = await agent.get("/api/setters/calendar/enriched");
+    const entry = list.body.calendar[0];
+    if (!entry) return;
+    const r = await agent.patch("/api/setters/calendar/" + entry.id).send({ calendarioEstado: "borracho" });
+    expect(r.status).toBe(400);
+  });
+
+  it("PATCH /api/setters/calendar/:id en entry inexistente → 404", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.patch("/api/setters/calendar/cal_no_existe").send({ calendarioEstado: "realizada" });
+    expect(r.status).toBe(404);
+  });
+
+  it("DELETE /api/setters/calendar/:id requiere admin (403 para setter)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "setter-onb@local.test", password: "setterpass" });
+    const r = await agent.delete("/api/setters/calendar/cal_anything");
+    expect(r.status).toBe(403);
+  });
 });
 
 describe("auth · presencia online (admin only)", () => {

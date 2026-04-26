@@ -2857,6 +2857,73 @@ app.post('/api/setters/calendar', requireAuth, (req, res) => {
   res.json({ entry });
 });
 
+// GET enriquecido: calendar con info del lead (telefono, ciudad, callLog).
+// Va ANTES de los routes con :id para que /enriched no se atrape como param.
+app.get('/api/setters/calendar/enriched', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const calendar = Array.isArray(data.calendar) ? data.calendar.slice() : [];
+  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
+  const filtered = authSetterId ? calendar.filter((e) => e.setterId === authSetterId) : calendar;
+  const settersById = {};
+  for (const s of (data.setters || [])) settersById[s.id] = s.name;
+  const enriched = filtered.map((entry) => {
+    const lead = entry.leadId ? data.leads[entry.leadId] : null;
+    return {
+      ...entry,
+      setterName: settersById[entry.setterId] || '',
+      lead: lead ? {
+        id: entry.leadId,
+        name: lead.name,
+        phone: lead.phone,
+        country: lead.country,
+        city: lead.city,
+        doctor: lead.doctor,
+        notes: lead.notes,
+        callAttempts: lead.callAttempts,
+        callLog: lead.callLog,
+        estado: lead.estado
+      } : null
+    };
+  });
+  enriched.sort((a, b) => new Date(a.fecha || 0).getTime() - new Date(b.fecha || 0).getTime());
+  res.json({ calendar: enriched });
+});
+
+// PATCH: actualizar estado de una entry (admin marca realizada/no-show/cancelada/reagendada)
+const CALENDAR_STATES = new Set(['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada']);
+app.patch('/api/setters/calendar/:id', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  if (!Array.isArray(data.calendar)) data.calendar = [];
+  const entry = data.calendar.find((e) => e.id === req.params.id);
+  if (!entry) return res.status(404).json({ error: 'Entry no encontrada.' });
+  if (req.auth?.user?.role === 'setter' && entry.setterId !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+  if (req.body.calendarioEstado !== undefined) {
+    if (!CALENDAR_STATES.has(req.body.calendarioEstado)) {
+      return res.status(400).json({ error: `Estado inválido. Esperado uno de: ${[...CALENDAR_STATES].join(', ')}` });
+    }
+    entry.calendarioEstado = req.body.calendarioEstado;
+  }
+  if (req.body.fecha !== undefined) entry.fecha = req.body.fecha;
+  if (req.body.nombre !== undefined) entry.nombre = String(req.body.nombre).slice(0, 200);
+  if (req.body.notas !== undefined) entry.notas = String(req.body.notas).slice(0, 1000);
+  if (req.body.valorProyecto !== undefined) entry.valorProyecto = Number(req.body.valorProyecto) || 0;
+  if (req.body.comision !== undefined) entry.comision = Number(req.body.comision) || 0;
+  saveSettersData(data);
+  res.json({ entry });
+});
+
+// DELETE: borrar una entry (admin solo)
+app.delete('/api/setters/calendar/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  if (!Array.isArray(data.calendar)) data.calendar = [];
+  const before = data.calendar.length;
+  data.calendar = data.calendar.filter((e) => e.id !== req.params.id);
+  saveSettersData(data);
+  res.json({ ok: data.calendar.length < before });
+});
+
 // ── Cache de enriquecimiento (evita llamadas duplicadas a Qwen/fetch) ──
 const enrichCache = new Map();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hora
