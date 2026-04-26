@@ -2318,6 +2318,117 @@ app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, re
   res.json({ ok: true });
 });
 
+// Disposition de una llamada — endpoint específico de Llamadas.
+// Recibe { outcome, notes?, callbackAt?, scheduled? } y aplica los cambios de estado
+// + log de la llamada + opcional creación de evento en el calendario (agenda con admin).
+const CALL_OUTCOMES = new Set([
+  'answered_interested',     // ✅ Atendió + Interesado → calificado, queda en Llamadas
+  'answered_not_interested', // ❌ Atendió + No interesado → descarta
+  'no_answer',               // 📵 No atendió → contador +1, sigue
+  'voicemail',               // 📭 Buzón → marca phoneStatus + sigue
+  'wrong_number',            // 🔢 Número equivocado → descarta + flag
+  'invalid_number',          // 🚫 No existe → descarta + flag
+  'callback_later',          // 🔄 Volver a llamar (con fecha) → oculta hasta fecha
+  'scheduled_with_admin'     // 📅 Agendó llamada de ventas con admin → crea evento en calendar
+]);
+
+app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+
+  const { outcome, notes, callbackAt, scheduled } = req.body || {};
+  if (!CALL_OUTCOMES.has(outcome)) {
+    return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
+  }
+
+  // Asegurar arrays/campos
+  if (!Array.isArray(lead.callLog)) lead.callLog = [];
+  if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
+
+  const now = new Date().toISOString();
+  const logEntry = {
+    ts: now,
+    outcome,
+    by: req.auth?.user?.id || '',
+    notes: (notes || '').toString().slice(0, 500)
+  };
+  lead.callLog.push(logEntry);
+  lead.callAttempts += 1;
+  lead.lastContactAt = now;
+  // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
+  if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
+
+  let calendarEntry = null;
+
+  switch (outcome) {
+    case 'answered_interested':
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'interesado';
+      // Sigue en Llamadas con chip verde, esperando agendamiento
+      break;
+
+    case 'answered_not_interested':
+      lead.respondio = true;
+      lead.interes = 'no';
+      lead.estado = 'descartado';
+      break;
+
+    case 'no_answer':
+      // Solo contador + log, no cambia estado
+      break;
+
+    case 'voicemail':
+      lead.phoneStatus = 'voicemail';
+      break;
+
+    case 'wrong_number':
+      lead.phoneStatus = 'wrong';
+      lead.estado = 'descartado';
+      break;
+
+    case 'invalid_number':
+      lead.phoneStatus = 'invalid';
+      lead.estado = 'descartado';
+      break;
+
+    case 'callback_later':
+      // callbackAt debe venir en ISO. Si no, default a +24hs
+      lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      break;
+
+    case 'scheduled_with_admin':
+      // Crea entrada en data.calendar reusando el mismo formato que /api/setters/calendar
+      if (!Array.isArray(data.calendar)) data.calendar = [];
+      const sched = scheduled || {};
+      calendarEntry = {
+        id: `cal_${Date.now()}`,
+        leadId: req.params.id,
+        fecha: sched.fecha || new Date(Date.now() + 24*60*60*1000).toISOString(),
+        nombre: sched.nombre || lead.name || '',
+        calendarioEstado: 'pendiente',
+        valorProyecto: 0,
+        comision: 0,
+        setterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
+        sourceCall: true
+      };
+      data.calendar.push(calendarEntry);
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'agendado';
+      break;
+  }
+
+  saveSettersData(data);
+  res.json({ ok: true, lead, calendarEntry });
+});
+
 // ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──
 app.post('/api/setters/dedup', requireAuth, requireRole('admin'), (req, res) => {
   const data = loadSettersData();

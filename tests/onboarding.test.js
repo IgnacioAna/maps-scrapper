@@ -232,6 +232,112 @@ describe("onboarding · assets estáticos NO interceptados", () => {
   });
 });
 
+describe("calls · disposition endpoint", () => {
+  // Necesitamos un lead para testear. Lo importamos via /api/setters/import como admin.
+  let testLeadId = null;
+
+  it("setup: crear lead de prueba en Llamadas", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test Llamada", phone: "+57 300 1234567", country: "Colombia", city: "Bogotá", website: "" }],
+      assignTo: ""
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.imported).toBeGreaterThan(0);
+    // Recuperar el id del lead creado
+    const list = await agent.get("/api/setters/leads/sin-wsp");
+    // El lead recién importado no tiene conexion sin_wsp (la heurística no auto-rutea)
+    // → marcarlo manualmente sin_wsp para que aparezca en la vista de llamadas
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test Llamada");
+    expect(lead).toBeDefined();
+    testLeadId = lead.id;
+    const patch = await agent.patch("/api/setters/leads/" + testLeadId).send({ conexion: "sin_wsp" });
+    expect(patch.status).toBe(200);
+  });
+
+  it("POST /call-disposition rechaza outcome inválido (400)", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/leads/" + testLeadId + "/call-disposition").send({ outcome: "invalid_outcome" });
+    expect(r.status).toBe(400);
+  });
+
+  it("POST /call-disposition con 'no_answer' incrementa callAttempts y agrega al log", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/leads/" + testLeadId + "/call-disposition").send({ outcome: "no_answer" });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.callAttempts).toBe(1);
+    expect(r.body.lead.callLog).toHaveLength(1);
+    expect(r.body.lead.callLog[0].outcome).toBe("no_answer");
+  });
+
+  it("POST /call-disposition con 'answered_interested' marca calificado=true e interes=si", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const r = await agent.post("/api/setters/leads/" + testLeadId + "/call-disposition").send({ outcome: "answered_interested" });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.calificado).toBe(true);
+    expect(r.body.lead.interes).toBe("si");
+    expect(r.body.lead.estado).toBe("interesado");
+    // El lead se queda en Llamadas (conexion sin_wsp)
+    expect(r.body.lead.conexion).toBe("sin_wsp");
+  });
+
+  it("POST /call-disposition con 'scheduled_with_admin' crea entry en calendar y marca agendado", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const fecha = new Date(Date.now() + 24*60*60*1000).toISOString();
+    const r = await agent.post("/api/setters/leads/" + testLeadId + "/call-disposition").send({
+      outcome: "scheduled_with_admin",
+      scheduled: { fecha, nombre: "Test Llamada" }
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.estado).toBe("agendado");
+    expect(r.body.calendarEntry).toBeTruthy();
+    expect(r.body.calendarEntry.leadId).toBe(testLeadId);
+    expect(r.body.calendarEntry.fecha).toBe(fecha);
+  });
+
+  it("POST /call-disposition con 'wrong_number' setea phoneStatus y descarta", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    // Crear otro lead para no contaminar
+    const imp = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test Wrong", phone: "+57 300 9999999", country: "Colombia" }],
+      assignTo: ""
+    });
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test Wrong");
+    await agent.patch("/api/setters/leads/" + lead.id).send({ conexion: "sin_wsp" });
+    const r = await agent.post("/api/setters/leads/" + lead.id + "/call-disposition").send({ outcome: "wrong_number" });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.phoneStatus).toBe("wrong");
+    expect(r.body.lead.estado).toBe("descartado");
+  });
+
+  it("POST /call-disposition con 'callback_later' setea callbackAt", async () => {
+    const agent = request.agent(app);
+    await agent.post("/api/auth/login").send({ email: "admin-onb@local.test", password: "onbpass1234" });
+    const imp = await agent.post("/api/setters/import").send({
+      leads: [{ name: "Test Callback", phone: "+57 300 5555555", country: "Colombia" }],
+      assignTo: ""
+    });
+    const all = await agent.get("/api/setters/leads");
+    const lead = all.body.leads.find(l => l.name === "Test Callback");
+    await agent.patch("/api/setters/leads/" + lead.id).send({ conexion: "sin_wsp" });
+    const futureDate = new Date(Date.now() + 48*60*60*1000).toISOString();
+    const r = await agent.post("/api/setters/leads/" + lead.id + "/call-disposition").send({
+      outcome: "callback_later",
+      callbackAt: futureDate
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.callbackAt).toBe(futureDate);
+  });
+});
+
 describe("auth · presencia online (admin only)", () => {
   // /api/auth/online usa sesión por cookie (no Bearer JWT). Usamos agent para persistirla.
   it("GET /api/auth/online sin auth → 401", async () => {

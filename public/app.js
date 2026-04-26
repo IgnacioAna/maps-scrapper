@@ -2198,12 +2198,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error('Import exception:', e); alert('Error al importar: ' + e.message); }
     });
 
-    // ── Vista Llamadas (Sin WSP) ──
+    // ── Vista Llamadas (Sin WSP) — rediseño con dispositions, click-to-call, agendamiento ──
+    let callsLeadsCache = [];
+
+    function buildTelLink(phone, country) {
+      if (!phone) return '';
+      let digits = String(phone).replace(/\D/g, '');
+      // Si no empieza con código de país, intentar agregarlo según el país del lead
+      const prefixMap = { 'colombia':'57','méxico':'52','mexico':'52','argentina':'54','chile':'56','perú':'51','peru':'51','bolivia':'591','uruguay':'598','paraguay':'595','ecuador':'593','venezuela':'58','españa':'34','espana':'34','estados unidos':'1','usa':'1' };
+      const c = String(country || '').toLowerCase().trim();
+      if (digits.length >= 7 && digits.length <= 10 && prefixMap[c]) {
+        digits = prefixMap[c] + digits;
+      }
+      return '+' + digits;
+    }
+
+    function fmtCountry(country) {
+      const flags = { 'colombia':'🇨🇴', 'méxico':'🇲🇽', 'mexico':'🇲🇽', 'argentina':'🇦🇷', 'chile':'🇨🇱', 'perú':'🇵🇪', 'peru':'🇵🇪', 'bolivia':'🇧🇴', 'uruguay':'🇺🇾', 'paraguay':'🇵🇾', 'ecuador':'🇪🇨', 'venezuela':'🇻🇪', 'españa':'🇪🇸', 'espana':'🇪🇸' };
+      const k = String(country || '').toLowerCase().trim();
+      return flags[k] || '';
+    }
+
     async function loadCallsView() {
       const setter = document.getElementById('calls-setter-select').value;
-      const url = apiUrl('/api/setters/leads/sin-wsp' + (setter ? '?setter=' + encodeURIComponent(setter) : ''));
+      const url = '/api/setters/leads/sin-wsp' + (setter ? '?setter=' + encodeURIComponent(setter) : '');
       try {
-        // Poblar select de setters
+        // Poblar select de setters (solo admin lo ve)
         const infoResp = await fetch(apiUrl('/api/setters'));
         const info = await infoResp.json();
         const callsSelect = document.getElementById('calls-setter-select');
@@ -2218,32 +2238,250 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const resp = await fetch(apiUrl(url));
         const data = await resp.json();
-        const tbody = document.getElementById('calls-leads-body');
-        if (!data.leads || data.leads.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><p>No hay leads sin WhatsApp.</p></td></tr>';
+        callsLeadsCache = data.leads || [];
+
+        // Poblar filtro de país con los países presentes en los leads
+        const countries = [...new Set(callsLeadsCache.map(l => (l.country || '').trim()).filter(Boolean))].sort();
+        const cf = document.getElementById('calls-country-filter');
+        const savedCountry = localStorage.getItem('calls_country_filter_' + (currentUser?.id || 'anon')) || '';
+        const curCountry = cf.value || savedCountry;
+        cf.innerHTML = '<option value="">🌎 Todos los países</option>' + countries.map(c => `<option value="${escHtml(c)}">${fmtCountry(c)} ${escHtml(c)}</option>`).join('');
+        if (curCountry && countries.includes(curCountry)) cf.value = curCountry;
+
+        renderCallsList();
+        renderCallsStats();
+      } catch (e) { console.error(e); }
+    }
+
+    function renderCallsList() {
+      const list = document.getElementById('calls-list');
+      const country = document.getElementById('calls-country-filter').value;
+      const search = (document.getElementById('calls-search')?.value || '').toLowerCase().trim();
+      const now = Date.now();
+
+      let leads = callsLeadsCache.slice();
+      if (country) leads = leads.filter(l => (l.country || '').trim() === country);
+      if (search) leads = leads.filter(l => (
+        (l.name || '').toLowerCase().includes(search) ||
+        (l.phone || '').toLowerCase().includes(search) ||
+        (l.city || '').toLowerCase().includes(search)
+      ));
+
+      // Ocultar leads con callbackAt en el futuro (excepto si el filtro lo pide)
+      const showCallbackPending = false;
+      if (!showCallbackPending) {
+        leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
+      }
+
+      // Ocultar descartados/agendados (ya no son accionables)
+      leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
+
+      // Ordenar: nunca llamados primero, luego por menos intentos
+      leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+
+      if (leads.length === 0) {
+        list.innerHTML = '<p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">No hay llamadas pendientes con esos filtros. 🎉</p>';
+        return;
+      }
+
+      list.innerHTML = leads.map(l => {
+        const tel = buildTelLink(l.phone, l.country);
+        const flag = fmtCountry(l.country);
+        const lastNote = l.notes && l.notes.length > 0 ? l.notes[l.notes.length - 1] : null;
+        const lastCall = l.callLog && l.callLog.length > 0 ? l.callLog[l.callLog.length - 1] : null;
+        const attempts = l.callAttempts || 0;
+        const interesado = l.estado === 'interesado';
+
+        const cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
+        const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
+
+        return `<div class="call-row" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: 36px 1fr auto auto; gap:14px; align-items:center;">
+          <div style="font-size:20px; opacity:0.7;">${flag || '📞'}</div>
+
+          <div style="min-width:0;">
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <strong style="color:var(--text-primary); font-size:14px;">${escHtml(l.name)}</strong>
+              ${interesadoBadge}
+              ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
+              ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
+            </div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
+              ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
+              ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
+            </div>
+            ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
+            ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
+          </div>
+
+          <a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" title="${escHtml(l.phone)}">
+            📞 Llamar
+          </a>
+
+          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:200px; cursor:pointer; font-family:inherit;">
+            <option value="">— Resultado de la llamada —</option>
+            <optgroup label="Atendió">
+              ${interesado ? '<option value="scheduled_with_admin">📅 Agendar con Ignacio</option>' : '<option value="answered_interested">✅ Interesado</option>'}
+              <option value="answered_not_interested">❌ No interesado</option>
+            </optgroup>
+            <optgroup label="No atendió">
+              <option value="no_answer">📵 No atendió / sonó nada</option>
+              <option value="voicemail">📭 Buzón de voz</option>
+              <option value="callback_later">🔄 Volver a llamar después</option>
+            </optgroup>
+            <optgroup label="Número no sirve">
+              <option value="wrong_number">🔢 Número equivocado</option>
+              <option value="invalid_number">🚫 No existe / no funciona</option>
+            </optgroup>
+          </select>
+        </div>`;
+      }).join('');
+    }
+
+    function callOutcomeLabel(o) {
+      const map = {
+        answered_interested: '✅ Interesado',
+        answered_not_interested: '❌ No interesado',
+        no_answer: '📵 No atendió',
+        voicemail: '📭 Buzón',
+        wrong_number: '🔢 Equivocado',
+        invalid_number: '🚫 No existe',
+        callback_later: '🔄 Postpuesto',
+        scheduled_with_admin: '📅 Agendado'
+      };
+      return map[o] || o;
+    }
+
+    function renderCallsStats() {
+      const country = document.getElementById('calls-country-filter').value;
+      const today = new Date().toISOString().substring(0, 10);
+      let pool = callsLeadsCache;
+      if (country) pool = pool.filter(l => (l.country || '').trim() === country);
+
+      let callsToday = 0, answeredToday = 0;
+      let scheduled = 0, dead = 0, pending = 0;
+
+      pool.forEach(l => {
+        const log = Array.isArray(l.callLog) ? l.callLog : [];
+        log.forEach(entry => {
+          if ((entry.ts || '').substring(0, 10) === today) {
+            callsToday++;
+            if (['answered_interested','answered_not_interested','scheduled_with_admin'].includes(entry.outcome)) answeredToday++;
+          }
+        });
+        if (l.estado === 'agendado') scheduled++;
+        if (['wrong','invalid'].includes(l.phoneStatus)) dead++;
+        if (!l.callAttempts && !['descartado','agendado'].includes(l.estado)) pending++;
+      });
+
+      const pctAnswered = callsToday > 0 ? Math.round(answeredToday / callsToday * 100) + '%' : '—';
+      document.getElementById('calls-stat-today').textContent = callsToday;
+      document.getElementById('calls-stat-answered').textContent = pctAnswered;
+      document.getElementById('calls-stat-scheduled').textContent = scheduled;
+      document.getElementById('calls-stat-pending').textContent = pending;
+      document.getElementById('calls-stat-dead').textContent = dead;
+    }
+
+    // Handler global para el dropdown de disposition
+    window._handleCallDisposition = async (leadId, selectEl) => {
+      const outcome = selectEl.value;
+      if (!outcome) return;
+      selectEl.disabled = true;
+
+      try {
+        if (outcome === 'callback_later') {
+          openCallbackModal(leadId);
+          selectEl.value = '';
+          selectEl.disabled = false;
           return;
         }
-        tbody.innerHTML = data.leads.map(l => {
-          let doc = l.doctor || '';
-          if (doc.includes('N/A') || doc.includes('Sin identificar')) doc = '';
-          const lastNote = l.notes && l.notes.length > 0 ? l.notes[l.notes.length - 1] : null;
-          return '<tr onclick="window._openLeadModal(\'' + escHtml(l.id) + '\')" style="cursor:pointer;">' +
-            '<td>' + (l.num || '') + '</td>' +
-            '<td style="font-weight:500;">' + escHtml(l.name) + '</td>' +
-            '<td>' + escHtml(l.phone || '') + '</td>' +
-            '<td class="text-muted">' + escHtml([l.country, l.city].filter(Boolean).join(' / ') || l.address || '') + '</td>' +
-            '<td>' + (l.website ? '<a href="' + escHtml(l.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()">🌐</a>' : '') + '</td>' +
-            '<td style="font-size:11px;">' + escHtml(doc).substring(0, 15) + '</td>' +
-            '<td class="text-muted" style="font-size:11px;">' + escHtml(l.fecha || '') + '</td>' +
-            '<td style="font-size:11px; color:var(--text-secondary);">' + (lastNote ? escHtml(lastNote.text).substring(0, 40) : '') + '</td>' +
-          '</tr>';
-        }).join('');
-      } catch (e) { console.error(e); }
+        if (outcome === 'scheduled_with_admin') {
+          openScheduleModal(leadId);
+          selectEl.value = '';
+          selectEl.disabled = false;
+          return;
+        }
+        // Outcomes directos
+        const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ outcome })
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        // Actualizar cache local
+        const idx = callsLeadsCache.findIndex(l => l.id === leadId);
+        if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...data.lead, id: leadId };
+        renderCallsList();
+        renderCallsStats();
+      } catch (e) {
+        alert('Error guardando: ' + e.message);
+        selectEl.disabled = false;
+      }
+    };
+
+    function openCallbackModal(leadId) {
+      const modal = document.getElementById('call-callback-modal');
+      const fechaInput = document.getElementById('call-cb-fecha');
+      // Default: mañana 10am hora local
+      const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
+      fechaInput.value = m.toISOString().substring(0, 16);
+      modal.classList.remove('hidden');
+      document.getElementById('call-cb-confirm').onclick = async () => {
+        const fecha = fechaInput.value;
+        if (!fecha) { alert('Elegí una fecha'); return; }
+        try {
+          const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ outcome: 'callback_later', callbackAt: new Date(fecha).toISOString() })
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          modal.classList.add('hidden');
+          await loadCallsView();
+        } catch (e) { alert('Error: ' + e.message); }
+      };
+    }
+
+    function openScheduleModal(leadId) {
+      const lead = callsLeadsCache.find(l => l.id === leadId);
+      const modal = document.getElementById('call-schedule-modal');
+      document.getElementById('call-sched-nombre').value = lead?.name || '';
+      // Default: mañana 11am
+      const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(11, 0, 0, 0);
+      document.getElementById('call-sched-fecha').value = m.toISOString().substring(0, 16);
+      document.getElementById('call-sched-notas').value = '';
+      modal.classList.remove('hidden');
+      document.getElementById('call-sched-confirm').onclick = async () => {
+        const nombre = document.getElementById('call-sched-nombre').value.trim();
+        const fecha = document.getElementById('call-sched-fecha').value;
+        const notas = document.getElementById('call-sched-notas').value.trim();
+        if (!fecha) { alert('Elegí fecha y hora'); return; }
+        try {
+          const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              outcome: 'scheduled_with_admin',
+              notes: notas,
+              scheduled: { fecha: new Date(fecha).toISOString(), nombre }
+            })
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          modal.classList.add('hidden');
+          await loadCallsView();
+        } catch (e) { alert('Error: ' + e.message); }
+      };
     }
 
     const callsMenuItem = document.querySelector('[data-target="view-calls"]');
     if (callsMenuItem) callsMenuItem.addEventListener('click', () => { loadCallsView(); });
     document.getElementById('calls-setter-select').addEventListener('change', () => { loadCallsView(); });
+    document.getElementById('calls-country-filter').addEventListener('change', (e) => {
+      localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), e.target.value);
+      renderCallsList();
+      renderCallsStats();
+    });
+    document.getElementById('calls-search').addEventListener('input', () => renderCallsList());
 
     // ── Centro de Comando ──
     async function loadCommandCenter() {
