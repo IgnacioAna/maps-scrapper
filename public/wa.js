@@ -378,12 +378,17 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
         </label>
 
         <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+          <input type="checkbox" id="wa-send-multimsg" style="margin:0;">
+          <span>Cada línea = mensaje separado (manda múltiples mensajes seguidos al mismo número)</span>
+        </label>
+
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
           <input type="checkbox" id="wa-send-rotate" style="margin:0;">
-          <span>Rotar variantes (separar mensajes con --- en líneas propias) — anti-detección spam</span>
+          <span>Rotar variantes (separar con --- en líneas propias) — anti-detección spam para batch a varios números</span>
         </label>
 
         <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Mensaje</label>
-        <textarea id="wa-send-text" rows="5" placeholder="Hola, ¿cómo estás?&#10;---&#10;Buenas, te escribo desde…&#10;---&#10;Hola! Una consulta rápida…" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
+        <textarea id="wa-send-text" rows="5" placeholder="Hola, ¿cómo estás?&#10;Te escribo desde…&#10;¿Tenés un minuto?" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
 
         <div id="wa-send-status" style="font-size:12px; color:var(--text-secondary); min-height:18px;"></div>
       </div>
@@ -414,6 +419,7 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
 
   goBtn.addEventListener('click', async () => {
     const rotateCb   = overlay.querySelector('#wa-send-rotate');
+    const multiMsgCb = overlay.querySelector('#wa-send-multimsg');
     const phoneRaw   = overlay.querySelector('#wa-send-phone').value.trim();
     const text = textInput.value.trim();
     if (!phoneRaw || !text) {
@@ -431,7 +437,7 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
       return;
     }
 
-    // Parsear variantes de mensaje (separadas por --- en línea propia)
+    // Parsear variantes de mensaje (separadas por --- en línea propia, para rotacion)
     const variants = rotateCb.checked
       ? text.split(/\n\s*---\s*\n/).map(v => v.trim()).filter(Boolean)
       : [text];
@@ -454,22 +460,53 @@ async function openSendMessageModal(accountId, prefillPhone = '', prefillText = 
       return variants[idx];
     };
 
-    let ok = 0, fail = 0;
+    // Si "cada línea = mensaje separado", el mensaje seleccionado se splittea
+    // en lineas y cada una se manda como mensaje individual al mismo numero.
+    // Pausa entre mensajes al mismo numero: 3-7s (humano que tipea y manda).
+    const splitIntoLines = (msg) => msg.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+    let ok = 0, fail = 0, totalSends = 0, totalDone = 0;
+    // Total de envios para mostrar progreso correcto cuando es multi-mensaje
+    if (multiMsgCb.checked) {
+      for (let i = 0; i < phones.length; i++) {
+        const sample = pickVariant(); lastIdx = -1; // reset preview
+        totalSends += splitIntoLines(sample).length;
+      }
+    } else {
+      totalSends = phones.length;
+    }
+    lastIdx = -1; // reset para el real loop
+
     for (let i = 0; i < phones.length; i++) {
       const p = phones[i];
-      const msg = pickVariant();
-      status.textContent = `Enviando ${i + 1}/${phones.length} → ${p}${variants.length > 1 ? ` (variante ${lastIdx + 1})` : ''}…`;
-      try {
-        await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text: msg }) });
-        ok++;
-      } catch (err) {
-        fail++;
-        console.error('send error', p, err);
+      const msgFull = pickVariant();
+      const messages = multiMsgCb.checked ? splitIntoLines(msgFull) : [msgFull];
+
+      for (let j = 0; j < messages.length; j++) {
+        const msg = messages[j];
+        totalDone++;
+        const variantTag = variants.length > 1 ? ` (var ${lastIdx + 1})` : '';
+        const lineTag = messages.length > 1 ? ` [linea ${j + 1}/${messages.length}]` : '';
+        status.textContent = `Enviando ${totalDone}/${totalSends} → ${p}${variantTag}${lineTag}…`;
+        try {
+          await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text: msg }) });
+          ok++;
+        } catch (err) {
+          fail++;
+          console.error('send error', p, err);
+        }
+        // Pausa entre lineas al MISMO numero: 3-7s (humano natural)
+        if (j < messages.length - 1) {
+          const wait = 3000 + Math.floor(Math.random() * 4000);
+          status.textContent = `Esperando ${Math.round(wait/1000)}s entre líneas…`;
+          await new Promise(r => setTimeout(r, wait));
+        }
       }
-      // Pausa anti-ban entre envíos (8-15s aleatorio)
+
+      // Pausa anti-ban entre numeros distintos (8-15s aleatorio)
       if (i < phones.length - 1) {
         const wait = 8000 + Math.floor(Math.random() * 7000);
-        status.textContent = `Esperando ${Math.round(wait/1000)}s antes del siguiente…`;
+        status.textContent = `Esperando ${Math.round(wait/1000)}s antes del siguiente número…`;
         await new Promise(r => setTimeout(r, wait));
       }
     }
