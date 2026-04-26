@@ -164,6 +164,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const authResp = await fetch(apiUrl('/api/auth/me'));
     const authState = await authResp.json();
+    // Anti-flash: el estado real ya llegó. Removemos el style optimista que poníamos
+    // en el <head> y dejamos que las clases .hidden manden de acá en adelante.
+    const antiFlashStyle = document.getElementById('scm-anti-flash');
+    if (antiFlashStyle) antiFlashStyle.remove();
     if (!authState.authenticated) {
       authScreen.classList.remove('hidden');
       mainLayout.classList.add('hidden');

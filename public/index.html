@@ -9,6 +9,23 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    // Anti-flash: si hay cookie de sesión, ocultá auth-screen y mostrá main-layout ANTES del
+    // primer paint — evita el flicker del login al navegar entre páginas. La verificación real
+    // contra /api/auth/me corre después y revierte si la sesión expiró.
+    (function() {
+      try {
+        var hasSession = /(?:^|;\s*)gs_session=/.test(document.cookie);
+        if (hasSession) {
+          // Inyectamos un style con !important para ganarle al state inicial del HTML
+          var s = document.createElement('style');
+          s.id = 'scm-anti-flash';
+          s.textContent = '#auth-screen{display:none!important}#main-layout{display:flex!important}';
+          document.head.appendChild(s);
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div id="auth-screen" class="auth-screen">
