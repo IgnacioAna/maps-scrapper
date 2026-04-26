@@ -114,6 +114,94 @@ describe("faqs · sort", () => {
   });
 });
 
+describe("faqs · variantes (retrieval-friendly)", () => {
+  it("POST /api/faqs acepta variantes y las guarda normalizadas", async () => {
+    const r = await request(app).post("/api/faqs").set("Cookie", cookie).send({
+      pregunta: "¿Quién sos?",
+      respuesta: "Soy del equipo, te quería preguntar algo",
+      categoria: "calificacion",
+      variantes: ["¿De parte de quién?", "Y a vos quién te conoce?", "  ", "¿De parte de quién?"]
+    });
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.entry.variantes)).toBe(true);
+    // dedup case-insensitive + filtra vacíos: dos únicas
+    expect(r.body.entry.variantes.length).toBe(2);
+  });
+
+  it("PUT /api/faqs/:id puede modificar variantes (acepta string con saltos)", async () => {
+    const created = await request(app).post("/api/faqs").set("Cookie", cookie).send({
+      pregunta: "¿Tienen oficina?", respuesta: "Trabajamos remoto"
+    });
+    const r = await request(app).put("/api/faqs/" + created.body.entry.id).set("Cookie", cookie).send({
+      variantes: "¿Dónde están?\n¿Tienen sede?\n"
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.entry.variantes).toEqual(["¿Dónde están?", "¿Tienen sede?"]);
+  });
+});
+
+describe("faqs · import bulk", () => {
+  it("POST /api/faqs/import (entries) crea las nuevas y omite duplicadas por pregunta", async () => {
+    const r = await request(app).post("/api/faqs/import").set("Cookie", cookie).send({
+      entries: [
+        { pregunta: "¿Cuánto cuesta el servicio?", respuesta: "duplicado", categoria: "precio" },
+        { pregunta: "¿Hacen demo?", respuesta: "Sí, agendamos una llamada", categoria: "general" },
+        { pregunta: "  ", respuesta: "vacía" }
+      ]
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.creadas).toBe(1);
+    expect(r.body.omitidas).toBe(1);
+    expect(r.body.errores).toBe(1);
+  });
+
+  it("POST /api/faqs/import (text) parsea bloques con prefijos P/R/C/T/V", async () => {
+    const text = `P: ¿Trabajan los fines de semana?
+R: De lunes a viernes únicamente
+C: general
+T: horarios, agenda
+V: ¿Atienden sábados? | ¿Atienden domingos?
+
+P: ¿Hacen factura?
+R: Sí, A o B según corresponda`;
+    const r = await request(app).post("/api/faqs/import").set("Cookie", cookie).send({ text });
+    expect(r.status).toBe(200);
+    expect(r.body.creadas).toBe(2);
+    const list = await request(app).get("/api/faqs?q=fines de semana").set("Cookie", cookie);
+    const e = list.body.entries.find(x => x.pregunta.includes("fines de semana"));
+    expect(e.variantes).toEqual(["¿Atienden sábados?", "¿Atienden domingos?"]);
+    expect(e.tags).toEqual(["horarios", "agenda"]);
+  });
+
+  it("POST /api/faqs/import (csv) parsea headers y separadores ;", async () => {
+    const csv = `pregunta,respuesta,categoria,tags,variantes
+"¿Aceptan tarjeta?","Sí, todas las tarjetas","general","pago;medios","¿Cobran con tarjeta?;¿Aceptan VISA?"`;
+    const r = await request(app).post("/api/faqs/import").set("Cookie", cookie).send({ csv });
+    expect(r.status).toBe(200);
+    expect(r.body.creadas).toBe(1);
+    const list = await request(app).get("/api/faqs?q=tarjeta").set("Cookie", cookie);
+    const e = list.body.entries.find(x => x.pregunta.includes("tarjeta"));
+    expect(e.tags).toEqual(["pago", "medios"]);
+    expect(e.variantes).toEqual(["¿Cobran con tarjeta?", "¿Aceptan VISA?"]);
+  });
+
+  it("rechaza body vacío", async () => {
+    const r = await request(app).post("/api/faqs/import").set("Cookie", cookie).send({});
+    expect(r.status).toBe(400);
+  });
+});
+
+describe("faqs · admin export-data incluye faqs y training", () => {
+  it("GET /api/admin/export-data trae faqs.entries y training.materials", async () => {
+    const r = await request(app).get("/api/admin/export-data").set("Cookie", cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.faqs).toBeTruthy();
+    expect(Array.isArray(r.body.faqs.entries)).toBe(true);
+    expect(r.body.training).toBeTruthy();
+    expect(Array.isArray(r.body.training.materials)).toBe(true);
+  });
+});
+
 describe("faqs · check-duplicate", () => {
   it("detecta una pregunta casi idéntica como duplicado", async () => {
     const r = await request(app).post("/api/faqs/check-duplicate").set("Cookie", cookie).send({

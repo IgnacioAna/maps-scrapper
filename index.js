@@ -693,6 +693,150 @@ async function sendInviteEmail(toEmail, toName, role, inviteUrl) {
   }
 }
 
+// ── Reporte semanal automático (Resend) ──
+// DATA_DIR se inicializa más abajo en el archivo; usamos lazy resolve.
+function getReportsFile() {
+  const dir = (typeof DATA_DIR !== 'undefined' && DATA_DIR) || (process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(process.cwd(), 'data')));
+  return path.join(dir, 'reports.json');
+}
+function loadReportsState() {
+  try { const f = getReportsFile(); return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : {}; }
+  catch { return {}; }
+}
+function saveReportsState(state) {
+  try { fs.writeFileSync(getReportsFile(), JSON.stringify(state, null, 2)); } catch (e) { console.warn('No pude guardar reports state:', e.message); }
+}
+
+function buildWeeklyReportData() {
+  const settersData = loadSettersData();
+  const allLeads = Object.values(settersData.leads || {});
+  const calendar = settersData.calendar || [];
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dayOfWeek = today.getDay() || 7;
+  const thisMonday = new Date(today.getTime() - (dayOfWeek - 1) * 24 * 60 * 60 * 1000);
+  const lastMonday = new Date(thisMonday.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const lastSunday = new Date(thisMonday.getTime() - 1);
+  const fromTs = lastMonday.getTime();
+  const toTs = thisMonday.getTime();
+  const conexionesNew = allLeads.filter(l => {
+    const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
+    return l.conexion === 'enviada' && t >= fromTs && t < toTs;
+  }).length;
+  let callsWeek = 0, callsAnsweredWeek = 0, callsScheduledWeek = 0, callsDeadWeek = 0;
+  for (const l of allLeads) {
+    if (Array.isArray(l.callLog)) {
+      for (const c of l.callLog) {
+        const t = c.ts ? new Date(c.ts).getTime() : 0;
+        if (t >= fromTs && t < toTs) {
+          callsWeek++;
+          if (['answered_interested', 'answered_not_interested', 'scheduled_with_admin'].includes(c.outcome)) callsAnsweredWeek++;
+          if (c.outcome === 'scheduled_with_admin') callsScheduledWeek++;
+          if (['wrong_number', 'invalid_number'].includes(c.outcome)) callsDeadWeek++;
+        }
+      }
+    }
+  }
+  const calRealized = calendar.filter(e => { const t = e.fecha ? new Date(e.fecha).getTime() : 0; return e.calendarioEstado === 'realizada' && t >= fromTs && t < toTs; }).length;
+  const calNoShow = calendar.filter(e => { const t = e.fecha ? new Date(e.fecha).getTime() : 0; return e.calendarioEstado === 'no_show' && t >= fromTs && t < toTs; }).length;
+  const calPendingNow = calendar.filter(e => e.calendarioEstado === 'pendiente').length;
+  const calOverdueNow = calendar.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < Date.now()).length;
+  const perSetter = (settersData.setters || []).map(s => {
+    const myLeads = allLeads.filter(l => l.assignedTo === s.id);
+    const conexionesSetter = myLeads.filter(l => { const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0; return l.conexion === 'enviada' && t >= fromTs && t < toTs; }).length;
+    let llamadas = 0, agendadosLlamada = 0;
+    for (const l of myLeads) {
+      if (Array.isArray(l.callLog)) {
+        for (const c of l.callLog) {
+          const t = c.ts ? new Date(c.ts).getTime() : 0;
+          if (t >= fromTs && t < toTs) {
+            llamadas++;
+            if (c.outcome === 'scheduled_with_admin') agendadosLlamada++;
+          }
+        }
+      }
+    }
+    return { name: s.name, leadsAsignados: myLeads.length, conexiones: conexionesSetter, llamadas, agendadosLlamada };
+  }).filter(s => s.conexiones > 0 || s.llamadas > 0);
+  return {
+    period: { from: lastMonday.toISOString().substring(0, 10), to: lastSunday.toISOString().substring(0, 10) },
+    wsp: { conexionesNew, respondieronTotal: allLeads.filter(l => l.respondio).length, interesadosTotal: allLeads.filter(l => l.interes === 'si').length, agendadosTotal: allLeads.filter(l => l.estado === 'agendado').length },
+    calls: { totalWeek: callsWeek, answeredWeek: callsAnsweredWeek, scheduledWeek: callsScheduledWeek, deadWeek: callsDeadWeek, pctAtendidas: callsWeek > 0 ? ((callsAnsweredWeek / callsWeek) * 100).toFixed(1) : '0.0' },
+    calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
+    perSetter,
+    leadsTotal: allLeads.length
+  };
+}
+
+function buildWeeklyReportHtml(data) {
+  const { period, wsp, calls, calendar: cal, perSetter, leadsTotal } = data;
+  const card = (label, value, color = '#9D85F2') => `<div style="background:#161922;border:1px solid #262B3B;border-radius:10px;padding:14px 16px;flex:1;min-width:140px;"><div style="font-size:11px;color:#7E8494;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px;">${label}</div><div style="font-size:22px;color:${color};font-weight:700;">${value}</div></div>`;
+  const rowsSetter = perSetter.map(s => `<tr style="border-bottom:1px solid #262B3B;"><td style="padding:8px 12px;color:#E5E7E2;font-weight:600;">${s.name}</td><td style="padding:8px 12px;">${s.leadsAsignados}</td><td style="padding:8px 12px;">${s.conexiones}</td><td style="padding:8px 12px;">${s.llamadas}</td><td style="padding:8px 12px;color:#4ADE80;font-weight:600;">${s.agendadosLlamada}</td></tr>`).join('') ||
+    `<tr><td colspan="5" style="padding:14px;text-align:center;color:#7E8494;">Sin actividad en la semana.</td></tr>`;
+  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">💬 WhatsApp</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Conexiones nuevas', wsp.conexionesNew)}${card('Respondieron (total)', wsp.respondieronTotal)}${card('Interesados (total)', wsp.interesadosTotal, '#4ADE80')}${card('Agendados (total)', wsp.agendadosTotal, '#4ADE80')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Números muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por setter</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Setter</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Conexiones</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
+}
+
+async function sendWeeklyReport(toEmail, dataOverride = null) {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
+  const data = dataOverride || buildWeeklyReportData();
+  const html = buildWeeklyReportHtml(data);
+  const fromEmail = process.env.INVITE_FROM_EMAIL || 'SCM Dental Setting App <onboarding@resend.dev>';
+  try {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: fromEmail, to: [toEmail], subject: `📊 Reporte semanal SCM · ${data.period.from} - ${data.period.to}`, html })
+    });
+    if (resp.ok) { const body = await resp.json(); return { sent: true, id: body.id }; }
+    const err = await resp.json().catch(() => ({}));
+    return { sent: false, reason: err.message || 'Error de Resend' };
+  } catch (e) { return { sent: false, reason: e.message }; }
+}
+
+function maybeRunWeeklyReportCron() {
+  const now = new Date();
+  if (now.getDay() !== 1 || now.getHours() < 8) return;
+  const state = loadReportsState();
+  const last = state.lastWeeklyReportAt ? new Date(state.lastWeeklyReportAt) : null;
+  if (last && (now.getTime() - last.getTime()) < 6 * 24 * 60 * 60 * 1000) return;
+  let adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) {
+    try { const admin = (loadAuthData().users || []).find(u => u.role === 'admin' && u.status === 'active'); adminEmail = admin?.email; }
+    catch {}
+  }
+  if (!adminEmail) { console.warn('Weekly report skipped: no admin email'); return; }
+  sendWeeklyReport(adminEmail).then(result => {
+    if (result.sent) {
+      state.lastWeeklyReportAt = now.toISOString();
+      state.lastWeeklyReportTo = adminEmail;
+      saveReportsState(state);
+      console.log(`📨 Reporte semanal enviado a ${adminEmail}`);
+    } else { console.warn('Weekly report failed:', result.reason); }
+  });
+}
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(maybeRunWeeklyReportCron, 60 * 60 * 1000);
+  setTimeout(maybeRunWeeklyReportCron, 60 * 1000);
+}
+
+app.get('/api/admin/weekly-report/preview', requireAuth, requireRole('admin'), (_req, res) => {
+  try { const data = buildWeeklyReportData(); res.json({ data, html: buildWeeklyReportHtml(data) }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), async (req, res) => {
+  const toEmail = req.body?.to || process.env.ADMIN_EMAIL || req.auth?.user?.email;
+  if (!toEmail) return res.status(400).json({ error: 'No hay email destinatario.' });
+  const result = await sendWeeklyReport(toEmail);
+  if (!result.sent) return res.status(500).json(result);
+  const state = loadReportsState();
+  state.lastWeeklyReportAt = new Date().toISOString();
+  state.lastWeeklyReportTo = toEmail;
+  saveReportsState(state);
+  res.json({ ok: true, ...result, to: toEmail });
+});
+
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
   if (!name || !email || !role) return res.status(400).json({ error: 'Nombre, email y rol son requeridos.' });
@@ -807,11 +951,19 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
     const history = loadHistory();
     const auth = loadAuthData();
     const setters = loadSettersData();
+    // faqs y training también se exportan: sin esto, el pre-deploy no los baja
+    // y un container nuevo de Railway arrancaría con faqs.json del repo (potencialmente
+    // desactualizado o vacío) descartando el banco vivo.
+    let faqs = null, training = null;
+    try { faqs = loadFaqs(); } catch {}
+    try { training = loadTraining(); } catch {}
     res.json({
       exportedAt: new Date().toISOString(),
       history,
       auth,
-      setters
+      setters,
+      faqs,
+      training
     });
   } catch (e) {
     console.error('Export error:', e);
@@ -3443,8 +3595,27 @@ app.get('/api/faqs', requireAuth, (req, res) => {
 });
 
 // POST /api/faqs — crear entrada (admin + setters)
+// Helper: normaliza el array de variantes (formas alternas de la misma pregunta).
+// Acepta array de strings o string con saltos de línea. Trim, dedup, max 10, max 200 chars c/u.
+function _faqNormalizeVariantes(input) {
+  if (!input) return [];
+  const arr = Array.isArray(input) ? input : String(input).split(/\r?\n/);
+  const out = [];
+  const seen = new Set();
+  for (const v of arr) {
+    const t = String(v || '').trim().slice(0, 200);
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
 app.post('/api/faqs', requireAuth, (req, res) => {
-  const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null } = req.body;
+  const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null, variantes = [] } = req.body;
   if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
   const data = loadFaqs();
   const entry = {
@@ -3453,6 +3624,7 @@ app.post('/api/faqs', requireAuth, (req, res) => {
     respuesta: respuesta.trim(),
     categoria,
     tags: Array.isArray(tags) ? tags : [],
+    variantes: _faqNormalizeVariantes(variantes),
     variantId,
     createdBy: req.auth.user.name || req.auth.user.email,
     createdById: req.auth.user.id,
@@ -3466,6 +3638,134 @@ app.post('/api/faqs', requireAuth, (req, res) => {
   res.json({ entry });
 });
 
+// POST /api/faqs/import — importar entradas en bulk (admin + setters)
+// Body acepta uno de:
+//   { entries: [ { pregunta, respuesta, categoria?, tags?, variantes? }, ... ] }   ← JSON
+//   { csv: "pregunta,respuesta,categoria,tags\n..." }                              ← CSV
+//   { text: "P: ...\nR: ...\n\nP: ...\nR: ...\n" }                                 ← texto plano
+//
+// Dedup: por pregunta normalizada (case-insensitive, trim) contra el banco existente.
+// Devuelve { creadas, omitidas, errores } con detalle.
+const VALID_FAQ_CATS = new Set(['precio','objecion','seguimiento','calificacion','general']);
+
+function _faqParseCsv(csv) {
+  // CSV minimalista: la primera línea son headers (pregunta, respuesta, categoria, tags, variantes).
+  // Soporta valores con comillas dobles para escapar comas. tags y variantes se splittean por ;
+  const lines = String(csv).split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const splitLine = (line) => {
+    const out = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = !inQuotes;
+      } else if (c === ',' && !inQuotes) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+  const headers = splitLine(lines[0]).map(h => h.toLowerCase());
+  const idx = (name) => headers.indexOf(name);
+  const out = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = splitLine(lines[i]);
+    const e = {
+      pregunta: cols[idx('pregunta')] || '',
+      respuesta: cols[idx('respuesta')] || '',
+      categoria: idx('categoria') >= 0 ? cols[idx('categoria')] : 'general',
+      tags: idx('tags') >= 0 ? (cols[idx('tags')] || '').split(';').map(t => t.trim()).filter(Boolean) : [],
+      variantes: idx('variantes') >= 0 ? (cols[idx('variantes')] || '').split(';').map(t => t.trim()).filter(Boolean) : []
+    };
+    if (e.pregunta && e.respuesta) out.push(e);
+  }
+  return out;
+}
+
+function _faqParsePlainText(text) {
+  // Formato: bloques separados por línea en blanco. Cada bloque tiene "P: ..." y "R: ..." (multilinea OK).
+  // Categoria opcional con "C: precio". Tags opcional "T: a, b, c".
+  const blocks = String(text).split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  const out = [];
+  for (const block of blocks) {
+    const e = { pregunta: '', respuesta: '', categoria: 'general', tags: [], variantes: [] };
+    let mode = null;
+    for (const line of block.split(/\n/)) {
+      const m = line.match(/^\s*(P|R|C|T|V)\s*[:\-]\s*(.*)$/i);
+      if (m) {
+        mode = m[1].toUpperCase();
+        const val = m[2];
+        if (mode === 'P') e.pregunta = val;
+        else if (mode === 'R') e.respuesta = val;
+        else if (mode === 'C') e.categoria = val.toLowerCase().trim();
+        else if (mode === 'T') e.tags = val.split(',').map(s => s.trim()).filter(Boolean);
+        else if (mode === 'V') e.variantes = val.split('|').map(s => s.trim()).filter(Boolean);
+      } else if (mode === 'P') e.pregunta = (e.pregunta + ' ' + line).trim();
+      else if (mode === 'R') e.respuesta = (e.respuesta + '\n' + line).trim();
+    }
+    if (e.pregunta && e.respuesta) out.push(e);
+  }
+  return out;
+}
+
+app.post('/api/faqs/import', requireAuth, (req, res) => {
+  const { entries, csv, text } = req.body || {};
+  let parsed = [];
+  try {
+    if (Array.isArray(entries) && entries.length) parsed = entries;
+    else if (typeof csv === 'string' && csv.trim()) parsed = _faqParseCsv(csv);
+    else if (typeof text === 'string' && text.trim()) parsed = _faqParsePlainText(text);
+    else return res.status(400).json({ error: 'Pasá entries (array), csv (string) o text (string).' });
+  } catch (e) {
+    return res.status(400).json({ error: 'No pude parsear el input: ' + e.message });
+  }
+  if (!parsed.length) return res.status(400).json({ error: 'No encontré entradas válidas (pregunta + respuesta).' });
+
+  const data = loadFaqs();
+  const existingPreguntas = new Set((data.entries || []).map(e => (e.pregunta || '').toLowerCase().trim()));
+  const creadas = [];
+  const omitidas = [];
+  const errores = [];
+
+  for (const raw of parsed) {
+    const pregunta = String(raw.pregunta || '').trim();
+    const respuesta = String(raw.respuesta || '').trim();
+    if (!pregunta || !respuesta) {
+      errores.push({ pregunta: pregunta.substring(0, 60), error: 'falta pregunta o respuesta' });
+      continue;
+    }
+    const key = pregunta.toLowerCase();
+    if (existingPreguntas.has(key)) {
+      omitidas.push({ pregunta: pregunta.substring(0, 60), motivo: 'ya existía' });
+      continue;
+    }
+    const categoria = VALID_FAQ_CATS.has(raw.categoria) ? raw.categoria : 'general';
+    const entry = {
+      id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      pregunta,
+      respuesta,
+      categoria,
+      tags: Array.isArray(raw.tags) ? raw.tags.map(t => String(t).trim()).filter(Boolean) : [],
+      variantes: _faqNormalizeVariantes(raw.variantes),
+      variantId: null,
+      createdBy: req.auth.user.name || req.auth.user.email,
+      createdById: req.auth.user.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      usos: 0,
+      funcionaron: 0
+    };
+    data.entries.push(entry);
+    existingPreguntas.add(key);
+    creadas.push({ id: entry.id, pregunta: entry.pregunta.substring(0, 60), categoria });
+  }
+  saveFaqs(data);
+  res.json({ creadas: creadas.length, omitidas: omitidas.length, errores: errores.length, detalle: { creadas, omitidas, errores } });
+});
+
 // PUT /api/faqs/:id — editar (admin o el creador)
 app.put('/api/faqs/:id', requireAuth, (req, res) => {
   const data = loadFaqs();
@@ -3474,11 +3774,12 @@ app.put('/api/faqs/:id', requireAuth, (req, res) => {
   const isAdmin = req.auth.user.role === 'admin';
   const isOwner = data.entries[idx].createdById === req.auth.user.id;
   if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Solo podés editar tus propias entradas' });
-  const { pregunta, respuesta, categoria, tags, variantId } = req.body;
+  const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
   if (pregunta !== undefined) data.entries[idx].pregunta = pregunta.trim();
   if (respuesta !== undefined) data.entries[idx].respuesta = respuesta.trim();
   if (categoria !== undefined) data.entries[idx].categoria = categoria;
   if (tags !== undefined) data.entries[idx].tags = Array.isArray(tags) ? tags : [];
+  if (variantes !== undefined) data.entries[idx].variantes = _faqNormalizeVariantes(variantes);
   if (variantId !== undefined) data.entries[idx].variantId = variantId;
   data.entries[idx].updatedAt = new Date().toISOString();
   saveFaqs(data);
@@ -3534,7 +3835,9 @@ function _faqTokens(s) {
   return set;
 }
 function _faqScore(entry, qTokens, opts = {}) {
-  const eTokens = _faqTokens((entry.pregunta || '') + ' ' + (entry.respuesta || ''));
+  // Sumamos pregunta + respuesta + variantes a la bolsa de tokens del entry.
+  const variantesText = Array.isArray(entry.variantes) ? entry.variantes.join(' ') : '';
+  const eTokens = _faqTokens((entry.pregunta || '') + ' ' + (entry.respuesta || '') + ' ' + variantesText);
   if (qTokens.size === 0 || eTokens.size === 0) return 0;
   let inter = 0;
   for (const t of qTokens) if (eTokens.has(t)) inter++;
@@ -3896,6 +4199,103 @@ function userIdFromSetterIdHelper(setterId) {
   if (admins.length === 1) return admins[0].id;
   return null;
 }
+
+// Healthcheck: estado del sistema en tiempo real (admin only)
+const SERVER_BOOT_TS = Date.now();
+app.get('/api/admin/health', requireAuth, requireRole('admin'), (_req, res) => {
+  const checks = {
+    server: { ok: true, uptimeSeconds: Math.round((Date.now() - SERVER_BOOT_TS) / 1000), nodeEnv: process.env.NODE_ENV || 'production' },
+    data: { ok: true, dir: DATA_DIR, files: {} },
+    counts: {},
+    ai: { mercury: !!process.env.MERCURY_API_KEY, qwen: !!process.env.QWEN_API_KEY },
+    backups: { ok: false, count: 0, latest: null },
+    errors: { ok: true, last24hCount: 0, latest: null },
+    rateLimit: { activeKeys: rateLimitStore.size }
+  };
+
+  // Tamaños de los JSON principales
+  const filesToCheck = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_events.json', 'wa_routines.json'];
+  for (const f of filesToCheck) {
+    const fp = path.join(DATA_DIR, f);
+    if (fs.existsSync(fp)) {
+      const stat = fs.statSync(fp);
+      checks.data.files[f] = { sizeBytes: stat.size, sizeMb: (stat.size / 1024 / 1024).toFixed(2), modifiedAt: stat.mtime.toISOString() };
+    } else {
+      checks.data.files[f] = null;
+    }
+  }
+
+  // Counts de negocio
+  try {
+    const settersData = loadSettersData();
+    const allLeads = Object.values(settersData.leads || {});
+    checks.counts.leads = allLeads.length;
+    checks.counts.sinWsp = allLeads.filter(l => l.conexion === 'sin_wsp').length;
+    checks.counts.interesados = allLeads.filter(l => l.interes === 'si').length;
+    checks.counts.agendados = allLeads.filter(l => l.estado === 'agendado').length;
+    const cal = settersData.calendar || [];
+    const now = Date.now();
+    checks.counts.calendarPendientes = cal.filter(e => e.calendarioEstado === 'pendiente').length;
+    checks.counts.calendarAtrasados = cal.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < now).length;
+    checks.counts.setters = (settersData.setters || []).length;
+    checks.counts.variants = (settersData.variants || []).length;
+  } catch (e) {
+    checks.data.ok = false;
+    checks.data.error = e.message;
+  }
+  try {
+    const authData = loadAuthData();
+    checks.counts.users = (authData.users || []).filter(u => u.status === 'active').length;
+    checks.counts.activeSessions = (authData.sessions || []).filter(s => !s.expiresAt || new Date(s.expiresAt).getTime() > Date.now()).length;
+  } catch {}
+  try {
+    const history = loadHistory();
+    checks.counts.historyEntries = Object.keys(history.entries || {}).length;
+  } catch {}
+
+  // Backups
+  try {
+    if (fs.existsSync(BACKUPS_DIR)) {
+      const list = fs.readdirSync(BACKUPS_DIR).filter(n => fs.statSync(path.join(BACKUPS_DIR, n)).isDirectory()).sort();
+      checks.backups.count = list.length;
+      if (list.length > 0) {
+        const latest = list[list.length - 1];
+        const latestPath = path.join(BACKUPS_DIR, latest);
+        const stat = fs.statSync(latestPath);
+        checks.backups.latest = { name: latest, createdAt: stat.mtime.toISOString(), ageHours: ((Date.now() - stat.mtime.getTime()) / 1000 / 3600).toFixed(1) };
+        // Si el último backup tiene > 8 hs, es un warning (debería correr cada 6)
+        checks.backups.ok = (Date.now() - stat.mtime.getTime()) < 8 * 60 * 60 * 1000;
+      }
+    }
+  } catch (e) { checks.backups.error = e.message; }
+
+  // Errores recientes
+  try {
+    if (fs.existsSync(ERROR_LOG)) {
+      const content = fs.readFileSync(ERROR_LOG, 'utf8');
+      const lines = content.split('\n').filter(Boolean);
+      const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+      let count24h = 0, latest = null;
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const e = JSON.parse(lines[i]);
+          const t = new Date(e.ts).getTime();
+          if (t < dayAgo) break;
+          count24h++;
+          if (!latest) latest = { ts: e.ts, message: (e.message || '').substring(0, 200), path: e.path };
+        } catch {}
+      }
+      checks.errors.last24hCount = count24h;
+      checks.errors.latest = latest;
+      checks.errors.ok = count24h < 50; // alerta si > 50 errores en 24h
+    }
+  } catch (e) { checks.errors.error = e.message; }
+
+  // Status global
+  const allOk = checks.server.ok && checks.data.ok && checks.backups.ok && checks.errors.ok;
+  const status = allOk ? 'healthy' : (checks.data.ok && checks.errors.ok ? 'degraded' : 'unhealthy');
+  res.json({ status, checks, generatedAt: new Date().toISOString() });
+});
 
 // Endpoint admin para ver errores recientes
 app.get('/api/admin/errors/recent', requireAuth, requireRole('admin'), (_req, res) => {

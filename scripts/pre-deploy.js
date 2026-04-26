@@ -103,6 +103,20 @@ async function main() {
     console.log(`  setters.json guardado`);
   }
 
+  if (data.faqs) {
+    const faqsPath = path.join(DATA_DIR, "faqs.json");
+    fs.writeFileSync(faqsPath, JSON.stringify(data.faqs, null, 2));
+    const entries = (data.faqs.entries || []).length;
+    console.log(`  faqs.json guardado (${entries} entradas)`);
+  }
+
+  if (data.training) {
+    const trainingPath = path.join(DATA_DIR, "training.json");
+    fs.writeFileSync(trainingPath, JSON.stringify(data.training, null, 2));
+    const materials = (data.training.materials || []).length;
+    console.log(`  training.json guardado (${materials} materiales)`);
+  }
+
   // 5. Bajar data del módulo WA (si existe el endpoint)
   try {
     const waResp = await fetch(`${baseUrl}/api/wa/admin/export`, { headers: { Cookie: cookies } });

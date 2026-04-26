@@ -3486,6 +3486,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('faq-respuesta').value = '';
     document.getElementById('faq-tags').value = '';
     document.getElementById('faq-categoria').value = 'general';
+    const variantesEl = document.getElementById('faq-variantes');
+    if (variantesEl) variantesEl.value = '';
     document.getElementById('faq-suggest-status').textContent = '';
     const dup = document.getElementById('faq-dup-warning');
     if (dup) { dup.classList.add('hidden'); dup.innerHTML = ''; }
@@ -3499,6 +3501,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           document.getElementById('faq-respuesta').value = entry.respuesta || '';
           document.getElementById('faq-tags').value = (entry.tags || []).join(', ');
           document.getElementById('faq-categoria').value = entry.categoria || 'general';
+          if (variantesEl) variantesEl.value = (entry.variantes || []).join('\n');
         }
       } catch {}
     }
@@ -3540,13 +3543,69 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch {}
     }
+    const variantesRaw = document.getElementById('faq-variantes')?.value || '';
+    const variantes = variantesRaw.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
     try {
       const method = id ? 'PUT' : 'POST';
       const url = id ? apiUrl('/api/faqs/' + id) : apiUrl('/api/faqs');
-      await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pregunta, respuesta, categoria, tags }) });
+      await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pregunta, respuesta, categoria, tags, variantes }) });
       document.getElementById('faq-modal').classList.add('hidden');
       loadFaqsModule();
     } catch(err) { alert('Error guardando: ' + err.message); }
+  };
+
+  // ── Importador en bulk ─────────────────────────────────────
+  const FAQ_IMPORT_PLACEHOLDERS = {
+    text: 'P: ¿Cuánto sale?\nR: Depende de cómo trabajen hoy. Lo vemos en la llamada.\nC: precio\nT: precio, costo\nV: ¿Cuánto cobran? | ¿Tienen precios?\n\nP: Ya tengo agencia\nR: Buenísimo, esto no es marketing...\nC: objecion',
+    csv: 'pregunta,respuesta,categoria,tags,variantes\n"¿Cuánto sale?","Depende del plan","precio","precio;costo","¿Cuánto cobran?;¿Tienen precios?"\n"Ya tengo agencia","Esto no es marketing","objecion","competencia",""',
+    json: '[\n  {\n    "pregunta": "¿Cuánto sale?",\n    "respuesta": "Depende del plan",\n    "categoria": "precio",\n    "tags": ["precio","costo"],\n    "variantes": ["¿Cuánto cobran?", "¿Tienen precios?"]\n  }\n]'
+  };
+  const FAQ_IMPORT_HELP = {
+    text: 'Bloques separados por línea en blanco. Prefijos: P: pregunta, R: respuesta (multilínea OK), C: categoría, T: tags (coma), V: variantes (separadas por |).',
+    csv: 'Headers obligatorios: pregunta, respuesta. Opcionales: categoria, tags (separados por ;), variantes (separados por ;). Usá comillas dobles si el valor tiene comas.',
+    json: 'Array de objetos con pregunta, respuesta y opcionales categoria, tags, variantes.'
+  };
+  window._faqImportPlaceholder = () => {
+    const fmt = document.getElementById('faq-import-format').value;
+    document.getElementById('faq-import-input').placeholder = FAQ_IMPORT_PLACEHOLDERS[fmt] || '';
+    document.getElementById('faq-import-help').textContent = FAQ_IMPORT_HELP[fmt] || '';
+  };
+  window._faqOpenImportModal = () => {
+    document.getElementById('faq-import-input').value = '';
+    document.getElementById('faq-import-format').value = 'text';
+    const r = document.getElementById('faq-import-result');
+    r.classList.add('hidden'); r.innerHTML = '';
+    window._faqImportPlaceholder();
+    document.getElementById('faq-import-modal').classList.remove('hidden');
+  };
+  window._faqImportSubmit = async () => {
+    const fmt = document.getElementById('faq-import-format').value;
+    const raw = document.getElementById('faq-import-input').value.trim();
+    if (!raw) { alert('Pegá algo en el textarea.'); return; }
+    let body = {};
+    if (fmt === 'json') {
+      try { body = { entries: JSON.parse(raw) }; }
+      catch (e) { alert('JSON inválido: ' + e.message); return; }
+    } else if (fmt === 'csv') body = { csv: raw };
+    else body = { text: raw };
+
+    const btn = document.getElementById('faq-import-submit-btn');
+    btn.disabled = true; btn.textContent = '⏳ Importando...';
+    try {
+      const resp = await fetch(apiUrl('/api/faqs/import'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
+      const r = document.getElementById('faq-import-result');
+      r.innerHTML = `✅ <strong>${data.creadas}</strong> creadas · <strong>${data.omitidas}</strong> omitidas (ya existían) · <strong>${data.errores}</strong> con error.`;
+      r.classList.remove('hidden');
+      loadFaqsModule();
+    } catch (err) {
+      alert('Error importando: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Importar';
+    }
   };
 
   window._faqSuggestTags = async () => {
