@@ -329,11 +329,8 @@ function renderAccountsAdmin() {
         renderAccountsAdmin();
         return;
       } else if (act === "msg") {
-        const phone = prompt("Teléfono destino (con código país, solo dígitos):");
-        if (!phone) return;
-        const text = prompt("Mensaje:");
-        if (!text) return;
-        await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId: id, phone, text }) });
+        await openSendMessageModal(id);
+        return; // el modal maneja el refresh
       }
       // refresh suave
       const a = _accounts.find((x) => x.id === id);
@@ -350,6 +347,119 @@ async function openCreateAccountDialog() {
     await loadInitialData();
     renderAccountsAdmin();
   } catch (err) { alert("Error: " + err.message); }
+}
+
+// Modal para enviar mensaje desde el panel WA. Soporta:
+// - Pre-llenar telefono (de localStorage o param)
+// - Mandar a 1 numero o a varios (uno por linea)
+// - Status visual de envio (cola)
+async function openSendMessageModal(accountId, prefillPhone = '', prefillText = '') {
+  const account = (_accounts || []).find(a => a.id === accountId);
+  const accountLabel = account?.label || 'Cuenta';
+  const lastPhone = prefillPhone || localStorage.getItem('wa-last-phone') || '';
+  const lastText  = prefillText  || localStorage.getItem('wa-last-text')  || '';
+
+  // Crear overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:600px;">
+      <div class="modal-header">
+        <h3>Enviar mensaje · ${escHtml(accountLabel)}</h3>
+        <button class="modal-close-btn" data-close>×</button>
+      </div>
+      <div class="modal-body">
+        <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Teléfono (con código país, solo dígitos)</label>
+        <input id="wa-send-phone" type="text" value="${escHtml(lastPhone)}" placeholder="Ej: 5491134567890" style="width:100%; margin-bottom:14px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px;">
+
+        <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">
+          <input type="checkbox" id="wa-send-multi" style="margin:0;">
+          <span>Enviar a varios (uno por línea)</span>
+        </label>
+
+        <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Mensaje</label>
+        <textarea id="wa-send-text" rows="5" placeholder="Hola {{nombre}}, ¿cómo estás?" style="width:100%; margin-bottom:8px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(lastText)}</textarea>
+
+        <div id="wa-send-status" style="font-size:12px; color:var(--text-secondary); min-height:18px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button id="wa-send-go" class="btn btn-primary">Enviar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const phoneInput = overlay.querySelector('#wa-send-phone');
+  const textInput  = overlay.querySelector('#wa-send-text');
+  const multiCb    = overlay.querySelector('#wa-send-multi');
+  const status     = overlay.querySelector('#wa-send-status');
+  const goBtn      = overlay.querySelector('#wa-send-go');
+
+  const close = () => overlay.remove();
+  overlay.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  // Toggle multi: cambia el textarea phone a multi-line cuando se activa
+  multiCb.addEventListener('change', () => {
+    if (multiCb.checked) {
+      // Convertir input a textarea visual
+      phoneInput.outerHTML = `<textarea id="wa-send-phone" rows="3" placeholder="Un número por línea&#10;5491134567890&#10;5491198765432" style="width:100%; margin-bottom:14px; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:14px; resize:vertical; font-family:inherit;">${escHtml(phoneInput.value)}</textarea>`;
+    }
+  });
+
+  goBtn.addEventListener('click', async () => {
+    const phoneRaw = overlay.querySelector('#wa-send-phone').value.trim();
+    const text = textInput.value.trim();
+    if (!phoneRaw || !text) {
+      status.textContent = 'Faltan teléfono o mensaje';
+      status.style.color = 'var(--danger)';
+      return;
+    }
+    const phones = multiCb.checked
+      ? phoneRaw.split('\n').map(p => p.replace(/\D/g, '')).filter(p => p.length >= 8)
+      : [phoneRaw.replace(/\D/g, '')].filter(p => p.length >= 8);
+
+    if (phones.length === 0) {
+      status.textContent = 'No hay números válidos (mínimo 8 dígitos)';
+      status.style.color = 'var(--danger)';
+      return;
+    }
+
+    // Guardar últimos para próximo uso
+    localStorage.setItem('wa-last-phone', phones[0]);
+    localStorage.setItem('wa-last-text', text);
+
+    goBtn.disabled = true;
+    status.style.color = 'var(--text-secondary)';
+
+    let ok = 0, fail = 0;
+    for (let i = 0; i < phones.length; i++) {
+      const p = phones[i];
+      status.textContent = `Enviando ${i + 1}/${phones.length} → ${p}…`;
+      try {
+        await api("/api/wa/commands/send-message", { method: "POST", body: JSON.stringify({ accountId, phone: p, text }) });
+        ok++;
+      } catch (err) {
+        fail++;
+        console.error('send error', p, err);
+      }
+      // Pausa anti-ban entre envíos (8-15s aleatorio)
+      if (i < phones.length - 1) {
+        const wait = 8000 + Math.floor(Math.random() * 7000);
+        status.textContent = `Esperando ${Math.round(wait/1000)}s antes del siguiente…`;
+        await new Promise(r => setTimeout(r, wait));
+      }
+    }
+
+    status.textContent = `Listo: ${ok} OK, ${fail} fallaron`;
+    status.style.color = fail === 0 ? 'var(--success)' : 'var(--warning)';
+    goBtn.textContent = 'Cerrar';
+    goBtn.disabled = false;
+    goBtn.onclick = close;
+  });
+
+  // Foco inicial: si ya hay phone, ir directo a textarea
+  setTimeout(() => (lastPhone ? textInput : phoneInput).focus(), 50);
 }
 
 // ── ROUTINES ──────────────────────────────────────────────────────────────
