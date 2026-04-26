@@ -730,4 +730,255 @@ document.addEventListener("click", (e) => {
   if (burger) burger.click();
 });
 
+// ── IA INBOX ──────────────────────────────────────────────────────────────
+// Lista de mensajes inbound clasificados por IA. Cada item:
+//   - contacto (nombre o telefono)
+//   - mensaje recibido
+//   - intent + confianza
+//   - respuesta sugerida
+//   - acciones: aprobar y enviar / editar y enviar / ignorar
+let _aiInboxCache = [];
+
+async function renderAIInbox() {
+  const view = $("#view-wa-aiinbox");
+  if (!view) return;
+
+  // Skeleton
+  view.innerHTML = `
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+      <div>
+        <h1 style="font-size:22px; font-weight:600; margin:0;">IA Inbox</h1>
+        <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">Mensajes que recibieron tus cuentas, clasificados por IA. Aprobá o editá las sugerencias antes de enviar.</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span id="ai-inbox-count" style="font-size:12px; color:var(--text-secondary);">—</span>
+        <button class="btn btn-secondary btn-sm" onclick="window._aiInboxRefresh()">Refrescar</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">
+      <button class="chip chip-filter" data-filter="all">Todos</button>
+      <button class="chip chip-filter" data-filter="needs-review">Requieren humano</button>
+      <button class="chip chip-filter" data-filter="auto">Auto-respuesta</button>
+      <button class="chip chip-filter" data-filter="caliente">Leads calientes</button>
+    </div>
+    <div id="ai-inbox-list">
+      <div class="empty-state" style="padding:30px; text-align:center; color:var(--text-secondary);">Cargando...</div>
+    </div>`;
+
+  view.querySelectorAll(".chip-filter").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      view.querySelectorAll(".chip-filter").forEach((b) => b.classList.remove("chip-active"));
+      btn.classList.add("chip-active");
+      _aiInboxRender();
+    }),
+  );
+  view.querySelector('[data-filter="all"]').classList.add("chip-active");
+
+  await _aiInboxRefresh();
+}
+
+async function _aiInboxRefresh() {
+  try {
+    const events = await api("/api/wa/events?type=ai-classified-inbound&limit=200");
+    // Quedarse con la entrada mas reciente por contactKey (deduplicar)
+    const byKey = new Map();
+    for (const ev of events) {
+      const key = `${ev.accountId}::${ev.payload?.contactKey || ev.payload?.contactPhone || ev.payload?.contactName}`;
+      const existing = byKey.get(key);
+      if (!existing || new Date(ev.createdAt).getTime() > new Date(existing.createdAt).getTime()) {
+        byKey.set(key, ev);
+      }
+    }
+    _aiInboxCache = Array.from(byKey.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    _aiInboxRender();
+  } catch (err) {
+    console.error("AI inbox load error:", err);
+    const list = $("#ai-inbox-list");
+    if (list) list.innerHTML = `<div class="empty-state" style="color:var(--danger); padding:20px;">Error: ${escHtml(err.message)}</div>`;
+  }
+}
+window._aiInboxRefresh = _aiInboxRefresh;
+
+function _aiInboxRender() {
+  const view = $("#view-wa-aiinbox");
+  if (!view) return;
+  const filter = view.querySelector(".chip-active")?.getAttribute("data-filter") || "all";
+  const list = $("#ai-inbox-list");
+  const count = $("#ai-inbox-count");
+
+  let items = _aiInboxCache.slice();
+  if (filter === "needs-review") items = items.filter((e) => e.payload?.classification?.needsHumanReview);
+  if (filter === "auto") items = items.filter((e) => e.payload?.classification?.shouldAutoReply);
+  if (filter === "caliente") items = items.filter((e) => {
+    const intent = e.payload?.classification?.intent;
+    return intent === "interesado_quiere_info" || intent === "interesado_quiere_agendar";
+  });
+
+  if (count) count.textContent = `${items.length} de ${_aiInboxCache.length}`;
+
+  if (items.length === 0) {
+    list.innerHTML = `<div class="empty-state" style="padding:30px; text-align:center; color:var(--text-secondary);">No hay mensajes ${filter !== "all" ? "con este filtro" : "todavía"}.</div>`;
+    return;
+  }
+
+  const intentLabels = {
+    saludo: { label: "Saludo", color: "var(--info)" },
+    pregunta_que_es: { label: "Pregunta info", color: "var(--info)" },
+    pregunta_precio: { label: "Pregunta precio", color: "var(--warning)" },
+    objecion_caro: { label: "Objeción precio", color: "var(--warning)" },
+    objecion_ya_tengo: { label: "Ya tiene proveedor", color: "var(--warning)" },
+    interesado_quiere_info: { label: "INTERESADO", color: "var(--success)" },
+    interesado_quiere_agendar: { label: "QUIERE AGENDAR", color: "var(--success)" },
+    descalificado: { label: "Descalificado", color: "var(--danger)" },
+    off_topic_o_ruido: { label: "Off-topic", color: "var(--text-secondary)" },
+    desconocido: { label: "Desconocido", color: "var(--text-secondary)" },
+  };
+
+  list.innerHTML = items
+    .map((ev) => {
+      const p = ev.payload || {};
+      const c = p.classification || {};
+      const intent = intentLabels[c.intent] || intentLabels.desconocido;
+      const account = (_accounts || []).find((a) => a.id === ev.accountId);
+      const accountLabel = account?.label || ev.accountId.slice(0, 8);
+      const contact = p.contactName || p.contactPhone || p.contactKey || "—";
+      const confidence = Math.round((c.confidence || 0) * 100);
+      const ago = formatAgo(new Date(ev.createdAt));
+      const needsHumanBadge = c.needsHumanReview
+        ? '<span class="chip chip-warning" style="font-size:10px;">Revisar humano</span>'
+        : '<span class="chip chip-success" style="font-size:10px;">Auto-respuesta</span>';
+
+      return `
+        <div class="ai-inbox-card" style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:14px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:12px;">
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;">
+                <strong style="font-size:14px;">${escHtml(contact)}</strong>
+                <span class="chip" style="background:${intent.color}22; color:${intent.color}; font-size:11px;">${intent.label}</span>
+                <span style="font-size:11px; color:var(--text-secondary);">${confidence}%</span>
+                ${needsHumanBadge}
+              </div>
+              <div style="font-size:12px; color:var(--text-secondary);">
+                ${escHtml(accountLabel)} · ${ago}
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--bg-tertiary); padding:10px 12px; border-radius:6px; margin-bottom:10px;">
+            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Mensaje recibido:</div>
+            <div style="font-size:13px;">${escHtml(p.message || "")}</div>
+          </div>
+          ${
+            c.suggestedReply
+              ? `
+          <div style="background:var(--bg-tertiary); padding:10px 12px; border-radius:6px; margin-bottom:10px; border-left:3px solid var(--accent);">
+            <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Sugerencia IA:</div>
+            <textarea class="ai-suggested-text" data-ev-id="${ev.id}" style="width:100%; background:transparent; border:none; color:var(--text-primary); font-size:13px; resize:vertical; min-height:50px; font-family:inherit;">${escHtml(c.suggestedReply)}</textarea>
+          </div>`
+              : `
+          <div style="font-size:12px; color:var(--text-secondary); font-style:italic; margin-bottom:10px;">Sin sugerencia IA — respondé manual desde la cuenta.</div>`
+          }
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            ${
+              c.suggestedReply
+                ? `<button class="btn btn-primary btn-sm" onclick="window._aiInboxSend('${ev.id}', '${escAttr(ev.accountId)}', '${escAttr(p.contactPhone || p.contactKey)}')">Enviar</button>`
+                : ""
+            }
+            <button class="btn btn-secondary btn-sm" onclick="window._aiInboxDismiss('${ev.id}')">Ignorar</button>
+            ${
+              c.markLeadAs
+                ? `<span class="chip chip-info" style="font-size:11px;">Marca lead → ${escHtml(c.markLeadAs)}</span>`
+                : ""
+            }
+          </div>
+        </div>`;
+    })
+    .join("");
+}
+
+window._aiInboxSend = async (evId, accountId, contactKey) => {
+  const ta = document.querySelector(`textarea[data-ev-id="${evId}"]`);
+  const text = ta?.value?.trim();
+  if (!text) {
+    alert("Escribí un mensaje antes de enviar.");
+    return;
+  }
+  // contactKey suele ser el telefono limpio
+  const phone = (contactKey || "").replace(/\D/g, "");
+  if (phone.length < 8) {
+    alert("No se pudo determinar el teléfono del destinatario. Respondé desde la cuenta directamente.");
+    return;
+  }
+  try {
+    await api("/api/wa/commands/send-message", {
+      method: "POST",
+      body: JSON.stringify({ accountId, phone, text }),
+    });
+    // Marcar este evento como atendido (creando un nuevo evento de "ai-inbox-handled")
+    await api("/api/wa/events", {
+      method: "POST",
+      body: JSON.stringify({
+        accountId,
+        type: "ai-inbox-handled",
+        payload: { handledEvId: evId, action: "sent", text },
+      }),
+    });
+    await _aiInboxRefresh();
+  } catch (err) {
+    alert("Error al enviar: " + err.message);
+  }
+};
+
+window._aiInboxDismiss = async (evId) => {
+  try {
+    await api("/api/wa/events", {
+      method: "POST",
+      body: JSON.stringify({
+        accountId: "",
+        type: "ai-inbox-handled",
+        payload: { handledEvId: evId, action: "dismissed" },
+      }),
+    });
+    await _aiInboxRefresh();
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+};
+
+function formatAgo(date) {
+  const ms = Date.now() - date.getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "ahora";
+  if (min < 60) return `hace ${min}m`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  return `hace ${d}d`;
+}
+
+// Helpers de escape (en caso de no tenerlos ya en el ambito)
+if (typeof escHtml === "undefined") {
+  window.escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+function escAttr(s) {
+  return String(s || "").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+}
+
+// Hook al sistema de routing del panel: cuando se navega al view-wa-aiinbox, renderizar
+document.addEventListener("click", (e) => {
+  const target = e.target.closest('[data-target="view-wa-aiinbox"]');
+  if (target) {
+    setTimeout(() => renderAIInbox(), 50);
+  }
+});
+
+// Refresh automatico cada 30s si la inbox esta visible
+setInterval(() => {
+  const view = $("#view-wa-aiinbox");
+  if (view && !view.classList.contains("hidden")) {
+    _aiInboxRefresh();
+  }
+}, 30_000);
+
 console.log("[wa] modulo cargado");
