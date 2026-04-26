@@ -169,6 +169,59 @@ Construído como **read-only oficial** + integración con la IA del Banco de Res
 
 ### Flujo: setter abre `/onboarding/4` → ve módulo en iframe → al final aparece quiz inyectado → si aprueba (≥4/5) se marca `progress[4]=true` + postMessage al wrapper actualiza el pill del topbar a "Quiz aprobado"
 
+## Banco de Respuestas (`view-faqs`)
+
+CRUD de pares pregunta/respuesta + IA que sugiere respuesta para una nueva pregunta del lead, usando el banco como ejemplos few-shot + material del Centro de Entrenamiento + onboarding como contexto base de verdad.
+
+### Estructura de un entry (`data/faqs.json`)
+```js
+{
+  id, pregunta, respuesta,
+  categoria: 'precio'|'objecion'|'seguimiento'|'calificacion'|'general',
+  tags: [],            // libres
+  variantes: [],       // formas alternas de la misma pregunta (opcional, max 10, max 200 chars c/u)
+  variantId,           // opcional: si aplica solo a una variante de mensaje
+  createdBy, createdById, createdAt, updatedAt,
+  usos, funcionaron    // métricas: setter clickea "Copiar" (uso) o "Funcionó" (efectividad)
+}
+```
+
+### Endpoints (`/api/faqs`)
+- `GET ?q=&categoria=&sort=` — listar/filtrar. `sort=usos` (default), `sort=top` (mejor ratio funcionaron/usos, requiere usos>=2), `sort=recientes`
+- `POST` — crear
+- `PUT /:id` — editar (admin o creador)
+- `DELETE /:id` — borrar (admin o creador)
+- `PATCH /:id/uso` — incrementa `usos`. Body `{funcionó:true}` también incrementa `funcionaron`
+- `POST /import` — bulk. Body acepta `{entries:[]}` (JSON array), `{csv:""}` (headers `pregunta,respuesta,categoria,tags,variantes`; `;` para listas), o `{text:""}` (bloques separados por línea en blanco con prefijos `P:`, `R:`, `C:`, `T:` coma, `V:` con `|`). Dedup por pregunta normalizada
+- `POST /check-duplicate` — devuelve hasta 5 entries con score >= 0.4 contra `{pregunta, respuesta, categoria, excludeId}`. La UI lo llama antes de guardar
+- `POST /suggest-tags` — IA propone `{categoria, tags}` para una FAQ a partir de pregunta+respuesta
+- `POST /suggest` — IA genera respuesta para `{pregunta, variantId?, contexto?, categoria?}`. Devuelve `{sugerencia, bloques, ejemplosUsados, ejemplos:[{id,pregunta,score}], usedFallback}`. Si la IA devuelve vacío, fallback automático a la respuesta literal del top match del retrieval (logueado a stdout). Output limitado a 1-2 bloques separados por `\n\n` (post-procesamiento del response del modelo)
+
+### Retrieval (helpers `_faqNormalize`, `_faqTokens`, `_faqScore`)
+- Tokenización: lowercase + sin acentos (NFD + strip diacríticos) + split por no-alfanum + filtra stopwords ES + tokens de longitud ≥ 3
+- Stopwords: lista en `FAQ_STOPWORDS_ES`. **Las palabras interrogativas (quien, donde, cuando, como, cual, porque) NO están en stopwords a propósito** — son señales fuertes de intención
+- `_faqScore(entry, qTokens, opts)`: cosine similarity sobre sets de tokens (entry incluye pregunta + respuesta + variantes), + boost por tag coincidente (+0.08 c/u, max 3), + boost por categoría coincidente (+0.10), + boost por efectividad histórica (`funcionaron/usos × 0.15`), + popularidad (+0.05)
+- `/suggest` usa threshold 0.10 + max 8 ejemplos. `/check-duplicate` usa threshold 0.40
+
+### Frontend ([public/app.js](public/app.js) — todo bajo `window._faq*`)
+- `loadFaqsModule()` lista
+- `_faqOpenModal(id?)` / `_faqSave(forceSave?)` con check duplicados antes de save
+- `_faqSuggest()` — botón "Generar con IA" en el modal
+- `_faqSuggestTags()` — botón "✨ Sugerir tags"
+- `_faqOpenImportModal()` / `_faqImportSubmit()` — modal de import bulk con selector de formato (text/csv/json)
+- `_faqCopy(id)` — incrementa usos al copiar
+- `_faqFeedback(id, true)` — botón "Funcionó"
+
+### Pre-deploy
+- `/api/admin/export-data` ahora incluye `faqs` y `training` (antes faltaban — un container nuevo de Railway podía descartar el banco vivo)
+- `scripts/pre-deploy.js` los guarda como `data/faqs.json` y `data/training.json`
+
+### Tests ([tests/faqs.test.js](tests/faqs.test.js))
+Setup: pre-popula `auth.json` y `faqs.json` vacío en `tmpData` antes de importar `index.js`. CRUD, sort (usos/top/recientes), variantes, import (entries/csv/text), check-duplicate, export-data. NO testea `/suggest` ni `/suggest-tags` (dependen de la API IA real).
+
+### Seed inicial
+[scripts/seed-faqs.mjs](scripts/seed-faqs.mjs) — script idempotente con 18 FAQs derivadas del Módulo 7 del onboarding (10 objeciones oficiales + 8 inferidas). Dedup por pregunta. Uso: `RAILWAY_URL=... ADMIN_EMAIL=... ADMIN_PASSWORD=... node scripts/seed-faqs.mjs`
+
 ## Módulo WhatsApp Multi-Account (`src/wa/`)
 
 Módulo separado para gestión de cuentas WA con estados, warmeo, rutinas. Se monta vía `mountWa(app)` desde `index.js`.
