@@ -152,6 +152,24 @@ No usamos GHL hoy, pero **dejamos puertas abiertas** para integrar mañana:
      customFields)
    - Hoy sin destino. El día que se decida integrar GHL, se le pega la URL.
 
+### Bloque C.5 — Extensión Chrome "Pegar como humano"
+
+10. **Chrome extension** que reemplaza el paste en `web.whatsapp.com` por
+    typing humano caracter por caracter (delay 50-150ms aleatorio).
+    - Hotkey: Ctrl+Shift+V (o reemplazar Ctrl+V opcionalmente)
+    - Lee del clipboard normal del SO
+    - Tipea en el input focuseado del chat actual
+    - Bonus: el panel SCM puede prefijar el texto copiado con un marker
+      invisible (`__SCM_TYPE__:`); la extension solo activa el typing humano
+      cuando ve ese marker. Cualquier otro paste normal funciona como Ctrl+V.
+    - Ventaja: sirve **incluso para setters que NO usen wa-multi** y prefieran
+      WA Web directo en Chrome. Cero fricción de instalacion (~10s drag and
+      drop a chrome://extensions/).
+    - Esfuerzo: 2-3 horas de codigo + 1 hora de testing.
+    - Idea original del usuario (27 abril 2026) — observo que el paste
+      instantaneo es uno de los tells mas fuertes para WA. Esta extension lo
+      mata.
+
 ### Bloque D — Mejora de IA (futuro, opcional)
 
 10. **Conectar Claude API o GPT-4o-mini** para generar respuestas
