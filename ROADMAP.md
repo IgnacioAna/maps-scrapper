@@ -209,3 +209,32 @@ No usamos GHL hoy, pero **dejamos puertas abiertas** para integrar mañana:
 Si pasa tiempo y querés saber dónde estamos: leer este archivo. Está en
 `GoogleSrapper/ROADMAP.md`. Cualquier decisión estratégica nueva se agrega
 acá con fecha.
+
+---
+
+## Setup de herramientas para evitar "las 3 horas dándole vueltas"
+
+**GSD (Get Shit Done) instalado el 27 abril 2026** en `~/.claude/` global.
+
+Skills `/gsd-*` disponibles en todas las sesiones de Claude Code:
+- `/gsd-resume-work` — retomar sesión anterior con contexto restaurado
+- `/gsd-discuss-phase` — preguntas adaptativas antes de planear (cero asunciones)
+- `/gsd-plan-phase` — plan detallado verificable
+- `/gsd-execute-phase` — ejecucion con sub-agents + commits atomicos
+- `/gsd-verify-work` — UAT conversacional
+- `/gsd-debug` — debugging sistematico que persiste entre context resets
+- `/gsd-do "<lo que quiero>"` — auto-routing a skill correcta
+
+**Hooks activos** (todas las sesiones):
+- Read-before-edit guard
+- Prompt injection guard
+- Context window monitor
+- Workflow guard
+
+**Por qué importa**: este workflow obliga a discutir/planear ANTES de codear,
+con preguntas adaptativas. Resuelve el problema de "no nos entendíamos al
+toque" y de "perder contexto cuando se llena la conversacion".
+
+**Para los próximos bloques (B/C/D del roadmap)**: arrancar con
+`/gsd-discuss-phase` describiendo el problema → revisar las preguntas que
+GSD haga → confirmar el plan → ejecutar con `/gsd-execute-phase`.
