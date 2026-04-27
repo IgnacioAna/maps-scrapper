@@ -1,6 +1,1535 @@
 {
   "events": [
     {
+      "id": "ev_1777234954885_gw1xnq",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Claro por eso el soporte es lo que hace que una empresa destaque y lleguen mas clientes por el boca a boca",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:22:34.885Z"
+    },
+    {
+      "id": "ev_1777234954884_1w4z8a",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:22:34.884Z"
+    },
+    {
+      "id": "ev_1777234954876_7hoorq",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Claro por eso el soporte es lo que hace que una empresa destaque y lleguen mas clientes por el boca a boca",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:22:34.876Z"
+    },
+    {
+      "id": "ev_1777234922431_4ce82g",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Ademas si tu nombre representa vinculo, fidelizacion no podes tener mal soporte jaja",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:22:02.431Z"
+    },
+    {
+      "id": "ev_1777234922429_zbnafy",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:22:02.429Z"
+    },
+    {
+      "id": "ev_1777234922427_o4g4lw",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Ademas si tu nombre representa vinculo, fidelizacion no podes tener mal soporte jaja",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:22:02.427Z"
+    },
+    {
+      "id": "ev_1777234907858_e5rsu9",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Sii, y on los típicos santiaguinos que caen mal por como hablan jajaja",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:21:47.858Z"
+    },
+    {
+      "id": "ev_1777234907856_2nx6ct",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:21:47.856Z"
+    },
+    {
+      "id": "ev_1777234907852_0idkft",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Sii, y on los típicos santiaguinos que caen mal por como hablan jajaja",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:21:47.852Z"
+    },
+    {
+      "id": "ev_1777234816096_nraci8",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Y en mi opinión eso es justo lo que no hay que hacer",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:20:16.096Z"
+    },
+    {
+      "id": "ev_1777234816094_a5gmej",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:20:16.094Z"
+    },
+    {
+      "id": "ev_1777234816085_f4rvm1",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Y en mi opinión eso es justo lo que no hay que hacer",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:20:16.085Z"
+    },
+    {
+      "id": "ev_1777234813636_vawr1w",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:20:13.636Z"
+    },
+    {
+      "id": "ev_1777234813634_si5p2b",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": []
+      },
+      "createdAt": "2026-04-26T20:20:13.634Z"
+    },
+    {
+      "id": "ev_1777234598885_084wz2",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Estuve revisando las redes de vambeai  el otro dia para ver que estrategias están usando porque están creciendo mucho",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:16:38.885Z"
+    },
+    {
+      "id": "ev_1777234598883_pfbcrw",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:16:38.883Z"
+    },
+    {
+      "id": "ev_1777234598876_tl1pms",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Estuve revisando las redes de vambeai  el otro dia para ver que estrategias están usando porque están creciendo mucho",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:16:38.876Z"
+    },
+    {
+      "id": "ev_1777234185891_b5pg76",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "ahh entiendo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:09:45.891Z"
+    },
+    {
+      "id": "ev_1777234185888_i9p4fw",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:09:45.888Z"
+    },
+    {
+      "id": "ev_1777234185876_vgctxi",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "ahh entiendo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:09:45.876Z"
+    },
+    {
+      "id": "ev_1777233727885_1fm6z8",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Y la idea es que so quieren marketing despues para captar clientes nuevos no se vayan con otra agencia",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T20:02:07.885Z"
+    },
+    {
+      "id": "ev_1777233727883_ht5k55",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T20:02:07.883Z"
+    },
+    {
+      "id": "ev_1777233727875_tfxzpe",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Y la idea es que so quieren marketing despues para captar clientes nuevos no se vayan con otra agencia",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T20:02:07.875Z"
+    },
+    {
+      "id": "ev_1777233580808_29tgez",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Entonces el producto estrella y diferencial es la reactivacion",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:59:40.808Z"
+    },
+    {
+      "id": "ev_1777233580806_0zy3n4",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:59:40.806Z"
+    },
+    {
+      "id": "ev_1777233580803_21erji",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Entonces el producto estrella y diferencial es la reactivacion",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:59:40.803Z"
+    },
+    {
+      "id": "ev_1777233557884_ghzivw",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "La reactivacion es el gancho para que ellos vean como trabajamos y nosotros ver si ellos son buenos clientes, lo demás va a empezar a salir solo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:59:17.884Z"
+    },
+    {
+      "id": "ev_1777233557882_bz272y",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:59:17.882Z"
+    },
+    {
+      "id": "ev_1777233557866_9bkmhv",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "La reactivacion es el gancho para que ellos vean como trabajamos y nosotros ver si ellos son buenos clientes, lo demás va a empezar a salir solo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:59:17.866Z"
+    },
+    {
+      "id": "ev_1777233399634_jqakia",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Claro que si",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:56:39.634Z"
+    },
+    {
+      "id": "ev_1777233399632_5q2i2w",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:56:39.632Z"
+    },
+    {
+      "id": "ev_1777233399630_we5n7c",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Claro que si",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:56:39.630Z"
+    },
+    {
+      "id": "ev_1777233328653_mb8m8j",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Y ahi ya es otro valor",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:55:28.653Z"
+    },
+    {
+      "id": "ev_1777233328652_j182fg",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:55:28.652Z"
+    },
+    {
+      "id": "ev_1777233328644_i392ne",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Y ahi ya es otro valor",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:55:28.644Z"
+    },
+    {
+      "id": "ev_1777233322925_2cdvki",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Pero por lo que escucho esta gente igual necesita captar nuevos entonces eso va a salir solo después , ya con los resultados de la reactivación",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:55:22.925Z"
+    },
+    {
+      "id": "ev_1777233322923_x4e23h",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:55:22.923Z"
+    },
+    {
+      "id": "ev_1777233322916_vr88gi",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Pero por lo que escucho esta gente igual necesita captar nuevos entonces eso va a salir solo después , ya con los resultados de la reactivación",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:55:22.916Z"
+    },
+    {
+      "id": "ev_1777233288908_ov14yo",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Nono, si te decía que es el discurso para la persona, no vender todo de una, lo mas importante y primero es la reactivacion",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:54:48.908Z"
+    },
+    {
+      "id": "ev_1777233288906_j9m91z",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:54:48.906Z"
+    },
+    {
+      "id": "ev_1777233288897_e04hu9",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Nono, si te decía que es el discurso para la persona, no vender todo de una, lo mas importante y primero es la reactivacion",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:54:48.897Z"
+    },
+    {
+      "id": "ev_1777233192929_7cms0b",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Igual ellos pagan algo por eso, la idea es ahora buscar muchos muchos clientes asi tenemos una cartera grande, que van a pagar poco pero pagan, termina siendo una SaaS el negocio y para los que quieran le vendes el upsell pero si hoy vendo tambien publicidad la operativa se complica mucho para captar nuevos clientes",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:53:12.929Z"
+    },
+    {
+      "id": "ev_1777233192927_x7vtag",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:53:12.927Z"
+    },
+    {
+      "id": "ev_1777233192920_5ngwqw",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Igual ellos pagan algo por eso, la idea es ahora buscar muchos muchos clientes asi tenemos una cartera grande, que van a pagar poco pero pagan, termina siendo una SaaS el negocio y para los que quieran le vendes el upsell pero si hoy vendo tambien publicidad la operativa se complica mucho para captar nuevos clientes",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:53:12.920Z"
+    },
+    {
+      "id": "ev_1777233124483_xjnnc8",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Si yo se los enseño porque les toca aprender para seguir operandolo van a pasar dos cosas: se van a frustrar por complejidad y van a verle el valor que tiene porque lo van a entender, ahi vender un upsell se hace más fácil",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:52:04.483Z"
+    },
+    {
+      "id": "ev_1777233124481_dijf6h",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:52:04.481Z"
+    },
+    {
+      "id": "ev_1777233124474_tdw213",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Si yo se los enseño porque les toca aprender para seguir operandolo van a pasar dos cosas: se van a frustrar por complejidad y van a verle el valor que tiene porque lo van a entender, ahi vender un upsell se hace más fácil",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:52:04.474Z"
+    },
+    {
+      "id": "ev_1777232908437_9l0yno",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Yo creo que el dominio tendría que ser .com",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:48:28.437Z"
+    },
+    {
+      "id": "ev_1777232908435_zowhoy",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:48:28.435Z"
+    },
+    {
+      "id": "ev_1777232908425_58bdi1",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Yo creo que el dominio tendría que ser .com",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:48:28.425Z"
+    },
+    {
+      "id": "ev_1777232853882_ah2a6z",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Asi se fomenta la reactivacion como el plus porque no tienen que pagar marketing aparte",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:47:33.882Z"
+    },
+    {
+      "id": "ev_1777232853881_9ovqbb",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:47:33.881Z"
+    },
+    {
+      "id": "ev_1777232853874_5pvap8",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Asi se fomenta la reactivacion como el plus porque no tienen que pagar marketing aparte",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:47:33.874Z"
+    },
+    {
+      "id": "ev_1777232818880_tzp82l",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Como decir con nosotros ustedes parten con lo que ya tienen y una vez tengamos resultados satisfactorios para ustedes recien vemos si es necesaria la captacion de pacientes nuevos",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:46:58.880Z"
+    },
+    {
+      "id": "ev_1777232818879_41apqn",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:46:58.879Z"
+    },
+    {
+      "id": "ev_1777232818872_zvtxb9",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Como decir con nosotros ustedes parten con lo que ya tienen y una vez tengamos resultados satisfactorios para ustedes recien vemos si es necesaria la captacion de pacientes nuevos",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:46:58.872Z"
+    },
+    {
+      "id": "ev_1777232783175_5c103a",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Reactivacion, seguimiento, manutención  y pertenencia y luego captacion nuevos clientes",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:46:23.175Z"
+    },
+    {
+      "id": "ev_1777232783173_tlqwxf",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:46:23.173Z"
+    },
+    {
+      "id": "ev_1777232783168_1bgiqj",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Reactivacion, seguimiento, manutención  y pertenencia y luego captacion nuevos clientes",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:46:23.168Z"
+    },
+    {
+      "id": "ev_1777232751726_mvf2lv",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Incluso ahora escuchando estoy pensando que hasta se podrían crear distintas propuestas con diferentes valores, por ejemplo, decir que trabajamos en 3 etapas. Sería",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:45:51.726Z"
+    },
+    {
+      "id": "ev_1777232751725_gw90h8",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:45:51.725Z"
+    },
+    {
+      "id": "ev_1777232751716_6eyhm6",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Incluso ahora escuchando estoy pensando que hasta se podrían crear distintas propuestas con diferentes valores, por ejemplo, decir que trabajamos en 3 etapas. Sería",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:45:51.716Z"
+    },
+    {
+      "id": "ev_1777232472592_qkwd3m",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Es transmitir bien el mensaje para motivar y comentar cual es el vehículo para llegar ahí",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:41:12.592Z"
+    },
+    {
+      "id": "ev_1777232472591_j3goe8",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:41:12.591Z"
+    },
+    {
+      "id": "ev_1777232472584_wab6rl",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Es transmitir bien el mensaje para motivar y comentar cual es el vehículo para llegar ahí",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:41:12.584Z"
+    },
+    {
+      "id": "ev_1777232421586_xoledc",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Claro, es el resultado lo que la gente quiere escuchar",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:40:21.586Z"
+    },
+    {
+      "id": "ev_1777232421585_voz3dl",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:40:21.585Z"
+    },
+    {
+      "id": "ev_1777232421583_dosijj",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Claro, es el resultado lo que la gente quiere escuchar",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:40:21.584Z"
+    },
+    {
+      "id": "ev_1777232376873_ev34hl",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Ellos sienten que la clínica esta preocupada de ellos y a la vez los educa",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:39:36.873Z"
+    },
+    {
+      "id": "ev_1777232376872_3nykbq",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:39:36.872Z"
+    },
+    {
+      "id": "ev_1777232376870_rhqwf7",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Ellos sienten que la clínica esta preocupada de ellos y a la vez los educa",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:39:36.870Z"
+    },
+    {
+      "id": "ev_1777232339869_ytjnlc",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Y además estar nutirendolos  con educación y prevención en salud",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:38:59.869Z"
+    },
+    {
+      "id": "ev_1777232339867_bptf86",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:38:59.867Z"
+    },
+    {
+      "id": "ev_1777232339860_lpnkiv",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Y además estar nutirendolos  con educación y prevención en salud",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:38:59.860Z"
+    },
+    {
+      "id": "ev_1777232287598_xrmwcd",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Para lograr el hábito hay que crear pertenencia y eso se logra con mostrarse atentos a ellos, es decir, estar preguntándoles como están entre tratamientos",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:38:07.598Z"
+    },
+    {
+      "id": "ev_1777232287597_mykxjk",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:38:07.597Z"
+    },
+    {
+      "id": "ev_1777232287588_96f94o",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Para lograr el hábito hay que crear pertenencia y eso se logra con mostrarse atentos a ellos, es decir, estar preguntándoles como están entre tratamientos",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:38:07.588Z"
+    },
+    {
+      "id": "ev_1777231571874_ec7fcy",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:26:11.874Z"
+    },
+    {
+      "id": "ev_1777231571873_las9wd",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:26:11.873Z"
+    },
+    {
+      "id": "ev_1777231397740_z8kyx6",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Estoy escuchando las grabaciones, se me están ocurriendo más cosas",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:23:17.740Z"
+    },
+    {
+      "id": "ev_1777231397739_8egysl",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:23:17.739Z"
+    },
+    {
+      "id": "ev_1777231397729_8vgoji",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Estoy escuchando las grabaciones, se me están ocurriendo más cosas",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:23:17.730Z"
+    },
+    {
+      "id": "ev_1777230395882_bz3chg",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Paula Kroff",
+        "contactName": "Paula Kroff",
+        "contactPhone": null,
+        "message": "Súper!!",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T19:06:35.882Z"
+    },
+    {
+      "id": "ev_1777230395881_pu3x49",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T19:06:35.881Z"
+    },
+    {
+      "id": "ev_1777230395874_cp41pj",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Paula Kroff",
+            "phone": null,
+            "lastMessage": "Súper!!",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T19:06:35.874Z"
+    },
+    {
+      "id": "ev_1777228511734_6omy6z",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+59893996913",
+        "contactName": "",
+        "contactPhone": "+59893996913",
+        "message": "Te agradezco mucho, ya contamos con ese servicio",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-04-26T18:35:11.734Z"
+    },
+    {
+      "id": "ev_1777228511733_uiw023",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T18:35:11.733Z"
+    },
+    {
+      "id": "ev_1777228511731_sgffiz",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+59893996913",
+            "lastMessage": "Te agradezco mucho, ya contamos con ese servicio",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-04-26T18:35:11.731Z"
+    },
+    {
+      "id": "ev_1777228510076_yg9fyp",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T18:35:10.076Z"
+    },
+    {
+      "id": "ev_1777228504132_af1ngm",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-04-26T18:35:04.132Z"
+    },
+    {
+      "id": "ev_1777228504074_k3s9aw",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-04-26T18:35:04.074Z"
+    },
+    {
       "id": "ev_1777173644643_rt1r0a",
       "type": "response-received",
       "accountId": "wa_1777129407605_6dmfeo",

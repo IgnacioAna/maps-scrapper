@@ -3,7 +3,7 @@
     {
       "id": "faq_1777170033321_ies4x",
       "pregunta": "¿Me podés pasar info? / Mandame algo",
-      "respuesta": "Sí, igual depende bastante de cómo trabajen hoy. Si te mando info genérica capaz no aplica para tu caso.\n\n¿Te ofrezco una llamada corta para entender la situación específica y ahí te paso lo que sí aplica?",
+      "respuesta": "Sí, igual depende bastante de cómo trabajen hoy. Si te mando info genérica capaz no aplica para tu caso.\n\nTe ofrezco una llamada corta para entender la situación específica y ahí te paso lo que sí aplica?",
       "categoria": "objecion",
       "tags": [
         "info",
@@ -14,14 +14,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.321Z",
-      "updatedAt": "2026-04-26T02:20:33.321Z",
+      "updatedAt": "2026-04-27T13:30:18.867Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170033491_l8kow",
       "pregunta": "Ya trabajo con alguien de marketing / Ya tengo agencia",
-      "respuesta": "Buenísimo. Igual esto no es marketing ni publicidad. Es un sistema que trabaja la base de pacientes que ya tenés y que hoy probablemente nadie está siguiendo.\n\nEs complementario. ¿Te interesa ver cómo funciona?",
+      "respuesta": "Buenísimo. Igual esto no es marketing ni publicidad. Es un sistema que trabaja la base de pacientes que ya tenés y que hoy probablemente nadie está siguiendo.\n\nEs complementario. Te interesa ver cómo funciona?",
       "categoria": "objecion",
       "tags": [
         "competencia",
@@ -32,14 +33,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.491Z",
-      "updatedAt": "2026-04-26T02:20:33.491Z",
+      "updatedAt": "2026-04-27T13:30:25.080Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170033665_ea11g",
       "pregunta": "Eso ya lo hacemos",
-      "respuesta": "Buenísimo. ¿Hoy lo tienen trabajado con un sistema armado o más manual desde el equipo?",
+      "respuesta": "Buenísimo. Hoy lo tienen trabajado con un sistema armado o más manual desde el equipo?",
       "categoria": "objecion",
       "tags": [
         "ya-lo-hacemos",
@@ -49,9 +51,10 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.665Z",
-      "updatedAt": "2026-04-26T02:20:33.665Z",
+      "updatedAt": "2026-04-27T13:30:31.611Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170033838_pasp6",
@@ -73,7 +76,7 @@
     {
       "id": "faq_1777170034012_8n9cr",
       "pregunta": "No usamos WhatsApp / no quiero automatizar",
-      "respuesta": "Se entiende. Igual no necesariamente tiene que ir por WhatsApp. También trabajamos con llamadas con IA o seguimiento por otras vías según cómo se maneje mejor la clínica.\n\n¿Te muestro las opciones en una llamada?",
+      "respuesta": "Se entiende. Igual no necesariamente tiene que ir por WhatsApp. También trabajamos con llamadas con IA o seguimiento por otras vías según cómo se maneje mejor la clínica.\n\nTe muestro las opciones en una llamada?",
       "categoria": "objecion",
       "tags": [
         "whatsapp",
@@ -84,14 +87,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.012Z",
-      "updatedAt": "2026-04-26T02:20:34.012Z",
+      "updatedAt": "2026-04-27T13:30:47.182Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170034183_jqh4b",
       "pregunta": "¿Cuánto sale? / ¿Cuánto cuesta?",
-      "respuesta": "Depende bastante de cómo trabajen hoy seguimiento y base. Justamente eso lo vemos en la llamada con Ignacio.\n\n¿Te ofrezco mañana 10am o jueves 4pm?",
+      "respuesta": "Depende bastante de cómo trabajen hoy seguimiento y base. Justamente eso lo vemos en la llamada con Ignacio.\n\nTe ofrezco mañana 10am o jueves 4pm?",
       "categoria": "precio",
       "tags": [
         "precio",
@@ -102,32 +106,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.183Z",
-      "updatedAt": "2026-04-26T02:20:34.183Z",
+      "updatedAt": "2026-04-27T13:30:11.970Z",
       "usos": 2,
-      "funcionaron": 1
-    },
-    {
-      "id": "faq_1777170034359_n8rn5",
-      "pregunta": "Es caro / fuera de presupuesto",
-      "respuesta": "Entiendo. ¿Caro en relación a qué? Te pregunto porque depende mucho de cuánto está perdiendo la clínica hoy con los pacientes que no vuelven.\n\n¿Te ofrezco la llamada y vemos los números reales?",
-      "categoria": "precio",
-      "tags": [
-        "caro",
-        "presupuesto",
-        "roi"
-      ],
-      "variantId": null,
-      "createdBy": "Ignacio",
-      "createdById": "user_admin_ignacio",
-      "createdAt": "2026-04-26T02:20:34.359Z",
-      "updatedAt": "2026-04-26T02:20:34.359Z",
-      "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 1,
+      "variantes": []
     },
     {
       "id": "faq_1777170034526_67bam",
       "pregunta": "¿Quién sos? / ¿De parte de quién?",
-      "respuesta": "Sí, perdón. Soy [Nombre], trabajo con un equipo que ayuda a clínicas dentales con un sistema de seguimiento de pacientes.\n\nTe quería hacer una pregunta corta sobre cómo trabajan ustedes, ¿te interesa que te cuente o mejor hablamos otro día?",
+      "respuesta": "Sí, perdón. Soy [Nombre], trabajo con un equipo que ayuda a clínicas dentales con un sistema de seguimiento de pacientes.\n\nTe quería hacer una pregunta corta sobre cómo trabajan ustedes, te interesa que te cuente o mejor hablamos otro día?",
       "categoria": "calificacion",
       "tags": [
         "presentacion",
@@ -137,14 +124,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.526Z",
-      "updatedAt": "2026-04-26T02:20:34.526Z",
+      "updatedAt": "2026-04-27T13:31:10.418Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170034694_dy9tk",
       "pregunta": "Eso lo ve otra persona / tengo que consultarlo",
-      "respuesta": "Perfecto. ¿Con quién tendría más sentido verlo entonces para no hacerte perder tiempo?\n\n¿Me podés pasar contacto o preferís coordinarlo vos?",
+      "respuesta": "Perfecto. Con quién tendría más sentido verlo entonces para no hacerte perder tiempo?\n\nMe podés pasar contacto o preferís coordinarlo vos?",
       "categoria": "calificacion",
       "tags": [
         "decisor",
@@ -155,14 +143,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.694Z",
-      "updatedAt": "2026-04-26T02:20:34.694Z",
+      "updatedAt": "2026-04-27T13:29:42.410Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170034888_ygr36",
       "pregunta": "No tengo tiempo ahora / estoy muy ocupado",
-      "respuesta": "De una. ¿Te escribo el lunes y vemos si cuadra hablar de esto con calma?",
+      "respuesta": "De una. Te escribo el lunes y vemos si cuadra hablar de esto con calma?",
       "categoria": "seguimiento",
       "tags": [
         "tiempo",
@@ -173,14 +162,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.888Z",
-      "updatedAt": "2026-04-26T02:20:34.888Z",
+      "updatedAt": "2026-04-27T13:31:35.413Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170035057_5vy35",
       "pregunta": "¿De qué se trata? / ¿Cómo funciona?",
-      "respuesta": "Te lo explico mejor en una llamada corta de 20 minutos, así te muestro cómo lo estamos haciendo con otras clínicas.\n\n¿Te queda mejor mañana 10am o jueves 4pm?",
+      "respuesta": "Te lo explico mejor en una llamada corta de 30 minutos, así te muestro cómo lo estamos haciendo con otras clínicas.\n\nTe queda mejor mañana 10am o jueves 4pm?",
       "categoria": "general",
       "tags": [
         "que-es",
@@ -191,14 +181,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.057Z",
-      "updatedAt": "2026-04-26T02:20:35.057Z",
+      "updatedAt": "2026-04-27T13:29:56.600Z",
       "usos": 1,
-      "funcionaron": 1
+      "funcionaron": 1,
+      "variantes": []
     },
     {
       "id": "faq_1777170035228_tpk9t",
       "pregunta": "¿Esto realmente funciona? / ¿Tienen casos?",
-      "respuesta": "Sí. Tenemos clientes activos hoy y el sistema está generando agendas reales todas las semanas.\n\nLos números los ve Ignacio en la llamada porque depende del caso de cada clínica. ¿Te ofrezco mañana 10am o jueves 4pm?",
+      "respuesta": "Sí. Tenemos clientes activos hoy y el sistema está generando agendas reales todas las semanas.\n\nLos números los ve Ignacio en la llamada porque depende del caso de cada clínica. Te ofrezco mañana 10am o jueves 4pm?",
       "categoria": "general",
       "tags": [
         "prueba-social",
@@ -209,14 +200,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.228Z",
-      "updatedAt": "2026-04-26T02:20:35.228Z",
+      "updatedAt": "2026-04-27T13:31:43.761Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170035422_oukno",
       "pregunta": "No tengo base de pacientes / es una clínica nueva",
-      "respuesta": "Se entiende. En ese caso el sistema arranca desde otro lado: confirmaciones, no-shows y captación de los nuevos que van entrando.\n\n¿Te muestro cómo se vería para un caso así en una llamada corta?",
+      "respuesta": "Se entiende. En ese caso el sistema arranca desde otro lado: confirmaciones, no-shows y captación de los nuevos que van entrando.\n\nTe muestro cómo se vería para un caso así en una llamada corta?",
       "categoria": "objecion",
       "tags": [
         "clinica-nueva",
@@ -226,14 +218,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.422Z",
-      "updatedAt": "2026-04-26T02:20:35.422Z",
+      "updatedAt": "2026-04-27T13:31:56.617Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170035590_rcn4l",
       "pregunta": "No quiero molestar a mis pacientes",
-      "respuesta": "Buen punto. Justamente el sistema está pensado para no spamear: respeta tiempos, deja de insistir si no hay respuesta y se siente como atención personal, no como publicidad.\n\n¿Te muestro un ejemplo real en una llamada?",
+      "respuesta": "Buen punto. Justamente el sistema está pensado para no spamear: respeta tiempos, deja de insistir si no hay respuesta y se siente como atención personal, no como publicidad.\n\nTe muestro un ejemplo real en una llamada?",
       "categoria": "objecion",
       "tags": [
         "spam",
@@ -244,14 +237,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.590Z",
-      "updatedAt": "2026-04-26T02:20:35.590Z",
+      "updatedAt": "2026-04-27T13:32:04.435Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170035758_wn96t",
       "pregunta": "Probé algo parecido y no funcionó",
-      "respuesta": "Se entiende. Pasa seguido. La diferencia normalmente está en el seguimiento sostenido y en cómo se trabaja la base existente, no sólo en captar nuevos.\n\n¿Te ofrezco la llamada y vemos qué se hizo distinto y qué se podría ajustar?",
+      "respuesta": "Se entiende. Pasa seguido. La diferencia normalmente está en el seguimiento sostenido y en cómo se trabaja la base existente, no sólo en captar nuevos.\n\nTe ofrezco la llamada y vemos qué se hizo distinto y qué se podría ajustar?",
       "categoria": "objecion",
       "tags": [
         "malas-experiencias",
@@ -261,14 +255,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.758Z",
-      "updatedAt": "2026-04-26T02:20:35.758Z",
+      "updatedAt": "2026-04-27T13:32:10.197Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170035927_bt5vr",
       "pregunta": "¿Tienen plan mensual? ¿Cómo cobran?",
-      "respuesta": "El esquema lo arma Ignacio en la llamada según el tamaño de la clínica y qué fases activamos.\n\n¿Te queda mejor mañana 10am o jueves 4pm para verlo?",
+      "respuesta": "El esquema lo arma Ignacio en la llamada según el tamaño de la clínica y qué fases activamos.\n\nTe queda mejor mañana 10am o jueves 4pm para verlo?",
       "categoria": "precio",
       "tags": [
         "precio",
@@ -279,14 +274,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.927Z",
-      "updatedAt": "2026-04-26T02:20:35.927Z",
+      "updatedAt": "2026-04-27T13:32:17.310Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170036094_soitr",
       "pregunta": "No soy yo el que toma esas decisiones",
-      "respuesta": "Sin drama. ¿Quién sería la persona indicada en la clínica para ver este tema?",
+      "respuesta": "Sin drama. Quién sería la persona indicada en la clínica para ver este tema?",
       "categoria": "calificacion",
       "tags": [
         "decisor",
@@ -296,14 +292,15 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:36.094Z",
-      "updatedAt": "2026-04-26T02:20:36.094Z",
+      "updatedAt": "2026-04-27T13:32:24.208Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777170036262_o1i0y",
       "pregunta": "Ahora estoy en consulta / no puedo hablar",
-      "respuesta": "Dale, sin problema. ¿A qué hora te queda mejor que te escriba más tarde?",
+      "respuesta": "Dale, sin problema. A qué hora te queda mejor que te escriba más tarde?",
       "categoria": "seguimiento",
       "tags": [
         "ocupado",
@@ -313,9 +310,10 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:36.262Z",
-      "updatedAt": "2026-04-26T02:20:36.262Z",
+      "updatedAt": "2026-04-27T13:31:21.431Z",
       "usos": 0,
-      "funcionaron": 0
+      "funcionaron": 0,
+      "variantes": []
     },
     {
       "id": "faq_1777184571407_yfoqv",
