@@ -1245,15 +1245,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.copy-block-btn');
       if (!btn) return;
-      const targetId = btn.getAttribute('data-copy-target');
+      // The button can either be a normal copy (data-copy-target) or a
+      // human-paste copy that prepends the SCM marker (data-copy-human-target).
+      // Buttons rendered from app.js use data-copy-text / data-copy-human-text
+      // and have their own listeners attached separately — skip those here.
+      const targetId = btn.getAttribute('data-copy-target') || btn.getAttribute('data-copy-human-target');
+      if (!targetId) return;
+      const asHuman = btn.hasAttribute('data-copy-human-target');
       const target = document.getElementById(targetId);
       const text = target ? target.textContent.trim() : '';
       if (!text || text === '—') return;
       try {
-        await copyToClipboard(text);
+        await copyToClipboard(asHuman ? '__SCM_TYPE__:' + text : text);
         const prev = btn.textContent;
-        btn.textContent = 'Copiado';
-        setTimeout(() => { btn.textContent = prev; }, 1200);
+        btn.textContent = asHuman ? '✓ Ctrl+V en WA' : 'Copiado';
+        setTimeout(() => { btn.textContent = prev; }, asHuman ? 1800 : 1200);
       } catch (err) {
         console.error(err);
       }
