@@ -547,6 +547,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="variant-block-text">${escHtml(text)}</div>
             <div class="variant-block-actions">
               <button type="button" class="copy-block-btn" data-copy-text="${escHtml(text)}">Copiar</button>
+              <button type="button" class="copy-block-btn" data-copy-human-text="${escHtml(text)}" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button>
               <button type="button" class="copy-block-btn" data-open-wa="${escHtml(text)}">Abrir WhatsApp</button>
             </div>
           </div>`;
@@ -557,6 +558,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           const prev = btn.textContent;
           btn.textContent = 'Copiado';
           setTimeout(() => { btn.textContent = prev; }, 1200);
+        });
+      });
+      container.querySelectorAll('[data-copy-human-text]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const txt = btn.getAttribute('data-copy-human-text') || '';
+          await copyToClipboard('__SCM_TYPE__:' + txt);
+          const prev = btn.textContent;
+          btn.textContent = '✓ Ctrl+V en WA';
+          setTimeout(() => { btn.textContent = prev; }, 1800);
         });
       });
       container.querySelectorAll('[data-open-wa]').forEach((btn) => {
@@ -3449,6 +3459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex;gap:6px;">
           <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--success);font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--accent);font-weight:600;" title="Copiar para Pegar como humano (extensión Chrome)" onclick="window._faqCopyAsHuman('${escHtml(e.id)}', this)">👤 Copiar humano</button>
           <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
         </div>
       </div>
@@ -3466,6 +3477,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1800);
     }
     // Registrar uso
+    try { await fetch(apiUrl('/api/faqs/' + id + '/uso'), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:'{}' }); } catch {}
+  };
+
+  // Copy with SCM marker prefix so the "Pegar como humano" Chrome extension
+  // detects it on Ctrl+V in WhatsApp Web and types it character by character
+  // instead of pasting instantly. Without the extension installed, this just
+  // copies the text with the marker visible (setter would notice).
+  window._faqCopyAsHuman = async (id, btn) => {
+    const card = btn.closest('.faq-card');
+    const texto = card?.querySelector('p:nth-of-type(2)')?.textContent || '';
+    if (texto && navigator.clipboard) {
+      await navigator.clipboard.writeText('__SCM_TYPE__:' + texto).catch(() => {});
+      const orig = btn.textContent;
+      btn.textContent = '✓ Listo, Ctrl+V en WA';
+      btn.style.color = 'var(--accent)';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2200);
+    }
     try { await fetch(apiUrl('/api/faqs/' + id + '/uso'), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:'{}' }); } catch {}
   };
 
