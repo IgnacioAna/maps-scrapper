@@ -14,11 +14,15 @@
   // browser delivers clipboardData synchronously to paste events — no
   // permission policy to fight.
   function onPaste(ev) {
-    // Only act on pastes targeting the WA compose editable.
+    // Only act on pastes targeting a compose editable. We accept any
+    // contenteditable to support both WhatsApp Web (role="textbox") and
+    // Instagram DMs (no role attribute).
     const target = ev.target;
-    const editable = target && target.closest
-      ? target.closest('div[contenteditable="true"][role="textbox"]')
-      : null;
+    let editable = null;
+    if (target && target.closest) {
+      editable = target.closest('div[contenteditable="true"][role="textbox"]') ||
+                 target.closest('div[contenteditable="true"]');
+    }
     if (!editable) return;
 
     const cd = ev.clipboardData;

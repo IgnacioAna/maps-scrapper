@@ -1,16 +1,22 @@
 {
   "manifest_version": 3,
   "name": "SCM — Pegar como humano",
-  "version": "0.1.1",
-  "description": "Reemplaza el paste en WhatsApp Web por typing humano caracter por caracter para evitar detección de bot. Solo se activa cuando el texto pegado viene del panel SCM (con marcador interno).",
+  "version": "0.2.0",
+  "description": "Reemplaza el paste en WhatsApp Web e Instagram por typing humano caracter por caracter para evitar detección de bot. Solo se activa cuando el texto pegado viene del panel SCM (con marcador interno).",
   "permissions": [],
   "host_permissions": [
     "https://web.whatsapp.com/*",
+    "https://www.instagram.com/*",
+    "https://instagram.com/*",
     "https://scm-setting.up.railway.app/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://web.whatsapp.com/*"],
+      "matches": [
+        "https://web.whatsapp.com/*",
+        "https://www.instagram.com/*",
+        "https://instagram.com/*"
+      ],
       "js": [
         "lib/clipboard.js",
         "lib/badge.js",

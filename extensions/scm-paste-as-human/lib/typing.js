@@ -56,7 +56,23 @@
   }
 
   function findCompose() {
-    return document.querySelector('div[contenteditable="true"][role="textbox"]');
+    // Strategy: prefer the currently-focused contenteditable. The user just
+    // clicked on the compose to put their cursor there (or pasted into it),
+    // so the active element is the most reliable signal across sites.
+    // Fall back to known selectors for WhatsApp Web and Instagram.
+    const active = document.activeElement;
+    if (active && active.isContentEditable) return active;
+
+    // WhatsApp Web — confirmed working.
+    let el = document.querySelector('div[contenteditable="true"][role="textbox"]');
+    if (el) return el;
+
+    // Instagram DMs — compose is contenteditable inside the message form.
+    el = document.querySelector('div[role="textbox"][contenteditable="true"]') ||
+         document.querySelector('div[contenteditable="true"][aria-label]') ||
+         document.querySelector('form div[contenteditable="true"]') ||
+         document.querySelector('div[contenteditable="true"]');
+    return el;
   }
 
   // Insert a single character. Returns true if the primary path (execCommand)
