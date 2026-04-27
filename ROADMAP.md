@@ -103,13 +103,43 @@ No usamos GHL hoy, pero **dejamos puertas abiertas** para integrar mañana:
 
 ### Bloque B — UX para setters (próxima semana)
 
-5. **Notificación visual** en el panel cuando entra una respuesta nueva
-   (badge rojo en el menú IA Inbox + sonido opcional)
-6. **Banco de respuestas editable desde panel** (no tener que tocar JSON):
+5. **REFACTOR ARQUITECTURA: ventana única con sidebar de cuentas**
+   (priority alta — pedido directo del usuario)
+   - Hoy: cada cuenta = `BrowserWindow` separada → setter tiene 3-5 ventanas
+     dispersas en el escritorio, dolor de Alt+Tab.
+   - Cambio: un solo `BrowserWindow` principal con UI custom + cada cuenta
+     embebida como `<webview>` (tag HTML) o `WebContentsView`.
+   - Layout objetivo (estilo WAWarmer):
+     ```
+     ┌──────────────────────────────────────────────────┐
+     │ wa-multi                              [_][□][X]  │
+     ├──────────┬───────────────────────────────────────┤
+     │ Cuentas  │                                       │
+     │ ● Paula  │     [WhatsApp Web de la activa]      │
+     │ ○ Tiago  │                                       │
+     │ ○ Léo    │                                       │
+     │ + Nueva  │                                       │
+     └──────────┴───────────────────────────────────────┘
+     ```
+   - Sidebar muestra cada cuenta con: avatar, label, indicador de estado
+     (verde conectado / amarillo QR / rojo bann), badge de mensajes
+     no leidos.
+   - Click cambia cual webview esta visible (las otras quedan cargadas en
+     background, warmings/respuestas siguen entrando).
+   - Subir cap a 5 cuentas concurrentes.
+   - Referencia visual analizada: WAWarmer 1.1.2 (Vue 2 + element-ui +
+     `<webview>` con partition por cuenta). Confirmado en
+     `dist/electron/renderer/pages/main/*.js` del app.asar.
+   - **El send flow OS-level (loadURL + sendInputEvent) se preserva**:
+     se aplica sobre la `webContents` de la webview activa en vez de la
+     ventana de cuenta.
+6. **Notificación visual** en el panel + en wa-multi cuando entra una
+   respuesta nueva (badge rojo en sidebar de cuenta + en menú IA Inbox)
+7. **Banco de respuestas editable desde panel** (no tener que tocar JSON):
    tabla CRUD por intent, con preview
-7. **Métricas por setter** en dashboard: enviados / respondieron / agendados
+8. **Métricas por setter** en dashboard: enviados / respondieron / agendados
    en últimas 24h y 7d
-8. **Inbox unificado por setter**: ver TODAS sus conversaciones activas
+9. **Inbox unificado por setter**: ver TODAS sus conversaciones activas
    (no solo respuestas pendientes)
 
 ### Bloque C — GHL-ready (cuando A y B estén estables)
