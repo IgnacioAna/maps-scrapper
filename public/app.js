@@ -563,10 +563,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.querySelectorAll('[data-copy-human-text]').forEach((btn) => {
         btn.addEventListener('click', async () => {
           const txt = btn.getAttribute('data-copy-human-text') || '';
-          await copyToClipboard('__SCM_TYPE__:' + txt);
+          const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
+          await copyToClipboard(ext ? ('__SCM_TYPE__:' + txt) : txt);
           const prev = btn.textContent;
-          btn.textContent = '✓ Ctrl+V en WA';
-          setTimeout(() => { btn.textContent = prev; }, 1800);
+          btn.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+          setTimeout(() => { btn.textContent = prev; }, 2400);
         });
       });
       container.querySelectorAll('[data-open-wa]').forEach((btn) => {
@@ -1242,6 +1243,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let setterPage = 1;
     const SETTER_PAGE_SIZE = 50;
 
+    // Detect if the "Pegar como humano" Chrome extension is installed.
+    // The extension injects data-scm-paste-installed="1" on <html> when
+    // present. If absent, the human-copy buttons fall back to a plain copy
+    // (no marker) so the setter doesn't accidentally paste raw "__SCM_TYPE__:"
+    // text into a real WhatsApp conversation.
+    const isHumanPasteExtensionInstalled = () => {
+      return document.documentElement.getAttribute('data-scm-paste-installed') === '1';
+    };
+
     document.addEventListener('click', async (e) => {
       const btn = e.target.closest('.copy-block-btn');
       if (!btn) return;
@@ -1256,10 +1266,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       const text = target ? target.textContent.trim() : '';
       if (!text || text === '—') return;
       try {
-        await copyToClipboard(asHuman ? '__SCM_TYPE__:' + text : text);
+        const extensionPresent = asHuman ? isHumanPasteExtensionInstalled() : true;
+        // If the user wants human typing but the extension is missing, copy
+        // plain text (safe fallback) and warn — never copy the raw marker.
+        const finalText = (asHuman && extensionPresent) ? ('__SCM_TYPE__:' + text) : text;
+        await copyToClipboard(finalText);
         const prev = btn.textContent;
-        btn.textContent = asHuman ? '✓ Ctrl+V en WA' : 'Copiado';
-        setTimeout(() => { btn.textContent = prev; }, asHuman ? 1800 : 1200);
+        if (asHuman && !extensionPresent) {
+          btn.textContent = '⚠ Sin extensión — copié normal';
+        } else if (asHuman) {
+          btn.textContent = '✓ Ctrl+V en WA';
+        } else {
+          btn.textContent = 'Copiado';
+        }
+        setTimeout(() => { btn.textContent = prev; }, asHuman ? 2400 : 1200);
       } catch (err) {
         console.error(err);
       }
@@ -3494,11 +3514,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const card = btn.closest('.faq-card');
     const texto = card?.querySelector('p:nth-of-type(2)')?.textContent || '';
     if (texto && navigator.clipboard) {
-      await navigator.clipboard.writeText('__SCM_TYPE__:' + texto).catch(() => {});
+      const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
+      await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + texto) : texto).catch(() => {});
       const orig = btn.textContent;
-      btn.textContent = '✓ Listo, Ctrl+V en WA';
-      btn.style.color = 'var(--accent)';
-      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2200);
+      btn.textContent = ext ? '✓ Listo, Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+      btn.style.color = ext ? 'var(--accent)' : 'var(--warning, #d97706)';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2400);
     }
     try { await fetch(apiUrl('/api/faqs/' + id + '/uso'), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:'{}' }); } catch {}
   };
