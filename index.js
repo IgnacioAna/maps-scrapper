@@ -79,6 +79,18 @@ const aiLimiter = rateLimit({
   max: process.env.NODE_ENV === 'test' ? 1000 : 30,
   keyFn: (req) => 'ai:' + (req.auth?.user?.id || ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim()))
 });
+// Rate limiter para endpoints que queman creditos externos (SerpAPI, Apify).
+// Pegar al boton "Scrape" 50 veces seguidas no debe vaciar la billetera.
+const scrapeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 5,
+  keyFn: (req) => 'scrape:' + (req.auth?.user?.id || ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim()))
+});
+const enrichLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 30,
+  keyFn: (req) => 'enrich:' + (req.auth?.user?.id || ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim()))
+});
 
 // AUTH_FILE se define después de DATA_DIR para usar el volume si está montado
 let AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
@@ -133,19 +145,38 @@ function loadAuthData() {
       if (!Array.isArray(raw.users)) raw.users = [];
       if (!Array.isArray(raw.invites)) raw.invites = [];
       if (!Array.isArray(raw.sessions)) raw.sessions = [];
-      // Purgar sesiones expiradas para evitar crecimiento indefinido
-      const now = Date.now();
-      const beforeCount = raw.sessions.length;
-      raw.sessions = raw.sessions.filter((s) => !s.expiresAt || new Date(s.expiresAt).getTime() > now);
-      if (raw.sessions.length < beforeCount) {
-        try { fs.writeFileSync(AUTH_FILE, JSON.stringify(raw, null, 2), "utf8"); } catch {}
-      }
+      // NOTA: la purga de sesiones expiradas se hace en setInterval (ver
+      // gcExpiredSessions abajo), NO en cada request. Antes esto corria en
+      // CADA llamada autenticada — escribia auth.json cuando una sesion
+      // expiraba, racing contra otros writes y bloqueando el hot path.
       return raw;
     }
   } catch (e) {
     console.error("Error leyendo auth data:", e);
   }
   return defaultAuthData();
+}
+
+// Purga periódica de sesiones expiradas. Corre cada 10 minutos en background,
+// fuera del request handler. Owner unico => no race.
+function gcExpiredSessions() {
+  try {
+    if (!fs.existsSync(AUTH_FILE)) return;
+    const raw = JSON.parse(fs.readFileSync(AUTH_FILE, "utf8"));
+    if (!Array.isArray(raw.sessions)) return;
+    const now = Date.now();
+    const before = raw.sessions.length;
+    raw.sessions = raw.sessions.filter((s) => !s.expiresAt || new Date(s.expiresAt).getTime() > now);
+    if (raw.sessions.length < before) {
+      saveAuthData(raw);
+      console.log(`[gcExpiredSessions] purgadas ${before - raw.sessions.length} sesiones expiradas`);
+    }
+  } catch (e) {
+    console.warn("[gcExpiredSessions] error:", e.message);
+  }
+}
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(gcExpiredSessions, 10 * 60 * 1000); // cada 10 min
 }
 
 function saveAuthData(data) {
@@ -1024,11 +1055,55 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
 // ── Admin: Importar data (restore después de deploy) ──
 app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { history, auth, setters } = req.body;
+    const { history, auth, setters, faqs, training } = req.body;
+
+    // Validacion de shape ANTES de tocar nada. Un payload malo no debe llegar
+    // a sobrescribir los archivos vivos. Cada bloque tiene su forma minima.
+    const errors = [];
+    if (history !== undefined) {
+      if (!history || typeof history !== 'object') errors.push('history debe ser objeto');
+      else if (history.entries !== undefined && (typeof history.entries !== 'object' || Array.isArray(history.entries))) {
+        errors.push('history.entries debe ser un map (objeto)');
+      }
+    }
+    if (auth !== undefined) {
+      if (!auth || typeof auth !== 'object') errors.push('auth debe ser objeto');
+      else if (!Array.isArray(auth.users)) errors.push('auth.users debe ser array');
+      else if (auth.invites !== undefined && !Array.isArray(auth.invites)) errors.push('auth.invites debe ser array');
+      else if (auth.sessions !== undefined && !Array.isArray(auth.sessions)) errors.push('auth.sessions debe ser array');
+    }
+    if (setters !== undefined) {
+      if (!setters || typeof setters !== 'object') errors.push('setters debe ser objeto');
+      else if (!Array.isArray(setters.setters)) errors.push('setters.setters debe ser array');
+      else if (setters.leads !== undefined && (typeof setters.leads !== 'object' || Array.isArray(setters.leads))) {
+        errors.push('setters.leads debe ser un map (objeto)');
+      }
+    }
+    if (faqs !== undefined) {
+      if (!faqs || typeof faqs !== 'object' || !Array.isArray(faqs.entries)) {
+        errors.push('faqs.entries debe ser array');
+      }
+    }
+    if (training !== undefined) {
+      if (!training || typeof training !== 'object' || !Array.isArray(training.materials)) {
+        errors.push('training.materials debe ser array');
+      }
+    }
+    if (history === undefined && auth === undefined && setters === undefined && faqs === undefined && training === undefined) {
+      errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training');
+    }
+    if (errors.length) {
+      return res.status(400).json({ error: 'Validacion fallida', detalles: errors });
+    }
+
+    // Backup ANTES de sobrescribir, para poder revertir si algo sale mal.
+    const backup = makeBackup('pre-import');
     if (history) saveHistory(history);
     if (auth) saveAuthData(auth);
     if (setters) saveSettersData(setters);
-    res.json({ ok: true, message: 'Data importada correctamente' });
+    if (faqs) saveFaqs(faqs);
+    if (training) saveTraining(training);
+    res.json({ ok: true, message: 'Data importada correctamente', backup: backup?.path || null });
   } catch (e) {
     console.error('Import error:', e);
     res.status(500).json({ error: 'Error importando data' });
@@ -1036,7 +1111,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 });
 
 // API de Apify (Buscador de Instagram Puro)
-app.post('/api/apify-scrape', requireAuth, requireRole('admin'), async (req, res) => {
+app.post('/api/apify-scrape', requireAuth, requireRole('admin'), scrapeLimiter, async (req, res) => {
   const { query, maxItems } = req.body;
   const apifyToken = process.env.APIFY_TOKEN;
   
@@ -1777,7 +1852,7 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
 }
 
 // ── Endpoint principal ──
-app.post('/api/scrape', requireAuth, requireRole('admin'), async (req, res) => {
+app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async (req, res) => {
   const { query, location, maxPages = 1, startPage = 1 } = req.body;
 
   if (!query) {
@@ -1790,6 +1865,15 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), async (req, res) => {
     const locations = location
       ? location.split(';').map(loc => loc.trim()).filter(Boolean)
       : [''];
+
+    // Clamp anti-quema-creditos: total de llamadas SerpAPI no puede pasar 50 por request.
+    // Esto previene un click accidental con 5 keywords x 10 ciudades x 5 paginas = 250 llamadas.
+    const totalCalls = queries.length * locations.length * Math.min(maxPages, 10);
+    if (totalCalls > 50) {
+      return res.status(400).json({
+        error: `Demasiado trabajo: ${queries.length} keywords x ${locations.length} ubicaciones x ${maxPages} paginas = ${totalCalls} llamadas. Maximo 50 por request. Reduci alguna dimension.`
+      });
+    }
 
     console.log(`Buscando ${queries.length} keyword(s): [${queries.join(', ')}] en ${locations.length} ubicación(es): [${locations.join(', ')}]`);
 
@@ -2104,6 +2188,26 @@ function saveSettersData(data) {
   } catch (e) {
     console.error("Error guardando setters data:", e);
   }
+}
+
+// Wrapper atómico para mutaciones de setters.json en handlers ASYNC.
+// Garantiza que el load+mutate+save ocurra como una unidad sin que otro handler
+// (PATCH, POST de notas, etc.) pueda colarse entre el load y el save y perder
+// cambios. Para handlers 100% sync, NO hace falta usar este wrapper porque
+// Node single-thread ya los hace atómicos.
+//
+// Uso: const result = await mutateSettersData(data => { data.foo = bar; return X; });
+let _settersMutex = Promise.resolve();
+async function mutateSettersData(mutator) {
+  const next = _settersMutex.then(async () => {
+    const data = loadSettersData();
+    const result = await Promise.resolve(mutator(data));
+    saveSettersData(data);
+    return result;
+  });
+  // Si este mutator falla, no envenenamos la cola para los próximos.
+  _settersMutex = next.catch(() => {});
+  return next;
 }
 
 // ── Setters: Info general ──
@@ -3166,6 +3270,9 @@ app.post('/api/setters/sessions/start', requireAuth, (req, res) => {
 
 app.post('/api/setters/sessions/end', requireAuth, async (req, res) => {
   const { setter } = req.body;
+  // Snapshot inicial para CALCULAR métricas (lectura solamente). La mutación
+  // real de la sesión se hace al final con mutateSettersData para que sea
+  // atómica frente a edits concurrentes que ocurran mientras esperamos a la IA.
   const data = loadSettersData();
   const effectiveSetter = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : setter;
   const active = data.sessions.find(s => s.setter === effectiveSetter && !s.endedAt);
@@ -3252,7 +3359,20 @@ Escribí: 1) un resumen ejecutivo de qué hizo, 2) un destacado positivo si lo h
     console.warn("[sessions/end] IA summary falló:", err.message);
   }
 
-  saveSettersData(data);
+  // Mutación final ATÓMICA: re-cargamos el estado actual (puede haber cambiado
+  // mientras esperábamos a la IA) y aplicamos solo los campos de la sesión.
+  // Esto evita pisar PATCH a leads que ocurrieron entre el load inicial y este save.
+  const sessionPatch = {
+    endedAt: active.endedAt,
+    summary: active.summary,
+    aiSummary: active.aiSummary
+  };
+  await mutateSettersData((freshData) => {
+    const freshActive = freshData.sessions?.find(s => s.setter === effectiveSetter && s.startedAt === active.startedAt && !s.endedAt);
+    if (freshActive) {
+      Object.assign(freshActive, sessionPatch);
+    }
+  });
   res.json({ session: active });
 });
 
@@ -3363,7 +3483,7 @@ const CACHE_TTL = 1000 * 60 * 60; // 1 hora
 const CACHE_MAX_SIZE = 500;
 
 // ── Endpoint para enriquecer datos ──
-app.post('/api/enrich', requireAuth, requireRole('admin'), async (req, res) => {
+app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async (req, res) => {
   let { url, currentPhone, country = '', city = '', location = '' } = req.body;
 
   if (!url) {

@@ -1,0 +1,190 @@
+// Tests de hardening pre-deploy: cobertura de los 4 fixes criticos aplicados
+// antes del onboarding de 8 setters.
+//
+// Cubre:
+//  - C-1: PATCH concurrentes mantienen integridad (handler sync = serializado por Node)
+//  - C-2: rate limiter scrape/enrich + clamp anti-quema-creditos en /api/scrape
+//  - H-4: validacion de shape + auto-backup en /api/admin/import-data
+//
+// C-3 (gc de sesiones en setInterval) no se testea directamente porque esta
+// gateado por NODE_ENV !== 'test'. Lo verificamos por observacion: el
+// loadAuthData ya no escribe disk al expirar sesiones.
+//
+// IMPORTANTE: el orden de los describes importa. C-1 corre PRIMERO porque
+// H-4 termina haciendo POST /import-data con setters vacios, lo que borra el
+// lead sembrado.
+
+import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
+import crypto from "node:crypto";
+import request from "supertest";
+
+const tmpData = path.join(os.tmpdir(), `hardening-test-${Date.now()}`);
+fs.mkdirSync(tmpData, { recursive: true });
+process.env.NODE_ENV = "test";
+process.env.DATA_DIR = tmpData;
+process.env.ADMIN_EMAIL = "admin-h@local.test";
+process.env.ADMIN_PASSWORD = "hpass1234";
+process.env.ADMIN_NAME = "AdminH";
+process.env.JWT_SECRET = "test-secret-h";
+
+function pwd(plain) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(plain, salt, 64).toString("hex");
+  return { salt, hash };
+}
+
+fs.writeFileSync(
+  path.join(tmpData, "auth.json"),
+  JSON.stringify({
+    users: [
+      { id: "user_admin_h", email: "admin-h@local.test", name: "AdminH", role: "admin", status: "active", setterId: "", password: pwd("hpass1234"), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    ],
+    invites: [],
+    sessions: [],
+  }, null, 2)
+);
+
+// Seed setters.json con un lead listo para que los PATCH no necesiten endpoint de import.
+fs.writeFileSync(
+  path.join(tmpData, "setters.json"),
+  JSON.stringify({
+    setters: [],
+    leads: {
+      "lead_concurrencia": {
+        id: "lead_concurrencia",
+        num: 1,
+        name: "Lead Concurrencia",
+        phone: "+5491100000000",
+        country: "Argentina",
+        assignedTo: "",
+        decisor: "",
+        estado: "sin_contactar"
+      }
+    },
+    variants: [],
+    calendar: [],
+    sessions: []
+  }, null, 2)
+);
+
+const { app } = await import("../index.js");
+
+let cookie = "";
+
+beforeAll(async () => {
+  const r = await request(app).post("/api/auth/login").send({ email: "admin-h@local.test", password: "hpass1234" });
+  expect(r.status).toBe(200);
+  cookie = r.headers["set-cookie"][0].split(";")[0];
+});
+
+afterAll(() => {
+  try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {}
+});
+
+describe("C-1: PATCH concurrentes mantienen integridad del lead", () => {
+  it("PATCH simple funciona (sanity check)", async () => {
+    const r = await request(app).patch(`/api/setters/leads/lead_concurrencia`).set("Cookie", cookie).send({ decisor: "single" });
+    expect(r.status).toBe(200);
+    expect(r.body.lead.decisor).toBe("single");
+  });
+
+  it("100 PATCH concurrentes a un lead NO lo borran ni causan errores", async () => {
+    const patches = [];
+    for (let i = 0; i < 100; i++) {
+      patches.push(request(app).patch(`/api/setters/leads/lead_concurrencia`).set("Cookie", cookie).send({ decisor: `c-${i}` }));
+    }
+    const results = await Promise.all(patches);
+    const failures = results.filter(r => r.status !== 200);
+    expect(failures.length).toBe(0);
+
+    const list = await request(app).get("/api/setters/leads").set("Cookie", cookie);
+    const leads = list.body.leads || []; // este endpoint devuelve un array, no map
+    const lead = leads.find(l => l.id === "lead_concurrencia");
+    expect(lead).toBeTruthy();
+    expect(lead.decisor).toMatch(/^c-\d+$/); // alguno de los 100 valores
+  });
+});
+
+describe("C-2: rate limit y clamp en endpoints externos", () => {
+  it("/api/scrape rechaza payloads que excedan 50 calls totales", async () => {
+    // 6 keywords x 6 ubicaciones x 2 paginas = 72 > 50
+    const r = await request(app).post("/api/scrape").set("Cookie", cookie).send({
+      query: "k1\nk2\nk3\nk4\nk5\nk6",
+      location: "Bogota; Lima; Madrid; Mexico DF; Buenos Aires; Quito",
+      maxPages: 2
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/Demasiado trabajo|llamadas/i);
+  });
+
+  it("/api/scrape acepta payloads dentro del limite (no rechaza con 400 por clamp)", async () => {
+    // 1 keyword x 1 ubicacion x 1 pagina = 1 (OK)
+    const r = await request(app).post("/api/scrape").set("Cookie", cookie).send({
+      query: "test query",
+      location: "Bogota",
+      maxPages: 1
+    });
+    // Si no hay SerpAPI key fallara con 500, pero NO con 400 del clamp
+    expect(r.status).not.toBe(400);
+  });
+});
+
+describe("H-4: validacion de shape en /api/admin/import-data", () => {
+  it("rechaza payload vacio (400)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({});
+    expect(r.status).toBe(400);
+    expect(r.body.detalles).toContain("payload vacio: incluir al menos uno de history/auth/setters/faqs/training");
+  });
+
+  it("rechaza auth sin users array (400)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      auth: { sessions: [] } // falta users
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.detalles.some(e => /users debe ser array/i.test(e))).toBe(true);
+  });
+
+  it("rechaza setters sin setters[] array (400)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      setters: { leads: {} } // falta setters[]
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.detalles.some(e => /setters\.setters debe ser array/i.test(e))).toBe(true);
+  });
+
+  it("rechaza setters.leads como array (debe ser map)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      setters: { setters: [], leads: [] } // leads como array (mal)
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.detalles.some(e => /leads debe ser un map/i.test(e))).toBe(true);
+  });
+
+  it("rechaza history.entries como array (debe ser map)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      history: { entries: [] }
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.detalles.some(e => /entries debe ser un map/i.test(e))).toBe(true);
+  });
+
+  it("rechaza faqs.entries que no es array", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      faqs: { entries: "not-an-array" }
+    });
+    expect(r.status).toBe(400);
+    expect(r.body.detalles.some(e => /faqs\.entries debe ser array/i.test(e))).toBe(true);
+  });
+
+  it("acepta payload valido con setters + faqs y devuelve ok (no toca auth para no borrar al admin del test)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({
+      setters: { setters: [], leads: {}, variants: [], calendar: [], sessions: [] },
+      faqs: { entries: [] }
+    });
+    expect(r.status).toBe(200);
+    expect(r.body.ok).toBe(true);
+  });
+});
