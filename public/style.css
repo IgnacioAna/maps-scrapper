@@ -980,6 +980,23 @@ body:has(#view-social.active) .global-location-panel {
   table-layout: auto;
 }
 
+/* Container de la tabla del Setteo: altura limitada para que el scrollbar
+   horizontal NO quede al fondo del array completo de leads (donde el setter
+   tendria que scrollear vertical hasta el final para acceder a el). En vez
+   de eso, el container tiene su propia altura y el scrollbar horizontal vive
+   al fondo del container — siempre visible mientras se navega la tabla. */
+#view-crm .table-container {
+  max-height: calc(100vh - 240px);
+  overflow: auto;
+}
+/* Encabezado sticky para no perder contexto al scrollear vertical dentro del container. */
+#view-crm #setter-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg-elevated);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
