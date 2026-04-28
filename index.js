@@ -503,6 +503,49 @@ function digitsHaveKnownPrefix(digits) {
   return false;
 }
 
+// Largo esperado del NÚMERO LOCAL (sin código de país) para móviles WhatsApp.
+// Solo países donde el largo móvil es estricto. AR (54) y MX (52) NO están porque
+// tienen prefijos móvil 9/1 opcionales que confunden el cálculo.
+const COUNTRY_LOCAL_MOBILE_LENGTH = {
+  '57': 10,   // Colombia: 3XX XXX XXXX
+  '56': 9,    // Chile:    9 XXXX XXXX
+  '51': 9,    // Perú:     9XX XXX XXX
+  '34': 9,    // España:   6XX XXX XXX / 7XX XXX XXX
+  '598': 8,   // Uruguay:  9X XXX XXX
+  '593': 9,   // Ecuador:  9X XXX XXXX
+  '595': 9,   // Paraguay: 9XX XXX XXX
+  '591': 8,   // Bolivia:  7X XXX XXX
+  '506': 8,   // Costa Rica
+  '507': 8,   // Panamá
+  '58': 10    // Venezuela: 4XX XXX XXXX
+};
+
+// Saca dígitos sobrantes que vienen ENTRE el código de país y el local.
+// Caso típico: Colombia con "+57 1 3XX..." donde el "1" es código de Bogotá
+// (fijo) y se cuela en el celular. WhatsApp no lo entiende.
+// Si el local supera el largo esperado por exactamente 1 dígito y empieza con
+// "1", asumimos que ese "1" es ruido y lo eliminamos.
+function _stripExtraIntermediateDigits(digits, prefix) {
+  if (!prefix || !COUNTRY_LOCAL_MOBILE_LENGTH[prefix]) return digits;
+  const expected = COUNTRY_LOCAL_MOBILE_LENGTH[prefix];
+  const local = digits.substring(prefix.length);
+  if (local.length === expected + 1 && local.startsWith('1')) {
+    return prefix + local.substring(1);
+  }
+  return digits;
+}
+
+// Si los dígitos no tienen prefijo de país explícito (caso country=''), intentamos
+// detectar el prefijo internacional automáticamente y aplicar el strip.
+function _autoDetectAndStrip(digits) {
+  for (const p of Object.keys(COUNTRY_LOCAL_MOBILE_LENGTH).sort((a, b) => b.length - a.length)) {
+    if (digits.startsWith(p)) {
+      return _stripExtraIntermediateDigits(digits, p);
+    }
+  }
+  return digits;
+}
+
 function buildWhatsAppUrl(phone, country, message = '') {
   if (!phone) return '';
   let digits = String(phone).replace(/\D/g, '');
@@ -531,13 +574,15 @@ function buildWhatsAppUrl(phone, country, message = '') {
   const normalizedCountry = normalize(country);
   const prefix = countryAliases[normalizedCountry] || '';
 
-  // Si ya viene con "+" internacional, respetar
+  // Si ya viene con "+" internacional, respetar (intentando sanear con auto-detect)
   if (phone.trim().startsWith('+')) {
-    return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+    const cleaned = _autoDetectAndStrip(digits);
+    return `https://wa.me/${cleaned}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
   }
   // Si los dígitos ya empiezan con el prefijo del país, no duplicar
   if (prefix && digits.startsWith(prefix) && digits.length >= prefix.length + 8) {
-    return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+    const cleaned = _stripExtraIntermediateDigits(digits, prefix);
+    return `https://wa.me/${cleaned}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
   }
   if (digits.startsWith('0')) digits = digits.substring(1);
   if (prefix === '54' && !digits.startsWith('9') && digits.length >= 10) digits = `9${digits}`;
@@ -549,7 +594,8 @@ function buildWhatsAppUrl(phone, country, message = '') {
     // (lead sin country o country mal cargado), usar tal cual. Evita el bug
     // histórico de prefijar con `1` un número que ya traía 34/54/52/etc.
     if (digitsHaveKnownPrefix(digits)) {
-      return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+      const cleaned = _autoDetectAndStrip(digits);
+      return `https://wa.me/${cleaned}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
     }
     // Dígitos largos (>=11) probablemente ya incluyen código de país
     if (digits.length >= 11) {

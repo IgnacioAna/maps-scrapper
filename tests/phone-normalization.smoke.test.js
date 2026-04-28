@@ -86,6 +86,33 @@ describe("buildWhatsAppUrl: prefijo internacional", () => {
     expect(digitsOf(buildWhatsAppUrl("573001234567", ""))).toBe("573001234567");
   });
 
+  it("CO con `1` sobrante después del 57 (fijo Bogotá filtrado en celular) — country=Colombia", () => {
+    // Bug Paula: "+57 1 3XX XXX XXXX" → 13 dígitos. El "1" es código de Bogotá
+    // (fijo) que se cuela en el WhatsApp móvil. Hay que sacarlo.
+    expect(digitsOf(buildWhatsAppUrl("5713001234567", "Colombia"))).toBe("573001234567");
+    expect(digitsOf(buildWhatsAppUrl("+57 1 300 123 4567", "Colombia"))).toBe("573001234567");
+  });
+
+  it("CO con `1` sobrante y country vacío también se sanea (autodetect)", () => {
+    expect(digitsOf(buildWhatsAppUrl("5713001234567", ""))).toBe("573001234567");
+    expect(digitsOf(buildWhatsAppUrl("+5713001234567", ""))).toBe("573001234567");
+  });
+
+  it("CO con largo correcto NO se toca (regresión)", () => {
+    expect(digitsOf(buildWhatsAppUrl("573001234567", "Colombia"))).toBe("573001234567");
+    expect(digitsOf(buildWhatsAppUrl("+573001234567", ""))).toBe("573001234567");
+  });
+
+  it("ES con largo correcto NO se toca (regresión cross-país)", () => {
+    // 34 + 9 dígitos = 11 totales. El strip solo aplica si excede en 1 Y empieza con "1".
+    expect(digitsOf(buildWhatsAppUrl("34604881378", "España"))).toBe("34604881378");
+  });
+
+  it("AR no se toca por _stripExtraIntermediateDigits (no está en el mapa)", () => {
+    // AR usa el "9" móvil, no es "1" sobrante. Y AR no está en COUNTRY_LOCAL_MOBILE_LENGTH.
+    expect(digitsOf(buildWhatsAppUrl("5491134567890", "Argentina"))).toBe("5491134567890");
+  });
+
   it("digitos US `1` con country=USA respeta", () => {
     expect(digitsOf(buildWhatsAppUrl("14155551212", "USA"))).toBe("14155551212");
   });
