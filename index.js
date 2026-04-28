@@ -549,15 +549,16 @@ function sanitizeOpeningMessage(raw) {
   const lower = s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
   const clientPatterns = [
     /me gustaria (saber|recibir|conocer|obtener|tener)/,
-    /estoy interesad[oa] en/,
+    /estoy interesad[oa@\/(]/,        // captura "interesado", "interesada", "interesado/a", "interesado(a)", "interesad@"
     /quisiera (saber|conocer|recibir|agendar|tener)/,
     /quiero (saber|recibir|agendar|conocer|obtener)/,
-    /podri(a|an) (brindarm|darm|enviarm|mandarm)/,
+    /podri(a|an) (brindarm|darm|enviarm|mandarm|ayudarm)/,
     /necesito (informacion|saber|conocer)/,
-    /me (podria|podrian) (informar|enviar|mandar|brindar)/,
+    /me (podria|podrian) (informar|enviar|mandar|brindar|ayudar)/,
     /me interesar\w*\s+(sus|los|el|tus)/,
     /agendar una cita/,
-    /(mas|adicional) informacion sobre (sus|los) (servicios|tratamientos)/
+    /(mas|adicional) informacion sobre (sus|los) (servicios|tratamientos|planes)/,
+    /podria (ayudarm|brindarm|darm|enviarm)/        // "¿Podría ayudarme?" suelto al final
   ];
   if (clientPatterns.some(rx => rx.test(lower))) return null;
   return s;

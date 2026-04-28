@@ -95,6 +95,12 @@ describe("sanitizeOpeningMessage — rechazos por basura", () => {
     expect(sanitizeOpeningMessage("Hola, necesito información sobre tratamientos")).toBeNull();
     expect(sanitizeOpeningMessage("Hola, me interesarían sus servicios dentales")).toBeNull();
     expect(sanitizeOpeningMessage("Hola, quiero agendar una cita por favor")).toBeNull();
+    // Variantes inclusivas que se le escapaban al regex viejo
+    expect(sanitizeOpeningMessage("Hola, estoy interesado/a en conocer más sobre sus tratamientos")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, estoy interesado(a) en conocer más sobre sus servicios")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, estoy interesad@ en sus tratamientos")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, ¿podría ayudarme con información?")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, podrían ayudarme con info adicional")).toBeNull();
   });
 });
 
