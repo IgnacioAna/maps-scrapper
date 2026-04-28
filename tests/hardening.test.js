@@ -290,8 +290,82 @@ describe("DELETE /api/setters/team/:id — cascada completa (user borrado + lead
     expect(authAfter.invites.find(i => i.token === "tok_cascada")).toBeUndefined();
   });
 
-  it("404 si el setter no existe", async () => {
-    const r = await request(app).delete("/api/setters/team/no-existe-este-id").set("Cookie", cookie);
+  it("404 si el setter no existe Y no hay user/invite huerfano con ese ID", async () => {
+    const r = await request(app).delete("/api/setters/team/no-existe-y-sin-huerfano").set("Cookie", cookie);
+    expect(r.status).toBe(404);
+  });
+
+  it("tolerante: si setter NO existe pero hay user huerfano con ese setterId, limpia el user igual", async () => {
+    // Sembrar user huerfano (sin setter en data.setters pero con setterId apuntando a uno inexistente)
+    const authFile = path.join(tmpData, "auth.json");
+    const authData = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    authData.users.push({
+      id: "user_huerfano_1", email: "huerfano@local.test", name: "Huerfano1",
+      role: "setter", status: "active", setterId: "setter_que_no_existe", password: pwd("xxx"),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    fs.writeFileSync(authFile, JSON.stringify(authData, null, 2));
+
+    const r = await request(app).delete("/api/setters/team/setter_que_no_existe").set("Cookie", cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.setterExisted).toBe(false);
+    expect(r.body.userDeleted).toBe(true);
+    expect(r.body.userEmail).toBe("huerfano@local.test");
+
+    const authAfter = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    expect(authAfter.users.find(u => u.id === "user_huerfano_1")).toBeUndefined();
+  });
+});
+
+describe("DELETE /api/auth/users/:id — borrar user huerfano directo", () => {
+  it("borra un user huerfano (sin setterId) y revoca sus sesiones", async () => {
+    const authFile = path.join(tmpData, "auth.json");
+    const authData = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    authData.users.push({
+      id: "user_huerfano_2", email: "huerfano2@local.test", name: "Huerfano2",
+      role: "setter", status: "inactive", setterId: "", password: pwd("xxx"),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    authData.sessions = authData.sessions || [];
+    authData.sessions.push({ id: "sess_h2", userId: "user_huerfano_2", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+    fs.writeFileSync(authFile, JSON.stringify(authData, null, 2));
+
+    const r = await request(app).delete("/api/auth/users/user_huerfano_2").set("Cookie", cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.email).toBe("huerfano2@local.test");
+    expect(r.body.sessionsRevoked).toBe(1);
+    const authAfter = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    expect(authAfter.users.find(u => u.id === "user_huerfano_2")).toBeUndefined();
+    expect(authAfter.sessions.find(s => s.id === "sess_h2")).toBeUndefined();
+  });
+
+  it("rechaza si el user tiene setterId que SI existe en data.setters (debe usar cascada de setter)", async () => {
+    // Crear setter real primero
+    const create = await request(app).post("/api/setters/team").set("Cookie", cookie).send({ name: "Setter Activo No Borrar" });
+    const sid = create.body.setters.find(s => s.name === "Setter Activo No Borrar").id;
+    // Sembrar user con ese setterId
+    const authFile = path.join(tmpData, "auth.json");
+    const authData = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    authData.users.push({
+      id: "user_con_setter_activo", email: "tiene-setter@local.test", name: "TieneSetter",
+      role: "setter", status: "active", setterId: sid, password: pwd("xxx"),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    fs.writeFileSync(authFile, JSON.stringify(authData, null, 2));
+
+    const r = await request(app).delete("/api/auth/users/user_con_setter_activo").set("Cookie", cookie);
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/setter activo|cascada/i);
+  });
+
+  it("rechaza borrarse a vos mismo", async () => {
+    const r = await request(app).delete("/api/auth/users/user_admin_h").set("Cookie", cookie);
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/a vos mismo/i);
+  });
+
+  it("404 si el user no existe", async () => {
+    const r = await request(app).delete("/api/auth/users/nope-no-existe").set("Cookie", cookie);
     expect(r.status).toBe(404);
   });
 });

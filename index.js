@@ -2423,7 +2423,23 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
   const setterId = req.params.id;
   const data = loadSettersData();
   const setter = data.setters.find(s => s.id === setterId);
-  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+
+  // Tolerante: si el setter NO existe en data.setters pero hay un user / invite
+  // con ese setterId (huerfano de un delete previo a medias), igual hacemos
+  // la limpieza del user y los invites. Antes esto devolvia 404 y dejaba
+  // huerfanos para siempre.
+  let setterExisted = !!setter;
+  if (!setterExisted) {
+    // Verificar si vale la pena seguir: tiene que haber user huerfano o invite huerfano
+    const auth = loadAuthData();
+    const orphanUser = (auth.users || []).find(u => u.role === 'setter' && u.setterId === setterId);
+    const orphanInvite = (auth.invites || []).find(inv => inv.setterId === setterId);
+    if (!orphanUser && !orphanInvite) {
+      return res.status(404).json({ error: 'Setter no encontrado y no hay user/invite huerfano con ese ID.' });
+    }
+    // Hay huerfano: seguimos para limpiarlo (saltamos los pasos 1-4 porque el
+    // setter no esta y no tiene leads/variantes/sesiones internas que limpiar).
+  }
 
   // 1) Sacar del array de setters
   data.setters = data.setters.filter(s => s.id !== setterId);
@@ -2480,14 +2496,16 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
       invitesRevoked = invitesBefore - auth.invites.length;
     }
     if (userDeleted || invitesRevoked > 0) saveAuthData(auth);
-    console.log(`[setter:delete] Setter '${setter.name}' eliminado: ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s)` + (userDeleted ? `, user '${userEmail}' BORRADO, ${sessionsRevoked} sesion(es) revocada(s)` : ', sin user asociado') + (invitesRevoked > 0 ? `, ${invitesRevoked} invite(s) revocada(s)` : '') + '.');
+    const labelName = setterExisted ? setter.name : (userEmail || setterId);
+    console.log(`[setter:delete] Setter '${labelName}' eliminado` + (setterExisted ? '' : ' (huerfano, no existia en data.setters)') + `: ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s)` + (userDeleted ? `, user '${userEmail}' BORRADO, ${sessionsRevoked} sesion(es) revocada(s)` : ', sin user asociado') + (invitesRevoked > 0 ? `, ${invitesRevoked} invite(s) revocada(s)` : '') + '.');
   } catch (e) {
     console.warn('[setter:delete] Cascada al usuario fallo (no critico):', e.message);
   }
 
   res.json({
     ok: true,
-    setterName: setter.name,
+    setterName: setterExisted ? setter.name : (userEmail || setterId),
+    setterExisted,
     leadsFreed,
     variantsFreed,
     userDeleted,
@@ -2495,6 +2513,56 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
     sessionsRevoked,
     invitesRevoked
   });
+});
+
+// DELETE /api/auth/users/:id — borrar un user huerfano puro (sin setter asociado).
+// Usado cuando el user no tiene setterId o el setter ya no existe pero el user
+// quedo en auth.json. Tambien limpia sus sessions e invites pendientes.
+//
+// Guards:
+// - No permite borrarse a si mismo (admin actual)
+// - No permite borrar al ultimo admin activo (deja siempre uno)
+app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const userId = req.params.id;
+  const me = req.auth?.user;
+  if (me && me.id === userId) {
+    return res.status(400).json({ error: 'No podes eliminarte a vos mismo.' });
+  }
+  const auth = loadAuthData();
+  const user = (auth.users || []).find(u => u.id === userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+  // Proteger al ultimo admin activo
+  if (user.role === 'admin') {
+    const activeAdmins = (auth.users || []).filter(u => u.role === 'admin' && u.status === 'active' && u.id !== userId);
+    if (activeAdmins.length === 0) {
+      return res.status(400).json({ error: 'No podes eliminar al ultimo admin activo.' });
+    }
+  }
+  // Si el user tiene setterId que SI existe en data.setters, advertir: usar
+  // el endpoint de delete-setter (cascada completa) en lugar de este.
+  if (user.setterId) {
+    const sd = loadSettersData();
+    if ((sd.setters || []).some(s => s.id === user.setterId)) {
+      return res.status(400).json({
+        error: 'Este user tiene un setter activo asociado. Usa Eliminar setter (cascada completa) en lugar de borrar el user solo.'
+      });
+    }
+  }
+  // OK borrar
+  auth.users = auth.users.filter(u => u.id !== userId);
+  const sessionsBefore = (auth.sessions || []).length;
+  auth.sessions = (auth.sessions || []).filter(s => s.userId !== userId);
+  const sessionsRevoked = sessionsBefore - auth.sessions.length;
+  // Tambien invites pendientes con ese email
+  let invitesRevoked = 0;
+  if (Array.isArray(auth.invites)) {
+    const before = auth.invites.length;
+    auth.invites = auth.invites.filter(inv => (inv.email || '').toLowerCase() !== (user.email || '').toLowerCase());
+    invitesRevoked = before - auth.invites.length;
+  }
+  saveAuthData(auth);
+  console.log(`[user:delete] User '${user.email}' (${user.role}) BORRADO directamente, ${sessionsRevoked} sesion(es) revocada(s), ${invitesRevoked} invite(s) revocada(s).`);
+  res.json({ ok: true, email: user.email, sessionsRevoked, invitesRevoked });
 });
 
 // ── Variantes CRUD (compartidas) ──

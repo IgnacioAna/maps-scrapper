@@ -2911,6 +2911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const users = data.users || [];
       const invites = data.invites || [];
       const inviteMap = new Map(invites.map(inv => [(inv.email || '').toLowerCase(), inv]));
+      const validSetterIds = new Set((settersData.setters || []).map(s => s.id));
       const variableCountBySetter = new Map();
       (settersData.variants || []).forEach(v => {
         if (!v.setterId) return;
@@ -2920,28 +2921,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.innerHTML = users.map(user => {
         const inv = inviteMap.get((user.email || '').toLowerCase());
         const varCount = user.role === 'setter' ? (variableCountBySetter.get(user.setterId || '') || 0) : 0;
-        // Acciones por rol: setter -> Editar / Duplicar / Eliminar; admin -> sin acciones
+        // 3 categorias de user:
+        //   (a) admin: sin acciones (ya esta protegido en el backend)
+        //   (b) setter sano: tiene setterId y existe en data.setters -> Editar/Duplicar/Eliminar (cascada)
+        //   (c) setter HUERFANO: sin setterId o con setterId que no existe -> "Borrar usuario"
         let actions = '—';
-        if (user.role === 'setter' && user.setterId) {
-          const sid = escHtml(user.setterId);
-          const sname = encodeURIComponent(user.name || '');
-          actions =
-            '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button> ' +
-            '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button> ' +
-            '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>';
+        if (user.role === 'setter') {
+          const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
+          if (isOrphan) {
+            actions =
+              '<span style="font-size:10px;color:var(--text-tertiary);margin-right:6px;">huérfano</span>' +
+              '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteUser(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Borrar usuario</button>';
+          } else {
+            const sid = escHtml(user.setterId);
+            const sname = encodeURIComponent(user.name || '');
+            actions =
+              '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button> ' +
+              '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button> ' +
+              '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>';
+          }
         }
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
           '<td>' + escHtml(user.email || '') + '</td>' +
           '<td>' + escHtml(user.role || '') + '</td>' +
           '<td>' + escHtml(user.status || '') + '</td>' +
-          '<td>' + escHtml(user.setterId || '') + '</td>' +
           '<td>' + (user.role === 'setter' ? varCount : '—') + '</td>' +
           '<td>' + (inv ? 'Pendiente' : '—') + '</td>' +
           '<td>' + actions + '</td>' +
         '</tr>';
       }).join('');
     }
+
+    // Borra un user directo (huerfanos sin setter o con setter inexistente).
+    // El backend tiene guards: no permite borrarse a uno mismo ni al ultimo admin.
+    window._deleteUser = async (userId, email) => {
+      if (!userId) return;
+      const msg = '¿Borrar el usuario "' + (email || userId) + '"?\n\n' +
+                  'Este usuario es huérfano (sin setter activo asociado). Esto va a:\n' +
+                  '• Borrarlo del sistema\n' +
+                  '• Cerrar sus sesiones\n' +
+                  '• Invalidar sus invites pendientes\n\n' +
+                  'NO se puede deshacer.';
+      if (!confirm(msg)) return;
+      try {
+        const r = await fetch(apiUrl('/api/auth/users/' + userId), { method: 'DELETE' });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+        const partes = ['Usuario "' + (data.email || email) + '" borrado.'];
+        if (data.sessionsRevoked) partes.push('• ' + data.sessionsRevoked + ' sesion(es) revocada(s)');
+        if (data.invitesRevoked) partes.push('• ' + data.invitesRevoked + ' invite(s) revocada(s)');
+        alert(partes.join('\n'));
+      } catch (err) {
+        alert('Error borrando usuario: ' + err.message);
+      }
+      loadCommandCenter();
+    };
 
     const inviteUserBtn = document.getElementById('invite-user-btn');
     const inviteResultDiv = document.getElementById('invite-result');

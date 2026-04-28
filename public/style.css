@@ -997,6 +997,13 @@ body:has(#view-social.active) .global-location-panel {
   background: var(--bg-elevated);
 }
 
+/* Tabla compacta para listados densos (ej: tabla de Equipo en Centro de Comando)
+   Reduce el padding y el font-size para que entren mas filas en pantalla. */
+.compact-table table { font-size: 12px; }
+.compact-table th { padding: 8px 12px; }
+.compact-table td { padding: 8px 12px; }
+.compact-table .btn-table-action { padding: 4px 8px; font-size: 11px; }
+
 table {
   width: 100%;
   border-collapse: collapse;
