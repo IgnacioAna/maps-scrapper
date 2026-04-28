@@ -132,6 +132,69 @@ describe("C-2: rate limit y clamp en endpoints externos", () => {
   });
 });
 
+describe("DELETE /api/setters/team/:id — cascada (user inactive + leads liberados + sesiones revocadas)", () => {
+  it("borra setter + libera leads asignados + desactiva user asociado + revoca sesiones", async () => {
+    // 1) Crear setter (el endpoint devuelve { setters: [...] })
+    const createRes = await request(app).post("/api/setters/team").set("Cookie", cookie).send({ name: "Setter Cascada" });
+    expect(createRes.status).toBe(200);
+    const created = createRes.body.setters.find(s => s.name === "Setter Cascada");
+    expect(created).toBeTruthy();
+    const setterId = created.id;
+
+    // 2) Sembrar un lead asignado a ese setter, y un user setter con ese setterId + sesion activa
+    const settersFile = path.join(tmpData, "setters.json");
+    const settersData = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    settersData.leads["lead_cascada_test"] = {
+      id: "lead_cascada_test",
+      num: 99,
+      name: "Lead Cascada",
+      phone: "+5491100000111",
+      country: "Argentina",
+      assignedTo: setterId,
+      decisor: "",
+      estado: "sin_contactar"
+    };
+    fs.writeFileSync(settersFile, JSON.stringify(settersData, null, 2));
+
+    const authFile = path.join(tmpData, "auth.json");
+    const authData = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    authData.users.push({
+      id: "user_setter_cascada", email: "setter-cascada@local.test", name: "SetterCascada",
+      role: "setter", status: "active", setterId, password: pwd("xxx"),
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    authData.sessions = authData.sessions || [];
+    authData.sessions.push({ id: "sess_cascada_xxx", userId: "user_setter_cascada", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+    fs.writeFileSync(authFile, JSON.stringify(authData, null, 2));
+
+    // 3) DELETE
+    const r = await request(app).delete("/api/setters/team/" + setterId).set("Cookie", cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.ok).toBe(true);
+    expect(r.body.setterName).toBe("Setter Cascada");
+    expect(r.body.leadsFreed).toBe(1);
+    expect(r.body.userDeactivated).toBe(true);
+    expect(r.body.userEmail).toBe("setter-cascada@local.test");
+    expect(r.body.sessionsRevoked).toBe(1);
+
+    // 4) Verificar estado final
+    const settersAfter = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    expect(settersAfter.setters.find(s => s.id === setterId)).toBeUndefined();
+    expect(settersAfter.leads.lead_cascada_test.assignedTo).toBe("");
+
+    const authAfter = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    const userAfter = authAfter.users.find(u => u.id === "user_setter_cascada");
+    expect(userAfter.status).toBe("inactive");
+    expect(userAfter.setterId).toBe("");
+    expect(authAfter.sessions.find(s => s.id === "sess_cascada_xxx")).toBeUndefined();
+  });
+
+  it("404 si el setter no existe", async () => {
+    const r = await request(app).delete("/api/setters/team/no-existe-este-id").set("Cookie", cookie);
+    expect(r.status).toBe(404);
+  });
+});
+
 describe("H-4: validacion de shape en /api/admin/import-data", () => {
   it("rechaza payload vacio (400)", async () => {
     const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({});

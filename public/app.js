@@ -2183,8 +2183,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window._deleteSetter = async (setterId) => {
       if (!setterId) return;
-      if (!confirm('Eliminar este setter y dejar sus variables sin asignar?')) return;
-      await fetch(apiUrl('/api/setters/team/' + setterId), { method: 'DELETE' });
+      const msg = '¿Eliminar este setter?\n\nEsto va a:\n' +
+                  '• Sacarlo del equipo\n' +
+                  '• Liberar sus leads (quedan sin asignar, NO se borran)\n' +
+                  '• Liberar sus variables\n' +
+                  '• Desactivar su usuario y cerrar sus sesiones (si tiene cuenta)\n\n' +
+                  'Esto NO se puede deshacer (los leads pueden reasignarse manualmente).';
+      if (!confirm(msg)) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/team/' + setterId), { method: 'DELETE' });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+        const partes = [];
+        partes.push('Setter "' + (data.setterName || setterId) + '" eliminado.');
+        if (data.leadsFreed) partes.push('• ' + data.leadsFreed + ' lead(s) liberado(s)');
+        if (data.variantsFreed) partes.push('• ' + data.variantsFreed + ' variante(s) liberada(s)');
+        if (data.userDeactivated) {
+          partes.push('• Usuario ' + (data.userEmail || '') + ' desactivado');
+          if (data.sessionsRevoked) partes.push('• ' + data.sessionsRevoked + ' sesion(es) revocada(s)');
+        }
+        alert(partes.join('\n'));
+      } catch (err) {
+        alert('Error eliminando setter: ' + err.message);
+      }
       loadCommandCenter();
     };
 

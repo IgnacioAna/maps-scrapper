@@ -2304,18 +2304,77 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
 });
 
 app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const setterId = req.params.id;
   const data = loadSettersData();
-  const setter = data.setters.find(s => s.id === req.params.id);
+  const setter = data.setters.find(s => s.id === setterId);
   if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
 
-  data.setters = data.setters.filter(s => s.id !== req.params.id);
+  // 1) Sacar del array de setters
+  data.setters = data.setters.filter(s => s.id !== setterId);
+
+  // 2) Liberar variantes (las que apuntaban a este setter quedan sin asignar)
+  let variantsFreed = 0;
   data.variants = data.variants.map((variant) => {
-    if (variant.setterId === req.params.id) variant.setterId = '';
-    if (Array.isArray(variant.sharedWith)) variant.sharedWith = variant.sharedWith.filter(id => id !== req.params.id);
+    if (variant.setterId === setterId) { variant.setterId = ''; variantsFreed++; }
+    if (Array.isArray(variant.sharedWith)) variant.sharedWith = variant.sharedWith.filter(id => id !== setterId);
     return variant;
   });
+
+  // 3) Liberar leads asignados a este setter (no se borran, quedan reasignables)
+  let leadsFreed = 0;
+  if (data.leads && typeof data.leads === 'object') {
+    for (const id of Object.keys(data.leads)) {
+      if (data.leads[id]?.assignedTo === setterId) {
+        data.leads[id].assignedTo = '';
+        leadsFreed++;
+      }
+    }
+  }
+
+  // 4) Cerrar sesiones activas del setter en sus sessions internas (las propias del modulo
+  //    de setteo, no las de auth) — limpiar las que sean de este setter.
+  if (Array.isArray(data.sessions)) {
+    data.sessions = data.sessions.filter(s => s.setter !== setterId);
+  }
+
   saveSettersData(data);
-  res.json({ ok: true });
+
+  // 5) Cascada al usuario asociado en auth.json (si existe).
+  //    Lo desactivamos en lugar de borrarlo para preservar trazabilidad
+  //    historica (notas, interacciones que mencionan su nombre, etc).
+  let userDeactivated = false;
+  let sessionsRevoked = 0;
+  let userEmail = '';
+  try {
+    const auth = loadAuthData();
+    const user = (auth.users || []).find(u => u.role === 'setter' && u.setterId === setterId);
+    if (user) {
+      userEmail = user.email;
+      user.status = 'inactive';
+      user.setterId = '';
+      user.updatedAt = new Date().toISOString();
+      userDeactivated = true;
+      const before = (auth.sessions || []).length;
+      auth.sessions = (auth.sessions || []).filter(s => s.userId !== user.id);
+      sessionsRevoked = before - auth.sessions.length;
+      saveAuthData(auth);
+      console.log(`[setter:delete] Setter '${setter.name}' eliminado en cascada: user '${userEmail}' desactivado, ${sessionsRevoked} sesion(es) revocada(s), ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s).`);
+    } else {
+      console.log(`[setter:delete] Setter '${setter.name}' eliminado: ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s). Sin user asociado en auth.json.`);
+    }
+  } catch (e) {
+    console.warn('[setter:delete] Cascada al usuario fallo (no critico):', e.message);
+  }
+
+  res.json({
+    ok: true,
+    setterName: setter.name,
+    leadsFreed,
+    variantsFreed,
+    userDeactivated,
+    userEmail: userDeactivated ? userEmail : '',
+    sessionsRevoked
+  });
 });
 
 // ── Variantes CRUD (compartidas) ──
