@@ -132,6 +132,59 @@ describe("C-2: rate limit y clamp en endpoints externos", () => {
   });
 });
 
+describe("POST /api/admin/regen-openings — limpia openMessages rotos", () => {
+  it("dryRun: cuenta cuantos cambiaria sin tocar nada", async () => {
+    // Sembrar leads con varios estados de openMessage
+    const settersFile = path.join(tmpData, "setters.json");
+    const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    sd.leads.lead_regen_1 = { id: "lead_regen_1", num: 50, name: "L1", phone: "+57300", country: "Colombia", openMessage: "Hola, me gustaría saber más sobre sus servicios" }; // ROL INVERTIDO
+    sd.leads.lead_regen_2 = { id: "lead_regen_2", num: 51, name: "L2", phone: "+57301", country: "Colombia", openMessage: "Hola, buenas tardes" }; // OK
+    sd.leads.lead_regen_3 = { id: "lead_regen_3", num: 52, name: "L3", phone: "+57302", country: "Colombia", openMessage: "" }; // VACIO
+    sd.leads.lead_regen_4 = { id: "lead_regen_4", num: 53, name: "L4", phone: "+57303", country: "Colombia", openMessage: "Visitanos en https://x.com" }; // URL
+    fs.writeFileSync(settersFile, JSON.stringify(sd, null, 2));
+
+    const r = await request(app).post("/api/admin/regen-openings").set("Cookie", cookie).send({ dryRun: true });
+    expect(r.status).toBe(200);
+    expect(r.body.scanned).toBeGreaterThanOrEqual(4);
+    expect(r.body.changed).toBeGreaterThanOrEqual(3); // 1, 3 y 4 deberian cambiar; 2 no
+    expect(r.body.dryRun).toBe(true);
+
+    // Verificar que NO toco el archivo (dryRun)
+    const sdAfter = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    expect(sdAfter.leads.lead_regen_1.openMessage).toBe("Hola, me gustaría saber más sobre sus servicios");
+  });
+
+  it("sin dryRun: regenera de verdad y los nuevos pasan el sanitizer", async () => {
+    const r = await request(app).post("/api/admin/regen-openings").set("Cookie", cookie).send({});
+    expect(r.status).toBe(200);
+    expect(r.body.changed).toBeGreaterThan(0);
+    const settersFile = path.join(tmpData, "setters.json");
+    const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    // El "rol invertido" ya fue regenerado a algo neutro
+    expect(sd.leads.lead_regen_1.openMessage).not.toMatch(/me gustar[ií]a/i);
+    // El que estaba bien sigue igual
+    expect(sd.leads.lead_regen_2.openMessage).toBe("Hola, buenas tardes");
+    // El vacio ya tiene mensaje
+    expect(sd.leads.lead_regen_3.openMessage.length).toBeGreaterThan(5);
+    // El URL fue reemplazado
+    expect(sd.leads.lead_regen_4.openMessage).not.toMatch(/https?:|www\./);
+  });
+
+  it("setterId filtra solo a un setter", async () => {
+    // Sembrar lead asignado a un setterId distinto
+    const settersFile = path.join(tmpData, "setters.json");
+    const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    sd.leads.lead_regen_otro_setter = { id: "lead_regen_otro_setter", num: 99, name: "Otro", country: "Colombia", openMessage: "Hola, estoy interesado", assignedTo: "setter_otro_xxx" };
+    sd.leads.lead_regen_solo = { id: "lead_regen_solo", num: 100, name: "Solo", country: "Colombia", openMessage: "Hola, me gustaría saber", assignedTo: "setter_target_xxx" };
+    fs.writeFileSync(settersFile, JSON.stringify(sd, null, 2));
+
+    const r = await request(app).post("/api/admin/regen-openings").set("Cookie", cookie).send({ setterId: "setter_target_xxx" });
+    expect(r.status).toBe(200);
+    expect(r.body.scanned).toBe(1); // solo el del target
+    expect(r.body.changed).toBe(1);
+  });
+});
+
 describe("POST /api/auth/accept-invite — auto-login con cookie de sesion", () => {
   it("crea el usuario, marca el invite aceptado, devuelve cookie de sesion y la sesion es valida", async () => {
     // 1) Como admin, creamos un invite para un nuevo setter

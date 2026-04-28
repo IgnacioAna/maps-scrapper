@@ -84,6 +84,18 @@ describe("sanitizeOpeningMessage — rechazos por basura", () => {
   it("saludos repetidos se rechazan (Hola Hola Hola)", () => {
     expect(sanitizeOpeningMessage("Hola hola hola buenas tardes")).toBeNull();
   });
+
+  it("rechaza mensajes 'tipo cliente' (rol invertido)", () => {
+    // Casos reales que estaba metiendo la IA
+    expect(sanitizeOpeningMessage("Hola, me gustaría saber más sobre sus servicios odontológicos")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, estoy interesado en los servicios de odontología que ofrecen")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, me gustaría recibir más información, por favor")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, quisiera agendar una cita")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, podrían brindarme más información")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, necesito información sobre tratamientos")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, me interesarían sus servicios dentales")).toBeNull();
+    expect(sanitizeOpeningMessage("Hola, quiero agendar una cita por favor")).toBeNull();
+  });
 });
 
 describe("sanitizeOpeningMessage — limpieza y aceptacion", () => {
