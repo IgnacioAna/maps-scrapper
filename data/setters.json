@@ -36605,16 +36605,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:09:43.033Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36629,7 +36629,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_padillaortodoncia_573108581348": {
       "num": 1901,
@@ -36653,16 +36654,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:09:44.859Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36677,7 +36678,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_flowjacsystemortodonciasinbrac_573175751177": {
       "num": 1902,
@@ -36701,16 +36703,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:09:57.535Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36725,7 +36727,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drakaterinebermeoodontologiayo_573229654297": {
       "num": 1903,
@@ -36749,16 +36752,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:10:47.468Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36773,7 +36776,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_fnodontlogosortodonciainvisibl_573167431902": {
       "num": 1904,
@@ -36797,16 +36801,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:10:48.957Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36821,7 +36825,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_clnicacolombianadeortodonciaya_573209904602": {
       "num": 1905,
@@ -36845,16 +36850,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:11:00.191Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36869,7 +36874,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_alfonsogonzlezodontlogoortodon_573107650550": {
       "num": 1906,
@@ -36893,16 +36899,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:11:53.606Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36917,7 +36923,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_topdentalsolutionsimplantesort_573017420478": {
       "num": 1907,
@@ -36941,16 +36948,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:11:52.274Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -36965,7 +36972,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_estticaoralyortodoncia_573182403751": {
       "num": 1908,
@@ -36989,16 +36997,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:11:51.012Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37013,7 +37021,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_o4odontologa_573507033580": {
       "num": 1909,
@@ -37037,16 +37046,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:12:26.256Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37061,7 +37070,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_retenedoresdeortodoncialaborat_573205766308": {
       "num": 1910,
@@ -37085,16 +37095,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:12:27.737Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37109,7 +37119,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dralissetteforeroortodonciainv_573166114692": {
       "num": 1911,
@@ -37133,16 +37144,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:12:29.104Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37157,7 +37168,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_juancarlosvesgaortodoncia_573173777284": {
       "num": 1912,
@@ -37181,16 +37193,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:08.477Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37205,7 +37217,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodonciainvisiblebogot_573135918320": {
       "num": 1913,
@@ -37229,16 +37242,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:09.771Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37253,7 +37266,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodoncianb_573118865305": {
       "num": 1914,
@@ -37277,16 +37291,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:11.282Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37301,7 +37315,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drahelianacovaodontologayortod_573118066084": {
       "num": 1915,
@@ -37325,16 +37340,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:42.337Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37349,7 +37364,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_draortodoncia_573013759387": {
       "num": 1916,
@@ -37373,16 +37389,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:43.374Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37397,7 +37413,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_victoriaortizortodonciayesttic_573053645096": {
       "num": 1917,
@@ -37421,16 +37438,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:58.423Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37445,7 +37462,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_formaortodoncia_573013530812": {
       "num": 1918,
@@ -37469,16 +37487,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:13:59.863Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37493,7 +37511,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drandrsbelloortodonciapersonal_573053367934": {
       "num": 1919,
@@ -37517,16 +37536,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:14:21.978Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37541,7 +37560,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_periodentclinicortodonciabogot_573124677274": {
       "num": 1920,
@@ -37565,16 +37585,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:14:25.373Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37589,7 +37609,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dravivianamurciagmez_573161479995": {
       "num": 1921,
@@ -37613,16 +37634,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:14:46.215Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37637,7 +37658,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_estefanytrianareyesortodoncist_573224051136": {
       "num": 1922,
@@ -37661,16 +37683,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:14:39.120Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37685,7 +37707,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_materialesparaortodonciaqualit_573108693494": {
       "num": 1923,
@@ -37709,16 +37732,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:15:02.379Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37733,7 +37756,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_mundooralodontlogosespecialist_573138791630": {
       "num": 1924,
@@ -37757,16 +37781,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:15:30.655Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37781,7 +37805,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drjulianlora_573225888325": {
       "num": 1925,
@@ -37805,16 +37830,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:15:31.893Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37829,7 +37854,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_draandreapedrazaortodonciainvi_573103087233": {
       "num": 1926,
@@ -37853,16 +37879,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:15:33.054Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37877,7 +37903,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_okidentodontopediatrayortodonc_573104112513": {
       "num": 1927,
@@ -37901,16 +37928,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:15.615Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37925,7 +37952,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontologiayortodoncia_573127035409": {
       "num": 1928,
@@ -37949,16 +37977,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:12.977Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -37973,7 +38001,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodonciamariapareja_573507908107": {
       "num": 1929,
@@ -37997,16 +38026,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:14.140Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38021,7 +38050,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_citydentcedritos_573144490937": {
       "num": 1930,
@@ -38045,16 +38075,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:05.658Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38069,7 +38099,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodonciavanessabello_573002645804": {
       "num": 1931,
@@ -38093,16 +38124,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:25.135Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38117,7 +38148,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drjuancarlostmara_573012680375": {
       "num": 1932,
@@ -38141,16 +38173,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:48.948Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38165,7 +38197,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodoncialtimastecnologasbogo_573100445656": {
       "num": 1933,
@@ -38189,16 +38222,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:50.281Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38213,7 +38246,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_eurodentforestadent_573102414409": {
       "num": 1934,
@@ -38237,16 +38271,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:16:51.576Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38261,7 +38295,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_colombiaorthodontics_573105594348": {
       "num": 1935,
@@ -38285,16 +38320,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:14.897Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38309,7 +38344,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dentisa_573166257556": {
       "num": 1936,
@@ -38333,16 +38369,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:16.255Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38357,7 +38393,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_smiledentalclinicavenida68_576012230775": {
       "num": 1937,
@@ -38381,16 +38418,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:17.294Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38405,7 +38442,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_ortodonciaodontologa_573004643619": {
       "num": 1938,
@@ -38429,16 +38467,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:44.568Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38453,7 +38491,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_alineadoresdentalestransparent_573024691979": {
       "num": 1939,
@@ -38477,16 +38516,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:43.464Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38501,7 +38540,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dentalofficedrrobertrocha_573223386018": {
       "num": 1940,
@@ -38525,16 +38565,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:17:42.379Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38549,7 +38589,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontolgicodrricard_573197365817": {
       "num": 1941,
@@ -38573,16 +38614,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:02.048Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38597,7 +38638,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontolgicoodontome_573209936170": {
       "num": 1942,
@@ -38621,16 +38663,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:01.027Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38645,7 +38687,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontologiademarlonbecerracent_573103298149": {
       "num": 1943,
@@ -38669,16 +38712,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:10.320Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38693,7 +38736,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultoriosodontolgicos_573142156394": {
       "num": 1944,
@@ -38717,16 +38761,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:38.245Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38741,7 +38785,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_centromedicoodontologicolaflor_573132963295": {
       "num": 1945,
@@ -38765,16 +38810,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:36.872Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38789,7 +38834,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontolgicoguadalup_573166293997": {
       "num": 1946,
@@ -38813,16 +38859,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:18:35.725Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38837,7 +38883,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontologicoespecia_573183683665": {
       "num": 1947,
@@ -38861,16 +38908,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:04.369Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38885,7 +38932,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_natudentconsultorioodontolgico_573202870506": {
       "num": 1948,
@@ -38909,16 +38957,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:05.450Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38933,7 +38981,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontolgicoellago_573002092828": {
       "num": 1949,
@@ -38957,16 +39006,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:06.582Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -38981,7 +39030,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontologa247urgenciasodontolg_573132340764": {
       "num": 1950,
@@ -39005,16 +39055,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:33.163Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39029,7 +39079,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontolgicodramarth_573505454084": {
       "num": 1951,
@@ -39053,16 +39104,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:32.019Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39077,7 +39128,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_arteoral_573125862916": {
       "num": 1952,
@@ -39101,16 +39153,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:19:30.898Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39125,7 +39177,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_galeras51drjorgeacerodrdanielm_573164444184": {
       "num": 1953,
@@ -39149,16 +39202,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:20:06.938Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39173,7 +39226,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontologico_573212048637": {
       "num": 1954,
@@ -39197,16 +39251,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:20:22.346Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39221,7 +39275,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontologicogranson_573102850551": {
       "num": 1955,
@@ -39245,16 +39300,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:20:24.824Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39269,7 +39324,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultorioodontologicobogotat_573208201133": {
       "num": 1956,
@@ -39293,16 +39349,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:20:45.978Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39317,7 +39373,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dentariaodontologia_573219667213": {
       "num": 1957,
@@ -39341,16 +39398,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:21:31.018Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39365,7 +39422,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultoriodrguillermobernal_573124343287": {
       "num": 1958,
@@ -39389,16 +39447,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:21:41.617Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39413,7 +39471,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_clnicaodontolgicanubident_573114856116": {
       "num": 1959,
@@ -39437,16 +39496,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:08.455Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39461,7 +39520,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_nuevasonrisapfconsultorioodont_573223470825": {
       "num": 1960,
@@ -39485,16 +39545,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:07.278Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39509,7 +39569,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontlogoenbogotcolombiadrmate_573204994229": {
       "num": 1961,
@@ -39533,16 +39594,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:05.976Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39557,7 +39618,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontologaorallifesedesuba_573005745029": {
       "num": 1962,
@@ -39581,16 +39643,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:45.953Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39605,7 +39667,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_coidental_573125308332": {
       "num": 1963,
@@ -39629,16 +39692,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:47.214Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39653,7 +39716,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontologadigitalbogot_573105743526": {
       "num": 1964,
@@ -39677,16 +39741,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:22:48.332Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39701,7 +39765,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_naturalsmileodontologaespecial_573155185727": {
       "num": 1965,
@@ -39725,16 +39790,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:10.378Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39749,7 +39814,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_fulldental127_573102676303": {
       "num": 1966,
@@ -39773,16 +39839,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:11.496Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39797,7 +39863,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontocenterplus_573112332840": {
       "num": 1967,
@@ -39821,16 +39888,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:12.550Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39845,7 +39912,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_clnicaodontolgicaproteccinoral_573163068085": {
       "num": 1968,
@@ -39869,16 +39937,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:35.422Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39893,7 +39961,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_odontoexpressdraisabelgmezespi_573223930330": {
       "num": 1969,
@@ -39917,16 +39986,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:36.533Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39941,7 +40010,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_lauralaraconsultorioodontolgic_573212415218": {
       "num": 1970,
@@ -39965,16 +40035,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:23:38.055Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -39989,7 +40059,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_clinicadrramironaranjo_573144436767": {
       "num": 1971,
@@ -40013,16 +40084,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:00.221Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40037,7 +40108,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dentalofficeunidos_573118752201": {
       "num": 1972,
@@ -40061,16 +40133,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:00.261Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40085,7 +40157,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_consultoriosporhoranorte_573163882635": {
       "num": 1973,
@@ -40109,16 +40182,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:04.535Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40133,7 +40206,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_pezodontlogos_573008410807": {
       "num": 1974,
@@ -40157,16 +40231,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:27.901Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40181,7 +40255,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_molartodontologia_573227233200": {
       "num": 1975,
@@ -40205,16 +40280,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:29.178Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40229,7 +40304,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_drapaolafrancoodontologabogot_573103243013": {
       "num": 1976,
@@ -40253,16 +40329,16 @@
       "openMessage": "",
       "assignedTo": "setter_paula",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-13T21:11:45.148Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-04-28T02:24:31.208Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -40277,7 +40353,8 @@
       "phoneStatus": "",
       "callLog": [],
       "callAttempts": 0,
-      "callbackAt": ""
+      "callbackAt": "",
+      "fechaContacto": "2026-04-28"
     },
     "l_dentisaludportal80_573222498714": {
       "num": 1977,
