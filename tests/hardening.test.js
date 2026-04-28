@@ -132,6 +132,52 @@ describe("C-2: rate limit y clamp en endpoints externos", () => {
   });
 });
 
+describe("POST /api/auth/accept-invite — auto-login con cookie de sesion", () => {
+  it("crea el usuario, marca el invite aceptado, devuelve cookie de sesion y la sesion es valida", async () => {
+    // 1) Como admin, creamos un invite para un nuevo setter
+    const invRes = await request(app).post("/api/auth/invites").set("Cookie", cookie).send({
+      name: "Setter NuevoInv", email: "nuevoinv@local.test", role: "setter", sendEmail: false
+    });
+    expect(invRes.status).toBe(200);
+    const token = invRes.body.invite.token;
+    expect(token).toBeTruthy();
+
+    // 2) Aceptamos el invite (sin auth — es flow publico)
+    const accept = await request(app).post("/api/auth/accept-invite").send({
+      token, password: "miclavesegura123"
+    });
+    expect(accept.status).toBe(200);
+    expect(accept.body.authenticated).toBe(true);
+    expect(accept.body.user.email).toBe("nuevoinv@local.test");
+    // 3) Debe venir con Set-Cookie de sesion
+    const setCookies = accept.headers["set-cookie"] || [];
+    const sessionCookie = setCookies.find(c => /^gs_session=/.test(c));
+    expect(sessionCookie).toBeTruthy();
+
+    // 4) Esa cookie debe permitir hacer GET /api/auth/me sin re-loguear
+    const cookieValue = sessionCookie.split(";")[0];
+    const meRes = await request(app).get("/api/auth/me").set("Cookie", cookieValue);
+    expect(meRes.status).toBe(200);
+    expect(meRes.body.authenticated).toBe(true);
+    expect(meRes.body.user.email).toBe("nuevoinv@local.test");
+  });
+
+  it("rechaza token invalido con 404 y mensaje claro", async () => {
+    const r = await request(app).post("/api/auth/accept-invite").send({
+      token: "tok-que-no-existe-12345", password: "xxxxxx123"
+    });
+    expect(r.status).toBe(404);
+    expect(r.body.error).toMatch(/invalida|invalid|usada/i);
+  });
+
+  it("rechaza password muy corta (<6) con 400", async () => {
+    const r = await request(app).post("/api/auth/accept-invite").send({
+      token: "tok-x", password: "abc"
+    });
+    expect(r.status).toBe(400);
+  });
+});
+
 describe("DELETE /api/setters/team/:id — cascada completa (user borrado + leads liberados + sesiones e invites revocadas)", () => {
   it("borra setter + libera leads asignados + BORRA user asociado + revoca sesiones e invites", async () => {
     // 1) Crear setter (el endpoint devuelve { setters: [...] })

@@ -35,7 +35,7 @@
           <span class="logo-mark" style="width:28px;height:28px;font-size:14px;">S</span>
           <h1>SCM</h1>
         </div>
-        <p class="auth-subtitle">Acceso por rol para admin y setters</p>
+        <p class="auth-subtitle" id="auth-subtitle">Acceso por rol para admin y setters</p>
       </div>
 
       <form id="auth-form" class="auth-form">
@@ -45,13 +45,22 @@
       </form>
 
       <div id="invite-panel" class="invite-panel hidden">
-        <h3>Activar invitación</h3>
+        <div id="invite-header" style="margin-bottom:16px;">
+          <h3 style="margin:0 0 6px;">Bienvenido, <span id="invite-display-name">—</span></h3>
+          <p style="margin:0;font-size:13px;color:var(--text-secondary);">Estás creando tu acceso para <strong id="invite-display-email">—</strong>.</p>
+          <p style="margin:6px 0 0;font-size:12px;color:var(--text-tertiary);">Una vez que crees tu contraseña, vas a entrar al sistema directamente. No tenés que volver a poner tu email después.</p>
+        </div>
         <form id="invite-form" class="auth-form">
           <input type="hidden" id="invite-token">
-          <input type="password" id="invite-password" placeholder="Crear contraseña" autocomplete="new-password" required>
-          <input type="password" id="invite-password-confirm" placeholder="Repetir contraseña" autocomplete="new-password" required>
-          <button type="submit" class="pill-btn" style="width:100%; justify-content:center;">Crear acceso</button>
+          <input type="password" id="invite-password" placeholder="Crear contraseña (mín. 6 caracteres)" autocomplete="new-password" minlength="6" required>
+          <input type="password" id="invite-password-confirm" placeholder="Repetir contraseña" autocomplete="new-password" minlength="6" required>
+          <button type="submit" id="invite-submit-btn" class="pill-btn" style="width:100%; justify-content:center;">Crear acceso y entrar</button>
         </form>
+      </div>
+
+      <div id="invite-error-panel" class="hidden" style="text-align:center;padding:12px;">
+        <p style="font-size:14px;color:var(--danger);margin:0 0 12px;" id="invite-error-text">Esta invitación no es válida.</p>
+        <button id="invite-back-btn" type="button" class="btn-ghost pill-btn" style="margin:0 auto;">Volver al login normal</button>
       </div>
 
       <div id="auth-message" class="auth-message"></div>
@@ -1123,7 +1132,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260428f"></script>
+  <script type="module" src="/app.js?v=20260428g"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

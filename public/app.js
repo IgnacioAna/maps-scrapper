@@ -173,16 +173,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       mainLayout.classList.add('hidden');
 
       const inviteToken = new URLSearchParams(window.location.search).get('invite');
+      const inviteErrorPanel = document.getElementById('invite-error-panel');
+      const inviteErrorText = document.getElementById('invite-error-text');
+      const inviteBackBtn = document.getElementById('invite-back-btn');
+      const inviteDisplayName = document.getElementById('invite-display-name');
+      const inviteDisplayEmail = document.getElementById('invite-display-email');
+      const inviteSubmitBtn = document.getElementById('invite-submit-btn');
+      const authSubtitle = document.getElementById('auth-subtitle');
+
       if (inviteToken) {
-        invitePanel.classList.remove('hidden');
+        // Cuando hay invite: ocultamos el formulario de login (causa de mucha confusion)
+        // y validamos el token contra el server. Si invalido -> panel de error con
+        // boton para volver al login normal. Si valido -> panel de invite con nombre/email
+        // visible para que el setter NO se confunda.
+        authForm.classList.add('hidden');
         inviteTokenInput.value = inviteToken;
         try {
           const inviteResp = await fetch(apiUrl('/api/auth/invites/' + inviteToken));
-          if (inviteResp.ok) {
+          if (!inviteResp.ok) {
+            const errData = await inviteResp.json().catch(() => ({}));
+            inviteErrorText.textContent = errData.error || 'Esta invitación no es válida o ya fue usada.';
+            inviteErrorPanel.classList.remove('hidden');
+            if (authSubtitle) authSubtitle.textContent = 'Invitación inválida';
+          } else {
             const inviteData = await inviteResp.json();
-            authMessage.textContent = `Invitación para ${inviteData.invite.name} (${inviteData.invite.role})`;
+            const inv = inviteData.invite || {};
+            inviteDisplayName.textContent = inv.name || '—';
+            inviteDisplayEmail.textContent = inv.email || '—';
+            invitePanel.classList.remove('hidden');
+            if (authSubtitle) authSubtitle.textContent = 'Activá tu acceso al sistema';
+            // Auto-focus en el primer input de password
+            setTimeout(() => invitePasswordInput.focus(), 100);
           }
-        } catch (e) {}
+        } catch (e) {
+          inviteErrorText.textContent = 'No se pudo verificar la invitación. Probá de nuevo en unos minutos.';
+          inviteErrorPanel.classList.remove('hidden');
+        }
+        if (inviteBackBtn) {
+          inviteBackBtn.addEventListener('click', () => {
+            window.location.href = window.location.pathname; // sin query string
+          });
+        }
       }
 
       authForm.addEventListener('submit', async (e) => {
@@ -207,26 +238,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       inviteForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         authMessage.className = 'auth-message';
-        if (invitePasswordInput.value !== invitePasswordConfirmInput.value) {
+        const pw = invitePasswordInput.value;
+        const pw2 = invitePasswordConfirmInput.value;
+        if (pw.length < 6) {
           authMessage.className = 'auth-message error';
-          authMessage.textContent = 'Las contraseñas no coinciden.';
+          authMessage.textContent = 'La contraseña debe tener al menos 6 caracteres.';
+          invitePasswordInput.focus();
           return;
         }
+        if (pw !== pw2) {
+          authMessage.className = 'auth-message error';
+          authMessage.textContent = 'Las contraseñas no coinciden. Volvé a escribir la segunda.';
+          invitePasswordConfirmInput.focus();
+          invitePasswordConfirmInput.select();
+          return;
+        }
+        if (inviteSubmitBtn) { inviteSubmitBtn.disabled = true; inviteSubmitBtn.textContent = 'Creando acceso...'; }
         try {
           const resp = await fetch(apiUrl('/api/auth/accept-invite'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: inviteTokenInput.value.trim(), password: invitePasswordInput.value })
+            body: JSON.stringify({ token: inviteTokenInput.value.trim(), password: pw })
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'No se pudo activar la invitación.');
+          // El server ya seteo la cookie de sesion. Redirect limpio (sin ?invite=)
+          // para que el frontend cargue el dashboard normal del setter.
           authMessage.className = 'auth-message success';
-          authMessage.textContent = 'Acceso creado. Ahora podés ingresar.';
-          inviteForm.reset();
-          invitePanel.classList.add('hidden');
+          authMessage.textContent = '¡Listo! Entrando al sistema...';
+          window.location.href = window.location.pathname;
         } catch (err) {
           authMessage.className = 'auth-message error';
           authMessage.textContent = err.message || 'Error al activar la invitación.';
+          if (inviteSubmitBtn) { inviteSubmitBtn.disabled = false; inviteSubmitBtn.textContent = 'Crear acceso y entrar'; }
         }
       });
 

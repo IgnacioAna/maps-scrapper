@@ -1008,7 +1008,7 @@ app.post('/api/auth/accept-invite', (req, res) => {
 
   const data = loadAuthData();
   const invite = data.invites.find((item) => item.token === token && item.status === 'pending');
-  if (!invite) return res.status(404).json({ error: 'Invitación inválida.' });
+  if (!invite) return res.status(404).json({ error: 'Invitación inválida o ya usada.' });
 
   const existing = data.users.find((u) => u.email.toLowerCase() === invite.email.toLowerCase());
   if (existing) return res.status(400).json({ error: 'Ya existe un usuario con ese email.' });
@@ -1028,8 +1028,20 @@ app.post('/api/auth/accept-invite', (req, res) => {
   data.users.push(user);
   invite.status = 'accepted';
   invite.acceptedAt = now;
+
+  // Auto-login: creamos sesion y seteamos cookie para que el setter no tenga
+  // que volver a tipear email + password despues de crear su acceso.
+  const session = {
+    id: 'sess_' + crypto.randomUUID().replace(/-/g, ''),
+    userId: user.id,
+    createdAt: now,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS).toISOString()
+  };
+  data.sessions = data.sessions || [];
+  data.sessions.push(session);
   saveAuthData(data);
-  res.json({ user: publicUser(user) });
+  setAuthCookie(res, session.id);
+  res.json({ user: publicUser(user), authenticated: true });
 });
 
 // ── Admin: Exportar toda la data (para backup pre-deploy) ──
