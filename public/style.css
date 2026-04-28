@@ -970,11 +970,14 @@ body:has(#view-social.active) .global-location-panel {
 }
 
 /* La tabla del Setteo (view-crm) tiene 19 columnas — fuerza un ancho minimo
-   para que el container active el scroll horizontal en pantallas que no dan
-   abasto. Antes, table { width: 100% } comprimia todo y los follow-ups
-   (24h/48h/72h/7d/15d) quedaban inaccesibles a la derecha. */
+   en base al contenido real (max-content) Y un piso de 1800px para garantizar
+   que SIEMPRE haya overflow horizontal en viewports estandar (incluso 1920px
+   con sidebar colapsada). Antes, table { width: 100% } comprimia las celdas y
+   los follow-ups (24h/48h/72h/7d/15d) quedaban casi invisibles a la derecha. */
 #setter-table {
-  min-width: 1500px;
+  width: auto;
+  min-width: 1800px;
+  table-layout: auto;
 }
 
 table {
