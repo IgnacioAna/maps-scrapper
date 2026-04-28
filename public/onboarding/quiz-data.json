@@ -68,10 +68,10 @@
     "titulo": "Tu rol",
     "preguntas": [
       {
-        "pregunta": "¿Cuál es tu trabajo real como setter?",
+        "pregunta": "¿Cuál es tu trabajo como setter?",
         "opciones": [
           "Cerrar la venta del sistema con el cliente",
-          "Abrir conversaciones, detectar interés real y llevar oportunidades a llamada con Ignacio",
+          "Abrir conversaciones, detectar interés y llevar oportunidades a llamada con Ignacio",
           "Convencer al cliente de que contrate SCM por chat"
         ],
         "correcta": 1,
@@ -256,34 +256,34 @@
         "explicacion": "Fase 1 (primera semana): 10-20 mensajes/día a contactos personales o conocidos que vayan a responder. Lo más importante es que te respondan, eso es lo que más reputación construye. Saltar fases por ansiedad termina en cuenta baneada."
       },
       {
-        "pregunta": "¿Cuál es la herramienta clave para mantener flujo constante de leads?",
+        "pregunta": "¿Cuál es el tope diario de mensajes recomendado para una cuenta de WhatsApp ya consolidada?",
         "opciones": [
-          "Hootsuite",
-          "Instant Data Scraper (extensión de Chrome)",
-          "ChatGPT"
+          "500 mensajes por día para sumar volumen",
+          "100-150 mensajes por día",
+          "30 mensajes por día siempre"
         ],
         "correcta": 1,
-        "explicacion": "Instant Data Scraper es una extensión de Chrome para extraer listas (likes, seguidores, comentarios) y bajarlas rápido. Bien usada, te permite armar bases de datos en minutos. Si no sabés usarla, escribile a Ignacio."
+        "explicacion": "El objetivo realista en operación normal (cuenta consolidada de 1 mes o más) es 100-150 mensajes por día. Si querés más volumen, sumás más números, no fuerzas uno solo. Volúmenes mucho mayores en una sola cuenta levantan señal de spam."
       },
       {
-        "pregunta": "¿Cuándo es mejor armar la base de leads para la semana?",
+        "pregunta": "Tenés un número consolidado (más de un mes de uso) y querés mandar volumen. ¿Cómo distribuís los mensajes?",
         "opciones": [
-          "Todos los días un poco antes de empezar a mandar",
-          "Los domingos, para llegar al lunes con combustible",
-          "Solo cuando se te acaban los leads en plena semana"
+          "Mando los 100-150 mensajes de corrido sin pausa para terminar rápido",
+          "Bloques de 8-10 mensajes con pausa de 10 minutos, hasta llegar al tope diario",
+          "Mando 1 mensaje cada 30 segundos exactos toda la mañana"
         ],
         "correcta": 1,
-        "explicacion": "Los domingos armás la base, durante la semana solo ejecutás. Si mezclás todo (buscar + filtrar + mandar + responder) el trabajo se vuelve lento, pesado y desordenado. La prospección no se improvisa, se prepara."
+        "explicacion": "Para una cuenta consolidada, bloques de 8-10 mensajes con pausa de 10 minutos funciona bien. Si el número se traba, bajás a bloques de 3 con pausa de 10 minutos. La regularidad perfecta (1 mensaje cada exactos 30 segundos) parece automatización: variá los tiempos."
       },
       {
-        "pregunta": "Un lead vive más activo en LinkedIn que en Instagram. ¿Qué hacés?",
+        "pregunta": "El sistema te trae el WhatsApp de un lead pero no responde. También tenés su Instagram. ¿Qué hacés?",
         "opciones": [
-          "Lo abordo igual por Instagram porque es mi canal preferido",
-          "Lo abordo por LinkedIn porque es donde tengo más chances de respuesta",
-          "Lo descarto porque solo trabajo Instagram"
+          "Lo descarto porque no respondió por WhatsApp",
+          "Pruebo por Instagram, que es el canal secundario cuando el WhatsApp no funciona",
+          "Insisto solo por WhatsApp hasta que responda"
         ],
         "correcta": 1,
-        "explicacion": "El canal es una herramienta, la oportunidad es el objetivo. NO te enamores de una plataforma. Si un lead vive en LinkedIn, es ahí donde lo abordás. La rigidez de canal te hace perder leads."
+        "explicacion": "WhatsApp es el canal principal pero Instagram entra como apoyo cuando WhatsApp no funciona y tenés el IG cargado. La rigidez de canal te hace perder leads. Si por ningún canal responde, lo movés a seguimiento."
       }
     ]
   },
@@ -302,14 +302,14 @@
         "explicacion": "El tracking no está para llenar planillas. Está para que no se te escapen oportunidades, para saber qué retomar y para sostener volumen sin caos. Una charla abierta no puede depender de la memoria."
       },
       {
-        "pregunta": "¿Cuántas conversaciones por día tenés que subir al Drive como evidencia?",
+        "pregunta": "¿Cuándo tenés que marcar el estado de un lead en el sistema?",
         "opciones": [
-          "Solo las que terminaron en agendamiento",
-          "Mínimo 5 por día (mezcla de buenas y con fricción)",
-          "Todas las del día sin excepción"
+          "Al final del día, cuando ya terminé toda la operación",
+          "Apenas pasa la conversación, en el momento, no después",
+          "Solo cuando el lead se vuelve interesado o agendado"
         ],
         "correcta": 1,
-        "explicacion": "Mínimo 5 conversaciones por día, ideal: 2 buenas + 3 con fricción/objeción/no respondió. Que se vea el contexto, no recortes mínimos. Esta evidencia es lo que entrena al sistema y al equipo."
+        "explicacion": "El marcado se hace en el momento, con el chat fresco. 'Después lo anoto' = no lo anotás. Si no marcás, no entrás en las métricas, y sin métricas no se puede comparar variantes ni mejorar la operación."
       },
       {
         "pregunta": "Tu tasa de respuesta bajó esta semana sin razón aparente. ¿Qué deberías mirar primero?",
@@ -336,7 +336,7 @@
         "opciones": [
           "Trackear de a ratos o confiar en la memoria 'después lo anoto'",
           "Hacer planillas demasiado simples",
-          "Subir muy pocas conversaciones al Drive"
+          "Marcar todos los leads con el mismo estado por defecto"
         ],
         "correcta": 0,
         "explicacion": "'Después lo anoto' = no lo anotás. Si trackeás un día sí y dos no, los datos no sirven. Anotá en el momento, con el chat fresco. La constancia es lo que hace funcional al tracking."
@@ -385,13 +385,13 @@
           "Lo descarto porque no es decisor"
         ],
         "correcta": 1,
-        "explicacion": "No te quedés vendiendo a alguien que no decide. Llegá al decisor real. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada con el socio para evitar el ida y vuelta."
+        "explicacion": "No te quedés vendiendo a alguien que no decide. Llegá al decisor. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada con el socio para evitar el ida y vuelta."
       },
       {
         "pregunta": "Un lead te dice 'es caro, está fuera de presupuesto'. ¿Qué hacés?",
         "opciones": [
           "Le ofrezco un descuento por chat para cerrar la operación",
-          "Le pregunto '¿caro en relación a qué?' y le ofrezco una llamada para ver los números reales",
+          "Le pregunto '¿caro en relación a qué?' y le ofrezco una llamada para ver los números",
           "Le digo que el sistema tiene mucho valor y vale lo que cuesta"
         ],
         "correcta": 1,
@@ -451,7 +451,7 @@
           "A un caso teórico de ejemplo en los manuales"
         ],
         "correcta": 1,
-        "explicacion": "El caso Sofía es un cliente real activo en Uruguay (clínica de la doctora Sofía Campanella). Genera agendas reales todas las semanas. Sirve como prueba social: 'sí, tenemos clientes activos'. Los números los muestra Ignacio en la llamada."
+        "explicacion": "El caso Sofía es un cliente activo en Uruguay (clínica de la doctora Sofía Campanella). Genera agendas todas las semanas. Sirve como prueba social: 'sí, tenemos clientes activos'. Los números los muestra Ignacio en la llamada."
       }
     ]
   }
