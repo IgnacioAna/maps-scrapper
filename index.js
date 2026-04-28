@@ -2024,7 +2024,17 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
 
   } catch (errError) {
     console.error("Error durante el scraping:", errError);
-    return res.status(500).json({ error: errError.message || errError });
+    // Limpiar el mensaje: SerpAPI a veces devuelve HTML crudo (pagina de error 5xx).
+    // Strip de tags + truncar a 300 chars para que no contamine el frontend.
+    let raw = String(errError?.message || errError || 'Error desconocido');
+    if (/<html|<!doctype|<body|<title/i.test(raw)) {
+      // El error viene como pagina HTML — devolver mensaje generico claro.
+      raw = 'SerpAPI devolvio una pagina de error (probable 5xx temporal o cuota agotada). Verifica tu cuenta en https://serpapi.com/manage-api-key';
+    } else {
+      raw = raw.replace(/<[^>]+>/g, '').substring(0, 300);
+    }
+    logError(errError, { source: '/api/scrape', query: req.body?.query, location: req.body?.location });
+    return res.status(500).json({ error: raw });
   }
 });
 

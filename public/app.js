@@ -793,7 +793,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   
       } catch (error) {
         console.error(error);
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--danger); padding: 2rem;">Error: ${error.message}</td></tr>`;
+        // Escapar el mensaje porque algunas APIs (SerpAPI con 5xx) devuelven HTML
+        // crudo en error.message — sin escape se inyecta como markup y rompe la UI.
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.style.cssText = 'text-align:center;color:var(--danger);padding:2rem;';
+        td.textContent = 'Error: ' + (error.message || 'Desconocido');
+        tr.appendChild(td);
+        tbody.innerHTML = '';
+        tbody.appendChild(tr);
       } finally {
         document.querySelector('#search-btn-top .btn-text').classList.remove('hidden');
         loader.classList.add('hidden');
