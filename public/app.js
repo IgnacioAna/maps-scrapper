@@ -2744,31 +2744,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           '</tr>'
         ).join('');
 
-        const settersListEl = document.getElementById('admin-setters-list');
-        if (settersListEl) {
-          const variantCountBySetter = new Map();
-          (data.perVariant || []).forEach(v => {
-            if (!v.setterId) return;
-            variantCountBySetter.set(v.setterId, (variantCountBySetter.get(v.setterId) || 0) + 1);
-          });
-          settersListEl.innerHTML = (data.perSetter || []).map(s => {
-            const count = variantCountBySetter.get(s.id) || 0;
-            return '<div class="variant-card" style="padding:12px;">' +
-              '<div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">' +
-                '<div>' +
-                  '<div style="font-weight:600; color:var(--text-main);">' + escHtml(s.name) + '</div>' +
-                  '<div style="font-size:12px; color:var(--text-secondary);">' + count + ' variables · ' + (s.interesados || 0) + ' interesados</div>' +
-                '</div>' +
-                '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
-                  '<button type="button" class="btn-table-action" style="color:var(--primary-color); font-size:11px;" onclick="document.getElementById(\'cmd-variable-setter-filter\').value=\'' + escHtml(s.id) + '\'; document.getElementById(\'cmd-variable-setter-filter\').dispatchEvent(new Event(\'change\'));">Ver variables</button>' +
-                  '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + escHtml(s.id) + '\', decodeURIComponent(\'' + encodeURIComponent(s.name) + '\'))">Editar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(s.id) + '\')">Duplicar</button>' +
-                  '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + escHtml(s.id) + '\')">Eliminar</button>' +
-                '</div>' +
-              '</div>' +
-            '</div>';
-          }).join('');
-        }
+        // Codigo muerto removido: el panel "admin-setters-list" se elimino del HTML.
+        // Las acciones por setter (Editar/Duplicar/Eliminar) ahora viven en la
+        // tabla "Equipo" arriba (users-table-body), que se popula via loadUsersPanel().
 
         // Tabla por variante
         const settersForFilter = data.setters || [];
@@ -2942,6 +2920,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.innerHTML = users.map(user => {
         const inv = inviteMap.get((user.email || '').toLowerCase());
         const varCount = user.role === 'setter' ? (variableCountBySetter.get(user.setterId || '') || 0) : 0;
+        // Acciones por rol: setter -> Editar / Duplicar / Eliminar; admin -> sin acciones
+        let actions = '—';
+        if (user.role === 'setter' && user.setterId) {
+          const sid = escHtml(user.setterId);
+          const sname = encodeURIComponent(user.name || '');
+          actions =
+            '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button> ' +
+            '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button> ' +
+            '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>';
+        }
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
           '<td>' + escHtml(user.email || '') + '</td>' +
@@ -2950,7 +2938,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td>' + escHtml(user.setterId || '') + '</td>' +
           '<td>' + (user.role === 'setter' ? varCount : '—') + '</td>' +
           '<td>' + (inv ? 'Pendiente' : '—') + '</td>' +
-          '<td>' + (user.role === 'setter' ? '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + escHtml(user.setterId || '') + '\')">Duplicar</button>' : '—') + '</td>' +
+          '<td>' + actions + '</td>' +
         '</tr>';
       }).join('');
     }

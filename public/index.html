@@ -900,6 +900,52 @@
         <div class="content-header">
           <h2>Centro de Comando</h2>
         </div>
+
+        <!-- EQUIPO: invitaciones + tabla de usuarios al tope para acceso rápido -->
+        <section class="admin-users-panel" data-roles="admin" style="padding:0 32px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:10px; margin:8px 0 12px;">
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">👥 Equipo</span>
+            <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+          </div>
+          <div class="admin-users-form" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
+            <input id="invite-name" type="text" placeholder="Nombre del setter" class="setter-input" style="min-width:180px;">
+            <input id="invite-email" type="email" placeholder="Email del setter" class="setter-input" style="min-width:220px;">
+            <select id="invite-role" class="setter-input" style="min-width:120px;">
+              <option value="setter">Setter</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button id="invite-user-btn" class="btn-primary pill-btn">+ Invitar y enviar email</button>
+          </div>
+          <div id="invite-result" class="hidden" style="margin-top:8px; padding:14px 18px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.2); border-radius:12px;">
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <span id="invite-result-icon" style="font-size:18px;">✅</span>
+              <span id="invite-result-text" style="font-size:13px; color:var(--text-main);"></span>
+            </div>
+            <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <input id="invite-result-url" type="text" readonly class="setter-input" style="flex:1; min-width:250px; font-size:12px; cursor:text;">
+              <button id="invite-copy-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Copiar link</button>
+              <button id="invite-wa-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Enviar por WhatsApp</button>
+            </div>
+          </div>
+          <div class="table-container" style="margin-top:12px;">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Setter</th>
+                  <th>Variables</th>
+                  <th>Invitación</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+
         <div class="setter-stats" id="cmd-stats"></div>
 
         <!-- Sección de métricas de llamadas (admin) -->
@@ -938,15 +984,10 @@
           <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
         </div>
         <section class="results-panel" style="padding:0 32px;">
-          <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
-            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
-              <div>
-                <h3 style="margin:0 0 4px; font-size:15px;">Setters</h3>
-                <p style="margin:0; color:var(--text-secondary); font-size:12px;">Seleccioná un setter para ver o asignar sus variables.</p>
-              </div>
-            </div>
-            <div id="admin-setters-list" style="display:grid; gap:10px;"></div>
-          </div>
+          <!-- Sección "Setters" eliminada: la info de cada setter ya está en
+               la tabla de Equipo (arriba) con sus acciones (Editar/Duplicar/Eliminar)
+               y en la tabla "Rendimiento por Setter" (abajo) con sus métricas.
+               El admin-setters-list duplicaba esa info. -->
           <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
             <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
               <div>
@@ -1019,46 +1060,6 @@
               <tbody id="cmd-var-body"></tbody>
             </table>
           </div>
-          <section class="admin-users-panel" data-roles="admin">
-            <h3 style="margin:24px 0 12px; font-size:15px;">Usuarios e invitaciones</h3>
-            <div class="admin-users-form">
-              <input id="invite-name" type="text" placeholder="Nombre del setter" class="setter-input">
-              <input id="invite-email" type="email" placeholder="Email del setter" class="setter-input">
-              <select id="invite-role" class="setter-input">
-                <option value="setter">Setter</option>
-                <option value="admin">Admin</option>
-              </select>
-              <button id="invite-user-btn" class="btn-primary pill-btn">+ Invitar y enviar email</button>
-            </div>
-            <div id="invite-result" class="hidden" style="margin-top:12px; padding:14px 18px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.2); border-radius:12px;">
-              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                <span id="invite-result-icon" style="font-size:18px;">✅</span>
-                <span id="invite-result-text" style="font-size:13px; color:var(--text-main);"></span>
-              </div>
-              <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <input id="invite-result-url" type="text" readonly class="setter-input" style="flex:1; min-width:250px; font-size:12px; cursor:text;">
-                <button id="invite-copy-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Copiar link</button>
-                <button id="invite-wa-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Enviar por WhatsApp</button>
-              </div>
-            </div>
-            <div class="table-container" style="margin-top:12px;">
-              <table id="users-table">
-                <thead>
-                  <tr>
-                    <th>Nombre</th>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Estado</th>
-                    <th>Setter</th>
-                    <th>Variables</th>
-                    <th>Invitación</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="users-table-body"></tbody>
-              </table>
-            </div>
-          </section>
           <!-- Base de Datos de Scraping -->
           <div class="admin-variable-panel" style="margin-top:20px; margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
             <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
@@ -1132,7 +1133,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260428g"></script>
+  <script type="module" src="/app.js?v=20260428h"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
