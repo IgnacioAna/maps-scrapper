@@ -7,7 +7,6 @@
     "aprobacion": "4 de 5 correctas (80%)",
     "formato_correcta": "índice 0-based del array de opciones (0=a, 1=b, 2=c)"
   },
-
   "modulo1": {
     "titulo": "El proyecto",
     "preguntas": [
@@ -63,7 +62,6 @@
       }
     ]
   },
-
   "modulo2": {
     "titulo": "Tu rol",
     "preguntas": [
@@ -119,7 +117,6 @@
       }
     ]
   },
-
   "modulo3": {
     "titulo": "Sistema operativo",
     "preguntas": [
@@ -175,7 +172,6 @@
       }
     ]
   },
-
   "modulo4": {
     "titulo": "Conversación",
     "preguntas": [
@@ -231,7 +227,6 @@
       }
     ]
   },
-
   "modulo5": {
     "titulo": "Canales y warmeo",
     "preguntas": [
@@ -248,12 +243,12 @@
       {
         "pregunta": "En la fase 1 del warmeo (primera semana), ¿cuál es el volumen recomendado?",
         "opciones": [
-          "10-20 mensajes por día a contactos personales que respondan",
+          "Maximo 20 mensajes por dia, uno cada 5 minutos",
           "50 mensajes por día con leads frescos",
           "100 mensajes por día para acelerar el proceso"
         ],
         "correcta": 0,
-        "explicacion": "Fase 1 (primera semana): 10-20 mensajes/día a contactos personales o conocidos que vayan a responder. Lo más importante es que te respondan, eso es lo que más reputación construye. Saltar fases por ansiedad termina en cuenta baneada."
+        "explicacion": "Fase 1 (primera semana, numero nuevo): maximo 20 mensajes por dia, uno cada 5 minutos para no spamear de golpe. Lo mas importante es que te respondan — recibir respuestas es lo que mas reputacion construye. Saltar fases por ansiedad termina en cuenta baneada."
       },
       {
         "pregunta": "¿Cuál es el tope diario de mensajes recomendado para una cuenta de WhatsApp ya consolidada?",
@@ -287,7 +282,6 @@
       }
     ]
   },
-
   "modulo6": {
     "titulo": "Tracking",
     "preguntas": [
@@ -343,7 +337,6 @@
       }
     ]
   },
-
   "modulo7": {
     "titulo": "Objeciones",
     "preguntas": [
@@ -399,7 +392,6 @@
       }
     ]
   },
-
   "modulo8": {
     "titulo": "Glosario",
     "preguntas": [
