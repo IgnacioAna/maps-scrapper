@@ -132,8 +132,8 @@ describe("C-2: rate limit y clamp en endpoints externos", () => {
   });
 });
 
-describe("DELETE /api/setters/team/:id — cascada (user inactive + leads liberados + sesiones revocadas)", () => {
-  it("borra setter + libera leads asignados + desactiva user asociado + revoca sesiones", async () => {
+describe("DELETE /api/setters/team/:id — cascada completa (user borrado + leads liberados + sesiones e invites revocadas)", () => {
+  it("borra setter + libera leads asignados + BORRA user asociado + revoca sesiones e invites", async () => {
     // 1) Crear setter (el endpoint devuelve { setters: [...] })
     const createRes = await request(app).post("/api/setters/team").set("Cookie", cookie).send({ name: "Setter Cascada" });
     expect(createRes.status).toBe(200);
@@ -165,6 +165,8 @@ describe("DELETE /api/setters/team/:id — cascada (user inactive + leads libera
     });
     authData.sessions = authData.sessions || [];
     authData.sessions.push({ id: "sess_cascada_xxx", userId: "user_setter_cascada", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+    authData.invites = authData.invites || [];
+    authData.invites.push({ token: "tok_cascada", email: "setter-cascada@local.test", setterId, role: "setter", expiresAt: new Date(Date.now() + 86400000).toISOString() });
     fs.writeFileSync(authFile, JSON.stringify(authData, null, 2));
 
     // 3) DELETE
@@ -173,20 +175,20 @@ describe("DELETE /api/setters/team/:id — cascada (user inactive + leads libera
     expect(r.body.ok).toBe(true);
     expect(r.body.setterName).toBe("Setter Cascada");
     expect(r.body.leadsFreed).toBe(1);
-    expect(r.body.userDeactivated).toBe(true);
+    expect(r.body.userDeleted).toBe(true);
     expect(r.body.userEmail).toBe("setter-cascada@local.test");
     expect(r.body.sessionsRevoked).toBe(1);
+    expect(r.body.invitesRevoked).toBe(1);
 
-    // 4) Verificar estado final
+    // 4) Verificar estado final: setter, lead, user, sesion e invite TODOS borrados/limpios
     const settersAfter = JSON.parse(fs.readFileSync(settersFile, "utf8"));
     expect(settersAfter.setters.find(s => s.id === setterId)).toBeUndefined();
     expect(settersAfter.leads.lead_cascada_test.assignedTo).toBe("");
 
     const authAfter = JSON.parse(fs.readFileSync(authFile, "utf8"));
-    const userAfter = authAfter.users.find(u => u.id === "user_setter_cascada");
-    expect(userAfter.status).toBe("inactive");
-    expect(userAfter.setterId).toBe("");
+    expect(authAfter.users.find(u => u.id === "user_setter_cascada")).toBeUndefined();
     expect(authAfter.sessions.find(s => s.id === "sess_cascada_xxx")).toBeUndefined();
+    expect(authAfter.invites.find(i => i.token === "tok_cascada")).toBeUndefined();
   });
 
   it("404 si el setter no existe", async () => {

@@ -2377,29 +2377,32 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
 
   saveSettersData(data);
 
-  // 5) Cascada al usuario asociado en auth.json (si existe).
-  //    Lo desactivamos en lugar de borrarlo para preservar trazabilidad
-  //    historica (notas, interacciones que mencionan su nombre, etc).
-  let userDeactivated = false;
+  // 5) Cascada al usuario asociado en auth.json (si existe): BORRAR
+  //    completo del array users, revocar sus sesiones e invalidar sus invites
+  //    pendientes. Si despues necesitas el mismo setter, lo invitas de nuevo.
+  let userDeleted = false;
   let sessionsRevoked = 0;
+  let invitesRevoked = 0;
   let userEmail = '';
   try {
     const auth = loadAuthData();
     const user = (auth.users || []).find(u => u.role === 'setter' && u.setterId === setterId);
     if (user) {
       userEmail = user.email;
-      user.status = 'inactive';
-      user.setterId = '';
-      user.updatedAt = new Date().toISOString();
-      userDeactivated = true;
-      const before = (auth.sessions || []).length;
+      auth.users = (auth.users || []).filter(u => u.id !== user.id);
+      const sessionsBefore = (auth.sessions || []).length;
       auth.sessions = (auth.sessions || []).filter(s => s.userId !== user.id);
-      sessionsRevoked = before - auth.sessions.length;
-      saveAuthData(auth);
-      console.log(`[setter:delete] Setter '${setter.name}' eliminado en cascada: user '${userEmail}' desactivado, ${sessionsRevoked} sesion(es) revocada(s), ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s).`);
-    } else {
-      console.log(`[setter:delete] Setter '${setter.name}' eliminado: ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s). Sin user asociado en auth.json.`);
+      sessionsRevoked = sessionsBefore - auth.sessions.length;
+      userDeleted = true;
     }
+    // Tambien limpiar invites pendientes que apuntaran a este setter
+    if (Array.isArray(auth.invites)) {
+      const invitesBefore = auth.invites.length;
+      auth.invites = auth.invites.filter(inv => inv.setterId !== setterId);
+      invitesRevoked = invitesBefore - auth.invites.length;
+    }
+    if (userDeleted || invitesRevoked > 0) saveAuthData(auth);
+    console.log(`[setter:delete] Setter '${setter.name}' eliminado: ${leadsFreed} lead(s) liberado(s), ${variantsFreed} variante(s) liberada(s)` + (userDeleted ? `, user '${userEmail}' BORRADO, ${sessionsRevoked} sesion(es) revocada(s)` : ', sin user asociado') + (invitesRevoked > 0 ? `, ${invitesRevoked} invite(s) revocada(s)` : '') + '.');
   } catch (e) {
     console.warn('[setter:delete] Cascada al usuario fallo (no critico):', e.message);
   }
@@ -2409,9 +2412,10 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
     setterName: setter.name,
     leadsFreed,
     variantsFreed,
-    userDeactivated,
-    userEmail: userDeactivated ? userEmail : '',
-    sessionsRevoked
+    userDeleted,
+    userEmail: userDeleted ? userEmail : '',
+    sessionsRevoked,
+    invitesRevoked
   });
 });
 
