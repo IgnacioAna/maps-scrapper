@@ -295,6 +295,7 @@ Comandos:
 - `index.html` tiene `<script src="/app.js?v=YYYYMMDD[x]">` y `<link href="/style.css?v=YYYYMMDD[x]">`
 - Al cambiar app.js o style.css, **siempre** actualizar el cache-buster
 - `express.static` tiene `maxAge: 0, etag: false`
+- **CASO REAL — bug invisible**: si cambiás `style.css` y NO bumpeás el cache-buster, los browsers que ya tienen ese `?v=...` cacheado **NO van a re-bajar el archivo nuevo**. El user reporta "el fix ya no está" cuando en realidad sigue en disco — solo que ellos ven la versión vieja. Verificás contra prod con `fetch('/style.css?v=...').text()` y el archivo está bien, pero el browser muestra otra cosa. Bumpear el cache-buster en CADA edit a style.css/app.js, sin excepción, aunque sea un cambio de 1 línea.
 
 ## Notas para otra IA que continue
 
