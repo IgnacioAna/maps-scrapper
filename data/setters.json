@@ -1,12 +1,6 @@
 {
   "setters": [
     {
-      "id": "setter_paula",
-      "name": "Paula",
-      "activeVariantId": "",
-      "createdAt": "2026-04-07T01:42:09.526Z"
-    },
-    {
       "id": "setter_evelio",
       "name": "Ignacio",
       "activeVariantId": "",
@@ -65,6 +59,12 @@
       "name": "Rocio Lueje",
       "activeVariantId": "",
       "createdAt": "2026-04-28T21:08:25.965Z"
+    },
+    {
+      "id": "setter_paula",
+      "name": "Paula",
+      "activeVariantId": "",
+      "createdAt": "2026-04-07T01:42:09.526Z"
     }
   ],
   "variants": [
@@ -73,7 +73,7 @@
       "name": "Var I",
       "weekLabel": "Semana 2",
       "active": true,
-      "setterId": "setter_paula",
+      "setterId": "",
       "sharedWith": [],
       "usedCount": 0,
       "blocks": [
@@ -129,9 +129,7 @@
       "weekLabel": "Semana 2",
       "active": true,
       "setterId": "setter_juan_david_santa_mejia",
-      "sharedWith": [
-        "setter_paula"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -405,7 +403,7 @@
       "name": "Var VII — Hipótesis: pérdida concreta de pacientes",
       "weekLabel": "",
       "active": true,
-      "setterId": "setter_paula",
+      "setterId": "",
       "sharedWith": [],
       "usedCount": 0,
       "blocks": [
@@ -460,7 +458,7 @@
       "name": "Var VIII — Hipótesis: específico al rol del dueño",
       "weekLabel": "",
       "active": true,
-      "setterId": "setter_paula",
+      "setterId": "",
       "sharedWith": [],
       "usedCount": 0,
       "blocks": [
@@ -139003,46 +139001,10 @@
   "calendar": [],
   "sessions": [
     {
-      "id": "s_1775526346750",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-07T01:45:46.750Z",
-      "endedAt": "2026-04-07T01:45:48.767Z"
-    },
-    {
-      "id": "s_1775526354877",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-07T01:45:54.877Z",
-      "endedAt": "2026-04-07T01:46:07.990Z"
-    },
-    {
-      "id": "s_1775849105962",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-10T19:25:05.962Z",
-      "endedAt": "2026-04-10T19:25:09.296Z"
-    },
-    {
       "id": "s_1776047671637",
       "setter": "setter_evelio",
       "startedAt": "2026-04-13T02:34:31.637Z",
       "endedAt": "2026-04-13T02:34:34.878Z"
-    },
-    {
-      "id": "s_1776179081388",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-14T15:04:41.388Z",
-      "endedAt": "2026-04-15T03:54:39.603Z"
-    },
-    {
-      "id": "s_1776225297652",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-15T03:54:57.652Z",
-      "endedAt": "2026-04-15T03:55:02.322Z"
-    },
-    {
-      "id": "s_1776268416507",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-15T15:53:36.507Z",
-      "endedAt": "2026-04-16T03:48:24.522Z"
     },
     {
       "id": "s_1776352747526",
@@ -139051,58 +139013,16 @@
       "endedAt": "2026-04-16T15:19:13.308Z"
     },
     {
-      "id": "s_1776438551026",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-17T15:09:11.026Z",
-      "endedAt": "2026-04-18T03:50:36.357Z"
-    },
-    {
-      "id": "s_1776533890398",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-18T17:38:10.398Z",
-      "endedAt": "2026-04-18T18:03:31.944Z"
-    },
-    {
-      "id": "s_1776535808811",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-18T18:10:08.811Z",
-      "endedAt": "2026-04-18T18:13:01.738Z"
-    },
-    {
       "id": "s_1776699830436",
       "setter": "setter_leandro",
       "startedAt": "2026-04-20T15:43:50.436Z",
       "endedAt": "2026-04-20T15:43:53.142Z"
     },
     {
-      "id": "s_1776700264697",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-20T15:51:04.698Z",
-      "endedAt": "2026-04-21T02:28:41.496Z"
-    },
-    {
       "id": "s_1776773575616",
       "setter": "setter_leandro",
       "startedAt": "2026-04-21T12:12:55.616Z",
       "endedAt": "2026-04-21T13:19:13.512Z"
-    },
-    {
-      "id": "s_1776779154145",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-21T13:45:54.145Z",
-      "endedAt": "2026-04-25T16:30:12.647Z",
-      "summary": {
-        "durationMin": 5924,
-        "connections": 0,
-        "replies": 149,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 2,
-        "notesAdded": 13,
-        "sinWsp": 6,
-        "totalInteractions": 0
-      },
-      "aiSummary": "1) En la sesión de 5 924 min, Paula no envió ninguna conexión, recibió 149 respuestas, no calificó prospectos y solo agendó 2 reuniones, dejando 13 notas"
     },
     {
       "id": "s_1777094638788",
@@ -139121,30 +139041,6 @@
       "setter": "setter_leandro",
       "startedAt": "2026-04-25T14:37:09.071Z",
       "endedAt": "2026-04-25T14:43:07.872Z"
-    },
-    {
-      "id": "s_1777137699451",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-25T17:21:39.451Z",
-      "endedAt": "2026-04-25T17:21:42.121Z",
-      "summary": {
-        "durationMin": 1,
-        "connections": 0,
-        "replies": 0,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 0,
-        "notesAdded": 0,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": null
-    },
-    {
-      "id": "s_1777308390985",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-27T16:46:30.985Z",
-      "endedAt": null
     }
   ],
   "__wspClassified": true
