@@ -232,21 +232,20 @@ describe("POST /api/auth/accept-invite — auto-login con cookie de sesion", () 
 });
 
 describe("PATCH /api/auth/users/:id — cambiar rol/nombre con guards", () => {
-  it("promueve un setter a supervisor: libera leads y limpia setterId", async () => {
-    // Crear setter base
-    const create = await request(app).post("/api/setters/team").set("Cookie", cookie).send({ name: "ToPromote" });
-    const sid = create.body.setters.find(s => s.name === "ToPromote").id;
-    // Crear user setter via invite + accept
+  it("promueve un setter a supervisor: PRESERVA setterId y leads asignados (no los libera)", async () => {
+    // Crear user setter via invite + accept (esto crea el setter profile via ensureSetterProfile)
     const inv = await request(app).post("/api/auth/invites").set("Cookie", cookie).send({
-      name: "ToPromote", email: "topromote@local.test", role: "setter", sendEmail: false
+      name: "ToPromoteSafe", email: "topromote-safe@local.test", role: "setter", sendEmail: false
     });
     const accept = await request(app).post("/api/auth/accept-invite").send({ token: inv.body.invite.token, password: "topromote123" });
     const userId = accept.body.user.id;
+    const setterId = accept.body.user.setterId;
+    expect(setterId).toBeTruthy();
     // Sembrar 2 leads asignados a este setter
     const settersFile = path.join(tmpData, "setters.json");
     const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
-    sd.leads.lead_promote_1 = { id: "lead_promote_1", num: 200, name: "L1", country: "Argentina", assignedTo: accept.body.user.setterId, openMessage: "Hola" };
-    sd.leads.lead_promote_2 = { id: "lead_promote_2", num: 201, name: "L2", country: "Argentina", assignedTo: accept.body.user.setterId, openMessage: "Hola" };
+    sd.leads.lead_promote_1 = { id: "lead_promote_1", num: 200, name: "L1", country: "Argentina", assignedTo: setterId, openMessage: "Hola" };
+    sd.leads.lead_promote_2 = { id: "lead_promote_2", num: 201, name: "L2", country: "Argentina", assignedTo: setterId, openMessage: "Hola" };
     fs.writeFileSync(settersFile, JSON.stringify(sd, null, 2));
 
     // PROMOVER a supervisor
@@ -254,14 +253,13 @@ describe("PATCH /api/auth/users/:id — cambiar rol/nombre con guards", () => {
     expect(r.status).toBe(200);
     expect(r.body.oldRole).toBe("setter");
     expect(r.body.newRole).toBe("supervisor");
-    expect(r.body.leadsFreed).toBe(2);
     expect(r.body.user.role).toBe("supervisor");
-    expect(r.body.user.setterId).toBe("");
+    // Preservacion CLAVE: setterId queda intacto y leads NO se liberan
+    expect(r.body.user.setterId).toBe(setterId);
 
-    // Verificar: leads liberados
     const sdAfter = JSON.parse(fs.readFileSync(settersFile, "utf8"));
-    expect(sdAfter.leads.lead_promote_1.assignedTo).toBe("");
-    expect(sdAfter.leads.lead_promote_2.assignedTo).toBe("");
+    expect(sdAfter.leads.lead_promote_1.assignedTo).toBe(setterId);
+    expect(sdAfter.leads.lead_promote_2.assignedTo).toBe(setterId);
   });
 
   it("rechaza cambiar el propio rol (auto-degradacion)", async () => {

@@ -2974,7 +2974,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '  • admin       (acceso total)\n' +
         '  • supervisor  (ve el equipo, no puede borrar ni scrapear)\n' +
         '  • setter      (operativo, solo ve sus leads)\n\n' +
-        'Nota: si pasa de setter a otro rol, se liberan sus leads.',
+        'Nota: si era setter, conserva sus leads y su base de prospección.',
         currentRole
       );
       if (!next || next === currentRole) return;
@@ -2986,9 +2986,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
-        const partes = ['Rol cambiado: ' + data.oldRole + ' → ' + data.newRole];
-        if (data.leadsFreed) partes.push('• ' + data.leadsFreed + ' lead(s) liberado(s)');
-        alert(partes.join('\n'));
+        alert('Rol cambiado: ' + data.oldRole + ' → ' + data.newRole);
       } catch (err) {
         alert('Error cambiando rol: ' + err.message);
       }

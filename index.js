@@ -2561,42 +2561,19 @@ app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) =
   }
 
   const oldRole = user.role;
-  let leadsFreed = 0;
 
   if (newRole !== undefined && newRole !== oldRole) {
-    // Si pasa de setter -> otro rol: liberar leads + el setter profile
-    if (oldRole === 'setter' && user.setterId) {
-      try {
-        const sd = loadSettersData();
-        // Liberar leads asignados a su setterId
-        if (sd.leads && typeof sd.leads === 'object') {
-          for (const lid of Object.keys(sd.leads)) {
-            if (sd.leads[lid]?.assignedTo === user.setterId) {
-              sd.leads[lid].assignedTo = '';
-              leadsFreed++;
-            }
-          }
-        }
-        // Sacar del array de setters (perdemos las stats pero el user sobrevive)
-        sd.setters = (sd.setters || []).filter(s => s.id !== user.setterId);
-        // Liberar variantes del setter
-        sd.variants = (sd.variants || []).map(v => {
-          if (v.setterId === user.setterId) v.setterId = '';
-          if (Array.isArray(v.sharedWith)) v.sharedWith = v.sharedWith.filter(id => id !== user.setterId);
-          return v;
-        });
-        // Limpiar sessions del modulo Setteo
-        if (Array.isArray(sd.sessions)) {
-          sd.sessions = sd.sessions.filter(s => s.setter !== user.setterId);
-        }
-        saveSettersData(sd);
-      } catch (e) {
-        console.warn('[user:patch] error liberando setter profile:', e.message);
-      }
-      user.setterId = '';
-    }
-    // Si pasa a setter desde otro rol: crear setter profile
-    if (newRole === 'setter' && oldRole !== 'setter') {
+    // PROMOCION setter -> supervisor/admin:
+    // PRESERVAMOS el setterId, los leads asignados, las variantes y el setter
+    // profile. La idea: el user sigue siendo "duenio" de su base de prospeccion
+    // aunque ahora supervise. El backend trata 'setter' como filtro especial
+    // (solo ve sus leads) — supervisor/admin VEN TODO igual, asi que mantener
+    // el setterId no afecta visibilidad. Si despues queres separarlos del todo,
+    // se puede borrar el setter profile manualmente.
+    //
+    // DEGRADACION otro -> setter: si no tenia setterId, le creamos uno nuevo.
+    // Si ya lo tenia (caso supervisor que fue setter antes), lo reusamos.
+    if (newRole === 'setter' && !user.setterId) {
       user.setterId = ensureSetterProfile(user.name || user.email);
     }
     user.role = newRole;
@@ -2608,8 +2585,8 @@ app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) =
   user.updatedAt = new Date().toISOString();
   saveAuthData(auth);
 
-  console.log(`[user:patch] User '${user.email}' actualizado: ${oldRole} -> ${user.role}` + (leadsFreed ? `, ${leadsFreed} lead(s) liberado(s)` : '') + '.');
-  res.json({ user: publicUser(user), leadsFreed, oldRole, newRole: user.role });
+  console.log(`[user:patch] User '${user.email}' actualizado: ${oldRole} -> ${user.role}` + (user.setterId ? ` (setterId=${user.setterId} preservado)` : '') + '.');
+  res.json({ user: publicUser(user), oldRole, newRole: user.role });
 });
 
 app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) => {
