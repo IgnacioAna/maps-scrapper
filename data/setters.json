@@ -7,12 +7,6 @@
       "createdAt": "2026-04-07T01:42:09.526Z"
     },
     {
-      "id": "setter_tiago",
-      "name": "Tiago",
-      "activeVariantId": "",
-      "createdAt": "2026-04-16T14:53:44.795Z"
-    },
-    {
       "id": "setter_leandro",
       "name": "Leandro",
       "activeVariantId": "",
@@ -139007,12 +139001,6 @@
       "endedAt": "2026-04-13T02:34:34.878Z"
     },
     {
-      "id": "s_1776352747526",
-      "setter": "setter_tiago",
-      "startedAt": "2026-04-16T15:19:07.526Z",
-      "endedAt": "2026-04-16T15:19:13.308Z"
-    },
-    {
       "id": "s_1776699830436",
       "setter": "setter_leandro",
       "startedAt": "2026-04-20T15:43:50.436Z",
@@ -139023,12 +139011,6 @@
       "setter": "setter_leandro",
       "startedAt": "2026-04-21T12:12:55.616Z",
       "endedAt": "2026-04-21T13:19:13.512Z"
-    },
-    {
-      "id": "s_1777094638788",
-      "setter": "setter_tiago",
-      "startedAt": "2026-04-25T05:23:58.789Z",
-      "endedAt": "2026-04-25T05:24:03.397Z"
     },
     {
       "id": "s_1777127809587",
