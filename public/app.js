@@ -3146,6 +3146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="text-align:center; color:' + (bloq ? 'var(--warning)' : 'var(--text-tertiary)') + ';">' + bloqStr + '</td>' +
         '</tr>';
       }).join('');
+      const sname = encodeURIComponent(userName || '');
       const totalIntentos = Object.values(prog).reduce((s, p) => s + (p.intentos || 0), 0);
       const aprobados = Object.values(prog).filter(p => p.aprobado).length;
       const eficiencia = totalIntentos > 0 ? Math.round((aprobados / totalIntentos) * 100) : 0;
@@ -3157,6 +3158,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
           '<h2 style="margin:0; color:var(--text-primary);">Onboarding · ' + escHtml(userName) + '</h2>' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
+        '</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">' +
+          '<button onclick="window._unlockAllOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(63,185,80,0.15); color:var(--success); border:1px solid rgba(63,185,80,0.3); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">🔓 Marcar 8/8 como aprobado (libre acceso)</button>' +
+          '<button onclick="window._resetOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(248,81,73,0.10); color:var(--danger); border:1px solid rgba(248,81,73,0.25); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">🗑️ Resetear progreso</button>' +
         '</div>' +
         '<div style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">' + ratioLabel + '</div>' +
         '<table style="width:100%; border-collapse:collapse;"><thead><tr style="background:rgba(167,139,250,0.06);">' +
@@ -3175,6 +3180,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       const wrap = document.createElement('div');
       wrap.innerHTML = html;
       document.body.appendChild(wrap.firstChild);
+    };
+
+    // Marca los 8 modulos como aprobados para "darle libre" a un setter
+    // que ya hizo el curso antes del tracking server-side.
+    window._unlockAllOnboarding = async (userId, userName) => {
+      if (!confirm('¿Marcar los 8 módulos del onboarding como aprobados para "' + userName + '"?\n\n' +
+                   'Esto le permite ver/releer cualquier módulo sin restricción. Útil para gente que ya terminó el curso antes y no queremos hacerle rehacer todo.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/onboarding/progress/' + encodeURIComponent(userId) + '/override'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ unlockAll: true })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        alert('Listo. ' + userName + ' ahora tiene acceso libre a los 8 módulos.');
+        document.querySelector('[style*="position:fixed"]')?.remove();
+        loadUsersPanel();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
+    };
+
+    // Resetea el progreso (rara vez util — tipo cuando admin se equivoco
+    // y le marco aprobados a la persona equivocada).
+    window._resetOnboarding = async (userId, userName) => {
+      if (!confirm('¿Resetear TODO el progreso de onboarding de "' + userName + '"?\n\nEsto va a:\n• Borrar todos los intentos registrados\n• Volver al estado 0/8\n• Liberar cualquier cooldown activo\n\nNO se puede deshacer.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/onboarding/progress/' + encodeURIComponent(userId) + '/override'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resetAll: true })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        alert('Progreso reseteado.');
+        document.querySelector('[style*="position:fixed"]')?.remove();
+        loadUsersPanel();
+      } catch (e) {
+        alert('Error: ' + e.message);
+      }
     };
 
     // Cambiar el rol de un user (admin -> supervisor -> setter o viceversa).

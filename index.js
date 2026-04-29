@@ -1750,6 +1750,61 @@ app.get('/api/onboarding/progress/:userId', requireAuth, requireRole('admin', 's
   return res.json(getUserOnboarding(user));
 });
 
+// Admin: override manual del progreso. Body: { unlockAll: true } marca los 8 modulos
+// como aprobados (para setters que ya hicieron el curso antes del tracking server-side
+// o para "darle libre" a alguien). { resetAll: true } limpia todo. { module, aprobado }
+// para flippear un modulo puntual.
+app.post('/api/onboarding/progress/:userId/override', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadAuthData();
+  const user = data.users.find(u => u.id === req.params.userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (!user.onboarding || typeof user.onboarding !== 'object') user.onboarding = {};
+  const body = req.body || {};
+  const now = new Date().toISOString();
+  if (body.unlockAll) {
+    for (const m of ONBOARDING_MODULES) {
+      const k = String(m.num);
+      const prev = user.onboarding[k] || {};
+      user.onboarding[k] = {
+        ...prev,
+        aprobado: true,
+        ultimo_score: prev.ultimo_score || 5,
+        intentos: prev.intentos || 0,
+        ultimaFecha: prev.ultimaFecha || now,
+        total: 5,
+        bloqueadoHasta: null,
+        unlockedByAdmin: true,
+        unlockedByAdminAt: now
+      };
+    }
+  } else if (body.resetAll) {
+    user.onboarding = {};
+  } else if (body.module) {
+    const N = parseInt(body.module, 10);
+    if (!Number.isFinite(N) || N < 1 || N > ONBOARDING_MODULES.length) {
+      return res.status(400).json({ error: 'module invalido' });
+    }
+    const k = String(N);
+    const prev = user.onboarding[k] || {};
+    user.onboarding[k] = {
+      ...prev,
+      aprobado: !!body.aprobado,
+      ultimo_score: prev.ultimo_score || (body.aprobado ? 5 : 0),
+      intentos: prev.intentos || 0,
+      ultimaFecha: prev.ultimaFecha || now,
+      total: 5,
+      bloqueadoHasta: body.aprobado ? null : prev.bloqueadoHasta,
+      unlockedByAdmin: !!body.aprobado,
+      unlockedByAdminAt: body.aprobado ? now : prev.unlockedByAdminAt
+    };
+  } else {
+    return res.status(400).json({ error: 'Pasá unlockAll, resetAll o module+aprobado' });
+  }
+  user.updatedAt = now;
+  saveAuthData(data);
+  return res.json({ ok: true, progress: getUserOnboarding(user) });
+});
+
 // Middleware manual: intercepta /onboarding/files/*.html para inyectar el quiz
 // y deja pasar /onboarding/quiz.js, /onboarding/quiz-data.json, etc al express.static
 app.use((req, res, next) => {
@@ -1779,6 +1834,23 @@ app.use((req, res, next) => {
   // Admin bypass del gate progresivo: detectamos rol via cookie session
   const session = getSessionFromRequest(req);
   const isAdmin = session?.user?.role === 'admin';
+  // Progreso server-side del user logueado: lo embedemos para que el gate
+  // del wrapper page no dependa solo del localStorage. Si el setter ya
+  // aprobo en otro browser/PC, igual entra al modulo siguiente sin que
+  // el localStorage vacio lo bloquee.
+  let serverProgress = {};
+  if (session?.user?.id) {
+    try {
+      const _data = loadAuthData();
+      const _user = (_data.users || []).find(u => u.id === session.user.id);
+      const _ob = _user && _user.onboarding;
+      if (_ob && typeof _ob === 'object') {
+        for (const k of Object.keys(_ob)) {
+          if (_ob[k] && _ob[k].aprobado) serverProgress[k] = true;
+        }
+      }
+    } catch (e) { /* fallback al gate via localStorage */ }
+  }
   const titleEsc = mod.title.replace(/"/g, '&quot;');
   const subtitleEsc = mod.subtitle.replace(/"/g, '&quot;');
   const html = `<!DOCTYPE html>
@@ -1828,6 +1900,7 @@ app.use((req, res, next) => {
   (function(){
     var N = ${num};
     var IS_ADMIN = ${isAdmin ? 'true' : 'false'};
+    var SERVER_PROGRESS = ${JSON.stringify(serverProgress)};
     var KEY = 'scm_onboarding_progress';
     var content = document.getElementById('scm-content');
     var pill = document.getElementById('scm-status-pill');
@@ -1845,7 +1918,16 @@ app.use((req, res, next) => {
       pill.classList.remove('pending', 'locked', 'passed'); pill.classList.add('admin');
     }
 
-    var progress = getP();
+    // Mergeamos localStorage con la verdad del server. Si aprobo en cualquiera
+    // de los dos lados, queda como aprobado. Asi un setter que aprobo en otra
+    // PC no se bloquea cuando entra desde una nueva.
+    var localProg = getP();
+    var progress = Object.assign({}, localProg);
+    Object.keys(SERVER_PROGRESS || {}).forEach(function(k){ if (SERVER_PROGRESS[k]) progress[k] = true; });
+    // Si el server tiene mas info que el local, sincronizamos local
+    var localDirty = false;
+    Object.keys(progress).forEach(function(k){ if (progress[k] && !localProg[k]) localDirty = true; });
+    if (localDirty) { try { localStorage.setItem(KEY, JSON.stringify(progress)); } catch(e){} }
 
     // Gate progresivo: módulo N requiere N-1 aprobado (módulo 1 siempre disponible)
     // Admin bypass: si sos admin, no hay gate. Todo libre.
