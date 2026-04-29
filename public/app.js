@@ -3016,14 +3016,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadUsersPanel() {
       const tbody = document.getElementById('users-table-body');
       if (!tbody) return;
-      const [usersResp, settersResp] = await Promise.all([
+      const [usersResp, settersResp, progressResp] = await Promise.all([
         fetch(apiUrl('/api/auth/users')),
-        fetch(apiUrl('/api/setters'))
+        fetch(apiUrl('/api/setters')),
+        fetch(apiUrl('/api/onboarding/progress/all')).catch(() => null)
       ]);
       const data = await usersResp.json();
       const settersData = await settersResp.json();
       const users = data.users || [];
       const invites = data.invites || [];
+      // Mapa userId -> { completados, total, progreso }. Si fallo el fetch, queda vacio.
+      let progressByUser = {};
+      let onboardingTotal = 8;
+      try {
+        if (progressResp && progressResp.ok) {
+          const pData = await progressResp.json();
+          progressByUser = pData.users || {};
+          onboardingTotal = pData.total || 8;
+        }
+      } catch (e) {}
       const inviteMap = new Map(invites.map(inv => [(inv.email || '').toLowerCase(), inv]));
       const validSetterIds = new Set((settersData.setters || []).map(s => s.id));
       const variableCountBySetter = new Map();
@@ -3064,12 +3075,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           if (acts.length) actions = acts.join(' ');
         }
+        // Onboarding cell: solo aplica a setters (admin/supervisor no hacen quiz)
+        let onboardingCell = '—';
+        if (user.role === 'setter') {
+          const prog = progressByUser[user.id];
+          const done = prog ? (prog.completados || 0) : 0;
+          const tot = prog ? (prog.total || onboardingTotal) : onboardingTotal;
+          let color = 'var(--text-tertiary)';
+          let bg = 'rgba(126,132,148,0.12)';
+          if (done >= tot) { color = 'var(--success)'; bg = 'rgba(91,185,116,0.15)'; }
+          else if (done > 0) { color = 'var(--info)'; bg = 'rgba(121,184,255,0.12)'; }
+          const tipo = done >= tot ? '🏆' : (done > 0 ? '📚' : '🔵');
+          onboardingCell = '<span style="font-size:11px; color:' + color + '; background:' + bg + '; padding:3px 8px; border-radius:8px; font-weight:600;" title="Progreso server-side, sincronizado al aprobar cada quiz">' + tipo + ' ' + done + '/' + tot + '</span>';
+        }
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
           '<td>' + escHtml(user.email || '') + '</td>' +
           '<td>' + escHtml(user.role || '') + '</td>' +
           '<td>' + escHtml(user.status || '') + '</td>' +
           '<td>' + (user.role === 'setter' ? varCount : '—') + '</td>' +
+          '<td>' + onboardingCell + '</td>' +
           '<td>' + (inv ? 'Pendiente' : '—') + '</td>' +
           '<td>' + actions + '</td>' +
         '</tr>';
@@ -4139,11 +4164,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   function getOnboardingProgress() {
     try { return JSON.parse(localStorage.getItem(ONBOARDING_PROGRESS_KEY) || '{}'); } catch { return {}; }
   }
+  // Hidrata localStorage del usuario actual con el progreso real del servidor.
+  // Asi cuando un setter abre la PC nueva o limpia el browser, NO empieza de cero.
+  // Tambien sincroniza al admin cuando hace "Ver como" (aunque ahi vea su propio
+  // localStorage del browser, el panel de Equipo si lee del server).
+  async function hydrateOnboardingProgressFromServer() {
+    try {
+      const r = await fetch(apiUrl('/api/onboarding/progress'), { credentials: 'include' });
+      if (!r.ok) return;
+      const data = await r.json();
+      const local = getOnboardingProgress();
+      const merged = { ...local };
+      let dirty = false;
+      Object.entries(data.progreso || {}).forEach(([k, v]) => {
+        if (v && v.aprobado && !merged[k]) { merged[k] = true; dirty = true; }
+      });
+      if (dirty) localStorage.setItem(ONBOARDING_PROGRESS_KEY, JSON.stringify(merged));
+    } catch (e) { /* offline: usar localStorage como esta */ }
+  }
   window.renderOnboardingCards = async () => {
     const cardsEl = document.getElementById('onboarding-cards');
     const subEl = document.getElementById('onboarding-subheader');
     const fillEl = document.getElementById('onboarding-progress-fill');
     if (!cardsEl) return;
+    // Sincroniza localStorage con el server antes de renderizar (idempotente)
+    await hydrateOnboardingProgressFromServer();
     let modules = [];
     try {
       const r = await fetch(apiUrl('/api/onboarding/modules'));

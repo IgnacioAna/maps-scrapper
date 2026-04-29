@@ -1652,6 +1652,79 @@ app.get('/api/onboarding/modules', (_req, res) => {
   res.json({ modules: ONBOARDING_MODULES, total: ONBOARDING_MODULES.length });
 });
 
+// ── Onboarding progress server-side ──
+// Antes vivía solo en localStorage del browser de cada setter, asi que
+// el admin no podia saber si Miguel Angel/Paula completaron el curso.
+// Ahora persiste en auth.users[].onboarding = { "1": {aprobado, ultimo_score, intentos, ultimaFecha}, ... }
+function _emptyOnboardingProgress() {
+  const out = {};
+  for (const m of ONBOARDING_MODULES) out[String(m.num)] = { aprobado: false, ultimo_score: 0, intentos: 0, ultimaFecha: null };
+  return out;
+}
+function getUserOnboarding(user) {
+  const base = _emptyOnboardingProgress();
+  const stored = user && user.onboarding && typeof user.onboarding === 'object' ? user.onboarding : {};
+  for (const k of Object.keys(stored)) {
+    if (base[k]) base[k] = { ...base[k], ...stored[k] };
+  }
+  const completados = Object.values(base).filter(v => v && v.aprobado).length;
+  return { progreso: base, completados, total: ONBOARDING_MODULES.length };
+}
+
+// Setter (o cualquier usuario) reporta el resultado de un quiz.
+// Body: { module: 1..8, score: 0..5, passed: boolean, total?: number }
+app.post('/api/onboarding/progress', requireAuth, (req, res) => {
+  const { module: modNum, score, passed, total } = req.body || {};
+  const N = parseInt(modNum, 10);
+  if (!Number.isFinite(N) || N < 1 || N > ONBOARDING_MODULES.length) {
+    return res.status(400).json({ error: 'module debe ser 1..8' });
+  }
+  const sc = Math.max(0, Math.min(99, parseInt(score, 10) || 0));
+  const totalQ = Math.max(1, Math.min(99, parseInt(total, 10) || 5));
+  const data = loadAuthData();
+  const user = data.users.find(u => u.id === req.auth.user.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  if (!user.onboarding || typeof user.onboarding !== 'object') user.onboarding = {};
+  const key = String(N);
+  const prev = user.onboarding[key] || { aprobado: false, ultimo_score: 0, intentos: 0, ultimaFecha: null, total: totalQ };
+  user.onboarding[key] = {
+    aprobado: !!passed || prev.aprobado, // una vez aprobado, queda aprobado aunque despues falle
+    ultimo_score: sc,
+    intentos: (prev.intentos || 0) + 1,
+    ultimaFecha: new Date().toISOString(),
+    total: totalQ
+  };
+  user.updatedAt = new Date().toISOString();
+  saveAuthData(data);
+  return res.json({ ok: true, progress: getUserOnboarding(user) });
+});
+
+// Devuelve el progreso del usuario logueado.
+app.get('/api/onboarding/progress', requireAuth, (req, res) => {
+  const data = loadAuthData();
+  const user = data.users.find(u => u.id === req.auth.user.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  return res.json(getUserOnboarding(user));
+});
+
+// Admin/supervisor: progreso de todos los usuarios (para panel Equipo).
+app.get('/api/onboarding/progress/all', requireAuth, requireRole('admin', 'supervisor'), (_req, res) => {
+  const data = loadAuthData();
+  const out = {};
+  for (const u of (data.users || [])) {
+    out[u.id] = getUserOnboarding(u);
+  }
+  return res.json({ users: out, total: ONBOARDING_MODULES.length });
+});
+
+// Admin/supervisor: progreso de un usuario puntual.
+app.get('/api/onboarding/progress/:userId', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const data = loadAuthData();
+  const user = data.users.find(u => u.id === req.params.userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  return res.json(getUserOnboarding(user));
+});
+
 // Middleware manual: intercepta /onboarding/files/*.html para inyectar el quiz
 // y deja pasar /onboarding/quiz.js, /onboarding/quiz-data.json, etc al express.static
 app.use((req, res, next) => {
@@ -1662,7 +1735,7 @@ app.use((req, res, next) => {
   if (!fs.existsSync(filePath)) return next();
   try {
     let html = fs.readFileSync(filePath, 'utf8');
-    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260425b"></script>\n`;
+    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260429a"></script>\n`;
     html = html.includes('</body>') ? html.replace('</body>', inject + '</body>') : html + inject;
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');

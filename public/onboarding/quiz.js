@@ -31,6 +31,20 @@
     setJSON(ATTEMPTS_KEY, a);
   }
 
+  // Persiste el resultado del intento al servidor para que admin/supervisor
+  // puedan ver el progreso real desde el panel de Equipo.
+  // Fallback silencioso: si falla (offline o sin sesion), localStorage queda igual.
+  function reportProgressToServer(score, passed, total) {
+    try {
+      fetch('/api/onboarding/progress', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: N, score: score, passed: !!passed, total: total })
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
   // Estilos del bloque (matchea los design tokens de cada módulo)
   const css = `
     .scm-quiz-section { max-width: 720px; margin: 64px auto 80px; padding: 0 24px; font-family: 'Inter', -apple-system, sans-serif; }
@@ -237,6 +251,7 @@
     preguntas.forEach((q, i) => { if (respuestas[i] === q.correcta) correctas++; });
     const passed = correctas >= PASS_THRESHOLD;
     saveAttempt(correctas, passed);
+    reportProgressToServer(correctas, passed, preguntas.length);
     if (passed) markModuleRead();
     renderResult(correctas, passed);
     if (passed) {
