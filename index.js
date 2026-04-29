@@ -340,6 +340,34 @@ function requireRole(...roles) {
   };
 }
 
+// Helper para vista "Ver como": un admin puede pasar ?viewAs=setter|supervisor
+// (+ asSetterId opcional) para que los endpoints filtren COMO SI fuera ese rol.
+// Util para que el admin vea exactamente lo que ven los setters/supervisores
+// sin tener que cerrar sesion y entrar con otra cuenta.
+//
+// IMPORTANTE: solo aplica si el user real es admin. Cualquier otro rol
+// que pase ?viewAs= se ignora (no podes elevar privilegios via query param).
+// Tambien la auth y los guards (requireRole) usan el rol REAL del cookie:
+// un admin viendo "como setter" NO pierde acceso a endpoints admin, solo
+// los endpoints de lectura de leads filtran como si fuera ese setter.
+function getEffectiveAuth(req) {
+  const realRole = req.auth?.user?.role;
+  const realSetterId = req.auth?.user?.setterId || '';
+  if (realRole !== 'admin') {
+    return { role: realRole, setterId: realSetterId, isImpersonating: false };
+  }
+  const viewAs = String(req.query.viewAs || '').trim().toLowerCase();
+  const asSetterId = String(req.query.asSetterId || '').trim();
+  if (!viewAs || !['setter', 'supervisor', 'admin'].includes(viewAs)) {
+    return { role: 'admin', setterId: realSetterId, isImpersonating: false };
+  }
+  return {
+    role: viewAs,
+    setterId: viewAs === 'setter' ? asSetterId : '',
+    isImpersonating: true
+  };
+}
+
 function ensureSetterProfile(name) {
   const settersData = loadSettersData();
   const setterName = name.trim();
@@ -2776,7 +2804,8 @@ app.get('/api/setters/leads', (req, res) => {
   const { setter, estado } = req.query;
   const data = loadSettersData();
   let leads = Object.entries(data.leads).map(([id, lead]) => ({ id, ...lead }));
-  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
+  const eff = getEffectiveAuth(req);
+  const authSetterId = eff.role === 'setter' ? eff.setterId : '';
   if (authSetterId) {
     leads = leads.filter((l) => l.assignedTo === authSetterId);
   } else if (setter) {
@@ -2794,7 +2823,8 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   let leads = Object.entries(data.leads)
     .filter(([_, l]) => l.conexion === 'sin_wsp')
     .map(([id, l]) => ({ id, ...l }));
-  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
+  const eff = getEffectiveAuth(req);
+  const authSetterId = eff.role === 'setter' ? eff.setterId : '';
   if (authSetterId) {
     leads = leads.filter((l) => l.assignedTo === authSetterId);
   } else if (setter) {
@@ -3366,7 +3396,8 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
   const { setter } = req.query;
   const data = loadSettersData();
   let leads = Object.values(data.leads);
-  const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
+  const eff = getEffectiveAuth(req);
+  const authSetterId = eff.role === 'setter' ? eff.setterId : '';
   if (authSetterId) {
     leads = leads.filter((l) => l.assignedTo === authSetterId);
   } else if (setter) {

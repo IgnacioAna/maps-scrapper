@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SCM</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%239D85F2'/%3E%3Cstop offset='100%25' stop-color='%237C5DDB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='url(%23g)'/%3E%3Cpath fill='%230F1115' d='M30 36 L46 36 L50 56 L54 36 L70 36 L62 68 L46 68 L42 50 L38 68 L22 68 Z'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/style.css?v=20260429a">
+  <link rel="stylesheet" href="/style.css?v=20260429b">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -152,12 +152,28 @@
       </nav>
       
       <div class="sidebar-footer">
+        <!-- Ver como: solo visible para admin REAL (data-roles=admin no funciona aca
+             porque viewAs override el role del body). Lo controlamos via JS. -->
+        <div id="view-as-control" class="hidden" style="margin-bottom:8px; padding:8px 10px; background:var(--bg-elevated); border:1px solid var(--border-subtle); border-radius:8px;">
+          <label style="display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Ver como</label>
+          <select id="view-as-select" style="width:100%; font-size:12px; padding:4px 6px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-primary);">
+            <option value="">Yo (admin)</option>
+            <option value="supervisor:">Supervisor</option>
+            <!-- Opciones de setter se agregan en runtime con sus IDs -->
+          </select>
+        </div>
         <div id="history-info" class="history-badge hidden"></div>
         <button id="logout-btn" type="button">Cerrar sesión</button>
       </div>
     </aside>
 
     <main class="content">
+      <!-- Banner sticky cuando admin esta en modo "Ver como" -->
+      <div id="view-as-banner" class="hidden" style="position:sticky; top:0; z-index:50; padding:8px 16px; background:linear-gradient(90deg, rgba(157,133,242,0.15), rgba(157,133,242,0.08)); border-bottom:1px solid rgba(157,133,242,0.3); display:flex; align-items:center; gap:12px; font-size:13px;">
+        <span style="font-size:14px;">👁</span>
+        <span>Estás viendo el sistema como <strong id="view-as-label">—</strong>. Tus permisos siguen siendo de admin.</span>
+        <button id="view-as-exit" type="button" style="margin-left:auto; padding:4px 12px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:500;">Volver a admin</button>
+      </div>
       <!-- SELECTORES GLOBALES DE UBICACIÓN -->
       <div class="global-location-panel" style="padding: 16px 32px 0; border-bottom: 0px solid var(--border-color);">
            <div class="filters-row" style="margin-bottom: 0;">
@@ -1133,7 +1149,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429a"></script>
+  <script type="module" src="/app.js?v=20260429b"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

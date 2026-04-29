@@ -40,7 +40,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     const API_BASE_URL = window.location.origin && window.location.origin !== 'null' && window.location.origin.startsWith('http')
       ? window.location.origin
       : 'http://localhost:3000';
-    const apiUrl = (path) => path.startsWith('http') ? path : new URL(path, API_BASE_URL).toString();
+
+    // Modo "Ver como" (impersonation visual del admin). Persiste en localStorage.
+    // Cuando esta activo, las requests a endpoints de leads agregan
+    // ?viewAs=role&asSetterId=xxx para que el backend filtre como ese rol.
+    // El admin sigue siendo admin para auth — solo el filtrado de leads cambia.
+    const VIEW_AS_KEY = 'scm_view_as';
+    function getViewAs() {
+      try {
+        const raw = localStorage.getItem(VIEW_AS_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch { return null; }
+    }
+    function setViewAs(viewAs) {
+      try {
+        if (!viewAs) localStorage.removeItem(VIEW_AS_KEY);
+        else localStorage.setItem(VIEW_AS_KEY, JSON.stringify(viewAs));
+      } catch {}
+    }
+    const apiUrl = (path) => {
+      let url = path.startsWith('http') ? path : new URL(path, API_BASE_URL).toString();
+      // Solo el admin REAL puede impersonar (currentUser.realRole === 'admin').
+      // Si la url ya tiene viewAs explicito, no la pisamos.
+      const viewAs = getViewAs();
+      if (viewAs && viewAs.role && currentUser?.realRole === 'admin') {
+        const u = new URL(url);
+        if (!u.searchParams.has('viewAs')) {
+          u.searchParams.set('viewAs', viewAs.role);
+          if (viewAs.setterId) u.searchParams.set('asSetterId', viewAs.setterId);
+          url = u.toString();
+        }
+      }
+      return url;
+    };
 
     const authScreen = document.getElementById('auth-screen');
     const mainLayout = document.getElementById('main-layout');
@@ -278,10 +311,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     currentUser = authState.user;
+    // realRole guarda el rol REAL (cookie auth). role puede ser sobrescrito
+    // por viewAs si el admin esta impersonando otro rol para preview.
+    currentUser.realRole = currentUser.role;
+    currentUser.realSetterId = currentUser.setterId;
+    currentUser.realName = currentUser.name;
+    const _va = getViewAs();
+    if (_va && _va.role && currentUser.realRole === 'admin') {
+      currentUser.role = _va.role;
+      currentUser.setterId = _va.setterId || '';
+      // No cambiamos name — para no confundir, el admin sigue viendo su nombre
+      // en el sidebar, solo el rol cambia.
+    }
     window.__CURRENT_USER__ = currentUser;
     authScreen.classList.add('hidden');
     mainLayout.classList.remove('hidden');
     document.body.dataset.role = currentUser.role;
+    if (currentUser.realRole !== currentUser.role) {
+      document.body.dataset.viewAs = '1';
+    }
 
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
@@ -298,6 +346,65 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (allowed.length === 0) return;
       if (!allowed.includes(currentUser.role)) el.classList.add('hidden');
     });
+
+    // ─── Modo "Ver como" (impersonation visual del admin) ──────────────────
+    // Solo el admin REAL puede usar esta funcionalidad. Si esta en modo
+    // viewAs, mostramos banner sticky + permitimos volver a admin.
+    if (currentUser.realRole === 'admin') {
+      const viewAsControl = document.getElementById('view-as-control');
+      const viewAsSelect = document.getElementById('view-as-select');
+      const viewAsBanner = document.getElementById('view-as-banner');
+      const viewAsLabel = document.getElementById('view-as-label');
+      const viewAsExit = document.getElementById('view-as-exit');
+
+      // Poblar setters disponibles (uno por setter)
+      try {
+        const r = await fetch(apiUrl('/api/setters'));
+        if (r.ok) {
+          const sd = await r.json();
+          (sd.setters || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = 'setter:' + s.id;
+            opt.textContent = 'Setter · ' + s.name;
+            viewAsSelect.appendChild(opt);
+          });
+        }
+      } catch {}
+
+      // Setear el value actual segun localStorage
+      const _vaState = getViewAs();
+      if (_vaState && _vaState.role) {
+        const v = _vaState.role === 'setter'
+          ? 'setter:' + (_vaState.setterId || '')
+          : _vaState.role + ':';
+        viewAsSelect.value = v;
+        if (viewAsBanner && viewAsLabel) {
+          viewAsBanner.classList.remove('hidden');
+          if (_vaState.role === 'setter') {
+            const opt = viewAsSelect.options[viewAsSelect.selectedIndex];
+            viewAsLabel.textContent = opt ? opt.textContent : 'Setter';
+          } else {
+            viewAsLabel.textContent = _vaState.role.charAt(0).toUpperCase() + _vaState.role.slice(1);
+          }
+        }
+      }
+      viewAsControl?.classList.remove('hidden');
+
+      viewAsSelect?.addEventListener('change', () => {
+        const v = viewAsSelect.value;
+        if (!v) {
+          setViewAs(null);
+        } else {
+          const [role, setterId] = v.split(':');
+          setViewAs({ role, setterId });
+        }
+        window.location.reload();
+      });
+      viewAsExit?.addEventListener('click', () => {
+        setViewAs(null);
+        window.location.reload();
+      });
+    }
 
     const form = document.getElementById('scrape-form');
     const queryInput = document.getElementById('query');
