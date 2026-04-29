@@ -1658,7 +1658,7 @@ app.get('/api/onboarding/modules', (_req, res) => {
 // Ahora persiste en auth.users[].onboarding = { "1": {aprobado, ultimo_score, intentos, ultimaFecha}, ... }
 function _emptyOnboardingProgress() {
   const out = {};
-  for (const m of ONBOARDING_MODULES) out[String(m.num)] = { aprobado: false, ultimo_score: 0, intentos: 0, ultimaFecha: null };
+  for (const m of ONBOARDING_MODULES) out[String(m.num)] = { aprobado: false, ultimo_score: 0, intentos: 0, ultimaFecha: null, bloqueadoHasta: null };
   return out;
 }
 function getUserOnboarding(user) {
@@ -1687,16 +1687,30 @@ app.post('/api/onboarding/progress', requireAuth, (req, res) => {
   if (!user.onboarding || typeof user.onboarding !== 'object') user.onboarding = {};
   const key = String(N);
   const prev = user.onboarding[key] || { aprobado: false, ultimo_score: 0, intentos: 0, ultimaFecha: null, total: totalQ };
+  // Cooldown anti-grinding: si fallo y todavia no aprobo nunca, lo bloqueamos
+  // por la duracion del modulo (min 5, max 15 min). Asi tiene que ir a releer
+  // y no puede sentarse a tirar intentos hasta sacar el orden de las opciones.
+  // Si ya aprobo antes (esta rehaciendo por gusto), no aplicamos cooldown.
+  const yaAprobadoAntes = !!prev.aprobado;
+  let bloqueadoHasta = prev.bloqueadoHasta || null;
+  if (!passed && !yaAprobadoAntes) {
+    const mod = ONBOARDING_MODULES.find(m => m.num === N);
+    const minutos = Math.max(5, Math.min(15, (mod && mod.minutes) || 5));
+    bloqueadoHasta = Date.now() + minutos * 60 * 1000;
+  } else if (passed) {
+    bloqueadoHasta = null; // aprobo: limpiamos cualquier cooldown viejo
+  }
   user.onboarding[key] = {
-    aprobado: !!passed || prev.aprobado, // una vez aprobado, queda aprobado aunque despues falle
+    aprobado: !!passed || yaAprobadoAntes, // una vez aprobado, queda aprobado aunque despues falle
     ultimo_score: sc,
     intentos: (prev.intentos || 0) + 1,
     ultimaFecha: new Date().toISOString(),
-    total: totalQ
+    total: totalQ,
+    bloqueadoHasta: bloqueadoHasta
   };
   user.updatedAt = new Date().toISOString();
   saveAuthData(data);
-  return res.json({ ok: true, progress: getUserOnboarding(user) });
+  return res.json({ ok: true, progress: getUserOnboarding(user), bloqueadoHasta: bloqueadoHasta });
 });
 
 // Devuelve el progreso del usuario logueado.
@@ -1746,7 +1760,7 @@ app.use((req, res, next) => {
   if (!fs.existsSync(filePath)) return next();
   try {
     let html = fs.readFileSync(filePath, 'utf8');
-    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260429a"></script>\n`;
+    const inject = `\n<div id="scm-quiz-root"></div>\n<script src="/onboarding/quiz.js?v=20260429b"></script>\n`;
     html = html.includes('</body>') ? html.replace('</body>', inject + '</body>') : html + inject;
     res.set('Content-Type', 'text/html; charset=utf-8');
     res.set('Cache-Control', 'no-cache');

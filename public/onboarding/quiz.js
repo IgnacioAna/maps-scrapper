@@ -31,18 +31,29 @@
     setJSON(ATTEMPTS_KEY, a);
   }
 
-  // Persiste el resultado del intento al servidor para que admin/supervisor
-  // puedan ver el progreso real desde el panel de Equipo.
-  // Fallback silencioso: si falla (offline o sin sesion), localStorage queda igual.
+  // Persiste el resultado del intento al servidor. Devuelve la promesa con
+  // el response para poder leer el cooldown (bloqueadoHasta) cuando falla.
+  // Fallback silencioso: si falla la red, no rompemos el flujo del usuario.
   function reportProgressToServer(score, passed, total) {
     try {
-      fetch('/api/onboarding/progress', {
+      return fetch('/api/onboarding/progress', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ module: N, score: score, passed: !!passed, total: total })
-      }).catch(function(){});
-    } catch (e) {}
+      }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+    } catch (e) { return Promise.resolve(null); }
+  }
+
+  // Trae el progreso del usuario para este modulo desde el server.
+  // Lo usamos para chequear cooldown antes de mostrar "Empezar el quiz".
+  function fetchOwnProgressForModule() {
+    try {
+      return fetch('/api/onboarding/progress', { credentials: 'include' })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ return d && d.progreso ? (d.progreso[String(N)] || null) : null; })
+        .catch(function(){ return null; });
+    } catch (e) { return Promise.resolve(null); }
   }
 
   // Estilos del bloque (matchea los design tokens de cada módulo)
@@ -160,6 +171,33 @@
     return picked.map(shuffleOptions);
   }
 
+  function formatCooldown(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    if (m === 0) return s + ' segundo' + (s === 1 ? '' : 's');
+    if (s === 0) return m + ' minuto' + (m === 1 ? '' : 's');
+    return m + ' min ' + s + ' s';
+  }
+
+  function renderCooldown(bloqueadoHasta) {
+    const restante = bloqueadoHasta - Date.now();
+    rootEl.innerHTML = `
+      <div class="scm-quiz-card" style="border-color: rgba(210,153,34,0.3); background: linear-gradient(135deg, rgba(210,153,34,0.08), rgba(210,153,34,0.02));">
+        <div class="scm-quiz-kicker" style="color:#D29922;">⏳ Quiz bloqueado temporalmente</div>
+        <h2 class="scm-quiz-title">Volvé a leer el módulo antes de reintentar</h2>
+        <p class="scm-quiz-desc">Fallaste el último intento. Para evitar que la gente adivine, el quiz queda bloqueado por <strong id="scm-cd-text">${escHtml(formatCooldown(restante))}</strong>. Aprovechá ese rato para releer el módulo — las preguntas son sobre lo que está acá arriba.</p>
+        <button class="scm-quiz-btn secondary" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ Volver al inicio del módulo</button>
+      </div>`;
+    // Tick cada segundo: cuando llega a 0, recargamos el intro.
+    const tick = setInterval(function(){
+      const r = bloqueadoHasta - Date.now();
+      if (r <= 0) { clearInterval(tick); init(); return; }
+      const el = document.getElementById('scm-cd-text');
+      if (el) el.textContent = formatCooldown(r);
+    }, 1000);
+  }
+
   function renderIntro() {
     if (allPool.length === 0) {
       rootEl.innerHTML = `
@@ -251,9 +289,17 @@
     preguntas.forEach((q, i) => { if (respuestas[i] === q.correcta) correctas++; });
     const passed = correctas >= PASS_THRESHOLD;
     saveAttempt(correctas, passed);
-    reportProgressToServer(correctas, passed, preguntas.length);
     if (passed) markModuleRead();
-    renderResult(correctas, passed);
+    // Reportamos al server y, si fallo, esperamos la respuesta para leer el cooldown.
+    const reportPromise = reportProgressToServer(correctas, passed, preguntas.length);
+    if (!passed) {
+      reportPromise.then(function(resp){
+        const cooldownUntil = resp && resp.bloqueadoHasta ? resp.bloqueadoHasta : null;
+        renderResult(correctas, passed, cooldownUntil);
+      });
+    } else {
+      renderResult(correctas, passed, null);
+    }
     if (passed) {
       // Detectar si completó TODOS los módulos para confetti épico
       const progress = getJSON(PROGRESS_KEY);
@@ -343,11 +389,12 @@
     setTimeout(() => ac.close(), epic ? 1500 : 800);
   }
 
-  function renderResult(score, passed) {
+  function renderResult(score, passed, cooldownUntil) {
     const total = preguntas.length;
     const failedQs = preguntas
       .map((q, i) => ({ q, i, sel: respuestas[i] }))
       .filter(item => item.sel !== item.q.correcta);
+    const blocked = !passed && cooldownUntil && cooldownUntil > Date.now();
 
     const nextN = N + 1;
     const hasNext = nextN <= 8;
@@ -369,8 +416,10 @@
       title = '🎉 ¡Aprobaste!';
       subtitle = `Módulo ${N} marcado como completado. ${hasNext ? 'Seguí con el módulo ' + (N + 1) + '.' : 'Te falta solo este último tramo.'}`;
     } else {
-      title = '📚 Te faltó. Repasá lo que fallaste';
-      subtitle = `Necesitás <strong>${PASS_THRESHOLD}</strong> correctas para aprobar.`;
+      title = '📚 Te faltó. Volvé al módulo y releelo';
+      subtitle = blocked
+        ? `Sacaste ${score}/${total}. Necesitás <strong>${PASS_THRESHOLD}</strong> correctas. El quiz queda bloqueado por <strong id="scm-cd-result">${escHtml(formatCooldown(cooldownUntil - Date.now()))}</strong> para que vuelvas a leer el material — no te vamos a decir cuáles fueron las correctas.`
+        : `Sacaste ${score}/${total}. Necesitás <strong>${PASS_THRESHOLD}</strong> correctas. Releé el módulo y volvé a intentar.`;
     }
 
     let html = `
@@ -382,14 +431,19 @@
           ${passed
             ? `<button class="scm-quiz-btn" id="scm-back">${todosListos ? '🏠 Volver al inicio' : '← Volver al Centro de Entrenamiento'}</button>` +
               (hasNext ? `<a href="/onboarding/${nextN}" class="scm-quiz-btn" style="text-decoration:none;">Siguiente módulo →</a>` : '')
-            : `<button class="scm-quiz-btn" id="scm-retry">Reintentar el quiz</button>` +
-              `<button class="scm-quiz-btn secondary" id="scm-reread">Volver a leer el módulo</button>`
+            : (blocked
+                ? `<button class="scm-quiz-btn secondary" id="scm-reread">↑ Volver a leer el módulo</button>`
+                : `<button class="scm-quiz-btn" id="scm-retry">Reintentar el quiz</button>` +
+                  `<button class="scm-quiz-btn secondary" id="scm-reread">Volver a leer el módulo</button>`)
           }
         </div>
       </div>`;
 
+    // Listado de preguntas falladas: mostramos cuáles fallaste y por qué (la
+    // explicacion enseña), pero NO marcamos cuál era la correcta. Si lo hicieramos,
+    // el setter podria reintentarl al toque memorizando las opciones marcadas.
     if (!passed && failedQs.length > 0) {
-      html += `<div style="margin-top:12px; color: var(--text-soft, #B8C2CC); font-size:13px; text-align:center;">Detalle de las que fallaste:</div>`;
+      html += `<div style="margin-top:12px; color: var(--text-soft, #B8C2CC); font-size:13px; text-align:center;">Te equivocaste en estas. Releé el módulo para entender por qué tu respuesta no era la mejor:</div>`;
       html += failedQs.map(item => {
         const q = item.q;
         return `<div class="scm-question failed" style="margin-top:14px;">
@@ -397,13 +451,12 @@
           <div class="scm-question-text">${escHtml(q.pregunta)}</div>
           <div class="scm-options">
             ${q.opciones.map((opt, j) => {
-              let cls = '';
-              if (j === q.correcta) cls = 'correct';
-              else if (j === item.sel) cls = 'incorrect';
+              // Solo marcamos la que el usuario eligió (incorrecta). NO revelamos la correcta.
+              const cls = (j === item.sel) ? 'incorrect' : '';
               return `<div class="scm-option ${cls}"><span class="scm-radio"></span><span>${escHtml(opt)}</span></div>`;
             }).join('')}
           </div>
-          ${q.explicacion ? `<div class="scm-explain"><strong>Por qué:</strong> ${escHtml(q.explicacion)}</div>` : ''}
+          ${q.explicacion ? `<div class="scm-explain"><strong>Pista:</strong> ${escHtml(q.explicacion)}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -418,6 +471,15 @@
       if (retry) retry.addEventListener('click', startQuiz);
       const reread = document.getElementById('scm-reread');
       if (reread) reread.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      // Si esta bloqueado, tickear el contador en el resultado y al llegar a 0 reabrir intro
+      if (blocked) {
+        const tick = setInterval(function(){
+          const r = cooldownUntil - Date.now();
+          const el = document.getElementById('scm-cd-result');
+          if (r <= 0) { clearInterval(tick); init(); return; }
+          if (el) el.textContent = formatCooldown(r);
+        }, 1000);
+      }
     }
     setTimeout(() => rootEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   }
@@ -432,14 +494,23 @@
     rootEl.className = 'scm-quiz-section';
     injectStyles();
 
-    fetch('/onboarding/quiz-data.json', { cache: 'no-cache' })
-      .then(r => r.json())
-      .then(data => {
+    Promise.all([
+      fetch('/onboarding/quiz-data.json', { cache: 'no-cache' }).then(r => r.json()),
+      fetchOwnProgressForModule()
+    ])
+      .then(function(results) {
+        const data = results[0];
+        const ownProg = results[1];
         quizData = data;
         const moduleData = data['modulo' + N];
         const base = (moduleData && Array.isArray(moduleData.preguntas)) ? moduleData.preguntas : [];
         const extra = (moduleData && Array.isArray(moduleData.bancoExtra)) ? moduleData.bancoExtra : [];
         allPool = base.concat(extra);
+        // Cooldown check: si esta bloqueado y NO esta aprobado, mostramos timer
+        if (ownProg && ownProg.bloqueadoHasta && !ownProg.aprobado && ownProg.bloqueadoHasta > Date.now()) {
+          renderCooldown(ownProg.bloqueadoHasta);
+          return;
+        }
         renderIntro();
       })
       .catch(err => {
