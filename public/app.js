@@ -4130,6 +4130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.loadOnlineUsers = async () => {
     const list = document.getElementById('online-users-list');
     if (!list) return;
+    // Feedback visual del boton Refrescar
+    const refreshBtns = document.querySelectorAll('button[onclick*="loadOnlineUsers"]');
+    refreshBtns.forEach(b => { b.disabled = true; b.dataset._origText = b.textContent; b.textContent = '⏳ Actualizando...'; });
     try {
       const resp = await fetch(apiUrl('/api/auth/online'));
       if (!resp.ok) {
@@ -4142,7 +4145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       const fmtAge = (ts) => {
-        if (!ts) return 'Nunca conectado';
+        if (!ts) return 'Sin actividad registrada';
         const sec = Math.floor((Date.now() - ts) / 1000);
         if (sec < 60) return `Hace ${sec}s`;
         if (sec < 3600) return `Hace ${Math.floor(sec/60)} min`;
@@ -4153,11 +4156,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       const stColor = (st) => st === 'online' ? 'var(--success)' : st === 'recent' ? 'var(--warning)' : '#666';
       const stLabel = (st) => st === 'online' ? 'Online' : st === 'recent' ? 'Reciente' : 'Offline';
       const onlineCount = data.users.filter(u => u.status === 'online').length;
+      const noLastSeenCount = data.users.filter(u => !u.lastSeen).length;
+      // Banner explicativo si la mayoria no tiene lastSeen registrado.
+      // El sistema empezo a persistir presencia recien hoy (commit 09bb3fd).
+      // Antes de eso la data se perdia con cada deploy de Railway.
+      const explanationBanner = noLastSeenCount > data.users.length / 2
+        ? `<div style="margin-bottom:14px; padding:12px 16px; background:rgba(255,176,32,0.08); border:1px solid rgba(255,176,32,0.3); border-radius:10px; font-size:12px; color:var(--text-secondary); line-height:1.5;">
+            <strong style="color:var(--warning);">⚠ ${noLastSeenCount} usuarios sin actividad registrada.</strong>
+            La actividad se empezó a guardar a partir de hoy. Las conexiones anteriores no quedaron grabadas. Cuando los usuarios entren al sistema van a aparecer acá automáticamente (refresh cada 15 seg).
+          </div>`
+        : '';
       list.innerHTML =
         `<div style="margin-bottom:14px; padding:12px 16px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px;">
           <strong style="color:var(--success);">🟢 ${onlineCount}</strong> ${onlineCount === 1 ? 'usuario conectado ahora' : 'usuarios conectados ahora'} · ${data.users.length} totales
-        </div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">` +
+          <span style="float:right; color:var(--text-secondary); font-size:11px;">Actualizado: ${new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</span>
+        </div>` +
+        explanationBanner +
+        `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">` +
         data.users.map(u => {
           const browser = (u.userAgent || '').match(/(Chrome|Firefox|Safari|Edge|Opera)/)?.[1] || '?';
           const os = (u.userAgent || '').match(/(Windows|Mac OS X|Linux|Android|iPhone)/)?.[1] || '?';
@@ -4173,6 +4188,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }).join('') + '</div>';
     } catch(err) {
       list.innerHTML = '<p style="color:var(--danger);">Error: ' + err.message + '</p>';
+    } finally {
+      // Restaurar boton
+      refreshBtns.forEach(b => { b.disabled = false; b.textContent = b.dataset._origText || '↻ Refrescar'; });
     }
   };
   document.querySelector('[data-target="view-online"]')?.addEventListener('click', () => {
