@@ -1700,11 +1700,22 @@ app.post('/api/onboarding/progress', requireAuth, (req, res) => {
 });
 
 // Devuelve el progreso del usuario logueado.
+// Si admin esta usando "Ver como setter" con ?viewAs=setter&asSetterId=XXX,
+// devuelve el progreso del setter impersonado (asi la vista refleja la realidad
+// del setter, no la del admin).
 app.get('/api/onboarding/progress', requireAuth, (req, res) => {
   const data = loadAuthData();
-  const user = data.users.find(u => u.id === req.auth.user.id);
-  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
-  return res.json(getUserOnboarding(user));
+  let targetUser = data.users.find(u => u.id === req.auth.user.id);
+  if (req.auth.user.role === 'admin') {
+    const viewAs = String(req.query.viewAs || '').trim().toLowerCase();
+    const asSetterId = String(req.query.asSetterId || '').trim();
+    if (viewAs === 'setter' && asSetterId) {
+      const impersonated = data.users.find(u => u.setterId === asSetterId);
+      if (impersonated) targetUser = impersonated;
+    }
+  }
+  if (!targetUser) return res.status(404).json({ error: 'Usuario no encontrado' });
+  return res.json(getUserOnboarding(targetUser));
 });
 
 // Admin/supervisor: progreso de todos los usuarios (para panel Equipo).

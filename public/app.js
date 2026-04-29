@@ -4164,31 +4164,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   function getOnboardingProgress() {
     try { return JSON.parse(localStorage.getItem(ONBOARDING_PROGRESS_KEY) || '{}'); } catch { return {}; }
   }
-  // Hidrata localStorage del usuario actual con el progreso real del servidor.
-  // Asi cuando un setter abre la PC nueva o limpia el browser, NO empieza de cero.
-  // Tambien sincroniza al admin cuando hace "Ver como" (aunque ahi vea su propio
-  // localStorage del browser, el panel de Equipo si lee del server).
-  async function hydrateOnboardingProgressFromServer() {
+  // Trae el progreso del server (respeta "Ver como" en backend) y lo devuelve
+  // como objeto { N: true, ... } para usar en el render.
+  // En modo "Ver como", NO toca el localStorage del admin (no le pisamos su progreso).
+  // En modo normal, sincroniza el localStorage para que el setter no pierda
+  // su progreso si cambia de browser.
+  async function fetchOnboardingProgressForView() {
+    const impersonating = !!getViewAs && getViewAs();
     try {
       const r = await fetch(apiUrl('/api/onboarding/progress'), { credentials: 'include' });
-      if (!r.ok) return;
+      if (!r.ok) return { progress: getOnboardingProgress(), source: 'local' };
       const data = await r.json();
-      const local = getOnboardingProgress();
-      const merged = { ...local };
-      let dirty = false;
-      Object.entries(data.progreso || {}).forEach(([k, v]) => {
-        if (v && v.aprobado && !merged[k]) { merged[k] = true; dirty = true; }
-      });
-      if (dirty) localStorage.setItem(ONBOARDING_PROGRESS_KEY, JSON.stringify(merged));
-    } catch (e) { /* offline: usar localStorage como esta */ }
+      const serverMap = {};
+      Object.entries(data.progreso || {}).forEach(([k, v]) => { if (v && v.aprobado) serverMap[k] = true; });
+      if (!impersonating) {
+        // Sincroniza localStorage solo en mi propia vista (no piso nada del admin
+        // mientras esta impersonando). Mergeo: server gana sobre local.
+        const merged = { ...getOnboardingProgress(), ...serverMap };
+        try { localStorage.setItem(ONBOARDING_PROGRESS_KEY, JSON.stringify(merged)); } catch (e) {}
+        return { progress: merged, source: 'server' };
+      }
+      // Impersonando: render puro desde server, sin tocar localStorage
+      return { progress: serverMap, source: 'server-impersonated' };
+    } catch (e) {
+      return { progress: getOnboardingProgress(), source: 'local-fallback' };
+    }
   }
   window.renderOnboardingCards = async () => {
     const cardsEl = document.getElementById('onboarding-cards');
     const subEl = document.getElementById('onboarding-subheader');
     const fillEl = document.getElementById('onboarding-progress-fill');
     if (!cardsEl) return;
-    // Sincroniza localStorage con el server antes de renderizar (idempotente)
-    await hydrateOnboardingProgressFromServer();
+    // Trae el progreso real (server o, si impersonando, del setter target)
+    const progressView = await fetchOnboardingProgressForView();
     let modules = [];
     try {
       const r = await fetch(apiUrl('/api/onboarding/modules'));
@@ -4198,7 +4206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       cardsEl.innerHTML = '<p style="color:var(--danger);">No pude cargar los módulos.</p>';
       return;
     }
-    const progress = getOnboardingProgress();
+    const progress = progressView.progress;
     const completados = modules.filter(m => progress[m.num]).length;
     const totalMin = modules.reduce((sum, m) => sum + (m.minutes || 0), 0);
     if (subEl) subEl.textContent = `${modules.length} módulos · ~${totalMin} min total · ${completados} de ${modules.length} completados`;
