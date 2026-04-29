@@ -81346,7 +81346,7 @@
       "conexion": "enviada",
       "apertura": "",
       "respondio": true,
-      "calificado": false,
+      "calificado": "no",
       "interes": null,
       "estado": "respondio",
       "notes": [],
