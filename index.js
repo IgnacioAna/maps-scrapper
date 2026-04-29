@@ -2522,6 +2522,96 @@ app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res
 // Guards:
 // - No permite borrarse a si mismo (admin actual)
 // - No permite borrar al ultimo admin activo (deja siempre uno)
+// PATCH /api/auth/users/:id — cambiar rol o nombre de un user existente.
+// Util para promover/degradar (ej: subir un setter a supervisor sin tener
+// que crear un user nuevo y reasignar manualmente).
+//
+// Body: { role?, name? }
+// Guards:
+//   - role debe ser admin / supervisor / setter
+//   - no podes cambiar tu propio rol (evita auto-degradacion accidental)
+//   - no podes degradar al ultimo admin activo
+//   - cambiar de setter -> supervisor/admin LIBERA leads asignados (porque
+//     ya no es un setter operativo). Si era setter sano, tambien libera el
+//     setterId del user (queda en blanco) y libera el setter profile en
+//     data.setters (sus variantes y leads se desasignan).
+//   - cambiar a setter desde supervisor/admin: necesita un setter profile
+//     nuevo, lo creamos automaticamente.
+app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const userId = req.params.id;
+  const { role: newRole, name: newName } = req.body || {};
+  const me = req.auth?.user;
+  const auth = loadAuthData();
+  const user = (auth.users || []).find(u => u.id === userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+  if (newRole !== undefined) {
+    if (!['admin', 'supervisor', 'setter'].includes(newRole)) {
+      return res.status(400).json({ error: "Rol invalido. Tiene que ser 'admin', 'supervisor' o 'setter'." });
+    }
+    if (me && me.id === userId && newRole !== user.role) {
+      return res.status(400).json({ error: 'No podes cambiar tu propio rol.' });
+    }
+    if (user.role === 'admin' && newRole !== 'admin') {
+      const activeAdmins = (auth.users || []).filter(u => u.role === 'admin' && u.status === 'active' && u.id !== userId);
+      if (activeAdmins.length === 0) {
+        return res.status(400).json({ error: 'No podes degradar al ultimo admin activo.' });
+      }
+    }
+  }
+
+  const oldRole = user.role;
+  let leadsFreed = 0;
+
+  if (newRole !== undefined && newRole !== oldRole) {
+    // Si pasa de setter -> otro rol: liberar leads + el setter profile
+    if (oldRole === 'setter' && user.setterId) {
+      try {
+        const sd = loadSettersData();
+        // Liberar leads asignados a su setterId
+        if (sd.leads && typeof sd.leads === 'object') {
+          for (const lid of Object.keys(sd.leads)) {
+            if (sd.leads[lid]?.assignedTo === user.setterId) {
+              sd.leads[lid].assignedTo = '';
+              leadsFreed++;
+            }
+          }
+        }
+        // Sacar del array de setters (perdemos las stats pero el user sobrevive)
+        sd.setters = (sd.setters || []).filter(s => s.id !== user.setterId);
+        // Liberar variantes del setter
+        sd.variants = (sd.variants || []).map(v => {
+          if (v.setterId === user.setterId) v.setterId = '';
+          if (Array.isArray(v.sharedWith)) v.sharedWith = v.sharedWith.filter(id => id !== user.setterId);
+          return v;
+        });
+        // Limpiar sessions del modulo Setteo
+        if (Array.isArray(sd.sessions)) {
+          sd.sessions = sd.sessions.filter(s => s.setter !== user.setterId);
+        }
+        saveSettersData(sd);
+      } catch (e) {
+        console.warn('[user:patch] error liberando setter profile:', e.message);
+      }
+      user.setterId = '';
+    }
+    // Si pasa a setter desde otro rol: crear setter profile
+    if (newRole === 'setter' && oldRole !== 'setter') {
+      user.setterId = ensureSetterProfile(user.name || user.email);
+    }
+    user.role = newRole;
+  }
+
+  if (newName !== undefined && String(newName).trim()) {
+    user.name = String(newName).trim();
+  }
+  user.updatedAt = new Date().toISOString();
+  saveAuthData(auth);
+
+  console.log(`[user:patch] User '${user.email}' actualizado: ${oldRole} -> ${user.role}` + (leadsFreed ? `, ${leadsFreed} lead(s) liberado(s)` : '') + '.');
+  res.json({ user: publicUser(user), leadsFreed, oldRole, newRole: user.role });
+});
+
 app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) => {
   const userId = req.params.id;
   const me = req.auth?.user;

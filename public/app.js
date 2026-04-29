@@ -2922,26 +2922,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.innerHTML = users.map(user => {
         const inv = inviteMap.get((user.email || '').toLowerCase());
         const varCount = user.role === 'setter' ? (variableCountBySetter.get(user.setterId || '') || 0) : 0;
-        // 3 categorias de user:
-        //   (a) admin: sin acciones (ya esta protegido en el backend)
-        //   (b) setter sano: tiene setterId y existe en data.setters -> Editar/Duplicar/Eliminar (cascada)
-        //   (c) setter HUERFANO: sin setterId o con setterId que no existe -> "Borrar usuario"
         // Supervisor no ve acciones (es read-only sobre el equipo).
         let actions = '—';
-        if (meIsAdmin && user.role === 'setter') {
-          const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
-          if (isOrphan) {
-            actions =
-              '<span style="font-size:10px;color:var(--text-tertiary);margin-right:6px;">huérfano</span>' +
-              '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteUser(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Borrar usuario</button>';
-          } else {
-            const sid = escHtml(user.setterId);
-            const sname = encodeURIComponent(user.name || '');
-            actions =
-              '<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button> ' +
-              '<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button> ' +
-              '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>';
+        if (meIsAdmin) {
+          const acts = [];
+          // Boton "Rol" para cambiar entre admin/supervisor/setter.
+          // Disponible para todos los roles excepto el propio user (no podes cambiarte a vos mismo).
+          if (user.id !== currentUser.id) {
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
           }
+          // Acciones especificas de setter
+          if (user.role === 'setter') {
+            const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
+            if (isOrphan) {
+              acts.push('<span style="font-size:10px;color:var(--text-tertiary);margin:0 4px;">huérfano</span>');
+              acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteUser(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Borrar</button>');
+            } else {
+              const sid = escHtml(user.setterId);
+              const sname = encodeURIComponent(user.name || '');
+              acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button>');
+              acts.push('<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button>');
+              acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>');
+            }
+          } else if (user.id !== currentUser.id) {
+            // admin/supervisor que no es el actual: opcion de borrar el user
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteUser(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Borrar</button>');
+          }
+          if (acts.length) actions = acts.join(' ');
         }
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
@@ -2954,6 +2961,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         '</tr>';
       }).join('');
     }
+
+    // Cambiar el rol de un user (admin -> supervisor -> setter o viceversa).
+    // El backend libera el setter profile + leads si pasa de setter a otro rol,
+    // y crea un setter profile nuevo si pasa a setter desde otro rol.
+    window._changeUserRole = async (userId, currentRole, email) => {
+      if (!userId) return;
+      const next = prompt(
+        '¿Cambiar el rol de "' + (email || userId) + '"?\n\n' +
+        'Rol actual: ' + currentRole + '\n\n' +
+        'Escribí el rol nuevo:\n' +
+        '  • admin       (acceso total)\n' +
+        '  • supervisor  (ve el equipo, no puede borrar ni scrapear)\n' +
+        '  • setter      (operativo, solo ve sus leads)\n\n' +
+        'Nota: si pasa de setter a otro rol, se liberan sus leads.',
+        currentRole
+      );
+      if (!next || next === currentRole) return;
+      try {
+        const r = await fetch(apiUrl('/api/auth/users/' + userId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: next.trim().toLowerCase() })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+        const partes = ['Rol cambiado: ' + data.oldRole + ' → ' + data.newRole];
+        if (data.leadsFreed) partes.push('• ' + data.leadsFreed + ' lead(s) liberado(s)');
+        alert(partes.join('\n'));
+      } catch (err) {
+        alert('Error cambiando rol: ' + err.message);
+      }
+      loadCommandCenter();
+    };
 
     // Borra un user directo (huerfanos sin setter o con setter inexistente).
     // El backend tiene guards: no permite borrarse a uno mismo ni al ultimo admin.

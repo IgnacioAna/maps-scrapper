@@ -231,6 +231,56 @@ describe("POST /api/auth/accept-invite — auto-login con cookie de sesion", () 
   });
 });
 
+describe("PATCH /api/auth/users/:id — cambiar rol/nombre con guards", () => {
+  it("promueve un setter a supervisor: libera leads y limpia setterId", async () => {
+    // Crear setter base
+    const create = await request(app).post("/api/setters/team").set("Cookie", cookie).send({ name: "ToPromote" });
+    const sid = create.body.setters.find(s => s.name === "ToPromote").id;
+    // Crear user setter via invite + accept
+    const inv = await request(app).post("/api/auth/invites").set("Cookie", cookie).send({
+      name: "ToPromote", email: "topromote@local.test", role: "setter", sendEmail: false
+    });
+    const accept = await request(app).post("/api/auth/accept-invite").send({ token: inv.body.invite.token, password: "topromote123" });
+    const userId = accept.body.user.id;
+    // Sembrar 2 leads asignados a este setter
+    const settersFile = path.join(tmpData, "setters.json");
+    const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    sd.leads.lead_promote_1 = { id: "lead_promote_1", num: 200, name: "L1", country: "Argentina", assignedTo: accept.body.user.setterId, openMessage: "Hola" };
+    sd.leads.lead_promote_2 = { id: "lead_promote_2", num: 201, name: "L2", country: "Argentina", assignedTo: accept.body.user.setterId, openMessage: "Hola" };
+    fs.writeFileSync(settersFile, JSON.stringify(sd, null, 2));
+
+    // PROMOVER a supervisor
+    const r = await request(app).patch("/api/auth/users/" + userId).set("Cookie", cookie).send({ role: "supervisor" });
+    expect(r.status).toBe(200);
+    expect(r.body.oldRole).toBe("setter");
+    expect(r.body.newRole).toBe("supervisor");
+    expect(r.body.leadsFreed).toBe(2);
+    expect(r.body.user.role).toBe("supervisor");
+    expect(r.body.user.setterId).toBe("");
+
+    // Verificar: leads liberados
+    const sdAfter = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+    expect(sdAfter.leads.lead_promote_1.assignedTo).toBe("");
+    expect(sdAfter.leads.lead_promote_2.assignedTo).toBe("");
+  });
+
+  it("rechaza cambiar el propio rol (auto-degradacion)", async () => {
+    const r = await request(app).patch("/api/auth/users/user_admin_h").set("Cookie", cookie).send({ role: "setter" });
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/propio rol/i);
+  });
+
+  it("rechaza rol invalido", async () => {
+    const r = await request(app).patch("/api/auth/users/user_admin_h").set("Cookie", cookie).send({ role: "rey" });
+    expect(r.status).toBe(400);
+  });
+
+  it("404 si user no existe", async () => {
+    const r = await request(app).patch("/api/auth/users/nope").set("Cookie", cookie).send({ role: "setter" });
+    expect(r.status).toBe(404);
+  });
+});
+
 describe("Rol 'supervisor': lectura del Centro de Comando + bloqueo de admin-only", () => {
   let supervisorCookie = "";
   beforeAll(async () => {
