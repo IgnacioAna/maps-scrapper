@@ -548,6 +548,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const q = queryInput.value.trim();
       const l = locationInput.value.trim();
       if (!q) return;
+      // Si hay multiples keywords, no auto-sugerir (cada una tiene su propio
+      // contador independiente y combinarlas da numeros absurdos).
+      const lineCount = q.split(/\r?\n/).filter(line => line.trim()).length;
+      if (lineCount > 1) {
+        startPageInput.value = 1;
+        return;
+      }
       try {
         const r = await fetch(apiUrl(`/api/history/suggest-page?query=${encodeURIComponent(q)}&location=${encodeURIComponent(l)}`));
         const { suggestedPage } = await r.json();
@@ -555,7 +562,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             startPageInput.value = suggestedPage;
             startPageInput.style.color = 'var(--primary-color)';
             startPageInput.style.borderColor = 'var(--primary-color)';
-            setTimeout(() => { 
+            setTimeout(() => {
                 startPageInput.style.color = '';
                 startPageInput.style.borderColor = '';
             }, 1000);

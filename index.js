@@ -2261,7 +2261,17 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
   const { query, location } = req.query;
   const history = loadHistory();
   if (!history.lastPages) history.lastPages = {};
-  
+
+  // BUGFIX: si vienen MULTIPLES keywords (split por \n), el fuzzy match cuenta
+  // entries de todas las keywords como si fueran una sola y devuelve numeros
+  // absurdos (ej: 91 paginas). No tiene sentido sugerir una pagina para
+  // multiples keywords con paginacion independiente — devolvemos 1 y que el
+  // user ajuste manualmente.
+  const queryLines = String(query || '').split(/\r?\n/).map(q => q.trim()).filter(Boolean);
+  if (queryLines.length > 1) {
+    return res.json({ suggestedPage: 1, reason: 'multiple-keywords' });
+  }
+
   const locs = location ? location.split(';').map(l => l.trim()).filter(Boolean) : [''];
   let maxSuggested = 1;
 
