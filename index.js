@@ -721,7 +721,7 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // Quién está conectado (solo admin)
-app.get('/api/auth/online', requireRole('admin'), (req, res) => {
+app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
   const now = Date.now();
   const ONLINE_THRESHOLD = 2 * 60 * 1000; // 2 min
   const RECENT_THRESHOLD = 30 * 60 * 1000; // 30 min
@@ -787,7 +787,7 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/auth/users', requireAuth, requireRole('admin'), (req, res) => {
+app.get('/api/auth/users', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const data = loadAuthData();
   res.json({ users: data.users.map(publicUser), invites: data.invites });
 });
@@ -976,7 +976,7 @@ app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), asy
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
   if (!name || !email || !role) return res.status(400).json({ error: 'Nombre, email y rol son requeridos.' });
-  if (!['admin', 'setter'].includes(role)) return res.status(400).json({ error: 'Rol inválido.' });
+  if (!['admin', 'supervisor', 'setter'].includes(role)) return res.status(400).json({ error: 'Rol inválido.' });
 
   const data = loadAuthData();
   if (data.users.find((u) => u.email.toLowerCase() === String(email).toLowerCase())) {
@@ -3291,7 +3291,7 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
 });
 
 // ── Centro de comando: stats por setter ──
-app.get('/api/setters/command', requireAuth, requireRole('admin'), (req, res) => {
+app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const data = loadSettersData();
   const allLeads = Object.values(data.leads);
 

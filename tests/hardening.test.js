@@ -231,6 +231,68 @@ describe("POST /api/auth/accept-invite — auto-login con cookie de sesion", () 
   });
 });
 
+describe("Rol 'supervisor': lectura del Centro de Comando + bloqueo de admin-only", () => {
+  let supervisorCookie = "";
+  beforeAll(async () => {
+    // Crear invite de supervisor (admin-only, asi que usamos cookie de admin)
+    const inv = await request(app).post("/api/auth/invites").set("Cookie", cookie).send({
+      name: "Sup Paula", email: "supervisor-test@local.test", role: "supervisor", sendEmail: false
+    });
+    expect(inv.status).toBe(200);
+    expect(inv.body.invite.role).toBe("supervisor");
+    // Aceptar invite con auto-login
+    const accept = await request(app).post("/api/auth/accept-invite").send({
+      token: inv.body.invite.token, password: "supervisor123"
+    });
+    expect(accept.status).toBe(200);
+    expect(accept.body.user.role).toBe("supervisor");
+    const setCookies = accept.headers["set-cookie"] || [];
+    const sessionCookie = setCookies.find(c => /^gs_session=/.test(c));
+    supervisorCookie = sessionCookie.split(";")[0];
+  });
+
+  it("supervisor PUEDE leer /api/setters/command", async () => {
+    const r = await request(app).get("/api/setters/command").set("Cookie", supervisorCookie);
+    expect(r.status).toBe(200);
+    expect(r.body.totals).toBeTruthy();
+  });
+
+  it("supervisor PUEDE leer /api/auth/users (ver el equipo)", async () => {
+    const r = await request(app).get("/api/auth/users").set("Cookie", supervisorCookie);
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.users)).toBe(true);
+  });
+
+  it("supervisor PUEDE leer /api/auth/online (quien esta conectado)", async () => {
+    const r = await request(app).get("/api/auth/online").set("Cookie", supervisorCookie);
+    expect(r.status).toBe(200);
+  });
+
+  it("supervisor NO PUEDE crear invitaciones (admin only)", async () => {
+    const r = await request(app).post("/api/auth/invites").set("Cookie", supervisorCookie).send({
+      name: "Otro", email: "otro@local.test", role: "setter"
+    });
+    expect(r.status).toBe(403);
+  });
+
+  it("supervisor NO PUEDE eliminar setters (admin only)", async () => {
+    const r = await request(app).delete("/api/setters/team/cualquier-id").set("Cookie", supervisorCookie);
+    expect(r.status).toBe(403);
+  });
+
+  it("supervisor NO PUEDE scrapear (admin only)", async () => {
+    const r = await request(app).post("/api/scrape").set("Cookie", supervisorCookie).send({
+      query: "test", location: "Buenos Aires", maxPages: 1
+    });
+    expect(r.status).toBe(403);
+  });
+
+  it("supervisor NO PUEDE importar data (admin only)", async () => {
+    const r = await request(app).post("/api/admin/import-data").set("Cookie", supervisorCookie).send({});
+    expect(r.status).toBe(403);
+  });
+});
+
 describe("DELETE /api/setters/team/:id — cascada completa (user borrado + leads liberados + sesiones e invites revocadas)", () => {
   it("borra setter + libera leads asignados + BORRA user asociado + revoca sesiones e invites", async () => {
     // 1) Crear setter (el endpoint devuelve { setters: [...] })

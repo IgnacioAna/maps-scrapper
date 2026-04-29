@@ -2918,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         variableCountBySetter.set(v.setterId, (variableCountBySetter.get(v.setterId) || 0) + 1);
       });
 
+      const meIsAdmin = currentUser?.role === 'admin';
       tbody.innerHTML = users.map(user => {
         const inv = inviteMap.get((user.email || '').toLowerCase());
         const varCount = user.role === 'setter' ? (variableCountBySetter.get(user.setterId || '') || 0) : 0;
@@ -2925,8 +2926,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         //   (a) admin: sin acciones (ya esta protegido en el backend)
         //   (b) setter sano: tiene setterId y existe en data.setters -> Editar/Duplicar/Eliminar (cascada)
         //   (c) setter HUERFANO: sin setterId o con setterId que no existe -> "Borrar usuario"
+        // Supervisor no ve acciones (es read-only sobre el equipo).
         let actions = '—';
-        if (user.role === 'setter') {
+        if (meIsAdmin && user.role === 'setter') {
           const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
           if (isOrphan) {
             actions =
