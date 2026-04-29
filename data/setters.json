@@ -59,6 +59,12 @@
       "name": "Genaro De Mori",
       "activeVariantId": "",
       "createdAt": "2026-04-28T20:16:49.746Z"
+    },
+    {
+      "id": "setter_rocio_lueje",
+      "name": "Rocio Lueje",
+      "activeVariantId": "",
+      "createdAt": "2026-04-28T21:08:25.965Z"
     }
   ],
   "variants": [
@@ -89907,13 +89913,19 @@
       "conexion": "enviada",
       "apertura": "",
       "respondio": true,
-      "calificado": false,
+      "calificado": "no",
       "interes": null,
       "estado": "respondio",
-      "notes": [],
+      "notes": [
+        {
+          "text": "Venden insumos a las clinicas",
+          "by": "Leandro",
+          "date": "2026-04-28T23:45:06.016Z"
+        }
+      ],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": "2026-04-28T18:44:35.317Z",
+      "lastContactAt": "2026-04-28T23:45:06.016Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
