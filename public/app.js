@@ -3076,6 +3076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (acts.length) actions = acts.join(' ');
         }
         // Onboarding cell: solo aplica a setters (admin/supervisor no hacen quiz)
+        // Click en la celda abre detalle por modulo (intentos, fechas, bloqueado)
         let onboardingCell = '—';
         if (user.role === 'setter') {
           const prog = progressByUser[user.id];
@@ -3086,7 +3087,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (done >= tot) { color = 'var(--success)'; bg = 'rgba(91,185,116,0.15)'; }
           else if (done > 0) { color = 'var(--info)'; bg = 'rgba(121,184,255,0.12)'; }
           const tipo = done >= tot ? '🏆' : (done > 0 ? '📚' : '🔵');
-          onboardingCell = '<span style="font-size:11px; color:' + color + '; background:' + bg + '; padding:3px 8px; border-radius:8px; font-weight:600;" title="Progreso server-side, sincronizado al aprobar cada quiz">' + tipo + ' ' + done + '/' + tot + '</span>';
+          const sname = encodeURIComponent(user.name || user.email || '');
+          onboardingCell = '<button type="button" onclick="window._showOnboardingDetail(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:11px; color:' + color + '; background:' + bg + '; padding:3px 8px; border-radius:8px; font-weight:600; border:none; cursor:pointer;" title="Click para ver detalle de intentos por modulo">' + tipo + ' ' + done + '/' + tot + ' →</button>';
         }
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
@@ -3100,6 +3102,80 @@ document.addEventListener('DOMContentLoaded', async () => {
         '</tr>';
       }).join('');
     }
+
+    // Drilldown del progreso de onboarding por modulo. Muestra cada modulo
+    // con: aprobado SI/NO, ultimo score, cuantos intentos, fecha del ultimo,
+    // y si esta bloqueado por cooldown. Asi ves quien estuvo grindeando vs
+    // quien lo hizo limpio en 1-2 intentos.
+    window._showOnboardingDetail = async (userId, userName) => {
+      let modulesMeta = [];
+      let detail = null;
+      try {
+        const [modsR, progR] = await Promise.all([
+          fetch(apiUrl('/api/onboarding/modules')),
+          fetch(apiUrl('/api/onboarding/progress/' + encodeURIComponent(userId)))
+        ]);
+        modulesMeta = (await modsR.json()).modules || [];
+        if (!progR.ok) throw new Error('No se pudo leer el progreso');
+        detail = await progR.json();
+      } catch (e) {
+        alert('Error cargando detalle: ' + e.message);
+        return;
+      }
+      const prog = detail.progreso || {};
+      const now = Date.now();
+      const rows = modulesMeta.map(m => {
+        const p = prog[String(m.num)] || {};
+        const aprobado = !!p.aprobado;
+        const intentos = p.intentos || 0;
+        const ultimo = p.ultimo_score != null ? p.ultimo_score : '—';
+        const fecha = p.ultimaFecha ? new Date(p.ultimaFecha).toLocaleString() : '—';
+        const bloq = p.bloqueadoHasta && p.bloqueadoHasta > now;
+        const bloqStr = bloq ? Math.ceil((p.bloqueadoHasta - now) / 60000) + ' min' : '—';
+        const estado = aprobado
+          ? '<span style="color:var(--success); font-weight:600;">✅ Aprobado</span>'
+          : (intentos > 0
+            ? '<span style="color:var(--warning); font-weight:600;">⚠️ Falló</span>'
+            : '<span style="color:var(--text-tertiary);">— sin intentos</span>');
+        return '<tr>' +
+          '<td style="font-weight:600;">' + m.num + '. ' + escHtml(m.title) + '</td>' +
+          '<td>' + estado + '</td>' +
+          '<td style="text-align:center;">' + intentos + '</td>' +
+          '<td style="text-align:center;">' + ultimo + '/5</td>' +
+          '<td style="font-size:11px; color:var(--text-secondary);">' + fecha + '</td>' +
+          '<td style="text-align:center; color:' + (bloq ? 'var(--warning)' : 'var(--text-tertiary)') + ';">' + bloqStr + '</td>' +
+        '</tr>';
+      }).join('');
+      const totalIntentos = Object.values(prog).reduce((s, p) => s + (p.intentos || 0), 0);
+      const aprobados = Object.values(prog).filter(p => p.aprobado).length;
+      const eficiencia = totalIntentos > 0 ? Math.round((aprobados / totalIntentos) * 100) : 0;
+      const ratioLabel = totalIntentos > 0
+        ? aprobados + ' aprobados en ' + totalIntentos + ' intentos (' + eficiencia + '% al primer intento limpio)'
+        : 'Todavía no hizo ningún quiz';
+      const html = '<div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:9999;" onclick="if(event.target===this) this.remove()">' +
+        '<div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:14px; padding:24px; max-width:900px; width:92%; max-height:88vh; overflow:auto;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<h2 style="margin:0; color:var(--text-primary);">Onboarding · ' + escHtml(userName) + '</h2>' +
+          '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
+        '</div>' +
+        '<div style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">' + ratioLabel + '</div>' +
+        '<table style="width:100%; border-collapse:collapse;"><thead><tr style="background:rgba(167,139,250,0.06);">' +
+          '<th style="text-align:left; padding:8px; font-size:12px; color:var(--text-secondary);">Módulo</th>' +
+          '<th style="text-align:left; padding:8px; font-size:12px; color:var(--text-secondary);">Estado</th>' +
+          '<th style="text-align:center; padding:8px; font-size:12px; color:var(--text-secondary);">Intentos</th>' +
+          '<th style="text-align:center; padding:8px; font-size:12px; color:var(--text-secondary);">Último</th>' +
+          '<th style="text-align:left; padding:8px; font-size:12px; color:var(--text-secondary);">Última fecha</th>' +
+          '<th style="text-align:center; padding:8px; font-size:12px; color:var(--text-secondary);">Bloqueado</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div style="font-size:11px; color:var(--text-tertiary); margin-top:14px; line-height:1.5;">' +
+          '🚨 <strong>Señales de alarma:</strong> Más de 3 intentos en un mismo módulo sugiere que está adivinando o no leyó el material. Cero intentos = no abrió el quiz.<br>' +
+          '⏳ El bloqueo se aplica automáticamente al fallar para que tenga que releer.' +
+        '</div>' +
+        '</div></div>';
+      const wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap.firstChild);
+    };
 
     // Cambiar el rol de un user (admin -> supervisor -> setter o viceversa).
     // El backend libera el setter profile + leads si pasa de setter a otro rol,
