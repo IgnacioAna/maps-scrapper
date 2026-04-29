@@ -248,6 +248,10 @@ function getSessionFromRequest(req) {
 }
 
 // Mapa en memoria: userId → { lastSeen, ip, userAgent, name, email, role }
+// El lastSeen se PERSISTE periodicamente a auth.users[].lastSeen via
+// flushOnlinePresence() para que sobreviva redeploys de Railway. Al boot
+// se carga del disco. Sin eso, cada deploy reseteaba el map y todos los
+// users aparecian como 'nunca conectados'.
 const onlinePresence = new Map();
 
 function attachAuth(req, _res, next) {
@@ -266,6 +270,61 @@ function attachAuth(req, _res, next) {
     });
   }
   next();
+}
+
+// Carga warmcache: cuando arranca el server (o despues de un redeploy),
+// poblamos el map con los lastSeen persistidos en auth.users[]. Asi el
+// histórico no se pierde con los deploys.
+function warmupOnlinePresenceFromDisk() {
+  try {
+    const data = loadAuthData();
+    let loaded = 0;
+    for (const u of (data.users || [])) {
+      if (u.lastSeen) {
+        onlinePresence.set(u.id, {
+          userId: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role,
+          lastSeen: typeof u.lastSeen === 'number' ? u.lastSeen : new Date(u.lastSeen).getTime(),
+          ip: u.lastIp || null,
+          userAgent: u.lastUserAgent || null
+        });
+        loaded++;
+      }
+    }
+    if (loaded > 0) console.log(`[presence] warmcache cargado: ${loaded} users con lastSeen del disco.`);
+  } catch (e) {
+    console.warn('[presence] warmcache fallo (no critico):', e.message);
+  }
+}
+
+// Flush periodico: vuelca lastSeen del map a auth.users[] en disco.
+// Cada 60s. Solo escribe si hay cambios para no spamear I/O.
+let _lastFlushedTimestamps = new Map();
+function flushOnlinePresence() {
+  try {
+    if (onlinePresence.size === 0) return;
+    const data = loadAuthData();
+    let dirty = false;
+    for (const [userId, p] of onlinePresence.entries()) {
+      const user = (data.users || []).find(u => u.id === userId);
+      if (!user) continue;
+      const lastFlushed = _lastFlushedTimestamps.get(userId) || 0;
+      if (p.lastSeen <= lastFlushed) continue; // sin cambio desde el ultimo flush
+      user.lastSeen = p.lastSeen;
+      if (p.ip) user.lastIp = p.ip;
+      if (p.userAgent) user.lastUserAgent = p.userAgent;
+      _lastFlushedTimestamps.set(userId, p.lastSeen);
+      dirty = true;
+    }
+    if (dirty) saveAuthData(data);
+  } catch (e) {
+    console.warn('[presence] flush fallo (no critico):', e.message);
+  }
+}
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(flushOnlinePresence, 60 * 1000); // cada 60s
 }
 
 function requireAuth(req, res, next) {
@@ -703,6 +762,7 @@ function stageLabel(stage = '') {
 }
 
 ensureAuthSeeds();
+warmupOnlinePresenceFromDisk();
 app.use('/api', attachAuth);
 app.use('/api/setters', requireAuth);
 
