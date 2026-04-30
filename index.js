@@ -1291,6 +1291,50 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 //   { setterId: "id" }            -> solo procesa leads asignados a ese setter
 //   { dryRun: true }              -> NO modifica nada, solo reporta cuantos se cambiarian
 //   { onlySuspicious: true }      -> default true: solo toca los rotos. false toca TODOS
+// Backfill: detecta leads con whatsappUrl corrupto (numeros con > 15 digitos
+// totales o que contienen "ext", "extension"). Esos son numeros que vinieron
+// del scrape/import con basura concatenada (extensiones, dos numeros pegados,
+// etc) y al hacer wa.me/XXXXX caen en ningun lado.
+// Estrategia: si la URL tiene > 15 digitos, intentamos truncar al primer
+// numero limpio. Si no se puede, limpiamos whatsappUrl (el setter vera "sin WSP"
+// y puede contactar de otra forma o dropear el lead).
+app.post('/api/admin/backfill-corrupt-phones', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, fixed: 0, cleared: 0, sample: [] });
+  let scanned = 0, fixed = 0, cleared = 0;
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    const phone = String(lead.phone || '').trim();
+    if (!phone) continue;
+    // 1) Caso "ext.": cortar antes de la extensión
+    let cleanedPhone = phone;
+    const extMatch = cleanedPhone.match(/^(.+?)\s*(?:ext|extn|extension|int)\.?\s*\d+\s*$/i);
+    if (extMatch) cleanedPhone = extMatch[1].trim();
+    const cleanedDigits = cleanedPhone.replace(/\D/g, '');
+    // 2) Caso digits absurdamente largos (>15): no podemos adivinar -> limpiar URL
+    const urlMatch = (lead.whatsappUrl || '').match(/wa\.me\/(\d+)/);
+    const urlDigits = urlMatch ? urlMatch[1] : '';
+    const isCorrupt = urlDigits.length > 15 || cleanedDigits.length > 15;
+    if (extMatch && cleanedDigits.length >= 8 && cleanedDigits.length <= 15) {
+      // Reconstruir URL con phone limpio
+      const newUrl = buildWhatsAppUrl(cleanedPhone, lead.country || '', lead.openMessage || '');
+      if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: newUrl, action: 'cleaned-ext' });
+      if (!dryRun) { lead.phone = cleanedPhone; lead.whatsappUrl = newUrl; }
+      fixed++;
+    } else if (isCorrupt) {
+      // No podemos adivinar — limpiar URL y marcar el lead para revision manual
+      if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: '(removed)', action: 'cleared-corrupt' });
+      if (!dryRun) { lead.whatsappUrl = ''; }
+      cleared++;
+    }
+  }
+  if (!dryRun && (fixed + cleared) > 0) saveSettersData(data);
+  res.json({ scanned, fixed, cleared, dryRun, sample });
+});
+
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
 // prefijo +52 (o cualquier prefijo que no sea +1) y los corrige a +1.
 // Resultado del bug en zona fronteriza Tijuana/Juarez/Reynosa donde clinicas
@@ -3239,6 +3283,15 @@ function _importLeadsCore(data, incoming, assignTo) {
 
     // Extraer teléfono limpio de URLs wa.me si viene así
     let cleanPhone = lead.phone || '';
+    // Sanear extensiones tipo "ext. 6012", "extn 1234", "int 99": las
+    // truncamos antes del marker porque sino se concatenan a los digitos
+    // del numero principal y queda un wa.me/NNNNNNNNNNNNNNNNN basura.
+    const _extMatch = String(cleanPhone).match(/^(.+?)\s*(?:ext|extn|extension|int)\.?\s*\d+\s*$/i);
+    if (_extMatch) cleanPhone = _extMatch[1].trim();
+    // Si despues de limpiar todavia queda un numero absurdamente largo (>15
+    // digitos), es senial de que el campo viene corrupto del CSV (dos numeros
+    // pegados o basura). Mejor descartarlo que generar una URL rota.
+    if (cleanPhone.replace(/\D/g, '').length > 15) cleanPhone = '';
     let importedWaUrl = lead.whatsappUrl || '';
     let importedOpenMsg = lead.openMessage || '';
     if (cleanPhone.includes('wa.me/')) {
