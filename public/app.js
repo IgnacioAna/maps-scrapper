@@ -5663,4 +5663,160 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { alert('Error: ' + e.message); }
   });
 
+  // ── Historial de scrapes (admin only) ──
+  let _shCurrentBatch = null;
+
+  function _shEsc(s) { return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+
+  function _shStateChip(b) {
+    if (b.sentToSetter) {
+      return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(91,185,116,0.12); color:#5bb974; border-radius:999px;">Enviado a ${_shEsc(b.sentToSetter.setterId)}</span>`;
+    }
+    return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border-radius:999px;">Pendiente</span>`;
+  }
+
+  async function _shLoad() {
+    try {
+      const r = await fetch('/api/admin/scrape-batches', { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      const total = document.getElementById('sh-total');
+      const tbody = document.getElementById('sh-tbody');
+      const empty = document.getElementById('sh-empty');
+      tbody.innerHTML = '';
+      if (total) total.textContent = `${d.total} batch${d.total === 1 ? '' : 'es'} guardados`;
+      if (!d.batches.length) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      for (const b of d.batches) {
+        const tr = document.createElement('tr');
+        tr.style.cssText = 'border-bottom:1px solid var(--border-color);';
+        const fecha = new Date(b.createdAt).toLocaleString();
+        const queriesShort = (b.queries || []).join(' | ').substring(0, 50) || '—';
+        const locsShort = (b.locations || []).filter(Boolean).join(' | ').substring(0, 40) || '—';
+        tr.innerHTML = `
+          <td style="padding:10px 8px; color:var(--text-secondary); font-size:12px;">${_shEsc(fecha)}</td>
+          <td style="padding:10px 8px; color:var(--text-primary);">${_shEsc(queriesShort)}</td>
+          <td style="padding:10px 8px; color:var(--text-secondary);">${_shEsc(locsShort)}</td>
+          <td style="padding:10px 8px; text-align:right; font-weight:600;">${b.resultsCount}</td>
+          <td style="padding:10px 8px; text-align:right; color:#5bb974;">${b.stats?.newCount ?? 0}</td>
+          <td style="padding:10px 8px;">${_shStateChip(b)}</td>
+          <td style="padding:10px 8px; text-align:right;"><button class="btn-secondary sh-open" data-id="${b.id}" style="font-size:11px;">Ver / Reasignar</button></td>
+        `;
+        tr.querySelector('.sh-open').addEventListener('click', () => _shOpen(b.id));
+        tbody.appendChild(tr);
+      }
+    } catch (e) {
+      alert('Error cargando historial: ' + e.message);
+    }
+  }
+
+  async function _shOpen(id) {
+    try {
+      const r = await fetch(`/api/admin/scrape-batches/${encodeURIComponent(id)}`, { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      _shCurrentBatch = d.batch;
+      const modal = document.getElementById('sh-detail-modal');
+      const title = document.getElementById('sh-modal-title');
+      const meta = document.getElementById('sh-modal-meta');
+      const already = document.getElementById('sh-modal-already-sent');
+      const setterSel = document.getElementById('sh-modal-setter');
+      const tbody = document.getElementById('sh-modal-tbody');
+
+      title.textContent = `Batch ${new Date(d.batch.createdAt).toLocaleString()}`;
+      meta.textContent = `Query: ${(d.batch.queries || []).join(' | ')} · Ubicación: ${(d.batch.locations || []).join(' | ')} · ${d.batch.results?.length || 0} leads totales`;
+
+      if (d.batch.sentToSetter) {
+        const s = d.batch.sentToSetter;
+        already.style.display = 'block';
+        already.textContent = `Ya enviado a ${s.setterId} el ${new Date(s.sentAt).toLocaleString()} (${s.imported} importados, ${s.skipped} duplicados). Reenviar lo va a deduplicar contra los leads existentes.`;
+      } else {
+        already.style.display = 'none';
+      }
+
+      // Popular selector con setters reales (vía /api/setters)
+      if (setterSel.children.length <= 1) {
+        try {
+          const sr = await fetch('/api/setters', { credentials: 'include' });
+          const sd = await sr.json();
+          for (const s of (sd.setters || sd || [])) {
+            const opt = document.createElement('option');
+            opt.value = s.id; opt.textContent = s.name;
+            setterSel.appendChild(opt);
+          }
+        } catch {}
+      }
+
+      // Render tabla con leads
+      tbody.innerHTML = '';
+      const results = Array.isArray(d.batch.results) ? d.batch.results : [];
+      for (const lead of results) {
+        const tr = document.createElement('tr');
+        tr.style.cssText = 'border-bottom:1px solid var(--border-color);';
+        const stateChip = lead.alreadyScraped
+          ? `<span class="chip" style="padding:1px 6px; font-size:10px; background:rgba(180,180,180,0.12); color:#aaa; border-radius:999px;">ya scrapeado</span>`
+          : `<span class="chip" style="padding:1px 6px; font-size:10px; background:rgba(91,185,116,0.12); color:#5bb974; border-radius:999px;">nuevo</span>`;
+        tr.innerHTML = `
+          <td style="padding:6px 8px; color:var(--text-primary);">${_shEsc(lead.name || '—')}</td>
+          <td style="padding:6px 8px; color:var(--text-secondary);">${_shEsc(lead.phone || '—')}</td>
+          <td style="padding:6px 8px; color:var(--text-secondary); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${_shEsc(lead.website || '—')}</td>
+          <td style="padding:6px 8px; color:var(--text-secondary);">${_shEsc(lead.city || lead.locationSearched || '—')}</td>
+          <td style="padding:6px 8px;">${stateChip}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      modal.style.display = 'flex';
+    } catch (e) { alert('Error abriendo batch: ' + e.message); }
+  }
+
+  document.querySelector('[data-target="view-scrape-history"]')?.addEventListener('click', () => {
+    setTimeout(() => _shLoad(), 80);
+  });
+  document.getElementById('sh-refresh')?.addEventListener('click', () => _shLoad());
+  document.getElementById('sh-modal-close')?.addEventListener('click', () => {
+    document.getElementById('sh-detail-modal').style.display = 'none';
+  });
+
+  document.getElementById('sh-modal-send')?.addEventListener('click', async () => {
+    if (!_shCurrentBatch) return;
+    const setterId = document.getElementById('sh-modal-setter').value;
+    if (!setterId) { alert('Elegí un setter primero.'); return; }
+    const onlyNew = document.getElementById('sh-modal-onlynew').checked;
+    if (!confirm(`Enviar ${onlyNew ? 'los nuevos' : 'TODOS'} los leads de este batch al setter seleccionado? Los ya importados se van a saltar por dedup.`)) return;
+    const btn = document.getElementById('sh-modal-send');
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const r = await fetch(`/api/admin/scrape-batches/${encodeURIComponent(_shCurrentBatch.id)}/send-to-setter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ setterId, onlyNew }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      alert(`Enviados: ${d.imported} · Saltados (dedup): ${d.skipped}`);
+      document.getElementById('sh-detail-modal').style.display = 'none';
+      _shLoad();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Enviar a setter';
+    }
+  });
+
+  document.getElementById('sh-modal-delete')?.addEventListener('click', async () => {
+    if (!_shCurrentBatch) return;
+    if (!confirm('Borrar este batch del historial? No se puede deshacer y los leads del batch dejan de ser recuperables.')) return;
+    try {
+      const r = await fetch(`/api/admin/scrape-batches/${encodeURIComponent(_shCurrentBatch.id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!r.ok) throw new Error('http ' + r.status);
+      document.getElementById('sh-detail-modal').style.display = 'none';
+      _shLoad();
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+
   });

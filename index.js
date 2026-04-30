@@ -2241,6 +2241,29 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
   return { results, hasMoreResults };
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── SCRAPE BATCHES: persistencia de cada scrape para no perder data ──
+// Cada batch guarda los results COMPLETOS (con phones/webs/etc.) para
+// que el admin pueda recuperarlos despues sin re-scrapear (no gastar
+// creditos SerpAPI). Persiste en data/scrape_batches.json. FIFO cap 50.
+// ══════════════════════════════════════════════════════════════
+const SCRAPE_BATCHES_FILE = path.join(process.cwd(), "data", "scrape_batches.json");
+
+function loadScrapeBatches() {
+  // Path final lo computa lazy en runtime usando DATA_DIR cuando ya esta seteado.
+  const file = path.join(typeof DATA_DIR !== 'undefined' ? DATA_DIR : path.join(process.cwd(), "data"), "scrape_batches.json");
+  try {
+    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (e) { console.error("[scrape-batches] load:", e.message); }
+  return { batches: [] };
+}
+
+function saveScrapeBatches(data) {
+  const file = path.join(typeof DATA_DIR !== 'undefined' ? DATA_DIR : path.join(process.cwd(), "data"), "scrape_batches.json");
+  try { fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("[scrape-batches] save:", e.message); }
+}
+
 // ── Endpoint principal ──
 app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async (req, res) => {
   const { query, location, maxPages = 1, startPage = 1 } = req.body;
@@ -2400,7 +2423,44 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     }
     console.log(`Nuevos: ${newResults.length} | Ya scrapeados: ${oldResults.length} | Total en historial: ${totalInHistory}`);
 
+    // PERSISTENCIA del batch: si el admin refresca antes de "Enviar a Setters",
+    // el batch sigue accesible desde view-scrape-history. NO depende del frontend
+    // tener los results en memoria.
+    const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    try {
+      const batchesData = loadScrapeBatches();
+      batchesData.batches = Array.isArray(batchesData.batches) ? batchesData.batches : [];
+      batchesData.batches.push({
+        id: batchId,
+        createdAt: searchTimestamp,
+        createdBy: req.auth?.user?.name || req.auth?.user?.email || "admin",
+        createdById: req.auth?.user?.id || "",
+        params: { query, location, maxPages, startPage },
+        queries,
+        locations,
+        stats: {
+          newCount: newResults.length,
+          alreadyScrapedCount: oldResults.length,
+          totalBeforeFilter: allResults.length,
+          dedupRemoved: dedupCount,
+          removedNoContact: removed,
+          locationsSearched: locations.length,
+        },
+        results: contactableResults,
+        sentToSetter: null,
+        enrichmentStatus: "none",
+      });
+      // FIFO cap: 50 batches mas recientes (para que el archivo no crezca infinito).
+      if (batchesData.batches.length > 50) {
+        batchesData.batches = batchesData.batches.slice(-50);
+      }
+      saveScrapeBatches(batchesData);
+    } catch (e) {
+      console.warn("[scrape] No pude persistir batch:", e.message);
+    }
+
     res.json({
+      batchId,
       results: contactableResults,
       newCount: newResults.length,
       alreadyScrapedCount: oldResults.length,
@@ -3039,15 +3099,16 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   res.json({ leads });
 });
 
-app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
-  try {
-  const { leads: incoming, assignTo } = req.body;
+// Helper compartido: importa un array de leads asignandolos a un setter.
+// Reutilizado por /api/setters/import (admin manual) y por
+// /api/admin/scrape-batches/:id/send-to-setter (re-importar batch sin re-scrapear).
+// Devuelve { ok, imported, skipped, total } o { ok:false, status, error }.
+function _importLeadsToSetters(incoming, assignTo) {
   if (!incoming || !Array.isArray(incoming) || incoming.length === 0) {
-    return res.status(400).json({ error: "No hay leads para importar." });
+    return { ok: false, status: 400, error: "No hay leads para importar." };
   }
-  // Validación: max 10000 leads por batch + cada lead debe tener al menos name o phone
   if (incoming.length > 10000) {
-    return res.status(413).json({ error: `Demasiados leads en un solo batch (max 10000, recibidos ${incoming.length}).` });
+    return { ok: false, status: 413, error: `Demasiados leads en un solo batch (max 10000, recibidos ${incoming.length}).` };
   }
   const malformed = incoming.findIndex((l) => {
     if (!l || typeof l !== 'object') return true;
@@ -3056,9 +3117,14 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     return !hasName && !hasPhone;
   });
   if (malformed >= 0) {
-    return res.status(400).json({ error: `Lead #${malformed + 1} inválido: requiere al menos 'name' o 'phone' string no vacío.` });
+    return { ok: false, status: 400, error: `Lead #${malformed + 1} inválido: requiere al menos 'name' o 'phone' string no vacío.` };
   }
+
   const data = loadSettersData();
+  return _importLeadsCore(data, incoming, assignTo);
+}
+
+function _importLeadsCore(data, incoming, assignTo) {
   let imported = 0, skipped = 0;
   // Buscar el num más alto actual
   let maxNum = 0;
@@ -3167,11 +3233,102 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     imported++;
   }
   saveSettersData(data);
-  res.json({ imported, skipped, total: Object.keys(data.leads).length });
+  return { ok: true, imported, skipped, total: Object.keys(data.leads).length };
+}
+
+app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const { leads: incoming, assignTo } = req.body;
+    const out = _importLeadsToSetters(incoming, assignTo);
+    if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
+    res.json({ imported: out.imported, skipped: out.skipped, total: out.total });
   } catch (err) {
     console.error('Error en /api/setters/import:', err);
     res.status(500).json({ error: err.message || 'Error importando leads' });
   }
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── SCRAPE BATCHES: endpoints (admin only) ──
+// ══════════════════════════════════════════════════════════════
+
+// GET /api/admin/scrape-batches — lista resumida (sin results para no inflar response)
+app.get("/api/admin/scrape-batches", requireAuth, requireRole("admin"), (req, res) => {
+  const data = loadScrapeBatches();
+  const list = (data.batches || []).map((b) => ({
+    id: b.id,
+    createdAt: b.createdAt,
+    createdBy: b.createdBy,
+    params: b.params,
+    queries: b.queries,
+    locations: b.locations,
+    stats: b.stats,
+    resultsCount: Array.isArray(b.results) ? b.results.length : 0,
+    sentToSetter: b.sentToSetter,
+    enrichmentStatus: b.enrichmentStatus,
+  })).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  res.json({ total: list.length, batches: list });
+});
+
+// GET /api/admin/scrape-batches/:id — devuelve el batch completo con results
+app.get("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (req, res) => {
+  const data = loadScrapeBatches();
+  const batch = (data.batches || []).find((b) => b.id === req.params.id);
+  if (!batch) return res.status(404).json({ error: "Batch no encontrado." });
+  res.json({ batch });
+});
+
+// POST /api/admin/scrape-batches/:id/send-to-setter — body: { setterId, onlyNew? }
+// Envia los leads del batch a un setter usando el helper compartido. Marca el
+// batch como sentToSetter. Si onlyNew=true, solo envia los que tienen
+// alreadyScraped=false (los nuevos del momento del scrape original).
+app.post("/api/admin/scrape-batches/:id/send-to-setter", requireAuth, requireRole("admin"), (req, res) => {
+  const { setterId, onlyNew = false } = req.body || {};
+  if (!setterId || !String(setterId).trim()) {
+    return res.status(400).json({ error: "setterId requerido." });
+  }
+  const data = loadScrapeBatches();
+  const idx = (data.batches || []).findIndex((b) => b.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Batch no encontrado." });
+  const batch = data.batches[idx];
+
+  let leadsToSend = Array.isArray(batch.results) ? batch.results : [];
+  if (onlyNew) {
+    leadsToSend = leadsToSend.filter((l) => !l.alreadyScraped);
+  }
+  if (leadsToSend.length === 0) {
+    return res.status(400).json({ error: "El batch no tiene leads para enviar (con el filtro aplicado)." });
+  }
+
+  const out = _importLeadsToSetters(leadsToSend, setterId);
+  if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
+
+  batch.sentToSetter = {
+    setterId,
+    sentAt: new Date().toISOString(),
+    sentBy: req.auth.user.name || req.auth.user.email,
+    imported: out.imported,
+    skipped: out.skipped,
+    onlyNew: !!onlyNew,
+  };
+  saveScrapeBatches(data);
+  res.json({
+    ok: true,
+    imported: out.imported,
+    skipped: out.skipped,
+    total: out.total,
+    batch: { id: batch.id, sentToSetter: batch.sentToSetter },
+  });
+});
+
+// DELETE /api/admin/scrape-batches/:id — borrar batch (cleanup manual)
+app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (req, res) => {
+  const data = loadScrapeBatches();
+  const before = (data.batches || []).length;
+  data.batches = (data.batches || []).filter((b) => b.id !== req.params.id);
+  if (data.batches.length === before) return res.status(404).json({ error: "Batch no encontrado." });
+  saveScrapeBatches(data);
+  res.json({ ok: true, remaining: data.batches.length });
 });
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──

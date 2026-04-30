@@ -1092,6 +1092,28 @@
       "updatedAt": "2026-04-30T01:14:36.933Z",
       "usos": 0,
       "funcionaron": 0
+    },
+    {
+      "id": "faq_promoted_1777513035722_2a5ew",
+      "pregunta": "que propone",
+      "respuesta": "Entiendo que quiere saber qué proponemos.\n\nNuestro sistema se conecta a la base de pacientes que ya tiene la clínica y, de forma automatizada, reactiva a quienes dejaron de venir, sigue presupuestos pendientes, gestiona no‑shows y envía contenidos post‑turno. Así se genera un flujo constante de citas sin que el equipo tenga que hacerlo manualmente.\n\nLe parece si coordinamos una llamada corta para mostrarle cómo funciona en su caso? Mañana o el miércoles?",
+      "categoria": "general",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-04-30T01:37:15.722Z",
+      "updatedAt": "2026-04-30T01:37:15.722Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
     }
   ]
 }

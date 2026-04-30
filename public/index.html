@@ -149,6 +149,10 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>Llamadas agendadas <span id="scheduled-badge" class="chip" style="margin-left:auto; background:var(--accent-soft); color:var(--accent); display:none; padding:1px 7px; font-size:10px;">0</span></span>
           </a>
+          <a href="#" class="menu-item" data-target="view-scrape-history" data-label="Historial de scrapes" data-roles="admin">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <span>Historial de scrapes</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-team" data-label="Equipo" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Equipo</span>
@@ -1254,6 +1258,84 @@
         </section>
       </div>
 
+      <!-- Historial de scrapes (admin only) -->
+      <div id="view-scrape-history" class="module-view hidden" data-roles="admin">
+        <header class="page-header">
+          <h2 class="page-title">Historial de scrapes</h2>
+          <p class="muted" style="margin-top:6px;">Cada scrape se guarda completo (con phones, webs, etc.). Si te olvidaste de enviar a un setter, podés re-importar acá sin gastar créditos de SerpAPI.</p>
+        </header>
+
+        <section style="margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button id="sh-refresh" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Actualizar</button>
+          <span id="sh-total" class="muted" style="font-size:12px;">—</span>
+          <span class="muted" style="font-size:11px; margin-left:auto;">Cap FIFO 50 batches</span>
+        </section>
+
+        <section style="margin-top:18px; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="text-align:left; border-bottom:1px solid var(--border-color);">
+                <th style="padding:10px 8px;">Fecha</th>
+                <th style="padding:10px 8px;">Query</th>
+                <th style="padding:10px 8px;">Ubicación</th>
+                <th style="padding:10px 8px; text-align:right;">Leads</th>
+                <th style="padding:10px 8px; text-align:right;">Nuevos</th>
+                <th style="padding:10px 8px;">Estado</th>
+                <th style="padding:10px 8px;"></th>
+              </tr>
+            </thead>
+            <tbody id="sh-tbody"></tbody>
+          </table>
+        </section>
+
+        <div id="sh-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">Todavía no hay scrapes guardados. Hacé un scrape desde Google Maps y volvé acá.</div>
+
+        <!-- Modal detalle batch + asignar -->
+        <div id="sh-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:flex-start; justify-content:center; overflow-y:auto; padding:20px;">
+          <div class="card" style="width:min(960px, 96vw); padding:20px; max-height:90vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+              <div>
+                <h3 style="margin:0; font-size:16px;" id="sh-modal-title">Batch</h3>
+                <div class="muted" style="font-size:12px; margin-top:4px;" id="sh-modal-meta">—</div>
+              </div>
+              <button id="sh-modal-close" class="btn-secondary" style="font-size:12px;">Cerrar</button>
+            </div>
+
+            <div id="sh-modal-already-sent" style="display:none; padding:10px 12px; border-radius:8px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.4); color:#5bb974; font-size:12px; margin-bottom:12px;"></div>
+
+            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Asignar a</label>
+                <select id="sh-modal-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+                  <option value="">— Elegir setter —</option>
+                </select>
+              </div>
+              <label style="display:flex; gap:6px; align-items:center; font-size:12px; color:var(--text-secondary);">
+                <input id="sh-modal-onlynew" type="checkbox" checked>
+                Solo enviar los nuevos (no ya scrapeados antes)
+              </label>
+              <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a setter</button>
+              <button id="sh-modal-delete" class="btn-secondary" style="font-size:12px; padding:8px 14px; color:#f85149; margin-left:auto;">Borrar batch</button>
+            </div>
+
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                  <tr style="text-align:left; border-bottom:1px solid var(--border-color); color:var(--text-secondary);">
+                    <th style="padding:6px 8px;">Nombre</th>
+                    <th style="padding:6px 8px;">Teléfono</th>
+                    <th style="padding:6px 8px;">Web</th>
+                    <th style="padding:6px 8px;">Ciudad</th>
+                    <th style="padding:6px 8px;">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="sh-modal-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Equipo (admin + supervisor) -->
       <div id="view-team" class="module-view hidden" data-roles="admin,supervisor">
         <header class="page-header">
@@ -1447,7 +1529,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429l"></script>
+  <script type="module" src="/app.js?v=20260429m"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
