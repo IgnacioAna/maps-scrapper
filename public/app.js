@@ -555,6 +555,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         startPageInput.value = 1;
         return;
       }
+      // Sin pais/ciudad seleccionada no tiene sentido sugerir paginas — el
+      // paging es por (query + ciudad). Sin ciudad, default a 1 y esperar.
+      if (!l) {
+        startPageInput.value = 1;
+        return;
+      }
       try {
         const r = await fetch(apiUrl(`/api/history/suggest-page?query=${encodeURIComponent(q)}&location=${encodeURIComponent(l)}`));
         const { suggestedPage } = await r.json();
@@ -4849,5 +4855,119 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (currentUser?.role === 'admin') {
     setTimeout(() => loadSystemHealth(), 2000);
   }
+
+  // ── Configuración Mercury (admin) ──
+  async function loadMercuryConfig() {
+    try {
+      const r = await fetch('/api/mercury/config', { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const cfg = await r.json();
+      const promptEl = document.getElementById('mercury-cfg-prompt');
+      const verEl = document.getElementById('mercury-cfg-version');
+      const updEl = document.getElementById('mercury-cfg-updated');
+      const upbEl = document.getElementById('mercury-cfg-updatedby');
+      const ccEl = document.getElementById('mercury-cfg-charcount');
+      if (promptEl) promptEl.value = cfg.systemPrompt || '';
+      if (verEl) verEl.textContent = cfg.version ?? '—';
+      if (updEl) updEl.textContent = cfg.updatedAt ? new Date(cfg.updatedAt).toLocaleString() : '—';
+      if (upbEl) upbEl.textContent = cfg.updatedBy || '—';
+      if (ccEl) ccEl.textContent = (cfg.systemPrompt || '').length;
+      _renderMercuryNotes(cfg.feedbackNotes || []);
+    } catch (e) {
+      alert('Error cargando config Mercury: ' + e.message);
+    }
+  }
+
+  function _renderMercuryNotes(notes) {
+    const ul = document.getElementById('mercury-cfg-notes');
+    const empty = document.getElementById('mercury-cfg-notes-empty');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (!notes.length) { if (empty) empty.style.display = 'block'; return; }
+    if (empty) empty.style.display = 'none';
+    const ordered = [...notes].reverse();
+    for (const n of ordered) {
+      const li = document.createElement('li');
+      li.style.cssText = 'display:flex; gap:10px; padding:10px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-app); align-items:flex-start;';
+      li.innerHTML = `
+        <div style="flex:1; min-width:0;">
+          <div class="mn-text" style="font-size:13px; line-height:1.45; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;"></div>
+          <div class="muted" style="font-size:11px; margin-top:4px;"><span class="meta-by"></span> · <span class="meta-at"></span></div>
+        </div>
+        <button class="btn-table-action btn-del" style="font-size:11px; color:#f85149;">Borrar</button>
+      `;
+      li.querySelector('.mn-text').textContent = n.text || '';
+      li.querySelector('.meta-by').textContent = n.addedBy || '—';
+      li.querySelector('.meta-at').textContent = n.addedAt ? new Date(n.addedAt).toLocaleString() : '';
+      li.querySelector('.btn-del').addEventListener('click', async () => {
+        if (!confirm('Borrar esta nota?')) return;
+        try {
+          const r = await fetch(`/api/mercury/config/notes/${encodeURIComponent(n.id)}`, { method: 'DELETE', credentials: 'include' });
+          if (!r.ok) throw new Error('http ' + r.status);
+          loadMercuryConfig();
+        } catch (e) { alert('Error: ' + e.message); }
+      });
+      ul.appendChild(li);
+    }
+  }
+
+  document.querySelector('[data-target="view-mercury-config"]')?.addEventListener('click', () => {
+    setTimeout(() => loadMercuryConfig(), 50);
+  });
+
+  document.getElementById('mercury-cfg-prompt')?.addEventListener('input', (e) => {
+    const cc = document.getElementById('mercury-cfg-charcount');
+    if (cc) cc.textContent = e.target.value.length;
+  });
+
+  document.getElementById('mercury-cfg-save')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const prompt = document.getElementById('mercury-cfg-prompt')?.value || '';
+    if (!prompt.trim()) { alert('El prompt no puede estar vacio.'); return; }
+    if (prompt.length > 20000) { alert('El prompt excede 20000 caracteres.'); return; }
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const r = await fetch('/api/mercury/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ systemPrompt: prompt }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      btn.textContent = 'Guardado';
+      setTimeout(() => { btn.textContent = 'Guardar prompt'; btn.disabled = false; }, 1500);
+      loadMercuryConfig();
+    } catch (err) {
+      alert('Error: ' + err.message);
+      btn.textContent = 'Guardar prompt'; btn.disabled = false;
+    }
+  });
+
+  document.getElementById('mercury-cfg-reset')?.addEventListener('click', async () => {
+    if (!confirm('Restaurar el system prompt al original? La version va a bumpear pero no perdes notas.')) return;
+    try {
+      const r = await fetch('/api/mercury/config/reset-prompt', { method: 'POST', credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      loadMercuryConfig();
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+
+  document.getElementById('mercury-cfg-addnote')?.addEventListener('click', async () => {
+    const inp = document.getElementById('mercury-cfg-newnote');
+    const text = (inp?.value || '').trim();
+    if (!text) return;
+    try {
+      const r = await fetch('/api/mercury/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ addNote: text }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'http ' + r.status); }
+      if (inp) inp.value = '';
+      loadMercuryConfig();
+    } catch (e) { alert('Error: ' + e.message); }
+  });
 
   });

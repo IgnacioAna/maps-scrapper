@@ -2452,7 +2452,16 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
     return res.json({ suggestedPage: 1, reason: 'multiple-keywords' });
   }
 
-  const locs = location ? location.split(';').map(l => l.trim()).filter(Boolean) : [''];
+  // BUGFIX: si no hay location seleccionada, no podemos sugerir nada coherente.
+  // El paging de Google Maps es por (query + ciudad), asi que sin ciudad
+  // todas las entradas de history matchearian (`includes('')` es siempre true)
+  // y devolveriamos paginas absurdas (ej: 259 paginas para "clinica" porque
+  // contaba TODAS las clinicas de TODAS las ciudades historicas). Devolvemos 1
+  // y que el user setee la ciudad antes de ver una sugerencia real.
+  const locs = location ? location.split(';').map(l => l.trim()).filter(Boolean) : [];
+  if (locs.length === 0) {
+    return res.json({ suggestedPage: 1, reason: 'no-location' });
+  }
   let maxSuggested = 1;
 
   if (query) {
@@ -4865,6 +4874,199 @@ Devolvé SOLO el/los bloque(s) de texto, nada más.`;
     console.error('Error FAQ suggest IA:', e.message);
     res.status(500).json({ error: 'Error de IA: ' + e.message });
   }
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── MÓDULO MERCURY (Asistente de respuestas + Revisión IA) ──
+// Helpers compartidos. Endpoints en fases siguientes.
+// ══════════════════════════════════════════════════════════════
+
+// Aplica las reglas de estilo SCM a un output de Mercury:
+// - Sin signos de apertura ¿ ¡ (solo los de cierre)
+// - Bloques separados por doble salto de linea, normalizados
+// - Trim global, max 4 bloques, max 800 chars por bloque
+// - Bullets con "-" se preservan
+// Devuelve { text, blocks } donde text es el output final pegable y
+// blocks es el array de mensajes WhatsApp separados.
+function sanitizeMercuryStyle(input) {
+  if (input == null) return { text: '', blocks: [] };
+  let s = String(input);
+  // 1. Strip signos de apertura ¿ ¡ (cualquier posicion).
+  s = s.replace(/[¿¡]/g, '');
+  // 2. Normalizar fin de linea.
+  s = s.replace(/\r\n?/g, '\n');
+  // 3. Trim por linea (preserva indentacion de bullets).
+  s = s.split('\n').map((ln) => ln.replace(/[ \t]+$/g, '')).join('\n');
+  // 4. Colapsar 3+ saltos a doble salto.
+  s = s.replace(/\n{3,}/g, '\n\n');
+  // 5. Trim global.
+  s = s.trim();
+  // 6. Partir en bloques por doble salto.
+  let blocks = s.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  // 7. Cap a 4 bloques (la mayoria de respuestas Mercury son 1-3).
+  if (blocks.length > 4) blocks = blocks.slice(0, 4);
+  // 8. Cap longitud por bloque.
+  blocks = blocks.map((b) => (b.length > 800 ? b.substring(0, 800).trim() : b));
+  return { text: blocks.join('\n\n'), blocks };
+}
+
+// Detecta menciones que Mercury NUNCA debe hacer (precios, stack, modalidad pago).
+// Devuelve array de issues encontrados (no muta el texto).
+function detectMercuryViolations(text) {
+  if (!text) return [];
+  const out = [];
+  const lower = String(text).toLowerCase();
+  // Precios concretos: cifras con $ / USD / pesos / monto + numero.
+  if (/\$\s?\d/.test(lower) || /\b(usd|us\$|u\$s|pesos?|dolares?)\s*\d/i.test(text) || /\b\d{2,}\s?(usd|dolares?|pesos?)/i.test(lower)) {
+    out.push('precio_concreto');
+  }
+  // Modalidad pago.
+  if (/\b(cuotas?|mensualidad|pago unico|pago único|mantenimiento mensual|fee mensual)\b/i.test(lower)) {
+    out.push('modalidad_pago');
+  }
+  // Stack tecnico mencionado al prospecto.
+  if (/\b(ghl|gohighlevel|n8n|openai|whatsapp api|whatsapp business api|ai agent|ai agents|claude|gpt-?\d)\b/i.test(lower)) {
+    out.push('stack_tecnico');
+  }
+  return out;
+}
+
+// Export para tests (vitest puede importar via import { sanitizeMercuryStyle } from "../index.js"
+// pero index.js arranca el server; los tests usan setup con DATA_DIR para evitar side effects).
+// Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
+globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations };
+
+// ── Config Mercury: system prompt editable + feedback notes (admin only) ──
+const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
+const MERCURY_PROMPT_SEED_FILE = path.join(process.cwd(), "scripts", "seed", "mercury-system-prompt.md");
+
+function _defaultMercurySystemPrompt() {
+  try {
+    if (fs.existsSync(MERCURY_PROMPT_SEED_FILE)) {
+      return fs.readFileSync(MERCURY_PROMPT_SEED_FILE, "utf8").trim();
+    }
+  } catch (e) {
+    console.warn("[mercury] No pude leer seed prompt:", e.message);
+  }
+  return "Sos Mercury, un asistente de IA que ayuda a setters SCM Dental a redactar respuestas en WhatsApp. Reglas: sin signos de apertura ¿¡, bloques separados por doble salto, sin precios, sin stack tecnico, sin emojis, registro profesional natural. V→R→R en objeciones.";
+}
+
+function loadMercuryConfig() {
+  try {
+    if (fs.existsSync(MERCURY_CONFIG_FILE)) {
+      const cfg = JSON.parse(fs.readFileSync(MERCURY_CONFIG_FILE, "utf8"));
+      if (!cfg.systemPrompt) cfg.systemPrompt = _defaultMercurySystemPrompt();
+      if (!Array.isArray(cfg.feedbackNotes)) cfg.feedbackNotes = [];
+      if (typeof cfg.version !== "number") cfg.version = 1;
+      return cfg;
+    }
+  } catch (e) { console.error("[mercury] Error leyendo config:", e.message); }
+  // Lazy init: primer arranque (o tras DATA_DIR limpio) crea el file con el seed.
+  const seeded = {
+    systemPrompt: _defaultMercurySystemPrompt(),
+    feedbackNotes: [],
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system_seed",
+  };
+  try { fs.writeFileSync(MERCURY_CONFIG_FILE, JSON.stringify(seeded, null, 2), "utf8"); }
+  catch (e) { console.warn("[mercury] No pude escribir seed config:", e.message); }
+  return seeded;
+}
+
+function saveMercuryConfig(cfg) {
+  try { fs.writeFileSync(MERCURY_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+  catch (e) { console.error("[mercury] Error guardando config:", e.message); }
+}
+
+// GET /api/mercury/config — admin lee config completo. Setter solo recibe metadata
+// (que el systemPrompt no se filtre a setters innecesariamente).
+app.get("/api/mercury/config", requireAuth, (req, res) => {
+  const cfg = loadMercuryConfig();
+  const isAdmin = req.auth?.user?.role === "admin";
+  if (!isAdmin) {
+    return res.json({
+      version: cfg.version,
+      updatedAt: cfg.updatedAt,
+      systemPromptLength: (cfg.systemPrompt || "").length,
+      feedbackNotesCount: (cfg.feedbackNotes || []).length,
+    });
+  }
+  res.json(cfg);
+});
+
+// PUT /api/mercury/config — solo admin. Acepta { systemPrompt?, feedbackNotes? }.
+// Cada update bumpea version. systemPrompt se valida (no vacio, max 20k chars).
+// feedbackNotes es array de { id, text, addedBy, addedAt } — la rotacion la hace
+// el endpoint (max 50 notas, FIFO).
+app.put("/api/mercury/config", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadMercuryConfig();
+  const { systemPrompt, feedbackNotes, addNote } = req.body || {};
+  let changed = false;
+
+  if (typeof systemPrompt === "string") {
+    const trimmed = systemPrompt.trim();
+    if (!trimmed) return res.status(400).json({ error: "systemPrompt no puede estar vacio." });
+    if (trimmed.length > 20000) return res.status(400).json({ error: "systemPrompt excede 20000 caracteres." });
+    cfg.systemPrompt = trimmed;
+    changed = true;
+  }
+
+  if (Array.isArray(feedbackNotes)) {
+    const sane = feedbackNotes
+      .filter((n) => n && typeof n.text === "string" && n.text.trim())
+      .map((n) => ({
+        id: n.id || `mn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        text: String(n.text).trim().substring(0, 1000),
+        addedBy: n.addedBy || req.auth.user.name || req.auth.user.email,
+        addedAt: n.addedAt || new Date().toISOString(),
+      }));
+    cfg.feedbackNotes = sane.slice(-50);
+    changed = true;
+  }
+
+  if (addNote && typeof addNote === "string" && addNote.trim()) {
+    const note = {
+      id: `mn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      text: addNote.trim().substring(0, 1000),
+      addedBy: req.auth.user.name || req.auth.user.email,
+      addedAt: new Date().toISOString(),
+    };
+    cfg.feedbackNotes = [...(cfg.feedbackNotes || []), note].slice(-50);
+    changed = true;
+  }
+
+  if (!changed) return res.status(400).json({ error: "No hay cambios. Pasa systemPrompt, feedbackNotes o addNote." });
+
+  cfg.version = (Number(cfg.version) || 0) + 1;
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveMercuryConfig(cfg);
+  res.json(cfg);
+});
+
+// DELETE /api/mercury/config/notes/:id — borrar una feedback note.
+app.delete("/api/mercury/config/notes/:id", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadMercuryConfig();
+  const before = (cfg.feedbackNotes || []).length;
+  cfg.feedbackNotes = (cfg.feedbackNotes || []).filter((n) => n.id !== req.params.id);
+  if (cfg.feedbackNotes.length === before) return res.status(404).json({ error: "Nota no encontrada." });
+  cfg.version = (Number(cfg.version) || 0) + 1;
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveMercuryConfig(cfg);
+  res.json({ ok: true, feedbackNotes: cfg.feedbackNotes });
+});
+
+// POST /api/mercury/config/reset-prompt — restaurar al seed original.
+app.post("/api/mercury/config/reset-prompt", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadMercuryConfig();
+  cfg.systemPrompt = _defaultMercurySystemPrompt();
+  cfg.version = (Number(cfg.version) || 0) + 1;
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveMercuryConfig(cfg);
+  res.json(cfg);
 });
 
 // ══════════════════════════════════════════════════════════════

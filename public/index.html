@@ -141,6 +141,10 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>Llamadas agendadas <span id="scheduled-badge" class="chip" style="margin-left:auto; background:var(--accent-soft); color:var(--accent); display:none; padding:1px 7px; font-size:10px;">0</span></span>
           </a>
+          <a href="#" class="menu-item" data-target="view-mercury-config" data-label="Configuración Mercury" data-roles="admin">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span>Configuración Mercury</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-system" data-label="Sistema" data-roles="admin">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             <span>Sistema <span id="system-health-badge" class="chip" style="margin-left:auto; display:none; padding:1px 7px; font-size:10px;">●</span></span>
@@ -1121,6 +1125,47 @@
         </section>
       </div>
 
+      <!-- Configuración Mercury (solo admin) -->
+      <div id="view-mercury-config" class="module-view hidden" data-roles="admin">
+        <header class="page-header">
+          <h2 class="page-title">Configuración Mercury</h2>
+          <p class="muted" style="margin-top:6px;">System prompt de la IA y notas de feedback que se inyectan en cada generación.</p>
+        </header>
+        <section style="margin-top:18px; display:grid; gap:18px;">
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+              <div>
+                <strong style="font-size:14px;">System prompt</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">
+                  Versión <span id="mercury-cfg-version">—</span> · Última edición <span id="mercury-cfg-updated">—</span> por <span id="mercury-cfg-updatedby">—</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button id="mercury-cfg-reset" class="btn-secondary" style="font-size:12px;">Restaurar al original</button>
+                <button id="mercury-cfg-save" class="btn-primary" style="font-size:12px;">Guardar prompt</button>
+              </div>
+            </div>
+            <textarea id="mercury-cfg-prompt" rows="22" style="width:100%; font-family:'Geist Mono',monospace; font-size:12px; line-height:1.55; padding:12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+            <div class="muted" style="font-size:11px; margin-top:6px;"><span id="mercury-cfg-charcount">0</span> / 20000 caracteres</div>
+          </div>
+
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+              <div>
+                <strong style="font-size:14px;">Notas de feedback</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Las últimas 10 se inyectan como contexto en cada generación de Mercury. Máximo 50 guardadas.</div>
+              </div>
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:12px;">
+              <input id="mercury-cfg-newnote" type="text" placeholder="Ej: cuando preguntan por software ya existente, profundizar antes de pitchear" maxlength="1000" style="flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <button id="mercury-cfg-addnote" class="btn-primary" style="font-size:12px;">Agregar nota</button>
+            </div>
+            <ul id="mercury-cfg-notes" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+            <div id="mercury-cfg-notes-empty" class="muted" style="font-size:12px; text-align:center; padding:18px 0; display:none;">Sin notas todavía.</div>
+          </div>
+        </section>
+      </div>
+
       <!-- VISTAS WA — renderizadas dinámicamente por wa.js -->
       <div id="view-wa-dashboard" class="module-view hidden" data-roles="admin"></div>
       <div id="view-wa-accounts" class="module-view hidden" data-roles="admin"></div>
@@ -1150,7 +1195,7 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429g"></script>
+  <script type="module" src="/app.js?v=20260429h"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
