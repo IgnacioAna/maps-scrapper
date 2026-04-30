@@ -1190,73 +1190,81 @@
 
       <!-- Asistente de respuestas (admin + setter) — mobile-first -->
       <div id="view-assistant" class="module-view hidden">
-        <header class="page-header">
-          <h2 class="page-title">Asistente de respuestas</h2>
-          <p class="muted" style="margin-top:6px;">Pegá el último mensaje del prospecto y generá una respuesta lista para copiar al WhatsApp.</p>
-        </header>
+        <div style="max-width:780px; margin:0 auto; padding:8px 0 60px;">
+          <header style="text-align:center; margin-bottom:28px;">
+            <div style="display:inline-flex; align-items:center; gap:10px; padding:6px 14px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:11px; font-weight:600; letter-spacing:0.4px; text-transform:uppercase; margin-bottom:14px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              Mercury IA
+            </div>
+            <h1 style="font-size:30px; font-weight:700; margin:0; color:var(--text-primary); letter-spacing:-0.5px;">Asistente de respuestas</h1>
+            <p style="font-size:14px; color:var(--text-secondary); margin:8px auto 0; max-width:520px; line-height:1.5;">Pegá el mensaje del prospecto. Mercury arma una respuesta basada en el banco + tu system prompt, lista para copiar al WhatsApp.</p>
+          </header>
 
-        <section style="margin-top:18px; display:grid; gap:16px; max-width:880px;">
           <!-- INPUT -->
-          <div class="card" style="padding:16px;">
-            <label for="asst-prospect-msg" style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mensaje del prospecto</label>
-            <textarea id="asst-prospect-msg" rows="4" placeholder="Pegá acá el último mensaje del prospecto…" style="width:100%; font-size:15px; line-height:1.5; padding:12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+          <div class="card" style="padding:24px; border-radius:16px;">
+            <label for="asst-prospect-msg" style="display:block; font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Mensaje del prospecto</label>
+            <textarea id="asst-prospect-msg" rows="5" placeholder="Pegá acá el último mensaje del prospecto…" style="width:100%; font-size:15px; line-height:1.6; padding:14px 16px; border-radius:12px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
 
-            <details style="margin-top:12px;">
-              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary);">+ Contexto adicional (opcional)</summary>
-              <textarea id="asst-context" rows="3" placeholder="Mensajes previos, nombre del prospecto, software que usan, ciudad, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+            <details style="margin-top:14px;">
+              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Contexto adicional (opcional)</summary>
+              <textarea id="asst-context" rows="3" placeholder="Mensajes previos, nombre del prospecto, software que usan, ciudad, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
             </details>
 
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
-              <div class="muted" style="font-size:11px;" id="asst-meta-hint">Mercury usa el banco de respuestas + tu system prompt + las últimas 10 notas de feedback.</div>
-              <button id="asst-generate-btn" class="btn-primary" style="font-size:14px; padding:10px 20px;">Generar respuesta</button>
-            </div>
+            <button id="asst-generate-btn" class="btn-primary" style="display:block; width:100%; margin-top:18px; font-size:15px; font-weight:600; padding:14px 20px; border-radius:12px;">Generar respuesta</button>
           </div>
 
           <!-- LOADING / ERROR -->
-          <div id="asst-loading" style="display:none; padding:20px; text-align:center; color:var(--text-secondary); font-size:13px;">Generando respuesta…</div>
-          <div id="asst-error" style="display:none; padding:14px 16px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:13px;"></div>
+          <div id="asst-loading" style="display:none; padding:24px; text-align:center; color:var(--accent); font-size:14px; margin-top:18px;">
+            <div style="display:inline-block; width:18px; height:18px; border:2px solid var(--accent-soft); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; vertical-align:middle; margin-right:8px;"></div>
+            Mercury está pensando…
+          </div>
+          <div id="asst-error" style="display:none; padding:14px 16px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:13px; margin-top:18px;"></div>
 
           <!-- OUTPUT -->
-          <div id="asst-output-card" class="card" style="padding:16px; display:none;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-              <strong style="font-size:14px;">Respuesta sugerida</strong>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <span id="asst-fallback-pill" class="chip" style="display:none; padding:2px 8px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
-                <span id="asst-violations-pill" class="chip" style="display:none; padding:2px 8px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
-                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:6px 12px;">Copiar todo</button>
+          <div id="asst-output-card" class="card" style="padding:24px; border-radius:16px; display:none; margin-top:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div style="width:6px; height:24px; background:var(--accent); border-radius:3px;"></div>
+                <strong style="font-size:15px; color:var(--text-primary);">Respuesta sugerida</strong>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
+                <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
+                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:8px 14px; border-radius:8px;">📋 Copiar todo</button>
               </div>
             </div>
 
             <ul id="asst-blocks" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
 
             <!-- Acciones del setter -->
-            <div id="asst-actions" style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
-              <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:120px; color:#5bb974;">✓ Buena respuesta</button>
-              <button class="btn-secondary asst-act-bad" data-action="bad" style="font-size:13px; flex:1; min-width:120px; color:#f85149;">✗ No la usaría</button>
-              <button class="btn-secondary asst-act-edit" data-action="edit" style="font-size:13px; flex:1; min-width:120px;">✎ Editar y enviar</button>
+            <div id="asst-actions" style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
+              <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:#5bb974; font-weight:500;">✓ Buena respuesta</button>
+              <button class="btn-secondary asst-act-bad" data-action="bad" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:#f85149; font-weight:500;">✗ No la usaría</button>
+              <button class="btn-secondary asst-act-edit" data-action="edit" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; font-weight:500;">✎ Editar y enviar</button>
             </div>
 
             <!-- Editor (oculto hasta que se haga click en editar) -->
-            <div id="asst-edit-box" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
-              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Versión final que vas a enviar</label>
-              <textarea id="asst-edit-text" rows="6" style="width:100%; font-size:14px; line-height:1.5; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
-              <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
-                <button id="asst-edit-cancel" class="btn-secondary" style="font-size:12px;">Cancelar</button>
-                <button id="asst-edit-save" class="btn-primary" style="font-size:12px;">Guardar versión final</button>
+            <div id="asst-edit-box" style="display:none; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-color);">
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Versión final que vas a enviar</label>
+              <textarea id="asst-edit-text" rows="6" style="width:100%; font-size:14px; line-height:1.55; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+              <div style="display:flex; gap:8px; margin-top:10px; justify-content:flex-end;">
+                <button id="asst-edit-cancel" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Cancelar</button>
+                <button id="asst-edit-save" class="btn-primary" style="font-size:12px; padding:8px 14px;">Guardar versión final</button>
               </div>
             </div>
 
             <!-- Status post-accion -->
-            <div id="asst-status" class="muted" style="display:none; margin-top:10px; font-size:12px;"></div>
+            <div id="asst-status" style="display:none; margin-top:14px; padding:10px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.3); border-radius:8px; color:#5bb974; font-size:12px;"></div>
 
             <!-- Ejemplos del banco usados (transparencia) -->
-            <details id="asst-ejemplos-wrap" style="margin-top:14px; display:none;">
-              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary);">Ejemplos del banco usados (<span id="asst-ejemplos-count">0</span>)</summary>
+            <details id="asst-ejemplos-wrap" style="margin-top:16px; display:none;">
+              <summary style="cursor:pointer; font-size:11px; color:var(--text-secondary); padding:6px 0;">Ver los ejemplos del banco que usó (<span id="asst-ejemplos-count">0</span>)</summary>
               <ul id="asst-ejemplos" style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12px;"></ul>
             </details>
           </div>
-        </section>
+        </div>
       </div>
+      <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
 
       <!-- Historial de scrapes (admin only) -->
       <div id="view-scrape-history" class="module-view hidden" data-roles="admin">
@@ -1529,7 +1537,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429n"></script>
+  <script type="module" src="/app.js?v=20260429o"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
