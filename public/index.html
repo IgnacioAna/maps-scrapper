@@ -546,6 +546,7 @@
                   <option value="SI">SI</option>
                   <option value="NO">NO</option>
                 </select>
+                <button id="modal-agendar-btn" class="btn-primary" style="margin-left:auto; padding:8px 16px; font-size:13px; border-radius:9px;">📅 Agendar reunión</button>
               </div>
               <div id="modal-call-log" style="display:none; margin-bottom:16px; padding:14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px;"></div>
               <div class="lead-modal-notes">
@@ -1525,6 +1526,44 @@
     </main>
   </div>
 
+  <!-- Modal Agendar reunión: iframe Google Calendar + form de confirmación -->
+  <div id="agendar-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); z-index:2100; align-items:center; justify-content:center; padding:16px;">
+    <div class="card" style="width:min(820px, 98vw); max-height:96vh; padding:0; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.7);">
+      <div style="padding:18px 22px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.08) 0%, transparent 100%); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+        <div style="width:38px; height:38px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px;">📅</div>
+        <div style="flex:1; min-width:0;">
+          <h3 style="margin:0; font-size:17px; font-weight:700; letter-spacing:-0.3px;">Agendar reunión con <span id="agendar-lead-name" style="color:var(--accent);">—</span></h3>
+          <div class="muted" style="font-size:12px; margin-top:3px;">Reservá el horario en el calendario de abajo. Después confirmá la fecha en el sistema.</div>
+        </div>
+        <button id="agendar-close" class="btn-secondary" style="font-size:13px; padding:7px 14px; border-radius:8px;">✕</button>
+      </div>
+      <div style="padding:14px 22px; flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+        <div id="agendar-iframe-wrap" style="border:1px solid var(--border-color); border-radius:12px; overflow:hidden; background:#fff;">
+          <iframe id="agendar-iframe" src="about:blank" style="border:0; width:100%; height:520px; display:block;" frameborder="0"></iframe>
+        </div>
+        <div id="agendar-no-config" style="display:none; padding:16px; background:rgba(255,200,40,0.06); border:1px solid rgba(255,200,40,0.4); border-radius:10px; color:#ffc828; font-size:13px;">⚠️ El URL de Google Calendar no está configurado. Pedile al admin que lo cargue desde la configuración del sistema.</div>
+        <div style="border-top:1px dashed var(--border-color); padding-top:14px;">
+          <strong style="font-size:13px;">Confirmar agendamiento en el sistema</strong>
+          <div class="muted" style="font-size:11px; margin-top:3px; margin-bottom:10px;">Después de reservar arriba, copiá la fecha/hora acá para que aparezca en "Llamadas agendadas".</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+              <span class="muted">Fecha y hora</span>
+              <input id="agendar-fecha" type="datetime-local" style="padding:9px 11px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+            </label>
+            <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+              <span class="muted">Notas (opcional)</span>
+              <input id="agendar-notas" type="text" placeholder="Ej: zoom, llamada, idioma…" style="padding:9px 11px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+            </label>
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 22px 18px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.18); border-top:1px solid var(--border-color);">
+        <button id="agendar-cancel" class="btn-secondary" style="font-size:13px; padding:9px 16px; border-radius:9px;">Cancelar</button>
+        <button id="agendar-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;" disabled>✓ Marcar como agendado</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal reusable "Elegir setter" (reemplaza prompt nativo) -->
   <div id="setter-picker-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(520px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
@@ -1563,7 +1602,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429s"></script>
+  <script type="module" src="/app.js?v=20260429t"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

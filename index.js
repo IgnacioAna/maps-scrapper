@@ -5702,6 +5702,53 @@ function saveMercuryConfig(cfg) {
   catch (e) { console.error("[mercury] Error guardando config:", e.message); }
 }
 
+// ── Google Calendar embed (Appointment Scheduling) ──
+// El admin pega el URL del iframe que Google Calendar genera en "Compartir".
+// Lo usamos en un modal "Agendar reunion" en el Setteo. Al confirmar, el setter
+// crea una entry en data.calendar que aparece en "Llamadas agendadas".
+const GCAL_CONFIG_FILE = path.join(DATA_DIR, "gcal_config.json");
+
+function loadGcalConfig() {
+  try {
+    if (fs.existsSync(GCAL_CONFIG_FILE)) return JSON.parse(fs.readFileSync(GCAL_CONFIG_FILE, "utf8"));
+  } catch (e) { console.error("[gcal] load:", e.message); }
+  // Default: el iframe que el admin paso (URL del booking de Ignacio).
+  return {
+    embedUrl: "https://calendar.google.com/calendar/appointments/schedules/AcZssZ2aTQnwMom7qCiB1RjixWpp1WRzeBkJA-cOBKBdSo_csmjuDD-MqTlB95v2jh4BPhXN0w7A3PyN?gv=true",
+    enabled: true,
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system_default",
+  };
+}
+
+function saveGcalConfig(cfg) {
+  try { fs.writeFileSync(GCAL_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+  catch (e) { console.error("[gcal] save:", e.message); }
+}
+
+// GET /api/gcal/config — todos pueden leer (setter necesita el URL para abrir el iframe).
+app.get("/api/gcal/config", requireAuth, (_req, res) => {
+  res.json(loadGcalConfig());
+});
+
+// PUT /api/gcal/config — solo admin. Body { embedUrl?, enabled? }.
+app.put("/api/gcal/config", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadGcalConfig();
+  const { embedUrl, enabled } = req.body || {};
+  if (typeof embedUrl === "string") {
+    const url = embedUrl.trim();
+    if (!url || !/^https?:\/\/calendar\.google\.com\//i.test(url)) {
+      return res.status(400).json({ error: "embedUrl debe ser un URL de calendar.google.com" });
+    }
+    cfg.embedUrl = url;
+  }
+  if (typeof enabled === "boolean") cfg.enabled = enabled;
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveGcalConfig(cfg);
+  res.json(cfg);
+});
+
 // GET /api/mercury/config — admin lee config completo. Setter solo recibe metadata
 // (que el systemPrompt no se filtre a setters innecesariamente).
 app.get("/api/mercury/config", requireAuth, (req, res) => {

@@ -1872,6 +1872,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = setterLeads.find(l => l.id === leadId);
       if (!lead) return;
       currentModalLeadId = leadId;
+      // Exponer el lead actual para handlers fuera de este closure (modal Agendar).
+      window.__currentLead = lead;
       // Guardar último lead trabajado (por usuario)
       try { localStorage.setItem('lastLeadWorked_' + (currentUser?.id || 'guest'), JSON.stringify({ id: leadId, name: lead.name, at: Date.now() })); } catch {}
       const variant = getLeadVariant(lead);
@@ -6072,5 +6074,129 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.id === 'setter-picker-modal') _pickSetterClose(null);
   });
   document.getElementById('setter-picker-confirm')?.addEventListener('click', () => _pickSetterClose(_pickSetterCurrent));
+
+  // ── Modal Agendar reunión (Google Calendar embed) ──
+  let _agendarLead = null;
+  let _agendarGcalUrl = '';
+  let _agendarGcalLoaded = false;
+
+  async function _agendarLoadGcalConfig() {
+    if (_agendarGcalLoaded) return _agendarGcalUrl;
+    try {
+      const r = await fetch('/api/gcal/config', { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      _agendarGcalUrl = d.enabled !== false ? (d.embedUrl || '') : '';
+    } catch (e) {
+      console.warn('[agendar] No pude cargar config gcal:', e.message);
+      _agendarGcalUrl = '';
+    }
+    _agendarGcalLoaded = true;
+    return _agendarGcalUrl;
+  }
+
+  window.openAgendarModal = async function openAgendarModal(lead) {
+    if (!lead) return;
+    _agendarLead = lead;
+    document.getElementById('agendar-lead-name').textContent = lead.name || '—';
+    // Default: en 1 hora (formato datetime-local)
+    const future = new Date(Date.now() + 60 * 60 * 1000);
+    const pad = (n) => String(n).padStart(2, '0');
+    const defaultIso = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}`;
+    document.getElementById('agendar-fecha').value = defaultIso;
+    document.getElementById('agendar-notas').value = '';
+    document.getElementById('agendar-confirm').disabled = false;
+
+    const url = await _agendarLoadGcalConfig();
+    const iframe = document.getElementById('agendar-iframe');
+    const wrap = document.getElementById('agendar-iframe-wrap');
+    const noConfig = document.getElementById('agendar-no-config');
+    if (url) {
+      iframe.src = url;
+      wrap.style.display = 'block';
+      noConfig.style.display = 'none';
+    } else {
+      iframe.src = 'about:blank';
+      wrap.style.display = 'none';
+      noConfig.style.display = 'block';
+    }
+    document.getElementById('agendar-modal').style.display = 'flex';
+  };
+
+  function _agendarClose() {
+    document.getElementById('agendar-modal').style.display = 'none';
+    document.getElementById('agendar-iframe').src = 'about:blank';
+    _agendarLead = null;
+  }
+
+  document.getElementById('agendar-close')?.addEventListener('click', _agendarClose);
+  document.getElementById('agendar-cancel')?.addEventListener('click', _agendarClose);
+  document.getElementById('agendar-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'agendar-modal') _agendarClose();
+  });
+
+  document.getElementById('agendar-confirm')?.addEventListener('click', async () => {
+    if (!_agendarLead) return;
+    const fecha = document.getElementById('agendar-fecha').value;
+    const notas = document.getElementById('agendar-notas').value.trim();
+    if (!fecha) { alert('Pegá la fecha y hora del agendamiento.'); return; }
+    const btn = document.getElementById('agendar-confirm');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      // 1. Crear entry en calendar (alimenta vista "Llamadas agendadas")
+      const calRes = await fetch(apiUrl('/api/setters/calendar'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          leadId: _agendarLead.id,
+          fecha,
+          nombre: _agendarLead.name || '',
+          calendarioEstado: 'pendiente',
+          setterId: _agendarLead.assignedTo || '',
+        }),
+      });
+      if (!calRes.ok) { const err = await calRes.text(); throw new Error('calendar: ' + err); }
+      const calData = await calRes.json();
+      // 2. Si vinieron notas, agregarlas a la entry via PATCH
+      if (notas && calData.entry?.id) {
+        await fetch(apiUrl('/api/setters/calendar/' + calData.entry.id), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ notas }),
+        });
+      }
+      // 3. Marcar lead como agendado
+      await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(_agendarLead.id)), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ estado: 'agendado' }),
+      });
+      btn.textContent = '✓ Agendado';
+      setTimeout(() => {
+        const reopenId = _agendarLead?.id;
+        _agendarClose();
+        // Si el modal del lead seguía abierto para este lead, refrescar
+        if (reopenId && window.__currentLead?.id === reopenId && window._openLeadModal) {
+          window._openLeadModal(reopenId);
+        }
+      }, 600);
+    } catch (e) {
+      alert('Error agendando: ' + e.message);
+      btn.disabled = false; btn.textContent = '✓ Marcar como agendado';
+    }
+  });
+
+  // Botón "Agendar" en el modal del lead → abre el modal de agendar
+  document.getElementById('modal-agendar-btn')?.addEventListener('click', () => {
+    const lead = window.__currentLead;
+    if (!lead) {
+      alert('Abrí primero la ficha del lead.');
+      return;
+    }
+    window.openAgendarModal(lead);
+  });
 
   });
