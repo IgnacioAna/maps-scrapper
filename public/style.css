@@ -997,6 +997,15 @@ body:has(#view-social.active) .global-location-panel {
   background: var(--bg-elevated);
 }
 
+/* Telefonos: nunca cortar a 2 lineas — leerlos asi es horrible y rompe la
+   busqueda visual. La columna de telefono es la 4ta (#, fecha, nombre, telefono).
+   Forzamos una sola linea aunque tenga espacios entre digitos. */
+#view-crm #setter-table td:nth-child(4),
+#view-crm #setter-table td:nth-child(4) a,
+#view-crm #setter-table td:nth-child(4) span {
+  white-space: nowrap;
+}
+
 /* Tabla compacta para listados densos (ej: tabla de Equipo en Centro de Comando)
    Reduce el padding y el font-size para que entren mas filas en pantalla. */
 .compact-table table { font-size: 12px; }

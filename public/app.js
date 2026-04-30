@@ -1627,12 +1627,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => (l.country || '').trim() === countryFilter);
       }
 
-      // Buscador general
-      const searchQ = (document.getElementById('setter-search')?.value || '').trim().toLowerCase();
-      if (searchQ) {
+      // Buscador general — tolerante a acentos, mayusculas, espacios y formato de telefono.
+      // Antes era includes() puro: si la persona escribia '5422163791147' pero el lead
+      // tenia '+54 221 637-9147', no matcheaba. Ahora:
+      //   - Normaliza texto: lowercase + sin acentos
+      //   - Tokeniza la query por espacios → cada token debe matchear (busqueda AND)
+      //   - Para tokens que son digitos, compara contra version solo-digitos de los telefonos
+      //   - Soporta busqueda con espacios libres ("dr lopez bogota")
+      const rawSearchQ = (document.getElementById('setter-search')?.value || '').trim();
+      if (rawSearchQ) {
+        const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const digits = (s) => String(s || '').replace(/\D/g, '');
+        const tokens = norm(rawSearchQ).split(/\s+/).filter(Boolean);
         filtered = filtered.filter(l => {
-          const haystack = [l.name, l.phone, l.webWhatsApp, l.aiWhatsApp, l.country, l.city, l.locationSearched, l.address, l.doctor, l.email, l.website, l.instagram].filter(Boolean).join(' ').toLowerCase();
-          return haystack.includes(searchQ);
+          // Haystack textual: todos los campos legibles concatenados, normalizados
+          const textParts = [l.name, l.country, l.city, l.locationSearched, l.address, l.doctor, l.email, l.website, l.instagram, l.facebook, l.notes?.map?.(n=>n.text||n).join(' ')];
+          const textHay = norm(textParts.filter(Boolean).join(' '));
+          // Haystack solo-digitos: telefonos juntos (sin formato)
+          const phoneHay = digits([l.phone, l.webWhatsApp, l.aiWhatsApp].filter(Boolean).join(''));
+          return tokens.every(tok => {
+            const tokDigits = digits(tok);
+            // Si el token tiene >= 4 digitos, lo buscamos en phoneHay (o textHay con digits sueltos)
+            if (tokDigits.length >= 4 && tokDigits.length === tok.replace(/[\s+()-]/g, '').length) {
+              return phoneHay.includes(tokDigits) || textHay.includes(tok);
+            }
+            // Token textual normal
+            return textHay.includes(tok);
+          });
         });
       }
 
