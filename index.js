@@ -4767,12 +4767,49 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async 
   let { url, currentPhone, country = '', city = '', location = '' } = req.body;
 
   if (!url) {
-    return res.json({ instagram: "", linkedin: "", facebook: "", email: "", phone: "", owner: "", aiRole: "" });
+    // Sin web: igual devolvemos openMessage del banco para que el lead siempre
+    // tenga apertura. aiRole vacio queda — no hubo nada que analizar.
+    return res.json({
+      instagram: "", linkedin: "", facebook: "",
+      email: "", phone: "", owner: "",
+      aiRole: "Sin sitio web",
+      webWhatsApp: "", aiWhatsApp: "",
+      openMessage: makeOpeningMessage({ country, city }),
+      country, city,
+      ownerInstagram: "", ownerLinkedin: "", ownerFacebook: ""
+    });
   }
 
   // Nos aseguramos que la URL tenga protocolo para que el fetch de node no falle con TypeError
   if (!/^https?:\/\//i.test(url.trim())) {
      url = `https://${url.trim()}`;
+  }
+
+  // BUGFIX: SerpAPI a veces devuelve wa.me/wa.link/api.whatsapp.com como
+  // "website". Eso NO es el sitio web del negocio — es un link directo a
+  // WhatsApp. Si lo enriquecemos: el HTML que vuelve es la landing page de
+  // WhatsApp, y de ahi extraemos garbage como instagram.com/whatsapp y
+  // facebook.com/profile.php que NO son del negocio. Saltamos enrich y
+  // devolvemos un fallback con openMessage del banco.
+  const lowerUrl = url.toLowerCase();
+  const isWhatsAppLink = /(?:^|\/\/|\.)(?:wa\.me|wa\.link|api\.whatsapp\.com|chat\.whatsapp\.com|m\.me|t\.me|linktr\.ee|bit\.ly|tinyurl\.com)\b/.test(lowerUrl);
+  if (isWhatsAppLink) {
+    // Intentamos extraer el numero del link de WSP si hay (asi al menos
+    // marcamos webWhatsApp para el setter).
+    let webWa = '';
+    const m1 = lowerUrl.match(/wa\.me\/(\d{7,15})/);
+    const m2 = lowerUrl.match(/api\.whatsapp\.com\/send\/?\?phone=(\d{7,15})/);
+    if (m1) webWa = m1[1]; else if (m2) webWa = m2[1];
+    return res.json({
+      instagram: "", linkedin: "", facebook: "",
+      email: "", phone: "", owner: "",
+      aiRole: "Sin web utilizable (es link de WSP)",
+      webWhatsApp: webWa,
+      aiWhatsApp: "",
+      openMessage: makeOpeningMessage({ country, city }),
+      country, city,
+      ownerInstagram: "", ownerLinkedin: "", ownerFacebook: ""
+    });
   }
 
   // Cache: si ya enriquecimos esta URL recientemente, devolver directo sin gastar API

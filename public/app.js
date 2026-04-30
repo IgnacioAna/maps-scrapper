@@ -1000,16 +1000,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Función para enriquecer un item individual
       const enrichItem = async (idx) => {
         const item = currentData[idx];
-        if (!item.website) return;
 
         // Skip si ya fue enriquecido (tiene datos de IA/redes)
         if (item._enriched) return;
 
+        // Detectar si el "website" es realmente un link de WSP (wa.me, wa.link, etc).
+        // En ese caso saltamos el enrich pesado y solo generamos openMessage del
+        // banco — no tiene sentido ir a la pagina de WhatsApp y sacar basura.
+        // Tambien si no hay website, igual pedimos enrich para que el server
+        // devuelva openMessage del banco usando country/city.
         try {
           const resp = await fetch(apiUrl('/api/enrich'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: item.website, currentPhone: item.phone, country: item.country || '', city: item.city || '', location: item.locationSearched || '' })
+            body: JSON.stringify({ url: item.website || '', currentPhone: item.phone, country: item.country || '', city: item.city || '', location: item.locationSearched || '' })
           });
           const social = await resp.json();
 
