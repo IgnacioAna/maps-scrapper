@@ -3494,6 +3494,64 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 });
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──
+// POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
+// uno destino. Body: { fromSetterId, toSetterId, count?, country?, city?, estado? }.
+// Si count no viene → mueve TODOS los leads que cumplan los filtros.
+// Si count está → mueve los primeros N (orden por num/importedAt asc).
+// Devuelve { moved, skipped, fromRemaining, toTotal }.
+app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, res) => {
+  const { fromSetterId, toSetterId, count, country, city, estado } = req.body || {};
+  if (!fromSetterId || !toSetterId) {
+    return res.status(400).json({ error: 'fromSetterId y toSetterId son requeridos.' });
+  }
+  if (fromSetterId === toSetterId) {
+    return res.status(400).json({ error: 'fromSetterId y toSetterId no pueden ser iguales.' });
+  }
+  const data = loadSettersData();
+  const fromSetter = (data.setters || []).find((s) => s.id === fromSetterId);
+  const toSetter = (data.setters || []).find((s) => s.id === toSetterId);
+  if (!fromSetter) return res.status(404).json({ error: `Setter origen no encontrado: ${fromSetterId}` });
+  if (!toSetter) return res.status(404).json({ error: `Setter destino no encontrado: ${toSetterId}` });
+
+  // Filtrar candidatos
+  let candidates = Object.entries(data.leads || {})
+    .filter(([_id, lead]) => lead.assignedTo === fromSetterId)
+    .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
+    .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
+    .filter(([_id, lead]) => !estado || lead.estado === estado);
+
+  // Orden: num ascending (los primeros importados primero)
+  candidates.sort((a, b) => (Number(a[1].num) || 0) - (Number(b[1].num) || 0));
+
+  // Aplicar count
+  const wanted = (typeof count === 'number' && count > 0) ? Math.min(count, candidates.length) : candidates.length;
+  const toMove = candidates.slice(0, wanted);
+
+  // Asignar al destino. También limpiar followUps activos porque el contexto cambia
+  // (el setter destino no sabe qué pasó en la conversación previa con el lead).
+  let moved = 0;
+  for (const [id, lead] of toMove) {
+    lead.assignedTo = toSetterId;
+    // Mantener varianteId si existe — el lead va con el opener original.
+    moved++;
+  }
+
+  saveSettersData(data);
+
+  // Re-contar restantes y total destino
+  const allLeadsNow = Object.values(data.leads || {});
+  const fromRemaining = allLeadsNow.filter((l) => l.assignedTo === fromSetterId).length;
+  const toTotal = allLeadsNow.filter((l) => l.assignedTo === toSetterId).length;
+
+  res.json({
+    ok: true,
+    moved,
+    requested: wanted,
+    fromSetter: { id: fromSetter.id, name: fromSetter.name, remaining: fromRemaining },
+    toSetter: { id: toSetter.id, name: toSetter.name, total: toTotal },
+  });
+});
+
 app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, res) => {
   const { setter, country, city } = req.body;
   const data = loadSettersData();

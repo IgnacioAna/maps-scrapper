@@ -6382,6 +6382,124 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('setter-picker-confirm')?.addEventListener('click', () => _pickSetterClose(_pickSetterCurrent));
 
+  // ── Modal Reasignar leads bulk (admin) ──
+  let _reassignSetters = [];
+  let _reassignCountsBySetter = {};
+
+  async function _reassignLoadSetters() {
+    try {
+      const r = await fetch(apiUrl('/api/setters'));
+      const d = await r.json();
+      _reassignSetters = d.setters || [];
+      // Contar leads por setter via /api/setters/command
+      try {
+        const c = await fetch(apiUrl('/api/setters/command'));
+        const cd = await c.json();
+        _reassignCountsBySetter = {};
+        for (const s of (cd.perSetter || [])) _reassignCountsBySetter[s.id] = s.total || 0;
+      } catch {}
+      const fromSel = document.getElementById('reassign-from');
+      const toSel = document.getElementById('reassign-to');
+      [fromSel, toSel].forEach(sel => {
+        if (!sel) return;
+        sel.innerHTML = '<option value="">— Elegir —</option>' + _reassignSetters
+          .map(s => `<option value="${s.id}">${(s.name || s.id)} (${_reassignCountsBySetter[s.id] || 0} leads)</option>`).join('');
+      });
+    } catch (e) { console.warn('[reassign] load:', e.message); }
+  }
+
+  function _reassignUpdatePreview() {
+    const fromId = document.getElementById('reassign-from').value;
+    const toId = document.getElementById('reassign-to').value;
+    const mode = document.getElementById('reassign-count-mode').value;
+    const customCount = parseInt(document.getElementById('reassign-custom-count').value, 10);
+    const fromCount = _reassignCountsBySetter[fromId] || 0;
+    const fromInfo = document.getElementById('reassign-from-info');
+    const preview = document.getElementById('reassign-preview');
+    const previewText = document.getElementById('reassign-preview-text');
+    const confirmBtn = document.getElementById('reassign-confirm');
+    const customWrap = document.getElementById('reassign-custom-count-wrap');
+
+    customWrap.style.display = mode === 'custom' ? 'flex' : 'none';
+    fromInfo.textContent = fromId ? `Tiene ${fromCount} leads asignados.` : '';
+
+    let toMove = 0;
+    if (mode === 'all') toMove = fromCount;
+    else if (mode === 'half') toMove = Math.floor(fromCount / 2);
+    else if (mode === 'quarter') toMove = Math.floor(fromCount / 4);
+    else if (mode === 'custom') toMove = Math.min(customCount || 0, fromCount);
+
+    const toName = _reassignSetters.find(s => s.id === toId)?.name || '—';
+    const fromName = _reassignSetters.find(s => s.id === fromId)?.name || '—';
+    if (fromId && toId && fromId !== toId && toMove > 0) {
+      preview.style.display = 'block';
+      previewText.textContent = `Vas a mover ${toMove} leads de ${fromName} a ${toName}.`;
+      confirmBtn.disabled = false;
+      confirmBtn.dataset.count = toMove;
+    } else {
+      preview.style.display = 'none';
+      confirmBtn.disabled = true;
+      delete confirmBtn.dataset.count;
+    }
+  }
+
+  document.getElementById('setter-reassign-btn')?.addEventListener('click', async () => {
+    await _reassignLoadSetters();
+    document.getElementById('reassign-from').value = '';
+    document.getElementById('reassign-to').value = '';
+    document.getElementById('reassign-count-mode').value = 'all';
+    document.getElementById('reassign-custom-count').value = '';
+    document.getElementById('reassign-country').value = '';
+    document.getElementById('reassign-city').value = '';
+    document.getElementById('reassign-estado').value = '';
+    _reassignUpdatePreview();
+    document.getElementById('reassign-modal').style.display = 'flex';
+  });
+
+  ['reassign-from', 'reassign-to', 'reassign-count-mode', 'reassign-custom-count'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', _reassignUpdatePreview);
+    document.getElementById(id)?.addEventListener('input', _reassignUpdatePreview);
+  });
+
+  document.getElementById('reassign-cancel')?.addEventListener('click', () => {
+    document.getElementById('reassign-modal').style.display = 'none';
+  });
+  document.getElementById('reassign-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'reassign-modal') document.getElementById('reassign-modal').style.display = 'none';
+  });
+
+  document.getElementById('reassign-confirm')?.addEventListener('click', async () => {
+    const btn = document.getElementById('reassign-confirm');
+    const fromId = document.getElementById('reassign-from').value;
+    const toId = document.getElementById('reassign-to').value;
+    const count = parseInt(btn.dataset.count, 10);
+    const country = document.getElementById('reassign-country').value.trim();
+    const city = document.getElementById('reassign-city').value.trim();
+    const estado = document.getElementById('reassign-estado').value;
+    if (!fromId || !toId || !count) return;
+    if (!confirm(`Confirmar: mover ${count} leads de ${_reassignSetters.find(s=>s.id===fromId)?.name} a ${_reassignSetters.find(s=>s.id===toId)?.name}? Esta acción no se puede deshacer fácil.`)) return;
+    btn.disabled = true; btn.textContent = 'Moviendo…';
+    try {
+      const body = { fromSetterId: fromId, toSetterId: toId, count };
+      if (country) body.country = country;
+      if (city) body.city = city;
+      if (estado) body.estado = estado;
+      const r = await fetch(apiUrl('/api/setters/reassign-bulk'), {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || ('http ' + r.status));
+      alert(`✓ Movidos ${d.moved} leads.\n${d.fromSetter.name} ahora tiene ${d.fromSetter.remaining} leads.\n${d.toSetter.name} ahora tiene ${d.toSetter.total} leads.`);
+      document.getElementById('reassign-modal').style.display = 'none';
+      // Refrescar contadores
+      await _reassignLoadSetters();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = '↔ Mover leads';
+    }
+  });
+
   // ── Modal Agendar reunión (Google Calendar embed) ──
   let _agendarLead = null;
   let _agendarGcalUrl = '';

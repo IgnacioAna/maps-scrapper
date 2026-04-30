@@ -480,6 +480,7 @@
             Importar CSV
             <input type="file" id="setter-import-csv" accept=".csv" style="display:none;">
           </label>
+          <button id="setter-reassign-btn" class="btn btn-secondary btn-sm" data-roles="admin" style="border-color:var(--accent); color:var(--accent);">↔ Reasignar leads</button>
           <button id="setter-clear-btn" class="btn btn-danger btn-sm" data-roles="admin">Borrar leads</button>
           <span id="setter-dedup-result" class="hidden" style="font-size:var(--text-xs); color:var(--success);"></span>
         </div>
@@ -1540,6 +1541,68 @@
     </main>
   </div>
 
+  <!-- Modal Reasignar leads en bulk (admin) -->
+  <div id="reassign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+      <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
+        <h3 style="margin:0; font-size:18px; font-weight:700;">↔ Reasignar leads en bulk</h3>
+        <p style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Mover leads de un setter a otro. Útil para redistribuir trabajo cuando un setter no puede continuar.</p>
+      </div>
+      <div style="padding:18px 24px; display:flex; flex-direction:column; gap:14px;">
+        <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+          <span class="muted">Setter origen (de quién sacar leads)</span>
+          <select id="reassign-from" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+            <option value="">— Elegir —</option>
+          </select>
+          <span id="reassign-from-info" class="muted" style="font-size:11px;"></span>
+        </label>
+        <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+          <span class="muted">Setter destino (a quién pasarle)</span>
+          <select id="reassign-to" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+            <option value="">— Elegir —</option>
+          </select>
+        </label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
+            <span class="muted">Cantidad a mover</span>
+            <select id="reassign-count-mode" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="all">Todos</option>
+              <option value="half">Mitad (50%)</option>
+              <option value="quarter">Cuarto (25%)</option>
+              <option value="custom">Cantidad específica</option>
+            </select>
+          </label>
+          <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;" id="reassign-custom-count-wrap" style="display:none;">
+            <span class="muted">Número exacto</span>
+            <input id="reassign-custom-count" type="number" min="1" placeholder="Ej: 50" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+          </label>
+        </div>
+        <details style="font-size:12px;">
+          <summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0;">+ Filtros opcionales (país, ciudad, estado)</summary>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
+            <input id="reassign-country" type="text" placeholder="País (ej: Bolivia)" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+            <input id="reassign-city" type="text" placeholder="Ciudad (ej: La Paz)" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+            <select id="reassign-estado" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+              <option value="">Cualquier estado</option>
+              <option value="sin_contactar">Sin contactar</option>
+              <option value="contactado">Contactado</option>
+              <option value="respondio">Respondió</option>
+              <option value="calificado">Calificado</option>
+              <option value="interesado">Interesado</option>
+            </select>
+          </div>
+        </details>
+        <div id="reassign-preview" style="padding:12px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:10px; font-size:13px; display:none;">
+          <strong id="reassign-preview-text"></strong>
+        </div>
+      </div>
+      <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.15);">
+        <button id="reassign-cancel" class="btn-secondary" style="font-size:13px; padding:9px 16px; border-radius:9px;">Cancelar</button>
+        <button id="reassign-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;" disabled>↔ Mover leads</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Agendar reunión: iframe Google Calendar + form de confirmación -->
   <div id="agendar-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); z-index:2100; align-items:center; justify-content:center; padding:16px;">
     <div class="card" style="width:min(820px, 98vw); max-height:96vh; padding:0; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.7);">
@@ -1616,7 +1679,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430f"></script>
+  <script type="module" src="/app.js?v=20260430g"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

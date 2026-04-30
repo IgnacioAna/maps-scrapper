@@ -1167,6 +1167,50 @@
       "updatedAt": "2026-04-30T16:48:06.185Z",
       "usos": 0,
       "funcionaron": 0
+    },
+    {
+      "id": "faq_promoted_1777591860910_umprr",
+      "pregunta": "Como te podemos apoyar hoy?",
+      "respuesta": "Entiendo, la idea es ayudar a que la clínica aproveche la base de pacientes que ya tiene y que hoy quizá se pierden. Cómo manejan ahora la reactivación y el seguimiento de los pacientes que no vuelven o de los presupuestos pendientes?\n\nPodemos profundizar en una llamada corta de 30 min y ver si nuestro sistema encaja en su flujo. Te parece bien mañana a las 10 am o el jueves a las 4 pm?",
+      "categoria": "precio",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-04-30T23:31:00.910Z",
+      "updatedAt": "2026-04-30T23:33:56.660Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
+    },
+    {
+      "id": "faq_promoted_1777591875446_h1cvo",
+      "pregunta": "Hola disculpa, quien eres ?",
+      "respuesta": "Soy parte del equipo que ayuda a clínicas dentales con un sistema de seguimiento y reactivación de pacientes, automatizando contactos y manteniendo la agenda llena sin esfuerzo adicional.\n\nLe parece si le cuento brevemente cómo funciona y vemos si le puede servir a su clínica?",
+      "categoria": "calificacion",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-04-30T23:31:15.446Z",
+      "updatedAt": "2026-04-30T23:34:10.868Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
     }
   ]
 }
