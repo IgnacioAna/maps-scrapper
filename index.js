@@ -391,6 +391,13 @@ function parseLocationParts(location = "") {
 
 function ensureLeadDefaults(lead = {}) {
   if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+  // followUpsPlanned: el setter PROGRAMA explícitamente cada follow-up. Si no
+  // está programado, no aparece en el listado de "Hacer hoy" / "Atrasados".
+  // Esto evita que TODOS los leads con WSP enviado se inflen automáticamente
+  // como pendientes (caso real: 4673 leads → 6500 follow-ups falsos).
+  if (!lead.followUpsPlanned || typeof lead.followUpsPlanned !== 'object') {
+    lead.followUpsPlanned = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+  }
   // Notas opcionales por step de follow-up. Se setean cuando el setter programa
   // el seguimiento con contexto. Vacio por default.
   if (!lead.followUpNotes || typeof lead.followUpNotes !== 'object') {
@@ -3672,13 +3679,14 @@ app.post('/api/setters/leads/:id/interaction', requireAuth, (req, res) => {
 });
 
 // Follow-up toggle/edit. Body acepta:
-//   { step, value? }              → toggle / set flag (comportamiento legacy)
+//   { step, value? }              → toggle / set flag de "hecho" (comportamiento legacy)
+//   { step, planned: bool }       → programar/desprogramar el follow-up para este lead
 //   { step, note }                → setear nota del step (string vacio = limpiar)
 //   { step, reschedule: ISO_date } → reprogramar vencimiento del step
 //   { reactivate: true }           → poner followUpsReactivated=true (lead vuelve al listado)
 //   { reactivate: false }          → desactivar (vuelven a esconderse si estado lo amerita)
 app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
-  const { step, value, note, reschedule, reactivate } = req.body || {};
+  const { step, value, planned, note, reschedule, reactivate } = req.body || {};
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
@@ -3697,6 +3705,9 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   if (step !== undefined) {
     if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
 
+    if (planned !== undefined) {
+      lead.followUpsPlanned[step] = !!planned;
+    }
     if (note !== undefined) {
       lead.followUpNotes[step] = String(note || '').slice(0, 500);
     }
@@ -3710,11 +3721,11 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
       }
     }
     // Si viene value explícito, usarlo. Si NO viene value pero NO viene note ni
-    // reschedule (caso legacy del checkbox), togglear.
+    // reschedule ni planned (caso legacy del checkbox), togglear.
     if (typeof value === 'boolean') {
       lead.followUps[step] = value;
       lead.lastContactAt = new Date().toISOString();
-    } else if (note === undefined && reschedule === undefined && reactivate === undefined) {
+    } else if (note === undefined && reschedule === undefined && reactivate === undefined && planned === undefined) {
       lead.followUps[step] = !lead.followUps[step];
       lead.lastContactAt = new Date().toISOString();
     }
@@ -3724,6 +3735,7 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   res.json({
     ok: true,
     followUps: lead.followUps,
+    followUpsPlanned: lead.followUpsPlanned,
     followUpNotes: lead.followUpNotes,
     followUpDueOverrides: lead.followUpDueOverrides,
     followUpsReactivated: lead.followUpsReactivated,
@@ -4122,6 +4134,9 @@ function _computeFollowupsDue(lead, now = Date.now()) {
   const startOfYesterday = startOfToday.getTime() - 24 * 60 * 60 * 1000;
 
   for (const step of FOLLOWUP_STEPS) {
+    // Si el setter NO programó este step explícitamente, no entra en el listado.
+    const planned = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
+    if (!planned) continue;
     const flag = !!(lead.followUps && lead.followUps[step.key]);
     const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
     const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;

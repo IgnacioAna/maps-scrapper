@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SCM</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%239D85F2'/%3E%3Cstop offset='100%25' stop-color='%237C5DDB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='url(%23g)'/%3E%3Cpath fill='%230F1115' d='M30 36 L46 36 L50 56 L54 36 L70 36 L62 68 L46 68 L42 50 L38 68 L22 68 Z'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/style.css?v=20260430a">
+  <link rel="stylesheet" href="/style.css?v=20260430b">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -192,14 +192,13 @@
     </aside>
 
     <main class="content">
-      <!-- Banner de follow-ups del día (aparece al login si hay > 0) -->
+      <!-- Banner sutil de follow-ups del día (aparece al login si hay > 0) -->
       <div id="followups-welcome-banner" class="followups-banner" style="display:none;">
-        <div class="fb-icon">📅</div>
+        <span class="fb-icon">📅</span>
         <div class="fb-text">
-          <div>Tenés <strong id="fb-count">0</strong> follow-ups para hoy.</div>
-          <div id="fb-overdue-line" class="fb-overdue" style="display:none;">Y <strong id="fb-overdue-count">0</strong> atrasados de días anteriores.</div>
+          <strong id="fb-count">0</strong> follow-ups para hoy<span id="fb-overdue-line" class="fb-overdue" style="display:none;"> · <strong id="fb-overdue-count">0</strong> atrasados</span>
         </div>
-        <button class="fb-cta" id="fb-cta-btn">Ver →</button>
+        <button class="fb-cta" id="fb-cta-btn">Ver</button>
         <button class="fb-dismiss" id="fb-dismiss-btn" title="Cerrar">✕</button>
       </div>
 
@@ -449,8 +448,6 @@
         <!-- Filtros -->
         <div class="pipeline-filters">
           <button class="pipe-filter active" data-status="all">Todos</button>
-          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que vencen hoy o vencieron ayer">📅 Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
-          <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups vencidos hace más de 1 día">⏰ Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
           <button class="pipe-filter" data-status="sin_contactar">Sin contactar</button>
           <button class="pipe-filter" data-status="en_proceso">En proceso</button>
           <button class="pipe-filter" data-status="enviada">WSP Enviado</button>
@@ -458,7 +455,8 @@
           <button class="pipe-filter" data-status="calificado">Calificados</button>
           <button class="pipe-filter" data-status="interesado">Interesados</button>
           <button class="pipe-filter" data-status="agendado">Agendados</button>
-          <button class="pipe-filter" data-status="seguimiento">En seguimiento</button>
+          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que el setter programó y vencen hoy o vencieron ayer">📅 Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
+          <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups programados vencidos hace más de 1 día">⏰ Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
         </div>
 
         <!-- Retomar último lead -->
@@ -1626,7 +1624,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430c"></script>
+  <script type="module" src="/app.js?v=20260430d"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

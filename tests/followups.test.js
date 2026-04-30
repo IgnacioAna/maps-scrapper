@@ -55,6 +55,7 @@ fs.writeFileSync(
         num: 1, name: "Today24h", phone: "+1", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(2 * DAY), lastContactAt: ago(25 * HOUR), interactions: [],
         varianteId: "var_test",
       },
@@ -63,6 +64,7 @@ fs.writeFileSync(
         num: 2, name: "Yesterday", phone: "+2", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(3 * DAY), lastContactAt: ago(49 * HOUR), interactions: [],
       },
       // 3) Lead WSP HACE 5 días → 24h, 48h, 72h vencidos > 24hs (overdue)
@@ -70,6 +72,7 @@ fs.writeFileSync(
         num: 3, name: "Overdue", phone: "+3", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(7 * DAY), lastContactAt: ago(5 * DAY), interactions: [],
       },
       // 4) Lead AGENDADO → todos sus follow-ups deben estar OCULTOS
@@ -77,6 +80,7 @@ fs.writeFileSync(
         num: 4, name: "Agendado", phone: "+4", assignedTo: "setter_fu",
         estado: "agendado", conexion: "enviada", respondio: true, calificado: true, interes: "si",
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(10 * DAY), lastContactAt: ago(48 * HOUR), interactions: [],
       },
       // 5) Lead INTERES=NO → ocultos también
@@ -84,6 +88,7 @@ fs.writeFileSync(
         num: 5, name: "NoInteresa", phone: "+5", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: true, calificado: false, interes: "no",
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(5 * DAY), lastContactAt: ago(48 * HOUR), interactions: [],
       },
       // 6) Lead con 24h ya HECHO → no debería aparecer en pendientes
@@ -91,6 +96,7 @@ fs.writeFileSync(
         num: 6, name: "Done24", phone: "+6", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': true, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(2 * DAY), lastContactAt: ago(25 * HOUR), interactions: [],
       },
       // 7) Lead RECIENTE (lc hace 5hs) → 24h aún FUTURO, no aparece
@@ -98,6 +104,7 @@ fs.writeFileSync(
         num: 7, name: "Future", phone: "+7", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(1 * DAY), lastContactAt: ago(5 * HOUR), interactions: [],
       },
       // 8) Lead sin lastContactAt → no se pueden calcular follow-ups
@@ -105,6 +112,7 @@ fs.writeFileSync(
         num: 8, name: "SinContacto", phone: "+8", assignedTo: "setter_fu",
         estado: "sin_contactar", conexion: "", respondio: false, calificado: false, interes: null,
         followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+        followUpsPlanned: { '24hs': true, '48hs': true, '72hs': true, '7d': true, '15d': true },
         notes: [], importedAt: ago(1 * DAY), lastContactAt: null, interactions: [],
       },
     },
@@ -311,5 +319,47 @@ describe("PATCH /api/setters/leads/:id/followup extendido", () => {
       .set("Cookie", setterCookie)
       .send({ step: "99h" });
     expect(r.status).toBe(400);
+  });
+
+  it("PATCH planned=false saca el follow-up del listado", async () => {
+    // lead_yesterday tiene 48hs en dueToday. Lo desprogramamos.
+    const before = await request(app).get("/api/setters/followups/today").set("Cookie", setterCookie);
+    const wasThere = [...before.body.dueToday, ...before.body.dueYesterday, ...before.body.overdue].find(f => f.leadId === "lead_yesterday" && f.step === "48hs");
+    expect(wasThere).toBeTruthy();
+
+    const r = await request(app)
+      .patch("/api/setters/leads/lead_yesterday/followup")
+      .set("Cookie", setterCookie)
+      .send({ step: "48hs", planned: false });
+    expect(r.status).toBe(200);
+    expect(r.body.followUpsPlanned['48hs']).toBe(false);
+
+    const after = await request(app).get("/api/setters/followups/today").set("Cookie", setterCookie);
+    const stillThere = [...after.body.dueToday, ...after.body.dueYesterday, ...after.body.overdue].find(f => f.leadId === "lead_yesterday" && f.step === "48hs");
+    expect(stillThere).toBeUndefined();
+  });
+
+  it("PATCH planned=true vuelve a agregarlo", async () => {
+    const r = await request(app)
+      .patch("/api/setters/leads/lead_yesterday/followup")
+      .set("Cookie", setterCookie)
+      .send({ step: "48hs", planned: true });
+    expect(r.status).toBe(200);
+    expect(r.body.followUpsPlanned['48hs']).toBe(true);
+    const after = await request(app).get("/api/setters/followups/today").set("Cookie", setterCookie);
+    const back = [...after.body.dueToday, ...after.body.dueYesterday, ...after.body.overdue].find(f => f.leadId === "lead_yesterday" && f.step === "48hs");
+    expect(back).toBeTruthy();
+  });
+
+  it("lead nuevo sin followUpsPlanned (todos false) NO aparece en el listado", async () => {
+    // Crear lead nuevo via PATCH directo sería complejo. Reuso uno existente:
+    // desactivar TODOS los planned de lead_24h_today.
+    for (const step of ['24hs', '48hs', '72hs', '7d', '15d']) {
+      await request(app).patch("/api/setters/leads/lead_24h_today/followup")
+        .set("Cookie", setterCookie).send({ step, planned: false });
+    }
+    const r = await request(app).get("/api/setters/followups/today").set("Cookie", setterCookie);
+    const all = [...r.body.dueToday, ...r.body.dueYesterday, ...r.body.overdue];
+    expect(all.find(f => f.leadId === "lead_24h_today")).toBeUndefined();
   });
 });

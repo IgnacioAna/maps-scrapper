@@ -1364,42 +1364,40 @@ td.empty-state .empty-state-content::before {
   vertical-align: middle;
 }
 
-/* Banner de bienvenida con cantidad de follow-ups */
+/* Banner sutil de bienvenida con cantidad de follow-ups */
 .followups-banner {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 22px;
-  margin: 18px 24px 0;
-  background: linear-gradient(135deg, rgba(157,133,242,0.10) 0%, rgba(91,185,116,0.08) 100%);
-  border: 1px solid rgba(157,133,242,0.40);
-  border-radius: 14px;
-  color: var(--text-primary);
-  font-size: 14px;
+  gap: 10px;
+  padding: 8px 16px;
+  margin: 8px 16px 0;
+  background: rgba(157,133,242,0.06);
+  border: 1px solid rgba(157,133,242,0.25);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
   flex-wrap: wrap;
 }
 .followups-banner .fb-icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%);
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 18px;
+  font-size: 14px;
+  flex-shrink: 0;
 }
-.followups-banner .fb-text { flex: 1; min-width: 200px; }
+.followups-banner .fb-text { flex: 1; min-width: 200px; line-height: 1.4; }
 .followups-banner .fb-text strong { color: var(--accent); font-weight: 600; }
-.followups-banner .fb-overdue { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.followups-banner .fb-overdue { font-size: 11px; color: var(--text-secondary); opacity: 0.8; }
 .followups-banner .fb-cta {
-  background: var(--accent); color: white; border: none;
-  padding: 9px 18px; border-radius: 9px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: background 0.15s;
+  background: transparent; color: var(--accent); border: 1px solid var(--accent);
+  padding: 4px 12px; border-radius: 6px;
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s;
 }
-.followups-banner .fb-cta:hover { background: #7a5ff0; }
+.followups-banner .fb-cta:hover { background: var(--accent); color: white; }
 .followups-banner .fb-dismiss {
   background: transparent; color: var(--text-secondary); border: none;
-  padding: 6px 10px; cursor: pointer; font-size: 18px; line-height: 1;
+  padding: 2px 6px; cursor: pointer; font-size: 14px; line-height: 1;
+  opacity: 0.7;
 }
-.followups-banner .fb-dismiss:hover { color: var(--text-primary); }
+.followups-banner .fb-dismiss:hover { opacity: 1; color: var(--text-primary); }
 
 /* ════════════════════════════════════════════════════════════════
    SETTER STATS (cards de métricas)

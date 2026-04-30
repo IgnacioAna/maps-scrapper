@@ -1441,7 +1441,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadFollowups() {
       try {
-        const r = await fetch(apiUrl('/api/setters/followups/today'));
+        // En modo "Ver como setter" (admin impersonando), el backend ve admin via
+        // cookie y NO filtra. Hay que pasar setterId explícito.
+        const u = window.__CURRENT_USER__;
+        const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+        const qs = isViewAsSetter ? '?setter=' + encodeURIComponent(u.setterId) : '';
+        const r = await fetch(apiUrl('/api/setters/followups/today' + qs));
         if (!r.ok) return;
         const d = await r.json();
         _followupsCache = d;
@@ -1540,43 +1545,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
 
       for (const step of STEPS) {
+        const planned = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
         const flag = !!(lead.followUps && lead.followUps[step.key]);
         const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
         const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
         const dueTs = overrideTs > 0 ? overrideTs : baseTs + step.deltaMs;
         const note = (lead.followUpNotes && lead.followUpNotes[step.key]) || '';
 
-        let statusBadge;
-        if (flag) statusBadge = '<span class="chip chip-success" style="font-size:10px;">✓ Hecho</span>';
-        else if (dueTs > now + 12 * 3600 * 1000) statusBadge = '<span class="chip" style="font-size:10px; background:rgba(255,255,255,0.04); color:var(--text-secondary);">Programado</span>';
-        else if (dueTs >= now - 12 * 3600 * 1000) statusBadge = '<span class="followup-chip followup-chip-today" style="font-size:10px;">Vence ahora</span>';
-        else if (dueTs >= now - 36 * 3600 * 1000) statusBadge = '<span class="followup-chip followup-chip-yesterday" style="font-size:10px;">Vencido ayer</span>';
-        else statusBadge = '<span class="followup-chip followup-chip-overdue" style="font-size:10px;">Atrasado</span>';
+        // 3 estados: NO programado / programado activo / hecho
+        let statusBadge, mainAction;
+        if (!planned) {
+          statusBadge = '<span class="chip" style="font-size:10px; background:rgba(255,255,255,0.04); color:var(--text-secondary);">Sin programar</span>';
+          mainAction = `<button class="btn-primary fu-plan" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">+ Programar</button>`;
+        } else if (flag) {
+          statusBadge = '<span class="chip chip-success" style="font-size:10px;">✓ Hecho</span>';
+          mainAction = `<button class="btn-secondary fu-uncheck" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">↺ Reabrir</button>`;
+        } else if (dueTs > now + 12 * 3600 * 1000) {
+          statusBadge = '<span class="chip" style="font-size:10px; background:rgba(157,133,242,0.12); color:var(--accent); border:1px solid rgba(157,133,242,0.40);">📅 Programado</span>';
+          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
+        } else if (dueTs >= now - 12 * 3600 * 1000) {
+          statusBadge = '<span class="followup-chip followup-chip-today" style="font-size:10px;">Vence ahora</span>';
+          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
+        } else if (dueTs >= now - 36 * 3600 * 1000) {
+          statusBadge = '<span class="followup-chip followup-chip-yesterday" style="font-size:10px;">Vencido ayer</span>';
+          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
+        } else {
+          statusBadge = '<span class="followup-chip followup-chip-overdue" style="font-size:10px;">Atrasado</span>';
+          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
+        }
+
+        // Si está programado, mostramos también botón "Quitar" para desprogramar.
+        const unplanBtn = planned && !flag ? `<button class="btn-secondary fu-unplan" data-step="${step.key}" style="font-size:11px; padding:5px 10px; color:#f85149;">✕ Quitar</button>` : '';
 
         const li = document.createElement('li');
-        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px; display:flex; flex-direction:column; gap:6px;';
+        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px; display:flex; flex-direction:column; gap:6px; ' + (planned ? '' : 'opacity:0.55;');
         li.innerHTML = `
           <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
             <div style="display:flex; align-items:center; gap:8px;">
               <strong style="font-size:13px;">${step.label}</strong>
               ${statusBadge}
-              ${overrideTs > 0 ? '<span class="muted" style="font-size:10px;">↻ reprogramado</span>' : ''}
+              ${planned && overrideTs > 0 ? '<span class="muted" style="font-size:10px;">↻ reprogramado</span>' : ''}
             </div>
-            <div class="muted" style="font-size:11px;">${fmtDate(dueTs)}</div>
+            ${planned ? `<div class="muted" style="font-size:11px;">${fmtDate(dueTs)}</div>` : ''}
           </div>
-          <textarea data-step="${step.key}" class="fu-note-input" placeholder="Nota opcional para cuando llegue ese día (ej: el lead pidió que le escriba el martes)…" rows="1" maxlength="500" style="width:100%; padding:7px 10px; font-size:12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-surface); color:var(--text-primary); resize:vertical; font-family:inherit;">${(note || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</textarea>
+          ${planned ? `<textarea data-step="${step.key}" class="fu-note-input" placeholder="Nota opcional (ej: el lead pidió que le escriba el martes)…" rows="1" maxlength="500" style="width:100%; padding:7px 10px; font-size:12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-surface); color:var(--text-primary); resize:vertical; font-family:inherit;">${(note || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</textarea>` : ''}
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="btn-secondary fu-save-note" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">💾 Guardar nota</button>
-            ${flag
-              ? `<button class="btn-secondary fu-uncheck" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">↺ Reabrir</button>`
-              : `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`}
-            <button class="btn-secondary fu-reschedule" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">📅 Reprogramar</button>
+            ${mainAction}
+            ${planned ? `<button class="btn-secondary fu-save-note" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">💾 Guardar nota</button>` : ''}
+            ${planned && !flag ? `<button class="btn-secondary fu-reschedule" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">📅 Reprogramar</button>` : ''}
+            ${unplanBtn}
           </div>
         `;
         list.appendChild(li);
       }
 
       // Bind handlers de los botones
+      list.querySelectorAll('.fu-plan').forEach(btn => btn.addEventListener('click', () => _fuActionPlan(lead, btn.dataset.step, true)));
+      list.querySelectorAll('.fu-unplan').forEach(btn => btn.addEventListener('click', () => _fuActionPlan(lead, btn.dataset.step, false)));
       list.querySelectorAll('.fu-check').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, true)));
       list.querySelectorAll('.fu-uncheck').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, false)));
       list.querySelectorAll('.fu-save-note').forEach(btn => btn.addEventListener('click', () => {
@@ -1585,6 +1610,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         _fuActionNote(lead, step, ta.value);
       }));
       list.querySelectorAll('.fu-reschedule').forEach(btn => btn.addEventListener('click', () => _fuActionReschedule(lead, btn.dataset.step)));
+    }
+
+    async function _fuActionPlan(lead, step, planned) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step, planned }),
+        });
+        const d = await r.json();
+        if (d.followUpsPlanned) lead.followUpsPlanned = d.followUpsPlanned;
+        _renderModalFollowups(lead);
+        loadFollowups();
+      } catch (e) { alert('Error: ' + e.message); }
     }
 
     async function _fuActionMark(lead, step, value) {
@@ -1828,11 +1867,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => l.calificado === true && l.interes !== 'si');
       } else if (currentPipeFilter === 'interesado') {
         filtered = filtered.filter(l => l.interes === 'si');
-      } else if (currentPipeFilter === 'seguimiento') {
-        filtered = filtered.filter(l => {
-          const fu = l.followUps || {};
-          return fu['24hs'] || fu['48hs'] || fu['72hs'] || fu['7d'] || fu['15d'];
-        });
       } else if (currentPipeFilter === 'sin_contactar') {
         filtered = filtered.filter(l => !l.conexion);
       } else if (currentPipeFilter === 'en_proceso') {
@@ -6655,12 +6689,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     sessionStorage.setItem('fu_banner_dismissed', '1');
   });
 
+  // Helper para construir el URL con ?setter= si admin impersona setter.
+  function _fuUrlWithViewAs(path) {
+    const u = window.__CURRENT_USER__;
+    const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+    return path + (isViewAsSetter ? (path.includes('?') ? '&' : '?') + 'setter=' + encodeURIComponent(u.setterId) : '');
+  }
+
   // Polling liviano: refrescar el badge cada 5 min mientras la app está abierta.
   // Solo si el usuario tiene rol setter o admin (no para roles sin acceso al CRM).
   setInterval(() => {
     const role = window.__CURRENT_USER__?.role;
     if (!role || (role !== 'setter' && role !== 'admin' && role !== 'supervisor')) return;
-    fetch('/api/setters/followups/badge', { credentials: 'include' })
+    fetch(_fuUrlWithViewAs('/api/setters/followups/badge'), { credentials: 'include' })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) window._setSidebarFollowupsBadge(d.count); })
       .catch(() => {});
@@ -6670,12 +6711,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // entrado todavía a la vista CRM. Eso permite ver el badge desde otras vistas.
   setTimeout(() => {
     if (window.__CURRENT_USER__) {
-      fetch('/api/setters/followups/badge', { credentials: 'include' })
+      fetch(_fuUrlWithViewAs('/api/setters/followups/badge'), { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d) window._setSidebarFollowupsBadge(d.count); })
         .catch(() => {});
       // Cargar también el cache completo para el banner
-      fetch('/api/setters/followups/today', { credentials: 'include' })
+      fetch(_fuUrlWithViewAs('/api/setters/followups/today'), { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d) { window._setFollowupsCacheGlobal(d); _showFollowupsBanner(); } })
         .catch(() => {});
