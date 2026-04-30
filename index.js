@@ -3215,6 +3215,12 @@ function _importLeadsCore(data, incoming, assignTo) {
     }
 
     const { country, city } = parseLocationParts(lead.locationSearched || lead.city || lead.country || '');
+    // Si el lead no tiene openMessage (no se enriquecio con IA o no se importo
+    // un text desde wa.me), generamos uno del banco AHORA usando country/city.
+    // Asi NUNCA un lead sale a setteo con WSP vacio.
+    const finalCountry = lead.country || country || '';
+    const finalCity = lead.city || city || '';
+    const finalOpenMsg = importedOpenMsg || lead.openMessage || makeOpeningMessage({ country: finalCountry, city: finalCity });
     const baseLead = ensureLeadDefaults({
       num: maxNum,
       fecha: now.toISOString().substring(0, 10),
@@ -3222,8 +3228,8 @@ function _importLeadsCore(data, incoming, assignTo) {
       phone: cleanPhone,
       website: lead.website || '',
       address: lead.address || '',
-      city: lead.city || city || '',
-      country: lead.country || country || '',
+      city: finalCity,
+      country: finalCountry,
       rating: lead.rating || '',
       reviews: lead.reviews || 0,
       instagram: lead.instagram || '',
@@ -3234,7 +3240,7 @@ function _importLeadsCore(data, incoming, assignTo) {
       decisor: '',
       webWhatsApp: lead.webWhatsApp || '',
       aiWhatsApp: lead.aiWhatsApp || '',
-      openMessage: importedOpenMsg || lead.openMessage || '',
+      openMessage: finalOpenMsg,
       assignedTo: setter ? setter.id : '',
       varianteId,
       conexion: '',
@@ -3248,8 +3254,14 @@ function _importLeadsCore(data, incoming, assignTo) {
       importedAt: now.toISOString(),
       lastContactAt: null
     });
-    // Si ya viene con URL de WhatsApp completa (del CSV), usarla; si no, construirla
-    baseLead.whatsappUrl = importedWaUrl || buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', baseLead.country || country || '', importedOpenMsg);
+    // Si ya viene con URL de WhatsApp completa (del CSV) Y trae ?text=, usarla.
+    // Si la URL importada no trae text, la reconstruimos con finalOpenMsg para
+    // que el setter siempre abra WSP con mensaje pre-cargado.
+    if (importedWaUrl && (importedWaUrl.includes('?text=') || importedWaUrl.includes('&text='))) {
+      baseLead.whatsappUrl = importedWaUrl;
+    } else {
+      baseLead.whatsappUrl = buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', finalCountry, finalOpenMsg);
+    }
     // Re-evaluar wspProbability con los datos finales. Esto es info SOLO INFORMATIVA:
     // NO auto-ruteamos porque la heurística (sin wa.me en web) tiene muchos falsos
     // positivos — la mayoría de las clínicas SÍ tienen WSP aunque no lo pongan en su web.
