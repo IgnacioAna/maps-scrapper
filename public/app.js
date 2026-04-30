@@ -923,11 +923,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
   
         const data = await response.json();
-  
+
         if (!response.ok) {
           throw new Error(data.error || 'Error al obtener datos');
         }
-  
+
+        // Guardar el batchId para poder marcarlo como sentToSetter cuando
+        // se haga "Enviar a Setters". Asi el panel Historial deja de
+        // decir "NO ENVIADO" cuando en realidad se envio.
+        window._lastScrapeBatchId = data.batchId || null;
+
         currentData = (data.results || []).map(item => ({
           ...item,
           website: normalizeUrl(item.website),
@@ -2495,7 +2500,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       if (assignTo === null) return; // cancelado
       try {
-        const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo }) });
+        const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo, batchId: window._lastScrapeBatchId || null }) });
         if (!importResp.ok) {
           const errData = await importResp.text();
           console.error('Import error response:', importResp.status, errData);

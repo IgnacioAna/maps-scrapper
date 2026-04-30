@@ -3281,10 +3281,31 @@ function _importLeadsCore(data, incoming, assignTo) {
 
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { leads: incoming, assignTo } = req.body;
+    const { leads: incoming, assignTo, batchId } = req.body;
     const out = _importLeadsToSetters(incoming, assignTo);
     if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
-    res.json({ imported: out.imported, skipped: out.skipped, total: out.total });
+    // Si vino un batchId del scrape, marcamos el batch como sentToSetter para
+    // que el panel "Historial de Scrapes" muestre el estado correcto y no diga
+    // "NO ENVIADO" cuando si fue.
+    if (batchId) {
+      try {
+        const batchesData = loadScrapeBatches();
+        const batch = (batchesData.batches || []).find(b => b.id === batchId);
+        if (batch && !batch.sentToSetter) {
+          batch.sentToSetter = {
+            setterId: assignTo || '',
+            sentAt: new Date().toISOString(),
+            sentBy: req.auth?.user?.name || req.auth?.user?.email || 'admin',
+            imported: out.imported,
+            skipped: out.skipped
+          };
+          saveScrapeBatches(batchesData);
+        }
+      } catch (e) {
+        console.warn('[import] no pude marcar batch como enviado:', e.message);
+      }
+    }
+    res.json({ imported: out.imported, skipped: out.skipped, total: out.total, batchUpdated: !!batchId });
   } catch (err) {
     console.error('Error en /api/setters/import:', err);
     res.status(500).json({ error: err.message || 'Error importando leads' });
