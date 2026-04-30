@@ -1544,8 +1544,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       };
 
+      // Modo implícito: 24h+48h+72h auto-programados si conexion=enviada y
+      // ningún planned está activo. Mantiene paridad con el backend.
+      const fp = lead.followUpsPlanned || {};
+      const allPlannedFalse = !fp['24hs'] && !fp['48hs'] && !fp['72hs'] && !fp['7d'] && !fp['15d'];
+      const isImplicit = allPlannedFalse && lead.conexion === 'enviada';
+      const IMPLICIT_KEYS = new Set(['24hs', '48hs', '72hs']);
+
       for (const step of STEPS) {
-        const planned = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
+        const explicit = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
+        const implicit = isImplicit && IMPLICIT_KEYS.has(step.key);
+        const planned = explicit || implicit;
         const flag = !!(lead.followUps && lead.followUps[step.key]);
         const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
         const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
@@ -1918,11 +1927,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (filtered.length === 0) {
         setterLeadsBody.innerHTML = '<tr><td colspan="19" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
+        // Marcar tabla vacía para que CSS quite el min-width 1800 y no aparezca
+        // doble scrollbar al pegarse con el floating scrollbar.
+        document.getElementById('setter-table')?.setAttribute('data-empty', '1');
         // Limpiar paginación
         const pag = document.getElementById('setter-pagination');
         if (pag) pag.innerHTML = '';
         return;
       }
+      // Tabla con datos: restaurar min-width
+      document.getElementById('setter-table')?.removeAttribute('data-empty');
 
       // Paginación
       const totalPages = Math.ceil(filtered.length / SETTER_PAGE_SIZE);

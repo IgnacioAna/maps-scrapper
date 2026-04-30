@@ -3706,7 +3706,19 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
     if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
 
     if (planned !== undefined) {
-      lead.followUpsPlanned[step] = !!planned;
+      // Si estamos en modo implícito (todos false + conexion=enviada), antes
+      // de aplicar el cambio materializamos los OTROS 2 implícitos a true,
+      // para que la decisión del setter sea coherente.
+      const cur = lead.followUpsPlanned;
+      const allFalse = !cur['24hs'] && !cur['48hs'] && !cur['72hs'] && !cur['7d'] && !cur['15d'];
+      const inImplicit = allFalse && lead.conexion === 'enviada';
+      if (inImplicit) {
+        const IMPLICIT = ['24hs', '48hs', '72hs'];
+        for (const k of IMPLICIT) {
+          if (k !== step) cur[k] = true;
+        }
+      }
+      cur[step] = !!planned;
     }
     if (note !== undefined) {
       lead.followUpNotes[step] = String(note || '').slice(0, 500);
@@ -4133,10 +4145,20 @@ function _computeFollowupsDue(lead, now = Date.now()) {
   const startOfTomorrow = startOfToday.getTime() + 24 * 60 * 60 * 1000;
   const startOfYesterday = startOfToday.getTime() - 24 * 60 * 60 * 1000;
 
+  // DEFAULT IMPLÍCITO: si el lead tiene WSP enviado y NUNCA fue tocado el modelo
+  // de planned (todos false), asumir que 24h+48h+72h estan programados por
+  // default (caso natural de outreach). El setter puede desprogramar manualmente
+  // si no quiere alguno, o programar 7d/15d extra. Apenas el setter toca CUALQUIER
+  // step manualmente (planned=true o false explicito), se respeta su decision.
+  const planned = lead.followUpsPlanned || {};
+  const allPlannedFalse = !planned['24hs'] && !planned['48hs'] && !planned['72hs'] && !planned['7d'] && !planned['15d'];
+  const isImplicitDefault = allPlannedFalse && lead.conexion === 'enviada';
+  const IMPLICIT_STEPS = new Set(['24hs', '48hs', '72hs']);
+
   for (const step of FOLLOWUP_STEPS) {
-    // Si el setter NO programó este step explícitamente, no entra en el listado.
-    const planned = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
-    if (!planned) continue;
+    const explicit = !!planned[step.key];
+    const implicit = isImplicitDefault && IMPLICIT_STEPS.has(step.key);
+    if (!explicit && !implicit) continue;
     const flag = !!(lead.followUps && lead.followUps[step.key]);
     const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
     const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;

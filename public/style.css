@@ -979,6 +979,18 @@ body:has(#view-social.active) .global-location-panel {
   min-width: 1800px;
   table-layout: auto;
 }
+/* Cuando la tabla está vacía (filtros sin resultados), quitar el min-width para
+   que no aparezca scroll horizontal innecesario (causaba doble scrollbar al
+   verse junto al floating scrollbar del viewport). */
+#setter-table[data-empty="1"] {
+  min-width: 100%;
+  width: 100%;
+}
+/* Y ocultar el floating scrollbar cuando la tabla está vacía. */
+#setter-table[data-empty="1"] ~ #crm-floating-scrollbar,
+#view-crm:has(#setter-table[data-empty="1"]) #crm-floating-scrollbar {
+  display: none !important;
+}
 
 /* Container de la tabla del Setteo: altura limitada para que el scrollbar
    horizontal NO quede al fondo del array completo de leads. Ademas tenemos
@@ -1370,13 +1382,15 @@ td.empty-state .empty-state-content::before {
   align-items: center;
   gap: 10px;
   padding: 8px 16px;
-  margin: 8px 16px 0;
+  margin: 8px 0 0;
   background: rgba(157,133,242,0.06);
   border: 1px solid rgba(157,133,242,0.25);
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 12px;
   flex-wrap: wrap;
+  box-sizing: border-box;
+  width: 100%;
 }
 .followups-banner .fb-icon {
   font-size: 14px;
