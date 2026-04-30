@@ -391,6 +391,19 @@ function parseLocationParts(location = "") {
 
 function ensureLeadDefaults(lead = {}) {
   if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+  // Notas opcionales por step de follow-up. Se setean cuando el setter programa
+  // el seguimiento con contexto. Vacio por default.
+  if (!lead.followUpNotes || typeof lead.followUpNotes !== 'object') {
+    lead.followUpNotes = { '24hs': '', '48hs': '', '72hs': '', '7d': '', '15d': '' };
+  }
+  // Overrides de fecha de vencimiento por step (ISO date). Si null, se usa
+  // lastContactAt + delta del step. Si tiene valor, ese es el vencimiento.
+  if (!lead.followUpDueOverrides || typeof lead.followUpDueOverrides !== 'object') {
+    lead.followUpDueOverrides = { '24hs': null, '48hs': null, '72hs': null, '7d': null, '15d': null };
+  }
+  // Flag para "reactivar follow-ups" si el lead estaba agendado/descartado y el
+  // setter quiere retomar el seguimiento.
+  if (typeof lead.followUpsReactivated !== 'boolean') lead.followUpsReactivated = false;
   if (!Array.isArray(lead.notes)) lead.notes = [];
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
   if (!lead.country) lead.country = '';
@@ -3658,27 +3671,64 @@ app.post('/api/setters/leads/:id/interaction', requireAuth, (req, res) => {
   res.json({ ok: true, lead: { id: req.params.id, ...lead } });
 });
 
-// Follow-up toggle
+// Follow-up toggle/edit. Body acepta:
+//   { step, value? }              → toggle / set flag (comportamiento legacy)
+//   { step, note }                → setear nota del step (string vacio = limpiar)
+//   { step, reschedule: ISO_date } → reprogramar vencimiento del step
+//   { reactivate: true }           → poner followUpsReactivated=true (lead vuelve al listado)
+//   { reactivate: false }          → desactivar (vuelven a esconderse si estado lo amerita)
 app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
-  const { step, value } = req.body;
-  const valid = ['24hs', '48hs', '72hs', '7d', '15d'];
-  if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
+  const { step, value, note, reschedule, reactivate } = req.body || {};
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
-  // Si viene value explícito, usarlo (determinístico). Si no, toggle (legacy).
-  if (typeof value === 'boolean') {
-    lead.followUps[step] = value;
-  } else {
-    lead.followUps[step] = !lead.followUps[step];
+  ensureLeadDefaults(lead);
+  const valid = ['24hs', '48hs', '72hs', '7d', '15d'];
+
+  // Reactivate (no requiere step)
+  if (reactivate !== undefined) {
+    lead.followUpsReactivated = !!reactivate;
   }
-  lead.lastContactAt = new Date().toISOString();
+
+  // Si hay step, validar primero antes de tocar
+  if (step !== undefined) {
+    if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
+
+    if (note !== undefined) {
+      lead.followUpNotes[step] = String(note || '').slice(0, 500);
+    }
+    if (reschedule !== undefined) {
+      if (reschedule === null || reschedule === '') {
+        lead.followUpDueOverrides[step] = null;
+      } else {
+        const ts = new Date(reschedule).getTime();
+        if (Number.isNaN(ts)) return res.status(400).json({ error: "reschedule debe ser fecha ISO o vacio." });
+        lead.followUpDueOverrides[step] = new Date(ts).toISOString();
+      }
+    }
+    // Si viene value explícito, usarlo. Si NO viene value pero NO viene note ni
+    // reschedule (caso legacy del checkbox), togglear.
+    if (typeof value === 'boolean') {
+      lead.followUps[step] = value;
+      lead.lastContactAt = new Date().toISOString();
+    } else if (note === undefined && reschedule === undefined && reactivate === undefined) {
+      lead.followUps[step] = !lead.followUps[step];
+      lead.lastContactAt = new Date().toISOString();
+    }
+  }
+
   saveSettersData(data);
-  res.json({ ok: true, followUps: lead.followUps, lead: { id: req.params.id, ...lead } });
+  res.json({
+    ok: true,
+    followUps: lead.followUps,
+    followUpNotes: lead.followUpNotes,
+    followUpDueOverrides: lead.followUpDueOverrides,
+    followUpsReactivated: lead.followUpsReactivated,
+    lead: { id: req.params.id, ...lead },
+  });
 });
 
 // Notas
@@ -4031,6 +4081,177 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
     setters: data.setters,
     variants: data.variants
   });
+});
+
+// ══════════════════════════════════════════════════════════════
+// ── FOLLOW-UPS: programación, vencimientos, notas, reschedule ──
+// Reusa el data model existente: lead.followUps (flags por step), lastContactAt
+// (fecha base para calcular vencimientos), + extensiones nuevas:
+// followUpNotes, followUpDueOverrides, followUpsReactivated.
+// ══════════════════════════════════════════════════════════════
+const FOLLOWUP_STEPS = [
+  { key: '24hs',  label: '24h', deltaMs: 24 * 60 * 60 * 1000 },
+  { key: '48hs',  label: '48h', deltaMs: 48 * 60 * 60 * 1000 },
+  { key: '72hs',  label: '72h', deltaMs: 72 * 60 * 60 * 1000 },
+  { key: '7d',    label: '7d',  deltaMs: 7 * 24 * 60 * 60 * 1000 },
+  { key: '15d',   label: '15d', deltaMs: 15 * 24 * 60 * 60 * 1000 },
+];
+
+// Estados que ocultan los follow-ups del listado "Hacer hoy" automáticamente.
+// El setter puede revertir con followUpsReactivated=true desde la tarjeta.
+const FOLLOWUP_HIDE_STATES = new Set(['agendado', 'descartado', 'cerrado']);
+
+function _isFollowupHidden(lead) {
+  if (lead.followUpsReactivated === true) return false;
+  if (FOLLOWUP_HIDE_STATES.has(lead.estado)) return true;
+  if (lead.interes === 'no') return true;
+  return false;
+}
+
+// Computa el estado de cada follow-up de un lead:
+//   - dueDate: ISO de cuándo vence (override o lastContactAt + step delta)
+//   - status: 'completed' | 'future' | 'dueToday' | 'dueYesterday' | 'overdue'
+//   - note: string (puede ser '')
+function _computeFollowupsDue(lead, now = Date.now()) {
+  const out = [];
+  if (!lead || _isFollowupHidden(lead)) return out;
+  const baseTs = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+  if (!baseTs) return out; // sin lastContactAt no hay base para programar
+  const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+  const startOfTomorrow = startOfToday.getTime() + 24 * 60 * 60 * 1000;
+  const startOfYesterday = startOfToday.getTime() - 24 * 60 * 60 * 1000;
+
+  for (const step of FOLLOWUP_STEPS) {
+    const flag = !!(lead.followUps && lead.followUps[step.key]);
+    const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
+    const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
+    const dueTs = overrideTs > 0 ? overrideTs : baseTs + step.deltaMs;
+
+    let status;
+    if (flag) status = 'completed';
+    else if (dueTs >= startOfTomorrow) status = 'future';
+    else if (dueTs >= startOfToday.getTime() && dueTs < startOfTomorrow) status = 'dueToday';
+    else if (dueTs >= startOfYesterday && dueTs < startOfToday.getTime()) status = 'dueYesterday';
+    else status = 'overdue';
+
+    out.push({
+      step: step.key,
+      label: step.label,
+      dueDate: new Date(dueTs).toISOString(),
+      isOverride: overrideTs > 0,
+      status,
+      note: (lead.followUpNotes && lead.followUpNotes[step.key]) || '',
+    });
+  }
+  return out;
+}
+
+// Cuenta follow-ups pendientes de un setter (solo dueToday + dueYesterday — NO
+// los overdue). Usado por el badge del sidebar.
+function _countFollowupsForBadge(leads) {
+  let count = 0;
+  for (const lead of leads) {
+    const fus = _computeFollowupsDue(lead);
+    for (const f of fus) {
+      if (f.status === 'dueToday' || f.status === 'dueYesterday') count++;
+    }
+  }
+  return count;
+}
+
+// GET /api/setters/followups/today — lista follow-ups del setter logueado
+// agrupados en dueToday / dueYesterday / overdue. Cada item incluye lead info
+// resumida + step + dueDate + note + variantUsedName.
+// Query params (admin/supervisor):
+//   - setter=<id> filtrar por setter especifico
+// RBAC: setter forzado a su id, admin/supervisor pueden filtrar.
+app.get('/api/setters/followups/today', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  const isSetter = role === 'setter';
+  const isAdminOrSuper = role === 'admin' || role === 'supervisor';
+  if (!isSetter && !isAdminOrSuper) return res.status(403).json({ error: 'No autorizado.' });
+
+  const data = loadSettersData();
+  let leads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
+
+  // Filtrar por setter
+  if (isSetter) {
+    leads = leads.filter((l) => l.assignedTo === req.auth.user.setterId);
+  } else if (req.query.setter) {
+    leads = leads.filter((l) => l.assignedTo === req.query.setter);
+  }
+
+  // Variantes para resolver nombre
+  const variantsById = {};
+  for (const v of (data.variants || [])) variantsById[v.id] = v.name || v.id;
+
+  const dueToday = [];
+  const dueYesterday = [];
+  const overdue = [];
+  const now = Date.now();
+
+  for (const lead of leads) {
+    const fus = _computeFollowupsDue(lead, now);
+    for (const f of fus) {
+      if (f.status === 'completed' || f.status === 'future') continue;
+      const item = {
+        leadId: lead._id,
+        leadName: lead.name || '—',
+        phone: lead.phone || '',
+        country: lead.country || '',
+        city: lead.city || '',
+        doctor: lead.doctor || '',
+        whatsappUrl: lead.whatsappUrl || '',
+        assignedTo: lead.assignedTo || '',
+        estado: lead.estado || '',
+        step: f.step,
+        label: f.label,
+        dueDate: f.dueDate,
+        isOverride: f.isOverride,
+        note: f.note,
+        variantId: lead.varianteId || '',
+        variantName: variantsById[lead.varianteId] || '',
+        lastContactAt: lead.lastContactAt || null,
+      };
+      if (f.status === 'dueToday') dueToday.push(item);
+      else if (f.status === 'dueYesterday') dueYesterday.push(item);
+      else if (f.status === 'overdue') overdue.push(item);
+    }
+  }
+
+  // Ordenar por dueDate ascendente (los que vencen antes primero).
+  const byDue = (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+  dueToday.sort(byDue);
+  dueYesterday.sort(byDue);
+  overdue.sort(byDue); // los más antiguos primero (vencen "antes" en el pasado)
+
+  res.json({
+    setter: isSetter ? req.auth.user.setterId : (req.query.setter || null),
+    setterScope: isSetter ? 'self' : (req.query.setter ? 'individual' : 'team'),
+    counts: {
+      dueToday: dueToday.length,
+      dueYesterday: dueYesterday.length,
+      overdue: overdue.length,
+      badge: dueToday.length + dueYesterday.length,
+    },
+    dueToday,
+    dueYesterday,
+    overdue,
+  });
+});
+
+// GET /api/setters/followups/badge — endpoint liviano para el badge del sidebar.
+// Solo devuelve { count: N } (suma de dueToday + dueYesterday del setter).
+app.get('/api/setters/followups/badge', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  const data = loadSettersData();
+  let leads = Object.values(data.leads || {}).map(ensureLeadDefaults);
+  if (role === 'setter') {
+    leads = leads.filter((l) => l.assignedTo === req.auth.user.setterId);
+  } else if (req.query.setter) {
+    leads = leads.filter((l) => l.assignedTo === req.query.setter);
+  }
+  res.json({ count: _countFollowupsForBadge(leads) });
 });
 
 // ── Performance: serie temporal por setter (Mi rendimiento + Equipo) ──

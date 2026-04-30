@@ -55025,6 +55025,1692 @@
       "scrapedAt": "2026-04-30T17:42:33.410Z",
       "query": "clinica dental",
       "location": "La Plata, Argentina"
+    },
+    "centro odontológico odonto solutions_los rosales, arequipa 04014, peru": {
+      "name": "Centro Odontológico Odonto Solutions",
+      "address": "Los Rosales, Arequipa 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "spa odontológico internacional_ovalo de vallecito 117, arequipa 04001, peru": {
+      "name": "Spa Odontológico Internacional",
+      "address": "Ovalo de Vallecito 117, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "laserdentkids sede arequipa | odontopediatría y ortodoncia | dentista para niños_los angeles de, arequipa 04013, peru": {
+      "name": "LaserdentKids Sede Arequipa | Odontopediatría y Ortodoncia | Dentista para Niños",
+      "address": "Los Angeles de, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontologico odontosonrisas arequipa_c. peral 571, arequipa 04001, peru": {
+      "name": "Centro Odontologico OdontoSonrisas Arequipa",
+      "address": "C. Peral 571, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "identa centro odontológico_av.dolores urb, agricultura 13, josé luis bustamante y rivero 04002, peru": {
+      "name": "Identa Centro Odontológico",
+      "address": "Av.Dolores Urb, Agricultura 13, José Luis Bustamante y Rivero 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "oralaser centro odontológico_c. san juan de dios 641, arequipa 04001, peru": {
+      "name": "Oralaser Centro Odontológico",
+      "address": "C. San Juan de Dios 641, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "serenity clínica dental_c. mercaderes 408-b, arequipa 04001, peru": {
+      "name": "Serenity Clínica Dental",
+      "address": "C. Mercaderes 408-B, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "priesdent odontologia digital_c. sevilla 102, arequipa 04013, peru": {
+      "name": "PRIESDENT Odontologia Digital",
+      "address": "C. Sevilla 102, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica open dental arequipa_estadio la tomilla, 28 de julio 404, cayma 04018, peru": {
+      "name": "CLINICA OPEN DENTAL AREQUIPA",
+      "address": "Estadio La Tomilla, 28 De Julio 404, Cayma 04018, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dental luedent_mal. socabaya cercado, arequipa 04001, peru": {
+      "name": "CLÍNICA DENTAL LUEDENT",
+      "address": "Mal. Socabaya Cercado, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clidentika centro odontológico_pje. sta. rosa 1920, arequipa 04001, peru": {
+      "name": "CLIDENTIKA Centro Odontológico",
+      "address": "Pje. Sta. Rosa 1920, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontologico sobre la rocaa_av. emmel 116a, arequipa 04013, peru": {
+      "name": "Centro Odontologico Sobre la Rocaa",
+      "address": "Av. Emmel 116A, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "doctor tapia centro odontológico_tronchadero 205, arequipa 04000, peru": {
+      "name": "Doctor Tapia Centro Odontológico",
+      "address": "Tronchadero 205, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "sta. maria_calle, av. jorge chávez 124, arequipa 04001, peru": {
+      "name": "Sta. Maria",
+      "address": "Calle, Av. Jorge Chávez 124, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dental multident arequipa_av. trinidad morán i-5, cayma 04013, peru": {
+      "name": "Clinica Dental Multident Arequipa",
+      "address": "Av. Trinidad Morán i-5, Cayma 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "qhali kay centro odontológico_urb. león xiii b23, cayma 04000, peru": {
+      "name": "Qhali Kay Centro Odontológico",
+      "address": "Urb. León XIII B23, Cayma 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro de odontología americana_avenida cayma 404 cayma, arequipa 04014, peru": {
+      "name": "Centro de Odontología Americana",
+      "address": "Avenida Cayma 404 Cayma, Arequipa 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "orthozent. especialidades odontológicas_av. hartley 4, josé luis bustamante y rivero 04009, peru": {
+      "name": "Orthozent. Especialidades Odontológicas",
+      "address": "Av. Hartley 4, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "central dentistas bustamante_josé luis bustamante district, av. dolores #163, arequipa 04000, peru": {
+      "name": "Central Dentistas Bustamante",
+      "address": "José Luis Bustamante District, Av. Dolores #163, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontologico cideo_arequipa 04001, peru": {
+      "name": "Centro Odontologico CIDEO",
+      "address": "Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica newdent_los cedros c-3 yanahuara, arequipa 04000, peru": {
+      "name": "CLINICA NEWDENT",
+      "address": "Los Cedros C-3 Yanahuara, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dentoclinic arequipa_av. ejército 906 , urb, cayma 04001, peru": {
+      "name": "DentoClinic Arequipa",
+      "address": "Av. Ejército 906 , Urb, Cayma 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "idealix clinica dental_edificio nasya i. oficina, 411, av. ejército 101, arequipa, peru": {
+      "name": "Idealix Clinica Dental",
+      "address": "Edificio Nasya I. Oficina, 411, Av. Ejército 101, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "titanium dent centro odontológico-dental_av. independencia 310, arequipa 04001, peru": {
+      "name": "Titanium Dent Centro Odontológico-Dental",
+      "address": "Av. Independencia 310, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontológico dental zone_c. jerusalén 404-a, arequipa 04001, peru": {
+      "name": "Centro Odontológico Dental Zone",
+      "address": "C. Jerusalén 404-A, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "milident_salaverry, arequipa 04001, peru": {
+      "name": "MiliDent",
+      "address": "Salaverry, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontológico doctor muelita_av. hartley 3 - urb, josé luis bustamante y rivero 04009, peru": {
+      "name": "Centro Odontológico Doctor Muelita",
+      "address": "Av. Hartley 3 - Urb, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "identa centro odontológico_misti 604, yanahuara 04210, peru": {
+      "name": "Identa Centro Odontológico",
+      "address": "Misti 604, Yanahuara 04210, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental group_c. san juan de dios 316, arequipa 04001, peru": {
+      "name": "Dental Group",
+      "address": "C. San Juan de Dios 316, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dentiniños odontopediatria_urb. valencia h-16, arequipa, peru": {
+      "name": "DentiNiños Odontopediatria",
+      "address": "Urb. Valencia H-16, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ortodontic lambramani_urb lambramani (bypass, virgen del pilar h4, arequipa 04001, peru": {
+      "name": "ORTODONTIC LAMBRAMANI",
+      "address": "URB LAMBRAMANI (BYPASS, Virgen del Pilar H4, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica odontologica soa_c. lazo de los rios 308, arequipa 04013, peru": {
+      "name": "CLINICA ODONTOLOGICA SOA",
+      "address": "C. Lazo de Los Rios 308, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dental stetic dent´s_av. siglo xx 142, arequipa 04001, peru": {
+      "name": "Clínica Dental Stetic Dent´s",
+      "address": "Av. Siglo XX 142, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "care clínica dental_ca. lima 113, yanahuara 04017, peru": {
+      "name": "CARE CLÍNICA DENTAL",
+      "address": "Ca. Lima 113, Yanahuara 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dental freshdent_av. lambramani 101, josé luis bustamante y rivero 04002, peru": {
+      "name": "Clínica Dental FreshDent",
+      "address": "Av. Lambramani 101, José Luis Bustamante y Rivero 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "curae estudio dental_jerusalén 605, yanahuara 04017, peru": {
+      "name": "Curae Estudio Dental",
+      "address": "Jerusalén 605, Yanahuara 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odóntika del perú_av. ejército 107-c, yanahuara 04013, peru": {
+      "name": "Odóntika Del Perú",
+      "address": "Av. Ejército 107-C, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro dental cristiano crisdent_c. la merced 540, arequipa 04001, peru": {
+      "name": "Centro Dental Cristiano CRISDENT",
+      "address": "C. la Merced 540, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "coa arequipa - centro odontológico americano_c. sevilla 107, cayma 04013, peru": {
+      "name": "COA Arequipa - Centro Odontológico Americano",
+      "address": "C. Sevilla 107, Cayma 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dentis implant clínica odontologica_francisco mostajo 319, yanahuara 04001, peru": {
+      "name": "DENTIS IMPLANT Clínica Odontologica",
+      "address": "Francisco Mostajo 319, Yanahuara 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica odontológica zea_c. sevilla 111, cayma 04018, peru": {
+      "name": "Clínica Odontológica ZEA",
+      "address": "C. Sevilla 111, Cayma 04018, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odam odontologia yanahuara_ejército 210, arequipa 04017, peru": {
+      "name": "ODAM ODONTOLOGIA YANAHUARA",
+      "address": "Ejército 210, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "manuel castro odontólogo_av ejército 101 edificio nasya i oficina 515, yanahuara 04001, peru": {
+      "name": "Manuel Castro Odontólogo",
+      "address": "Av ejército 101 Edificio Nasya I Oficina 515, Yanahuara 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "solución dental_urbanizacion adepa m-3, arequipa, josé luis bustamante y rivero, peru": {
+      "name": "Solución Dental",
+      "address": "Urbanizacion Adepa M-3, Arequipa, José Luis Bustamante y Rivero, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "orthodontist - clínica dental y ortodoncia en yanahuara_av. victor andrés belaunde 265, yanahuara 04013, peru": {
+      "name": "Orthodontist - Clínica Dental y Ortodoncia en Yanahuara",
+      "address": "Av. Victor Andrés Belaunde 265, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "medicdent_salaverry 409, arequipa 04001, peru": {
+      "name": "MEDICDENT",
+      "address": "Salaverry 409, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "identic odontología especializada_av. lambramani 161, arequipa 04002, peru": {
+      "name": "IDENTIC Odontología Especializada",
+      "address": "Av. Lambramani 161, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dental reval arequipa_av. vidaurrazaga 150, josé luis bustamante y rivero 04009, peru": {
+      "name": "CLINICA DENTAL REVAL AREQUIPA",
+      "address": "Av. Vidaurrazaga 150, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontologico via oral_av. cayma 604-a, arequipa 04014, peru": {
+      "name": "Centro Odontologico Via Oral",
+      "address": "Av. Cayma 604-A, Arequipa 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ortodent_ca. josé santos chocano 209, arequipa 04017, peru": {
+      "name": "ORTODENT",
+      "address": "Ca. José Santos Chocano 209, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "aqpsmile centro odontológico especializado_samuel velarde 116, arequipa 04013, peru": {
+      "name": "AQPSMILE CENTRO ODONTOLÓGICO ESPECIALIZADO",
+      "address": "Samuel Velarde 116, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica odontologica_rbanización san jose s/n, yanahuara cercado de, 04014, peru": {
+      "name": "Clinica Odontologica",
+      "address": "rbanización San Jose s/n, Yanahuara Cercado De, 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ochoa's dental group_calle enrique pallardely 13 cercado, arequipa 04002, peru": {
+      "name": "Ochoa's dental group",
+      "address": "Calle Enrique Pallardely 13 Cercado, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "vapreh dental care_av. estados unidos 10, josé luis bustamante y rivero 04009, peru": {
+      "name": "Vapreh Dental Care",
+      "address": "Av. Estados Unidos 10, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "zea centro odontologico_c. san juan de dios 216, arequipa 04001, peru": {
+      "name": "Zea Centro Odontologico",
+      "address": "C. San Juan de Dios 216, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro dental sao paulo_el filtro 311, arequipa 04000, peru": {
+      "name": "Centro Dental Sao Paulo",
+      "address": "El Filtro 311, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dental el solar - yanahuara_av. josé abelardo quiñones 35, arequipa 04013, peru": {
+      "name": "Clínica Dental El Solar - Yanahuara",
+      "address": "Av. José Abelardo Quiñones 35, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro cristiano dental internacional_urb. magisterial ⅱ, arequipa 04001, peru": {
+      "name": "Centro Cristiano Dental Internacional",
+      "address": "Urb. Magisterial Ⅱ, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultoriodentalsonríe_51, san juan de dios 410 2do piso, arequipa 04000, peru": {
+      "name": "ConsultorioDentalSonríe",
+      "address": "51, San Juan de Dios 410 2do piso, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "spa odontológico internacional cayma_av. cayma 406, cayma 04014, peru": {
+      "name": "Spa Odontológico Internacional Cayma",
+      "address": "Av. Cayma 406, Cayma 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "muelident aqp sede umacollo_lavalle 112, arequipa 04013, peru": {
+      "name": "Muelident AQP Sede Umacollo",
+      "address": "Lavalle 112, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "priodent_c. zamácola 202a, arequipa 04013, peru": {
+      "name": "PRIODENT",
+      "address": "C. Zamácola 202a, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ortodontic cayma arequipa_pasaje cooperativa de ingenieros h -14, 04000, peru": {
+      "name": "ORTODONTIC CAYMA AREQUIPA",
+      "address": "Pasaje Cooperativa de Ingenieros H -14, 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental mas arequipa_c. san juan de dios 402, cercado de arequipa 04001, peru": {
+      "name": "Dental Mas Arequipa",
+      "address": "C. San Juan de Dios 402, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "smile dental spa_mollendo 136, arequipa 04001, peru": {
+      "name": "Smile Dental Spa",
+      "address": "Mollendo 136, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "san josé_av. josé abelardo quiñones 116, arequipa 04013, peru": {
+      "name": "San José",
+      "address": "Av. José Abelardo Quiñones 116, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontológico_centro comercial via xristo, int. 220, av. siglo xx 218, arequipa 04001, peru": {
+      "name": "Centro Odontológico",
+      "address": "Centro Comercial Via Xristo, Int. 220, Av. Siglo XX 218, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica odontológica odam_calle nueva 211, arequipa 04001, peru": {
+      "name": "Clínica Odontológica ODAM",
+      "address": "Calle Nueva 211, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "orismed odontologia integral_urb. j. p. v. y g. g-17, josé luis bustamante y rivero 04009, peru": {
+      "name": "OrisMed Odontologia Integral",
+      "address": "Urb. J. P. V. y G. G-17, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "cori dent_la salle 101, arequipa 04001, peru": {
+      "name": "CORI DENT",
+      "address": "La Salle 101, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "cso arequipa - cuidado y salud oral_urb. las orquídeas v-4b, arequipa, peru": {
+      "name": "CSO Arequipa - Cuidado y Salud Oral",
+      "address": "Urb. Las Orquídeas V-4B, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "gutidents centro odontólogico_ca. ballon farfan n°99, arequipa 04013, peru": {
+      "name": "GUTIDENTS Centro Odontólogico",
+      "address": "Ca. Ballon Farfan N°99, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odam - odontológia la salle_la salle 103, arequipa 04001, peru": {
+      "name": "ODAM - Odontológia La Salle",
+      "address": "La Salle 103, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica odontológica zea pierola_frente a centromax, galerias heresi a3, arequipa 04000, peru": {
+      "name": "Clínica Odontológica Zea Pierola",
+      "address": "frente a Centromax, Galerias Heresi A3, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "glow dental - odontología integral_esquina con, av. lima 100, av. ejército ii, yanahuara 04001, peru": {
+      "name": "Glow Dental - Odontología Integral",
+      "address": "ESQUINA CON, AV. LIMA 100, Av. Ejército II, Yanahuara 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "medishgine_hfw3+9fc, arequipa 04013, peru": {
+      "name": "MEDISHGINE",
+      "address": "HFW3+9FC, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. gamarra odontología avanzada_c. santo domingo 205, arequipa 04001, peru": {
+      "name": "Dr. Gamarra Odontología Avanzada",
+      "address": "C. Santo Domingo 205, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "promise_urbanización alvares thomas, b-39-b, cercado de arequipa 04002, peru": {
+      "name": "Promise",
+      "address": "Urbanización Alvares Thomas, B-39-B, Cercado De Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro cristiano dental intrenacional_urb. magisterial ⅱ, arequipa 04013, peru": {
+      "name": "Centro Cristiano Dental Intrenacional",
+      "address": "Urb. Magisterial Ⅱ, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dental sodini_av. pumacahua 101, cerro colorado 04017, peru": {
+      "name": "Clinica Dental SODINI",
+      "address": "Av. Pumacahua 101, Cerro Colorado 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "hada de los dientes_san jose c-10, arequipa 04013, peru": {
+      "name": "Hada de los dientes",
+      "address": "San Jose C-10, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontólogo richard mercado_manuel aguirre 133-a, yanahuara 04013, peru": {
+      "name": "Odontólogo Richard Mercado",
+      "address": "Manuel Aguirre 133-A, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "especialista en ortodoncia arequipa i doctora márquez_urb. los portales i-8, cayma 04017, peru": {
+      "name": "Especialista en Ortodoncia Arequipa I Doctora Márquez",
+      "address": "Urb. Los Portales i-8, Cayma 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "san juan de dios clinic_clínica san juan de dios, av. ejército 1020, cayma 04000, peru": {
+      "name": "San Juan de Dios Clinic",
+      "address": "Clínica San Juan de Dios, Av. Ejército 1020, Cayma 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "doctor stetic_c. sucre 401, arequipa 04000, peru": {
+      "name": "Doctor Stetic",
+      "address": "C. Sucre 401, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "laboratorio dental_galería los cristales, c. santo domingo 205, cercado de arequipa 04001, peru": {
+      "name": "Laboratorio Dental",
+      "address": "GALERÍA LOS CRISTALES, C. Santo Domingo 205, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "adea arequipa (creando sonrisas)_república de chile 336, arequipa 04001, peru": {
+      "name": "ADEA arequipa (creando sonrisas)",
+      "address": "República de Chile 336, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio odontologico paredes y cardenas_c. sucre 306, arequipa 04001, peru": {
+      "name": "Consultorio Odontologico Paredes y Cardenas",
+      "address": "C. Sucre 306, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "confiadent — clinica odontologica_edificio magnus torre a, av. cayma, arequipa 04017, peru": {
+      "name": "Confiadent — Clinica Odontologica",
+      "address": "Edificio Magnus torre A, Av. Cayma, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "daniel alcides carrión medical center_clorinda matto de turner 116, arequipa 04002, peru": {
+      "name": "Daniel Alcides Carrión Medical Center",
+      "address": "Clorinda Matto de Turner 116, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental_edificio sudamérica, c. palacio viejo 216, cercado de arequipa 04001, peru": {
+      "name": "Dental",
+      "address": "Edificio Sudamérica, C. Palacio Viejo 216, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "z-dentalis_cercado, arequipa 04001, peru": {
+      "name": "Z-dentalis",
+      "address": "Cercado, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "medident arequipa_av. lambramani mz a lote 1 cercado, arequipa 04002, peru": {
+      "name": "Medident Arequipa",
+      "address": "Av. Lambramani Mz A Lote 1 Cercado, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dental plaza_c. san camilo 119, arequipa 04001, peru": {
+      "name": "Clinica Dental Plaza",
+      "address": "C. San Camilo 119, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "medina dent_galería \"san juan, c. perú 107, arequipa 04001, peru": {
+      "name": "Medina Dent",
+      "address": "Galería \"San Juan, C. Perú 107, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "denta vitalis_tronchadero 203, cayma 04017, peru": {
+      "name": "Denta Vitalis",
+      "address": "Tronchadero 203, Cayma 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental wash_segundo, c. san camilo 137, cercado de arequipa 04001, peru": {
+      "name": "Dental Wash",
+      "address": "SEGUNDO, C. San Camilo 137, Cercado de Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica tovar arequipa_arequipa 04001, peru": {
+      "name": "Clinica Tovar Arequipa",
+      "address": "Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "kobelth odontología_calle, octavio muñoz najar # 137, arequipa 04001, peru": {
+      "name": "Kobelth Odontología",
+      "address": "Calle, Octavio Muñoz Najar # 137, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "perudent_calle santa catalina 107 interior 3° piso cercado de arequipa, arequipa 04001, peru": {
+      "name": "Perudent",
+      "address": "calle santa catalina 107 interior 3° piso Cercado de Arequipa, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "alta estetica dental aed_urbano victor a. belaunde, yanahuara 04013, peru": {
+      "name": "Alta Estetica Dental AED",
+      "address": "Urbano Victor A. Belaunde, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "diagnocef - radiografías dentales_c. mercaderes 328, cercado de arequipa 04001, peru": {
+      "name": "DIAGNOCEF - RADIOGRAFÍAS DENTALES",
+      "address": "C. Mercaderes 328, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ab dental, centro odontológico_av. victor andrés belaunde 229-a, yanahuara 04016, peru": {
+      "name": "AB Dental, Centro Odontológico",
+      "address": "Av. Victor Andrés Belaunde 229-A, Yanahuara 04016, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "beadent, centro odontologico_urb. león xiii i- 3, cayma 04014, peru": {
+      "name": "Beadent, centro odontologico",
+      "address": "Urb. León XIII I- 3, Cayma 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica arequipa_av. bolognesi s/n esq, c. puente grau, arequipa 04017, peru": {
+      "name": "Clinica Arequipa",
+      "address": "Av. Bolognesi s/n Esq, C. Puente Grau, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "polar odontología estética_cooperativa daniel alcides carrion i-11, josé luis bustamante y rivero 04001, peru": {
+      "name": "Polar Odontología Estética",
+      "address": "Cooperativa Daniel Alcides Carrion I-11, José Luis Bustamante y Rivero 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odonto srl_c. santo domingo 211, arequipa 04001, peru": {
+      "name": "Odonto SRL",
+      "address": "C. Santo Domingo 211, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "sonríe a la vida - arequipa_y ribero, calle arenales entre columbia y nilo josé luis bustamante, arequipa 04002, peru": {
+      "name": "Sonríe a la vida - Arequipa",
+      "address": "y Ribero, Calle Arenales entre Columbia y Nilo José Luis Bustamante, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental rx and ct_centro médico arequipa, quinto, av. ejército 505, yanahuara 04017, peru": {
+      "name": "Dental Rx and CT",
+      "address": "Centro Médico Arequipa, Quinto, Av. Ejército 505, Yanahuara 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental sos_c. san camilo 333, cercado de arequipa 04001, peru": {
+      "name": "Dental Sos",
+      "address": "C. San Camilo 333, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "desy dent_arequipa avenue 1860, lynx 04001, peru": {
+      "name": "Desy Dent",
+      "address": "Arequipa Avenue 1860, Lynx 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odonto peru_av. emmel 405, yanahuara 04013, peru": {
+      "name": "Odonto Peru",
+      "address": "Av. Emmel 405, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "finezza - odontologia & microendodoncia_av. victor andrés belaunde c11, yanahuara 04001, peru": {
+      "name": "Finezza - Odontologia & Microendodoncia",
+      "address": "Av. Victor Andrés Belaunde C11, Yanahuara 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "oral rx_juan de dios salazar 282, arequipa 04001, peru": {
+      "name": "Oral rX",
+      "address": "Juan de Dios Salazar 282, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. carlos gutierrez consultorio dental_ca. consuelo 211, arequipa 04001, peru": {
+      "name": "Dr. Carlos Gutierrez Consultorio Dental",
+      "address": "Ca. Consuelo 211, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "roheri odontología integral_ca. consuelo 211, cercado de arequipa 04001, peru": {
+      "name": "Roheri Odontología Integral",
+      "address": "Ca. Consuelo 211, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro médico monte carmelo_calle francisco, gomez de la torre 119, arequipa, peru": {
+      "name": "Centro Médico Monte Carmelo",
+      "address": "Calle Francisco, Gomez De La Torre 119, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odam_c. piérola 108, arequipa 04000, peru": {
+      "name": "Odam",
+      "address": "C. Piérola 108, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "oral rx_av. ejército 101, yanahuara 1, peru": {
+      "name": "Oral rX",
+      "address": "Av. Ejército 101, Yanahuara 1, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio dental_c. jerusalén 132, cercado de arequipa 04001, peru": {
+      "name": "Consultorio Dental",
+      "address": "C. Jerusalén 132, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "biendental_galeria heresi oficina, c. mercaderes 328, arequipa 04001, peru": {
+      "name": "BienDental",
+      "address": "Galeria Heresi Oficina, C. Mercaderes 328, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "laboratorío dental torres_galería comercial juan xxiii, c. deán valdivia 408, cercado de arequipa 04001, peru": {
+      "name": "Laboratorío Dental Torres",
+      "address": "Galería Comercial Juan XXIII, C. Deán Valdivia 408, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinicentro absi_av. ejército 101, yanahuara 04013, peru": {
+      "name": "Clinicentro Absi",
+      "address": "Av. Ejército 101, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "priesdent odontología digital ( sede cercado)_costado del banco de la nación, c. rivero 113a, arequipa 04001, peru": {
+      "name": "Priesdent Odontología Digital ( Sede Cercado)",
+      "address": "Costado del Banco de la Nación, C. Rivero 113A, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "orthodentis arequipa especialistas en ortodoncia y ortopedia maxilar_av. brasil, arequipa 04013, peru": {
+      "name": "ORTHODENTIS AREQUIPA Especialistas en Ortodoncia y Ortopedia Maxilar",
+      "address": "Av. Brasil, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "sain dent_av. ramón castilla 403, arequipa 04018, peru": {
+      "name": "Sain Dent",
+      "address": "Av. Ramón Castilla 403, Arequipa 04018, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "oftalmosalud - clínica oftalmológica arequipa_manuel ugarteche 522, arequipa 04001, peru": {
+      "name": "Oftalmosalud - Clínica Oftalmológica Arequipa",
+      "address": "Manuel Ugarteche 522, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "super dent_calle nicolas de pierola 108, arequipa 04001, peru": {
+      "name": "Super Dent",
+      "address": "Calle Nicolas de Pierola 108, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "buen dentista_av. 28 de julio, cayma 04018, peru": {
+      "name": "Buen Dentista",
+      "address": "Av. 28 de Julio, Cayma 04018, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica mall salud perú_smart fit, edificio al costado de tottus 3er piso-encima del, paucarpata 04001, peru": {
+      "name": "Clinica Mall Salud Perú",
+      "address": "smart fit, edificio al costado de tottus 3er Piso-encima del, Paucarpata 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontho speed_c. álvarez thomas 576, arequipa 04001, peru": {
+      "name": "Odontho Speed",
+      "address": "C. Álvarez Thomas 576, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica emmel_av. emmel 125, yanahuara 04013, peru": {
+      "name": "Clínica Emmel",
+      "address": "Av. Emmel 125, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. pedro zapana chalco_galería soto, 204, c. perú 226 cercado, arequipa 04001, peru": {
+      "name": "Dr. Pedro Zapana Chalco",
+      "address": "Galería Soto, 204, C. Perú 226 Cercado, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "bellasmile dental_av. porongoche 518, josé luis bustamante y rivero 04002, peru": {
+      "name": "BELLASMILE DENTAL",
+      "address": "Av. Porongoche 518, José Luis Bustamante y Rivero 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontológico p.molar-dent_arequipa 218, tiabaya 04011, peru": {
+      "name": "Centro Odontológico P.Molar-Dent",
+      "address": "Arequipa 218, Tiabaya 04011, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "elite dentista & asociados_054, cayma, peru": {
+      "name": "ELITE DENTISTA & ASOCIADOS",
+      "address": "054, Cayma, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. manuel rubin dentista en arequipa_av. caracas 917, arequipa 04012, peru": {
+      "name": "Dr. Manuel Rubin Dentista en Arequipa",
+      "address": "Av. Caracas 917, Arequipa 04012, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "304 centro dental_olimpica 304, arequipa 04001, peru": {
+      "name": "304 Centro Dental",
+      "address": "Olimpica 304, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dra evangelina morales muñoz_c paz soldán 304, arequipa 04017, peru": {
+      "name": "Dra Evangelina Morales Muñoz",
+      "address": "C Paz Soldán 304, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "endomax - centro odontológico_galerías gama, c. peral 316, arequipa 04001, peru": {
+      "name": "Endomax - Centro Odontológico",
+      "address": "Galerías Gama, C. Peral 316, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "estética dental y del rostro - arequipa_las lilas 104, yanahuara 04013, peru": {
+      "name": "Estética Dental y del Rostro - Arequipa",
+      "address": "Las Lilas 104, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dra marita quiroz - dentista-piedra santa yanahuara-arequipa_urb piedra santa v-8 segunda etapa, yanahuara 04013, peru": {
+      "name": "Dra Marita Quiroz - Dentista-Piedra Santa Yanahuara-Arequipa",
+      "address": "Urb Piedra Santa V-8 segunda etapa, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "happy dents_av. paseo de la cultura n14, josé luis bustamante y rivero 04002, peru": {
+      "name": "Happy Dents",
+      "address": "Av. Paseo de La Cultura n14, José Luis Bustamante y Rivero 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "colegio odontologico region arequipa_urbano bancaria e9, arequipa 04002, peru": {
+      "name": "Colegio Odontologico Region Arequipa",
+      "address": "Urbano Bancaria e9, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "pacific dent_av. pacifico 500, alto selva alegre 04001, peru": {
+      "name": "Pacific Dent",
+      "address": "Av. Pacifico 500, Alto Selva Alegre 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "muelident aqp sede cercado_04000 av olimpica 100 c por ormeño cruce de salaverry con, c. san juan de dios, arequipa 04000, peru": {
+      "name": "Muelident AQP Sede Cercado",
+      "address": "04000 Av Olimpica 100 c por Ormeño cruce de salaverry con, C. San Juan de Dios, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dentalike ortodoncia e implantes dentales & odontologia estetica_calle honduras nro 100. segundo piso. oficina 5, josé luis bustamante y rivero 04009, peru": {
+      "name": "DENTALIKE Ortodoncia e Implantes Dentales & Odontologia estetica",
+      "address": "Calle Honduras Nro 100. Segundo Piso. Oficina 5, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "suárez & bernal odontología especializada | carillas | estética dental | implantes | diseño de sonrisa | prótesis_jf42+58q, arequipa 04014, peru": {
+      "name": "Suárez & Bernal Odontología Especializada | Carillas | Estética Dental | Implantes | Diseño de Sonrisa | Prótesis",
+      "address": "JF42+58Q, Arequipa 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio dental arequipa sur_urbanizacion 15 de enero, john f. kennedy 601 a, paucarpata 04002, peru": {
+      "name": "Consultorio dental Arequipa sur",
+      "address": "Urbanizacion 15 de Enero, John F. Kennedy 601 A, Paucarpata 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clearance - odontología estética_jirón, vizcaya 231, san luis 15021, peru": {
+      "name": "Clearance - Odontología Estética",
+      "address": "Jirón, Vizcaya 231, San Luis 15021, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "diente feliz 24 horas eirl_040001, arequipa, peru": {
+      "name": "Diente Feliz 24 Horas Eirl",
+      "address": "040001, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "diamond centro odontológico_calle malaga grenet d-6, peru": {
+      "name": "DIAMOND Centro Odontológico",
+      "address": "Calle Malaga Grenet D-6, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "oral center mr_04001, arequipa 04001, peru": {
+      "name": "ORAL CENTER MR",
+      "address": "04001, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental planet_al frente plaza las americas, bolognesi 209, cerro colorado 04000, peru": {
+      "name": "Dental Planet",
+      "address": "al frente Plaza Las Americas, Bolognesi 209, Cerro Colorado 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental innova_av ejército esquina con calle lima 100 edificio nasya 2, tercer piso, of 318 yanahuara, arequipa 04013, peru": {
+      "name": "DENTAL INNOVA",
+      "address": "Av ejército esquina con calle lima 100 Edificio Nasya 2, Tercer piso, Of 318 Yanahuara, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "aguilar ortodoncia, centro odontológico_av. victor andrés belaunde 229-a, yanahuara 04016, peru": {
+      "name": "AGUILAR ORTODONCIA, Centro Odontológico",
+      "address": "Av. Victor Andrés Belaunde 229-A, Yanahuara 04016, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "biodent especialistas en salud dental_melgar 104, arequipa 04001, peru": {
+      "name": "Biodent Especialistas en Salud Dental",
+      "address": "Melgar 104, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "orthodontica clinica dental_lisboa 104, jacobo hunter 04011, peru": {
+      "name": "Orthodontica Clinica Dental",
+      "address": "Lisboa 104, Jacobo Hunter 04011, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "altos estudios en odontología_av. siglo xx 142, arequipa 04001, peru": {
+      "name": "ALTOS ESTUDIOS EN ODONTOLOGÍA",
+      "address": "Av. Siglo XX 142, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "qm odontólogos_venezuela 188, arequipa 04001, peru": {
+      "name": "QM odontólogos",
+      "address": "Venezuela 188, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "maxident - centro de cirugía maxilofacial y odontología_san gabriel 63, arequipa 04002, peru": {
+      "name": "Maxident - Centro de Cirugía Maxilofacial y Odontología",
+      "address": "San Gabriel 63, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "cer dent_c. san josé 214-a, arequipa 04001, peru": {
+      "name": "Cer Dent",
+      "address": "C. San José 214-A, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "nova dental_urbanización, valencia g-17, yanahuara 04014, peru": {
+      "name": "Nova Dental",
+      "address": "Urbanización, Valencia G-17, Yanahuara 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "rinoplastía, otorrinolaringología arequipa \"santa fe\" - otorrino arequipa. dr. ronald rubén sillo cari._av. perú 201 con, costa rica 200, josé luis bustamante y rivero 04013, peru": {
+      "name": "Rinoplastía, Otorrinolaringología Arequipa \"Santa Fe\" - Otorrino Arequipa. Dr. Ronald Rubén Sillo Cari.",
+      "address": "Av. Perú 201 con, Costa Rica 200, José Luis Bustamante y Rivero 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dr. romero_mal. zolezzi 323, mariano melgar 04001, peru": {
+      "name": "Clinica Dr. Romero",
+      "address": "Mal. Zolezzi 323, Mariano Melgar 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "misti dent_mariano melgar 115, cayma 04013, peru": {
+      "name": "Misti Dent",
+      "address": "Mariano Melgar 115, Cayma 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dental harmony dent_hfch+wwp, av. hartley, arequipa 04002, peru": {
+      "name": "Clínica Dental Harmony Dent",
+      "address": "HFCH+WWP, Av. Hartley, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "ortodoncia brackets | biodens aqp | clinica dental_arequipa 206, paucarpata 04002, peru": {
+      "name": "Ortodoncia brackets | BIODENS AQP | Clinica dental",
+      "address": "Arequipa 206, Paucarpata 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. jonathan quilcate gonzales_c. perú 100-b, cercado de arequipa 04001, peru": {
+      "name": "Dr. Jonathan Quilcate Gonzales",
+      "address": "C. Perú 100-B, Cercado de Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "priesdent cercado_c. rivero 113, cercado arequipa 04001, peru": {
+      "name": "Priesdent cercado",
+      "address": "C. Rivero 113, Cercado Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio rey dental 👑🦷_c. rivero 408, arequipa 04001, peru": {
+      "name": "Consultorio Rey Dental 👑🦷",
+      "address": "C. Rivero 408, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "era dental consultorio odontológico - arequipa_c. 20 de abril 200a, cayma 04001, peru": {
+      "name": "Era Dental Consultorio odontológico - Arequipa",
+      "address": "C. 20 de Abril 200A, Cayma 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. pablo franco | odontología avanzada y especializada_sta. marta 411, arequipa 04001, peru": {
+      "name": "Dr. Pablo Franco | Odontología Avanzada y Especializada",
+      "address": "Sta. Marta 411, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "spa odontologico integral_pancho fierro 150, arequipa 04017, peru": {
+      "name": "Spa Odontologico Integral",
+      "address": "Pancho Fierro 150, Arequipa 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "gala dent - arequipa consultorio odontológico_av. roosevelt 225, alto selva alegre 04000, peru": {
+      "name": "GALA DENT - Arequipa Consultorio Odontológico",
+      "address": "Av. Roosevelt 225, Alto Selva Alegre 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorios dentales jaila_av. goyeneche 101, arequipa 04001, peru": {
+      "name": "CONSULTORIOS DENTALES JAILA",
+      "address": "Av. Goyeneche 101, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontologico dental implants_urb. león xiii, cayma 04014, peru": {
+      "name": "Centro Odontologico Dental Implants",
+      "address": "Urb. León XIII, Cayma 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio psicologico arequipa_mercaderes cel 934293837, calle mercaderes 406 of 308, union, arequipa, peru": {
+      "name": "CONSULTORIO PSICOLOGICO AREQUIPA",
+      "address": "Mercaderes CEL 934293837, calle MERCADERES 406 OF 308, Union, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "duality centro odontológico especializado, ejercito_av. ejército 502, cerro colorado 04017, peru": {
+      "name": "Duality Centro Odontológico Especializado, Ejercito",
+      "address": "Av. Ejército 502, Cerro Colorado 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "doctor maza_av. ejército 710, yanahuara 04000, peru": {
+      "name": "Doctor Maza",
+      "address": "Av. Ejército 710, Yanahuara 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "viva dent - centro odontológico especializado_calle clorinda matto de turner mz b, arequipa 04013, arequipa 04000, peru": {
+      "name": "Viva Dent - Centro Odontológico Especializado",
+      "address": "CALLE CLORINDA MATTO DE TURNER MZ B, Arequipa 04013, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "segur dent_misti 116a, yanahuara 04017, peru": {
+      "name": "Segur Dent",
+      "address": "Misti 116A, Yanahuara 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental house arequipa_av. goyeneche 2106, miraflores 04004, peru": {
+      "name": "Dental House Arequipa",
+      "address": "Av. Goyeneche 2106, Miraflores 04004, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "centro odontológico_san antonio 117, cercado de arequipa 04001, peru": {
+      "name": "Centro Odontológico",
+      "address": "San Antonio 117, Cercado de Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio dental_av. dolores 104, arequipa 04002, peru": {
+      "name": "Consultorio Dental",
+      "address": "Av. Dolores 104, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "salud dental arequipa_av pizarro 230, paucarpata 04009, peru": {
+      "name": "Salud Dental Arequipa",
+      "address": "Av Pizarro 230, Paucarpata 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio odontológico arequipa_modesto molina 1193, tacna 23001, peru": {
+      "name": "Consultorio odontológico Arequipa",
+      "address": "Modesto Molina 1193, Tacna 23001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "smile consultorio dental_c. peral 533, arequipa 04001, peru": {
+      "name": "SMILE consultorio dental",
+      "address": "C. Peral 533, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "biosmile consultorio dental_hfw8+vhg, c. san camilo, arequipa 04001, peru": {
+      "name": "BioSmile Consultorio Dental",
+      "address": "HFW8+VHG, C. San Camilo, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clinica dental dr. mauricio arequipa_previa cita, mariano melgar 525, cerro colorado 04014, peru": {
+      "name": "Clinica Dental Dr. Mauricio Arequipa",
+      "address": "Previa cita, Mariano Melgar 525, Cerro Colorado 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "molar consultorio dental_pje. los guindos, cayma 04017, peru": {
+      "name": "Molar Consultorio Dental",
+      "address": "Pje. Los Guindos, Cayma 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dra. ana zegarra, dentista en sanita dent_av. lambramani 134, arequipa 04002, peru": {
+      "name": "Dra. Ana Zegarra, Dentista en Sanita Dent",
+      "address": "Av. Lambramani 134, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "endoclinic arequipa_04014, independencia americana b9-a, yanahuara 04014, peru": {
+      "name": "EndoClinic Arequipa",
+      "address": "04014, Independencia Americana B9-A, Yanahuara 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "bucosalud_calle bartolome herrera 203, buen retiro cercado, arequipa 04001, peru": {
+      "name": "BucoSalud",
+      "address": "Calle Bartolome Herrera 203, Buen Retiro Cercado, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontocenter arequipa_av. estados unidos z-18, josé luis bustamante y rivero 04009, peru": {
+      "name": "Odontocenter Arequipa",
+      "address": "Av. Estados Unidos Z-18, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "okdent_octavio muñoz najar 238, arequipa 04001, peru": {
+      "name": "OKDENT",
+      "address": "Octavio Muñoz Najar 238, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "pimadent dra. denisse pizarro_c. mercaderes 406, arequipa 04001, peru": {
+      "name": "Pimadent Dra. Denisse Pizarro",
+      "address": "C. Mercaderes 406, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontholistica_santa teresa b-5 #1, arequipa 04001, peru": {
+      "name": "Odontholistica",
+      "address": "Santa Teresa B-5 #1, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "jha´dent aqp_octavio muñoz najar 106, arequipa 04001, peru": {
+      "name": "Jha´Dent Aqp",
+      "address": "Octavio Muñoz Najar 106, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. edgard garay - cirujano dentista_calle san felipe, urbanizacion los angeles lote 09, arequipa 04001, peru": {
+      "name": "Dr. Edgard Garay - Cirujano Dentista",
+      "address": "Calle San Felipe, Urbanizacion Los Angeles Lote 09, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "central dentistas yanahuara_av. ejército 616, yanahuara 04013, peru": {
+      "name": "Central Dentistas Yanahuara",
+      "address": "Av. Ejército 616, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "viadental_renato morales de, rivera 305, peru": {
+      "name": "ViaDental",
+      "address": "Renato Morales de, Rivera 305, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "cirujano dentista josé alberto deza rosas_calle clorinda matto de turner № 94, arequipa, peru": {
+      "name": "Cirujano Dentista José Alberto Deza Rosas",
+      "address": "Calle Clorinda Matto de Turner № 94, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio dental dra r.postigo_c. jerusalén 128, arequipa 04001, peru": {
+      "name": "Consultorio Dental Dra R.Postigo",
+      "address": "C. Jerusalén 128, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "mi dentista_cooperariva ingenieros h 14 - 5, cayma, arequipa, peru": {
+      "name": "Mi Dentista",
+      "address": "Cooperariva Ingenieros h 14 - 5, Cayma, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "bichectomia aqp & laser dent eirl._yanahuara 04014, peru": {
+      "name": "BICHECTOMIA AQP & LASER DENT EIRL.",
+      "address": "Yanahuara 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental rojas_av. la paz 309, arequipa 04001, peru": {
+      "name": "DENTAL ROJAS",
+      "address": "Av. La Paz 309, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "tmc innovación_c. mercaderes 328, arequipa 04001, peru": {
+      "name": "TMC INNOVACIÓN",
+      "address": "C. Mercaderes 328, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "cool dent arequipa_av. hartley e-39, josé luis bustamante y rivero 04009, peru": {
+      "name": "Cool Dent Arequipa",
+      "address": "Av. Hartley E-39, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odonto dey_urb. a, alvarez thomas a-16, arequipa, peru": {
+      "name": "Odonto Dey",
+      "address": "Urb. A, Alvarez Thomas A-16, Arequipa, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental studio aqp_av. victor andrés belaunde c10, yanahuara 04000, peru": {
+      "name": "DENTAL STUDIO AQP",
+      "address": "Av. Victor Andrés Belaunde C10, Yanahuara 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "clínica dalamo_josé luis bustamante y rivero 04009, peru": {
+      "name": "Clínica Dalamo",
+      "address": "José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dra. erika magaly choque | especialista en ortodoncia_urb. magisterial ⅱ j-10, arequipa 04013, peru": {
+      "name": "Dra. Erika Magaly Choque | Especialista en Ortodoncia",
+      "address": "Urb. Magisterial Ⅱ J-10, Arequipa 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "j & l_av. jorge chávez 511, cercado de arequipa 04001, peru": {
+      "name": "J & L",
+      "address": "Av. Jorge Chávez 511, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "alphadent_c. san juan de dios 216, arequipa 04001, peru": {
+      "name": "ALPHAdent",
+      "address": "C. San Juan de Dios 216, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "tendent - cia_residencial monterrico c5 josé luis bustamante y rivero, arequipa 04009, peru": {
+      "name": "TENDENT - CIA",
+      "address": "Residencial Monterrico C5 José Luis Bustamante y Rivero, Arequipa 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "sky dent's_calle, galeria diagonal, octavio muñoz najar 140, arequipa 04001, peru": {
+      "name": "SKY DENT'S",
+      "address": "Calle, Galeria Diagonal, Octavio Muñoz Najar 140, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odonefo_galería los cristales, c. santo domingo 205, cercado de arequipa 04001, peru": {
+      "name": "Odonefo",
+      "address": "GALERÍA LOS CRISTALES, C. Santo Domingo 205, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. cesar a. cornejo caceres_galería nueva visión, pizarro 224, cercado de arequipa 04001, peru": {
+      "name": "Dr. Cesar A. Cornejo Caceres",
+      "address": "Galería Nueva Visión, Pizarro 224, Cercado de Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dra. darcy quilcate gonzales_c. perú 100-b, cercado arequipa 04001, peru": {
+      "name": "Dra. Darcy Quilcate Gonzales",
+      "address": "C. Perú 100-B, Cercado Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "aqp salud_pizarro 401, arequipa 04001, peru": {
+      "name": "AQP SALUD",
+      "address": "Pizarro 401, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dental center_san rafael 118, cercado de arequipa 04001, peru": {
+      "name": "Dental Center",
+      "address": "San Rafael 118, Cercado De Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "facetas estudio dental_c. perú 107, arequipa 04001, peru": {
+      "name": "Facetas estudio dental",
+      "address": "C. Perú 107, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. dante villanueva_centro comercial ls casona, oficina 5-a, piso 2, calle mercaderes 32 cercado de, arequipa 04001, peru": {
+      "name": "Dr. Dante Villanueva",
+      "address": "Centro Comercial Ls Casona, Oficina 5-A, Piso 2, Calle Mercaderes 32 Cercado de, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontoplus_marañon 217, cerro colorado 04017, peru": {
+      "name": "ODONTOplus",
+      "address": "Marañon 217, Cerro Colorado 04017, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. smile centro odontológico_alfonso ugarte 313, cerro colorado 04014, peru": {
+      "name": "Dr. Smile Centro Odontológico",
+      "address": "Alfonso Ugarte 313, Cerro Colorado 04014, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "sonrie clínica dental_hfch+xx7, av. hartley, josé luis bustamante y rivero 04009, peru": {
+      "name": "SONRIE Clínica Dental",
+      "address": "HFCH+XX7, Av. Hartley, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "arce lazo marco antonio_av. arequipa 315, alto selva alegre 04001, peru": {
+      "name": "ARCE LAZO MARCO ANTONIO",
+      "address": "Av. Arequipa 315, Alto Selva Alegre 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "jose gutierrez mendez_centro comercial unión mercaderes, oficina 315, c. mercaderes 406, arequipa 04001, peru": {
+      "name": "Jose Gutierrez Mendez",
+      "address": "Centro Comercial Unión Mercaderes, Oficina 315, C. Mercaderes 406, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "smiles care_c. 15 de agosto 110, arequipa 04001, peru": {
+      "name": "Smiles Care",
+      "address": "C. 15 De Agosto 110, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "rh imágenes dent_urb. francisco mostajo g-36 urb. francisco mostajo, arequipa 04000, peru": {
+      "name": "RH Imágenes Dent",
+      "address": "Urb. Francisco Mostajo G-36 Urb. Francisco Mostajo, Arequipa 04000, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. luis b. huayta puma_galería nueva vición, pizarro 224, cercado de arequipa 04001, peru": {
+      "name": "Dr. Luis B. Huayta Puma",
+      "address": "Galería Nueva Vición, Pizarro 224, Cercado de Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dente white_arequipa 04001, peru": {
+      "name": "DENTE WHITE",
+      "address": "Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "dr. wilmar ramos - redent ramos_c. san josé 214, arequipa 04001, peru": {
+      "name": "Dr. Wilmar Ramos - REDENT RAMOS",
+      "address": "C. San José 214, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "odontiss_hfr9+4qr, av. virgen del pilar, arequipa 04002, peru": {
+      "name": "ODONTISS",
+      "address": "HFR9+4QR, Av. Virgen del Pilar, Arequipa 04002, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "lira_8320000, arequipa 04001, peru": {
+      "name": "Lira",
+      "address": "8320000, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "precio del dólar perú_c. san juan de dios 120, arequipa 04001, peru": {
+      "name": "Precio del Dólar Perú",
+      "address": "C. San Juan de Dios 120, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "adasur dent_av. victor andrés belaunde 101, yanahuara 04013, peru": {
+      "name": "ADASUR DENT",
+      "address": "Av. Victor Andrés Belaunde 101, Yanahuara 04013, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "masterclass odontología_av. independencia 1900, arequipa 04001, peru": {
+      "name": "MasterClass Odontología",
+      "address": "Av. Independencia 1900, Arequipa 04001, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "consultorio odontologico barreda_": {
+      "name": "CONSULTORIO ODONTOLOGICO BARREDA",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
+    },
+    "son reír_piso 2, avenida, garcilaso de la vega 200-a, josé luis bustamante y rivero 04009, peru": {
+      "name": "Son Reír",
+      "address": "PISO 2, AVENIDA, Garcilaso De La Vega 200-A, José Luis Bustamante y Rivero 04009, Peru",
+      "scrapedAt": "2026-04-30T18:00:02.179Z",
+      "query": "clinica dental\nodontologo\nconsultorio odontologico\ndentista",
+      "location": "Arequipa, Perú"
     }
   },
   "searches": [
@@ -55512,6 +57198,24 @@
       "timestamp": "2026-04-30T17:42:33.410Z",
       "newFound": 18,
       "duplicatesSkipped": 0
+    },
+    {
+      "query": "clinica dental",
+      "locations": [
+        "La Plata, Argentina"
+      ],
+      "timestamp": "2026-04-30T17:45:22.686Z",
+      "newFound": 0,
+      "duplicatesSkipped": 18
+    },
+    {
+      "query": "clinica dental | odontologo | consultorio odontologico | dentista",
+      "locations": [
+        "Arequipa, Perú"
+      ],
+      "timestamp": "2026-04-30T18:00:02.179Z",
+      "newFound": 241,
+      "duplicatesSkipped": 1
     }
   ],
   "lastPages": {
@@ -55632,6 +57336,10 @@
     "odontologo_bucaramanga, colombia": 10,
     "consultorio odontologico_bucaramanga, colombia": 10,
     "dentista_bucaramanga, colombia": 10,
-    "clinica dental_la plata, argentina": 1
+    "clinica dental_la plata, argentina": 1,
+    "clinica dental_arequipa, perú": 10,
+    "odontologo_arequipa, perú": 10,
+    "consultorio odontologico_arequipa, perú": 10,
+    "dentista_arequipa, perú": 10
   }
 }
