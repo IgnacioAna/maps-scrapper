@@ -1432,6 +1432,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     let settersList = [];
     let variantsList = [];
     let currentPipeFilter = 'all';
+    // Cache de follow-ups del setter actual (refresca al entrar al CRM y cada
+    // vez que se tilda un follow-up). Estructura igual a /api/setters/followups/today
+    let _followupsCache = null;
+    // Mapa rápido leadId → { step, label, status, note } para mostrar el chip
+    // en cada lead row cuando se está en filtros 'hacer_hoy' o 'atrasados'.
+    let _followupByLead = new Map();
+
+    async function loadFollowups() {
+      try {
+        const r = await fetch(apiUrl('/api/setters/followups/today'));
+        if (!r.ok) return;
+        const d = await r.json();
+        _followupsCache = d;
+        _followupByLead = new Map();
+        // Tomar el follow-up más urgente por lead (los más antiguos primero)
+        const allItems = [
+          ...(d.overdue || []).map(f => ({ ...f, statusBucket: 'overdue' })),
+          ...(d.dueYesterday || []).map(f => ({ ...f, statusBucket: 'dueYesterday' })),
+          ...(d.dueToday || []).map(f => ({ ...f, statusBucket: 'dueToday' })),
+        ];
+        for (const f of allItems) {
+          if (!_followupByLead.has(f.leadId)) _followupByLead.set(f.leadId, f);
+        }
+        // Update badges de filtros
+        const today = (d.counts?.dueToday || 0) + (d.counts?.dueYesterday || 0);
+        const overdue = d.counts?.overdue || 0;
+        const setBadge = (id, count, btnSelector) => {
+          const el = document.getElementById(id);
+          const btn = document.querySelector(btnSelector);
+          if (el) {
+            if (count > 0) { el.textContent = count; el.style.display = 'inline-flex'; }
+            else el.style.display = 'none';
+          }
+          if (btn) btn.classList.toggle('has-items', count > 0);
+        };
+        setBadge('filter-badge-hacer-hoy', today, '.pipe-filter-urgent');
+        setBadge('filter-badge-atrasados', overdue, '.pipe-filter-overdue');
+        // Sidebar badge
+        if (window._setSidebarFollowupsBadge) window._setSidebarFollowupsBadge(today);
+      } catch (e) { console.warn('[followups] load:', e.message); }
+    }
+
+    // Helper para que el chip se renderice en lead rows cuando aplica.
+    window._followupChipFor = (leadId) => _followupByLead.get(leadId) || null;
+
     let currentModalLeadId = null;
     let currentVariableId = '';
     let editingVariantId = '';
@@ -1496,6 +1541,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setterLeads = leadsData.leads || [];
         settersList = stats.setters || [];
         variantsList = stats.variants || [];
+        // Cargar follow-ups del setter (se usa para chips, badges y filtros)
+        loadFollowups();
 
         // Repopular filtro de país con los leads cargados
         if (typeof window._populateSetterCountryFilter === 'function') {
@@ -1600,7 +1647,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderSetterLeads() {
       let filtered = [...setterLeads];
-      if (currentPipeFilter === 'enviada') {
+      if (currentPipeFilter === 'hacer_hoy') {
+        // dueToday + dueYesterday: el setter tiene que hacerlos.
+        const ids = new Set([
+          ...(_followupsCache?.dueToday || []).map(f => f.leadId),
+          ...(_followupsCache?.dueYesterday || []).map(f => f.leadId),
+        ]);
+        filtered = filtered.filter(l => ids.has(l.id));
+      } else if (currentPipeFilter === 'atrasados') {
+        const ids = new Set((_followupsCache?.overdue || []).map(f => f.leadId));
+        filtered = filtered.filter(l => ids.has(l.id));
+      } else if (currentPipeFilter === 'enviada') {
         filtered = filtered.filter(l => l.conexion === 'enviada' && !l.respondio);
       } else if (currentPipeFilter === 'sin_wsp') {
         filtered = filtered.filter(l => l.conexion === 'sin_wsp');
@@ -1752,13 +1809,29 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? '<span class="chip ' + estadoChipClass[lead.estado] + '">' + estadoLabel[lead.estado] + '</span>'
           : '';
 
+        // Chip de follow-up: aparece en columna nombre cuando estamos en
+        // filtros 'hacer_hoy' o 'atrasados' (o si el lead tiene un follow-up
+        // urgente y queremos siempre mostrarlo). Por ahora: solo en esos filtros.
+        const fuItem = (window._followupChipFor && window._followupChipFor(lead.id)) || null;
+        let fuChipHtml = '';
+        let fuNoteHtml = '';
+        if (fuItem && (currentPipeFilter === 'hacer_hoy' || currentPipeFilter === 'atrasados')) {
+          const cls = fuItem.statusBucket === 'dueToday' ? 'followup-chip-today'
+            : fuItem.statusBucket === 'dueYesterday' ? 'followup-chip-yesterday'
+            : 'followup-chip-overdue';
+          fuChipHtml = '<span class="followup-chip ' + cls + '" title="Follow-up ' + escHtml(fuItem.label) + '">📅 ' + escHtml(fuItem.label) + '</span>';
+          if (fuItem.note) {
+            fuNoteHtml = '<div class="followup-row-note" title="' + escHtml(fuItem.note) + '">📝 ' + escHtml(fuItem.note) + '</div>';
+          }
+        }
+
         // Fecha: mostrar fecha de contacto si existe, sino fecha de import
         const displayDate = lead.fechaContacto || (lead.fecha || '').substring(5);
 
         return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')">' +
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
-          '<td style="font-weight:500;">' + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div></td>' +
+          '<td style="font-weight:500;">' + (fuChipHtml ? fuChipHtml + ' ' : '') + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div>' + fuNoteHtml + '</td>' +
           '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" title="Abrir sitio web"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +

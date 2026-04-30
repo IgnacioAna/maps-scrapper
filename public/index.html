@@ -438,6 +438,8 @@
         <!-- Filtros -->
         <div class="pipeline-filters">
           <button class="pipe-filter active" data-status="all">Todos</button>
+          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que vencen hoy o vencieron ayer">📅 Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
+          <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups vencidos hace más de 1 día">⏰ Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
           <button class="pipe-filter" data-status="sin_contactar">Sin contactar</button>
           <button class="pipe-filter" data-status="en_proceso">En proceso</button>
           <button class="pipe-filter" data-status="enviada">WSP Enviado</button>
@@ -1602,7 +1604,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429z"></script>
+  <script type="module" src="/app.js?v=20260430a"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

@@ -1268,6 +1268,84 @@ td.empty-state .empty-state-content::before {
   color: var(--accent);
 }
 
+/* Filtros especiales: Hacer hoy (verde) y Atrasados (naranja). Solo brillan
+   cuando hay items pendientes (filter-badge visible). */
+.pipe-filter-urgent.has-items {
+  border-color: rgba(91, 185, 116, 0.5);
+  color: #5bb974;
+}
+.pipe-filter-urgent.has-items.active {
+  background: rgba(91, 185, 116, 0.10);
+  border-color: #5bb974;
+  color: #5bb974;
+}
+.pipe-filter-overdue.has-items {
+  border-color: rgba(255, 138, 61, 0.55);
+  color: #ff8a3d;
+}
+.pipe-filter-overdue.has-items.active {
+  background: rgba(255, 138, 61, 0.10);
+  border-color: #ff8a3d;
+  color: #ff8a3d;
+}
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(91, 185, 116, 0.20);
+  color: #5bb974;
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+.pipe-filter-overdue .filter-badge {
+  background: rgba(255, 138, 61, 0.20);
+  color: #ff8a3d;
+}
+
+/* Chip de step de follow-up en cada lead row */
+.followup-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.followup-chip-today {
+  background: rgba(91, 185, 116, 0.12);
+  color: #5bb974;
+  border-color: rgba(91, 185, 116, 0.40);
+}
+.followup-chip-yesterday {
+  background: rgba(255, 138, 61, 0.12);
+  color: #ff8a3d;
+  border-color: rgba(255, 138, 61, 0.45);
+}
+.followup-chip-overdue {
+  background: rgba(248, 81, 73, 0.10);
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.40);
+}
+.followup-row-note {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin-top: 2px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ════════════════════════════════════════════════════════════════
    SETTER STATS (cards de métricas)
 ═════════════════════════════════════════════════════════════════ */
