@@ -1812,21 +1812,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       const bar = _ensureFloatingScrollbar();
       const inner = bar.firstElementChild;
       const tableContainer = view ? view.querySelector('.table-container') : null;
-      const table = tableContainer ? tableContainer.querySelector('#setter-table') : null;
-      // Mostrar solo si la vista CRM esta activa Y la tabla overflow horizontal
+      // Mostrar solo si la vista CRM esta activa Y el container tiene overflow horizontal
       const viewActive = view && !view.classList.contains('hidden');
-      if (!viewActive || !tableContainer || !table) {
+      if (!viewActive || !tableContainer) {
         bar.style.display = 'none';
         return;
       }
-      const needsScroll = table.scrollWidth > tableContainer.clientWidth + 4;
+      // Usamos tableContainer.scrollWidth (no table.scrollWidth) — incluye el
+      // padding interno y refleja exactamente cuanto se puede scrollear.
+      const scrollWidth = tableContainer.scrollWidth;
+      const visibleWidth = tableContainer.clientWidth;
+      const needsScroll = scrollWidth > visibleWidth + 4;
       if (!needsScroll) { bar.style.display = 'none'; return; }
       // Posicionar la barra alineada con el container
       const rect = tableContainer.getBoundingClientRect();
       bar.style.display = 'block';
       bar.style.left = rect.left + 'px';
       bar.style.width = rect.width + 'px';
-      inner.style.width = table.scrollWidth + 'px';
+      inner.style.width = scrollWidth + 'px';
       // Reflejar scroll position actual
       bar.scrollLeft = tableContainer.scrollLeft;
       // Wire bidireccional una sola vez
@@ -1854,6 +1857,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         setTimeout(_syncFloatingScrollbar, 100);
       }
     });
+    // Cuando el sidebar toggle abre/cierra, el tablecontainer cambia de ancho
+    // y la barra flotante hay que recalcularla. MutationObserver para detectar
+    // el toggle de la clase .collapsed en el sidebar.
+    const _sidebarEl = document.querySelector('.sidebar');
+    if (_sidebarEl && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(() => {
+        // Esperar al fin de la transicion CSS (~250ms tipicamente) antes de medir
+        setTimeout(_syncFloatingScrollbar, 50);
+        setTimeout(_syncFloatingScrollbar, 320);
+      }).observe(_sidebarEl, { attributes: true, attributeFilter: ['class'] });
+    }
+    // ResizeObserver del container: si por cualquier razon (zoom, fontsize)
+    // cambia el ancho, recalcular.
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => _syncFloatingScrollbar());
+      // Observamos en el primer renderSetterLeads cuando el container existe
+      const _observeOnce = () => {
+        const c = document.querySelector('#view-crm .table-container');
+        if (c && !c.dataset._roObserved) {
+          ro.observe(c);
+          c.dataset._roObserved = '1';
+        } else if (!c) {
+          setTimeout(_observeOnce, 200);
+        }
+      };
+      _observeOnce();
+    }
 
     // Helper: sync lead from server response and refresh UI
     function _syncLeadAndRefresh(id, serverLead) {
