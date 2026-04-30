@@ -4997,6 +4997,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('asst-status').style.display = 'none';
     document.getElementById('asst-fallback-pill').style.display = 'none';
     document.getElementById('asst-violations-pill').style.display = 'none';
+    const vp = document.getElementById('asst-variant-pill'); if (vp) vp.style.display = 'none';
     document.getElementById('asst-ejemplos-wrap').style.display = 'none';
     _asstHideError();
   }
@@ -5045,9 +5046,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Cargar variantes en el selector del Asistente (solo una vez por sesión).
+  let _asstVariantsLoaded = false;
+  async function _asstLoadVariants() {
+    if (_asstVariantsLoaded) return;
+    const sel = document.getElementById('asst-variant');
+    if (!sel) return;
+    try {
+      const r = await fetch('/api/setters/variants', { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const variants = Array.isArray(d.variants) ? d.variants : (Array.isArray(d) ? d : []);
+      for (const v of variants) {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = v.name || v.id;
+        sel.appendChild(opt);
+      }
+      _asstVariantsLoaded = true;
+    } catch (e) {
+      console.warn('No pude cargar variantes:', e.message);
+    }
+  }
+
   async function _asstGenerate() {
     const msg = document.getElementById('asst-prospect-msg').value.trim();
     const ctx = document.getElementById('asst-context').value.trim();
+    const variantId = document.getElementById('asst-variant')?.value || '';
     if (!msg) { _asstShowError('Pegá el mensaje del prospecto.'); return; }
     _asstResetUI();
     _asstSetLoading(true);
@@ -5056,7 +5081,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ prospectMessage: msg, context: ctx }),
+        body: JSON.stringify({ prospectMessage: msg, context: ctx, variantId }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'http ' + r.status);
@@ -5069,6 +5094,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pill = document.getElementById('asst-violations-pill');
         pill.textContent = '⚠ ' + d.violations.join(', ');
         pill.style.display = 'inline-block';
+      }
+      // Pill de variante usada (informativa: confirma al setter que Mercury la consideró)
+      const vPill = document.getElementById('asst-variant-pill');
+      if (vPill) {
+        if (d.variantUsed && d.variantUsed.name) {
+          vPill.textContent = '🎯 ' + d.variantUsed.name;
+          vPill.style.display = 'inline-block';
+        } else {
+          vPill.style.display = 'none';
+        }
       }
     } catch (e) {
       _asstShowError('Error: ' + e.message);
@@ -5096,6 +5131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.querySelector('[data-target="view-assistant"]')?.addEventListener('click', () => {
+    _asstLoadVariants();
     setTimeout(() => {
       // Foco automático en el textarea principal cuando se abre la vista.
       document.getElementById('asst-prospect-msg')?.focus();

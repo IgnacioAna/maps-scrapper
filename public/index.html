@@ -747,10 +747,10 @@
               </label>
               <label class="form-field">
                 <div class="form-field-label-row">
-                  <span>Palabras clave (separadas por coma)</span>
-                  <button id="faq-suggest-tags-btn" class="btn btn-ghost btn-sm" onclick="window._faqSuggestTags()" title="La IA propone categoría y tags a partir de la pregunta y respuesta">✨ Sugerir tags</button>
+                  <span>Palabras clave (opcional)</span>
+                  <span class="form-field-help" style="font-size:11px;">Si lo dejás vacío, la IA las completa automáticamente al guardar.</span>
                 </div>
-                <input type="text" id="faq-tags" autocomplete="off" placeholder="ej: caro, descuento, seguro">
+                <input type="text" id="faq-tags" autocomplete="off" placeholder="ej: caro, descuento, seguro (o dejá vacío)">
               </label>
             </div>
             <label class="form-field">
@@ -1205,6 +1205,13 @@
             <label for="asst-prospect-msg" style="display:block; font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Mensaje del prospecto</label>
             <textarea id="asst-prospect-msg" rows="5" placeholder="Pegá acá el último mensaje del prospecto…" style="width:100%; font-size:15px; line-height:1.6; padding:14px 16px; border-radius:12px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
 
+            <div style="margin-top:14px;">
+              <label for="asst-variant" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Variante que le mandaste al lead <span style="font-weight:400; opacity:0.7;">(opcional, mejora la respuesta)</span></label>
+              <select id="asst-variant" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+                <option value="">— No especificar —</option>
+              </select>
+            </div>
+
             <details style="margin-top:14px;">
               <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Contexto adicional (opcional)</summary>
               <textarea id="asst-context" rows="3" placeholder="Mensajes previos, nombre del prospecto, software que usan, ciudad, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
@@ -1228,6 +1235,7 @@
                 <strong style="font-size:15px; color:var(--text-primary);">Respuesta sugerida</strong>
               </div>
               <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span id="asst-variant-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(157,133,242,0.14); color:var(--accent); border:1px solid rgba(157,133,242,0.4); border-radius:999px;"></span>
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
                 <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:8px 14px; border-radius:8px;">📋 Copiar todo</button>
@@ -1537,7 +1545,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429o"></script>
+  <script type="module" src="/app.js?v=20260429p"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

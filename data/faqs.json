@@ -15,8 +15,8 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.321Z",
       "updatedAt": "2026-04-27T13:30:18.867Z",
-      "usos": 3,
-      "funcionaron": 0,
+      "usos": 6,
+      "funcionaron": 1,
       "variantes": []
     },
     {
@@ -107,7 +107,7 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.183Z",
       "updatedAt": "2026-04-27T13:30:11.970Z",
-      "usos": 4,
+      "usos": 5,
       "funcionaron": 3,
       "variantes": []
     },
@@ -182,7 +182,7 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:35.057Z",
       "updatedAt": "2026-04-27T13:29:56.600Z",
-      "usos": 1,
+      "usos": 3,
       "funcionaron": 1,
       "variantes": []
     },
@@ -1107,7 +1107,7 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-30T01:37:15.722Z",
-      "updatedAt": "2026-04-30T01:37:15.722Z",
+      "updatedAt": "2026-04-30T01:53:47.372Z",
       "usos": 0,
       "funcionaron": 0,
       "tagsExtra": [

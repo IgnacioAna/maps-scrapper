@@ -5016,16 +5016,66 @@ function _faqNormalizeVariantes(input) {
   return out;
 }
 
-app.post('/api/faqs', requireAuth, (req, res) => {
+// Helper: auto-genera tags + categoria con IA si el user no los proporcionó.
+// Best-effort con timeout de 3s. Si la IA falla o no hay key, devuelve los
+// valores que vinieron del user (vacios o defaults). NO bloquea el guardado.
+async function _autoTagFaq({ pregunta, respuesta, categoria, tags }) {
+  const userTags = Array.isArray(tags) ? tags.filter((t) => String(t).trim()) : [];
+  const hasUserTags = userTags.length > 0;
+  const hasUserCategoria = categoria && categoria !== 'general';
+  if (hasUserTags && hasUserCategoria) return { tags: userTags, categoria };
+  if (!mercuryKey && !qwenKey) return { tags: userTags, categoria: categoria || 'general' };
+
+  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
+Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
+{"categoria":"<una de: precio|objecion|seguimiento|calificacion|general>","tags":["palabra1","palabra2","palabra3"]}
+
+Reglas:
+- "categoria": elegí UNA sola, la más representativa.
+- "tags": 2 a 5 palabras clave en minúsculas, sin acentos, sin números, sin espacios (usá guiones si es compuesto). Apuntan a temas, objeciones o triggers (ej: "caro", "ya-tengo-marketing", "competencia", "horarios", "agenda").
+- No inventes contenido ni agregues texto fuera del JSON. Sin markdown, sin comillas externas, sin explicación.
+
+PREGUNTA: ${pregunta}
+RESPUESTA: ${respuesta || '(vacía)'}`;
+
+  try {
+    const completion = await Promise.race([
+      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.2, max_tokens: 150 }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000)),
+    ]);
+    const raw = completion.choices?.[0]?.message?.content?.trim() || '';
+    const m = raw.match(/\{[\s\S]*\}/);
+    let parsed = {};
+    if (m) { try { parsed = JSON.parse(m[0]); } catch {} }
+    const validCats = new Set(['precio', 'objecion', 'seguimiento', 'calificacion', 'general']);
+    const iaCategoria = validCats.has(parsed.categoria) ? parsed.categoria : 'general';
+    const iaTags = Array.isArray(parsed.tags)
+      ? parsed.tags
+        .map((t) => String(t).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9-]/g, '').trim())
+        .filter((t) => t.length >= 2 && t.length <= 30)
+        .slice(0, 5)
+      : [];
+    return {
+      tags: hasUserTags ? userTags : iaTags,
+      categoria: hasUserCategoria ? categoria : iaCategoria,
+    };
+  } catch (e) {
+    console.warn('[faqs] auto-tag IA falló (no bloqueante):', e.message);
+    return { tags: userTags, categoria: categoria || 'general' };
+  }
+}
+
+app.post('/api/faqs', requireAuth, async (req, res) => {
   const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null, variantes = [] } = req.body;
   if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
+  const auto = await _autoTagFaq({ pregunta: pregunta.trim(), respuesta: respuesta.trim(), categoria, tags });
   const data = loadFaqs();
   const entry = {
     id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     pregunta: pregunta.trim(),
     respuesta: respuesta.trim(),
-    categoria,
-    tags: Array.isArray(tags) ? tags : [],
+    categoria: auto.categoria,
+    tags: auto.tags,
     variantes: _faqNormalizeVariantes(variantes),
     variantId,
     createdBy: req.auth.user.name || req.auth.user.email,
@@ -5171,20 +5221,31 @@ app.post('/api/faqs/import', requireAuth, (req, res) => {
 // PUT /api/faqs/:id — editar (solo admin o supervisor)
 // Cambio 2026-04-29: setters NO pueden editar entradas del banco, ni siquiera
 // las que crearon. Decision del admin para mantener calidad del banco.
-app.put('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+app.put('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), async (req, res) => {
   const data = loadFaqs();
   const idx = data.entries.findIndex(e => e.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
+  const e = data.entries[idx];
   const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
-  if (pregunta !== undefined) data.entries[idx].pregunta = pregunta.trim();
-  if (respuesta !== undefined) data.entries[idx].respuesta = respuesta.trim();
-  if (categoria !== undefined) data.entries[idx].categoria = categoria;
-  if (tags !== undefined) data.entries[idx].tags = Array.isArray(tags) ? tags : [];
-  if (variantes !== undefined) data.entries[idx].variantes = _faqNormalizeVariantes(variantes);
-  if (variantId !== undefined) data.entries[idx].variantId = variantId;
-  data.entries[idx].updatedAt = new Date().toISOString();
+  if (pregunta !== undefined) e.pregunta = pregunta.trim();
+  if (respuesta !== undefined) e.respuesta = respuesta.trim();
+  if (categoria !== undefined) e.categoria = categoria;
+  if (tags !== undefined) e.tags = Array.isArray(tags) ? tags : [];
+  if (variantes !== undefined) e.variantes = _faqNormalizeVariantes(variantes);
+  if (variantId !== undefined) e.variantId = variantId;
+
+  // Auto-tag: si el user dejó tags vacíos o categoria='general', re-generamos.
+  // Importante: solo si pregunta o respuesta cambiaron (para no llamar IA al pedo en un PUT que solo toca tags).
+  const contentTouched = pregunta !== undefined || respuesta !== undefined;
+  if (contentTouched) {
+    const auto = await _autoTagFaq({ pregunta: e.pregunta, respuesta: e.respuesta, categoria: e.categoria, tags: e.tags });
+    e.categoria = auto.categoria;
+    e.tags = auto.tags;
+  }
+
+  e.updatedAt = new Date().toISOString();
   saveFaqs(data);
-  res.json({ entry: data.entries[idx] });
+  res.json({ entry: e });
 });
 
 // DELETE /api/faqs/:id — solo admin o supervisor
@@ -5669,7 +5730,7 @@ function saveMercuryGenerations(data) {
 // de estilo SCM. Si la IA falla o no hay key, fallback al top match del banco.
 // Persiste TODA la generacion para revision admin (Fase 4).
 app.post("/api/mercury/generate", requireAuth, async (req, res) => {
-  const { prospectMessage, context = "", leadId = "", categoria = "" } = req.body || {};
+  const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "" } = req.body || {};
   if (!prospectMessage || !String(prospectMessage).trim()) {
     return res.status(400).json({ error: "prospectMessage requerido." });
   }
@@ -5701,13 +5762,38 @@ app.post("/api/mercury/generate", requireAuth, async (req, res) => {
     ? `NOTAS DE FEEDBACK DEL ADMIN (correcciones recientes a tener en cuenta):\n${recentNotes.map((n) => `- ${n.text}`).join("\n")}\n`
     : "";
 
-  const userPrompt = `${notesBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
+  // Si el setter indicó qué variante de opener usó con este lead, inyectamos
+  // el texto completo de la variante (los 4 bloques: apertura/problema/prueba
+  // social/cierre) para que Mercury sepa qué fue lo último que el lead recibió
+  // del setter y pueda generar una respuesta más alineada al hilo real.
+  let variantBlock = "";
+  let variantUsed = null;
+  if (variantId) {
+    try {
+      const settersData = loadSettersData();
+      const v = (settersData.variants || []).find((x) => x.id === variantId);
+      if (v && Array.isArray(v.blocks) && v.blocks.length) {
+        const blocksText = v.blocks
+          .filter((b) => b.text && b.text.trim())
+          .map((b) => `[${b.label || 'Bloque'}]\n${b.text.trim()}`)
+          .join("\n\n");
+        if (blocksText) {
+          variantBlock = `MENSAJE INICIAL QUE EL SETTER ENVIÓ AL PROSPECTO (variante: ${v.name || variantId}):\n${blocksText}\n\n`;
+          variantUsed = { id: v.id, name: v.name || '' };
+        }
+      }
+    } catch (e) {
+      console.warn("[mercury/generate] no pude resolver variante:", e.message);
+    }
+  }
+
+  const userPrompt = `${notesBlock}${variantBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
 ${ejemplosTexto}
 
 ${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}MENSAJE DEL PROSPECTO A RESPONDER:
 ${message}
 
-Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.`;
+Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`;
 
   let rawOutput = "";
   let usedFallback = false;
@@ -5761,6 +5847,7 @@ Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡.
     prospectMessage: message,
     context: ctx || null,
     categoriaHint: categoria || null,
+    variantUsed,
     output: { text: sanitized.text, blocks: sanitized.blocks },
     rawOutput,
     ejemplos,
@@ -5796,6 +5883,7 @@ Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡.
     usedFallback,
     violations,
     promptVersion: cfg.version,
+    variantUsed,
   });
 });
 
