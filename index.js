@@ -730,6 +730,17 @@ function buildWhatsAppUrl(phone, country, message = '') {
   let digits = String(phone).replace(/\D/g, '');
   if (!digits) return '';
 
+  // BUGFIX: clinicas en zona fronteriza (Tijuana/Cd. Juarez/Reynosa) usan
+  // numeros US '(XXX) XXX-XXXX' aunque country='Mexico'. Si lo tratamos como
+  // mexicano agregando +52, generamos wa.me/52XXXXXXXXXX que NO existe.
+  // Detectamos el formato US/Canada y forzamos prefijo +1, ignorando country.
+  // Patron: (NNN) NNN-NNNN — los parentesis en area code son senial inequivoca US/Canada.
+  const rawPhone = String(phone).trim();
+  const looksUSFormat = /^\(\d{3}\)\s?\d{3}[-\s]?\d{4}$/.test(rawPhone);
+  if (looksUSFormat && digits.length === 10) {
+    return `https://wa.me/1${digits}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
+  }
+
   // Normalizar país: sin acentos, lowercase, y aliases (CO, MX, etc.)
   const normalize = (s) => String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const countryAliases = {
@@ -1280,6 +1291,34 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 //   { setterId: "id" }            -> solo procesa leads asignados a ese setter
 //   { dryRun: true }              -> NO modifica nada, solo reporta cuantos se cambiarian
 //   { onlySuspicious: true }      -> default true: solo toca los rotos. false toca TODOS
+// Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
+// prefijo +52 (o cualquier prefijo que no sea +1) y los corrige a +1.
+// Resultado del bug en zona fronteriza Tijuana/Juarez/Reynosa donde clinicas
+// usan numero US pero country=Mexico.
+app.post('/api/admin/backfill-us-borderphones', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, fixed: 0, sample: [] });
+  let scanned = 0, fixed = 0;
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    const phone = String(lead.phone || '').trim();
+    const looksUS = /^\(\d{3}\)\s?\d{3}[-\s]?\d{4}$/.test(phone);
+    if (!looksUS) continue;
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length !== 10) continue;
+    const newUrl = `https://wa.me/1${digits}${lead.openMessage ? `?text=${encodeURIComponent(lead.openMessage)}` : ''}`;
+    if (lead.whatsappUrl === newUrl) continue;
+    if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: newUrl });
+    if (!dryRun) lead.whatsappUrl = newUrl;
+    fixed++;
+  }
+  if (!dryRun && fixed > 0) saveSettersData(data);
+  res.json({ scanned, fixed, dryRun, sample });
+});
+
 // Backfill: leads viejos cuyo whatsappUrl quedo SIN ?text= pero tienen openMessage.
 // Resultado del bug historico: el setter abre wa.me/PHONE y el WSP se abre vacio
 // aunque hay openMessage almacenado. Este endpoint repara los whatsappUrl

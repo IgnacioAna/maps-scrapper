@@ -686,6 +686,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const country = lead?.country || lead?.locationCountry || '';
       let digits = phone.replace(/\D/g, '');
       if (!digits) return '';
+      // BUGFIX zona fronteriza: numeros US '(NNN) NNN-NNNN' en clinicas de
+      // Tijuana/Juarez/Reynosa. Forzamos +1 ignorando country=Mexico para que
+      // el wa.me funcione (sino quedaba wa.me/52NNNNNNNNNN que no existe).
+      const looksUSFormat = /^\(\d{3}\)\s?\d{3}[-\s]?\d{4}$/.test(phone.trim());
+      if (looksUSFormat && digits.length === 10) {
+        return `https://wa.me/1${digits}?text=${encodeURIComponent(message)}`;
+      }
       const prefix = COUNTRY_CODES[country] || '';
       if (phone.trim().startsWith('+')) return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
       if (prefix && digits.startsWith(prefix) && digits.length >= prefix.length + 8) return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
