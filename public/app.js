@@ -3860,8 +3860,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function _renderFaqCard(e) {
     const isAdmin = currentUser?.role === 'admin';
-    const isOwner = e.createdById === currentUser?.id;
-    const canEdit = isAdmin || isOwner;
+    const isSupervisor = currentUser?.role === 'supervisor';
+    // Cambio 2026-04-29: edit/delete solo para admin y supervisor. Setters NO
+    // pueden editar ni borrar entradas del banco aunque las hayan creado.
+    const canEdit = isAdmin || isSupervisor;
     const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
     const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
     const tags = (e.tags || []).map(t => `<span style="background:rgba(88,166,255,0.12);color:var(--info);padding:3px 8px;border-radius:10px;font-size:10px;border:1px solid rgba(88,166,255,0.25);">#${escHtml(t)}</span>`).join(' ');
@@ -5436,7 +5438,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setterFilter = document.getElementById('myp-setter')?.value || '';
     const params = new URLSearchParams();
     params.set('period', period);
-    if (setterFilter) params.set('setter', setterFilter);
+    // En modo "Ver como" (admin impersonando setter), el backend ve admin via cookie y no
+    // fuerza el setter. Tenemos que pasarlo explicito desde el frontend.
+    const u = window.__CURRENT_USER__;
+    const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+    const effectiveSetter = setterFilter || (isViewAsSetter ? u.setterId : '');
+    if (effectiveSetter) params.set('setter', effectiveSetter);
     try {
       const r = await fetch(`/api/setters/performance?${params.toString()}`, { credentials: 'include' });
       if (!r.ok) throw new Error('http ' + r.status);

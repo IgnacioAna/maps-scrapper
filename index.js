@@ -3942,39 +3942,37 @@ function _perfDefaultRange(period) {
 }
 
 function _perfAggregate(leads, fromTs, toTs) {
-  // Un bucket = los KPIs de los leads filtrados, restringidos a [fromTs, toTs).
-  // Logica:
-  //  - total: leads con AL MENOS UNA interaction o lastContactAt en [from,to)
-  //  - conexiones: count de interactions con action 'open' (o lead.conexion='enviada' tocado en bucket)
-  //  - respondieron: count de leads con respondio=true Y lastContactAt en bucket
-  //  - calificados: count de interactions con action 'qualified' en bucket
-  //  - interesados: count de interactions con action 'interest' en bucket
-  //  - agendados: count de leads con estado='agendado' Y lastContactAt en bucket
-  //  - shows / noShows: lead.asistioAt en bucket Y asistio === true/false
+  // Un bucket = KPIs de los leads filtrados restringidos a [fromTs, toTs).
+  // Cambio 2026-04-29 (post-feedback): contamos por flags reales del lead +
+  // lastContactAt como anchor temporal. NO contamos interactions[].action='open'
+  // porque casi nadie loggea esos eventos explicitos — el setter cambia el flag
+  // del lead directamente desde la UI.
+  //
+  // Definiciones:
+  //  - total: leads del setter con lastContactAt o importedAt en bucket (lead "tocado" o "recibido" en periodo).
+  //  - conexiones: leads con conexion='enviada' Y lastContactAt en bucket.
+  //  - respondieron: leads con respondio=true Y lastContactAt en bucket.
+  //  - calificados: leads con calificado=true Y lastContactAt en bucket.
+  //  - interesados: leads con interes='si' Y lastContactAt en bucket.
+  //  - agendados: leads con estado='agendado' Y lastContactAt en bucket.
+  //  - shows/noShows: lead.asistioAt en bucket Y asistio === true/false.
   let total = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
-  const seenLeads = new Set();
   for (const lead of leads) {
-    let touched = false;
     const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
-    if (lc >= fromTs && lc < toTs) touched = true;
-    for (const it of (lead.interactions || [])) {
-      const t = it.createdAt ? new Date(it.createdAt).getTime() : 0;
-      if (t < fromTs || t >= toTs) continue;
-      touched = true;
-      if (it.action === "open") conexiones++;
-      else if (it.action === "qualified") calificados++;
-      else if (it.action === "interest") interesados++;
-    }
-    if (touched && !seenLeads.has(lead._id || lead.id || lead.num)) {
-      total++;
-      seenLeads.add(lead._id || lead.id || lead.num);
-    }
-    // Estados snapshot al cierre del bucket: usamos lastContactAt como anchor
-    if (lc >= fromTs && lc < toTs) {
-      if (lead.respondio) respondieron++;
+    const imp = lead.importedAt ? new Date(lead.importedAt).getTime() : 0;
+    const touchedInBucket = lc >= fromTs && lc < toTs;
+    const importedInBucket = imp >= fromTs && imp < toTs;
+
+    if (touchedInBucket || importedInBucket) total++;
+
+    if (touchedInBucket) {
+      if (lead.conexion === "enviada") conexiones++;
+      if (lead.respondio === true) respondieron++;
+      if (lead.calificado === true) calificados++;
+      if (lead.interes === "si") interesados++;
       if (lead.estado === "agendado") agendados++;
     }
-    // Asistencia
+
     const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
     if (ats >= fromTs && ats < toTs) {
       if (lead.asistio === true) shows++;
@@ -5170,14 +5168,13 @@ app.post('/api/faqs/import', requireAuth, (req, res) => {
   res.json({ creadas: creadas.length, omitidas: omitidas.length, errores: errores.length, detalle: { creadas, omitidas, errores } });
 });
 
-// PUT /api/faqs/:id — editar (admin o el creador)
-app.put('/api/faqs/:id', requireAuth, (req, res) => {
+// PUT /api/faqs/:id — editar (solo admin o supervisor)
+// Cambio 2026-04-29: setters NO pueden editar entradas del banco, ni siquiera
+// las que crearon. Decision del admin para mantener calidad del banco.
+app.put('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const data = loadFaqs();
   const idx = data.entries.findIndex(e => e.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
-  const isAdmin = req.auth.user.role === 'admin';
-  const isOwner = data.entries[idx].createdById === req.auth.user.id;
-  if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Solo podés editar tus propias entradas' });
   const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
   if (pregunta !== undefined) data.entries[idx].pregunta = pregunta.trim();
   if (respuesta !== undefined) data.entries[idx].respuesta = respuesta.trim();
@@ -5190,14 +5187,11 @@ app.put('/api/faqs/:id', requireAuth, (req, res) => {
   res.json({ entry: data.entries[idx] });
 });
 
-// DELETE /api/faqs/:id (admin o el creador)
-app.delete('/api/faqs/:id', requireAuth, (req, res) => {
+// DELETE /api/faqs/:id — solo admin o supervisor
+app.delete('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const data = loadFaqs();
   const idx = data.entries.findIndex(e => e.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
-  const isAdmin = req.auth.user.role === 'admin';
-  const isOwner = data.entries[idx].createdById === req.auth.user.id;
-  if (!isAdmin && !isOwner) return res.status(403).json({ error: 'Solo podés borrar tus propias entradas' });
   data.entries.splice(idx, 1);
   saveFaqs(data);
   res.json({ ok: true });

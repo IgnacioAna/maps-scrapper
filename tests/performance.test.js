@@ -190,14 +190,21 @@ describe("GET /api/setters/performance · RBAC + scope", () => {
 });
 
 describe("Agregaciones · KPIs y comparativa", () => {
-  it("setter_a en últimos 14 días: total=3, conexiones=3, calificados=2, interesados=2, agendados=2, shows=1, noShows=1", async () => {
+  it("setter_a en últimos 14 días: usa flags reales del lead (no interactions count)", async () => {
     const r = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterACookie);
     expect(r.status).toBe(200);
+    // 3 leads con lastContactAt en últimos 14 días (l_a1, l_a2, l_a3)
     expect(r.body.totals.total).toBe(3);
+    // conexion='enviada' en los 3 → 3
     expect(r.body.totals.conexiones).toBe(3);
-    expect(r.body.totals.calificados).toBe(2);
+    // respondio=true en los 3 → 3
+    expect(r.body.totals.respondieron).toBe(3);
+    // calificado=true en los 3 → 3 (antes contaba interactions, ahora flags)
+    expect(r.body.totals.calificados).toBe(3);
+    // interes='si' en l_a2 y l_a3 → 2
     expect(r.body.totals.interesados).toBe(2);
-    expect(r.body.totals.agendados).toBe(2); // l_a2 y l_a3 ambos con estado=agendado
+    // estado='agendado' en l_a2 y l_a3 → 2
+    expect(r.body.totals.agendados).toBe(2);
     expect(r.body.totals.shows).toBe(1);
     expect(r.body.totals.noShows).toBe(1);
     expect(r.body.totals.pctShow).toBe(50);
@@ -205,10 +212,11 @@ describe("Agregaciones · KPIs y comparativa", () => {
 
   it("comparativa con periodo anterior tiene deltas (period=day → 14 días vs 14 días previos)", async () => {
     const r = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterACookie);
-    // Periodo anterior (días 15-28) contiene l_a_prev1 (día 15) y l_a_prev2 (día 18)
-    expect(r.body.previous.total).toBe(2);
-    expect(r.body.deltas.total.abs).toBe(1); // 3 - 2
-    expect(r.body.deltas.total.pct).toBe(50); // (3-2)/2 * 100
+    // Total ahora cuenta touched OR importedAt en bucket. Periodo previo (28→14d):
+    // l_a2 (imp t(15)), l_a3 (imp t(20)), l_a_prev1 (lc t(15) + imp t(25)), l_a_prev2 (lc t(18)) = 4
+    expect(r.body.previous.total).toBe(4);
+    // 3 - 4 = -1
+    expect(r.body.deltas.total.abs).toBe(-1);
   });
 
   it("buckets diarios tienen length correcta", async () => {
