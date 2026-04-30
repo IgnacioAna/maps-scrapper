@@ -981,14 +981,45 @@ body:has(#view-social.active) .global-location-panel {
 }
 
 /* Container de la tabla del Setteo: altura limitada para que el scrollbar
-   horizontal NO quede al fondo del array completo de leads (donde el setter
-   tendria que scrollear vertical hasta el final para acceder a el). En vez
-   de eso, el container tiene su propia altura y el scrollbar horizontal vive
-   al fondo del container — siempre visible mientras se navega la tabla. */
+   horizontal NO quede al fondo del array completo de leads. Ademas tenemos
+   un twin scrollbar fijo al fondo del viewport (#crm-floating-scrollbar) que
+   se sincroniza con este container — asi en notebooks chiquitas siempre
+   esta a mano. */
 #view-crm .table-container {
   max-height: calc(100vh - 240px);
   overflow: auto;
+  /* Engrosar scrollbar para que sea facil de agarrar */
+  scrollbar-width: auto;
 }
+#view-crm .table-container::-webkit-scrollbar { height: 14px; width: 14px; }
+#view-crm .table-container::-webkit-scrollbar-thumb {
+  background: var(--accent, #9d85f2);
+  border-radius: 7px;
+  border: 2px solid var(--bg-app, #0f1115);
+}
+#view-crm .table-container::-webkit-scrollbar-track { background: var(--bg-elevated, #1a1d24); }
+
+/* Twin scrollbar flotante: siempre visible al fondo del viewport mientras
+   estoy en la vista CRM. Se sincroniza con la tabla via JS (ver crm-sticky-scrollbar). */
+#crm-floating-scrollbar {
+  position: fixed;
+  bottom: 0;
+  z-index: 50;
+  height: 16px;
+  background: var(--bg-app, #0f1115);
+  border-top: 1px solid var(--border-color, #21262d);
+  overflow-x: scroll;
+  overflow-y: hidden;
+  display: none; /* Se prende via JS solo cuando view-crm esta activo y hay overflow */
+}
+#crm-floating-scrollbar > div { height: 1px; }
+#crm-floating-scrollbar::-webkit-scrollbar { height: 14px; }
+#crm-floating-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--accent, #9d85f2);
+  border-radius: 7px;
+  border: 2px solid var(--bg-app, #0f1115);
+}
+#crm-floating-scrollbar::-webkit-scrollbar-track { background: var(--bg-elevated, #1a1d24); }
 /* Encabezado sticky para no perder contexto al scrollear vertical dentro del container. */
 #view-crm #setter-table thead {
   position: sticky;

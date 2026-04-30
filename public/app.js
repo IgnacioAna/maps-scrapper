@@ -1787,7 +1787,73 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="text-align:center;">' + estadoChip + '</td>' +
         '</tr>';
       }).join('');
+      // Despues de renderizar, sincronizar el scrollbar flotante
+      _syncFloatingScrollbar();
     }
+
+    // ── Twin scrollbar flotante (siempre visible al fondo del viewport) ──
+    // Solucion al pedido del user: en notebooks chicas, el scrollbar horizontal
+    // de la tabla CRM quedaba al fondo del array de leads y habia que scrollear
+    // toda la pagina para usarlo. Este scrollbar flotante esta sticky en el
+    // fondo del viewport, sincronizado con la tabla en ambos sentidos.
+    function _ensureFloatingScrollbar() {
+      let bar = document.getElementById('crm-floating-scrollbar');
+      if (bar) return bar;
+      bar = document.createElement('div');
+      bar.id = 'crm-floating-scrollbar';
+      const inner = document.createElement('div');
+      bar.appendChild(inner);
+      document.body.appendChild(bar);
+      return bar;
+    }
+    let _floatingScrollSyncing = false;
+    function _syncFloatingScrollbar() {
+      const view = document.getElementById('view-crm');
+      const bar = _ensureFloatingScrollbar();
+      const inner = bar.firstElementChild;
+      const tableContainer = view ? view.querySelector('.table-container') : null;
+      const table = tableContainer ? tableContainer.querySelector('#setter-table') : null;
+      // Mostrar solo si la vista CRM esta activa Y la tabla overflow horizontal
+      const viewActive = view && !view.classList.contains('hidden');
+      if (!viewActive || !tableContainer || !table) {
+        bar.style.display = 'none';
+        return;
+      }
+      const needsScroll = table.scrollWidth > tableContainer.clientWidth + 4;
+      if (!needsScroll) { bar.style.display = 'none'; return; }
+      // Posicionar la barra alineada con el container
+      const rect = tableContainer.getBoundingClientRect();
+      bar.style.display = 'block';
+      bar.style.left = rect.left + 'px';
+      bar.style.width = rect.width + 'px';
+      inner.style.width = table.scrollWidth + 'px';
+      // Reflejar scroll position actual
+      bar.scrollLeft = tableContainer.scrollLeft;
+      // Wire bidireccional una sola vez
+      if (!bar.dataset._wired) {
+        bar.addEventListener('scroll', () => {
+          if (_floatingScrollSyncing) return;
+          _floatingScrollSyncing = true;
+          tableContainer.scrollLeft = bar.scrollLeft;
+          requestAnimationFrame(() => { _floatingScrollSyncing = false; });
+        });
+        tableContainer.addEventListener('scroll', () => {
+          if (_floatingScrollSyncing) return;
+          _floatingScrollSyncing = true;
+          bar.scrollLeft = tableContainer.scrollLeft;
+          requestAnimationFrame(() => { _floatingScrollSyncing = false; });
+        });
+        bar.dataset._wired = '1';
+      }
+    }
+    // Re-sync en eventos de viewport
+    window.addEventListener('resize', _syncFloatingScrollbar);
+    // Cuando cambia de vista (clicks en sidebar), volver a evaluar
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('.menu-item[data-target]')) {
+        setTimeout(_syncFloatingScrollbar, 100);
+      }
+    });
 
     // Helper: sync lead from server response and refresh UI
     function _syncLeadAndRefresh(id, serverLead) {
