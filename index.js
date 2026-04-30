@@ -4486,10 +4486,11 @@ const ALERT_CONFIG_FILE = path.join(DATA_DIR, "alert_config.json");
 
 function _defaultAlertConfig() {
   return {
-    dropPctThreshold: 30,        // alerta si total cae >= X% vs periodo anterior
-    inactivityDays: 7,           // alerta si setter sin actividad por N dias
-    aperturaPctMin: 20,          // alerta si pctApertura < X (con total > minTotalForAlert)
-    minTotalForAlert: 5,         // no alertar con muy pocos leads
+    dropPctThreshold: 30,         // alerta si total cae >= X% vs periodo anterior
+    inactivityDays: 7,            // alerta si setter sin actividad por N dias
+    aperturaPctMin: 20,           // alerta si pctApertura < X (con total > minTotalForAlert)
+    minTotalForAlert: 5,          // no alertar con muy pocos leads
+    followupsTodayThreshold: 15,  // pinta rojo en panel Equipo si setter tiene > X follow-ups hoy
     updatedAt: new Date().toISOString(),
     updatedBy: "system_default",
   };
@@ -4518,12 +4519,13 @@ app.get("/api/setters/alert-config", requireAuth, requireRole("admin", "supervis
 
 app.put("/api/setters/alert-config", requireAuth, requireRole("admin"), (req, res) => {
   const cfg = loadAlertConfig();
-  const { dropPctThreshold, inactivityDays, aperturaPctMin, minTotalForAlert } = req.body || {};
+  const { dropPctThreshold, inactivityDays, aperturaPctMin, minTotalForAlert, followupsTodayThreshold } = req.body || {};
   let changed = false;
   if (typeof dropPctThreshold === "number" && dropPctThreshold >= 0 && dropPctThreshold <= 100) { cfg.dropPctThreshold = dropPctThreshold; changed = true; }
   if (typeof inactivityDays === "number" && inactivityDays >= 1 && inactivityDays <= 90) { cfg.inactivityDays = inactivityDays; changed = true; }
   if (typeof aperturaPctMin === "number" && aperturaPctMin >= 0 && aperturaPctMin <= 100) { cfg.aperturaPctMin = aperturaPctMin; changed = true; }
   if (typeof minTotalForAlert === "number" && minTotalForAlert >= 0) { cfg.minTotalForAlert = minTotalForAlert; changed = true; }
+  if (typeof followupsTodayThreshold === "number" && followupsTodayThreshold >= 0 && followupsTodayThreshold <= 500) { cfg.followupsTodayThreshold = followupsTodayThreshold; changed = true; }
   if (!changed) return res.status(400).json({ error: "Sin cambios validos." });
   cfg.updatedAt = new Date().toISOString();
   cfg.updatedBy = req.auth.user.name || req.auth.user.email;
@@ -4571,6 +4573,16 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     const totalAssigned = setterLeads.length;
     const untouchedAssigned = setterLeads.filter(l => !l.lastContactAt).length;
 
+    // Follow-ups del día (dueToday + dueYesterday) — para columna del panel Equipo.
+    const followupsToday = _countFollowupsForBadge(setterLeads);
+    // Follow-ups atrasados (overdue, > 24hs vencidos)
+    let followupsOverdue = 0;
+    const _now = Date.now();
+    for (const l of setterLeads) {
+      const fus = _computeFollowupsDue(l, _now);
+      for (const f of fus) if (f.status === 'overdue') followupsOverdue++;
+    }
+
     // Alertas con severidad ajustada al contexto. Lo importante: si el setter
     // tiene leads SIN TOCAR, eso es high (esta parado sobre trabajo). Si no
     // tiene leads asignados, la alerta es informativa (no es su culpa).
@@ -4608,6 +4620,8 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
       totalAssigned,           // leads totales asignados al setter (independiente del periodo)
       untouchedAssigned,       // de los asignados, cuantos jamas se tocaron
+      followupsToday,          // dueToday + dueYesterday — el badge del setter
+      followupsOverdue,        // overdue (vencidos > 24hs)
       alerts,
     };
   });

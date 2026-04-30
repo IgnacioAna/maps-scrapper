@@ -141,6 +141,22 @@ describe("Shape y agregaciones", () => {
     // setter_a (5) + setter_b (1) = 6 / 2 setters activos = 3
     expect(r.body.teamAverages.total).toBe(3);
   });
+
+  it("perSetter incluye followupsToday y followupsOverdue (numeros)", async () => {
+    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    for (const s of r.body.perSetter) {
+      expect(typeof s.followupsToday).toBe("number");
+      expect(typeof s.followupsOverdue).toBe("number");
+      expect(s.followupsToday).toBeGreaterThanOrEqual(0);
+      expect(s.followupsOverdue).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("alertConfig devuelve followupsTodayThreshold con default 15", async () => {
+    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    expect(r.body.alertConfig).toHaveProperty("followupsTodayThreshold");
+    expect(r.body.alertConfig.followupsTodayThreshold).toBe(15);
+  });
 });
 
 describe("Alertas automáticas", () => {
@@ -208,5 +224,13 @@ describe("Alert config", () => {
     const dropB = r.body.alerts.find((a) => a.setterId === "setter_b" && a.type === "drop");
     // 1 vs 5 = -80%, ahora umbral 90% → ya NO alerta
     expect(dropB).toBeUndefined();
+  });
+
+  it("PUT followupsTodayThreshold actualiza el config", async () => {
+    const r = await request(app).put("/api/setters/alert-config").set("Cookie", adminCookie).send({ followupsTodayThreshold: 30 });
+    expect(r.status).toBe(200);
+    expect(r.body.followupsTodayThreshold).toBe(30);
+    const team = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    expect(team.body.alertConfig.followupsTodayThreshold).toBe(30);
   });
 });

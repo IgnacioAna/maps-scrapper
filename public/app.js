@@ -5983,6 +5983,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<td style="padding:14px 10px; text-align:right; background:${bg}; font-variant-numeric:tabular-nums; color:var(--text-primary);">${value}${deltaHtml}</td>`;
   }
 
+  // Cell de "Follow-ups hoy" en panel Equipo. Pinta rojo si supera el umbral
+  // (alertConfig.followupsTodayThreshold). Si tiene atrasados, los muestra
+  // en chip naranja chico.
+  function _teamFollowupsCell(s) {
+    const today = s.followupsToday || 0;
+    const overdue = s.followupsOverdue || 0;
+    const threshold = (_teamData?.alertConfig?.followupsTodayThreshold) ?? 15;
+    let bg = 'transparent';
+    let color = 'var(--text-primary)';
+    if (today > threshold) { bg = 'rgba(248,81,73,0.10)'; color = '#f85149'; }
+    else if (today > 0) { bg = 'rgba(91,185,116,0.07)'; color = '#5bb974'; }
+    const overdueChip = overdue > 0 ? ` <span title="Atrasados (>1 día)" style="font-size:10px; padding:1px 6px; background:rgba(255,138,61,0.15); color:#ff8a3d; border-radius:6px; margin-left:4px;">+${overdue}</span>` : '';
+    return `<td style="padding:14px 10px; text-align:right; background:${bg}; font-variant-numeric:tabular-nums; color:${color}; font-weight:${today > 0 ? '600' : '400'};">${today}${overdueChip}</td>`;
+  }
+
   function _teamRenderAlerts(alerts) {
     const wrap = document.getElementById('team-alerts');
     const list = document.getElementById('team-alerts-list');
@@ -6003,7 +6018,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function _teamSorted(rows) {
     const { key, dir } = _teamSort;
-    const get = (r) => (key === 'name' ? r.name : (r.current?.[key] ?? 0));
+    const get = (r) => {
+      if (key === 'name') return r.name;
+      if (key === 'followupsToday') return r.followupsToday ?? 0;
+      return r.current?.[key] ?? 0;
+    };
     return [...rows].sort((a, b) => {
       const va = get(a), vb = get(b);
       if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -6071,6 +6090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${_teamCell(c.interesados, _teamFmtDelta(s.deltas.interesados), vsAvg('interesados', c.interesados))}
         ${_teamCell(c.agendados, _teamFmtDelta(s.deltas.agendados), vsAvg('agendados', c.agendados))}
         ${_teamCell(c.pctShow + '%', '', vsAvg('pctShow', c.pctShow))}
+        ${_teamFollowupsCell(s)}
         <td style="padding:14px 10px; text-align:right; color:var(--text-secondary); font-size:12px; white-space:nowrap;">${lastAct}</td>
       `;
       tr.querySelector('.t-name').textContent = s.name;
@@ -6078,6 +6098,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.appendChild(tr);
     });
 
+    // Total follow-ups hoy del equipo (suma directa, no promedio)
+    const totalFuToday = d.perSetter.reduce((sum, s) => sum + (s.followupsToday || 0), 0);
+    const totalFuOverdue = d.perSetter.reduce((sum, s) => sum + (s.followupsOverdue || 0), 0);
     // Footer con promedios del equipo
     tfoot.innerHTML = `
       <tr style="border-top:2px solid var(--border-color); font-weight:600; color:var(--text-secondary);">
@@ -6089,6 +6112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="padding:10px 8px; text-align:right;">${avg.interesados}</td>
         <td style="padding:10px 8px; text-align:right;">${avg.agendados}</td>
         <td style="padding:10px 8px; text-align:right;">${avg.pctShow}%</td>
+        <td style="padding:10px 8px; text-align:right; color:var(--text-primary); font-weight:700;" title="Total del equipo">${totalFuToday}${totalFuOverdue > 0 ? ` <span style="font-size:10px; padding:1px 6px; background:rgba(255,138,61,0.15); color:#ff8a3d; border-radius:6px; margin-left:4px; font-weight:600;">+${totalFuOverdue}</span>` : ''}</td>
         <td></td>
       </tr>
     `;
