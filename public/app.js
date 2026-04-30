@@ -1486,203 +1486,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Renderiza la sección de follow-ups dentro del modal del lead.
     // Muestra los 5 steps (24h/48h/72h/7d/15d) con: estado, fecha, nota,
     // botones marcar hecho / reprogramar.
+    // Render simplificado: solo info del follow-up activo (si lo hay).
+    // Los checkboxes 24h/48h/72h/7d/15d en la TABLA del CRM son los que el setter
+    // tilda. Tildar = "voy a hacer follow-up en X desde este momento". Solo uno
+    // activo a la vez. El backend destila los otros automáticamente.
     function _renderModalFollowups(lead) {
-      const STEPS = [
-        { key: '24hs', label: '24 horas', deltaMs: 24 * 3600 * 1000 },
-        { key: '48hs', label: '48 horas', deltaMs: 48 * 3600 * 1000 },
-        { key: '72hs', label: '72 horas', deltaMs: 72 * 3600 * 1000 },
-        { key: '7d',   label: '7 días',   deltaMs: 7 * 24 * 3600 * 1000 },
-        { key: '15d',  label: '15 días',  deltaMs: 15 * 24 * 3600 * 1000 },
-      ];
-      const list = document.getElementById('modal-followups-list');
-      const empty = document.getElementById('modal-followups-empty');
-      const hidden = document.getElementById('modal-followups-hidden-msg');
-      const reactivateBtn = document.getElementById('modal-followups-reactivate');
-      if (!list) return;
-      list.innerHTML = '';
-      empty.style.display = 'none';
-      hidden.style.display = 'none';
-      reactivateBtn.style.display = 'none';
-
-      const baseTs = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
-      if (!baseTs) {
-        empty.style.display = 'block';
-        return;
-      }
-
-      // Si está oculto por estado y no fue reactivado, mostrar el aviso + botón
-      const HIDE_STATES = ['agendado', 'descartado', 'cerrado'];
-      const isHidden = (HIDE_STATES.includes(lead.estado) || lead.interes === 'no') && !lead.followUpsReactivated;
-      if (isHidden) {
-        hidden.style.display = 'block';
-        reactivateBtn.style.display = 'inline-flex';
-        reactivateBtn.onclick = async () => {
-          try {
-            await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ reactivate: true }),
-            });
-            lead.followUpsReactivated = true;
-            _renderModalFollowups(lead);
-            loadFollowups();
-          } catch (e) { alert('Error: ' + e.message); }
-        };
-        return;
-      }
-
-      const now = Date.now();
-      const fmtDate = (ts) => {
-        const d = new Date(ts);
-        const today = new Date(); today.setHours(0,0,0,0);
-        const tomorrow = today.getTime() + 24 * 3600 * 1000;
-        const yesterday = today.getTime() - 24 * 3600 * 1000;
-        const dayMs = d.getTime(); const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
-        if (dayStart.getTime() === today.getTime()) return 'Hoy ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        if (dayStart.getTime() === yesterday) return 'Ayer ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        if (dayStart.getTime() === tomorrow) return 'Mañana ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const info = document.getElementById('modal-followups-info');
+      if (!info) return;
+      const STEPS = {
+        '24hs': { label: '24 horas', deltaMs: 24 * 3600 * 1000 },
+        '48hs': { label: '48 horas', deltaMs: 48 * 3600 * 1000 },
+        '72hs': { label: '72 horas', deltaMs: 72 * 3600 * 1000 },
+        '7d':   { label: '7 días',   deltaMs: 7 * 24 * 3600 * 1000 },
+        '15d':  { label: '15 días',  deltaMs: 15 * 24 * 3600 * 1000 },
       };
-
-      // Modo implícito: 24h+48h+72h auto-programados si conexion=enviada y
-      // ningún planned está activo. Mantiene paridad con el backend.
-      const fp = lead.followUpsPlanned || {};
-      const allPlannedFalse = !fp['24hs'] && !fp['48hs'] && !fp['72hs'] && !fp['7d'] && !fp['15d'];
-      const isImplicit = allPlannedFalse && lead.conexion === 'enviada';
-      const IMPLICIT_KEYS = new Set(['24hs', '48hs', '72hs']);
-
-      for (const step of STEPS) {
-        const explicit = !!(lead.followUpsPlanned && lead.followUpsPlanned[step.key]);
-        const implicit = isImplicit && IMPLICIT_KEYS.has(step.key);
-        const planned = explicit || implicit;
-        const flag = !!(lead.followUps && lead.followUps[step.key]);
-        const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
-        const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
-        const dueTs = overrideTs > 0 ? overrideTs : baseTs + step.deltaMs;
-        const note = (lead.followUpNotes && lead.followUpNotes[step.key]) || '';
-
-        // 3 estados: NO programado / programado activo / hecho
-        let statusBadge, mainAction;
-        if (!planned) {
-          statusBadge = '<span class="chip" style="font-size:10px; background:rgba(255,255,255,0.04); color:var(--text-secondary);">Sin programar</span>';
-          mainAction = `<button class="btn-primary fu-plan" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">+ Programar</button>`;
-        } else if (flag) {
-          statusBadge = '<span class="chip chip-success" style="font-size:10px;">✓ Hecho</span>';
-          mainAction = `<button class="btn-secondary fu-uncheck" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">↺ Reabrir</button>`;
-        } else if (dueTs > now + 12 * 3600 * 1000) {
-          statusBadge = '<span class="chip" style="font-size:10px; background:rgba(157,133,242,0.12); color:var(--accent); border:1px solid rgba(157,133,242,0.40);">📅 Programado</span>';
-          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
-        } else if (dueTs >= now - 12 * 3600 * 1000) {
-          statusBadge = '<span class="followup-chip followup-chip-today" style="font-size:10px;">Vence ahora</span>';
-          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
-        } else if (dueTs >= now - 36 * 3600 * 1000) {
-          statusBadge = '<span class="followup-chip followup-chip-yesterday" style="font-size:10px;">Vencido ayer</span>';
-          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
-        } else {
-          statusBadge = '<span class="followup-chip followup-chip-overdue" style="font-size:10px;">Atrasado</span>';
-          mainAction = `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`;
-        }
-
-        // Si está programado, mostramos también botón "Quitar" para desprogramar.
-        const unplanBtn = planned && !flag ? `<button class="btn-secondary fu-unplan" data-step="${step.key}" style="font-size:11px; padding:5px 10px; color:#f85149;">✕ Quitar</button>` : '';
-
-        const li = document.createElement('li');
-        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px; display:flex; flex-direction:column; gap:6px; ' + (planned ? '' : 'opacity:0.55;');
-        li.innerHTML = `
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <strong style="font-size:13px;">${step.label}</strong>
-              ${statusBadge}
-              ${planned && overrideTs > 0 ? '<span class="muted" style="font-size:10px;">↻ reprogramado</span>' : ''}
-            </div>
-            ${planned ? `<div class="muted" style="font-size:11px;">${fmtDate(dueTs)}</div>` : ''}
-          </div>
-          ${planned ? `<textarea data-step="${step.key}" class="fu-note-input" placeholder="Nota opcional (ej: el lead pidió que le escriba el martes)…" rows="1" maxlength="500" style="width:100%; padding:7px 10px; font-size:12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-surface); color:var(--text-primary); resize:vertical; font-family:inherit;">${(note || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</textarea>` : ''}
-          <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${mainAction}
-            ${planned ? `<button class="btn-secondary fu-save-note" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">💾 Guardar nota</button>` : ''}
-            ${planned && !flag ? `<button class="btn-secondary fu-reschedule" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">📅 Reprogramar</button>` : ''}
-            ${unplanBtn}
-          </div>
-        `;
-        list.appendChild(li);
+      const fu = lead.followUps || {};
+      const activeKey = Object.keys(STEPS).find(k => fu[k] === true);
+      if (!activeKey) {
+        info.style.display = 'none';
+        return;
       }
+      const startedAt = lead.followUpStartedAt ? new Date(lead.followUpStartedAt).getTime() : (lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0);
+      if (!startedAt) {
+        info.style.display = 'none';
+        return;
+      }
+      const dueTs = startedAt + STEPS[activeKey].deltaMs;
+      const now = Date.now();
+      const d = new Date(dueTs);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const tomorrow = today.getTime() + 24 * 3600 * 1000;
+      const yesterday = today.getTime() - 24 * 3600 * 1000;
+      const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+      let when;
+      if (dayStart.getTime() === today.getTime()) when = 'Hoy ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      else if (dayStart.getTime() === yesterday) when = 'Ayer ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      else if (dayStart.getTime() === tomorrow) when = 'Mañana ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      else when = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-      // Bind handlers de los botones
-      list.querySelectorAll('.fu-plan').forEach(btn => btn.addEventListener('click', () => _fuActionPlan(lead, btn.dataset.step, true)));
-      list.querySelectorAll('.fu-unplan').forEach(btn => btn.addEventListener('click', () => _fuActionPlan(lead, btn.dataset.step, false)));
-      list.querySelectorAll('.fu-check').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, true)));
-      list.querySelectorAll('.fu-uncheck').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, false)));
-      list.querySelectorAll('.fu-save-note').forEach(btn => btn.addEventListener('click', () => {
-        const step = btn.dataset.step;
-        const ta = list.querySelector(`.fu-note-input[data-step="${step}"]`);
-        _fuActionNote(lead, step, ta.value);
-      }));
-      list.querySelectorAll('.fu-reschedule').forEach(btn => btn.addEventListener('click', () => _fuActionReschedule(lead, btn.dataset.step)));
-    }
+      let statusLabel, statusColor;
+      if (dueTs > now + 12 * 3600 * 1000) { statusLabel = 'Programado'; statusColor = 'var(--accent)'; }
+      else if (dueTs >= now - 12 * 3600 * 1000) { statusLabel = 'Vence ahora'; statusColor = '#5bb974'; }
+      else if (dueTs >= now - 36 * 3600 * 1000) { statusLabel = 'Vencido ayer'; statusColor = '#ff8a3d'; }
+      else { statusLabel = 'Atrasado'; statusColor = '#f85149'; }
 
-    async function _fuActionPlan(lead, step, planned) {
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step, planned }),
-        });
-        const d = await r.json();
-        if (d.followUpsPlanned) lead.followUpsPlanned = d.followUpsPlanned;
-        _renderModalFollowups(lead);
-        loadFollowups();
-      } catch (e) { alert('Error: ' + e.message); }
-    }
-
-    async function _fuActionMark(lead, step, value) {
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step, value }),
-        });
-        const d = await r.json();
-        if (d.followUps) lead.followUps = d.followUps;
-        _renderModalFollowups(lead);
-        loadFollowups();
-      } catch (e) { alert('Error: ' + e.message); }
-    }
-    async function _fuActionNote(lead, step, note) {
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step, note }),
-        });
-        const d = await r.json();
-        if (d.followUpNotes) lead.followUpNotes = d.followUpNotes;
-        // Feedback visual en el botón
-        const btn = document.querySelector(`.fu-save-note[data-step="${step}"]`);
-        if (btn) {
-          const orig = btn.textContent;
-          btn.textContent = '✓ Guardada';
-          setTimeout(() => { btn.textContent = orig; }, 1200);
-        }
-        loadFollowups();
-      } catch (e) { alert('Error: ' + e.message); }
-    }
-    async function _fuActionReschedule(lead, step) {
-      const current = (lead.followUpDueOverrides && lead.followUpDueOverrides[step]) || '';
-      const input = prompt('Nueva fecha del follow-up "' + step + '" (formato YYYY-MM-DD HH:MM o YYYY-MM-DDTHH:MM).\nDejá vacío para resetear al default.', current ? new Date(current).toISOString().slice(0, 16) : '');
-      if (input === null) return;
-      const newVal = input.trim();
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step, reschedule: newVal }),
-        });
-        const d = await r.json();
-        if (d.followUpDueOverrides) lead.followUpDueOverrides = d.followUpDueOverrides;
-        _renderModalFollowups(lead);
-        loadFollowups();
-      } catch (e) { alert('Error: ' + e.message); }
+      info.innerHTML = `
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <span style="font-size:14px;">📅</span>
+          <div style="flex:1; min-width:200px;">
+            <strong style="color:var(--text-primary);">Follow-up ${STEPS[activeKey].label}</strong>
+            <span style="color:${statusColor}; font-weight:600; margin-left:6px; font-size:12px;">· ${statusLabel}</span>
+            <div class="muted" style="font-size:11px; margin-top:2px;">Vence: ${when} · Tildado: ${new Date(startedAt).toLocaleString()}</div>
+          </div>
+          <span class="muted" style="font-size:11px;">Cambialo desde los checkboxes de la tabla.</span>
+        </div>
+      `;
+      info.style.display = 'block';
     }
 
 
@@ -2264,15 +2123,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify({ step, value })
         });
         const data = await resp.json();
-        // Actualizar estado local para evitar desync
+        // Actualizar estado local para evitar desync. Importante: el backend
+        // destila los otros checkboxes automáticamente (solo uno activo a la
+        // vez), entonces el response trae el estado COMPLETO de followUps.
         const idx = setterLeads.findIndex(l => l.id === id);
         if (idx >= 0 && data.followUps) {
           setterLeads[idx].followUps = data.followUps;
-          setterLeads[idx].lastContactAt = data.lead?.lastContactAt || setterLeads[idx].lastContactAt;
+          setterLeads[idx].followUpStartedAt = data.followUpStartedAt;
         }
         _updateStatsLocal();
-        // Re-renderizar sólo si estamos en filtro "seguimiento" para que respete el filtro
-        if (currentPipeFilter === 'seguimiento') renderSetterLeads();
+        // Re-render para que los checkboxes destildados por el backend se vean
+        // y el chip de follow-up se actualice. Si estamos en filtros 'hacer_hoy'
+        // o 'atrasados', el filtro también necesita refresh.
+        renderSetterLeads();
+        // Refrescar listado de follow-ups (badge sidebar + filtros del CRM)
+        if (typeof loadFollowups === 'function') loadFollowups();
       } catch (e) { console.error(e); }
     };
 

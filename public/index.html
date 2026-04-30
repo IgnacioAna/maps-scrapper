@@ -560,16 +560,8 @@
                 <button id="modal-agendar-btn" class="btn-primary" style="margin-left:auto; padding:8px 16px; font-size:13px; border-radius:9px;">📅 Agendar reunión</button>
               </div>
               <div id="modal-call-log" style="display:none; margin-bottom:16px; padding:14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px;"></div>
-              <!-- Sección de follow-ups con notas y reprogramación -->
-              <div id="modal-followups-section" style="margin-bottom:18px; padding:16px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-                  <strong style="font-size:13px;">📅 Seguimientos programados</strong>
-                  <button id="modal-followups-reactivate" class="btn-secondary" style="font-size:11px; padding:5px 10px; display:none;">Reactivar follow-ups</button>
-                </div>
-                <div id="modal-followups-empty" class="muted" style="font-size:12px; text-align:center; padding:8px 0; display:none;">Este lead todavía no tiene WhatsApp enviado. Cuando se envíe, los seguimientos se programan automáticamente.</div>
-                <div id="modal-followups-hidden-msg" class="muted" style="font-size:12px; padding:8px; background:rgba(255,200,40,0.06); border:1px dashed rgba(255,200,40,0.4); border-radius:8px; display:none;">Los seguimientos están ocultos porque el lead está en estado agendado / descartado / no interesa. Si querés retomarlos, click en "Reactivar follow-ups".</div>
-                <ul id="modal-followups-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
-              </div>
+              <!-- Follow-ups: chip simple con info del activo (los checkboxes de la tabla del CRM son los que se tildan) -->
+              <div id="modal-followups-info" style="display:none; margin-bottom:16px; padding:12px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:10px; font-size:13px;"></div>
               <div class="lead-modal-notes">
                 <h4>Conversación / Notas</h4>
                 <div id="modal-notes-list" class="notes-list"></div>
@@ -1624,7 +1616,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430e"></script>
+  <script type="module" src="/app.js?v=20260430f"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

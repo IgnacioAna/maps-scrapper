@@ -391,26 +391,12 @@ function parseLocationParts(location = "") {
 
 function ensureLeadDefaults(lead = {}) {
   if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
-  // followUpsPlanned: el setter PROGRAMA explícitamente cada follow-up. Si no
-  // está programado, no aparece en el listado de "Hacer hoy" / "Atrasados".
-  // Esto evita que TODOS los leads con WSP enviado se inflen automáticamente
-  // como pendientes (caso real: 4673 leads → 6500 follow-ups falsos).
-  if (!lead.followUpsPlanned || typeof lead.followUpsPlanned !== 'object') {
-    lead.followUpsPlanned = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
-  }
-  // Notas opcionales por step de follow-up. Se setean cuando el setter programa
-  // el seguimiento con contexto. Vacio por default.
-  if (!lead.followUpNotes || typeof lead.followUpNotes !== 'object') {
-    lead.followUpNotes = { '24hs': '', '48hs': '', '72hs': '', '7d': '', '15d': '' };
-  }
-  // Overrides de fecha de vencimiento por step (ISO date). Si null, se usa
-  // lastContactAt + delta del step. Si tiene valor, ese es el vencimiento.
-  if (!lead.followUpDueOverrides || typeof lead.followUpDueOverrides !== 'object') {
-    lead.followUpDueOverrides = { '24hs': null, '48hs': null, '72hs': null, '7d': null, '15d': null };
-  }
-  // Flag para "reactivar follow-ups" si el lead estaba agendado/descartado y el
-  // setter quiere retomar el seguimiento.
-  if (typeof lead.followUpsReactivated !== 'boolean') lead.followUpsReactivated = false;
+  // Nueva semántica (2026-04-30): tildar un checkbox de follow-up significa
+  // "voy a hacer follow-up en X horas/días DESDE ESTE MOMENTO". Solo uno activo
+  // a la vez por lead — tildar uno destila los otros. followUpStartedAt es el
+  // ISO del momento en que se tildó el activo (base del contador de venciamiento).
+  // Si todos están en false, no hay follow-up programado y followUpStartedAt = null.
+  if (!lead.followUpStartedAt) lead.followUpStartedAt = null;
   if (!Array.isArray(lead.notes)) lead.notes = [];
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
   if (!lead.country) lead.country = '';
@@ -3678,15 +3664,13 @@ app.post('/api/setters/leads/:id/interaction', requireAuth, (req, res) => {
   res.json({ ok: true, lead: { id: req.params.id, ...lead } });
 });
 
-// Follow-up toggle/edit. Body acepta:
-//   { step, value? }              → toggle / set flag de "hecho" (comportamiento legacy)
-//   { step, planned: bool }       → programar/desprogramar el follow-up para este lead
-//   { step, note }                → setear nota del step (string vacio = limpiar)
-//   { step, reschedule: ISO_date } → reprogramar vencimiento del step
-//   { reactivate: true }           → poner followUpsReactivated=true (lead vuelve al listado)
-//   { reactivate: false }          → desactivar (vuelven a esconderse si estado lo amerita)
+// Follow-up toggle. Body acepta:
+//   { step, value? }      → set/toggle el step. Si value=true (o toggle a true):
+//                            destila los otros steps y setea followUpStartedAt=now.
+//                           Si value=false (o toggle a false): solo destildea ese.
+//                           Si era el activo, followUpStartedAt = null.
 app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
-  const { step, value, planned, note, reschedule, reactivate } = req.body || {};
+  const { step, value } = req.body || {};
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
@@ -3695,62 +3679,30 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   }
   ensureLeadDefaults(lead);
   const valid = ['24hs', '48hs', '72hs', '7d', '15d'];
-
-  // Reactivate (no requiere step)
-  if (reactivate !== undefined) {
-    lead.followUpsReactivated = !!reactivate;
+  if (step === undefined || !valid.includes(step)) {
+    return res.status(400).json({ error: "Step inválido." });
   }
 
-  // Si hay step, validar primero antes de tocar
-  if (step !== undefined) {
-    if (!valid.includes(step)) return res.status(400).json({ error: "Step inválido." });
+  const previous = !!lead.followUps[step];
+  const next = typeof value === 'boolean' ? value : !previous;
 
-    if (planned !== undefined) {
-      // Si estamos en modo implícito (todos false + conexion=enviada), antes
-      // de aplicar el cambio materializamos los OTROS 2 implícitos a true,
-      // para que la decisión del setter sea coherente.
-      const cur = lead.followUpsPlanned;
-      const allFalse = !cur['24hs'] && !cur['48hs'] && !cur['72hs'] && !cur['7d'] && !cur['15d'];
-      const inImplicit = allFalse && lead.conexion === 'enviada';
-      if (inImplicit) {
-        const IMPLICIT = ['24hs', '48hs', '72hs'];
-        for (const k of IMPLICIT) {
-          if (k !== step) cur[k] = true;
-        }
-      }
-      cur[step] = !!planned;
-    }
-    if (note !== undefined) {
-      lead.followUpNotes[step] = String(note || '').slice(0, 500);
-    }
-    if (reschedule !== undefined) {
-      if (reschedule === null || reschedule === '') {
-        lead.followUpDueOverrides[step] = null;
-      } else {
-        const ts = new Date(reschedule).getTime();
-        if (Number.isNaN(ts)) return res.status(400).json({ error: "reschedule debe ser fecha ISO o vacio." });
-        lead.followUpDueOverrides[step] = new Date(ts).toISOString();
-      }
-    }
-    // Si viene value explícito, usarlo. Si NO viene value pero NO viene note ni
-    // reschedule ni planned (caso legacy del checkbox), togglear.
-    if (typeof value === 'boolean') {
-      lead.followUps[step] = value;
-      lead.lastContactAt = new Date().toISOString();
-    } else if (note === undefined && reschedule === undefined && reactivate === undefined && planned === undefined) {
-      lead.followUps[step] = !lead.followUps[step];
-      lead.lastContactAt = new Date().toISOString();
-    }
+  if (next === true) {
+    // Tildar este step → destildar los otros (solo uno activo) + setear started.
+    for (const k of valid) lead.followUps[k] = (k === step);
+    lead.followUpStartedAt = new Date().toISOString();
+  } else {
+    // Destildar este step → si era el activo, queda sin follow-up.
+    lead.followUps[step] = false;
+    const stillActive = valid.some((k) => lead.followUps[k] === true);
+    if (!stillActive) lead.followUpStartedAt = null;
   }
-
+  // No cambiar lastContactAt acá: ese sigue siendo "última vez que se mandó WSP",
+  // no "última vez que se cambió el checkbox de follow-up".
   saveSettersData(data);
   res.json({
     ok: true,
     followUps: lead.followUps,
-    followUpsPlanned: lead.followUpsPlanned,
-    followUpNotes: lead.followUpNotes,
-    followUpDueOverrides: lead.followUpDueOverrides,
-    followUpsReactivated: lead.followUpsReactivated,
+    followUpStartedAt: lead.followUpStartedAt,
     lead: { id: req.params.id, ...lead },
   });
 });
@@ -4136,50 +4088,44 @@ function _isFollowupHidden(lead) {
 //   - dueDate: ISO de cuándo vence (override o lastContactAt + step delta)
 //   - status: 'completed' | 'future' | 'dueToday' | 'dueYesterday' | 'overdue'
 //   - note: string (puede ser '')
+// Nueva semántica: el setter tilda UN checkbox para programar el follow-up.
+// Tildar 24h = "voy a contactar en 24h DESDE AHORA". followUpStartedAt = momento
+// del tildado. Solo uno activo a la vez. Si tilda otro, se reemplaza.
+// Si destila el activo (queda en false), no hay follow-up.
 function _computeFollowupsDue(lead, now = Date.now()) {
   const out = [];
   if (!lead || _isFollowupHidden(lead)) return out;
-  const baseTs = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
-  if (!baseTs) return out; // sin lastContactAt no hay base para programar
+  const fu = lead.followUps || {};
+  // Buscar el step activo (el último tildado — solo uno activo).
+  const activeStep = FOLLOWUP_STEPS.find((s) => fu[s.key] === true);
+  if (!activeStep) return out;
+  // Base del contador: followUpStartedAt si existe, sino fallback a lastContactAt
+  // (compat con leads viejos donde el flag está tildado pero followUpStartedAt
+  // todavia no fue seteado).
+  const baseTs = lead.followUpStartedAt
+    ? new Date(lead.followUpStartedAt).getTime()
+    : (lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0);
+  if (!baseTs) return out;
+
   const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
   const startOfTomorrow = startOfToday.getTime() + 24 * 60 * 60 * 1000;
   const startOfYesterday = startOfToday.getTime() - 24 * 60 * 60 * 1000;
 
-  // DEFAULT IMPLÍCITO: si el lead tiene WSP enviado y NUNCA fue tocado el modelo
-  // de planned (todos false), asumir que 24h+48h+72h estan programados por
-  // default (caso natural de outreach). El setter puede desprogramar manualmente
-  // si no quiere alguno, o programar 7d/15d extra. Apenas el setter toca CUALQUIER
-  // step manualmente (planned=true o false explicito), se respeta su decision.
-  const planned = lead.followUpsPlanned || {};
-  const allPlannedFalse = !planned['24hs'] && !planned['48hs'] && !planned['72hs'] && !planned['7d'] && !planned['15d'];
-  const isImplicitDefault = allPlannedFalse && lead.conexion === 'enviada';
-  const IMPLICIT_STEPS = new Set(['24hs', '48hs', '72hs']);
+  const dueTs = baseTs + activeStep.deltaMs;
+  let status;
+  if (dueTs >= startOfTomorrow) status = 'future';
+  else if (dueTs >= startOfToday.getTime() && dueTs < startOfTomorrow) status = 'dueToday';
+  else if (dueTs >= startOfYesterday && dueTs < startOfToday.getTime()) status = 'dueYesterday';
+  else status = 'overdue';
 
-  for (const step of FOLLOWUP_STEPS) {
-    const explicit = !!planned[step.key];
-    const implicit = isImplicitDefault && IMPLICIT_STEPS.has(step.key);
-    if (!explicit && !implicit) continue;
-    const flag = !!(lead.followUps && lead.followUps[step.key]);
-    const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
-    const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
-    const dueTs = overrideTs > 0 ? overrideTs : baseTs + step.deltaMs;
-
-    let status;
-    if (flag) status = 'completed';
-    else if (dueTs >= startOfTomorrow) status = 'future';
-    else if (dueTs >= startOfToday.getTime() && dueTs < startOfTomorrow) status = 'dueToday';
-    else if (dueTs >= startOfYesterday && dueTs < startOfToday.getTime()) status = 'dueYesterday';
-    else status = 'overdue';
-
-    out.push({
-      step: step.key,
-      label: step.label,
-      dueDate: new Date(dueTs).toISOString(),
-      isOverride: overrideTs > 0,
-      status,
-      note: (lead.followUpNotes && lead.followUpNotes[step.key]) || '',
-    });
-  }
+  out.push({
+    step: activeStep.key,
+    label: activeStep.label,
+    dueDate: new Date(dueTs).toISOString(),
+    startedAt: new Date(baseTs).toISOString(),
+    status,
+    note: '',
+  });
   return out;
 }
 
