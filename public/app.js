@@ -5195,69 +5195,151 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function _mrStatusPill(g) {
     const map = {
-      pendiente: { text: 'Pendiente', bg: 'rgba(180,180,180,0.12)', color: '#aaa' },
-      approved: { text: 'Aprobada (oro)', bg: 'rgba(91,185,116,0.12)', color: '#5bb974' },
-      rejected: { text: 'Rechazada', bg: 'rgba(248,81,73,0.12)', color: '#f85149' },
-      rewritten: { text: 'Reescrita', bg: 'rgba(157,133,242,0.14)', color: '#9D85F2' },
-      reviewed: { text: 'Con nota', bg: 'rgba(255,200,40,0.14)', color: '#ffc828' },
+      pendiente: { text: 'Pendiente', bg: 'rgba(180,180,180,0.10)', color: '#9aa0a6', border: 'rgba(180,180,180,0.30)' },
+      approved: { text: '✓ Oro', bg: 'rgba(91,185,116,0.12)', color: '#5bb974', border: 'rgba(91,185,116,0.45)' },
+      rejected: { text: '✗ Rechazada', bg: 'rgba(248,81,73,0.10)', color: '#f85149', border: 'rgba(248,81,73,0.45)' },
+      rewritten: { text: '✎ Reescrita', bg: 'rgba(157,133,242,0.14)', color: '#9D85F2', border: 'rgba(157,133,242,0.50)' },
+      reviewed: { text: '💡 Con nota', bg: 'rgba(255,200,40,0.12)', color: '#ffc828', border: 'rgba(255,200,40,0.45)' },
     };
     const m = map[g.status] || map.pendiente;
-    return `<span class="chip" style="padding:2px 8px; font-size:10px; background:${m.bg}; color:${m.color}; border-radius:999px;">${m.text}</span>`;
+    return `<span class="chip" style="padding:4px 10px; font-size:11px; font-weight:500; background:${m.bg}; color:${m.color}; border:1px solid ${m.border}; border-radius:999px; white-space:nowrap;">${m.text}</span>`;
   }
 
   function _mrSetterActionPill(g) {
     if (!g.setterAction) return '';
     const map = {
-      good: { text: '✓ Setter: buena', color: '#5bb974' },
-      bad: { text: '✗ Setter: descartó', color: '#f85149' },
-      edited: { text: '✎ Setter: editó', color: '#9D85F2' },
+      good: { text: 'Setter: ✓ buena', color: '#5bb974' },
+      bad: { text: 'Setter: ✗ descartó', color: '#f85149' },
+      edited: { text: 'Setter: ✎ editó', color: '#9D85F2' },
     };
     const m = map[g.setterAction];
     if (!m) return '';
-    return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(255,255,255,0.04); color:${m.color}; border:1px solid ${m.color}33; border-radius:999px;">${m.text}</span>`;
+    return `<span class="chip" style="padding:3px 9px; font-size:10px; background:transparent; color:${m.color}; border:1px solid ${m.color}40; border-radius:999px; white-space:nowrap;">${m.text}</span>`;
+  }
+
+  function _mrInitial(name) {
+    return String(name || '?').trim().charAt(0).toUpperCase() || '?';
   }
 
   function _mrRenderGen(g) {
     const div = document.createElement('div');
     div.className = 'card';
-    div.style.cssText = 'padding:14px; display:flex; flex-direction:column; gap:10px;';
-    const blocksHtml = (g.output?.blocks || []).map((b) => `<div style="padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word;">${_mrEscape(b)}</div>`).join('');
+    // Card más respirada con sombra sutil y border accent al hover.
+    div.style.cssText = 'padding:0; overflow:hidden; border-radius:16px; background:linear-gradient(180deg, var(--surface-color) 0%, rgba(255,255,255,0.005) 100%); box-shadow:0 1px 3px rgba(0,0,0,0.25); transition:border-color 0.2s, transform 0.15s ease-out;';
+    div.onmouseover = () => { div.style.borderColor = 'var(--accent)'; };
+    div.onmouseout = () => { div.style.borderColor = 'var(--border-color)'; };
+
+    const blocksHtml = (g.output?.blocks || []).map((b, i) => `
+      <div style="position:relative; padding:14px 16px 14px 18px; background:rgba(157,133,242,0.05); border-left:3px solid var(--accent); border-radius:10px; font-size:14px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">
+        <div style="position:absolute; top:8px; right:10px; font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:var(--accent); opacity:0.55; font-weight:600;">B${i + 1}</div>
+        ${_mrEscape(b)}
+      </div>
+    `).join('');
+
     const finalSentHtml = g.finalSent
-      ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Versión final del setter: ${_mrEscape(g.finalSent)}</div>`
+      ? `<div style="margin-top:10px; padding:12px 14px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); border-radius:8px;">
+          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Versión final que envió el setter</div>
+          <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.finalSent)}</div>
+        </div>`
       : '';
-    const adminInfoHtml = g.adminAction
-      ? `<div class="muted" style="font-size:11px;">Revisada por ${_mrEscape(g.adminReviewedBy || '—')} · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}${g.adminAction === 'rewritten' && g.adminRewrite ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Reescritura admin: ${_mrEscape(g.adminRewrite)}</div>` : ''}${g.adminAction === 'suggested_improvement' && g.adminNote ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Nota: ${_mrEscape(g.adminNote)}</div>` : ''}${g.adminAction === 'rejected' && g.adminRejectReason ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Razón: ${_mrEscape(g.adminRejectReason)}</div>` : ''}</div>`
+
+    const adminBlocks = [];
+    if (g.adminAction === 'rewritten' && g.adminRewrite) {
+      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); border-radius:8px;">
+        <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div>
+        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div>
+      </div>`);
+    }
+    if (g.adminAction === 'suggested_improvement' && g.adminNote) {
+      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;">
+        <div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">💡 Nota de mejora</div>
+        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div>
+      </div>`);
+    }
+    if (g.adminAction === 'rejected' && g.adminRejectReason) {
+      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); border-radius:8px;">
+        <div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Razón del rechazo</div>
+        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRejectReason)}</div>
+      </div>`);
+    }
+    const adminBlocksHtml = adminBlocks.length ? `<div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">${adminBlocks.join('')}</div>` : '';
+
+    const adminFooterHtml = g.adminAction
+      ? `<div class="muted" style="font-size:11px; padding:8px 0; border-top:1px dashed var(--border-color); margin-top:10px;">Revisada por <strong style="color:var(--text-primary);">${_mrEscape(g.adminReviewedBy || '—')}</strong> · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}</div>`
       : '';
+
     const ejemplosHtml = (g.ejemplos || []).length
-      ? `<details style="font-size:11px;"><summary style="cursor:pointer; color:var(--text-secondary);">Ejemplos del banco usados (${g.ejemplos.length})</summary><ul style="list-style:none; padding:6px 0 0 0; margin:0; display:flex; flex-direction:column; gap:4px;">${g.ejemplos.map((e) => `<li style="padding:4px 8px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:6px;">${_mrEscape(e.pregunta)} <span class="muted">· ${_mrEscape(e.categoria)} · ${e.score}</span></li>`).join('')}</ul></details>`
+      ? `<details style="font-size:11px; margin-top:10px;">
+          <summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0; user-select:none;">📚 Ejemplos del banco usados (${g.ejemplos.length})</summary>
+          <ul style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:5px;">
+            ${g.ejemplos.map((e) => `<li style="padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; display:flex; gap:8px; align-items:center; font-size:11px;">
+              <span style="flex:1; color:var(--text-primary);">${_mrEscape(e.pregunta)}</span>
+              <span style="background:var(--accent-soft); color:var(--accent); padding:1px 8px; border-radius:6px; font-size:10px;">${_mrEscape(e.categoria)}</span>
+              <span style="color:var(--text-secondary); font-variant-numeric:tabular-nums;">${e.score}</span>
+            </li>`).join('')}
+          </ul>
+        </details>`
       : '';
+
+    const variantTag = g.variantUsed?.name
+      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px;">🎯 ${_mrEscape(g.variantUsed.name)}</span>`
+      : '';
+    const fallbackTag = g.usedFallback
+      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(255,200,40,0.10); color:#ffc828; border:1px solid rgba(255,200,40,0.35); border-radius:999px;">fallback</span>`
+      : '';
+    const violationsTag = (g.violations || []).length
+      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px;">⚠ ${_mrEscape(g.violations.join(', '))}</span>`
+      : '';
+    const setterInitial = _mrInitial(g.setterName);
+
     div.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+      <!-- Header con setter avatar + status -->
+      <div style="padding:16px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border-color); flex-wrap:wrap;">
+        <div style="width:36px; height:36px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px;">${setterInitial}</div>
         <div style="flex:1; min-width:0;">
-          <div class="muted" style="font-size:11px;">${new Date(g.createdAt).toLocaleString()} · setter: <strong style="color:var(--text-primary);">${_mrEscape(g.setterName || '—')}</strong> · prompt v${g.promptVersion ?? '—'}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ` · <span style="color:#f85149;">⚠ ${_mrEscape(g.violations.join(', '))}</span>` : ''}</div>
-          <div style="margin-top:6px; padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word;"><span class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Mensaje del prospecto</span><br>${_mrEscape(g.prospectMessage)}</div>
-          ${g.context ? `<div style="margin-top:6px; padding:8px 10px; background:var(--bg-app); border:1px dashed var(--border-color); border-radius:8px; font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:var(--text-secondary);"><span class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Contexto</span><br>${_mrEscape(g.context)}</div>` : ''}
+          <div style="font-size:14px; font-weight:600; color:var(--text-primary);">${_mrEscape(g.setterName || '—')}</div>
+          <div class="muted" style="font-size:11px; margin-top:2px;">${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}</div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+          ${variantTag}${fallbackTag}${violationsTag}
           ${_mrStatusPill(g)}
           ${_mrSetterActionPill(g)}
         </div>
       </div>
 
-      <div>
-        <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Respuesta de Mercury (${(g.output?.blocks || []).length} bloque(s))</div>
-        <div style="display:flex; flex-direction:column; gap:6px;">${blocksHtml}</div>
-        ${finalSentHtml}
+      <!-- Body: prospecto + Mercury -->
+      <div style="padding:18px;">
+        <!-- Mensaje del prospecto (estilo burbuja recibido) -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px;">Mensaje del prospecto</div>
+          <div style="display:flex; gap:8px; align-items:flex-start;">
+            <div style="width:24px; height:24px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-secondary);">👤</div>
+            <div style="flex:1; padding:12px 14px; background:rgba(255,255,255,0.025); border:1px solid var(--border-color); border-radius:14px; border-top-left-radius:4px; font-size:13.5px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${_mrEscape(g.prospectMessage)}</div>
+          </div>
+          ${g.context ? `<div style="margin-top:8px; margin-left:32px; padding:8px 12px; font-size:12px; color:var(--text-secondary); background:rgba(255,255,255,0.02); border:1px dashed var(--border-color); border-radius:10px; line-height:1.5; white-space:pre-wrap;"><strong style="color:var(--text-primary); font-size:10px; text-transform:uppercase; letter-spacing:0.4px;">Contexto:</strong> ${_mrEscape(g.context)}</div>` : ''}
+        </div>
+
+        <!-- Respuesta de Mercury (estilo burbuja enviado, accent) -->
+        <div>
+          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            Respuesta de Mercury (${(g.output?.blocks || []).length} bloque${(g.output?.blocks || []).length === 1 ? '' : 's'})
+          </div>
+          <div style="display:flex; flex-direction:column; gap:8px;">${blocksHtml}</div>
+          ${finalSentHtml}
+        </div>
+
+        ${adminBlocksHtml}
+        ${ejemplosHtml}
+        ${adminFooterHtml}
       </div>
 
-      ${ejemplosHtml}
-      ${adminInfoHtml}
-
-      <div style="display:flex; gap:6px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--border-color);">
-        <button class="btn-secondary mr-act-approve" data-id="${g.id}" style="font-size:12px; color:#5bb974;">✓ Aprobar oro</button>
-        <button class="btn-secondary mr-act-reject" data-id="${g.id}" style="font-size:12px; color:#f85149;">✗ Rechazar</button>
-        <button class="btn-secondary mr-act-rewrite" data-id="${g.id}" style="font-size:12px; color:#9D85F2;">✎ Reescribir</button>
-        <button class="btn-secondary mr-act-suggest" data-id="${g.id}" style="font-size:12px; color:#ffc828;">💡 Sugerir mejora</button>
+      <!-- Acciones admin (footer sticky con bg distinto) -->
+      <div style="padding:12px 18px; background:rgba(0,0,0,0.15); border-top:1px solid var(--border-color); display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn-secondary mr-act-approve" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#5bb974; font-weight:500;">✓ Aprobar oro</button>
+        <button class="btn-secondary mr-act-rewrite" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent); font-weight:500;">✎ Reescribir</button>
+        <button class="btn-secondary mr-act-suggest" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">💡 Sugerir mejora</button>
+        <button class="btn-secondary mr-act-reject" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#f85149; font-weight:500;">✗ Rechazar</button>
       </div>
     `;
     return div;
@@ -5408,11 +5490,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const card = document.createElement('div');
       card.className = 'card';
-      card.style.cssText = 'padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-height:96px;';
+      card.style.cssText = 'padding:18px 20px; display:flex; flex-direction:column; gap:10px; min-height:120px; border-radius:14px; transition:border-color 0.18s, transform 0.18s ease-out, box-shadow 0.18s; cursor:default;';
+      card.onmouseover = () => { card.style.borderColor = 'var(--accent)'; card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 8px 24px rgba(157,133,242,0.10)'; };
+      card.onmouseout = () => { card.style.borderColor = 'var(--border-color)'; card.style.transform = ''; card.style.boxShadow = ''; };
       card.innerHTML = `
-        <div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">${def.label}</div>
-        <div style="font-size:28px; font-weight:700; color:var(--text-primary); line-height:1;">${value}</div>
-        <div>${deltaHtml}</div>
+        <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.7px; font-weight:600;">${def.label}</div>
+        <div style="font-size:32px; font-weight:700; color:var(--text-primary); line-height:1; letter-spacing:-1px; font-variant-numeric:tabular-nums;">${value}</div>
+        <div style="margin-top:auto;">${deltaHtml}</div>
       `;
       card.title = def.hint;
       el.appendChild(card);
@@ -5544,7 +5628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let bg = 'transparent';
     if (vsAvg === 'above') bg = 'rgba(91,185,116,0.07)';
     else if (vsAvg === 'below') bg = 'rgba(248,81,73,0.07)';
-    return `<td style="padding:10px 8px; text-align:right; background:${bg};">${value}${deltaHtml}</td>`;
+    return `<td style="padding:14px 10px; text-align:right; background:${bg}; font-variant-numeric:tabular-nums; color:var(--text-primary);">${value}${deltaHtml}</td>`;
   }
 
   function _teamRenderAlerts(alerts) {
@@ -5593,16 +5677,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       return null;
     };
 
-    for (const s of _teamSorted(d.perSetter)) {
+    const sorted = _teamSorted(d.perSetter);
+    sorted.forEach((s, idx) => {
       const c = s.current;
       const lastAct = s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : '—';
       const alertCount = (s.alerts || []).length;
-      const alertBadge = alertCount > 0 ? ` <span style="display:inline-block; padding:1px 6px; font-size:10px; background:rgba(248,81,73,0.18); color:#f85149; border-radius:999px;">${alertCount}</span>` : '';
+      const alertBadge = alertCount > 0 ? ` <span style="display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; font-size:10px; font-weight:700; background:rgba(248,81,73,0.18); color:#f85149; border-radius:999px; vertical-align:middle;">${alertCount}</span>` : '';
+      const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');
-      tr.style.cssText = 'border-bottom:1px solid var(--border-color); cursor:pointer;';
+      const zebra = idx % 2 === 1 ? 'background:rgba(255,255,255,0.012);' : '';
+      tr.style.cssText = `border-bottom:1px solid var(--border-color); cursor:pointer; transition:background-color 0.15s; ${zebra}`;
       tr.dataset.setterId = s.id;
+      tr.onmouseover = () => { tr.style.backgroundColor = 'rgba(157,133,242,0.06)'; };
+      tr.onmouseout = () => { tr.style.backgroundColor = ''; };
       tr.innerHTML = `
-        <td style="padding:10px 8px; font-weight:500; color:var(--text-primary);"><span class="t-name"></span>${alertBadge}</td>
+        <td style="padding:14px 10px; font-weight:500; color:var(--text-primary);">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
+            <span class="t-name"></span>${alertBadge}
+          </div>
+        </td>
         ${_teamCell(c.total, _teamFmtDelta(s.deltas.total), vsAvg('total', c.total))}
         ${_teamCell(c.conexiones, _teamFmtDelta(s.deltas.conexiones), vsAvg('conexiones', c.conexiones))}
         ${_teamCell(c.respondieron, _teamFmtDelta(s.deltas.respondieron), vsAvg('respondieron', c.respondieron))}
@@ -5610,12 +5704,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${_teamCell(c.interesados, _teamFmtDelta(s.deltas.interesados), vsAvg('interesados', c.interesados))}
         ${_teamCell(c.agendados, _teamFmtDelta(s.deltas.agendados), vsAvg('agendados', c.agendados))}
         ${_teamCell(c.pctShow + '%', '', vsAvg('pctShow', c.pctShow))}
-        <td style="padding:10px 8px; text-align:right; color:var(--text-secondary);">${lastAct}</td>
+        <td style="padding:14px 10px; text-align:right; color:var(--text-secondary); font-size:12px; white-space:nowrap;">${lastAct}</td>
       `;
       tr.querySelector('.t-name').textContent = s.name;
       tr.addEventListener('click', () => _teamDrilldown(s.id));
       tbody.appendChild(tr);
-    }
+    });
 
     // Footer con promedios del equipo
     tfoot.innerHTML = `
