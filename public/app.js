@@ -665,6 +665,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const buildSetterWaUrl = (lead, stage = 'apertura') => {
       // Si el lead tiene su propia URL de WhatsApp importada (del CSV), usarla directamente en apertura
       if (stage === 'apertura' && lead?.whatsappUrl && lead.whatsappUrl.includes('wa.me/')) {
+        // BUGFIX: muchos leads viejos tenian whatsappUrl SIN ?text= (solo wa.me/NUMERO)
+        // y openMessage por separado, pero nunca se mergearon. Si falta el text y
+        // hay openMessage, lo agregamos al vuelo asi el setter abre WSP con el
+        // mensaje pre-cargado.
+        if (lead.whatsappUrl.includes('?text=') || lead.whatsappUrl.includes('&text=')) {
+          return lead.whatsappUrl;
+        }
+        if (lead.openMessage) {
+          const sep = lead.whatsappUrl.includes('?') ? '&' : '?';
+          return `${lead.whatsappUrl}${sep}text=${encodeURIComponent(lead.openMessage)}`;
+        }
         return lead.whatsappUrl;
       }
       const phone = lead?.phone || lead?.webWhatsApp || lead?.aiWhatsApp || '';

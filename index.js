@@ -1280,6 +1280,37 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 //   { setterId: "id" }            -> solo procesa leads asignados a ese setter
 //   { dryRun: true }              -> NO modifica nada, solo reporta cuantos se cambiarian
 //   { onlySuspicious: true }      -> default true: solo toca los rotos. false toca TODOS
+// Backfill: leads viejos cuyo whatsappUrl quedo SIN ?text= pero tienen openMessage.
+// Resultado del bug historico: el setter abre wa.me/PHONE y el WSP se abre vacio
+// aunque hay openMessage almacenado. Este endpoint repara los whatsappUrl
+// para que incluyan el openMessage encoded.
+app.post('/api/admin/backfill-wa-text', requireAuth, requireRole('admin'), (req, res) => {
+  const { setterId = '', dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') {
+    return res.json({ scanned: 0, fixed: 0, sample: [] });
+  }
+  let scanned = 0, fixed = 0;
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    if (setterId && lead.assignedTo !== setterId) continue;
+    scanned++;
+    const url = (lead.whatsappUrl || '').trim();
+    const msg = (lead.openMessage || '').trim();
+    if (!url || !msg) continue;
+    if (!url.includes('wa.me/')) continue;
+    if (url.includes('?text=') || url.includes('&text=')) continue;
+    const sep = url.includes('?') ? '&' : '?';
+    const newUrl = `${url}${sep}text=${encodeURIComponent(msg)}`;
+    if (sample.length < 10) sample.push({ id, name: lead.name, before: url, after: newUrl });
+    if (!dryRun) lead.whatsappUrl = newUrl;
+    fixed++;
+  }
+  if (!dryRun && fixed > 0) saveSettersData(data);
+  res.json({ scanned, fixed, dryRun, sample });
+});
+
 app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, res) => {
   const { setterId = '', dryRun = false, onlySuspicious = true } = req.body || {};
   const data = loadSettersData();
