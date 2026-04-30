@@ -1114,6 +1114,59 @@
         "mercury-promoted",
         "aprobado-admin"
       ]
+    },
+    {
+      "id": "faq_1777567686185_xhj7h",
+      "pregunta": "Gracias pero no me interesa / no por ahora",
+      "respuesta": "Entiendo. Si te parece, te escribo mas adelante para ver como viene la operativa, asi no insisto ahora. Buen dia.",
+      "categoria": "objecion",
+      "tags": [
+        "cierre",
+        "no-interesa",
+        "puerta-abierta"
+      ],
+      "variantes": [
+        "Gracias pero no",
+        "No me interesa por ahora",
+        "Por ahora no",
+        "Mas adelante lo veo",
+        "Estamos cubiertos gracias",
+        "No es para nosotros",
+        "Ahora no es momento",
+        "Estamos con otras prioridades"
+      ],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-04-30T16:48:06.185Z",
+      "updatedAt": "2026-04-30T16:48:06.185Z",
+      "usos": 0,
+      "funcionaron": 0
+    },
+    {
+      "id": "faq_1777567686185_n8h0i",
+      "pregunta": "No gracias / no insistan / dejen de escribir",
+      "respuesta": "Entendido. Que te vaya bien.",
+      "categoria": "objecion",
+      "tags": [
+        "cierre-firme",
+        "agresivo",
+        "no-insistir"
+      ],
+      "variantes": [
+        "No insistan",
+        "Dejen de escribirme",
+        "Ya les dije que no",
+        "No me interesa nada",
+        "Por favor no me contacten mas"
+      ],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-04-30T16:48:06.185Z",
+      "updatedAt": "2026-04-30T16:48:06.185Z",
+      "usos": 0,
+      "funcionaron": 0
     }
   ]
 }
