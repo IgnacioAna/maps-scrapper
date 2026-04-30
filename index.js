@@ -3973,7 +3973,7 @@ function _perfBucketsForPeriod(period, fromTs, toTs) {
 }
 
 function _perfDefaultRange(period) {
-  // Range por default segun period: 14 dias, 8 semanas, 6 meses (en ms).
+  // Range por default para SERIES TEMPORALES (chart): 14 dias, 8 semanas, 6 meses.
   const now = Date.now();
   const oneDay = 24 * 60 * 60 * 1000;
   const to = now;
@@ -3981,6 +3981,20 @@ function _perfDefaultRange(period) {
   if (period === "day") from = now - 14 * oneDay;
   else if (period === "month") from = now - 6 * 30 * oneDay;
   else from = now - 8 * 7 * oneDay;
+  return { from, to };
+}
+
+// Range para la TABLA de Equipo: el periodo en si (no series).
+// Si pides "week", queres VER esta semana (ultimos 7 dias), no las ultimas 8.
+// Si pides "month", queres VER este mes (ultimos 30 dias), no los ultimos 6.
+function _perfTableRange(period) {
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  const to = now;
+  let from;
+  if (period === "day") from = now - oneDay;
+  else if (period === "month") from = now - 30 * oneDay;
+  else from = now - 7 * oneDay; // week (default)
   return { from, to };
 }
 
@@ -3999,14 +4013,19 @@ function _perfAggregate(leads, fromTs, toTs) {
   //  - interesados: leads con interes='si' Y lastContactAt en bucket.
   //  - agendados: leads con estado='agendado' Y lastContactAt en bucket.
   //  - shows/noShows: lead.asistioAt en bucket Y asistio === true/false.
-  let total = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
+  let total = 0, recibidos = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
   for (const lead of leads) {
     const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
     const imp = lead.importedAt ? new Date(lead.importedAt).getTime() : 0;
     const touchedInBucket = lc >= fromTs && lc < toTs;
     const importedInBucket = imp >= fromTs && imp < toTs;
 
-    if (touchedInBucket || importedInBucket) total++;
+    // total = leads efectivamente TOCADOS por el setter en el periodo. Es el
+    // denominador honesto para % conexion / % apertura. Antes contabamos tambien
+    // los importados sin tocar y desvirtuaba todo (Yesxander con 290 "total"
+    // pero 0 conexiones porque no abrio ninguno).
+    if (touchedInBucket) total++;
+    if (importedInBucket) recibidos++;
 
     if (touchedInBucket) {
       if (lead.conexion === "enviada") conexiones++;
@@ -4025,6 +4044,7 @@ function _perfAggregate(leads, fromTs, toTs) {
   const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
   return {
     total,
+    recibidos,            // leads importados/asignados en el periodo (sin tocar o tocados)
     conexiones,
     respondieron,
     calificados,
@@ -4185,7 +4205,10 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   if (req.query.from) { const f = new Date(req.query.from).getTime(); if (!Number.isNaN(f)) fromTs = f; }
   if (req.query.to) { const t = new Date(req.query.to).getTime(); if (!Number.isNaN(t)) toTs = t; }
   if (!fromTs || !toTs) {
-    const def = _perfDefaultRange(period);
+    // Para la TABLA del Equipo usamos el rango natural del period seleccionado
+    // (1 dia / 7 dias / 30 dias). Antes usabamos el rango de series (14d/8sem/6m)
+    // y se veian numeros acumulados en vez del periodo.
+    const def = _perfTableRange(period);
     fromTs = fromTs || def.from;
     toTs = toTs || def.to;
   }
@@ -4211,20 +4234,35 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
       return t > max ? t : max;
     }, 0);
+    const totalAssigned = setterLeads.length;
+    const untouchedAssigned = setterLeads.filter(l => !l.lastContactAt).length;
 
-    // Alertas para este setter
+    // Alertas con severidad ajustada al contexto. Lo importante: si el setter
+    // tiene leads SIN TOCAR, eso es high (esta parado sobre trabajo). Si no
+    // tiene leads asignados, la alerta es informativa (no es su culpa).
     const alerts = [];
     if (previous.total > 0 && deltas.total.pct <= -cfg.dropPctThreshold) {
-      alerts.push({ type: "drop", severity: "high", message: `Bajó ${Math.abs(deltas.total.pct)}% en total leads vs período anterior.` });
+      alerts.push({ type: "drop", severity: "high", message: `Bajó ${Math.abs(deltas.total.pct)}% en leads tocados vs período anterior.` });
     }
     if (lastActivity > 0 && lastActivity < inactivityCutoff) {
       const days = Math.floor((Date.now() - lastActivity) / (24 * 60 * 60 * 1000));
-      alerts.push({ type: "inactivity", severity: "medium", message: `Sin actividad hace ${days} días.` });
+      const sev = totalAssigned > 0 ? "high" : "medium";
+      alerts.push({ type: "inactivity", severity: sev, message: `Sin actividad hace ${days} días${totalAssigned > 0 ? ` (tiene ${totalAssigned} leads asignados)` : ''}.` });
     } else if (lastActivity === 0) {
-      alerts.push({ type: "no_activity_ever", severity: "low", message: "Sin actividad registrada todavía." });
+      // Nunca toco un lead. Diferenciamos: con leads asignados = HIGH (parado),
+      // sin leads asignados = info (no le mandaron nada).
+      if (totalAssigned > 0) {
+        alerts.push({ type: "never_touched", severity: "high", message: `Tiene ${totalAssigned} leads asignados y NO tocó ninguno todavía.` });
+      } else {
+        alerts.push({ type: "no_leads_assigned", severity: "low", message: "Sin leads asignados — no hay nada que medir." });
+      }
+    }
+    // Untouched aunque haya algo de actividad: si tiene >50% sin tocar, alerta media
+    if (totalAssigned >= cfg.minTotalForAlert && lastActivity > 0 && untouchedAssigned / totalAssigned >= 0.5) {
+      alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) sin tocar todavía.` });
     }
     if (current.total >= cfg.minTotalForAlert && current.pctApertura > 0 && current.pctApertura < cfg.aperturaPctMin) {
-      alerts.push({ type: "low_apertura", severity: "medium", message: `Tasa de apertura ${current.pctApertura}% (umbral ${cfg.aperturaPctMin}%).` });
+      alerts.push({ type: "low_apertura", severity: "medium", message: `Tasa de respuesta ${current.pctApertura}% (umbral ${cfg.aperturaPctMin}%).` });
     }
 
     return {
@@ -4234,6 +4272,8 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       previous,
       deltas,
       lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
+      totalAssigned,           // leads totales asignados al setter (independiente del periodo)
+      untouchedAssigned,       // de los asignados, cuantos jamas se tocaron
       alerts,
     };
   });

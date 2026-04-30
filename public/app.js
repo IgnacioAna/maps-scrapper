@@ -2478,24 +2478,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      // Cargar lista de setters
-      const resp = await fetch(apiUrl('/api/setters'));
-      const data = await resp.json();
-      const names = (data.setters || []).map(s => s.name + ' (' + s.id + ')').join('\n');
+      const subtitle = skippedOld > 0
+        ? `${newLeads.length} leads nuevos · ${skippedOld} ya scrapeados se descartan automáticamente.`
+        : `${newLeads.length} leads para asignar.`;
 
-      let msg = 'Asignar a qué setter?\n\n' + names + '\n\n(Escribí el nombre exacto o dejá vacío)';
-      if (skippedOld > 0) {
-        msg = '⚠️ Se detectaron ' + skippedOld + ' leads ya scrapeados anteriormente.\nSolo se enviarán los ' + newLeads.length + ' leads NUEVOS.\n\n' + msg;
-      }
-
-      const input = prompt(msg);
-      if (input === null) return; // canceló
-
-      let assignTo = '';
-      if (input) {
-        const found = (data.setters || []).find(s => s.name.toLowerCase() === input.trim().toLowerCase());
-        assignTo = found ? found.id : input.trim();
-      }
+      const assignTo = await window.pickSetter({
+        title: 'Enviar a Setters',
+        subtitle,
+        allowEmpty: true,
+      });
+      if (assignTo === null) return; // cancelado
       try {
         const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo }) });
         if (!importResp.ok) {
@@ -3411,19 +3403,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setterClearBtn = document.getElementById('setter-clear-btn');
     if (setterClearBtn) {
       setterClearBtn.addEventListener('click', async () => {
-        let settersList = [];
-        try {
-          const sResp = await fetch(apiUrl('/api/setters'));
-          const sData = await sResp.json();
-          settersList = sData.setters || [];
-        } catch (err) { console.error(err); }
+        const setterId = await window.pickSetter({
+          title: 'Borrar leads de un setter',
+          subtitle: '⚠️ Vas a borrar leads. Elegí de qué setter.',
+          allowEmpty: false,
+        });
+        if (!setterId) return;
 
-        const names = settersList.map(s => s.name).join('\n');
-        const input = prompt('¿De qué setter borrar TODOS los leads?\n\n' + names + '\n\n(Escribí el nombre exacto):');
-        if (!input) return;
-
-        const found = settersList.find(s => s.name.toLowerCase() === input.trim().toLowerCase());
-        if (!found) { alert('Setter no encontrado: ' + input); return; }
+        const sResp = await fetch(apiUrl('/api/setters'));
+        const sData = await sResp.json();
+        const settersList = sData.setters || [];
+        const found = settersList.find(s => s.id === setterId);
+        if (!found) { alert('Setter no encontrado: ' + setterId); return; }
 
         const countryFilter = prompt('¿Filtrar por país? (ej: Uruguay, Bolivia)\n\nDejá vacío para borrar TODOS los leads de ' + found.name + ':');
 
@@ -3457,23 +3448,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Cargar setters para el prompt
-        let settersList = [];
-        try {
-          const sResp = await fetch(apiUrl('/api/setters'));
-          const sData = await sResp.json();
-          settersList = sData.setters || [];
-        } catch (err) { console.error(err); }
-
-        const names = settersList.map(s => s.name).join('\n');
-        const input = prompt('¿A qué setter asignar estos leads?\n\n' + names + '\n\n(Escribí el nombre exacto o dejá vacío para no asignar):');
-        if (input === null) { setterImportCsv.value = ''; return; }
-
-        let assignTo = '';
-        if (input) {
-          const found = settersList.find(s => s.name.toLowerCase() === input.trim().toLowerCase());
-          assignTo = found ? found.id : input.trim();
-        }
+        const assignTo = await window.pickSetter({
+          title: 'Importar CSV a setter',
+          subtitle: 'A qué setter querés asignar los leads del CSV?',
+          allowEmpty: true,
+        });
+        if (assignTo === null) { setterImportCsv.value = ''; return; }
 
         // Parsear CSV
         const text = await file.text();
@@ -5682,7 +5662,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       const c = s.current;
       const lastAct = s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : '—';
       const alertCount = (s.alerts || []).length;
-      const alertBadge = alertCount > 0 ? ` <span style="display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; font-size:10px; font-weight:700; background:rgba(248,81,73,0.18); color:#f85149; border-radius:999px; vertical-align:middle;">${alertCount}</span>` : '';
+      // Severidad mas alta del setter para colorear el badge
+      const sevs = (s.alerts || []).map(a => a.severity);
+      const topSev = sevs.includes('high') ? 'high' : sevs.includes('medium') ? 'medium' : 'low';
+      const sevBg = { high: 'rgba(248,81,73,0.20)', medium: 'rgba(255,200,40,0.18)', low: 'rgba(170,170,170,0.18)' }[topSev];
+      const sevColor = { high: '#f85149', medium: '#ffc828', low: '#aaa' }[topSev];
+      const alertBadge = alertCount > 0 ? ` <span title="${escHtml((s.alerts||[]).map(a=>a.message).join(' • '))}" style="display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 6px; font-size:10px; font-weight:700; background:${sevBg}; color:${sevColor}; border-radius:999px; vertical-align:middle;">${alertCount}</span>` : '';
+      // Badge "sin tocar" con detalle de asignados/sin trabajar (visible siempre)
+      const totalAssigned = s.totalAssigned || 0;
+      const untouched = s.untouchedAssigned || 0;
+      let assignedBadge = '';
+      if (totalAssigned > 0) {
+        const ratio = untouched / totalAssigned;
+        const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
+        const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
+        assignedBadge = ` <span title="Total asignados al setter (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">📥 ${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
+      }
       const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');
       const zebra = idx % 2 === 1 ? 'background:rgba(255,255,255,0.012);' : '';
@@ -5694,7 +5689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="padding:14px 10px; font-weight:500; color:var(--text-primary);">
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
-            <span class="t-name"></span>${alertBadge}
+            <span class="t-name"></span>${alertBadge}${assignedBadge}
           </div>
         </td>
         ${_teamCell(c.total, _teamFmtDelta(s.deltas.total), vsAvg('total', c.total))}
@@ -5966,5 +5961,116 @@ document.addEventListener('DOMContentLoaded', async () => {
       _shLoad();
     } catch (e) { alert('Error: ' + e.message); }
   });
+
+  // ── Modal reusable: elegir setter (reemplaza prompt() nativo) ──
+  // Uso: const setterId = await window.pickSetter({ title?, subtitle?, allowEmpty? });
+  // Devuelve el setter.id elegido, '' si "sin asignar" (allowEmpty=true), o null si cancela.
+  let _pickSetterCurrent = null;
+  let _pickSetterResolve = null;
+
+  async function _pickSetterFetch() {
+    try {
+      const r = await fetch(apiUrl('/api/setters'));
+      const d = await r.json();
+      return d.setters || d || [];
+    } catch (e) { console.warn('pickSetter fetch err:', e.message); return []; }
+  }
+
+  function _pickSetterRender(setters, query, allowEmpty) {
+    const list = document.getElementById('setter-picker-list');
+    list.innerHTML = '';
+    const q = String(query || '').toLowerCase().trim();
+    const filtered = setters.filter(s => !q || (s.name || '').toLowerCase().includes(q) || (s.id || '').toLowerCase().includes(q));
+    if (allowEmpty && !q) {
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.dataset.setterId = '';
+      item.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-secondary); cursor:pointer; text-align:left; font-size:13px; transition:all 0.15s;';
+      item.innerHTML = `
+        <div style="width:32px; height:32px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px dashed var(--border-color); display:flex; align-items:center; justify-content:center; font-size:14px;">∅</div>
+        <div style="flex:1;"><strong>Sin asignar</strong><div style="font-size:11px; opacity:0.7;">Importar sin setter (queda sin dueño)</div></div>
+      `;
+      item.onmouseover = () => { item.style.borderColor = 'var(--accent)'; item.style.background = 'rgba(157,133,242,0.06)'; };
+      item.onmouseout = () => { _pickSetterUpdateActive(); };
+      item.onclick = () => _pickSetterSelect(item, '');
+      list.appendChild(item);
+    }
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:20px; text-align:center; color:var(--text-secondary); font-size:12px;';
+      empty.textContent = 'Sin coincidencias.';
+      list.appendChild(empty);
+      return;
+    }
+    for (const s of filtered) {
+      const initial = String(s.name || '?').trim().charAt(0).toUpperCase();
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.setterId = s.id;
+      btn.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); cursor:pointer; text-align:left; font-size:13px; transition:all 0.15s;';
+      btn.innerHTML = `
+        <div style="width:32px; height:32px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px;">${initial}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-weight:600; color:var(--text-primary);">${(s.name || '—').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:1px;">${(s.id || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</div>
+        </div>
+      `;
+      btn.onmouseover = () => { if (_pickSetterCurrent !== s.id) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; } };
+      btn.onmouseout = () => { _pickSetterUpdateActive(); };
+      btn.onclick = () => _pickSetterSelect(btn, s.id);
+      list.appendChild(btn);
+    }
+    _pickSetterUpdateActive();
+  }
+
+  function _pickSetterUpdateActive() {
+    const list = document.getElementById('setter-picker-list');
+    if (!list) return;
+    Array.from(list.children).forEach(btn => {
+      if (!btn.dataset || btn.dataset.setterId === undefined) return;
+      const isActive = btn.dataset.setterId === _pickSetterCurrent;
+      if (isActive) {
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.background = 'rgba(157,133,242,0.10)';
+      } else {
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.background = 'var(--bg-app)';
+      }
+    });
+    document.getElementById('setter-picker-confirm').disabled = (_pickSetterCurrent === null);
+  }
+
+  function _pickSetterSelect(btn, id) {
+    _pickSetterCurrent = id;
+    _pickSetterUpdateActive();
+  }
+
+  function _pickSetterClose(result) {
+    document.getElementById('setter-picker-modal').style.display = 'none';
+    if (_pickSetterResolve) { _pickSetterResolve(result); _pickSetterResolve = null; }
+    _pickSetterCurrent = null;
+  }
+
+  window.pickSetter = async function pickSetter(opts = {}) {
+    const { title = 'Elegir setter', subtitle = 'A qué setter querés asignar estos leads?', allowEmpty = false } = opts;
+    document.getElementById('setter-picker-title').textContent = title;
+    document.getElementById('setter-picker-subtitle').textContent = subtitle;
+    const search = document.getElementById('setter-picker-search');
+    search.value = '';
+    _pickSetterCurrent = null;
+    const setters = await _pickSetterFetch();
+    _pickSetterRender(setters, '', allowEmpty);
+    const modal = document.getElementById('setter-picker-modal');
+    modal.style.display = 'flex';
+    setTimeout(() => search.focus(), 60);
+    search.oninput = () => _pickSetterRender(setters, search.value, allowEmpty);
+    return new Promise(resolve => { _pickSetterResolve = resolve; });
+  };
+
+  document.getElementById('setter-picker-cancel')?.addEventListener('click', () => _pickSetterClose(null));
+  document.getElementById('setter-picker-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'setter-picker-modal') _pickSetterClose(null);
+  });
+  document.getElementById('setter-picker-confirm')?.addEventListener('click', () => _pickSetterClose(_pickSetterCurrent));
 
   });

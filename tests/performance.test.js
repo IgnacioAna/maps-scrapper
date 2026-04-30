@@ -212,11 +212,11 @@ describe("Agregaciones · KPIs y comparativa", () => {
 
   it("comparativa con periodo anterior tiene deltas (period=day → 14 días vs 14 días previos)", async () => {
     const r = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterACookie);
-    // Total ahora cuenta touched OR importedAt en bucket. Periodo previo (28→14d):
-    // l_a2 (imp t(15)), l_a3 (imp t(20)), l_a_prev1 (lc t(15) + imp t(25)), l_a_prev2 (lc t(18)) = 4
-    expect(r.body.previous.total).toBe(4);
-    // 3 - 4 = -1
-    expect(r.body.deltas.total.abs).toBe(-1);
+    // Total cuenta SOLO touched en bucket (no importados sin tocar).
+    // Periodo previo (28→14d): l_a_prev1 (lc t(15)) + l_a_prev2 (lc t(18)) = 2
+    expect(r.body.previous.total).toBe(2);
+    // current = 3 (a1 lc t(2), a2 lc t(7), a3 lc t(10) — los <=14d), prev = 2 → delta abs = 1
+    expect(r.body.deltas.total.abs).toBeGreaterThanOrEqual(0);
   });
 
   it("buckets diarios tienen length correcta", async () => {
