@@ -4970,4 +4970,697 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { alert('Error: ' + e.message); }
   });
 
+  // ── Asistente de respuestas (admin + setter) ──
+  let _asstCurrentGen = null;
+
+  function _asstShowError(msg) {
+    const el = document.getElementById('asst-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function _asstHideError() {
+    const el = document.getElementById('asst-error');
+    if (el) el.style.display = 'none';
+  }
+  function _asstSetLoading(on) {
+    const el = document.getElementById('asst-loading');
+    if (el) el.style.display = on ? 'block' : 'none';
+    const btn = document.getElementById('asst-generate-btn');
+    if (btn) { btn.disabled = on; btn.textContent = on ? 'Generando…' : 'Generar respuesta'; }
+  }
+  function _asstResetUI() {
+    document.getElementById('asst-output-card').style.display = 'none';
+    document.getElementById('asst-edit-box').style.display = 'none';
+    document.getElementById('asst-status').style.display = 'none';
+    document.getElementById('asst-fallback-pill').style.display = 'none';
+    document.getElementById('asst-violations-pill').style.display = 'none';
+    document.getElementById('asst-ejemplos-wrap').style.display = 'none';
+    _asstHideError();
+  }
+
+  function _asstRenderBlocks(blocks) {
+    const ul = document.getElementById('asst-blocks');
+    ul.innerHTML = '';
+    blocks.forEach((b, i) => {
+      const li = document.createElement('li');
+      li.style.cssText = 'display:flex; gap:10px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:12px; align-items:flex-start;';
+      li.innerHTML = `
+        <div style="flex:1; min-width:0;">
+          <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Bloque ${i + 1}</div>
+          <div class="asst-block-text" style="font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; color:var(--text-primary);"></div>
+        </div>
+        <button class="btn-table-action asst-block-copy" style="font-size:11px; flex-shrink:0;">Copiar</button>
+      `;
+      li.querySelector('.asst-block-text').textContent = b;
+      li.querySelector('.asst-block-copy').addEventListener('click', async (ev) => {
+        try {
+          await navigator.clipboard.writeText(b);
+          ev.target.textContent = '✓ Copiado';
+          setTimeout(() => { ev.target.textContent = 'Copiar'; }, 1500);
+        } catch (e) { alert('No pude copiar: ' + e.message); }
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function _asstRenderEjemplos(ejemplos) {
+    const wrap = document.getElementById('asst-ejemplos-wrap');
+    const ul = document.getElementById('asst-ejemplos');
+    const count = document.getElementById('asst-ejemplos-count');
+    if (!ejemplos || !ejemplos.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    count.textContent = ejemplos.length;
+    ul.innerHTML = '';
+    for (const e of ejemplos) {
+      const li = document.createElement('li');
+      li.style.cssText = 'padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px;';
+      li.innerHTML = `<div style="font-weight:500; color:var(--text-primary);"></div><div class="muted" style="font-size:11px; margin-top:2px;">categoría: <span class="ej-cat"></span> · score: <span class="ej-score"></span></div>`;
+      li.querySelector('div').textContent = e.pregunta || '—';
+      li.querySelector('.ej-cat').textContent = e.categoria || '—';
+      li.querySelector('.ej-score').textContent = e.score ?? '—';
+      ul.appendChild(li);
+    }
+  }
+
+  async function _asstGenerate() {
+    const msg = document.getElementById('asst-prospect-msg').value.trim();
+    const ctx = document.getElementById('asst-context').value.trim();
+    if (!msg) { _asstShowError('Pegá el mensaje del prospecto.'); return; }
+    _asstResetUI();
+    _asstSetLoading(true);
+    try {
+      const r = await fetch('/api/mercury/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ prospectMessage: msg, context: ctx }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      _asstCurrentGen = d;
+      document.getElementById('asst-output-card').style.display = 'block';
+      _asstRenderBlocks(d.blocks || []);
+      _asstRenderEjemplos(d.ejemplos || []);
+      if (d.usedFallback) document.getElementById('asst-fallback-pill').style.display = 'inline-block';
+      if (Array.isArray(d.violations) && d.violations.length) {
+        const pill = document.getElementById('asst-violations-pill');
+        pill.textContent = '⚠ ' + d.violations.join(', ');
+        pill.style.display = 'inline-block';
+      }
+    } catch (e) {
+      _asstShowError('Error: ' + e.message);
+    } finally {
+      _asstSetLoading(false);
+    }
+  }
+
+  async function _asstPatch(payload, statusMsg) {
+    if (!_asstCurrentGen?.id) return;
+    try {
+      const r = await fetch(`/api/mercury/generations/${encodeURIComponent(_asstCurrentGen.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'http ' + r.status); }
+      const st = document.getElementById('asst-status');
+      st.textContent = statusMsg;
+      st.style.display = 'block';
+    } catch (e) {
+      _asstShowError('Error: ' + e.message);
+    }
+  }
+
+  document.querySelector('[data-target="view-assistant"]')?.addEventListener('click', () => {
+    setTimeout(() => {
+      // Foco automático en el textarea principal cuando se abre la vista.
+      document.getElementById('asst-prospect-msg')?.focus();
+    }, 100);
+  });
+
+  document.getElementById('asst-generate-btn')?.addEventListener('click', _asstGenerate);
+
+  document.getElementById('asst-copy-all')?.addEventListener('click', async (ev) => {
+    if (!_asstCurrentGen?.blocks?.length) return;
+    try {
+      await navigator.clipboard.writeText(_asstCurrentGen.blocks.join('\n\n'));
+      ev.target.textContent = '✓ Copiado todo';
+      setTimeout(() => { ev.target.textContent = 'Copiar todo'; }, 1500);
+    } catch (e) { alert('No pude copiar: ' + e.message); }
+  });
+
+  document.querySelector('.asst-act-good')?.addEventListener('click', () => {
+    _asstPatch({ setterAction: 'good' }, 'Marcada como buena. Gracias por el feedback.');
+  });
+  document.querySelector('.asst-act-bad')?.addEventListener('click', () => {
+    _asstPatch({ setterAction: 'bad' }, 'Marcada como descartada. Vamos a aprender de eso.');
+  });
+  document.querySelector('.asst-act-edit')?.addEventListener('click', () => {
+    if (!_asstCurrentGen) return;
+    const box = document.getElementById('asst-edit-box');
+    const ta = document.getElementById('asst-edit-text');
+    ta.value = _asstCurrentGen.text || (_asstCurrentGen.blocks || []).join('\n\n');
+    box.style.display = 'block';
+    ta.focus();
+  });
+  document.getElementById('asst-edit-cancel')?.addEventListener('click', () => {
+    document.getElementById('asst-edit-box').style.display = 'none';
+  });
+  document.getElementById('asst-edit-save')?.addEventListener('click', async () => {
+    const ta = document.getElementById('asst-edit-text');
+    const txt = (ta?.value || '').trim();
+    if (!txt) { _asstShowError('La versión final no puede estar vacía.'); return; }
+    await _asstPatch({ setterAction: 'edited', setterEditedText: txt, finalSent: txt }, 'Guardada la versión final que enviaste.');
+    document.getElementById('asst-edit-box').style.display = 'none';
+    try { await navigator.clipboard.writeText(txt); } catch {}
+  });
+
+  // ── Revisión IA (solo admin) ──
+  let _mrSetters = [];
+
+  function _mrEscape(s) {
+    return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function _mrStatusPill(g) {
+    const map = {
+      pendiente: { text: 'Pendiente', bg: 'rgba(180,180,180,0.12)', color: '#aaa' },
+      approved: { text: 'Aprobada (oro)', bg: 'rgba(91,185,116,0.12)', color: '#5bb974' },
+      rejected: { text: 'Rechazada', bg: 'rgba(248,81,73,0.12)', color: '#f85149' },
+      rewritten: { text: 'Reescrita', bg: 'rgba(157,133,242,0.14)', color: '#9D85F2' },
+      reviewed: { text: 'Con nota', bg: 'rgba(255,200,40,0.14)', color: '#ffc828' },
+    };
+    const m = map[g.status] || map.pendiente;
+    return `<span class="chip" style="padding:2px 8px; font-size:10px; background:${m.bg}; color:${m.color}; border-radius:999px;">${m.text}</span>`;
+  }
+
+  function _mrSetterActionPill(g) {
+    if (!g.setterAction) return '';
+    const map = {
+      good: { text: '✓ Setter: buena', color: '#5bb974' },
+      bad: { text: '✗ Setter: descartó', color: '#f85149' },
+      edited: { text: '✎ Setter: editó', color: '#9D85F2' },
+    };
+    const m = map[g.setterAction];
+    if (!m) return '';
+    return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(255,255,255,0.04); color:${m.color}; border:1px solid ${m.color}33; border-radius:999px;">${m.text}</span>`;
+  }
+
+  function _mrRenderGen(g) {
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.cssText = 'padding:14px; display:flex; flex-direction:column; gap:10px;';
+    const blocksHtml = (g.output?.blocks || []).map((b) => `<div style="padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word;">${_mrEscape(b)}</div>`).join('');
+    const finalSentHtml = g.finalSent
+      ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Versión final del setter: ${_mrEscape(g.finalSent)}</div>`
+      : '';
+    const adminInfoHtml = g.adminAction
+      ? `<div class="muted" style="font-size:11px;">Revisada por ${_mrEscape(g.adminReviewedBy || '—')} · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}${g.adminAction === 'rewritten' && g.adminRewrite ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Reescritura admin: ${_mrEscape(g.adminRewrite)}</div>` : ''}${g.adminAction === 'suggested_improvement' && g.adminNote ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Nota: ${_mrEscape(g.adminNote)}</div>` : ''}${g.adminAction === 'rejected' && g.adminRejectReason ? `<div style="margin-top:6px; padding:8px 10px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); font-size:12px; color:var(--text-primary); white-space:pre-wrap;">Razón: ${_mrEscape(g.adminRejectReason)}</div>` : ''}</div>`
+      : '';
+    const ejemplosHtml = (g.ejemplos || []).length
+      ? `<details style="font-size:11px;"><summary style="cursor:pointer; color:var(--text-secondary);">Ejemplos del banco usados (${g.ejemplos.length})</summary><ul style="list-style:none; padding:6px 0 0 0; margin:0; display:flex; flex-direction:column; gap:4px;">${g.ejemplos.map((e) => `<li style="padding:4px 8px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:6px;">${_mrEscape(e.pregunta)} <span class="muted">· ${_mrEscape(e.categoria)} · ${e.score}</span></li>`).join('')}</ul></details>`
+      : '';
+    div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:0;">
+          <div class="muted" style="font-size:11px;">${new Date(g.createdAt).toLocaleString()} · setter: <strong style="color:var(--text-primary);">${_mrEscape(g.setterName || '—')}</strong> · prompt v${g.promptVersion ?? '—'}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ` · <span style="color:#f85149;">⚠ ${_mrEscape(g.violations.join(', '))}</span>` : ''}</div>
+          <div style="margin-top:6px; padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word;"><span class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Mensaje del prospecto</span><br>${_mrEscape(g.prospectMessage)}</div>
+          ${g.context ? `<div style="margin-top:6px; padding:8px 10px; background:var(--bg-app); border:1px dashed var(--border-color); border-radius:8px; font-size:12px; line-height:1.5; white-space:pre-wrap; word-break:break-word; color:var(--text-secondary);"><span class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Contexto</span><br>${_mrEscape(g.context)}</div>` : ''}
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+          ${_mrStatusPill(g)}
+          ${_mrSetterActionPill(g)}
+        </div>
+      </div>
+
+      <div>
+        <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Respuesta de Mercury (${(g.output?.blocks || []).length} bloque(s))</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">${blocksHtml}</div>
+        ${finalSentHtml}
+      </div>
+
+      ${ejemplosHtml}
+      ${adminInfoHtml}
+
+      <div style="display:flex; gap:6px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--border-color);">
+        <button class="btn-secondary mr-act-approve" data-id="${g.id}" style="font-size:12px; color:#5bb974;">✓ Aprobar oro</button>
+        <button class="btn-secondary mr-act-reject" data-id="${g.id}" style="font-size:12px; color:#f85149;">✗ Rechazar</button>
+        <button class="btn-secondary mr-act-rewrite" data-id="${g.id}" style="font-size:12px; color:#9D85F2;">✎ Reescribir</button>
+        <button class="btn-secondary mr-act-suggest" data-id="${g.id}" style="font-size:12px; color:#ffc828;">💡 Sugerir mejora</button>
+      </div>
+    `;
+    return div;
+  }
+
+  async function _mrLoad() {
+    const params = new URLSearchParams();
+    const setterId = document.getElementById('mr-filter-setter')?.value || '';
+    const status = document.getElementById('mr-filter-status')?.value || '';
+    const setterAction = document.getElementById('mr-filter-setteraction')?.value || '';
+    if (setterId) params.set('setterId', setterId);
+    if (status) params.set('status', status);
+    if (setterAction) params.set('setterAction', setterAction);
+    params.set('limit', '100');
+
+    try {
+      const r = await fetch(`/api/mercury/generations?${params.toString()}`, { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      const list = document.getElementById('mr-list');
+      const empty = document.getElementById('mr-empty');
+      const total = document.getElementById('mr-total');
+      list.innerHTML = '';
+      if (total) total.textContent = `${d.generations.length} de ${d.total} generaciones`;
+      if (!d.generations.length) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+
+      // Popular filtro de setters (solo en primer carga, dedup por id)
+      const sel = document.getElementById('mr-filter-setter');
+      if (sel && _mrSetters.length === 0) {
+        const seen = new Set();
+        for (const g of d.generations) {
+          const sid = g.setterId || g.userId || '';
+          const sname = g.setterName || sid;
+          if (sid && !seen.has(sid)) {
+            seen.add(sid);
+            _mrSetters.push({ id: sid, name: sname });
+          }
+        }
+        for (const s of _mrSetters) {
+          const opt = document.createElement('option');
+          opt.value = s.id; opt.textContent = s.name;
+          sel.appendChild(opt);
+        }
+      }
+
+      for (const g of d.generations) list.appendChild(_mrRenderGen(g));
+
+      // Bind actions
+      list.querySelectorAll('.mr-act-approve').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'approve')));
+      list.querySelectorAll('.mr-act-reject').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'reject')));
+      list.querySelectorAll('.mr-act-rewrite').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'rewrite')));
+      list.querySelectorAll('.mr-act-suggest').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'suggest')));
+    } catch (e) {
+      alert('Error cargando revisión IA: ' + e.message);
+    }
+  }
+
+  async function _mrAct(id, action) {
+    let body = {};
+    let path = `/api/mercury/generations/${encodeURIComponent(id)}`;
+    if (action === 'approve') {
+      if (!confirm('Aprobar esta generación como ejemplo de oro? Se va a promover al banco de respuestas.')) return;
+      path += '/approve';
+    } else if (action === 'reject') {
+      const reason = prompt('Razón del rechazo (opcional):') || '';
+      path += '/reject';
+      if (reason) body.reason = reason;
+    } else if (action === 'rewrite') {
+      const text = prompt('Pegá la respuesta correcta. Se va a promover al banco como reescritura.');
+      if (!text || !text.trim()) return;
+      path += '/rewrite';
+      body.text = text.trim();
+    } else if (action === 'suggest') {
+      const note = prompt('Escribí la sugerencia de mejora. Se va a inyectar como nota en futuras generaciones de Mercury.');
+      if (!note || !note.trim()) return;
+      path += '/suggest-improvement';
+      body.note = note.trim();
+    }
+    try {
+      const r = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      _mrLoad();
+    } catch (e) {
+      alert('Error: ' + e.message);
+    }
+  }
+
+  document.querySelector('[data-target="view-mercury-review"]')?.addEventListener('click', () => {
+    setTimeout(() => _mrLoad(), 100);
+  });
+  document.getElementById('mr-refresh')?.addEventListener('click', () => _mrLoad());
+  document.getElementById('mr-filter-setter')?.addEventListener('change', () => _mrLoad());
+  document.getElementById('mr-filter-status')?.addEventListener('change', () => _mrLoad());
+  document.getElementById('mr-filter-setteraction')?.addEventListener('change', () => _mrLoad());
+
+  // ── Mi rendimiento (setter + admin + supervisor) ──
+  let _mypChart = null;
+  let _mypLastData = null;
+  let _mypActiveSeries = ['agendados']; // KPIs visibles en el chart
+
+  const MYP_KPI_DEFS = [
+    { key: 'total',        label: 'Total leads',  hint: 'Leads tocados en el período' },
+    { key: 'conexiones',   label: 'Conexiones',   hint: 'WhatsApp enviados' },
+    { key: 'respondieron', label: 'Respondieron', hint: 'Leads que contestaron' },
+    { key: 'calificados',  label: 'Calificados',  hint: 'Leads que pasaron calificación' },
+    { key: 'interesados',  label: 'Interesados',  hint: 'Leads que mostraron interés' },
+    { key: 'agendados',    label: 'Agendados',    hint: 'Reuniones cerradas' },
+    { key: 'shows',        label: 'Show rate',    hint: 'Asistieron a la llamada (de marcados)', isShowRate: true },
+  ];
+
+  function _mypFmtDelta(d) {
+    if (!d) return '';
+    const abs = d.abs || 0;
+    const pct = d.pct || 0;
+    if (abs === 0 && pct === 0) return '<span class="muted" style="font-size:11px;">sin cambios</span>';
+    const arrow = abs > 0 ? '▲' : '▼';
+    const color = abs > 0 ? '#5bb974' : '#f85149';
+    return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${Math.abs(abs)} <span style="font-size:10px; opacity:0.85;">(${pct > 0 ? '+' : ''}${pct}%)</span></span>`;
+  }
+
+  function _mypRenderKpis(d) {
+    const el = document.getElementById('myp-kpis');
+    if (!el) return;
+    el.innerHTML = '';
+    for (const def of MYP_KPI_DEFS) {
+      let value, deltaHtml = '';
+      if (def.isShowRate) {
+        const shows = d.totals.shows || 0;
+        const noShows = d.totals.noShows || 0;
+        const denom = shows + noShows;
+        value = denom > 0 ? `${d.totals.pctShow}%` : '—';
+        const prevDenom = (d.previous.shows || 0) + (d.previous.noShows || 0);
+        const prevPct = prevDenom > 0 ? Number(((d.previous.shows / prevDenom) * 100).toFixed(1)) : 0;
+        const curr = denom > 0 ? d.totals.pctShow : 0;
+        const abs = Number((curr - prevPct).toFixed(1));
+        const pctRel = prevPct > 0 ? Number((((curr - prevPct) / prevPct) * 100).toFixed(1)) : (curr > 0 ? 100 : 0);
+        deltaHtml = denom > 0 ? _mypFmtDelta({ abs, pct: pctRel }) : '<span class="muted" style="font-size:11px;">sin agendados</span>';
+      } else {
+        value = d.totals[def.key];
+        deltaHtml = _mypFmtDelta(d.deltas[def.key]);
+      }
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.cssText = 'padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-height:96px;';
+      card.innerHTML = `
+        <div class="muted" style="font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">${def.label}</div>
+        <div style="font-size:28px; font-weight:700; color:var(--text-primary); line-height:1;">${value}</div>
+        <div>${deltaHtml}</div>
+      `;
+      card.title = def.hint;
+      el.appendChild(card);
+    }
+  }
+
+  function _mypRenderChartToggle() {
+    const wrap = document.getElementById('myp-chart-toggle');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    for (const def of MYP_KPI_DEFS) {
+      if (def.isShowRate) continue;
+      const active = _mypActiveSeries.includes(def.key);
+      const btn = document.createElement('button');
+      btn.className = 'btn-secondary';
+      btn.textContent = def.label;
+      btn.style.cssText = `font-size:11px; padding:4px 10px; ${active ? 'background:var(--accent-soft); color:var(--accent); border-color:var(--accent);' : ''}`;
+      btn.addEventListener('click', () => {
+        if (active) {
+          _mypActiveSeries = _mypActiveSeries.filter((k) => k !== def.key);
+          if (_mypActiveSeries.length === 0) _mypActiveSeries = ['agendados'];
+        } else {
+          _mypActiveSeries = [..._mypActiveSeries, def.key];
+        }
+        _mypRenderChartToggle();
+        _mypRenderChart(_mypLastData);
+      });
+      wrap.appendChild(btn);
+    }
+  }
+
+  function _mypRenderChart(d) {
+    if (!d || !window.Chart) return;
+    const canvas = document.getElementById('myp-chart');
+    if (!canvas) return;
+    const labels = d.buckets.map((b) => b.label);
+    const palette = { total:'#9D85F2', conexiones:'#5bb974', respondieron:'#4dabf7', calificados:'#ffc828', interesados:'#ff8a3d', agendados:'#9D85F2' };
+    const datasets = _mypActiveSeries.map((k) => {
+      const def = MYP_KPI_DEFS.find((x) => x.key === k);
+      return {
+        label: def?.label || k,
+        data: d.buckets.map((b) => b[k] || 0),
+        borderColor: palette[k] || '#9D85F2',
+        backgroundColor: (palette[k] || '#9D85F2') + '22',
+        tension: 0.3,
+        fill: false,
+        borderWidth: 2,
+      };
+    });
+    if (_mypChart) _mypChart.destroy();
+    _mypChart = new window.Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#aaa', font: { size: 11 } } },
+        },
+        scales: {
+          x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#222' } },
+          y: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#222' }, beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  async function _mypLoad() {
+    const period = document.getElementById('myp-period')?.value || 'week';
+    const setterFilter = document.getElementById('myp-setter')?.value || '';
+    const params = new URLSearchParams();
+    params.set('period', period);
+    if (setterFilter) params.set('setter', setterFilter);
+    try {
+      const r = await fetch(`/api/setters/performance?${params.toString()}`, { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      _mypLastData = d;
+      const range = document.getElementById('myp-range');
+      if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
+      _mypRenderKpis(d);
+      _mypRenderChart(d);
+
+      // Popular selector de setters si admin/supervisor (primer carga)
+      const wrap = document.getElementById('myp-setter-wrap');
+      const sel = document.getElementById('myp-setter');
+      const role = window.__CURRENT_USER__?.role;
+      if ((role === 'admin' || role === 'supervisor') && wrap) {
+        wrap.style.display = 'block';
+        if (sel && sel.children.length <= 1 && Array.isArray(d.setters)) {
+          for (const s of d.setters) {
+            const opt = document.createElement('option');
+            opt.value = s.id; opt.textContent = s.name;
+            sel.appendChild(opt);
+          }
+        }
+      }
+    } catch (e) {
+      alert('Error cargando rendimiento: ' + e.message);
+    }
+  }
+
+  document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
+    setTimeout(() => { _mypRenderChartToggle(); _mypLoad(); }, 80);
+  });
+  document.getElementById('myp-period')?.addEventListener('change', () => _mypLoad());
+  document.getElementById('myp-setter')?.addEventListener('change', () => _mypLoad());
+  document.getElementById('myp-refresh')?.addEventListener('click', () => _mypLoad());
+
+  // ── Equipo (admin + supervisor) ──
+  let _teamData = null;
+  let _teamSort = { key: 'total', dir: 'desc' };
+
+  function _teamFmtDelta(d) {
+    if (!d) return '';
+    const abs = d.abs || 0;
+    if (abs === 0) return '';
+    const arrow = abs > 0 ? '▲' : '▼';
+    const color = abs > 0 ? '#5bb974' : '#f85149';
+    return ` <span style="color:${color}; font-size:10px; opacity:0.85;">${arrow}${Math.abs(abs)}</span>`;
+  }
+
+  function _teamCell(value, deltaHtml, vsAvg) {
+    let bg = 'transparent';
+    if (vsAvg === 'above') bg = 'rgba(91,185,116,0.07)';
+    else if (vsAvg === 'below') bg = 'rgba(248,81,73,0.07)';
+    return `<td style="padding:10px 8px; text-align:right; background:${bg};">${value}${deltaHtml}</td>`;
+  }
+
+  function _teamRenderAlerts(alerts) {
+    const wrap = document.getElementById('team-alerts');
+    const list = document.getElementById('team-alerts-list');
+    const count = document.getElementById('team-alerts-count');
+    if (!alerts.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    count.textContent = alerts.length;
+    list.innerHTML = '';
+    for (const a of alerts) {
+      const li = document.createElement('li');
+      const sevColor = { high: '#f85149', medium: '#ffc828', low: '#aaa' }[a.severity] || '#aaa';
+      li.innerHTML = `<span style="color:${sevColor}; font-weight:600;">●</span> <strong style="color:var(--text-primary);"></strong> <span class="muted"></span>`;
+      li.querySelector('strong').textContent = a.setterName || '—';
+      li.querySelector('.muted').textContent = a.message;
+      list.appendChild(li);
+    }
+  }
+
+  function _teamSorted(rows) {
+    const { key, dir } = _teamSort;
+    const get = (r) => (key === 'name' ? r.name : (r.current?.[key] ?? 0));
+    return [...rows].sort((a, b) => {
+      const va = get(a), vb = get(b);
+      if (typeof va === 'string') return dir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+      return dir === 'asc' ? va - vb : vb - va;
+    });
+  }
+
+  function _teamRenderTable(d) {
+    const tbody = document.getElementById('team-tbody');
+    const tfoot = document.getElementById('team-tfoot');
+    const empty = document.getElementById('team-empty');
+    tbody.innerHTML = '';
+    tfoot.innerHTML = '';
+    if (!d.perSetter.length) { empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    const avg = d.teamAverages;
+    const vsAvg = (key, val) => {
+      const a = avg[key] || 0;
+      if (a === 0) return null;
+      if (val > a * 1.1) return 'above';
+      if (val < a * 0.9) return 'below';
+      return null;
+    };
+
+    for (const s of _teamSorted(d.perSetter)) {
+      const c = s.current;
+      const lastAct = s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : '—';
+      const alertCount = (s.alerts || []).length;
+      const alertBadge = alertCount > 0 ? ` <span style="display:inline-block; padding:1px 6px; font-size:10px; background:rgba(248,81,73,0.18); color:#f85149; border-radius:999px;">${alertCount}</span>` : '';
+      const tr = document.createElement('tr');
+      tr.style.cssText = 'border-bottom:1px solid var(--border-color); cursor:pointer;';
+      tr.dataset.setterId = s.id;
+      tr.innerHTML = `
+        <td style="padding:10px 8px; font-weight:500; color:var(--text-primary);"><span class="t-name"></span>${alertBadge}</td>
+        ${_teamCell(c.total, _teamFmtDelta(s.deltas.total), vsAvg('total', c.total))}
+        ${_teamCell(c.conexiones, _teamFmtDelta(s.deltas.conexiones), vsAvg('conexiones', c.conexiones))}
+        ${_teamCell(c.respondieron, _teamFmtDelta(s.deltas.respondieron), vsAvg('respondieron', c.respondieron))}
+        ${_teamCell(c.calificados, _teamFmtDelta(s.deltas.calificados), vsAvg('calificados', c.calificados))}
+        ${_teamCell(c.interesados, _teamFmtDelta(s.deltas.interesados), vsAvg('interesados', c.interesados))}
+        ${_teamCell(c.agendados, _teamFmtDelta(s.deltas.agendados), vsAvg('agendados', c.agendados))}
+        ${_teamCell(c.pctShow + '%', '', vsAvg('pctShow', c.pctShow))}
+        <td style="padding:10px 8px; text-align:right; color:var(--text-secondary);">${lastAct}</td>
+      `;
+      tr.querySelector('.t-name').textContent = s.name;
+      tr.addEventListener('click', () => _teamDrilldown(s.id));
+      tbody.appendChild(tr);
+    }
+
+    // Footer con promedios del equipo
+    tfoot.innerHTML = `
+      <tr style="border-top:2px solid var(--border-color); font-weight:600; color:var(--text-secondary);">
+        <td style="padding:10px 8px;">Promedio equipo</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.total}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.conexiones}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.respondieron}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.calificados}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.interesados}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.agendados}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.pctShow}%</td>
+        <td></td>
+      </tr>
+    `;
+  }
+
+  function _teamDrilldown(setterId) {
+    // Navegar a Mi rendimiento con setter pre-seleccionado.
+    const item = document.querySelector('[data-target="view-myperf"]');
+    if (!item) return;
+    item.click();
+    setTimeout(() => {
+      const sel = document.getElementById('myp-setter');
+      if (sel) {
+        sel.value = setterId;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }, 200);
+  }
+
+  async function _teamLoad() {
+    const period = document.getElementById('team-period')?.value || 'week';
+    try {
+      const r = await fetch(`/api/setters/team-performance?period=${period}`, { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const d = await r.json();
+      _teamData = d;
+      const range = document.getElementById('team-range');
+      if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
+      _teamRenderAlerts(d.alerts || []);
+      _teamRenderTable(d);
+    } catch (e) {
+      alert('Error cargando equipo: ' + e.message);
+    }
+  }
+
+  document.querySelector('[data-target="view-team"]')?.addEventListener('click', () => {
+    setTimeout(() => _teamLoad(), 80);
+  });
+  document.getElementById('team-period')?.addEventListener('change', () => _teamLoad());
+  document.getElementById('team-refresh')?.addEventListener('click', () => _teamLoad());
+
+  // Sort handlers en headers
+  document.querySelectorAll('#team-table th[data-sort]').forEach((th) => {
+    th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      if (_teamSort.key === k) _teamSort.dir = _teamSort.dir === 'asc' ? 'desc' : 'asc';
+      else { _teamSort.key = k; _teamSort.dir = 'desc'; }
+      if (_teamData) _teamRenderTable(_teamData);
+    });
+  });
+
+  // Modal config umbrales
+  document.getElementById('team-config-btn')?.addEventListener('click', async () => {
+    try {
+      const r = await fetch('/api/setters/alert-config', { credentials: 'include' });
+      if (!r.ok) throw new Error('http ' + r.status);
+      const cfg = await r.json();
+      document.getElementById('team-cfg-drop').value = cfg.dropPctThreshold;
+      document.getElementById('team-cfg-inact').value = cfg.inactivityDays;
+      document.getElementById('team-cfg-apertura').value = cfg.aperturaPctMin;
+      document.getElementById('team-cfg-mintotal').value = cfg.minTotalForAlert;
+      const modal = document.getElementById('team-config-modal');
+      modal.style.display = 'flex';
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+  document.getElementById('team-cfg-cancel')?.addEventListener('click', () => {
+    document.getElementById('team-config-modal').style.display = 'none';
+  });
+  document.getElementById('team-cfg-save')?.addEventListener('click', async () => {
+    const body = {
+      dropPctThreshold: Number(document.getElementById('team-cfg-drop').value),
+      inactivityDays: Number(document.getElementById('team-cfg-inact').value),
+      aperturaPctMin: Number(document.getElementById('team-cfg-apertura').value),
+      minTotalForAlert: Number(document.getElementById('team-cfg-mintotal').value),
+    };
+    try {
+      const r = await fetch('/api/setters/alert-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      document.getElementById('team-config-modal').style.display = 'none';
+      _teamLoad();
+    } catch (e) { alert('Error: ' + e.message); }
+  });
+
   });

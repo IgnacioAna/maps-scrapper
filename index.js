@@ -405,6 +405,12 @@ function ensureLeadDefaults(lead = {}) {
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
   if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
+  // Show rate: si el lead llegó a estado "agendado", el closer marca tras la
+  // llamada si el prospecto se presentó. true = show, false = no-show, null =
+  // todavia no se sabe / no aplica.
+  if (lead.asistio === undefined) lead.asistio = null;
+  if (!lead.asistioAt) lead.asistioAt = '';
+  if (!lead.asistioBy) lead.asistioBy = '';
   return lead;
 }
 
@@ -3393,6 +3399,73 @@ app.delete('/api/setters/leads/:id/note/:noteIndex', requireAuth, (req, res) => 
   res.json({ ok: true, notes: lead.notes });
 });
 
+// PATCH /api/setters/leads/:id/asistencia — admin/supervisor marca si el
+// prospecto se presento a la llamada con el closer (show rate).
+// Body: { asistio: true|false|null, note?: string }.
+// Solo aplicable si lead.estado === 'agendado'.
+app.patch('/api/setters/leads/:id/asistencia', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  ensureLeadDefaults(lead);
+  if (lead.estado !== 'agendado') {
+    return res.status(400).json({ error: 'El lead no esta en estado agendado.' });
+  }
+  const { asistio, note } = req.body || {};
+  if (asistio !== true && asistio !== false && asistio !== null) {
+    return res.status(400).json({ error: 'asistio debe ser true, false o null.' });
+  }
+  lead.asistio = asistio;
+  lead.asistioAt = asistio == null ? '' : new Date().toISOString();
+  lead.asistioBy = asistio == null ? '' : (req.auth.user.name || req.auth.user.email);
+  if (note && String(note).trim()) {
+    lead.notes = Array.isArray(lead.notes) ? lead.notes : [];
+    const tag = asistio === true ? 'show' : asistio === false ? 'no-show' : 'reset asistencia';
+    lead.notes.push({
+      text: `[${tag}] ${String(note).trim()}`,
+      by: req.auth.user.name || req.auth.user.email,
+      date: new Date().toISOString(),
+    });
+  }
+  saveSettersData(data);
+  res.json({ ok: true, asistio: lead.asistio, asistioAt: lead.asistioAt, asistioBy: lead.asistioBy });
+});
+
+// POST /api/setters/asistencia/backfill — backfill desde calendar para
+// agendados que ya tienen calendarioEstado. admin only.
+//   - calendarioEstado === 'realizada' → asistio=true
+//   - calendarioEstado === 'no_show'   → asistio=false
+//   - cualquier otro                   → no toca
+// Solo modifica leads con asistio=null para no sobrescribir asistencias ya
+// marcadas a mano.
+app.post('/api/setters/asistencia/backfill', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  const calendar = Array.isArray(data.calendar) ? data.calendar : [];
+  let updated = 0;
+  let skipped = 0;
+  const now = new Date().toISOString();
+  const adminLabel = `${req.auth.user.name || req.auth.user.email} (backfill)`;
+  for (const entry of calendar) {
+    const lead = entry.leadId ? data.leads[entry.leadId] : null;
+    if (!lead) continue;
+    ensureLeadDefaults(lead);
+    if (lead.asistio !== null && lead.asistio !== undefined) { skipped++; continue; }
+    if (entry.calendarioEstado === 'realizada') {
+      lead.asistio = true;
+      lead.asistioAt = entry.updatedAt || now;
+      lead.asistioBy = adminLabel;
+      updated++;
+    } else if (entry.calendarioEstado === 'no_show') {
+      lead.asistio = false;
+      lead.asistioAt = entry.updatedAt || now;
+      lead.asistioBy = adminLabel;
+      updated++;
+    }
+  }
+  if (updated > 0) saveSettersData(data);
+  res.json({ ok: true, updated, skipped });
+});
+
 app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, res) => {
   const data = loadSettersData();
   if (data.leads[req.params.id]) { delete data.leads[req.params.id]; saveSettersData(data); }
@@ -3644,6 +3717,361 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
     byVariant,
     setters: data.setters,
     variants: data.variants
+  });
+});
+
+// ── Performance: serie temporal por setter (Mi rendimiento + Equipo) ──
+// Agrega KPIs en buckets dia/semana/mes desde interactions[] + asistencia.
+// RBAC: setter ve solo lo suyo; admin/supervisor ven cualquier setter o el
+// agregado del equipo.
+
+function _perfBucketsForPeriod(period, fromTs, toTs) {
+  // Devuelve array de { from, to, label } orden cronologico ascendente.
+  const buckets = [];
+  const oneDay = 24 * 60 * 60 * 1000;
+  if (period === "day") {
+    let cur = new Date(fromTs);
+    cur.setHours(0, 0, 0, 0);
+    while (cur.getTime() < toTs) {
+      const next = new Date(cur.getTime() + oneDay);
+      buckets.push({
+        from: cur.getTime(),
+        to: Math.min(next.getTime(), toTs),
+        label: cur.toISOString().substring(0, 10),
+      });
+      cur = next;
+    }
+  } else if (period === "month") {
+    let cur = new Date(fromTs);
+    cur.setDate(1); cur.setHours(0, 0, 0, 0);
+    while (cur.getTime() < toTs) {
+      const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      buckets.push({
+        from: cur.getTime(),
+        to: Math.min(next.getTime(), toTs),
+        label: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`,
+      });
+      cur = next;
+    }
+  } else {
+    // week — buckets de lunes a domingo
+    let cur = new Date(fromTs);
+    cur.setHours(0, 0, 0, 0);
+    const dayOfWeek = (cur.getDay() + 6) % 7; // lunes = 0
+    cur = new Date(cur.getTime() - dayOfWeek * oneDay);
+    while (cur.getTime() < toTs) {
+      const next = new Date(cur.getTime() + 7 * oneDay);
+      buckets.push({
+        from: cur.getTime(),
+        to: Math.min(next.getTime(), toTs),
+        label: `Sem ${cur.toISOString().substring(0, 10)}`,
+      });
+      cur = next;
+    }
+  }
+  return buckets;
+}
+
+function _perfDefaultRange(period) {
+  // Range por default segun period: 14 dias, 8 semanas, 6 meses (en ms).
+  const now = Date.now();
+  const oneDay = 24 * 60 * 60 * 1000;
+  const to = now;
+  let from;
+  if (period === "day") from = now - 14 * oneDay;
+  else if (period === "month") from = now - 6 * 30 * oneDay;
+  else from = now - 8 * 7 * oneDay;
+  return { from, to };
+}
+
+function _perfAggregate(leads, fromTs, toTs) {
+  // Un bucket = los KPIs de los leads filtrados, restringidos a [fromTs, toTs).
+  // Logica:
+  //  - total: leads con AL MENOS UNA interaction o lastContactAt en [from,to)
+  //  - conexiones: count de interactions con action 'open' (o lead.conexion='enviada' tocado en bucket)
+  //  - respondieron: count de leads con respondio=true Y lastContactAt en bucket
+  //  - calificados: count de interactions con action 'qualified' en bucket
+  //  - interesados: count de interactions con action 'interest' en bucket
+  //  - agendados: count de leads con estado='agendado' Y lastContactAt en bucket
+  //  - shows / noShows: lead.asistioAt en bucket Y asistio === true/false
+  let total = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
+  const seenLeads = new Set();
+  for (const lead of leads) {
+    let touched = false;
+    const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+    if (lc >= fromTs && lc < toTs) touched = true;
+    for (const it of (lead.interactions || [])) {
+      const t = it.createdAt ? new Date(it.createdAt).getTime() : 0;
+      if (t < fromTs || t >= toTs) continue;
+      touched = true;
+      if (it.action === "open") conexiones++;
+      else if (it.action === "qualified") calificados++;
+      else if (it.action === "interest") interesados++;
+    }
+    if (touched && !seenLeads.has(lead._id || lead.id || lead.num)) {
+      total++;
+      seenLeads.add(lead._id || lead.id || lead.num);
+    }
+    // Estados snapshot al cierre del bucket: usamos lastContactAt como anchor
+    if (lc >= fromTs && lc < toTs) {
+      if (lead.respondio) respondieron++;
+      if (lead.estado === "agendado") agendados++;
+    }
+    // Asistencia
+    const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
+    if (ats >= fromTs && ats < toTs) {
+      if (lead.asistio === true) shows++;
+      else if (lead.asistio === false) noShows++;
+    }
+  }
+  const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
+  return {
+    total,
+    conexiones,
+    respondieron,
+    calificados,
+    interesados,
+    agendados,
+    shows,
+    noShows,
+    pctConexion: pct(conexiones, total),
+    pctApertura: pct(respondieron, conexiones),
+    pctCalificacion: pct(interesados, calificados),
+    pctShow: pct(shows, shows + noShows),
+    pctConversion: pct(agendados, total),
+  };
+}
+
+function _perfDelta(curr, prev) {
+  const out = {};
+  for (const key of ["total", "conexiones", "respondieron", "calificados", "interesados", "agendados", "shows", "noShows"]) {
+    const c = Number(curr[key]) || 0;
+    const p = Number(prev[key]) || 0;
+    out[key] = {
+      abs: c - p,
+      pct: p > 0 ? Number((((c - p) / p) * 100).toFixed(1)) : (c > 0 ? 100 : 0),
+    };
+  }
+  return out;
+}
+
+app.get("/api/setters/performance", requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  const isSetter = role === "setter";
+  const isAdminOrSuper = role === "admin" || role === "supervisor";
+  if (!isSetter && !isAdminOrSuper) return res.status(403).json({ error: "No autorizado." });
+
+  const period = ["day", "week", "month"].includes(req.query.period) ? req.query.period : "week";
+  let fromTs, toTs;
+  if (req.query.from) {
+    const f = new Date(req.query.from).getTime();
+    if (!Number.isNaN(f)) fromTs = f;
+  }
+  if (req.query.to) {
+    const t = new Date(req.query.to).getTime();
+    if (!Number.isNaN(t)) toTs = t;
+  }
+  if (!fromTs || !toTs) {
+    const def = _perfDefaultRange(period);
+    fromTs = fromTs || def.from;
+    toTs = toTs || def.to;
+  }
+  if (toTs <= fromTs) return res.status(400).json({ error: "Range invalido (to <= from)." });
+
+  const data = loadSettersData();
+  const allLeads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
+
+  // Determinar setter target.
+  const requestedSetter = String(req.query.setter || "").trim();
+  let setterFilter = "";
+  if (isSetter) {
+    setterFilter = req.auth.user.setterId || "";
+  } else {
+    setterFilter = requestedSetter; // vacio = agregado del equipo
+  }
+  const filtered = setterFilter
+    ? allLeads.filter((l) => l.assignedTo === setterFilter)
+    : allLeads;
+
+  // Buckets del periodo actual + agregar kpis por bucket.
+  const buckets = _perfBucketsForPeriod(period, fromTs, toTs).map((b) => ({
+    label: b.label,
+    from: new Date(b.from).toISOString(),
+    to: new Date(b.to).toISOString(),
+    ...(_perfAggregate(filtered, b.from, b.to)),
+  }));
+
+  // Totales del periodo actual.
+  const totals = _perfAggregate(filtered, fromTs, toTs);
+
+  // Periodo anterior: misma duracion, justo antes de fromTs.
+  const periodMs = toTs - fromTs;
+  const prevTo = fromTs;
+  const prevFrom = fromTs - periodMs;
+  const previous = _perfAggregate(filtered, prevFrom, prevTo);
+  const deltas = _perfDelta(totals, previous);
+
+  res.json({
+    period,
+    from: new Date(fromTs).toISOString(),
+    to: new Date(toTs).toISOString(),
+    setter: setterFilter || null,
+    setterScope: isSetter ? "self" : (setterFilter ? "individual" : "team"),
+    totals,
+    previous: {
+      from: new Date(prevFrom).toISOString(),
+      to: new Date(prevTo).toISOString(),
+      ...previous,
+    },
+    deltas,
+    buckets,
+    setters: isAdminOrSuper ? (data.setters || []).map((s) => ({ id: s.id, name: s.name })) : [],
+  });
+});
+
+// ── Alertas config (umbrales del panel Equipo) ──
+const ALERT_CONFIG_FILE = path.join(DATA_DIR, "alert_config.json");
+
+function _defaultAlertConfig() {
+  return {
+    dropPctThreshold: 30,        // alerta si total cae >= X% vs periodo anterior
+    inactivityDays: 7,           // alerta si setter sin actividad por N dias
+    aperturaPctMin: 20,          // alerta si pctApertura < X (con total > minTotalForAlert)
+    minTotalForAlert: 5,         // no alertar con muy pocos leads
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system_default",
+  };
+}
+
+function loadAlertConfig() {
+  try {
+    if (fs.existsSync(ALERT_CONFIG_FILE)) {
+      const cfg = JSON.parse(fs.readFileSync(ALERT_CONFIG_FILE, "utf8"));
+      return { ..._defaultAlertConfig(), ...cfg };
+    }
+  } catch (e) { console.error("[alerts] load:", e.message); }
+  const seeded = _defaultAlertConfig();
+  try { fs.writeFileSync(ALERT_CONFIG_FILE, JSON.stringify(seeded, null, 2), "utf8"); } catch {}
+  return seeded;
+}
+
+function saveAlertConfig(cfg) {
+  try { fs.writeFileSync(ALERT_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+  catch (e) { console.error("[alerts] save:", e.message); }
+}
+
+app.get("/api/setters/alert-config", requireAuth, requireRole("admin", "supervisor"), (_req, res) => {
+  res.json(loadAlertConfig());
+});
+
+app.put("/api/setters/alert-config", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadAlertConfig();
+  const { dropPctThreshold, inactivityDays, aperturaPctMin, minTotalForAlert } = req.body || {};
+  let changed = false;
+  if (typeof dropPctThreshold === "number" && dropPctThreshold >= 0 && dropPctThreshold <= 100) { cfg.dropPctThreshold = dropPctThreshold; changed = true; }
+  if (typeof inactivityDays === "number" && inactivityDays >= 1 && inactivityDays <= 90) { cfg.inactivityDays = inactivityDays; changed = true; }
+  if (typeof aperturaPctMin === "number" && aperturaPctMin >= 0 && aperturaPctMin <= 100) { cfg.aperturaPctMin = aperturaPctMin; changed = true; }
+  if (typeof minTotalForAlert === "number" && minTotalForAlert >= 0) { cfg.minTotalForAlert = minTotalForAlert; changed = true; }
+  if (!changed) return res.status(400).json({ error: "Sin cambios validos." });
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveAlertConfig(cfg);
+  res.json(cfg);
+});
+
+// GET /api/setters/team-performance — tabla comparativa con KPIs por setter
+// + promedios + alertas. Solo admin/supervisor.
+app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supervisor"), (req, res) => {
+  const period = ["day", "week", "month"].includes(req.query.period) ? req.query.period : "week";
+  let fromTs, toTs;
+  if (req.query.from) { const f = new Date(req.query.from).getTime(); if (!Number.isNaN(f)) fromTs = f; }
+  if (req.query.to) { const t = new Date(req.query.to).getTime(); if (!Number.isNaN(t)) toTs = t; }
+  if (!fromTs || !toTs) {
+    const def = _perfDefaultRange(period);
+    fromTs = fromTs || def.from;
+    toTs = toTs || def.to;
+  }
+  if (toTs <= fromTs) return res.status(400).json({ error: "Range invalido (to <= from)." });
+
+  const data = loadSettersData();
+  const allLeads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
+  const periodMs = toTs - fromTs;
+  const prevTo = fromTs;
+  const prevFrom = fromTs - periodMs;
+
+  const cfg = loadAlertConfig();
+  const inactivityCutoff = Date.now() - cfg.inactivityDays * 24 * 60 * 60 * 1000;
+
+  const perSetter = (data.setters || []).map((s) => {
+    const setterLeads = allLeads.filter((l) => l.assignedTo === s.id);
+    const current = _perfAggregate(setterLeads, fromTs, toTs);
+    const previous = _perfAggregate(setterLeads, prevFrom, prevTo);
+    const deltas = _perfDelta(current, previous);
+
+    // Ultima actividad: max(lastContactAt) entre todos los leads del setter.
+    const lastActivity = setterLeads.reduce((max, l) => {
+      const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
+      return t > max ? t : max;
+    }, 0);
+
+    // Alertas para este setter
+    const alerts = [];
+    if (previous.total > 0 && deltas.total.pct <= -cfg.dropPctThreshold) {
+      alerts.push({ type: "drop", severity: "high", message: `Bajó ${Math.abs(deltas.total.pct)}% en total leads vs período anterior.` });
+    }
+    if (lastActivity > 0 && lastActivity < inactivityCutoff) {
+      const days = Math.floor((Date.now() - lastActivity) / (24 * 60 * 60 * 1000));
+      alerts.push({ type: "inactivity", severity: "medium", message: `Sin actividad hace ${days} días.` });
+    } else if (lastActivity === 0) {
+      alerts.push({ type: "no_activity_ever", severity: "low", message: "Sin actividad registrada todavía." });
+    }
+    if (current.total >= cfg.minTotalForAlert && current.pctApertura > 0 && current.pctApertura < cfg.aperturaPctMin) {
+      alerts.push({ type: "low_apertura", severity: "medium", message: `Tasa de apertura ${current.pctApertura}% (umbral ${cfg.aperturaPctMin}%).` });
+    }
+
+    return {
+      id: s.id,
+      name: s.name,
+      current,
+      previous,
+      deltas,
+      lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null,
+      alerts,
+    };
+  });
+
+  // Promedios del equipo (solo sobre setters con total > 0 para no diluir).
+  const active = perSetter.filter((s) => s.current.total > 0);
+  const avg = (key) => active.length > 0 ? Number((active.reduce((a, s) => a + (s.current[key] || 0), 0) / active.length).toFixed(1)) : 0;
+  const teamAverages = {
+    total: avg("total"),
+    conexiones: avg("conexiones"),
+    respondieron: avg("respondieron"),
+    calificados: avg("calificados"),
+    interesados: avg("interesados"),
+    agendados: avg("agendados"),
+    pctConexion: avg("pctConexion"),
+    pctApertura: avg("pctApertura"),
+    pctCalificacion: avg("pctCalificacion"),
+    pctShow: avg("pctShow"),
+  };
+
+  // Lista global de alertas con setter info.
+  const allAlerts = perSetter.flatMap((s) =>
+    (s.alerts || []).map((a) => ({ setterId: s.id, setterName: s.name, ...a }))
+  ).sort((a, b) => {
+    const sevOrder = { high: 0, medium: 1, low: 2 };
+    return (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9);
+  });
+
+  res.json({
+    period,
+    from: new Date(fromTs).toISOString(),
+    to: new Date(toTs).toISOString(),
+    perSetter,
+    teamAverages,
+    alerts: allAlerts,
+    alertConfig: cfg,
   });
 });
 
@@ -5067,6 +5495,374 @@ app.post("/api/mercury/config/reset-prompt", requireAuth, requireRole("admin"), 
   cfg.updatedBy = req.auth.user.name || req.auth.user.email;
   saveMercuryConfig(cfg);
   res.json(cfg);
+});
+
+// ── Mercury generations (asistente de respuestas) ──
+const MERCURY_GENS_FILE = path.join(DATA_DIR, "mercury_generations.json");
+
+function loadMercuryGenerations() {
+  try {
+    if (fs.existsSync(MERCURY_GENS_FILE)) return JSON.parse(fs.readFileSync(MERCURY_GENS_FILE, "utf8"));
+  } catch (e) { console.error("[mercury] Error leyendo generations:", e.message); }
+  return { generations: [] };
+}
+
+function saveMercuryGenerations(data) {
+  try { fs.writeFileSync(MERCURY_GENS_FILE, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("[mercury] Error guardando generations:", e.message); }
+}
+
+// POST /api/mercury/generate — el setter pega un mensaje de prospecto y recibe
+// una respuesta lista para copiar. Usa retrieval top-5 contra el banco + system
+// prompt configurable + ultimas 10 feedbackNotes. Sanitiza output con las reglas
+// de estilo SCM. Si la IA falla o no hay key, fallback al top match del banco.
+// Persiste TODA la generacion para revision admin (Fase 4).
+app.post("/api/mercury/generate", requireAuth, async (req, res) => {
+  const { prospectMessage, context = "", leadId = "", categoria = "" } = req.body || {};
+  if (!prospectMessage || !String(prospectMessage).trim()) {
+    return res.status(400).json({ error: "prospectMessage requerido." });
+  }
+  const message = String(prospectMessage).trim().substring(0, 4000);
+  const ctx = String(context || "").trim().substring(0, 4000);
+
+  const setterId = req.auth?.user?.role === "setter" ? (req.auth.user.setterId || "") : "";
+  const setterName = req.auth?.user?.name || req.auth?.user?.email || "—";
+  const userId = req.auth?.user?.id || "";
+
+  const cfg = loadMercuryConfig();
+  const faqs = loadFaqs();
+  const qTokens = _faqTokens(message + " " + ctx);
+  const SCORE_THRESHOLD = 0.10;
+  const MAX_EXAMPLES = 5;
+  const scored = (faqs.entries || [])
+    .filter((e) => e.respuesta && e.pregunta)
+    .map((e) => ({ entry: e, score: _faqScore(e, qTokens, { categoria }) }))
+    .filter((x) => x.score >= SCORE_THRESHOLD)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, MAX_EXAMPLES);
+
+  const ejemplosTexto = scored.length > 0
+    ? scored.map((x, i) => `Ejemplo ${i + 1}:\nPregunta: ${x.entry.pregunta}\nRespuesta: ${x.entry.respuesta}`).join("\n\n")
+    : "(No hay ejemplos suficientemente similares en el banco. Aplicá V→R→R con las reglas de estilo.)";
+
+  const recentNotes = (cfg.feedbackNotes || []).slice(-10);
+  const notesBlock = recentNotes.length
+    ? `NOTAS DE FEEDBACK DEL ADMIN (correcciones recientes a tener en cuenta):\n${recentNotes.map((n) => `- ${n.text}`).join("\n")}\n`
+    : "";
+
+  const userPrompt = `${notesBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
+${ejemplosTexto}
+
+${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}MENSAJE DEL PROSPECTO A RESPONDER:
+${message}
+
+Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.`;
+
+  let rawOutput = "";
+  let usedFallback = false;
+  let aiError = null;
+
+  if (mercuryKey || qwenKey) {
+    try {
+      const completion = await ai.chat.completions.create({
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: cfg.systemPrompt || _defaultMercurySystemPrompt() },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.4,
+        max_tokens: 500,
+      });
+      rawOutput = completion.choices?.[0]?.message?.content?.trim() || "";
+    } catch (e) {
+      aiError = e.message || "ai_error";
+      console.warn("[mercury/generate] IA falló:", aiError);
+    }
+  }
+
+  if (!rawOutput && scored.length > 0) {
+    rawOutput = scored[0].entry.respuesta;
+    usedFallback = true;
+  }
+  if (!rawOutput) {
+    return res.status(503).json({
+      error: "No hay IA disponible y el banco no tiene match suficiente. Revisa el banco o configurá MERCURY_API_KEY/QWEN_API_KEY.",
+    });
+  }
+
+  const sanitized = sanitizeMercuryStyle(rawOutput);
+  const violations = detectMercuryViolations(sanitized.text);
+
+  const ejemplos = scored.map((x) => ({
+    id: x.entry.id,
+    pregunta: x.entry.pregunta,
+    categoria: x.entry.categoria,
+    score: Number(x.score.toFixed(3)),
+  }));
+
+  // Persistir
+  const generation = {
+    id: `mg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    setterId,
+    setterName,
+    userId,
+    leadId: leadId || null,
+    prospectMessage: message,
+    context: ctx || null,
+    categoriaHint: categoria || null,
+    output: { text: sanitized.text, blocks: sanitized.blocks },
+    rawOutput,
+    ejemplos,
+    usedFallback,
+    aiError,
+    violations,
+    promptVersion: cfg.version,
+    status: "pendiente",
+    setterAction: null,
+    setterEditedText: null,
+    finalSent: null,
+    adminAction: null,
+    adminRewrite: null,
+    promotedToFaqId: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const gens = loadMercuryGenerations();
+  gens.generations = Array.isArray(gens.generations) ? gens.generations : [];
+  gens.generations.push(generation);
+  // Cap a 5000 generaciones (FIFO) para que el archivo no crezca infinito.
+  if (gens.generations.length > 5000) {
+    gens.generations = gens.generations.slice(-5000);
+  }
+  saveMercuryGenerations(gens);
+
+  res.json({
+    id: generation.id,
+    text: sanitized.text,
+    blocks: sanitized.blocks,
+    ejemplos,
+    usedFallback,
+    violations,
+    promptVersion: cfg.version,
+  });
+});
+
+// PATCH /api/mercury/generations/:id — el setter (dueño) o admin actualizan
+// setterAction (good/bad/edited), setterEditedText, finalSent.
+app.patch("/api/mercury/generations/:id", requireAuth, (req, res) => {
+  const gens = loadMercuryGenerations();
+  const idx = (gens.generations || []).findIndex((g) => g.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Generación no encontrada." });
+
+  const gen = gens.generations[idx];
+  const isAdmin = req.auth?.user?.role === "admin";
+  const isOwner = (gen.userId && gen.userId === req.auth?.user?.id);
+  if (!isAdmin && !isOwner) return res.status(403).json({ error: "Solo el setter dueño o un admin pueden modificar." });
+
+  const { setterAction, setterEditedText, finalSent } = req.body || {};
+  if (setterAction !== undefined) {
+    if (!["good", "bad", "edited", null].includes(setterAction)) {
+      return res.status(400).json({ error: "setterAction invalido. Usar good|bad|edited|null." });
+    }
+    gen.setterAction = setterAction;
+  }
+  if (setterEditedText !== undefined) {
+    gen.setterEditedText = setterEditedText ? String(setterEditedText).substring(0, 4000) : null;
+  }
+  if (finalSent !== undefined) {
+    gen.finalSent = finalSent ? String(finalSent).substring(0, 4000) : null;
+  }
+  gen.updatedAt = new Date().toISOString();
+  saveMercuryGenerations(gens);
+  res.json({ generation: gen });
+});
+
+// GET /api/mercury/generations — admin ve todas (con filtros). Setter ve solo
+// las suyas. Filtros: setterId, status, setterAction, from, to (ISO dates).
+app.get("/api/mercury/generations", requireAuth, (req, res) => {
+  const gens = loadMercuryGenerations();
+  let list = Array.isArray(gens.generations) ? [...gens.generations] : [];
+  const isAdmin = req.auth?.user?.role === "admin";
+  const isSetter = req.auth?.user?.role === "setter";
+  const userId = req.auth?.user?.id || "";
+
+  if (isSetter) {
+    list = list.filter((g) => g.userId === userId || (g.setterId && g.setterId === req.auth.user.setterId));
+  } else if (isAdmin && req.query.setterId) {
+    list = list.filter((g) => g.setterId === req.query.setterId);
+  }
+
+  if (req.query.status) list = list.filter((g) => g.status === req.query.status);
+  if (req.query.setterAction) list = list.filter((g) => g.setterAction === req.query.setterAction);
+  if (req.query.from) {
+    const fromTs = new Date(req.query.from).getTime();
+    if (!Number.isNaN(fromTs)) list = list.filter((g) => new Date(g.createdAt).getTime() >= fromTs);
+  }
+  if (req.query.to) {
+    const toTs = new Date(req.query.to).getTime();
+    if (!Number.isNaN(toTs)) list = list.filter((g) => new Date(g.createdAt).getTime() <= toTs);
+  }
+
+  // Ordenar mas recientes primero
+  list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, 500);
+  const total = list.length;
+  res.json({ total, generations: list.slice(0, limit) });
+});
+
+// ── Promocion de generacion al banco como FAQ (admin: approve / rewrite) ──
+function _mercuryNormPregunta(s) {
+  return String(s || "")
+    .toLowerCase()
+    .trim()
+    .replace(/^[¿¡]+/, "")
+    .replace(/[?!.,;:]+$/, "")
+    .replace(/\s+/g, " ");
+}
+
+function _mercuryPromoteToFaq({ pregunta, respuesta, categoria, extraTag, adminUser }) {
+  const faqs = loadFaqs();
+  faqs.entries = Array.isArray(faqs.entries) ? faqs.entries : [];
+  const key = _mercuryNormPregunta(pregunta);
+  const existing = faqs.entries.find((e) => _mercuryNormPregunta(e.pregunta) === key);
+  if (existing) {
+    // Idempotente: marcamos la existente con tagsExtra y la devolvemos.
+    existing.tagsExtra = Array.from(new Set([...(existing.tagsExtra || []), extraTag, "mercury-promoted"]));
+    existing.updatedAt = new Date().toISOString();
+    saveFaqs(faqs);
+    return existing;
+  }
+  const cat = ["precio", "objecion", "seguimiento", "calificacion", "general"].includes(categoria) ? categoria : "general";
+  const now = new Date().toISOString();
+  const entry = {
+    id: `faq_promoted_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    pregunta: String(pregunta || "").trim().substring(0, 500),
+    respuesta: String(respuesta || "").trim(),
+    categoria: cat,
+    tags: ["mercury", extraTag].filter(Boolean),
+    variantes: [],
+    variantId: null,
+    createdBy: adminUser?.name || adminUser?.email || "admin",
+    createdById: adminUser?.id || "system_admin_promote",
+    createdAt: now,
+    updatedAt: now,
+    usos: 0,
+    funcionaron: 0,
+    tagsExtra: ["mercury-promoted", extraTag].filter(Boolean),
+  };
+  faqs.entries.push(entry);
+  saveFaqs(faqs);
+  return entry;
+}
+
+// POST /api/mercury/generations/:id/approve — aprueba como "oro" y promueve al banco.
+// Body opcional: { text } — si pasa texto, usa ese; si no, usa output original.
+app.post("/api/mercury/generations/:id/approve", requireAuth, requireRole("admin"), (req, res) => {
+  const gens = loadMercuryGenerations();
+  const idx = (gens.generations || []).findIndex((g) => g.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Generación no encontrada." });
+  const gen = gens.generations[idx];
+  const text = (req.body?.text && String(req.body.text).trim()) || (gen.finalSent || gen.output?.text || "");
+  if (!text.trim()) return res.status(400).json({ error: "No hay texto para promover. Pasa { text } o asegura que la generación tenga output." });
+
+  const faq = _mercuryPromoteToFaq({
+    pregunta: gen.prospectMessage,
+    respuesta: text,
+    categoria: gen.categoriaHint || gen.ejemplos?.[0]?.categoria || "general",
+    extraTag: "aprobado-admin",
+    adminUser: req.auth.user,
+  });
+
+  gen.adminAction = "approved";
+  gen.status = "approved";
+  gen.promotedToFaqId = faq.id;
+  gen.adminReviewedAt = new Date().toISOString();
+  gen.adminReviewedBy = req.auth.user.name || req.auth.user.email;
+  gen.updatedAt = gen.adminReviewedAt;
+  saveMercuryGenerations(gens);
+  res.json({ generation: gen, faq });
+});
+
+// POST /api/mercury/generations/:id/reject — rechaza. Body opcional { reason }.
+app.post("/api/mercury/generations/:id/reject", requireAuth, requireRole("admin"), (req, res) => {
+  const gens = loadMercuryGenerations();
+  const idx = (gens.generations || []).findIndex((g) => g.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Generación no encontrada." });
+  const gen = gens.generations[idx];
+  gen.adminAction = "rejected";
+  gen.status = "rejected";
+  gen.adminRejectReason = req.body?.reason ? String(req.body.reason).substring(0, 500) : null;
+  gen.adminReviewedAt = new Date().toISOString();
+  gen.adminReviewedBy = req.auth.user.name || req.auth.user.email;
+  gen.updatedAt = gen.adminReviewedAt;
+  saveMercuryGenerations(gens);
+  res.json({ generation: gen });
+});
+
+// POST /api/mercury/generations/:id/rewrite — admin pega la respuesta correcta.
+// Promueve esa version al banco. Body: { text } requerido.
+app.post("/api/mercury/generations/:id/rewrite", requireAuth, requireRole("admin"), (req, res) => {
+  const text = req.body?.text ? String(req.body.text).trim() : "";
+  if (!text) return res.status(400).json({ error: "text requerido." });
+  const gens = loadMercuryGenerations();
+  const idx = (gens.generations || []).findIndex((g) => g.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Generación no encontrada." });
+  const gen = gens.generations[idx];
+
+  const faq = _mercuryPromoteToFaq({
+    pregunta: gen.prospectMessage,
+    respuesta: text,
+    categoria: gen.categoriaHint || gen.ejemplos?.[0]?.categoria || "general",
+    extraTag: "reescrita-admin",
+    adminUser: req.auth.user,
+  });
+
+  gen.adminAction = "rewritten";
+  gen.status = "rewritten";
+  gen.adminRewrite = text.substring(0, 4000);
+  gen.promotedToFaqId = faq.id;
+  gen.adminReviewedAt = new Date().toISOString();
+  gen.adminReviewedBy = req.auth.user.name || req.auth.user.email;
+  gen.updatedAt = gen.adminReviewedAt;
+  saveMercuryGenerations(gens);
+  res.json({ generation: gen, faq });
+});
+
+// POST /api/mercury/generations/:id/suggest-improvement — admin pega una nota
+// que se acumula en mercury_config.feedbackNotes (las ultimas 10 se inyectan
+// en cada futura generacion).
+app.post("/api/mercury/generations/:id/suggest-improvement", requireAuth, requireRole("admin"), (req, res) => {
+  const note = req.body?.note ? String(req.body.note).trim() : "";
+  if (!note) return res.status(400).json({ error: "note requerido." });
+  const gens = loadMercuryGenerations();
+  const idx = (gens.generations || []).findIndex((g) => g.id === req.params.id);
+  if (idx < 0) return res.status(404).json({ error: "Generación no encontrada." });
+  const gen = gens.generations[idx];
+
+  const cfg = loadMercuryConfig();
+  const newNote = {
+    id: `mn_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    text: note.substring(0, 1000),
+    addedBy: req.auth.user.name || req.auth.user.email,
+    addedAt: new Date().toISOString(),
+    sourceGenerationId: gen.id,
+  };
+  cfg.feedbackNotes = [...(cfg.feedbackNotes || []), newNote].slice(-50);
+  cfg.version = (Number(cfg.version) || 0) + 1;
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth.user.name || req.auth.user.email;
+  saveMercuryConfig(cfg);
+
+  gen.adminAction = "suggested_improvement";
+  gen.status = "reviewed";
+  gen.adminNote = note.substring(0, 1000);
+  gen.adminReviewedAt = newNote.addedAt;
+  gen.adminReviewedBy = newNote.addedBy;
+  gen.updatedAt = newNote.addedAt;
+  saveMercuryGenerations(gens);
+  res.json({ generation: gen, note: newNote, configVersion: cfg.version });
 });
 
 // ══════════════════════════════════════════════════════════════

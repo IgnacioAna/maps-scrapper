@@ -99,6 +99,14 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Llamadas (Sin WSP)</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-myperf" data-label="Mi rendimiento">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
+            <span>Mi rendimiento</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-assistant" data-label="Asistente de respuestas">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1"/><circle cx="13" cy="10" r="1"/><circle cx="17" cy="10" r="1"/></svg>
+            <span>Asistente de respuestas</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-faqs" data-label="Banco de Respuestas">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             <span>Banco de Respuestas</span>
@@ -140,6 +148,14 @@
           <a href="#" class="menu-item" data-target="view-scheduled-calls" data-label="Llamadas agendadas" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             <span>Llamadas agendadas <span id="scheduled-badge" class="chip" style="margin-left:auto; background:var(--accent-soft); color:var(--accent); display:none; padding:1px 7px; font-size:10px;">0</span></span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-team" data-label="Equipo" data-roles="admin,supervisor">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Equipo</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-mercury-review" data-label="Revisión IA" data-roles="admin">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Revisión IA</span>
           </a>
           <a href="#" class="menu-item" data-target="view-mercury-config" data-label="Configuración Mercury" data-roles="admin">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
@@ -1125,6 +1141,241 @@
         </section>
       </div>
 
+      <!-- Mi rendimiento (setter + admin + supervisor) — mobile-first -->
+      <div id="view-myperf" class="module-view hidden">
+        <header class="page-header">
+          <h2 class="page-title">Mi rendimiento</h2>
+          <p class="muted" style="margin-top:6px;">Tu evolución en el tiempo. Cada KPI compara con el mismo período anterior.</p>
+        </header>
+
+        <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Período</label>
+            <select id="myp-period" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="day">Día (últimos 14)</option>
+              <option value="week" selected>Semana (últimas 8)</option>
+              <option value="month">Mes (últimos 6)</option>
+            </select>
+          </div>
+          <div id="myp-setter-wrap" style="display:none;">
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Setter</label>
+            <select id="myp-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="">Equipo completo</option>
+            </select>
+          </div>
+          <button id="myp-refresh" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Actualizar</button>
+          <span id="myp-range" class="muted" style="font-size:12px; margin-left:auto;">—</span>
+        </section>
+
+        <section id="myp-kpis" style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px;"></section>
+
+        <section style="margin-top:18px;">
+          <div class="card" style="padding:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+              <strong style="font-size:14px;">Evolución temporal</strong>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;" id="myp-chart-toggle"></div>
+            </div>
+            <div style="position:relative; height:280px;">
+              <canvas id="myp-chart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <div id="myp-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">Sin datos en el período seleccionado.</div>
+      </div>
+
+      <!-- Asistente de respuestas (admin + setter) — mobile-first -->
+      <div id="view-assistant" class="module-view hidden">
+        <header class="page-header">
+          <h2 class="page-title">Asistente de respuestas</h2>
+          <p class="muted" style="margin-top:6px;">Pegá el último mensaje del prospecto y generá una respuesta lista para copiar al WhatsApp.</p>
+        </header>
+
+        <section style="margin-top:18px; display:grid; gap:16px; max-width:880px;">
+          <!-- INPUT -->
+          <div class="card" style="padding:16px;">
+            <label for="asst-prospect-msg" style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Mensaje del prospecto</label>
+            <textarea id="asst-prospect-msg" rows="4" placeholder="Pegá acá el último mensaje del prospecto…" style="width:100%; font-size:15px; line-height:1.5; padding:12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+
+            <details style="margin-top:12px;">
+              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary);">+ Contexto adicional (opcional)</summary>
+              <textarea id="asst-context" rows="3" placeholder="Mensajes previos, nombre del prospecto, software que usan, ciudad, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+            </details>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:14px; flex-wrap:wrap;">
+              <div class="muted" style="font-size:11px;" id="asst-meta-hint">Mercury usa el banco de respuestas + tu system prompt + las últimas 10 notas de feedback.</div>
+              <button id="asst-generate-btn" class="btn-primary" style="font-size:14px; padding:10px 20px;">Generar respuesta</button>
+            </div>
+          </div>
+
+          <!-- LOADING / ERROR -->
+          <div id="asst-loading" style="display:none; padding:20px; text-align:center; color:var(--text-secondary); font-size:13px;">Generando respuesta…</div>
+          <div id="asst-error" style="display:none; padding:14px 16px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:13px;"></div>
+
+          <!-- OUTPUT -->
+          <div id="asst-output-card" class="card" style="padding:16px; display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+              <strong style="font-size:14px;">Respuesta sugerida</strong>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <span id="asst-fallback-pill" class="chip" style="display:none; padding:2px 8px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
+                <span id="asst-violations-pill" class="chip" style="display:none; padding:2px 8px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
+                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:6px 12px;">Copiar todo</button>
+              </div>
+            </div>
+
+            <ul id="asst-blocks" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
+
+            <!-- Acciones del setter -->
+            <div id="asst-actions" style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+              <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:120px; color:#5bb974;">✓ Buena respuesta</button>
+              <button class="btn-secondary asst-act-bad" data-action="bad" style="font-size:13px; flex:1; min-width:120px; color:#f85149;">✗ No la usaría</button>
+              <button class="btn-secondary asst-act-edit" data-action="edit" style="font-size:13px; flex:1; min-width:120px;">✎ Editar y enviar</button>
+            </div>
+
+            <!-- Editor (oculto hasta que se haga click en editar) -->
+            <div id="asst-edit-box" style="display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-color);">
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:6px;">Versión final que vas a enviar</label>
+              <textarea id="asst-edit-text" rows="6" style="width:100%; font-size:14px; line-height:1.5; padding:10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+              <div style="display:flex; gap:8px; margin-top:8px; justify-content:flex-end;">
+                <button id="asst-edit-cancel" class="btn-secondary" style="font-size:12px;">Cancelar</button>
+                <button id="asst-edit-save" class="btn-primary" style="font-size:12px;">Guardar versión final</button>
+              </div>
+            </div>
+
+            <!-- Status post-accion -->
+            <div id="asst-status" class="muted" style="display:none; margin-top:10px; font-size:12px;"></div>
+
+            <!-- Ejemplos del banco usados (transparencia) -->
+            <details id="asst-ejemplos-wrap" style="margin-top:14px; display:none;">
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary);">Ejemplos del banco usados (<span id="asst-ejemplos-count">0</span>)</summary>
+              <ul id="asst-ejemplos" style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12px;"></ul>
+            </details>
+          </div>
+        </section>
+      </div>
+
+      <!-- Equipo (admin + supervisor) -->
+      <div id="view-team" class="module-view hidden" data-roles="admin,supervisor">
+        <header class="page-header">
+          <h2 class="page-title">Equipo</h2>
+          <p class="muted" style="margin-top:6px;">Tabla comparativa del equipo con alertas automáticas y drilldown por setter.</p>
+        </header>
+
+        <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Período</label>
+            <select id="team-period" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="day">Día (últimos 14)</option>
+              <option value="week" selected>Semana (últimas 8)</option>
+              <option value="month">Mes (últimos 6)</option>
+            </select>
+          </div>
+          <button id="team-refresh" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Actualizar</button>
+          <button id="team-config-btn" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Umbrales de alerta</button>
+          <span id="team-range" class="muted" style="font-size:12px; margin-left:auto;">—</span>
+        </section>
+
+        <section id="team-alerts" style="margin-top:18px; display:none;">
+          <div style="padding:12px 14px; border-radius:10px; background:rgba(248,81,73,0.06); border:1px solid rgba(248,81,73,0.3);">
+            <strong style="font-size:13px; color:#f85149;">Alertas activas <span id="team-alerts-count">0</span></strong>
+            <ul id="team-alerts-list" style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:13px;"></ul>
+          </div>
+        </section>
+
+        <section style="margin-top:18px; overflow-x:auto;">
+          <table id="team-table" style="width:100%; border-collapse:collapse; font-size:13px;">
+            <thead>
+              <tr style="text-align:left; border-bottom:1px solid var(--border-color);">
+                <th data-sort="name" style="padding:10px 8px; cursor:pointer;">Setter</th>
+                <th data-sort="total" style="padding:10px 8px; cursor:pointer; text-align:right;">Total</th>
+                <th data-sort="conexiones" style="padding:10px 8px; cursor:pointer; text-align:right;">Conexiones</th>
+                <th data-sort="respondieron" style="padding:10px 8px; cursor:pointer; text-align:right;">Respondieron</th>
+                <th data-sort="calificados" style="padding:10px 8px; cursor:pointer; text-align:right;">Calificados</th>
+                <th data-sort="interesados" style="padding:10px 8px; cursor:pointer; text-align:right;">Interesados</th>
+                <th data-sort="agendados" style="padding:10px 8px; cursor:pointer; text-align:right;">Agendados</th>
+                <th data-sort="pctShow" style="padding:10px 8px; cursor:pointer; text-align:right;">Show rate</th>
+                <th style="padding:10px 8px; text-align:right;">Última actividad</th>
+              </tr>
+            </thead>
+            <tbody id="team-tbody"></tbody>
+            <tfoot id="team-tfoot"></tfoot>
+          </table>
+        </section>
+
+        <div id="team-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">No hay setters con actividad en el período.</div>
+
+        <!-- Modal config umbrales (admin only) -->
+        <div id="team-config-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+          <div class="card" style="width:min(440px, 90vw); padding:20px;">
+            <h3 style="margin:0 0 12px 0; font-size:16px;">Umbrales de alerta</h3>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px;">
+                <span class="muted">Drop %: alerta si el total cae más de</span>
+                <input id="team-cfg-drop" type="number" min="0" max="100" step="1" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px;">
+                <span class="muted">Días sin actividad para alertar</span>
+                <input id="team-cfg-inact" type="number" min="1" max="90" step="1" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px;">
+                <span class="muted">% Apertura mínimo aceptable</span>
+                <input id="team-cfg-apertura" type="number" min="0" max="100" step="1" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; font-size:12px;">
+                <span class="muted">Total mínimo para alertar (evita ruido)</span>
+                <input id="team-cfg-mintotal" type="number" min="0" max="500" step="1" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+              </label>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:14px;">
+              <button id="team-cfg-cancel" class="btn-secondary" style="font-size:12px;">Cancelar</button>
+              <button id="team-cfg-save" class="btn-primary" style="font-size:12px;">Guardar (admin)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revisión IA (solo admin) -->
+      <div id="view-mercury-review" class="module-view hidden" data-roles="admin">
+        <header class="page-header">
+          <h2 class="page-title">Revisión IA</h2>
+          <p class="muted" style="margin-top:6px;">Generaciones de Mercury en orden cronológico inverso. Aprobá las buenas como ejemplo de oro, rechazá las malas, reescribí o dejá una nota de mejora para la IA.</p>
+        </header>
+
+        <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+          <div>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Setter</label>
+            <select id="mr-filter-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Status</label>
+            <select id="mr-filter-status" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="">Todos</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="approved">Aprobada</option>
+              <option value="rejected">Rechazada</option>
+              <option value="rewritten">Reescrita</option>
+              <option value="reviewed">Con nota</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Acción del setter</label>
+            <select id="mr-filter-setteraction" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+              <option value="">Todas</option>
+              <option value="good">Buena</option>
+              <option value="bad">Mala</option>
+              <option value="edited">Editada</option>
+            </select>
+          </div>
+          <button id="mr-refresh" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Actualizar</button>
+          <span id="mr-total" class="muted" style="font-size:12px; margin-left:auto;">—</span>
+        </section>
+
+        <section id="mr-list" style="margin-top:18px; display:flex; flex-direction:column; gap:14px;"></section>
+        <div id="mr-empty" class="muted" style="text-align:center; padding:40px 0; font-size:13px; display:none;">No hay generaciones que coincidan con los filtros.</div>
+      </div>
+
       <!-- Configuración Mercury (solo admin) -->
       <div id="view-mercury-config" class="module-view hidden" data-roles="admin">
         <header class="page-header">
@@ -1195,7 +1446,8 @@
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260429h"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="/app.js?v=20260429l"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

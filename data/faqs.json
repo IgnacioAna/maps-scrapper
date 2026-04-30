@@ -107,8 +107,8 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:34.183Z",
       "updatedAt": "2026-04-27T13:30:11.970Z",
-      "usos": 2,
-      "funcionaron": 1,
+      "usos": 4,
+      "funcionaron": 3,
       "variantes": []
     },
     {
@@ -351,6 +351,843 @@
       "updatedAt": "2026-04-26T06:22:51.407Z",
       "usos": 0,
       "funcionaron": 0
+    },
+    {
+      "id": "faq_mercury_1777511504331_14noe",
+      "pregunta": "Y me indicaria los valores por favor",
+      "respuesta": "Claro, en la reu podemos revisar los valores. Le parece manana o el miercoles?",
+      "categoria": "precio",
+      "tags": [
+        "precio",
+        "valores",
+        "agendar"
+      ],
+      "variantes": [
+        "Cuanto cuesta",
+        "Cual es el precio",
+        "Que valores manejan",
+        "Me pasas el precio",
+        "Cuanto sale el servicio"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_0igow",
+      "pregunta": "Es un CRM?",
+      "respuesta": "No exactamente. Un CRM lo tienen que operar, alguien carga datos, hace seguimiento, gestiona contactos. Lo que nosotros montamos funciona solo: importamos la base de pacientes y el sistema hace las llamadas, manda los mensajes y registra las agendas sin que nadie lo este manejando.\n\nEl CRM seria una parte de la infraestructura, pero el valor esta en la automatizacion que corre encima. Lo unico que hace su equipo es nutrir el sistema: quien fue, quien no, y que servicio termino haciendo.",
+      "categoria": "calificacion",
+      "tags": [
+        "crm",
+        "diferenciacion",
+        "que-es"
+      ],
+      "variantes": [
+        "Es como un CRM?",
+        "Esto funciona como un CRM?",
+        "Es un sistema tipo CRM?"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_gu6ar",
+      "pregunta": "Mandame la propuesta por mail",
+      "respuesta": "Por experiencia se suele descontextualizar por correo. Seria mejor mostrarles en una llamada de 30 minutos como funcionaria aplicado a ustedes y ahi ven rapido si tiene sentido o no.\n\nSi te parece, podemos coordinarla para esta semana y asi lo pueden evaluar con mas claridad.",
+      "categoria": "objecion",
+      "tags": [
+        "mail",
+        "propuesta",
+        "redirigir-llamada"
+      ],
+      "variantes": [
+        "Pasame info por mail",
+        "Enviame la propuesta por correo",
+        "Mandame mas informacion al mail",
+        "Pasame todo por escrito"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_y33as",
+      "pregunta": "Mandale al director / a mis jefes la propuesta por correo",
+      "respuesta": "En lugar del mail, podrias pasarle la informacion directamente. Los mails con propuestas por experiencia tienden a perderse y prefiero que lo vea en contexto.\n\nSi puede coordinar una llamada corta de 20 minutos con el decisor, mucho mejor.",
+      "categoria": "objecion",
+      "tags": [
+        "intermediario",
+        "decisor",
+        "redirigir-llamada"
+      ],
+      "variantes": [
+        "Mandale a mi jefe",
+        "Escribile al director",
+        "Mandale info al doctor"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_flf58",
+      "pregunta": "A mi la gente me busca por boca a boca, no necesito esto",
+      "respuesta": "Eso esta buenisimo, habla muy bien de ustedes porque el boca a boca sale de la confianza.\n\nNosotros no venimos a reemplazar eso, sino a potenciarlo. Hacer seguimiento, reactivar pacientes que dejaron de venir y mantener mas activo al paciente a largo plazo ayuda a fidelizarlo y que ese boca a boca crezca.\n\nHoy todo ese seguimiento lo hacen manual o tienen alguna forma de trabajarlo?",
+      "categoria": "objecion",
+      "tags": [
+        "boca-a-boca",
+        "no-necesito",
+        "reencuadrar"
+      ],
+      "variantes": [
+        "No necesito marketing",
+        "Trabajo por recomendacion",
+        "Me recomiendan, no uso redes",
+        "No tengo tiempo para mas"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_cb6hy",
+      "pregunta": "Por el momento no tengo tiempo, mas adelante",
+      "respuesta": "Si, te entiendo. De hecho justamente eso es lo que buscamos resolver: que la clinica no dependa tanto de vos para sostener todo y que puedas tener un poco mas de aire.\n\nSi crees que tiene sentido podemos coordinar una llamada corta sin compromiso y te muestro como lo trabajamos.",
+      "categoria": "objecion",
+      "tags": [
+        "tiempo",
+        "mas-adelante",
+        "reencuadrar"
+      ],
+      "variantes": [
+        "Estoy muy ocupado",
+        "Para mas adelante",
+        "Ahora no puedo",
+        "Llego cansado de noche"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_n91g1",
+      "pregunta": "Si trabajamos con una app que nos recuerda los pacientes",
+      "respuesta": "Esta buenisimo que ya tengan eso armado, la verdad.\n\nTe pregunto para entender bien: la app les recuerda y despues ustedes hacen el contacto manualmente, o tambien les automatiza el seguimiento y la reactivacion completa?",
+      "categoria": "calificacion",
+      "tags": [
+        "software-existente",
+        "profundizar",
+        "abrir-brecha"
+      ],
+      "variantes": [
+        "Ya tenemos un software",
+        "Usamos una app",
+        "Ya manejamos eso con un sistema"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_jp3t0",
+      "pregunta": "Si lo hacemos / Si lo trabajamos",
+      "respuesta": "Que bueno que lo hacen. El trabajo es mas manual o tienen algun sistema?",
+      "categoria": "calificacion",
+      "tags": [
+        "respuesta-corta",
+        "profundizar",
+        "abrir-brecha"
+      ],
+      "variantes": [
+        "Si",
+        "Si lo manejamos",
+        "Lo gestionamos"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_l1cz0",
+      "pregunta": "No tenemos ningun sistema, cual es el suyo?",
+      "respuesta": "Armamos un sistema a medida para la clinica, usando su base de datos, para reactivar pacientes y ordenar el seguimiento de una forma mas automatica.\n\nLa idea es recuperar consultas que hoy se pierden por falta de seguimiento, sin que todo dependa del trabajo manual del equipo. Una vez implementado este sistema queda propio de ustedes.\n\nSi queres, te cuento rapido como funciona en una llamada y vemos si tendria sentido para ustedes.",
+      "categoria": "general",
+      "tags": [
+        "pitch",
+        "que-es",
+        "cierre-llamada"
+      ],
+      "variantes": [
+        "Cual es su sistema",
+        "Como funciona lo que ofrecen",
+        "De que se trata",
+        "Que es lo que hacen"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_da24n",
+      "pregunta": "Anteriormente probamos algo asi y no funciono",
+      "respuesta": "Si, obvio. Justamente uno de los problemas de este tipo de servicios es que muchas veces quieren meter la misma estructura en todas las clinicas y ahi es donde no funciona.\n\nNosotros primero evaluamos como trabajan ustedes, como manejan su base, como hacen el seguimiento y que necesitaria la clinica para que el sistema se adapte al modelo de atencion que tienen. La idea es construir algo que realmente les sirva.\n\nSi queres, lo coordinamos en una llamada corta y te digo con honestidad si aplicaria o no para su clinica.",
+      "categoria": "objecion",
+      "tags": [
+        "ya-probamos",
+        "no-funciono",
+        "diferenciacion"
+      ],
+      "variantes": [
+        "Ya nos ofrecieron esto",
+        "Probamos algo similar y no funciono",
+        "Tuvimos una mala experiencia con esto"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_h0hdm",
+      "pregunta": "Manejamos protocolos internos, mejor escribanle a nuestros jefes por correo",
+      "respuesta": "Por experiencia se suele descontextualizar por correo. Seria mejor mostrarles en una llamada de 30 minutos como funcionaria aplicado a ustedes y ahi ven rapido si tiene sentido o no. Si ya de alguna forma trabajan esto, este sistema se amolda y potencia, ya que cubre varias areas de la recuperacion y retencion de pacientes.\n\nSi te parece, podemos coordinarla para esta semana y asi lo pueden evaluar con mas claridad.",
+      "categoria": "objecion",
+      "tags": [
+        "intermediario",
+        "gatekeeping",
+        "redirigir-llamada"
+      ],
+      "variantes": [
+        "Tengo que consultarlo con mis jefes",
+        "Mejor escribiles a ellos por mail",
+        "Pasale la info a mi supervisor"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_vnbfj",
+      "pregunta": "Lo sentimos, este es el call center, eso es lo que nosotros hacemos",
+      "respuesta": "Igualmente no va por reemplazar esa labor, al contrario. Muchas veces sirve para ordenarla mejor y sacar un poco de carga de encima en la parte mas repetitiva, para que el equipo pueda enfocarse mas en atender bien y no en estar persiguiendo todo manualmente.\n\nSi le parece a tu supervisor lo vemos en una llamada de 30 minutos y les muestro bien a que me refiero.",
+      "categoria": "objecion",
+      "tags": [
+        "call-center",
+        "ya-lo-hacemos",
+        "complementar"
+      ],
+      "variantes": [
+        "Eso lo hacemos nosotros",
+        "Tenemos call center propio",
+        "Ya tenemos personal para eso"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_o57u7",
+      "pregunta": "Trabajamos con Dentalink (u otro software dental)",
+      "respuesta": "Te comento porque justo uno de nuestros clientes tambien trabaja con Dentalink. En estos casos no se reemplaza lo que ustedes ya usan, sino que se suma en paralelo para ayudar en la parte de reactivacion de pacientes antiguos, seguimiento y fidelizacion de pacientes, sin depender de que el equipo tenga que estar encima de todo manualmente. Es un sistema que funciona en automatico.\n\nSi le parece, coordinemos una llamada breve y le muestro como funcionaria aplicado a ustedes.",
+      "categoria": "objecion",
+      "tags": [
+        "dentalink",
+        "software-dental",
+        "complementar"
+      ],
+      "variantes": [
+        "Usamos Dentalink",
+        "Tenemos otro software dental",
+        "Llevamos la agenda con un sistema"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_76mhj",
+      "pregunta": "Aparte de ofender con su respuesta, en realidad que es lo que quieren?",
+      "respuesta": "Disculpame si se interpreto mal. Lo que quise decir es que en muchas clinicas esa parte de reactivacion y seguimiento suele depender mucho del trabajo manual del equipo, y nosotros trabajamos justamente para acompanar y ordenar ese proceso, no para desmerecerlo.\n\nEs muy raro que con la operativa diaria se pueda llevar un seguimiento consistente, por eso creamos este sistema, ya que es una solucion a un problema que tienen las clinicas.",
+      "categoria": "objecion",
+      "tags": [
+        "ofendido",
+        "disculpa",
+        "reencuadrar"
+      ],
+      "variantes": [
+        "Me parece insultante lo que dicen",
+        "Por que asumen que no lo hacemos bien",
+        "Que se creen ustedes"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_f8oit",
+      "pregunta": "Que nos proponen?",
+      "respuesta": "Les proponemos un sistema para trabajar esa parte de forma mas ordenada y constante de manera automatica, que consta en:\n\n- Reactivar pacientes que no volvieron\n- Dar seguimiento a consultas o presupuestos que quedaron en el aire\n- Sostener el vinculo post turno para revisiones y controles\n\nTodo sin que lo tenga que hacer el equipo, asi se pueden enfocar en las tareas mas importantes.\n\nEn una llamada podemos verlo con mas profundidad y ver como aplicaria en su caso.",
+      "categoria": "general",
+      "tags": [
+        "pitch",
+        "que-proponen",
+        "cierre-llamada"
+      ],
+      "variantes": [
+        "Cuentenme la propuesta",
+        "Que ofrecen",
+        "Cual es su servicio"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_lutk2",
+      "pregunta": "Sobre la marcha / lo hacemos sobre la marcha",
+      "respuesta": "Uy, te entiendo. Pero lo hacen manual?",
+      "categoria": "calificacion",
+      "tags": [
+        "marcha",
+        "manual",
+        "profundizar"
+      ],
+      "variantes": [
+        "Mas o menos",
+        "No tenemos algo armado",
+        "Lo vamos haciendo cuando podemos"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_esnqi",
+      "pregunta": "Existe una persona en recepcion que hace el seguimiento pero no es sostenido",
+      "respuesta": "Nosotros trabajamos justamente sobre eso: que el seguimiento no dependa solo del dia a dia de recepcion, sino que se sostenga con mas orden y constancia en el tiempo, todo de forma automatica.\n\nSe hace sobre pacientes que no volvieron, consultas o presupuestos que quedaron sin avanzar, no-shows y seguimiento post turno, para que esa continuidad no se corte con el tiempo y la clinica no pierda esas oportunidades por falta de constancia. Ademas de fidelizar al paciente al largo plazo.\n\nHoy donde sienten mas esa fuga?",
+      "categoria": "calificacion",
+      "tags": [
+        "recepcion",
+        "no-sostenido",
+        "profundizar-dolor"
+      ],
+      "variantes": [
+        "Lo hace recepcion pero no siempre",
+        "Tenemos a alguien encargada pero no da abasto",
+        "Hay alguien pero se le mezcla con otras tareas"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_npg5d",
+      "pregunta": "No tenemos esa forma, nos faltan pacientes. De que pais nos escriben?",
+      "respuesta": "Te entiendo. Justamente cuando una clinica siente que le faltan pacientes, muchas veces el foco se va solo a buscar nuevos, pero siempre hay una oportunidad grande en trabajar mejor la base que ya existe: pacientes que consultaron y no avanzaron, pacientes que no volvieron, seguimientos que se cortaron o no asistidos que no se retomaron.\n\nLo que hacemos nosotros apunta a complementar esa parte, para ayudar a generar un flujo mas constante, mejorar la fidelizacion y tambien fortalecer los referidos, sin depender unicamente de salir a captar desde cero todo el tiempo, ya que eso es mas dificil que trabajar alguien que ya los conoce.\n\nHoy ustedes tienen identificado cuantos pacientes tienen en su base?",
+      "categoria": "objecion",
+      "tags": [
+        "faltan-pacientes",
+        "pais",
+        "reencuadrar"
+      ],
+      "variantes": [
+        "No tenemos sistema y nos faltan pacientes",
+        "Estamos buscando pacientes nuevos",
+        "Necesitamos mas gente que venga"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504331_fn5qx",
+      "pregunta": "Tenemos 2 anos abiertos y como 100 pacientes. Trabajan con Bolivia (u otro pais)?",
+      "respuesta": "Con una base de alrededor de 100 pacientes ya se puede mirar si hay oportunidad, sobre todo si hay pacientes que no volvieron, tratamientos que no avanzaron o seguimientos que se fueron cortando con el tiempo. Justamente al ser pocos hay que exprimir lo que mas se pueda.\n\nLa clave ahi no pasa tanto por el pais, sino por cuanto de esa base quedo sin trabajar.\n\nHoy como estan captando nuevos pacientes?",
+      "categoria": "calificacion",
+      "tags": [
+        "base-pequena",
+        "pais",
+        "exprimir"
+      ],
+      "variantes": [
+        "Somos nuevos, tenemos pocos pacientes",
+        "Acabamos de abrir",
+        "Trabajan con mi pais?"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_f5oir",
+      "pregunta": "Que software manejan, redes sociales? Precios? Mensual o pago unico?",
+      "respuesta": "No, redes no manejamos. Lo que hacemos es implementar un sistema que trabaja en la operativa de la clinica.\n\nLos detalles de modalidad y valores los profundizamos en una llamada para que tengan sentido aplicados a tu clinica.",
+      "categoria": "precio",
+      "tags": [
+        "multiples-preguntas",
+        "precio",
+        "redirigir-llamada"
+      ],
+      "variantes": [
+        "Cuanto cuesta y como se paga",
+        "Es mensual o un solo pago",
+        "Que software usan ustedes"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_1dzma",
+      "pregunta": "Acabamos de empezar con un software hace una semana",
+      "respuesta": "Perfecto, entiendo.\n\nEse software esta mas orientado a la gestion/agenda y recordatorios, o tambien les trabaja la parte de reactivacion de pacientes que no volvieron, no-shows y seguimientos que se cortan?",
+      "categoria": "calificacion",
+      "tags": [
+        "software-nuevo",
+        "profundizar",
+        "abrir-brecha"
+      ],
+      "variantes": [
+        "Recien empezamos a usar un sistema",
+        "Hace poco contratamos un software",
+        "Estamos probando una herramienta nueva"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_he0r3",
+      "pregunta": "No tengo intencion de impulsar por redes",
+      "respuesta": "Claro, entiendo. Igualmente no le escribia por un tema de redes ni de marketing.\n\nLo que hacemos nosotros va mas por la parte de seguimiento y reactivacion de pacientes que ya pasaron por la clinica, para que no se pierdan por falta de continuidad.\n\nPor eso te consultaba si hoy esa parte la trabajan.",
+      "categoria": "objecion",
+      "tags": [
+        "no-redes",
+        "aclarar-foco",
+        "reencuadrar"
+      ],
+      "variantes": [
+        "No quiero hacer redes",
+        "No me interesa marketing",
+        "No es lo mio"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_hezfv",
+      "pregunta": "Redes sociales para reactivar y captar pacientes",
+      "respuesta": "Nosotros no manejamos redes sociales. Trabajamos mas la parte de reactivacion, seguimiento y fidelizacion de pacientes que ya fueron a clinica, le damos vida a su base de datos.\n\nEn algunos casos eso tambien termina ayudando a la captacion de forma indirecta, porque mejora la fidelizacion y los referidos, pero nuestro foco principal no es manejar redes sino ordenar esa parte comercial y de seguimiento de la clinica.\n\nUstedes hoy estan buscando trabajar mejor la base que ya tienen?",
+      "categoria": "calificacion",
+      "tags": [
+        "redes-confusion",
+        "diferenciacion",
+        "foco-base"
+      ],
+      "variantes": [
+        "Quieren manejar mis redes?",
+        "Hacen marketing en redes?",
+        "Es para Instagram?"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_u791m",
+      "pregunta": "Mandame su propuesta",
+      "respuesta": "La propuesta consiste en implementar un sistema de reactivacion, seguimiento y fidelizacion de pacientes para que la clinica no dependa solo del trabajo manual del equipo en esa parte.\n\nSe trabaja sobre pacientes que no volvieron, consultas o presupuestos que quedaron sin avanzar, no-shows y seguimiento post turno, para que no se pierdan oportunidades por falta de continuidad.\n\nLa idea es ayudar a que la clinica pueda trabajar su base de pacientes de forma mas ordenada y constante, mejorando retencion, continuidad y vinculo con el paciente.\n\nSi les hace sentido, podemos verlo con mas profundidad en una llamada.",
+      "categoria": "general",
+      "tags": [
+        "propuesta-escrita",
+        "pitch",
+        "cierre-llamada"
+      ],
+      "variantes": [
+        "Pasame la propuesta",
+        "Mandame que ofrecen por aca",
+        "Contame mas por escrito"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_xipv5",
+      "pregunta": "Llevamos la agenda por Dentalink y manualmente",
+      "respuesta": "Te comento porque justo uno de nuestros clientes tambien trabaja con Dentalink. En estos casos no se reemplaza lo que ustedes ya usan, sino que se suma en paralelo para ayudar en la parte de reactivacion de pacientes antiguos, seguimiento y fidelizacion sin depender de que el equipo tenga que estar encima de todo manualmente.\n\nSi le parece, coordinemos una llamada breve y le muestro como funcionaria aplicado a ustedes.",
+      "categoria": "calificacion",
+      "tags": [
+        "dentalink",
+        "agenda-manual",
+        "complementar"
+      ],
+      "variantes": [
+        "Agenda por dentalink",
+        "Manejamos todo manualmente con dentalink"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_l8mg7",
+      "pregunta": "Estamos implementando un CRM con automatizaciones",
+      "respuesta": "Buenisimo, entonces estan en un buen momento.\n\nJustamente nosotros no reemplazamos eso, sino que sumamos una capa enfocada en reactivacion y seguimiento de pacientes para que esa base no quede solo ordenada, sino tambien trabajada.\n\nSi les parece, coordinemos una llamada y les muestro como convive con un CRM sin pisarse.",
+      "categoria": "objecion",
+      "tags": [
+        "crm-existente",
+        "convivencia",
+        "complementar"
+      ],
+      "variantes": [
+        "Estamos armando un CRM",
+        "Ya tenemos automatizaciones",
+        "Estamos implementando un sistema con IA"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_auo7h",
+      "pregunta": "Con la historia clinica digital tengo herramientas para ese tipo de casos. Como trabajan ustedes?",
+      "respuesta": "Nosotros trabajamos ese tema sobre todo desde la reactivacion y el seguimiento de la base de pacientes de forma automatica.\n\nPor ejemplo, armamos secuencias para contactar de forma mas ordenada a pacientes inactivos que dejaron de ir, presupuestos pendientes, controles que quedaron sin agendar o consultas que no avanzaron, para que eso no dependa de que alguien lo haga manualmente caso por caso.\n\nLa idea es que haya una logica de seguimiento mas constante, que ayude a mover esos pacientes y recuperar oportunidades que muchas veces quedan en la base sin trabajarse del todo, manteniendo frecuente al paciente a la clinica y por consecuencia fidelizarlo a largo plazo.\n\nNo apuntamos tanto a la parte clinica, sino mas a la parte de seguimiento y reactivacion comercial.\n\nSi le parece, lo mas facil es hacer una llamada corta y le muestro bien como lo trabajamos, asi ves si tiene sentido o si con lo que ya tienen estan cubiertos.",
+      "categoria": "calificacion",
+      "tags": [
+        "historia-clinica",
+        "diferenciacion",
+        "comercial-vs-clinico"
+      ],
+      "variantes": [
+        "Ya tengo herramientas con la historia clinica",
+        "Como funciona su sistema",
+        "En que se diferencia"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_6fosu",
+      "pregunta": "Y como manejas eso?",
+      "respuesta": "Lo hacemos sobre la base de pacientes de la clinica. Armamos una logica de seguimiento y reactivacion automatica para contactar pacientes inactivos de forma ordenada, sin que dependa de hacerlo manualmente.\n\nSi te parece, hacemos una llamada corta y te muestro concretamente como lo trabajamos, asi evaluas si les puede sumar.",
+      "categoria": "general",
+      "tags": [
+        "como-funciona",
+        "pitch-corto",
+        "cierre-llamada"
+      ],
+      "variantes": [
+        "Como funciona",
+        "Como lo hacen",
+        "Explicame mas"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_svsc7",
+      "pregunta": "Ya contamos con personal a cargo de esa funcion, gracias",
+      "respuesta": "Entiendo. Y si en algun momento desean reactivar a esos pacientes que no volvieron, ya tenes mi contacto. Que tengas un lindo dia.",
+      "categoria": "objecion",
+      "tags": [
+        "ya-tenemos-personal",
+        "cierre-elegante",
+        "no-insistir"
+      ],
+      "variantes": [
+        "Tenemos a alguien que se encarga",
+        "Esa funcion la cubrimos internamente",
+        "Tenemos personal propio para eso"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_1asfk",
+      "pregunta": "Gestionan redes sociales tambien?",
+      "respuesta": "Si, trabajamos esa parte tambien.\n\nPero no la abordamos de entrada de forma generica. Primero ordenamos y activamos la base de pacientes, seguimientos post turno y controles, y despues, sobre esa base, escalamos adquisicion con publicidad paga.\n\nLa idea es que primero funcione el sistema adaptado a la clinica y recien ahi sumar trafico.\n\nSi te interesa, te cuento en una llamada de 30 minutos como lo planteamos.",
+      "categoria": "general",
+      "tags": [
+        "redes-pregunta",
+        "secuencia-trabajo",
+        "cierre-llamada"
+      ],
+      "variantes": [
+        "Manejan redes?",
+        "Tambien hacen publicidad?",
+        "Trabajan ads?"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_6mtk2",
+      "pregunta": "Necesitamos factura para demostrar gastos",
+      "respuesta": "Si, hacemos factura sin problema.",
+      "categoria": "general",
+      "tags": [
+        "factura",
+        "administrativo",
+        "respuesta-corta"
+      ],
+      "variantes": [
+        "Pueden facturar?",
+        "Emiten factura?",
+        "Necesito factura para contabilidad"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
+    },
+    {
+      "id": "faq_mercury_1777511504332_nx6vj",
+      "pregunta": "Cual es su pagina web?",
+      "respuesta": "Te paso la web: https://scm-dental.vercel.app/",
+      "categoria": "general",
+      "tags": [
+        "web",
+        "info",
+        "respuesta-corta"
+      ],
+      "variantes": [
+        "Tienen sitio web?",
+        "Donde puedo ver mas info",
+        "Pasame la pagina"
+      ],
+      "variantId": null,
+      "createdBy": "Mercury Seed",
+      "createdById": "system_mercury_seed",
+      "createdAt": "2026-04-30T01:11:44.331Z",
+      "updatedAt": "2026-04-30T01:11:44.331Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-seed"
+      ]
     }
   ]
 }
