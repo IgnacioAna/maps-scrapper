@@ -1445,6 +1445,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!r.ok) return;
         const d = await r.json();
         _followupsCache = d;
+        if (window._setFollowupsCacheGlobal) window._setFollowupsCacheGlobal(d);
         _followupByLead = new Map();
         // Tomar el follow-up más urgente por lead (los más antiguos primero)
         const allItems = [
@@ -1476,6 +1477,166 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Helper para que el chip se renderice en lead rows cuando aplica.
     window._followupChipFor = (leadId) => _followupByLead.get(leadId) || null;
+
+    // Renderiza la sección de follow-ups dentro del modal del lead.
+    // Muestra los 5 steps (24h/48h/72h/7d/15d) con: estado, fecha, nota,
+    // botones marcar hecho / reprogramar.
+    function _renderModalFollowups(lead) {
+      const STEPS = [
+        { key: '24hs', label: '24 horas', deltaMs: 24 * 3600 * 1000 },
+        { key: '48hs', label: '48 horas', deltaMs: 48 * 3600 * 1000 },
+        { key: '72hs', label: '72 horas', deltaMs: 72 * 3600 * 1000 },
+        { key: '7d',   label: '7 días',   deltaMs: 7 * 24 * 3600 * 1000 },
+        { key: '15d',  label: '15 días',  deltaMs: 15 * 24 * 3600 * 1000 },
+      ];
+      const list = document.getElementById('modal-followups-list');
+      const empty = document.getElementById('modal-followups-empty');
+      const hidden = document.getElementById('modal-followups-hidden-msg');
+      const reactivateBtn = document.getElementById('modal-followups-reactivate');
+      if (!list) return;
+      list.innerHTML = '';
+      empty.style.display = 'none';
+      hidden.style.display = 'none';
+      reactivateBtn.style.display = 'none';
+
+      const baseTs = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+      if (!baseTs) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      // Si está oculto por estado y no fue reactivado, mostrar el aviso + botón
+      const HIDE_STATES = ['agendado', 'descartado', 'cerrado'];
+      const isHidden = (HIDE_STATES.includes(lead.estado) || lead.interes === 'no') && !lead.followUpsReactivated;
+      if (isHidden) {
+        hidden.style.display = 'block';
+        reactivateBtn.style.display = 'inline-flex';
+        reactivateBtn.onclick = async () => {
+          try {
+            await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reactivate: true }),
+            });
+            lead.followUpsReactivated = true;
+            _renderModalFollowups(lead);
+            loadFollowups();
+          } catch (e) { alert('Error: ' + e.message); }
+        };
+        return;
+      }
+
+      const now = Date.now();
+      const fmtDate = (ts) => {
+        const d = new Date(ts);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = today.getTime() + 24 * 3600 * 1000;
+        const yesterday = today.getTime() - 24 * 3600 * 1000;
+        const dayMs = d.getTime(); const dayStart = new Date(d); dayStart.setHours(0,0,0,0);
+        if (dayStart.getTime() === today.getTime()) return 'Hoy ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (dayStart.getTime() === yesterday) return 'Ayer ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (dayStart.getTime() === tomorrow) return 'Mañana ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      };
+
+      for (const step of STEPS) {
+        const flag = !!(lead.followUps && lead.followUps[step.key]);
+        const overrideRaw = lead.followUpDueOverrides && lead.followUpDueOverrides[step.key];
+        const overrideTs = overrideRaw ? new Date(overrideRaw).getTime() : 0;
+        const dueTs = overrideTs > 0 ? overrideTs : baseTs + step.deltaMs;
+        const note = (lead.followUpNotes && lead.followUpNotes[step.key]) || '';
+
+        let statusBadge;
+        if (flag) statusBadge = '<span class="chip chip-success" style="font-size:10px;">✓ Hecho</span>';
+        else if (dueTs > now + 12 * 3600 * 1000) statusBadge = '<span class="chip" style="font-size:10px; background:rgba(255,255,255,0.04); color:var(--text-secondary);">Programado</span>';
+        else if (dueTs >= now - 12 * 3600 * 1000) statusBadge = '<span class="followup-chip followup-chip-today" style="font-size:10px;">Vence ahora</span>';
+        else if (dueTs >= now - 36 * 3600 * 1000) statusBadge = '<span class="followup-chip followup-chip-yesterday" style="font-size:10px;">Vencido ayer</span>';
+        else statusBadge = '<span class="followup-chip followup-chip-overdue" style="font-size:10px;">Atrasado</span>';
+
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px; display:flex; flex-direction:column; gap:6px;';
+        li.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <strong style="font-size:13px;">${step.label}</strong>
+              ${statusBadge}
+              ${overrideTs > 0 ? '<span class="muted" style="font-size:10px;">↻ reprogramado</span>' : ''}
+            </div>
+            <div class="muted" style="font-size:11px;">${fmtDate(dueTs)}</div>
+          </div>
+          <textarea data-step="${step.key}" class="fu-note-input" placeholder="Nota opcional para cuando llegue ese día (ej: el lead pidió que le escriba el martes)…" rows="1" maxlength="500" style="width:100%; padding:7px 10px; font-size:12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-surface); color:var(--text-primary); resize:vertical; font-family:inherit;">${(note || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</textarea>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn-secondary fu-save-note" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">💾 Guardar nota</button>
+            ${flag
+              ? `<button class="btn-secondary fu-uncheck" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">↺ Reabrir</button>`
+              : `<button class="btn-primary fu-check" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">✓ Marcar como hecho</button>`}
+            <button class="btn-secondary fu-reschedule" data-step="${step.key}" style="font-size:11px; padding:5px 10px;">📅 Reprogramar</button>
+          </div>
+        `;
+        list.appendChild(li);
+      }
+
+      // Bind handlers de los botones
+      list.querySelectorAll('.fu-check').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, true)));
+      list.querySelectorAll('.fu-uncheck').forEach(btn => btn.addEventListener('click', () => _fuActionMark(lead, btn.dataset.step, false)));
+      list.querySelectorAll('.fu-save-note').forEach(btn => btn.addEventListener('click', () => {
+        const step = btn.dataset.step;
+        const ta = list.querySelector(`.fu-note-input[data-step="${step}"]`);
+        _fuActionNote(lead, step, ta.value);
+      }));
+      list.querySelectorAll('.fu-reschedule').forEach(btn => btn.addEventListener('click', () => _fuActionReschedule(lead, btn.dataset.step)));
+    }
+
+    async function _fuActionMark(lead, step, value) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step, value }),
+        });
+        const d = await r.json();
+        if (d.followUps) lead.followUps = d.followUps;
+        _renderModalFollowups(lead);
+        loadFollowups();
+      } catch (e) { alert('Error: ' + e.message); }
+    }
+    async function _fuActionNote(lead, step, note) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step, note }),
+        });
+        const d = await r.json();
+        if (d.followUpNotes) lead.followUpNotes = d.followUpNotes;
+        // Feedback visual en el botón
+        const btn = document.querySelector(`.fu-save-note[data-step="${step}"]`);
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = '✓ Guardada';
+          setTimeout(() => { btn.textContent = orig; }, 1200);
+        }
+        loadFollowups();
+      } catch (e) { alert('Error: ' + e.message); }
+    }
+    async function _fuActionReschedule(lead, step) {
+      const current = (lead.followUpDueOverrides && lead.followUpDueOverrides[step]) || '';
+      const input = prompt('Nueva fecha del follow-up "' + step + '" (formato YYYY-MM-DD HH:MM o YYYY-MM-DDTHH:MM).\nDejá vacío para resetear al default.', current ? new Date(current).toISOString().slice(0, 16) : '');
+      if (input === null) return;
+      const newVal = input.trim();
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + lead.id + '/followup'), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step, reschedule: newVal }),
+        });
+        const d = await r.json();
+        if (d.followUpDueOverrides) lead.followUpDueOverrides = d.followUpDueOverrides;
+        _renderModalFollowups(lead);
+        loadFollowups();
+      } catch (e) { alert('Error: ' + e.message); }
+    }
+
 
     let currentModalLeadId = null;
     let currentVariableId = '';
@@ -2118,6 +2279,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       renderBlocks(getVariantById(lead.varianteId || currentVariableId), lead);
+
+      // ── Sección de follow-ups con notas + reprogramar ──
+      _renderModalFollowups(lead);
 
       // Historial de llamadas (si lo hay)
       const callLogContainer = document.getElementById('modal-call-log');
@@ -6404,5 +6568,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.openAgendarModal(lead);
   });
+
+  // ── Follow-ups: badge sidebar + título de pestaña + banner al login ──
+  let _fuBaseTitle = document.title || 'SCM';
+  let _fuLastBadgeCount = 0;
+
+  function _setTabTitle(count) {
+    if (count > 0) document.title = `(${count}) ${_fuBaseTitle}`;
+    else document.title = _fuBaseTitle;
+  }
+
+  // Hook que llama loadFollowups() del closure CRM. Setea badge del sidebar +
+  // título de pestaña. Si es la primera vez con > 0, dispara el banner al login
+  // (una sola vez por sesión).
+  window._setSidebarFollowupsBadge = (count) => {
+    _fuLastBadgeCount = count;
+    const badge = document.getElementById('sidebar-followups-badge');
+    if (badge) {
+      if (count > 0) { badge.textContent = count; badge.style.display = 'inline-flex'; }
+      else badge.style.display = 'none';
+    }
+    _setTabTitle(count);
+    // Mostrar banner solo una vez por sesión y si no fue dismisseado
+    const dismissed = sessionStorage.getItem('fu_banner_dismissed') === '1';
+    const shown = sessionStorage.getItem('fu_banner_shown') === '1';
+    if (count > 0 && !shown && !dismissed) _showFollowupsBanner();
+  };
+
+  function _showFollowupsBanner() {
+    const banner = document.getElementById('followups-welcome-banner');
+    if (!banner || !_followupsCacheGlobal) return;
+    const today = (_followupsCacheGlobal.counts?.dueToday || 0) + (_followupsCacheGlobal.counts?.dueYesterday || 0);
+    const overdue = _followupsCacheGlobal.counts?.overdue || 0;
+    if (today === 0) return;
+    document.getElementById('fb-count').textContent = today;
+    const overdueLine = document.getElementById('fb-overdue-line');
+    if (overdue > 0) {
+      document.getElementById('fb-overdue-count').textContent = overdue;
+      overdueLine.style.display = 'block';
+    } else {
+      overdueLine.style.display = 'none';
+    }
+    banner.style.display = 'flex';
+    sessionStorage.setItem('fu_banner_shown', '1');
+  }
+
+  // Cache global para que el banner pueda leer counts.dueToday/dueYesterday/overdue
+  let _followupsCacheGlobal = null;
+  window._setFollowupsCacheGlobal = (cache) => { _followupsCacheGlobal = cache; };
+
+  document.getElementById('fb-cta-btn')?.addEventListener('click', () => {
+    document.getElementById('followups-welcome-banner').style.display = 'none';
+    sessionStorage.setItem('fu_banner_dismissed', '1');
+    // Llevar al filtro Hacer hoy del CRM
+    document.querySelector('[data-target="view-crm"]')?.click();
+    setTimeout(() => {
+      document.querySelector('.pipe-filter[data-status="hacer_hoy"]')?.click();
+    }, 200);
+  });
+  document.getElementById('fb-dismiss-btn')?.addEventListener('click', () => {
+    document.getElementById('followups-welcome-banner').style.display = 'none';
+    sessionStorage.setItem('fu_banner_dismissed', '1');
+  });
+
+  // Polling liviano: refrescar el badge cada 5 min mientras la app está abierta.
+  // Solo si el usuario tiene rol setter o admin (no para roles sin acceso al CRM).
+  setInterval(() => {
+    const role = window.__CURRENT_USER__?.role;
+    if (!role || (role !== 'setter' && role !== 'admin' && role !== 'supervisor')) return;
+    fetch('/api/setters/followups/badge', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) window._setSidebarFollowupsBadge(d.count); })
+      .catch(() => {});
+  }, 5 * 60 * 1000);
+
+  // Cargar el badge al inicio (apenas el user esté logueado), aunque no haya
+  // entrado todavía a la vista CRM. Eso permite ver el badge desde otras vistas.
+  setTimeout(() => {
+    if (window.__CURRENT_USER__) {
+      fetch('/api/setters/followups/badge', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) window._setSidebarFollowupsBadge(d.count); })
+        .catch(() => {});
+      // Cargar también el cache completo para el banner
+      fetch('/api/setters/followups/today', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) { window._setFollowupsCacheGlobal(d); _showFollowupsBanner(); } })
+        .catch(() => {});
+    }
+  }, 1500);
 
   });
