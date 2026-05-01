@@ -5703,19 +5703,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm('Aprobar esta generación como ejemplo de oro? Se va a promover al banco de respuestas.')) return;
       path += '/approve';
     } else if (action === 'reject') {
-      const reason = prompt('Razón del rechazo (opcional):') || '';
+      const reason = await window.askText({
+        title: '✗ Rechazar generación',
+        subtitle: 'Anotá una razón del rechazo (opcional). Se guarda como referencia para revisar después.',
+        type: 'input',
+        placeholder: 'Ej: tono demasiado formal, mencionó precio…',
+        confirmLabel: 'Rechazar',
+        confirmRequired: false,
+      });
+      if (reason === null) return;
       path += '/reject';
       if (reason) body.reason = reason;
     } else if (action === 'rewrite') {
-      const text = prompt('Pegá la respuesta correcta. Se va a promover al banco como reescritura.');
-      if (!text || !text.trim()) return;
+      const text = await window.askText({
+        title: '✎ Reescribir respuesta',
+        subtitle: 'Pegá la respuesta correcta. Se va a promover al banco de respuestas con tag "reescrita-admin".',
+        type: 'textarea',
+        placeholder: 'Te entiendo. Lo vemos en una llamada y revisamos como aplicaria a tu caso.\n\nLe parece mañana o el miércoles?',
+        confirmLabel: 'Promover al banco',
+        hint: 'Sin signos ¿¡ de apertura. Bloques separados con doble salto de línea.',
+      });
+      if (!text) return;
       path += '/rewrite';
-      body.text = text.trim();
+      body.text = text;
     } else if (action === 'suggest') {
-      const note = prompt('Escribí la sugerencia de mejora. Se va a inyectar como nota en futuras generaciones de Mercury.');
-      if (!note || !note.trim()) return;
+      const note = await window.askText({
+        title: '💡 Sugerir mejora a Mercury',
+        subtitle: 'Escribí la sugerencia. Se va a inyectar como nota en futuras generaciones para que Mercury aprenda.',
+        type: 'textarea',
+        placeholder: 'Ej: cuando preguntan por software ya existente, profundizar antes de pitchear.',
+        confirmLabel: 'Guardar sugerencia',
+        hint: 'Tip: las últimas 10 sugerencias se inyectan automáticamente en cada generación nueva.',
+      });
+      if (!note) return;
       path += '/suggest-improvement';
-      body.note = note.trim();
+      body.note = note;
     }
     try {
       const r = await fetch(path, {
@@ -6440,6 +6462,77 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.id === 'setter-picker-modal') _pickSetterClose(null);
   });
   document.getElementById('setter-picker-confirm')?.addEventListener('click', () => _pickSetterClose(_pickSetterCurrent));
+
+  // ── Modal genérico askText: reemplaza prompt() nativo ──
+  // Uso: const text = await window.askText({ title, subtitle, type:'input'|'textarea', placeholder?, defaultValue?, confirmLabel?, confirmRequired?, hint? });
+  // Devuelve el texto (string trimmed) si confirmó, null si canceló.
+  // Si confirmRequired (default true): no permite confirmar con texto vacío.
+  let _askTextResolve = null;
+  let _askTextRequired = true;
+
+  function _askTextClose(value) {
+    document.getElementById('ask-text-modal').style.display = 'none';
+    if (_askTextResolve) { _askTextResolve(value); _askTextResolve = null; }
+  }
+
+  window.askText = async function askText(opts = {}) {
+    const {
+      title = 'Escribí algo',
+      subtitle = '',
+      type = 'input', // 'input' | 'textarea'
+      placeholder = '',
+      defaultValue = '',
+      confirmLabel = 'Confirmar',
+      confirmRequired = true,
+      hint = '',
+    } = opts;
+    document.getElementById('ask-text-title').textContent = title;
+    document.getElementById('ask-text-subtitle').textContent = subtitle;
+    const input = document.getElementById('ask-text-input');
+    const textarea = document.getElementById('ask-text-textarea');
+    const hintEl = document.getElementById('ask-text-hint');
+    const useTextarea = type === 'textarea';
+    input.style.display = useTextarea ? 'none' : 'block';
+    textarea.style.display = useTextarea ? 'block' : 'none';
+    const target = useTextarea ? textarea : input;
+    target.value = defaultValue || '';
+    target.placeholder = placeholder || '';
+    if (hint) { hintEl.textContent = hint; hintEl.style.display = 'block'; }
+    else hintEl.style.display = 'none';
+    document.getElementById('ask-text-confirm').textContent = confirmLabel;
+    _askTextRequired = !!confirmRequired;
+    document.getElementById('ask-text-modal').style.display = 'flex';
+    setTimeout(() => target.focus(), 80);
+    return new Promise((resolve) => { _askTextResolve = resolve; });
+  };
+
+  function _askTextDoConfirm() {
+    const useTextarea = document.getElementById('ask-text-textarea').style.display !== 'none';
+    const target = document.getElementById(useTextarea ? 'ask-text-textarea' : 'ask-text-input');
+    const value = (target.value || '').trim();
+    if (_askTextRequired && !value) {
+      target.focus();
+      target.style.borderColor = '#f85149';
+      setTimeout(() => { target.style.borderColor = 'var(--border-color)'; }, 1000);
+      return;
+    }
+    _askTextClose(value);
+  }
+
+  document.getElementById('ask-text-cancel')?.addEventListener('click', () => _askTextClose(null));
+  document.getElementById('ask-text-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'ask-text-modal') _askTextClose(null);
+  });
+  document.getElementById('ask-text-confirm')?.addEventListener('click', _askTextDoConfirm);
+  // Enter en input → confirmar (no en textarea, ahí es nueva línea).
+  document.getElementById('ask-text-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); _askTextDoConfirm(); }
+  });
+  // Cmd/Ctrl+Enter en textarea → confirmar
+  document.getElementById('ask-text-textarea')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); _askTextDoConfirm(); }
+    if (e.key === 'Escape') { e.preventDefault(); _askTextClose(null); }
+  });
 
   // ── Modal Reasignar leads bulk (admin) ──
   let _reassignSetters = [];

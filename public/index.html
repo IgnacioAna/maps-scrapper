@@ -1567,6 +1567,25 @@
     </main>
   </div>
 
+  <!-- Modal genérico askText (reemplaza prompt() nativo). Soporta input simple o textarea. -->
+  <div id="ask-text-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:2100; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="width:min(540px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.65);">
+      <div style="padding:20px 24px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
+        <h3 id="ask-text-title" style="margin:0; font-size:17px; font-weight:700; letter-spacing:-0.2px; color:var(--text-primary);">Título</h3>
+        <p id="ask-text-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Subtitulo</p>
+      </div>
+      <div style="padding:18px 24px;">
+        <input id="ask-text-input" type="text" autocomplete="off" placeholder="" style="display:none; width:100%; padding:11px 14px; font-size:14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); box-sizing:border-box;">
+        <textarea id="ask-text-textarea" rows="5" placeholder="" style="display:none; width:100%; padding:12px 14px; font-size:14px; line-height:1.5; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; box-sizing:border-box; font-family:inherit;"></textarea>
+        <div id="ask-text-hint" class="muted" style="font-size:11px; margin-top:6px; display:none;"></div>
+      </div>
+      <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.18);">
+        <button id="ask-text-cancel" class="btn-secondary" style="font-size:13px; padding:9px 18px; border-radius:9px;">Cancelar</button>
+        <button id="ask-text-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Reasignar leads en bulk (admin) -->
   <div id="reassign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
@@ -1709,7 +1728,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430i"></script>
+  <script type="module" src="/app.js?v=20260430j"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

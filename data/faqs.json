@@ -1211,6 +1211,50 @@
         "mercury-promoted",
         "aprobado-admin"
       ]
+    },
+    {
+      "id": "faq_promoted_1777674204379_s4uh5",
+      "pregunta": "No realizamos contrataciones externas",
+      "respuesta": "Entiendo, no suelen contratar servicios externos. Lo que proponemos es instalar una infraestructura de automatización que se conecta a su base de pacientes sin que tengan que incorporar un nuevo proveedor.\n\nAsí pueden reactivar y fidelizar a sus pacientes sin cambiar sus procesos actuales. Le parece si agendamos una breve llamada para mostrarle cómo funciona en su caso? Qué día y hora le conviene?",
+      "categoria": "general",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-05-01T22:23:24.379Z",
+      "updatedAt": "2026-05-01T22:23:24.379Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
+    },
+    {
+      "id": "faq_promoted_1777674350372_69phs",
+      "pregunta": "OOO es un servicio de captación de clientes",
+      "respuesta": "Entiendo, se enfocan en captar nuevos pacientes.\n\nNuestro objetivo es diferente: trabajamos con la base que ya tienen, reactivando y fidelizando a los que dejaron de venir, lo que también genera nuevas visitas sin depender solo de la captación.\n\nTe parece si lo vemos en una llamada breve para entender cómo complementa lo que ya hacen? Cuándo podríamos agendar, mañana o jueves?",
+      "categoria": "precio",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-05-01T22:25:50.372Z",
+      "updatedAt": "2026-05-01T22:25:50.372Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
     }
   ]
 }
