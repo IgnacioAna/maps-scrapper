@@ -1490,8 +1490,29 @@
           <span id="mr-total" class="muted" style="font-size:12px; margin-left:auto;">—</span>
         </section>
 
-        <section id="mr-list" style="margin-top:18px; display:flex; flex-direction:column; gap:14px;"></section>
+        <section id="mr-list" style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></section>
         <div id="mr-empty" class="muted" style="text-align:center; padding:40px 0; font-size:13px; display:none;">No hay generaciones que coincidan con los filtros.</div>
+
+        <!-- Modal de detalle/acciones de una generación Mercury -->
+        <div id="mr-detail-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+          <div class="card" style="width:min(720px, 96vw); max-height:92vh; padding:0; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.7);">
+            <div style="padding:18px 24px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%); display:flex; gap:12px; align-items:flex-start;">
+              <div id="mr-detail-avatar" style="width:38px; height:38px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">?</div>
+              <div style="flex:1; min-width:0;">
+                <h3 id="mr-detail-title" style="margin:0; font-size:16px; font-weight:700; letter-spacing:-0.2px;">Setter</h3>
+                <div id="mr-detail-meta" class="muted" style="font-size:11px; margin-top:3px;">—</div>
+              </div>
+              <button id="mr-detail-close" class="btn-secondary" style="font-size:13px; padding:6px 12px; border-radius:8px;">✕</button>
+            </div>
+            <div id="mr-detail-body" style="padding:18px 24px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:14px;"></div>
+            <div style="padding:14px 24px 18px; display:flex; gap:8px; flex-wrap:wrap; background:rgba(0,0,0,0.18); border-top:1px solid var(--border-color);">
+              <button id="mr-detail-approve" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#5bb974; font-weight:500;">✓ Aprobar oro</button>
+              <button id="mr-detail-rewrite" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent); font-weight:500;">✎ Reescribir</button>
+              <button id="mr-detail-suggest" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">💡 Sugerir mejora</button>
+              <button id="mr-detail-reject" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#f85149; font-weight:500;">✗ Rechazar</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Configuración Mercury (solo admin) -->
@@ -1688,7 +1709,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430h"></script>
+  <script type="module" src="/app.js?v=20260430i"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

@@ -5485,13 +5485,115 @@ document.addEventListener('DOMContentLoaded', async () => {
     return String(name || '?').trim().charAt(0).toUpperCase() || '?';
   }
 
+  // Cache de generaciones por id para que el modal de detalle pueda leer.
+  const _mrCache = new Map();
+
+  // Tarjeta compacta para el grid. Click → modal de detalle. Hover → preview tooltip.
   function _mrRenderGen(g) {
+    _mrCache.set(g.id, g);
     const div = document.createElement('div');
-    div.className = 'card';
-    // Card más respirada con sombra sutil y border accent al hover.
-    div.style.cssText = 'padding:0; overflow:hidden; border-radius:16px; background:linear-gradient(180deg, var(--surface-color) 0%, rgba(255,255,255,0.005) 100%); box-shadow:0 1px 3px rgba(0,0,0,0.25); transition:border-color 0.2s, transform 0.15s ease-out;';
-    div.onmouseover = () => { div.style.borderColor = 'var(--accent)'; };
-    div.onmouseout = () => { div.style.borderColor = 'var(--border-color)'; };
+    div.className = 'card mr-card';
+    div.dataset.id = g.id;
+    div.style.cssText = 'padding:14px 16px; display:flex; flex-direction:column; gap:10px; border-radius:14px; cursor:pointer; transition:border-color 0.18s, transform 0.18s ease-out, box-shadow 0.18s; position:relative; min-height:160px;';
+    div.onmouseover = () => {
+      div.style.borderColor = 'var(--accent)';
+      div.style.transform = 'translateY(-2px)';
+      div.style.boxShadow = '0 8px 24px rgba(157,133,242,0.10)';
+      _mrShowPreview(div, g);
+    };
+    div.onmouseout = () => {
+      div.style.borderColor = 'var(--border-color)';
+      div.style.transform = '';
+      div.style.boxShadow = '';
+      _mrHidePreview();
+    };
+    div.onclick = () => _mrOpenDetail(g.id);
+
+    const setterInitial = _mrInitial(g.setterName);
+    const variantTag = g.variantUsed?.name
+      ? `<span style="padding:2px 7px; font-size:9px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px; white-space:nowrap;">🎯 ${_mrEscape(g.variantUsed.name)}</span>`
+      : '';
+    const violationsTag = (g.violations || []).length
+      ? `<span title="${_mrEscape(g.violations.join(', '))}" style="padding:2px 7px; font-size:9px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px; white-space:nowrap;">⚠</span>`
+      : '';
+
+    // Truncar mensaje del prospecto a 90 chars para preview en card.
+    const prospectShort = (g.prospectMessage || '').length > 100
+      ? g.prospectMessage.substring(0, 100) + '…'
+      : g.prospectMessage || '—';
+    const blockCount = (g.output?.blocks || []).length;
+
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${setterInitial}</div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${_mrEscape(g.setterName || '—')}</div>
+          <div class="muted" style="font-size:10px; margin-top:1px;">${new Date(g.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
+        </div>
+        ${_mrStatusPill(g)}
+      </div>
+      <div style="font-size:12px; color:var(--text-secondary); line-height:1.4; flex:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;">
+        <span style="color:var(--text-primary); font-weight:500;">"</span>${_mrEscape(prospectShort)}<span style="color:var(--text-primary); font-weight:500;">"</span>
+      </div>
+      <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px solid var(--border-color);">
+        ${variantTag}${violationsTag}
+        <span class="muted" style="font-size:10px; margin-left:auto;">💬 ${blockCount} bloque${blockCount === 1 ? '' : 's'}</span>
+        ${_mrSetterActionPill(g) || ''}
+      </div>
+    `;
+    return div;
+  }
+
+  // Tooltip flotante con la respuesta completa de Mercury (preview en hover).
+  let _mrPreviewEl = null;
+  function _mrShowPreview(card, g) {
+    _mrHidePreview();
+    if (!g.output?.blocks?.length) return;
+    const tooltip = document.createElement('div');
+    tooltip.id = 'mr-hover-preview';
+    tooltip.style.cssText = 'position:fixed; z-index:1500; max-width:380px; background:var(--surface-color); border:1px solid var(--accent); border-radius:12px; padding:14px 16px; box-shadow:0 12px 32px rgba(0,0,0,0.55); pointer-events:none;';
+    const blocks = g.output.blocks.map((b, i) => `
+      <div style="padding:8px 10px; background:rgba(157,133,242,0.06); border-left:2px solid var(--accent); border-radius:6px; margin-bottom:6px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); opacity:0.6; font-weight:600; margin-bottom:3px;">Bloque ${i + 1}</div>
+        <div style="font-size:12px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${_mrEscape(b)}</div>
+      </div>
+    `).join('');
+    tooltip.innerHTML = `
+      <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Respuesta Mercury
+      </div>
+      ${blocks}
+      <div class="muted" style="font-size:10px; margin-top:6px; padding-top:6px; border-top:1px dashed var(--border-color);">Click para ver detalles y aprobar/reescribir/etc.</div>
+    `;
+    document.body.appendChild(tooltip);
+    _mrPreviewEl = tooltip;
+    // Posicionamiento: derecha de la card si entra, sino izquierda.
+    const rect = card.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let left = rect.right + 12;
+    let top = rect.top;
+    if (left + tipRect.width > window.innerWidth - 16) left = rect.left - tipRect.width - 12;
+    if (top + tipRect.height > window.innerHeight - 16) top = window.innerHeight - tipRect.height - 16;
+    if (top < 16) top = 16;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+  }
+  function _mrHidePreview() {
+    if (_mrPreviewEl && _mrPreviewEl.parentNode) _mrPreviewEl.parentNode.removeChild(_mrPreviewEl);
+    _mrPreviewEl = null;
+  }
+
+  // Modal de detalle: abre con todo el contenido + 4 botones de acción.
+  let _mrCurrentDetailId = null;
+  function _mrOpenDetail(id) {
+    const g = _mrCache.get(id);
+    if (!g) return;
+    _mrCurrentDetailId = id;
+    const setterInitial = _mrInitial(g.setterName);
+    document.getElementById('mr-detail-avatar').textContent = setterInitial;
+    document.getElementById('mr-detail-title').textContent = g.setterName || '—';
+    document.getElementById('mr-detail-meta').innerHTML = `${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}${g.variantUsed?.name ? ' · 🎯 ' + _mrEscape(g.variantUsed.name) : ''}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ' · <span style="color:#f85149;">⚠ ' + _mrEscape(g.violations.join(', ')) + '</span>' : ''}`;
 
     const blocksHtml = (g.output?.blocks || []).map((b, i) => `
       <div style="position:relative; padding:14px 16px 14px 18px; background:rgba(157,133,242,0.05); border-left:3px solid var(--accent); border-radius:10px; font-size:14px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">
@@ -5501,112 +5603,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     `).join('');
 
     const finalSentHtml = g.finalSent
-      ? `<div style="margin-top:10px; padding:12px 14px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); border-radius:8px;">
+      ? `<div style="padding:12px 14px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); border-radius:8px;">
           <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Versión final que envió el setter</div>
           <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.finalSent)}</div>
-        </div>`
-      : '';
+        </div>` : '';
 
     const adminBlocks = [];
-    if (g.adminAction === 'rewritten' && g.adminRewrite) {
-      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); border-radius:8px;">
-        <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div>
-        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div>
-      </div>`);
-    }
-    if (g.adminAction === 'suggested_improvement' && g.adminNote) {
-      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;">
-        <div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">💡 Nota de mejora</div>
-        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div>
-      </div>`);
-    }
-    if (g.adminAction === 'rejected' && g.adminRejectReason) {
-      adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); border-radius:8px;">
-        <div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Razón del rechazo</div>
-        <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRejectReason)}</div>
-      </div>`);
-    }
-    const adminBlocksHtml = adminBlocks.length ? `<div style="display:flex; flex-direction:column; gap:8px; margin-top:10px;">${adminBlocks.join('')}</div>` : '';
-
-    const adminFooterHtml = g.adminAction
-      ? `<div class="muted" style="font-size:11px; padding:8px 0; border-top:1px dashed var(--border-color); margin-top:10px;">Revisada por <strong style="color:var(--text-primary);">${_mrEscape(g.adminReviewedBy || '—')}</strong> · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}</div>`
-      : '';
+    if (g.adminAction === 'rewritten' && g.adminRewrite) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); border-radius:8px;"><div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div></div>`);
+    if (g.adminAction === 'suggested_improvement' && g.adminNote) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;"><div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">💡 Nota de mejora</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div></div>`);
+    if (g.adminAction === 'rejected' && g.adminRejectReason) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); border-radius:8px;"><div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Razón del rechazo</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRejectReason)}</div></div>`);
 
     const ejemplosHtml = (g.ejemplos || []).length
-      ? `<details style="font-size:11px; margin-top:10px;">
-          <summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0; user-select:none;">📚 Ejemplos del banco usados (${g.ejemplos.length})</summary>
-          <ul style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:5px;">
-            ${g.ejemplos.map((e) => `<li style="padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; display:flex; gap:8px; align-items:center; font-size:11px;">
-              <span style="flex:1; color:var(--text-primary);">${_mrEscape(e.pregunta)}</span>
-              <span style="background:var(--accent-soft); color:var(--accent); padding:1px 8px; border-radius:6px; font-size:10px;">${_mrEscape(e.categoria)}</span>
-              <span style="color:var(--text-secondary); font-variant-numeric:tabular-nums;">${e.score}</span>
-            </li>`).join('')}
-          </ul>
-        </details>`
-      : '';
+      ? `<details style="font-size:11px;"><summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0; user-select:none;">📚 Ejemplos del banco usados (${g.ejemplos.length})</summary><ul style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:5px;">${g.ejemplos.map((e) => `<li style="padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; display:flex; gap:8px; align-items:center; font-size:11px;"><span style="flex:1; color:var(--text-primary);">${_mrEscape(e.pregunta)}</span><span style="background:var(--accent-soft); color:var(--accent); padding:1px 8px; border-radius:6px; font-size:10px;">${_mrEscape(e.categoria)}</span><span style="color:var(--text-secondary); font-variant-numeric:tabular-nums;">${e.score}</span></li>`).join('')}</ul></details>` : '';
 
-    const variantTag = g.variantUsed?.name
-      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px;">🎯 ${_mrEscape(g.variantUsed.name)}</span>`
-      : '';
-    const fallbackTag = g.usedFallback
-      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(255,200,40,0.10); color:#ffc828; border:1px solid rgba(255,200,40,0.35); border-radius:999px;">fallback</span>`
-      : '';
-    const violationsTag = (g.violations || []).length
-      ? `<span style="padding:3px 9px; font-size:10px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px;">⚠ ${_mrEscape(g.violations.join(', '))}</span>`
-      : '';
-    const setterInitial = _mrInitial(g.setterName);
+    const adminFooter = g.adminAction
+      ? `<div class="muted" style="font-size:11px; padding:8px 0; border-top:1px dashed var(--border-color);">Revisada por <strong style="color:var(--text-primary);">${_mrEscape(g.adminReviewedBy || '—')}</strong> · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}</div>` : '';
 
-    div.innerHTML = `
-      <!-- Header con setter avatar + status -->
-      <div style="padding:16px 18px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border-color); flex-wrap:wrap;">
-        <div style="width:36px; height:36px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:14px;">${setterInitial}</div>
-        <div style="flex:1; min-width:0;">
-          <div style="font-size:14px; font-weight:600; color:var(--text-primary);">${_mrEscape(g.setterName || '—')}</div>
-          <div class="muted" style="font-size:11px; margin-top:2px;">${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}</div>
+    document.getElementById('mr-detail-body').innerHTML = `
+      <div>
+        <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px;">Mensaje del prospecto</div>
+        <div style="display:flex; gap:8px; align-items:flex-start;">
+          <div style="width:24px; height:24px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-secondary);">👤</div>
+          <div style="flex:1; padding:12px 14px; background:rgba(255,255,255,0.025); border:1px solid var(--border-color); border-radius:14px; border-top-left-radius:4px; font-size:13.5px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${_mrEscape(g.prospectMessage)}</div>
         </div>
-        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-          ${variantTag}${fallbackTag}${violationsTag}
-          ${_mrStatusPill(g)}
-          ${_mrSetterActionPill(g)}
-        </div>
+        ${g.context ? `<div style="margin-top:8px; margin-left:32px; padding:8px 12px; font-size:12px; color:var(--text-secondary); background:rgba(255,255,255,0.02); border:1px dashed var(--border-color); border-radius:10px; line-height:1.5; white-space:pre-wrap;"><strong style="color:var(--text-primary); font-size:10px; text-transform:uppercase; letter-spacing:0.4px;">Contexto:</strong> ${_mrEscape(g.context)}</div>` : ''}
       </div>
-
-      <!-- Body: prospecto + Mercury -->
-      <div style="padding:18px;">
-        <!-- Mensaje del prospecto (estilo burbuja recibido) -->
-        <div style="margin-bottom:14px;">
-          <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px;">Mensaje del prospecto</div>
-          <div style="display:flex; gap:8px; align-items:flex-start;">
-            <div style="width:24px; height:24px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--text-secondary);">👤</div>
-            <div style="flex:1; padding:12px 14px; background:rgba(255,255,255,0.025); border:1px solid var(--border-color); border-radius:14px; border-top-left-radius:4px; font-size:13.5px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${_mrEscape(g.prospectMessage)}</div>
-          </div>
-          ${g.context ? `<div style="margin-top:8px; margin-left:32px; padding:8px 12px; font-size:12px; color:var(--text-secondary); background:rgba(255,255,255,0.02); border:1px dashed var(--border-color); border-radius:10px; line-height:1.5; white-space:pre-wrap;"><strong style="color:var(--text-primary); font-size:10px; text-transform:uppercase; letter-spacing:0.4px;">Contexto:</strong> ${_mrEscape(g.context)}</div>` : ''}
+      <div>
+        <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          Respuesta de Mercury
         </div>
-
-        <!-- Respuesta de Mercury (estilo burbuja enviado, accent) -->
-        <div>
-          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            Respuesta de Mercury (${(g.output?.blocks || []).length} bloque${(g.output?.blocks || []).length === 1 ? '' : 's'})
-          </div>
-          <div style="display:flex; flex-direction:column; gap:8px;">${blocksHtml}</div>
-          ${finalSentHtml}
-        </div>
-
-        ${adminBlocksHtml}
-        ${ejemplosHtml}
-        ${adminFooterHtml}
+        <div style="display:flex; flex-direction:column; gap:8px;">${blocksHtml}</div>
       </div>
-
-      <!-- Acciones admin (footer sticky con bg distinto) -->
-      <div style="padding:12px 18px; background:rgba(0,0,0,0.15); border-top:1px solid var(--border-color); display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn-secondary mr-act-approve" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#5bb974; font-weight:500;">✓ Aprobar oro</button>
-        <button class="btn-secondary mr-act-rewrite" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent); font-weight:500;">✎ Reescribir</button>
-        <button class="btn-secondary mr-act-suggest" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">💡 Sugerir mejora</button>
-        <button class="btn-secondary mr-act-reject" data-id="${g.id}" style="font-size:12px; padding:8px 14px; border-radius:8px; flex:1; min-width:130px; color:#f85149; font-weight:500;">✗ Rechazar</button>
-      </div>
+      ${finalSentHtml}
+      ${adminBlocks.length ? `<div style="display:flex; flex-direction:column; gap:8px;">${adminBlocks.join('')}</div>` : ''}
+      ${ejemplosHtml}
+      ${adminFooter}
     `;
-    return div;
+    document.getElementById('mr-detail-modal').style.display = 'flex';
+  }
+
+  function _mrCloseDetail() {
+    document.getElementById('mr-detail-modal').style.display = 'none';
+    _mrCurrentDetailId = null;
   }
 
   async function _mrLoad() {
@@ -5650,13 +5689,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
+      _mrCache.clear();
       for (const g of d.generations) list.appendChild(_mrRenderGen(g));
-
-      // Bind actions
-      list.querySelectorAll('.mr-act-approve').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'approve')));
-      list.querySelectorAll('.mr-act-reject').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'reject')));
-      list.querySelectorAll('.mr-act-rewrite').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'rewrite')));
-      list.querySelectorAll('.mr-act-suggest').forEach((b) => b.addEventListener('click', () => _mrAct(b.dataset.id, 'suggest')));
     } catch (e) {
       alert('Error cargando revisión IA: ' + e.message);
     }
@@ -5705,6 +5739,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('mr-filter-setter')?.addEventListener('change', () => _mrLoad());
   document.getElementById('mr-filter-status')?.addEventListener('change', () => _mrLoad());
   document.getElementById('mr-filter-setteraction')?.addEventListener('change', () => _mrLoad());
+
+  // Handlers del modal de detalle
+  document.getElementById('mr-detail-close')?.addEventListener('click', _mrCloseDetail);
+  document.getElementById('mr-detail-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'mr-detail-modal') _mrCloseDetail();
+  });
+  document.getElementById('mr-detail-approve')?.addEventListener('click', async () => {
+    if (!_mrCurrentDetailId) return;
+    await _mrAct(_mrCurrentDetailId, 'approve');
+    _mrCloseDetail();
+  });
+  document.getElementById('mr-detail-rewrite')?.addEventListener('click', async () => {
+    if (!_mrCurrentDetailId) return;
+    await _mrAct(_mrCurrentDetailId, 'rewrite');
+    _mrCloseDetail();
+  });
+  document.getElementById('mr-detail-suggest')?.addEventListener('click', async () => {
+    if (!_mrCurrentDetailId) return;
+    await _mrAct(_mrCurrentDetailId, 'suggest');
+    _mrCloseDetail();
+  });
+  document.getElementById('mr-detail-reject')?.addEventListener('click', async () => {
+    if (!_mrCurrentDetailId) return;
+    await _mrAct(_mrCurrentDetailId, 'reject');
+    _mrCloseDetail();
+  });
 
   // ── Mi rendimiento (setter + admin + supervisor) ──
   let _mypChart = null;
