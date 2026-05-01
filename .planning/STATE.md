@@ -53,6 +53,32 @@ B se ataca primero (warmer es el que más le importa).
 - Sesión actual: re-onboarding al estado del warmer (`src/wa/`,
   `wa-multi`) y discusión para definir qué resolver primero.
 
+### 2026-05-01 (PM) — Phase 2.1 Warming-Lunes ejecutada (sprint Vie→Lun)
+
+6 waves del PLAN.md ejecutadas con disciplina GSD:
+
+- **Wave 1**: commiteados los cambios pendientes de wa-multi
+  (window-manager, preload whatsapp, ai-replier, response-bank-template).
+- **Wave 2**: módulo `fingerprint-patcher.ts` agregado al preload.
+  Randomiza Canvas/WebGL/Audio/Navigator/Screen por cuenta con seed
+  determinístico hash(accountId). Anti-ban capa nueva.
+- **Wave 3**: endpoint `POST /api/wa/accounts/:id/start-warming-default` +
+  botón "🔥 Calentar" en panel admin (one-click: crea routine + attach +
+  start) con toast de feedback.
+- **Wave 4**: bump a v0.3.0 + build con electron-builder + zip
+  distribuible `wa-multi-portable-v3.0.0.zip` (145 MB) en escritorio.
+- **Wave 5**: doc `docs/setter-quickstart.md` (154 líneas, 10 secciones)
+  para distribuir junto al zip.
+- **Wave 6**: smoke test automatizado 10/10 OK. VERIFICATION.md con
+  checklist manual pendiente del usuario.
+
+**Phase 2 status**: parcialmente completa — subset crítico para el lunes
+resuelto. Resto del Bloque B (sidebar único + webviews, banco editable,
+métricas pulidas, inbox unificado) → Phase 2.2 post-lunes.
+
+**Próximo paso del usuario**: ejecutar checklist manual VERIFICATION.md +
+distribuir zip + doc el lunes a los 15 setters.
+
 ---
 
 ## Open Questions / Blockers
