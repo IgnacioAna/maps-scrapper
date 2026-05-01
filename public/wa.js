@@ -999,4 +999,254 @@ setInterval(() => {
   }
 }, 30_000);
 
+// ── RED DE WARMING (AI-to-AI) ─────────────────────────────────────────────
+// Vista admin para inscribir cuentas al pool de warming network. Cada cuenta
+// inscrita recibe una persona ficticia y empieza a chatear con otras cuentas
+// del pool (cross-setter only). Las conversaciones se generan via LLM.
+
+let _warmingNetCache = { pool: [], pairs: [], stats: null };
+
+async function renderWarmingNetwork() {
+  const view = $("#view-wa-warming-network");
+  if (!view) return;
+
+  view.innerHTML = `
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+      <div>
+        <h1 style="font-size:22px; font-weight:600; margin:0;">Red de Warming (AI-to-AI)</h1>
+        <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">Cuentas inscritas se mandan mensajes entre sí con IA conversacional. Cross-setter (Paula chatea con cuenta de Tiago, no consigo misma).</p>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn btn-secondary btn-sm" onclick="window._warmingNetTick()">Forzar tick</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._warmingNetRefresh()">Refrescar</button>
+      </div>
+    </div>
+
+    <div id="wn-stats" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:24px;"></div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h2 style="font-size:16px; font-weight:600; margin:0;">Pool de cuentas</h2>
+      <button class="btn btn-primary btn-sm" id="wn-enroll-btn">+ Inscribir cuenta</button>
+    </div>
+    <div id="wn-pool-table"></div>
+
+    <div style="margin-top:32px;">
+      <h2 style="font-size:16px; font-weight:600; margin-bottom:12px;">Pares activos</h2>
+      <div id="wn-pairs-table"></div>
+    </div>
+
+    <div style="margin-top:32px;">
+      <h2 style="font-size:16px; font-weight:600; margin-bottom:12px;">Últimos mensajes intercambiados</h2>
+      <div id="wn-messages-list"></div>
+    </div>
+  `;
+
+  $("#wn-enroll-btn")?.addEventListener("click", openEnrollDialog);
+  await _warmingNetRefresh();
+}
+
+async function _warmingNetRefresh() {
+  try {
+    const [pool, pairs, stats, messages] = await Promise.all([
+      api("/api/wa/warming-network/pool"),
+      api("/api/wa/warming-network/pairs"),
+      api("/api/wa/warming-network/stats"),
+      api("/api/wa/warming-network/messages?limit=20"),
+    ]);
+    _warmingNetCache = { pool, pairs, stats, messages };
+    renderWarmingNetStats(stats);
+    renderWarmingNetPool(pool);
+    renderWarmingNetPairs(pairs, pool);
+    renderWarmingNetMessages(messages, pool);
+  } catch (err) {
+    console.error("warming-network refresh:", err);
+  }
+}
+window._warmingNetRefresh = _warmingNetRefresh;
+
+window._warmingNetTick = async () => {
+  try {
+    await api("/api/wa/warming-network/tick", { method: "POST" });
+    setTimeout(_warmingNetRefresh, 1000);
+  } catch (err) { alert("Error: " + err.message); }
+};
+
+function renderWarmingNetStats(stats) {
+  const cont = $("#wn-stats");
+  if (!cont || !stats) return;
+  const card = (label, value, sub) => `
+    <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:14px;">
+      <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;">${label}</div>
+      <div style="font-size:24px; font-weight:600; margin-top:4px;">${value}</div>
+      ${sub ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${sub}</div>` : ""}
+    </div>`;
+  cont.innerHTML = [
+    card("Pool total", stats.pool.total, `${stats.pool.active} activas`),
+    card("Pares activos", stats.pairs.active, ""),
+    card("Mensajes (mes)", stats.messages.totalMessagesSent || 0, ""),
+    card("Costo IA (mes)", `$${(stats.messages.totalLLMCostUsd || 0).toFixed(3)}`, stats.llm.totalCalls + " calls"),
+  ].join("");
+}
+
+function renderWarmingNetPool(pool) {
+  const cont = $("#wn-pool-table");
+  if (!cont) return;
+  if (pool.length === 0) {
+    cont.innerHTML = `<div class="empty-state" style="padding:24px; text-align:center; color:var(--text-secondary);">Pool vacío. Inscribí cuentas para arrancar.</div>`;
+    return;
+  }
+  cont.innerHTML = `
+    <table class="leads-table" style="width:100%;">
+      <thead>
+        <tr>
+          <th>Cuenta</th><th>Setter</th><th>Persona ficticia</th>
+          <th>Estilo</th><th>Estado</th><th>Inscrita</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pool.map((m) => {
+          const account = (_accounts || []).find(a => a.id === m.accountId);
+          const accountLabel = account?.label || m.accountId.slice(0, 12);
+          const setter = (_setters || []).find(s => s.id === m.setterId);
+          const setterName = setter?.name || (m.setterId === null ? "Admin" : m.setterId.slice(0, 8));
+          const personaText = `${m.persona.name}, ${m.persona.age}a, ${m.persona.city}`;
+          const enrolledAgo = formatAgo(new Date(m.enrolledAt));
+          const stateBadge = m.active
+            ? '<span class="chip chip-success" style="font-size:11px;">Activa</span>'
+            : `<span class="chip chip-warning" style="font-size:11px;">Pausada (${escHtml(m.pausedReason || "")})</span>`;
+          return `<tr>
+            <td>${escHtml(accountLabel)}</td>
+            <td>${escHtml(setterName)}</td>
+            <td><span title="${escHtml(JSON.stringify(m.persona.interests))}">${escHtml(personaText)}</span></td>
+            <td style="font-size:12px;">${escHtml(m.persona.style)} · ${escHtml(m.persona.replySpeed)}</td>
+            <td>${stateBadge}</td>
+            <td style="font-size:11px; color:var(--text-secondary);">${enrolledAgo}</td>
+            <td style="white-space:nowrap;">
+              ${m.active
+                ? `<button class="btn-table-action" onclick="window._wnPause('${m.accountId}')" style="color:var(--warning);">⏸</button>`
+                : `<button class="btn-table-action" onclick="window._wnResume('${m.accountId}')" style="color:var(--success);">▶</button>`}
+              <button class="btn-table-action" onclick="window._wnUnenroll('${m.accountId}')" style="color:var(--danger);">🗑</button>
+            </td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderWarmingNetPairs(pairs, pool) {
+  const cont = $("#wn-pairs-table");
+  if (!cont) return;
+  if (pairs.length === 0) {
+    cont.innerHTML = `<div class="empty-state" style="padding:16px; text-align:center; color:var(--text-secondary);">Sin pares activos. Cuando haya 2+ cuentas en el pool de setters distintos, el orchestrator los crea automáticamente.</div>`;
+    return;
+  }
+  const personaOf = (id) => pool.find(p => p.accountId === id)?.persona;
+  cont.innerHTML = `
+    <table class="leads-table" style="width:100%;">
+      <thead><tr><th>Par</th><th>Estado</th><th>Mensajes</th><th>Último</th><th>Próxima acción</th></tr></thead>
+      <tbody>
+        ${pairs.map(p => {
+          const a = personaOf(p.accountA);
+          const b = personaOf(p.accountB);
+          const aName = a?.name || p.accountA.slice(0, 8);
+          const bName = b?.name || p.accountB.slice(0, 8);
+          const lastAgo = p.lastMessageAt ? formatAgo(new Date(p.lastMessageAt)) : "—";
+          const nextAt = p.nextActionAt ? new Date(p.nextActionAt) : null;
+          const nextText = nextAt
+            ? (nextAt > new Date() ? `en ${Math.round((nextAt - new Date())/60000)}m` : "ahora")
+            : "—";
+          return `<tr>
+            <td>${escHtml(aName)} ↔ ${escHtml(bName)}</td>
+            <td><span class="chip" style="font-size:11px;">${escHtml(p.state)}</span></td>
+            <td>${p.messageCount || 0}</td>
+            <td style="font-size:11px;">${lastAgo}</td>
+            <td style="font-size:11px;">${nextText}</td>
+          </tr>`;
+        }).join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderWarmingNetMessages(messages, pool) {
+  const cont = $("#wn-messages-list");
+  if (!cont) return;
+  if (!messages || messages.length === 0) {
+    cont.innerHTML = `<div class="empty-state" style="padding:16px; text-align:center; color:var(--text-secondary);">Sin mensajes todavía.</div>`;
+    return;
+  }
+  const personaOf = (id) => pool.find(p => p.accountId === id)?.persona;
+  cont.innerHTML = messages.slice(0, 20).map(m => {
+    const from = personaOf(m.fromAccount);
+    const to = personaOf(m.toAccount);
+    return `
+      <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); margin-bottom:6px;">
+          <span><strong>${escHtml(from?.name || "?")}</strong> → ${escHtml(to?.name || "?")}</span>
+          <span>${formatAgo(new Date(m.sentAt))}</span>
+        </div>
+        <div style="font-size:13px;">${escHtml(m.text)}</div>
+      </div>`;
+  }).join("");
+}
+
+async function openEnrollDialog() {
+  const enrolledIds = new Set(_warmingNetCache.pool.map(p => p.accountId));
+  const candidates = (_accounts || []).filter(a => !enrolledIds.has(a.id));
+  if (candidates.length === 0) {
+    alert("No hay cuentas disponibles para inscribir (todas ya están en el pool).");
+    return;
+  }
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:480px;">
+      <div class="modal-header"><h3>Inscribir cuenta a Red de Warming</h3><button class="modal-close-btn" data-close>×</button></div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px;">La cuenta recibirá una persona ficticia y empezará a chatear automáticamente con otras del pool. <strong>Asegurate de avisar al setter</strong>.</p>
+        <select id="wn-enroll-select" style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary);">
+          ${candidates.map(a => `<option value="${a.id}">${escHtml(a.label)} ${a.phone ? `(${escHtml(a.phone)})` : ""}</option>`).join("")}
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button class="btn btn-primary" id="wn-enroll-confirm">Inscribir</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll("[data-close]").forEach(el => el.addEventListener("click", () => overlay.remove()));
+  overlay.querySelector("#wn-enroll-confirm").addEventListener("click", async () => {
+    const accountId = overlay.querySelector("#wn-enroll-select").value;
+    try {
+      const r = await api(`/api/wa/warming-network/enroll/${accountId}`, { method: "POST" });
+      overlay.remove();
+      alert(`Cuenta inscripta. Persona ficticia: ${r.persona.name}, ${r.persona.age}a, ${r.persona.city}.`);
+      await _warmingNetRefresh();
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
+  });
+}
+
+window._wnPause = async (accountId) => {
+  try { await api(`/api/wa/warming-network/pause/${accountId}`, { method: "POST", body: JSON.stringify({ reason: "manual" }) }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+};
+window._wnResume = async (accountId) => {
+  try { await api(`/api/wa/warming-network/resume/${accountId}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+};
+window._wnUnenroll = async (accountId) => {
+  if (!confirm("¿Sacar la cuenta del pool de warming? Sus pares activos se cerrarán.")) return;
+  try { await api(`/api/wa/warming-network/unenroll/${accountId}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+};
+
+document.addEventListener("click", (e) => {
+  const target = e.target.closest('[data-target="view-wa-warming-network"]');
+  if (target) setTimeout(() => renderWarmingNetwork(), 50);
+});
+
+// Refresh auto cada 30s si la vista está visible
+setInterval(() => {
+  const view = $("#view-wa-warming-network");
+  if (view && !view.classList.contains("hidden")) _warmingNetRefresh();
+}, 30_000);
+
 console.log("[wa] modulo cargado");
