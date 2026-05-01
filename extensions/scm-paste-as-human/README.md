@@ -1,104 +1,131 @@
 # SCM — Pegar como humano
 
 Extensión de Chrome que reemplaza el paste instantáneo en
-`web.whatsapp.com` por typing humano caracter por caracter, para evitar
-que WhatsApp detecte el patrón de paste como bot.
+**WhatsApp Web** e **Instagram DMs** por typing humano caracter por
+caracter, para evitar que esas plataformas detecten el patrón de paste
+como bot.
 
-**Hotkey:** `Ctrl + Espacio` en `web.whatsapp.com`
-**Activación:** solo si el clipboard arranca con el marker `__SCM_TYPE__:`
-**Solución de marker:** botón "Copiar 👤" en el panel SCM (Banco de
-Respuestas y Variantes) lo agrega automáticamente al clipboard.
+**Activación:** solo si el texto que pegás viene del panel SCM (con un
+marcador interno invisible). Cualquier otro Ctrl+V en WA/IG funciona
+normal e instantáneo.
 
 ---
 
-## Instalar (modo dev, drag-drop)
+## Instalar (3 pasos, 30 segundos)
 
-1. Abrí Chrome → andá a `chrome://extensions/`.
-2. Arriba a la derecha activá **"Modo de desarrollador"**.
-3. Hacé drag-drop de la carpeta `scm-paste-as-human/` (o del `.zip`
-   descomprimido) sobre la página.
-4. Listo. La extensión aparece en la lista. No necesita login ni nada.
+1. Descomprimir el `.zip` que te pasamos en una carpeta cualquiera
+   (donde quieras, ej: Documentos).
+2. Abrí Chrome → andá a `chrome://extensions/` (pegalo en la barra del
+   navegador y Enter).
+3. Arriba a la derecha activá **"Modo de desarrollador"**.
+4. Click en **"Cargar descomprimida"** (arriba a la izquierda). Buscá
+   la carpeta donde descomprimiste y seleccionala.
+5. Listo. Aparece "SCM — Pegar como humano" en la lista. NO necesita
+   login ni ninguna config.
 
-> Si Chrome dice "el manifest tiene errores": abrí DevTools de la página
-> de extensiones (F12) y mirá la consola para el detalle.
+> Si Chrome te pide aprobar permisos para `web.whatsapp.com`,
+> `instagram.com` y `scm-setting.up.railway.app` — aceptá todos. Son
+> los sitios donde la extensión funciona.
 
-## Cómo se usa
+---
 
-1. En el panel SCM, hacé click en **"Copiar 👤"** del mensaje/respuesta
-   que querés mandar. (El botón "Copiar" normal sigue funcionando para
-   paste instantáneo común.)
-2. Andá a `web.whatsapp.com`. Click en el chat del lead.
-3. Click una vez en el cuadro de texto del chat (focus).
-4. Apretá **Ctrl + Espacio**.
-5. La extensión empieza a tipear caracter por caracter. Aparece un
-   badge violeta abajo a la derecha con el progreso (`Tipeando... 47/120`).
-6. Cuando termina, aprietas Enter (o el botón verde de send) como
-   siempre. **No mandes el mensaje hasta que el badge desaparezca.**
+## Cómo usar (en el día a día)
 
-### Cancelar / pausar
+1. En el panel SCM, en cualquier mensaje/respuesta/variante, vas a ver
+   **dos botones:**
+   - **"Copiar"** (verde) — copia normal de toda la vida.
+   - **"👤 Copiar humano"** (violeta) — copia con un marcador para que
+     la extensión active el typing humano al pegar.
+2. Click en **"👤 Copiar humano"**. El botón confirma con
+   `✓ Ctrl+V en WA`.
+3. Andá a `web.whatsapp.com` (o Instagram DMs) → abrí el chat del lead.
+4. Click en el campo donde se escribe el mensaje.
+5. Apretá **`Ctrl + V`** (paste de toda la vida).
+6. La extensión arranca a tipear caracter por caracter. Aparece un
+   badge violeta abajo a la derecha mostrando el progreso
+   (`Tipeando... 47/120`).
+7. Cuando termina, apretás **Enter** (o el botón verde de mandar) como
+   siempre.
 
-- **Esc** en cualquier momento → cancela el typing. Lo tipeado hasta
-  ahí queda en el input.
-- **Empezar a teclear vos** → la extensión detecta y se detiene
-  automáticamente para no pisar lo que escribís. (Si querés terminar el
-  mensaje, copiá de nuevo desde el panel y volvé a apretar Ctrl+Espacio
-  para tipear el resto.)
+> ⚠ **No mandes el mensaje hasta que el badge desaparezca** (= terminó
+> de tipear).
 
-### Si te pone "Falta marker SCM"
+### Si copiás algo NO del panel SCM
 
-Significa que lo que tenés en el clipboard NO viene del botón "Copiar 👤"
-del panel. Volvé al panel y copialo desde ahí.
+Ctrl+V funciona normal (paste instantáneo). La extensión solo activa
+el typing humano si detecta el marcador interno que pone el botón
+"👤 Copiar humano" del panel.
 
-## Permisos que pide la extensión
+### Si te aparece "⚠ Sin extensión — copié normal" en el panel
 
-- `clipboardRead` — para leer el clipboard cuando aprietas Ctrl+Espacio.
-  No accede al clipboard fuera de WA Web ni en background.
-- `host_permissions: web.whatsapp.com` — el content script solo se
-  inyecta en WA Web. No corre en otros sitios.
+Significa que el panel detectó que la extensión NO está instalada (o
+está desactivada). El botón hizo un copy normal sin marcador (no se va
+a romper nada al pegar) — pero no vas a tener typing humano. Instalá
+la extensión o avisale a Ignacio.
 
-No tiene ni `background`, ni `tabs`, ni telemetría. El código es chico
-y auditable (~500 LOC en total).
+---
+
+## Cancelar / pausar
+
+- **Esc** mientras está tipeando → cancela. Lo tipeado hasta ahí queda
+  en el input.
+- **Empezás a teclear vos** mientras tipea → la extensión detecta y se
+  detiene automáticamente para no pisar lo que escribís.
+
+---
 
 ## Naturalismo del typing
 
 - Delay aleatorio entre caracteres: 50–150ms
 - Pausa extra después de `.`, `,`, `;`, `!`, `?`, `:` (150–350ms)
-- Cada 25–60 caracteres, una pausa larga de "pensar" (1–2.5s)
-- 2% de probabilidad de typo simulado: tipea una tecla vecina del QWERTY,
-  pausa, hace backspace, tipea la correcta.
+- Cada 25–60 caracteres, una pausa larga "de pensar" (1–2.5s)
+- 2% de probabilidad de typo simulado: tipea una tecla vecina del
+  QWERTY, pausa, hace backspace, tipea la correcta.
 
 Trade-off: un mensaje de 200 caracteres puede tardar 30–40 segundos.
-Es el precio de no parecer bot. Si en operación se vuelve doloroso,
-podemos exponer un slider de "intensidad" en una versión futura.
-
-## Para developers
-
-- `manifest.json` — manifest V3
-- `content.js` — orchestrator (hotkey listener, async control flow)
-- `lib/clipboard.js` — read + parse marker
-- `lib/typing.js` — motor de typing humano (`execCommand('insertText')`
-  primario, fallback `InputEvent` para Lexical)
-- `lib/badge.js` — UI de progreso
-- `lib/toast.js` — toasts
-- `lib/cancel.js` — Esc + auto-pausa al teclear
-
-Notas técnicas en `../../.planning/phases/03.5-pegar-como-humano/03.5-RESEARCH.md`.
-
-## Test manual
-
-Ver `TESTING.md` (checklist de 10 ítems para validar antes de distribuir
-a setters).
-
-Para el smoke test inicial sin instalar la extensión, ver `SMOKE-TEST.md`.
-
-## Distribución a setters
-
-1. Empaquetar: `bash build.sh` (genera `release/scm-paste-as-human-v0.1.0.zip`).
-2. Subir el `.zip` al panel SCM (TBD: endpoint admin) o pasarlo por
-   Drive/email.
-3. El setter descomprime y arrastra la carpeta a `chrome://extensions/`.
-4. Listo.
+Es el precio de no parecer bot.
 
 ---
 
-*Versión 0.1.0 — abril 2026.*
+## Sitios donde funciona
+
+- `web.whatsapp.com` ✓ validado
+- `www.instagram.com` y `instagram.com` (DMs) — validado en código,
+  testear en uso real
+
+NO hace nada en otros sitios. La extensión está scoped a los dominios
+de arriba más el panel SCM (`scm-setting.up.railway.app`) para detectar
+que está instalada.
+
+---
+
+## Permisos que pide la extensión
+
+- `host_permissions`: solo `web.whatsapp.com`, `instagram.com` y
+  `scm-setting.up.railway.app`. No accede a otros sitios.
+- Sin acceso al clipboard, sin telemetría, sin background, sin tabs.
+
+Código auditable (~600 LOC en total).
+
+---
+
+## Para developers
+
+- `manifest.json` — manifest V3, versión 0.2.0
+- `content.js` — orquestador (intercepta `paste` event en WA/IG)
+- `lib/clipboard.js` — parsea el marker `__SCM_TYPE__:` del texto
+  pegado
+- `lib/typing.js` — motor de typing humano
+  (`document.execCommand('insertText')` per char, fallback a
+  `InputEvent('beforeinput')` para Lexical)
+- `lib/badge.js` — UI de progreso
+- `lib/toast.js` — toasts
+- `lib/cancel.js` — Esc + auto-pausa al teclear
+- `lib/panel-signal.js` — content script en el panel SCM que setea
+  `data-scm-paste-installed="1"` para que el panel detecte la extensión
+
+Notas técnicas en `../../.planning/phases/03.5-pegar-como-humano/03.5-RESEARCH.md`.
+
+---
+
+*Versión 0.2.0 — abril 2026.*

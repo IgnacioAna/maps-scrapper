@@ -152,7 +152,14 @@ No usamos GHL hoy, pero **dejamos puertas abiertas** para integrar mañana:
      customFields)
    - Hoy sin destino. El día que se decida integrar GHL, se le pega la URL.
 
-### Bloque C.5 — Extensión Chrome "Pegar como humano"
+### Bloque C.5 — Extensión Chrome "Pegar como humano" ✅ COMPLETADO (2026-04-27)
+
+> Extensión MV3 deployada en `extensions/scm-paste-as-human/` (v0.2.0).
+> ZIP listo en `release/scm-paste-as-human-v0.2.0.zip` para distribuir.
+> Soporta WhatsApp Web + Instagram DMs. Botones "👤 Copiar humano" en
+> el panel (Setteo, Banco de Respuestas, Centro de Comando) con
+> detección de extensión instalada (fallback seguro a paste normal).
+> Pendiente del usuario: distribuir el .zip a los 15 setters.
 
 10. **Chrome extension** que reemplaza el paste en `web.whatsapp.com` por
     typing humano caracter por caracter (delay 50-150ms aleatorio).
