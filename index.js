@@ -3495,12 +3495,15 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──
 // POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
-// uno destino. Body: { fromSetterId, toSetterId, count?, country?, city?, estado? }.
+// uno destino. Body: { fromSetterId, toSetterId, count?, country?, city?, estado?,
+// untouchedOnly? }.
 // Si count no viene → mueve TODOS los leads que cumplan los filtros.
 // Si count está → mueve los primeros N (orden por num/importedAt asc).
+// Si untouchedOnly=true → solo mueve los que nunca fueron tocados (sin
+// lastContactAt y sin interactions registradas).
 // Devuelve { moved, skipped, fromRemaining, toTotal }.
 app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, res) => {
-  const { fromSetterId, toSetterId, count, country, city, estado } = req.body || {};
+  const { fromSetterId, toSetterId, count, country, city, estado, untouchedOnly } = req.body || {};
   if (!fromSetterId || !toSetterId) {
     return res.status(400).json({ error: 'fromSetterId y toSetterId son requeridos.' });
   }
@@ -3518,7 +3521,8 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
     .filter(([_id, lead]) => lead.assignedTo === fromSetterId)
     .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
     .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
-    .filter(([_id, lead]) => !estado || lead.estado === estado);
+    .filter(([_id, lead]) => !estado || lead.estado === estado)
+    .filter(([_id, lead]) => !untouchedOnly || (!lead.lastContactAt && !(Array.isArray(lead.interactions) && lead.interactions.length > 0) && !lead.conexion));
 
   // Orden: num ascending (los primeros importados primero)
   candidates.sort((a, b) => (Number(a[1].num) || 0) - (Number(b[1].num) || 0));

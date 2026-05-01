@@ -6476,6 +6476,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const country = document.getElementById('reassign-country').value.trim();
     const city = document.getElementById('reassign-city').value.trim();
     const estado = document.getElementById('reassign-estado').value;
+    const untouchedOnly = document.getElementById('reassign-untouched')?.checked || false;
     if (!fromId || !toId || !count) return;
     if (!confirm(`Confirmar: mover ${count} leads de ${_reassignSetters.find(s=>s.id===fromId)?.name} a ${_reassignSetters.find(s=>s.id===toId)?.name}? Esta acción no se puede deshacer fácil.`)) return;
     btn.disabled = true; btn.textContent = 'Moviendo…';
@@ -6484,6 +6485,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (country) body.country = country;
       if (city) body.city = city;
       if (estado) body.estado = estado;
+      if (untouchedOnly) body.untouchedOnly = true;
       const r = await fetch(apiUrl('/api/setters/reassign-bulk'), {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
       });
