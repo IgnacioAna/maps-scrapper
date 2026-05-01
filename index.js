@@ -6936,6 +6936,8 @@ if (process.env.NODE_ENV !== "test") {
   });
 }
 
+// mountWa es async ahora porque el warming-network orchestrator se carga
+// dinámicamente. Lo dejamos en background sin await para no bloquear el boot.
 mountWa(app, server, {
   dataDir: DATA_DIR,
   jwtSecret: process.env.JWT_SECRET || (process.env.ADMIN_PASSWORD || "change-me-in-prod") + "_wa",
@@ -6944,6 +6946,10 @@ mountWa(app, server, {
   getSessionFromRequest,
   verifyCredentials: verifyCredentialsHelper,
   userIdFromSetterId: userIdFromSetterIdHelper,
-});
+  // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
+  // network lo reusa en vez de pedir API keys nuevas.
+  aiClient: ai,
+  aiModel: AI_MODEL,
+}).catch((err) => console.error("mountWa error:", err));
 
 export { app, buildWhatsAppUrl, digitsHaveKnownPrefix, sanitizeOpeningMessage, makeOpeningMessage };

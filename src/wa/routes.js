@@ -505,6 +505,142 @@ export function registerWaRoutes(app, deps) {
     if (status) setAccountStatus(accountId, status, phone);
     res.json({ ok: true, eventId: ev.id });
   });
+
+  // ── WARMING NETWORK (AI-to-AI) ──────────────────────────────────────────
+  // Endpoints de gestión del pool y observabilidad. El orchestrator corre
+  // en background (boot del server lo arranca).
+
+  app.get("/api/wa/warming-network/pool", requireAuth, requireRole("admin"), async (_req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    res.json(wnStore.listPool());
+  });
+
+  app.post("/api/wa/warming-network/enroll/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const account = getAccount(req.params.accountId);
+    if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
+    const setterId = ownerUserIdOfAccount(account);
+    if (!setterId) return res.status(400).json({ error: "cuenta sin asignar a setter" });
+
+    const { personaFor } = await import("./warming-network/persona-generator.js");
+    const wnStore = await import("./warming-network/store.js");
+    const persona = personaFor(account.id);
+    const result = wnStore.enrollAccount({ accountId: account.id, setterId, persona });
+    if (!result.ok) return res.status(400).json({ error: result.reason });
+
+    appendEvent({
+      accountId: account.id,
+      userId: req.auth.user.id,
+      type: "warming-network-enrolled",
+      payload: { persona: { name: persona.name, age: persona.age, city: persona.city } },
+    });
+    res.json({ ok: true, persona });
+  });
+
+  app.post("/api/wa/warming-network/unenroll/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const result = wnStore.unenrollAccount(req.params.accountId);
+    appendEvent({
+      accountId: req.params.accountId,
+      userId: req.auth.user.id,
+      type: "warming-network-unenrolled",
+    });
+    res.json(result);
+  });
+
+  app.post("/api/wa/warming-network/pause/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const result = wnStore.pauseAccount(req.params.accountId, req.body?.reason || "manual");
+    res.json(result);
+  });
+
+  app.post("/api/wa/warming-network/resume/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const result = wnStore.resumeAccount(req.params.accountId);
+    res.json(result);
+  });
+
+  app.get("/api/wa/warming-network/pairs", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const accountId = req.query.accountId;
+    if (accountId) {
+      res.json(wnStore.listPairsForAccount(accountId));
+    } else {
+      res.json(wnStore.listActivePairs());
+    }
+  });
+
+  app.get("/api/wa/warming-network/messages", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const accountId = req.query.accountId;
+    const pairId = req.query.pairId;
+    res.json(wnStore.listRecentSentMessages({ limit, accountId, pairId }));
+  });
+
+  app.get("/api/wa/warming-network/stats", requireAuth, requireRole("admin"), async (_req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const llm = await import("./warming-network/llm-client.js");
+    const stats = wnStore.getStats();
+    const llmStats = llm.getLLMStats();
+    const pool = wnStore.listPool();
+    const pairs = wnStore.listActivePairs();
+    res.json({
+      pool: { total: pool.length, active: pool.filter((p) => p.active).length },
+      pairs: { active: pairs.length },
+      messages: stats,
+      llm: llmStats,
+    });
+  });
+
+  // Forzar tick manual del orchestrator (debug / testing)
+  app.post("/api/wa/warming-network/tick", requireAuth, requireRole("admin"), async (_req, res) => {
+    const orch = await import("./warming-network/orchestrator.js");
+    await orch.tick();
+    res.json({ ok: true });
+  });
+
+  // Endpoint que recibe del wa-multi cuando una cuenta del pool RECIBE un
+  // mensaje de otra cuenta del pool (warming inbound). Marca el historial
+  // del par y NO emite evento de "ai-classified-inbound" (filtra del IA Inbox).
+  app.post("/api/wa/warming-network/inbound", requireAuth, async (req, res) => {
+    const { receiverAccountId, fromPhone, text } = req.body || {};
+    if (!receiverAccountId || !fromPhone || !text) {
+      return res.status(400).json({ error: "receiverAccountId, fromPhone, text requeridos" });
+    }
+    const wnStore = await import("./warming-network/store.js");
+    const orch = await import("./warming-network/orchestrator.js");
+
+    // Buscar el par activo del receiver donde el otro tenga el teléfono fromPhone
+    // Como en wa-multi solo conocemos el teléfono que vino, necesitamos resolver
+    // a accountId. Simplificación: si fromPhone matchea con el phone de alguna
+    // cuenta del pool, esa es la sender.
+    const senderAccount = listAccounts().find((a) => a.phone && a.phone.replace(/\D/g, "").endsWith(String(fromPhone).replace(/\D/g, "").slice(-8)));
+    if (!senderAccount) {
+      return res.json({ ok: false, reason: "sender no encontrado en accounts" });
+    }
+    const senderInPool = wnStore.getPoolMember(senderAccount.id);
+    if (!senderInPool) {
+      return res.json({ ok: false, reason: "sender no esta en pool" });
+    }
+
+    // Encontrar el par activo entre receiver y sender
+    const pairs = wnStore.listPairsForAccount(receiverAccountId);
+    const pair = pairs.find(
+      (p) =>
+        (p.accountA === senderAccount.id && p.accountB === receiverAccountId) ||
+        (p.accountB === senderAccount.id && p.accountA === receiverAccountId),
+    );
+    if (!pair) {
+      return res.json({ ok: false, reason: "no hay par activo" });
+    }
+
+    orch.onWarmingInboundReceived({
+      pairId: pair.id,
+      fromAccountId: senderAccount.id,
+      text: String(text).slice(0, 500),
+    });
+    res.json({ ok: true, pairId: pair.id });
+  });
 }
 
 // helper para tener acceso a un body parser local si hace falta

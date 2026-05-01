@@ -72,8 +72,50 @@ export function initGateway(httpServer, deps) {
       }
     });
 
-    socket.on("account:event", ({ accountId, type, payload } = {}) => {
+    socket.on("account:event", async ({ accountId, type, payload } = {}) => {
       if (!type) return;
+
+      // Filtro warming network: si llega 'ai-classified-inbound' y el remitente
+      // está en el pool de warming, NO lo guardamos como lead inbound — lo
+      // ruteamos al orchestrator del warming network y aborto.
+      if (type === "ai-classified-inbound" && payload?.contactPhone) {
+        try {
+          const wnStore = await import("./warming-network/store.js");
+          const orch = await import("./warming-network/orchestrator.js");
+          // Buscar si el contactPhone matchea con alguna cuenta del pool
+          const accountsOfPool = wnStore.listPool().map((m) => m.accountId);
+          const { listAccounts } = await import("./data.js");
+          const senderAccount = listAccounts().find(
+            (a) =>
+              accountsOfPool.includes(a.id) &&
+              a.phone &&
+              a.phone.replace(/\D/g, "").endsWith(String(payload.contactPhone).replace(/\D/g, "").slice(-8)),
+          );
+          if (senderAccount) {
+            // Es warming inbound — actualizar par + NO emitir como lead
+            const pairs = wnStore.listPairsForAccount(accountId);
+            const pair = pairs.find(
+              (p) =>
+                (p.accountA === senderAccount.id && p.accountB === accountId) ||
+                (p.accountB === senderAccount.id && p.accountA === accountId),
+            );
+            if (pair) {
+              orch.onWarmingInboundReceived({
+                pairId: pair.id,
+                fromAccountId: senderAccount.id,
+                text: payload.message || "",
+              });
+              console.log(`[warming-net] inbound filtrado: ${senderAccount.id} → ${accountId} pair=${pair.id}`);
+              // No appendEvent — no queremos llenar el log de leads con warming
+              return;
+            }
+          }
+        } catch (err) {
+          console.error("[warming-net] error filtrando inbound:", err);
+          // Continúa al flow normal
+        }
+      }
+
       const event = appendEvent({ accountId, userId: user.id, type, payload });
       io.to("admins").emit("admin:event", {
         accountId,
