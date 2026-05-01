@@ -242,10 +242,13 @@ function renderAccountsAdmin() {
       <td><select class="wa-assign-setter" data-id="${a.id}" style="width:130px;">${setterOpts}</select></td>
       <td><select class="wa-attach-routine" data-id="${a.id}" style="width:130px;">${routineOpts}</select></td>
       <td style="white-space:nowrap;">
+        ${!a.routineStartedAt
+          ? `<button class="btn-table-action" data-act="start-warming-default" data-id="${a.id}" title="Crear rutina SCM Default + asignar + arrancar warming en 1 click" style="background:var(--accent); color:white; padding:4px 10px; border-radius:6px; font-weight:600;">🔥 Calentar</button>`
+          : ''}
         <button class="btn-table-action" data-act="open" data-id="${a.id}">Abrir</button>
         <button class="btn-table-action" data-act="msg" data-id="${a.id}">Mensaje</button>
-        <button class="btn-table-action" data-act="start" data-id="${a.id}" style="color:var(--success);">▶ Warm</button>
-        <button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:var(--warning);">⏸</button>
+        ${a.routineStartedAt
+          ? `<button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:var(--warning);" title="Detener warming">⏸</button>` : ''}
         <button class="btn-table-action" data-act="reset" data-id="${a.id}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
         <button class="btn-table-action" data-act="del" data-id="${a.id}" style="color:var(--danger);">🗑</button>
       </td>
@@ -314,6 +317,21 @@ function renderAccountsAdmin() {
     const act = e.target.dataset.act;
     try {
       if (act === "open") await api("/api/wa/commands/open", { method: "POST", body: JSON.stringify({ accountId: id }) });
+      else if (act === "start-warming-default") {
+        // One-click: crea routine SCM Default si no existe, attach + start
+        const result = await api(`/api/wa/accounts/${id}/start-warming-default`, { method: "POST" });
+        const phaseName = result?.currentPhase?.name || "Fase 1";
+        const dailyMsg = result?.currentPhase?.dailyMessages || "—";
+        // Toast simple
+        const toast = document.createElement("div");
+        toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--accent);color:white;padding:14px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.3);";
+        toast.innerHTML = `🔥 Warming arrancado<br><strong>${phaseName}</strong> · ~${dailyMsg} msgs/día`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4500);
+        await loadInitialData();
+        renderAccountsAdmin();
+        return;
+      }
       else if (act === "start") await api("/api/wa/commands/start-routine", { method: "POST", body: JSON.stringify({ accountId: id }) });
       else if (act === "stop") await api("/api/wa/commands/stop-routine", { method: "POST", body: JSON.stringify({ accountId: id }) });
       else if (act === "reset") {

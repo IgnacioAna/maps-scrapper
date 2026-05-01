@@ -287,6 +287,81 @@ export function registerWaRoutes(app, deps) {
     };
   }
 
+  // ── ONE-CLICK CALENTAR ─────────────────────────────────────────────────
+  // Endpoint pensado para el botón "🔥 Calentar este número" del panel admin.
+  // Si la cuenta no tiene routine, busca o crea la "SCM Default" con la
+  // curva pragmática SCM (defaultPhases) y se la attachea. Después arranca.
+  // Idempotente: si ya está calentando, devuelve el estado actual sin re-arrancar.
+  app.post("/api/wa/accounts/:id/start-warming-default", requireAuth, requireRole("admin"), (req, res) => {
+    let account = getAccount(req.params.id);
+    if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
+    const userId = ownerUserIdOfAccount(account);
+    if (!userId) return res.status(400).json({ error: "cuenta sin asignar a setter" });
+
+    // 1) Buscar o crear routine SCM Default
+    let routine = listRoutines().find((r) => r.name === "SCM Default" && (!r.targets || r.targets.length === 0));
+    if (!routine) {
+      routine = createRoutine({
+        name: "SCM Default",
+        // phases vacío → effectivePhases() cae a defaultPhases() (curva SCM)
+        phases: [],
+        hourStart: 9,
+        hourEnd: 19,
+        timezone: "America/Argentina/Buenos_Aires",
+        // messages vacío inicialmente — el setter puede agregar después si quiere
+        // que el warming engine mande mensajes auto. Para fase inicial, mejor manual.
+        messages: [
+          "Hola, ¿cómo estás?",
+          "Buenas, ¿cómo va?",
+          "Hola! Una consulta breve",
+        ],
+        // targets vacío → no auto-envía hasta que el admin configure targets
+        targets: [],
+        autoReply: false,
+      });
+    }
+
+    // 2) Attach routine a la cuenta (si no la tiene ya)
+    if (account.routineId !== routine.id) {
+      account = attachRoutine(account.id, routine.id);
+    }
+
+    // 3) Si la cuenta NO tenía routineStartedAt, arranca día 1 ahora
+    if (!account.routineStartedAt) {
+      account = startWarming(account.id);
+    }
+
+    // 4) Emitir routine:start al setter dueño
+    sendToUser(userId, "routine:start", {
+      accountId: account.id,
+      routineId: routine.id,
+      config: buildRoutineConfig(routine, account),
+    });
+
+    appendEvent({
+      accountId: account.id,
+      userId: req.auth.user.id,
+      type: "warming-default-started",
+      payload: {
+        warmingDay: warmingDayOf(account),
+        phaseName: currentPhaseFor(routine, warmingDayOf(account)).name,
+      },
+    });
+
+    res.json({
+      ok: true,
+      routineId: routine.id,
+      routineName: routine.name,
+      warmingDay: warmingDayOf(account),
+      currentPhase: currentPhaseFor(routine, warmingDayOf(account)),
+      account: {
+        id: account.id,
+        routineStartedAt: account.routineStartedAt,
+        staggerOffsetMs: account.staggerOffsetMs,
+      },
+    });
+  });
+
   app.post("/api/wa/commands/start-routine", requireAuth, requireRole("admin"), (req, res) => {
     let account = getAccount(req.body?.accountId);
     if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
