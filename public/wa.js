@@ -227,30 +227,33 @@ function renderAccountsAdmin() {
           ? `<span style="color:var(--warning);">Cooldown hasta ${new Date(a.pauseUntil).toLocaleString()}</span>`
           : `<span title="${escHtml(phase?.name || '')}">Día ${day} · ${phase ? `${phase.dailyMessages}msg/d` : '—'}</span>`);
     const routineOpts = ['<option value="">—</option>']
-      .concat(_routines.map((r) => `<option value="${r.id}" ${a.routineId === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`))
+      .concat(_routines.map((r) => `<option value="${escHtml(r.id)}" ${a.routineId === r.id ? "selected" : ""}>${escHtml(r.name)}</option>`))
       .join("");
     const setterOpts = ['<option value="">—</option>']
-      .concat(_setters.map((s) => `<option value="${s.id}" ${a.assignment?.refId === s.id ? "selected" : ""}>${escHtml(s.name)}</option>`))
+      .concat(_setters.map((s) => `<option value="${escHtml(s.id)}" ${a.assignment?.refId === s.id ? "selected" : ""}>${escHtml(s.name)}</option>`))
       .join("");
     const checked = _selectedAccountIds.has(a.id) ? "checked" : "";
-    return `<tr data-id="${a.id}">
-      <td><input type="checkbox" class="wa-acc-check" data-id="${a.id}" ${checked}></td>
+    return `<tr data-id="${escHtml(a.id)}">
+      <td><input type="checkbox" class="wa-acc-check" data-id="${escHtml(a.id)}" ${checked}></td>
       <td>${escHtml(a.label)}</td>
       <td>${escHtml(a.phone || "—")}</td>
       <td>${statusBadge(a.status)}</td>
       <td style="font-size:12px;">${phaseCell}</td>
-      <td><select class="wa-assign-setter" data-id="${a.id}" style="width:130px;">${setterOpts}</select></td>
-      <td><select class="wa-attach-routine" data-id="${a.id}" style="width:130px;">${routineOpts}</select></td>
+      <td><select class="wa-assign-setter" data-id="${escHtml(a.id)}" style="width:130px;">${setterOpts}</select></td>
+      <td><select class="wa-attach-routine" data-id="${escHtml(a.id)}" style="width:130px;">${routineOpts}</select></td>
       <td style="white-space:nowrap;">
-        ${!a.routineStartedAt
-          ? `<button class="btn-table-action" data-act="start-warming-default" data-id="${a.id}" title="Crear rutina SCM Default + asignar + arrancar warming en 1 click" style="background:var(--accent); color:white; padding:4px 10px; border-radius:6px; font-weight:600;">🔥 Calentar</button>`
+        ${!a.routineStartedAt && !a.routineId
+          ? `<button class="btn-table-action" data-act="start-warming-default" data-id="${escHtml(a.id)}" title="Crear rutina SCM Default + asignar + arrancar warming en 1 click" style="background:var(--accent); color:white; padding:4px 10px; border-radius:6px; font-weight:600;">🔥 Calentar</button>`
           : ''}
-        <button class="btn-table-action" data-act="open" data-id="${a.id}">Abrir</button>
-        <button class="btn-table-action" data-act="msg" data-id="${a.id}">Mensaje</button>
+        ${!a.routineStartedAt && a.routineId
+          ? `<button class="btn-table-action" data-act="start" data-id="${escHtml(a.id)}" title="Iniciar la rutina adjunta" style="color:var(--success); font-weight:600;">▶ Iniciar</button>`
+          : ''}
+        <button class="btn-table-action" data-act="open" data-id="${escHtml(a.id)}">Abrir</button>
+        <button class="btn-table-action" data-act="msg" data-id="${escHtml(a.id)}">Mensaje</button>
         ${a.routineStartedAt
-          ? `<button class="btn-table-action" data-act="stop" data-id="${a.id}" style="color:var(--warning);" title="Detener warming">⏸</button>` : ''}
-        <button class="btn-table-action" data-act="reset" data-id="${a.id}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
-        <button class="btn-table-action" data-act="del" data-id="${a.id}" style="color:var(--danger);">🗑</button>
+          ? `<button class="btn-table-action" data-act="stop" data-id="${escHtml(a.id)}" style="color:var(--warning);" title="Detener warming">⏸</button>` : ''}
+        <button class="btn-table-action" data-act="reset" data-id="${escHtml(a.id)}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
+        <button class="btn-table-action" data-act="del" data-id="${escHtml(a.id)}" style="color:var(--danger);">🗑</button>
       </td>
     </tr>`;
   }).join("");
@@ -900,10 +903,10 @@ function _aiInboxRender() {
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             ${
               c.suggestedReply
-                ? `<button class="btn btn-primary btn-sm" onclick="window._aiInboxSend('${ev.id}', '${escAttr(ev.accountId)}', '${escAttr(p.contactPhone || p.contactKey)}')">Enviar</button>`
+                ? `<button class="btn btn-primary btn-sm" onclick="window._aiInboxSend('${escAttr(ev.id)}', '${escAttr(ev.accountId)}', '${escAttr(p.contactPhone || p.contactKey)}')">Enviar</button>`
                 : ""
             }
-            <button class="btn btn-secondary btn-sm" onclick="window._aiInboxDismiss('${ev.id}')">Ignorar</button>
+            <button class="btn btn-secondary btn-sm" onclick="window._aiInboxDismiss('${escAttr(ev.id)}')">Ignorar</button>
             ${
               c.markLeadAs
                 ? `<span class="chip chip-info" style="font-size:11px;">Marca lead → ${escHtml(c.markLeadAs)}</span>`
@@ -980,7 +983,12 @@ if (typeof escHtml === "undefined") {
   window.escHtml = (s) => String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 function escAttr(s) {
-  return String(s || "").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+  return String(s || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, "&quot;");
 }
 
 // Hook al sistema de routing del panel: cuando se navega al view-wa-aiinbox, renderizar
@@ -998,7 +1006,6 @@ setInterval(() => {
     _aiInboxRefresh();
   }
 }, 30_000);
-
 // ── RED DE WARMING (AI-to-AI) ─────────────────────────────────────────────
 // Vista admin para inscribir cuentas al pool de warming network. Cada cuenta
 // inscrita recibe una persona ficticia y empieza a chatear con otras cuentas
@@ -1248,5 +1255,3 @@ setInterval(() => {
   const view = $("#view-wa-warming-network");
   if (view && !view.classList.contains("hidden")) _warmingNetRefresh();
 }, 30_000);
-
-console.log("[wa] modulo cargado");

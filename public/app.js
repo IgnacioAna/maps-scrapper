@@ -1330,7 +1330,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (selectedCities.length > 0 && !query.startsWith('http') && !query.startsWith('#')) {
             const locationStr = selectedCities.join(' ');
             query = `${query} ${locationStr}`;
-            console.log(`Búsqueda Apify localizada: ${query}`);
         }
 
         // Estado cargando
@@ -1361,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
           console.error('Apify Frontend Error:', error);
           const displayMsg = error.message.includes('{') ? error.message : `Error al conectar con Apify: ${error.message}`;
-          apifyResultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:40px;">${displayMsg}</td></tr>`;
+          apifyResultsBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--danger); padding:40px;">${escHtml(displayMsg)}</td></tr>`;
         } finally {
           apifyRunBtn.disabled = false;
           apifyRunBtn.textContent = 'Ejecutar Extractor Instagram';
@@ -6385,6 +6384,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Modal Reasignar leads bulk (admin) ──
   let _reassignSetters = [];
   let _reassignCountsBySetter = {};
+  let _reassignPreviewTimer = null;
+  let _reassignPreviewSeq = 0;
 
   async function _reassignLoadSetters() {
     try {
@@ -6403,12 +6404,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       [fromSel, toSel].forEach(sel => {
         if (!sel) return;
         sel.innerHTML = '<option value="">— Elegir —</option>' + _reassignSetters
-          .map(s => `<option value="${s.id}">${(s.name || s.id)} (${_reassignCountsBySetter[s.id] || 0} leads)</option>`).join('');
+          .map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name || s.id)} (${_reassignCountsBySetter[s.id] || 0} leads)</option>`).join('');
       });
     } catch (e) { console.warn('[reassign] load:', e.message); }
   }
 
-  function _reassignUpdatePreview() {
+  function _reassignFilterBody(fromId) {
+    const country = document.getElementById('reassign-country').value.trim();
+    const city = document.getElementById('reassign-city').value.trim();
+    const estado = document.getElementById('reassign-estado').value;
+    const untouchedOnly = document.getElementById('reassign-untouched')?.checked || false;
+    const body = { fromSetterId: fromId };
+    if (country) body.country = country;
+    if (city) body.city = city;
+    if (estado) body.estado = estado;
+    if (untouchedOnly) body.untouchedOnly = true;
+    return body;
+  }
+
+  async function _reassignUpdatePreview() {
     const fromId = document.getElementById('reassign-from').value;
     const toId = document.getElementById('reassign-to').value;
     const mode = document.getElementById('reassign-count-mode').value;
@@ -6422,25 +6436,65 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     customWrap.style.display = mode === 'custom' ? 'flex' : 'none';
     fromInfo.textContent = fromId ? `Tiene ${fromCount} leads asignados.` : '';
+    confirmBtn.disabled = true;
+    delete confirmBtn.dataset.count;
+
+    if (!fromId || !toId || fromId === toId) {
+      preview.style.display = 'none';
+      return;
+    }
+
+    const seq = ++_reassignPreviewSeq;
+    preview.style.display = 'block';
+    previewText.textContent = 'Calculando leads que cumplen los filtros...';
+
+    let eligibleCount = fromCount;
+    try {
+      const r = await fetch(apiUrl('/api/setters/reassign-bulk/preview'), {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(_reassignFilterBody(fromId)),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || ('http ' + r.status));
+      if (seq !== _reassignPreviewSeq) return;
+      eligibleCount = d.count || 0;
+      fromInfo.textContent = `Tiene ${fromCount} leads asignados · ${eligibleCount} cumplen los filtros.`;
+    } catch (e) {
+      if (seq !== _reassignPreviewSeq) return;
+      previewText.textContent = `No se pudo calcular el preview: ${e.message}`;
+      return;
+    }
 
     let toMove = 0;
-    if (mode === 'all') toMove = fromCount;
-    else if (mode === 'half') toMove = Math.floor(fromCount / 2);
-    else if (mode === 'quarter') toMove = Math.floor(fromCount / 4);
-    else if (mode === 'custom') toMove = Math.min(customCount || 0, fromCount);
+    if (mode === 'all') toMove = eligibleCount;
+    else if (mode === 'half') toMove = Math.floor(eligibleCount / 2);
+    else if (mode === 'quarter') toMove = Math.floor(eligibleCount / 4);
+    else if (mode === 'custom') toMove = Math.min(customCount || 0, eligibleCount);
 
     const toName = _reassignSetters.find(s => s.id === toId)?.name || '—';
     const fromName = _reassignSetters.find(s => s.id === fromId)?.name || '—';
-    if (fromId && toId && fromId !== toId && toMove > 0) {
-      preview.style.display = 'block';
-      previewText.textContent = `Vas a mover ${toMove} leads de ${fromName} a ${toName}.`;
+    if (toMove > 0) {
+      previewText.textContent = `Vas a mover ${toMove} de ${eligibleCount} leads filtrados de ${fromName} a ${toName}.`;
       confirmBtn.disabled = false;
       confirmBtn.dataset.count = toMove;
     } else {
-      preview.style.display = 'none';
+      previewText.textContent = eligibleCount === 0
+        ? 'No hay leads que cumplan estos filtros.'
+        : 'La cantidad elegida da 0 leads. Ajustá el modo o usá una cantidad específica.';
       confirmBtn.disabled = true;
       delete confirmBtn.dataset.count;
     }
+  }
+
+  function _reassignSchedulePreview() {
+    clearTimeout(_reassignPreviewTimer);
+    const confirmBtn = document.getElementById('reassign-confirm');
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      delete confirmBtn.dataset.count;
+    }
+    _reassignPreviewTimer = setTimeout(() => _reassignUpdatePreview(), 180);
   }
 
   document.getElementById('setter-reassign-btn')?.addEventListener('click', async () => {
@@ -6452,13 +6506,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('reassign-country').value = '';
     document.getElementById('reassign-city').value = '';
     document.getElementById('reassign-estado').value = '';
+    document.getElementById('reassign-untouched').checked = false;
     _reassignUpdatePreview();
     document.getElementById('reassign-modal').style.display = 'flex';
   });
 
-  ['reassign-from', 'reassign-to', 'reassign-count-mode', 'reassign-custom-count'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', _reassignUpdatePreview);
-    document.getElementById(id)?.addEventListener('input', _reassignUpdatePreview);
+  ['reassign-from', 'reassign-to', 'reassign-count-mode', 'reassign-custom-count', 'reassign-country', 'reassign-city', 'reassign-estado', 'reassign-untouched'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', _reassignSchedulePreview);
+    document.getElementById(id)?.addEventListener('input', _reassignSchedulePreview);
   });
 
   document.getElementById('reassign-cancel')?.addEventListener('click', () => {
@@ -6473,19 +6528,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fromId = document.getElementById('reassign-from').value;
     const toId = document.getElementById('reassign-to').value;
     const count = parseInt(btn.dataset.count, 10);
-    const country = document.getElementById('reassign-country').value.trim();
-    const city = document.getElementById('reassign-city').value.trim();
-    const estado = document.getElementById('reassign-estado').value;
-    const untouchedOnly = document.getElementById('reassign-untouched')?.checked || false;
     if (!fromId || !toId || !count) return;
     if (!confirm(`Confirmar: mover ${count} leads de ${_reassignSetters.find(s=>s.id===fromId)?.name} a ${_reassignSetters.find(s=>s.id===toId)?.name}? Esta acción no se puede deshacer fácil.`)) return;
     btn.disabled = true; btn.textContent = 'Moviendo…';
     try {
-      const body = { fromSetterId: fromId, toSetterId: toId, count };
-      if (country) body.country = country;
-      if (city) body.city = city;
-      if (estado) body.estado = estado;
-      if (untouchedOnly) body.untouchedOnly = true;
+      const body = { ..._reassignFilterBody(fromId), toSetterId: toId, count };
       const r = await fetch(apiUrl('/api/setters/reassign-bulk'), {
         method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
       });

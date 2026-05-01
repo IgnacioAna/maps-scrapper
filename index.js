@@ -2810,7 +2810,7 @@ async function mutateSettersData(mutator) {
 }
 
 // ── Setters: Info general ──
-app.get('/api/setters', (req, res) => {
+app.get('/api/setters', requireAuth, (req, res) => {
   const data = loadSettersData();
   const variants = data.variants.map(normalizeVariantRecord);
   res.json({ setters: data.setters, variants });
@@ -3106,7 +3106,7 @@ app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) 
 });
 
 // ── Variantes CRUD (compartidas) ──
-app.get('/api/setters/variants', (req, res) => {
+app.get('/api/setters/variants', requireAuth, (req, res) => {
   const data = loadSettersData();
    res.json({ variants: data.variants.map(normalizeVariantRecord) });
 });
@@ -3185,7 +3185,7 @@ app.delete('/api/setters/variants/:id', requireAuth, (req, res) => {
 });
 
 // ── Leads ──
-app.get('/api/setters/leads', (req, res) => {
+app.get('/api/setters/leads', requireAuth, (req, res) => {
   const { setter, estado } = req.query;
   const data = loadSettersData();
   let leads = Object.entries(data.leads).map(([id, lead]) => ({ id, ...lead }));
@@ -3494,6 +3494,16 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 });
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──
+function getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly } = {}) {
+  return Object.entries(data.leads || {})
+    .filter(([_id, lead]) => lead.assignedTo === fromSetterId)
+    .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
+    .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
+    .filter(([_id, lead]) => !estado || lead.estado === estado)
+    .filter(([_id, lead]) => !untouchedOnly || (!lead.lastContactAt && !(Array.isArray(lead.interactions) && lead.interactions.length > 0) && !lead.conexion))
+    .sort((a, b) => (Number(a[1].num) || 0) - (Number(b[1].num) || 0));
+}
+
 // POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
 // uno destino. Body: { fromSetterId, toSetterId, count?, country?, city?, estado?,
 // untouchedOnly? }.
@@ -3516,16 +3526,7 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
   if (!fromSetter) return res.status(404).json({ error: `Setter origen no encontrado: ${fromSetterId}` });
   if (!toSetter) return res.status(404).json({ error: `Setter destino no encontrado: ${toSetterId}` });
 
-  // Filtrar candidatos
-  let candidates = Object.entries(data.leads || {})
-    .filter(([_id, lead]) => lead.assignedTo === fromSetterId)
-    .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
-    .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
-    .filter(([_id, lead]) => !estado || lead.estado === estado)
-    .filter(([_id, lead]) => !untouchedOnly || (!lead.lastContactAt && !(Array.isArray(lead.interactions) && lead.interactions.length > 0) && !lead.conexion));
-
-  // Orden: num ascending (los primeros importados primero)
-  candidates.sort((a, b) => (Number(a[1].num) || 0) - (Number(b[1].num) || 0));
+  const candidates = getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly });
 
   // Aplicar count
   const wanted = (typeof count === 'number' && count > 0) ? Math.min(count, candidates.length) : candidates.length;
@@ -3553,6 +3554,27 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
     requested: wanted,
     fromSetter: { id: fromSetter.id, name: fromSetter.name, remaining: fromRemaining },
     toSetter: { id: toSetter.id, name: toSetter.name, total: toTotal },
+  });
+});
+
+app.post('/api/setters/reassign-bulk/preview', requireAuth, requireRole('admin'), (req, res) => {
+  const { fromSetterId, country, city, estado, untouchedOnly } = req.body || {};
+  if (!fromSetterId) {
+    return res.status(400).json({ error: 'fromSetterId es requerido.' });
+  }
+
+  const data = loadSettersData();
+  const fromSetter = (data.setters || []).find((s) => s.id === fromSetterId);
+  if (!fromSetter) return res.status(404).json({ error: `Setter origen no encontrado: ${fromSetterId}` });
+
+  const candidates = getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly });
+  const totalAssigned = Object.values(data.leads || {}).filter((lead) => lead.assignedTo === fromSetterId).length;
+
+  res.json({
+    ok: true,
+    count: candidates.length,
+    totalAssigned,
+    fromSetter: { id: fromSetter.id, name: fromSetter.name },
   });
 });
 
@@ -6685,6 +6707,18 @@ function saveTraining(data) {
   fs.writeFileSync(TRAINING_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
+function resolveTrainingFile(fileName) {
+  if (!fileName) return null;
+  const baseDir = path.resolve(TRAINING_DIR);
+  const resolved = path.resolve(baseDir, path.basename(String(fileName)));
+  return resolved.startsWith(baseDir + path.sep) ? resolved : null;
+}
+
+function safeDownloadName(name, fallback = 'archivo') {
+  const cleaned = path.basename(String(name || fallback)).replace(/[\r\n"\\]/g, '_').trim();
+  return cleaned || fallback;
+}
+
 // GET list
 app.get('/api/training', requireAuth, (_req, res) => {
   const data = loadTraining();
@@ -6746,10 +6780,11 @@ app.get('/api/training/:id/download', requireAuth, (req, res) => {
   const data = loadTraining();
   const m = (data.materials || []).find(x => x.id === req.params.id);
   if (!m || !m.fileName) return res.status(404).json({ error: 'Archivo no encontrado.' });
-  const filePath = path.join(TRAINING_DIR, m.fileName);
+  const filePath = resolveTrainingFile(m.fileName);
+  if (!filePath) return res.status(400).json({ error: 'Nombre de archivo inválido.' });
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo faltante en disco.' });
   res.setHeader('Content-Type', m.mimeType || 'application/octet-stream');
-  res.setHeader('Content-Disposition', `attachment; filename="${m.originalFileName || m.fileName}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${safeDownloadName(m.originalFileName || m.fileName)}"`);
   fs.createReadStream(filePath).pipe(res);
 });
 
@@ -6771,7 +6806,10 @@ app.delete('/api/training/:id', requireAuth, requireRole('admin'), (req, res) =>
   const m = (data.materials || []).find(x => x.id === req.params.id);
   if (!m) return res.status(404).json({ error: 'No encontrado.' });
   if (m.fileName) {
-    try { fs.unlinkSync(path.join(TRAINING_DIR, m.fileName)); } catch {}
+    try {
+      const filePath = resolveTrainingFile(m.fileName);
+      if (filePath) fs.unlinkSync(filePath);
+    } catch {}
   }
   data.materials = data.materials.filter(x => x.id !== req.params.id);
   saveTraining(data);
