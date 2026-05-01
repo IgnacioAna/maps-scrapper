@@ -1,6 +1,17 @@
 {
   "events": [
     {
+      "id": "ev_1777670986724_8f5lig",
+      "type": "warming-default-started",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "warmingDay": 1,
+        "phaseName": "Fase 1 — Arranque"
+      },
+      "createdAt": "2026-05-01T21:29:46.724Z"
+    },
+    {
       "id": "ev_1777234954885_gw1xnq",
       "type": "ai-classified-inbound",
       "accountId": "wa_1777129407605_6dmfeo",

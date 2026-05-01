@@ -1,3 +1,27 @@
 {
-  "routines": []
+  "routines": [
+    {
+      "id": "routine_1777670986721_op3uo7",
+      "name": "SCM Default",
+      "phases": [],
+      "hourStart": 9,
+      "hourEnd": 19,
+      "timezone": "America/Argentina/Buenos_Aires",
+      "messages": [
+        "Hola, ¿cómo estás?",
+        "Buenas, ¿cómo va?",
+        "Hola! Una consulta breve"
+      ],
+      "targets": [],
+      "autoReply": false,
+      "autoReplies": [],
+      "hardMaxDailyMessages": 2000,
+      "hardMinDripMs": 3000,
+      "maxDailyIncreasePct": 20,
+      "banCooldownDays": 4,
+      "minDeliveryRatePct": 90,
+      "pendingThresholdMs": 300000,
+      "createdAt": "2026-05-01T21:29:46.721Z"
+    }
+  ]
 }
