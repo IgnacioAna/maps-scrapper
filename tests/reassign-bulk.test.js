@@ -103,4 +103,24 @@ describe("POST /api/setters/reassign-bulk", () => {
     expect(data.leads.lead_2.assignedTo).toBe("setter_from");
     expect(data.leads.lead_5.assignedTo).toBe("setter_from");
   });
+
+  it("acepta count numerico como string sin mover todos los candidatos", async () => {
+    const r = await request(app)
+      .post("/api/setters/reassign-bulk")
+      .set("Cookie", cookie)
+      .send({ fromSetterId: "setter_from", toSetterId: "setter_to", country: "Bolivia", untouchedOnly: true, count: "1" });
+
+    expect(r.status).toBe(200);
+    expect(r.body.moved).toBe(1);
+  });
+
+  it("rechaza count invalido para evitar movimientos masivos accidentales", async () => {
+    const r = await request(app)
+      .post("/api/setters/reassign-bulk")
+      .set("Cookie", cookie)
+      .send({ fromSetterId: "setter_from", toSetterId: "setter_to", country: "Bolivia", count: "muchos" });
+
+    expect(r.status).toBe(400);
+    expect(r.body.error).toMatch(/count/);
+  });
 });

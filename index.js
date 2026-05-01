@@ -3529,7 +3529,14 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
   const candidates = getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly });
 
   // Aplicar count
-  const wanted = (typeof count === 'number' && count > 0) ? Math.min(count, candidates.length) : candidates.length;
+  let wanted = candidates.length;
+  if (count !== undefined && count !== null && count !== '') {
+    const parsedCount = Number(count);
+    if (!Number.isFinite(parsedCount) || parsedCount <= 0) {
+      return res.status(400).json({ error: 'count debe ser un número mayor a 0.' });
+    }
+    wanted = Math.min(Math.floor(parsedCount), candidates.length);
+  }
   const toMove = candidates.slice(0, wanted);
 
   // Asignar al destino. También limpiar followUps activos porque el contexto cambia
@@ -3541,6 +3548,7 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
     moved++;
   }
 
+  const backup = moved > 0 ? makeBackup('pre-reassign-bulk') : null;
   saveSettersData(data);
 
   // Re-contar restantes y total destino
@@ -3552,6 +3560,7 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
     ok: true,
     moved,
     requested: wanted,
+    backup: backup?.path || null,
     fromSetter: { id: fromSetter.id, name: fromSetter.name, remaining: fromRemaining },
     toSetter: { id: toSetter.id, name: toSetter.name, total: toTotal },
   });
@@ -3595,8 +3604,9 @@ app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, r
     delete data.leads[id];
     removed++;
   }
+  const backup = removed > 0 ? makeBackup('pre-leads-bulk-delete') : null;
   if (removed > 0) saveSettersData(data);
-  res.json({ removed, remaining: Object.keys(data.leads).length });
+  res.json({ removed, remaining: Object.keys(data.leads).length, backup: backup?.path || null });
 });
 
 // Actualizar lead (campos múltiples)
@@ -4080,10 +4090,11 @@ app.post('/api/setters/dedup', requireAuth, requireRole('admin'), (req, res) => 
     delete data.leads[id];
   }
 
+  const backup = toDelete.length > 0 ? makeBackup('pre-setters-dedup') : null;
   if (toDelete.length > 0) saveSettersData(data);
 
   const remaining = Object.keys(data.leads).length;
-  res.json({ removed: toDelete.length, remaining });
+  res.json({ removed: toDelete.length, remaining, backup: backup?.path || null });
 });
 
 // ── KPI Stats ──
