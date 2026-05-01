@@ -79,6 +79,41 @@ métricas pulidas, inbox unificado) → Phase 2.2 post-lunes.
 **Próximo paso del usuario**: ejecutar checklist manual VERIFICATION.md +
 distribuir zip + doc el lunes a los 15 setters.
 
+### 2026-05-01 (PM++) — Phase 2.3 AI-to-AI Warming Network ejecutada
+
+Después del cierre de 2.1, el usuario identificó un gap fundamental: el
+"warmer" anterior era scheduled outbound (manda lo que vos cargás como
+targets+messages), NO warming real. Real warming = cuentas chatean entre
+sí con IA conversacional para construir reputación natural.
+
+Phase 2.3 cierra ese gap. 6 waves ejecutadas con disciplina GSD (discuss
+→ plan → execute → verify):
+
+- **PLAN.md** con 9 asunciones explícitas y 6 waves
+- **Wave 1**: schema + persona-generator (determinístico por accountId,
+  pools de nombres argentinos, estilos, ventanas de actividad) + store JSON
+- **Wave 2**: pairing engine cross-setter + fairness + anti-incest semanal,
+  scheduler con cadencia humana gaussiana, orchestrator state machine
+- **Wave 3**: LLM integration reusando Mercury (Inception Labs) + Qwen
+  fallback EXISTENTES — cero API keys nuevas. Cost estimado ~$0.45/mes
+  para 30 cuentas × 10 msgs/día.
+- **Wave 4**: 9 endpoints REST en `/api/wa/warming-network/*`, boot
+  integrado en mountWa, filtro de gateway que rutea inbounds del pool
+  al orchestrator y los oculta del IA Inbox de leads, handler socket
+  `warming:send-message` en wa-multi reusando send flow OS-level
+- **Wave 5**: vista admin "Red de Warming" en panel con stats cards,
+  tabla del pool con personas ficticias, tabla de pares activos con
+  state machine, lista de mensajes recientes, modal de inscripción
+- **Wave 6**: 10/10 verificaciones automáticas OK, 299/299 tests passing
+
+Commits: 7 atomicos por wave en GoogleSrapper + 1 en wa-multi.
+
+**Phase 2.3 status**: ✅ código completo. Pendiente deploy + smoke test
+manual del usuario. VERIFICATION.md tiene checklist 6-tests.
+
+**Próximo paso**: deploy a Railway + inscribir 2 cuentas de prueba del
+usuario + observar primer ciclo de mensajes generados por LLM.
+
 ---
 
 ## Open Questions / Blockers
