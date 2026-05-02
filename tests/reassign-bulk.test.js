@@ -124,3 +124,21 @@ describe("POST /api/setters/reassign-bulk", () => {
     expect(r.body.error).toMatch(/count/);
   });
 });
+
+describe("DELETE /api/setters/leads-bulk", () => {
+  it("no explota cuando llega sin body y no borra nada", async () => {
+    const before = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+    const beforeCount = Object.keys(before.leads || {}).length;
+
+    const r = await request(app)
+      .delete("/api/setters/leads-bulk")
+      .set("Cookie", cookie);
+
+    expect(r.status).toBe(200);
+    expect(r.body.removed).toBe(0);
+    expect(r.body.remaining).toBe(beforeCount);
+
+    const after = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+    expect(Object.keys(after.leads || {}).length).toBe(beforeCount);
+  });
+});

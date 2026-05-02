@@ -3588,7 +3588,7 @@ app.post('/api/setters/reassign-bulk/preview', requireAuth, requireRole('admin')
 });
 
 app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, res) => {
-  const { setter, country, city } = req.body;
+  const { setter, country, city } = req.body || {};
   const data = loadSettersData();
   let removed = 0;
   for (const id in data.leads) {

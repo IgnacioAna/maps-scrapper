@@ -1130,9 +1130,9 @@ function renderWarmingNetPool(pool) {
             <td style="font-size:11px; color:var(--text-secondary);">${enrolledAgo}</td>
             <td style="white-space:nowrap;">
               ${m.active
-                ? `<button class="btn-table-action" onclick="window._wnPause('${m.accountId}')" style="color:var(--warning);">⏸</button>`
-                : `<button class="btn-table-action" onclick="window._wnResume('${m.accountId}')" style="color:var(--success);">▶</button>`}
-              <button class="btn-table-action" onclick="window._wnUnenroll('${m.accountId}')" style="color:var(--danger);">🗑</button>
+                ? `<button class="btn-table-action" onclick="window._wnPause('${escAttr(m.accountId)}')" style="color:var(--warning);">⏸</button>`
+                : `<button class="btn-table-action" onclick="window._wnResume('${escAttr(m.accountId)}')" style="color:var(--success);">▶</button>`}
+              <button class="btn-table-action" onclick="window._wnUnenroll('${escAttr(m.accountId)}')" style="color:var(--danger);">🗑</button>
             </td>
           </tr>`;
         }).join("")}
@@ -1211,7 +1211,7 @@ async function openEnrollDialog() {
       <div class="modal-body">
         <p style="font-size:13px; color:var(--text-secondary); margin-bottom:14px;">La cuenta recibirá una persona ficticia y empezará a chatear automáticamente con otras del pool. <strong>Asegurate de avisar al setter</strong>.</p>
         <select id="wn-enroll-select" style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary);">
-          ${candidates.map(a => `<option value="${a.id}">${escHtml(a.label)} ${a.phone ? `(${escHtml(a.phone)})` : ""}</option>`).join("")}
+          ${candidates.map(a => `<option value="${escHtml(a.id)}">${escHtml(a.label)} ${a.phone ? `(${escHtml(a.phone)})` : ""}</option>`).join("")}
         </select>
       </div>
       <div class="modal-footer">
@@ -1224,7 +1224,7 @@ async function openEnrollDialog() {
   overlay.querySelector("#wn-enroll-confirm").addEventListener("click", async () => {
     const accountId = overlay.querySelector("#wn-enroll-select").value;
     try {
-      const r = await api(`/api/wa/warming-network/enroll/${accountId}`, { method: "POST" });
+      const r = await api(`/api/wa/warming-network/enroll/${encodeURIComponent(accountId)}`, { method: "POST" });
       overlay.remove();
       alert(`Cuenta inscripta. Persona ficticia: ${r.persona.name}, ${r.persona.age}a, ${r.persona.city}.`);
       await _warmingNetRefresh();
@@ -1235,14 +1235,14 @@ async function openEnrollDialog() {
 }
 
 window._wnPause = async (accountId) => {
-  try { await api(`/api/wa/warming-network/pause/${accountId}`, { method: "POST", body: JSON.stringify({ reason: "manual" }) }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+  try { await api(`/api/wa/warming-network/pause/${encodeURIComponent(accountId)}`, { method: "POST", body: JSON.stringify({ reason: "manual" }) }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
 };
 window._wnResume = async (accountId) => {
-  try { await api(`/api/wa/warming-network/resume/${accountId}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+  try { await api(`/api/wa/warming-network/resume/${encodeURIComponent(accountId)}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
 };
 window._wnUnenroll = async (accountId) => {
   if (!confirm("¿Sacar la cuenta del pool de warming? Sus pares activos se cerrarán.")) return;
-  try { await api(`/api/wa/warming-network/unenroll/${accountId}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+  try { await api(`/api/wa/warming-network/unenroll/${encodeURIComponent(accountId)}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
 };
 
 document.addEventListener("click", (e) => {

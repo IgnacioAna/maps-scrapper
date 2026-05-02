@@ -4950,7 +4950,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!status) return;
     let body = { calendarioEstado: status };
     if (status === 'reagendada') {
-      const newDate = window.prompt('Nueva fecha y hora (formato ISO, ej: 2026-05-01T14:30):', '');
+      const newDate = await window.askText({
+        title: 'Reagendar llamada',
+        subtitle: 'Ingresá la nueva fecha y hora.',
+        type: 'input',
+        placeholder: '2026-05-01T14:30',
+        confirmLabel: 'Reagendar',
+      });
       if (!newDate) return;
       const parsed = new Date(newDate);
       if (isNaN(parsed.getTime())) { alert('Fecha inválida'); return; }
@@ -5103,7 +5109,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { alert('Error: ' + e.message); }
   });
   document.getElementById('system-report-send-btn')?.addEventListener('click', async () => {
-    const to = window.prompt('Enviar reporte a (email):', currentUser?.email || '');
+    const to = await window.askText({
+      title: 'Enviar reporte',
+      subtitle: 'Elegí el email que va a recibir el reporte semanal.',
+      type: 'input',
+      placeholder: 'admin@empresa.com',
+      defaultValue: currentUser?.email || '',
+      confirmLabel: 'Enviar reporte',
+    });
     if (!to) return;
     const btn = document.getElementById('system-report-send-btn');
     btn.disabled = true; btn.textContent = '📨 Enviando...';
