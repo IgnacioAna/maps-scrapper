@@ -73,12 +73,23 @@
 
     const ctl = ns.createCancelController({ editable });
 
+    // Resolve speed preset from chrome.storage.local. If reading fails or
+    // the user never picked one, getCurrentSpeedKey returns DEFAULT_KEY ('medium').
+    let preset;
+    try {
+      const key = await ns.getCurrentSpeedKey();
+      preset = ns.getPreset(key);
+    } catch (e) {
+      preset = ns.getPreset(ns.DEFAULT_KEY || 'medium');
+    }
+
     try {
       const result = await ns.humanType(text, {
         editable,
         onProgress: (cur, total) => ns.updateBadge(cur, total),
         signal: ctl.signal,
         skipFirst: true,
+        preset,
       });
       if (result.aborted) {
         const reason = ctl.signal.reason || 'cancelled';

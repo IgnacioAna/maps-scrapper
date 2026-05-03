@@ -50,6 +50,21 @@ normal e instantáneo.
 > ⚠ **No mandes el mensaje hasta que el badge desaparezca** (= terminó
 > de tipear).
 
+### Cambiar la velocidad del typing
+
+Click en el ícono de la extensión (arriba a la derecha de Chrome, al
+lado de la barra de direcciones — si no lo ves, cliquéa el ícono del
+puzzle 🧩 y "fijá" la extensión SCM). Se abre un popup con 4 niveles:
+
+| Nivel | Tiempo aprox. para 200 chars |
+|---|---|
+| 🐢 Lento | 30-40s (más natural) |
+| 🚶 Medio (default) | 12-18s |
+| 🐇 Rápido | 5-8s |
+| 🐎 Muy rápido | 2-4s (mínimamente humano) |
+
+Click en el nivel que quieras y se guarda. Aplica al próximo Ctrl+V.
+
 ### Si copiás algo NO del panel SCM
 
 Ctrl+V funciona normal (paste instantáneo). La extensión solo activa
@@ -74,16 +89,17 @@ la extensión o avisale a Ignacio.
 
 ---
 
-## Naturalismo del typing
+## Naturalismo del typing (configurable desde v0.3.0)
 
-- Delay aleatorio entre caracteres: 50–150ms
-- Pausa extra después de `.`, `,`, `;`, `!`, `?`, `:` (150–350ms)
-- Cada 25–60 caracteres, una pausa larga "de pensar" (1–2.5s)
-- 2% de probabilidad de typo simulado: tipea una tecla vecina del
-  QWERTY, pausa, hace backspace, tipea la correcta.
+| Parámetro | 🐢 Lento | 🚶 Medio | 🐇 Rápido | 🐎 Muy rápido |
+|---|---|---|---|---|
+| Delay base | 50-150ms | 30-80ms | 15-40ms | 8-20ms |
+| Pausa puntuación | +150-350ms | +80-180ms | +40-90ms | +20-50ms |
+| Pausa "pensar" | sí (cada 25-60 chars, 1-2.5s) | sí (cada 60-120, 0.5-1.2s) | no | no |
+| Typos simulados | 2% | 1% | 0.5% | 0% |
+| Tiempo 200 chars | ~30-40s | ~12-18s | ~5-8s | ~2-4s |
 
-Trade-off: un mensaje de 200 caracteres puede tardar 30–40 segundos.
-Es el precio de no parecer bot.
+Default: **Medio**. Configurable desde el popup de la extensión.
 
 ---
 

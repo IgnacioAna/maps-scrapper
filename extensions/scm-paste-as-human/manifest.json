@@ -1,15 +1,19 @@
 {
   "manifest_version": 3,
   "name": "SCM — Pegar como humano",
-  "version": "0.2.0",
-  "description": "Reemplaza el paste en WhatsApp Web e Instagram por typing humano caracter por caracter para evitar detección de bot. Solo se activa cuando el texto pegado viene del panel SCM (con marcador interno).",
-  "permissions": [],
+  "version": "0.3.0",
+  "description": "Reemplaza el paste en WhatsApp Web e Instagram por typing humano caracter por caracter para evitar detección de bot. Velocidad configurable (lento/medio/rápido/muy rápido) desde el icono de la extensión. Solo se activa cuando el texto pegado viene del panel SCM (con marcador interno).",
+  "permissions": ["storage"],
   "host_permissions": [
     "https://web.whatsapp.com/*",
     "https://www.instagram.com/*",
     "https://instagram.com/*",
     "https://scm-setting.up.railway.app/*"
   ],
+  "action": {
+    "default_title": "SCM — Pegar como humano (config velocidad)",
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -22,6 +26,7 @@
         "lib/badge.js",
         "lib/toast.js",
         "lib/cancel.js",
+        "lib/settings.js",
         "lib/typing.js",
         "content.js"
       ],

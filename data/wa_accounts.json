@@ -21,6 +21,28 @@
       "deliveryFails": 0,
       "lastBannedAt": null,
       "createdAt": "2026-04-25T15:03:27.605Z"
+    },
+    {
+      "id": "wa_1777831276977_qxby1z",
+      "label": "Test Ignacio 2",
+      "phone": null,
+      "status": "CONNECTED",
+      "assignment": {
+        "kind": "setter",
+        "refId": "setter_paula"
+      },
+      "routineId": "routine_1777670986721_op3uo7",
+      "notes": "",
+      "routineStartedAt": "2026-05-03T18:09:39.090Z",
+      "pauseUntil": null,
+      "staggerOffsetMs": 2349994,
+      "dailyKey": "2026-05-03",
+      "msgsSentToday": 0,
+      "responsesToday": 0,
+      "pendingCount": 0,
+      "deliveryFails": 0,
+      "lastBannedAt": null,
+      "createdAt": "2026-05-03T18:01:16.977Z"
     }
   ]
 }

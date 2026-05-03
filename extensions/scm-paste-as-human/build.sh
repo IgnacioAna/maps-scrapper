@@ -18,11 +18,15 @@ rm -f "${OUT_DIR}/${ZIP_NAME}"
 FILES=(
   "manifest.json"
   "content.js"
+  "popup.html"
+  "popup.js"
   "lib/clipboard.js"
   "lib/badge.js"
   "lib/toast.js"
   "lib/cancel.js"
+  "lib/settings.js"
   "lib/typing.js"
+  "lib/panel-signal.js"
   "README.md"
 )
 

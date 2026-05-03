@@ -7,6 +7,6 @@
   'use strict';
   try {
     document.documentElement.setAttribute('data-scm-paste-installed', '1');
-    document.documentElement.setAttribute('data-scm-paste-version', '0.2.0');
+    document.documentElement.setAttribute('data-scm-paste-version', '0.3.0');
   } catch (_) {}
 })();

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>SCM — Pegar como humano</title>
+  <style>
+    :root {
+      --bg: #0F1115;
+      --surface: #1A1D24;
+      --border: rgba(157, 133, 242, 0.25);
+      --accent: #9D85F2;
+      --text: #E5E7E2;
+      --text-dim: #94A3B0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 14px;
+      width: 280px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 13px;
+    }
+    h1 {
+      margin: 0 0 4px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .subtitle {
+      margin: 0 0 14px 0;
+      font-size: 11px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .speed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .speed-btn {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 120ms, border-color 120ms;
+      text-align: left;
+    }
+    .speed-btn:hover { background: rgba(157, 133, 242, 0.08); }
+    .speed-btn.active {
+      background: rgba(157, 133, 242, 0.18);
+      border-color: var(--accent);
+    }
+    .speed-label { font-weight: 500; }
+    .speed-time {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .speed-btn.active .speed-time { color: var(--accent); }
+    .footer {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 10px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .saved-flash {
+      color: var(--accent);
+      opacity: 0;
+      transition: opacity 200ms;
+      font-size: 10px;
+      margin-left: 6px;
+    }
+    .saved-flash.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <h1>Velocidad del typing<span id="saved-flash" class="saved-flash">✓ guardado</span></h1>
+  <p class="subtitle">Cuánto tarda en tipear un mensaje en WhatsApp / Instagram. Más lento = más natural.</p>
+
+  <div id="speed-list" class="speed-list">
+    <!-- populated by popup.js -->
+  </div>
+
+  <p class="footer">
+    Se aplica al próximo Ctrl+V. La extensión solo actúa en mensajes copiados desde el panel SCM.
+  </p>
+
+  <script src="popup.js"></script>
+</body>
+</html>

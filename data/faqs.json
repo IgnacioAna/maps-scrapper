@@ -15,7 +15,7 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.321Z",
       "updatedAt": "2026-04-27T13:30:18.867Z",
-      "usos": 6,
+      "usos": 7,
       "funcionaron": 1,
       "variantes": []
     },
@@ -34,7 +34,7 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.491Z",
       "updatedAt": "2026-04-27T13:30:25.080Z",
-      "usos": 0,
+      "usos": 2,
       "funcionaron": 0,
       "variantes": []
     },
@@ -52,7 +52,7 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-04-26T02:20:33.665Z",
       "updatedAt": "2026-04-27T13:30:31.611Z",
-      "usos": 1,
+      "usos": 4,
       "funcionaron": 0,
       "variantes": []
     },
@@ -1249,6 +1249,28 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-05-01T22:25:50.372Z",
       "updatedAt": "2026-05-01T22:25:50.372Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
+    },
+    {
+      "id": "faq_promoted_1777830459138_q5tx4",
+      "pregunta": "queda muy lejos su emprsa es en argentina nosotros estamos en colombia",
+      "respuesta": "Entiendo, la distancia puede generar dudas, pero trabajamos de forma totalmente remota y ya tenemos clínicas en varios países de LATAM, incluida Colombia, que usan nuestra infraestructura sin necesidad de estar en el mismo sitio.\n\nEn una llamada breve podemos mostrarte cómo se implementa el sistema y cómo se adapta a la base de pacientes de tu clínica, sin que la ubicación sea una barrera. Qué día y hora de esta semana te viene mejor para conversar?",
+      "categoria": "general",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-05-03T17:47:39.138Z",
+      "updatedAt": "2026-05-03T17:47:39.138Z",
       "usos": 0,
       "funcionaron": 0,
       "tagsExtra": [

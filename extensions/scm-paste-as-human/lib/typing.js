@@ -4,7 +4,6 @@
   const ns = (window.__SCM_PASTE = window.__SCM_PASTE || {});
 
   // QWERTY adjacency for typo simulation (lowercase, ASCII).
-  // Used only to pick a "believable" typo character.
   const QWERTY_NEIGHBORS = {
     a:'sqwz', b:'vghn', c:'xdfv', d:'serfcx', e:'wsdr34',
     f:'drtgvc', g:'ftyhbv', h:'gyujnb', i:'uoj89kl', j:'huiknm',
@@ -14,28 +13,16 @@
     z:'asx',
   };
 
-  function isPunctuation(ch) {
-    return /[.,;!?:]/.test(ch);
-  }
-
-  function isAlphaLower(ch) {
-    return /[a-z]/.test(ch);
-  }
-
-  function rand(min, max) {
-    return min + Math.random() * (max - min);
-  }
-
-  function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-  }
+  function isPunctuation(ch) { return /[.,;!?:]/.test(ch); }
+  function isAlphaLower(ch) { return /[a-z]/.test(ch); }
+  function rand(min, max) { return min + Math.random() * (max - min); }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   function pickTypoFor(ch) {
     const lower = ch.toLowerCase();
     const neighbors = QWERTY_NEIGHBORS[lower];
     if (!neighbors || !neighbors.length) return null;
     const pick = neighbors[Math.floor(Math.random() * neighbors.length)];
-    // Preserve case of the original char.
     return ch === ch.toUpperCase() && /[a-z]/i.test(ch) ? pick.toUpperCase() : pick;
   }
 
@@ -49,25 +36,15 @@
       sel.removeAllRanges();
       sel.addRange(range);
     } catch (e) {
-      // Selection setup failed — Lexical may still accept input on focus alone.
-      // Log and continue.
       console.warn('[SCM] selection setup failed:', e);
     }
   }
 
   function findCompose() {
-    // Strategy: prefer the currently-focused contenteditable. The user just
-    // clicked on the compose to put their cursor there (or pasted into it),
-    // so the active element is the most reliable signal across sites.
-    // Fall back to known selectors for WhatsApp Web and Instagram.
     const active = document.activeElement;
     if (active && active.isContentEditable) return active;
-
-    // WhatsApp Web — confirmed working.
     let el = document.querySelector('div[contenteditable="true"][role="textbox"]');
     if (el) return el;
-
-    // Instagram DMs — compose is contenteditable inside the message form.
     el = document.querySelector('div[role="textbox"][contenteditable="true"]') ||
          document.querySelector('div[contenteditable="true"][aria-label]') ||
          document.querySelector('form div[contenteditable="true"]') ||
@@ -75,12 +52,9 @@
     return el;
   }
 
-  // Insert a single character. Returns true if the primary path (execCommand)
-  // worked, false if we fell back to InputEvent dispatch.
   function insertChar(editable, ch) {
     const ok = document.execCommand('insertText', false, ch);
     if (ok) return true;
-
     editable.dispatchEvent(new InputEvent('beforeinput', {
       inputType: 'insertText', data: ch, bubbles: true, cancelable: true,
     }));
@@ -90,7 +64,6 @@
     return false;
   }
 
-  // Delete one character backward (for typo correction).
   function deleteBack(editable) {
     const ok = document.execCommand('delete', false);
     if (ok) return;
@@ -102,59 +75,56 @@
     }));
   }
 
-  // Compute delay AFTER having typed `ch`, before typing the next char.
-  function postCharDelay(ch) {
-    let d = rand(50, 150);
-    if (isPunctuation(ch)) d += rand(150, 350);
+  function postCharDelay(ch, preset) {
+    let d = rand(preset.baseMin, preset.baseMax);
+    if (isPunctuation(ch)) d += rand(preset.punctExtraMin, preset.punctExtraMax);
     return d;
   }
 
-  // Roll for a long "thinking" pause every N chars.
-  function maybeThinkingPause(charsSinceLastPause) {
-    // Trigger window: somewhere between 25 and 60 chars.
-    if (charsSinceLastPause < 25) return 0;
-    const trigger = 25 + Math.random() * 35;
+  function maybeThinkingPause(charsSinceLastPause, preset) {
+    if (!preset.thinkEnabled) return 0;
+    if (charsSinceLastPause < preset.thinkEveryMin) return 0;
+    const trigger = preset.thinkEveryMin + Math.random() * (preset.thinkEveryMax - preset.thinkEveryMin);
     if (charsSinceLastPause >= trigger) {
-      return rand(900, 2400);
+      return rand(preset.thinkMsMin, preset.thinkMsMax);
     }
     return 0;
   }
 
   /**
-   * humanType — types `text` into the focused WA Web compose, char by char.
+   * humanType — types `text` into the focused compose, char by char.
    *
    * Options:
-   *   - onProgress(current, total): called after each successful char insert
-   *   - signal: AbortSignal; when aborted, loop exits cleanly
-   *   - skipFirst: if true, skip the first char (used by orchestrator that
-   *     types the first char synchronously to preserve user-gesture)
-   *   - typoRate: probability 0..1 of a simulated typo on alpha chars (default 0.02)
-   *   - editable: pre-resolved compose element; if absent, resolved internally
-   *
-   * Throws (string codes): 'compose-not-found', 'ime-active'
+   *   - onProgress(current, total)
+   *   - signal: AbortSignal
+   *   - skipFirst: if true, skip the first char (typed sync by caller)
+   *   - editable: pre-resolved compose element
+   *   - preset: speed preset object from settings.js (PRESETS[key]). If
+   *     omitted, falls back to the 'slow' preset (legacy behavior).
    */
   async function humanType(text, options) {
     const opts = options || {};
     const onProgress = opts.onProgress || function () {};
     const signal = opts.signal;
     const skipFirst = !!opts.skipFirst;
-    const typoRate = typeof opts.typoRate === 'number' ? opts.typoRate : 0.02;
+    const preset = opts.preset || (ns.getPreset && ns.getPreset('slow')) || {
+      baseMin: 50, baseMax: 150, punctExtraMin: 150, punctExtraMax: 350,
+      thinkEnabled: true, thinkEveryMin: 25, thinkEveryMax: 60,
+      thinkMsMin: 900, thinkMsMax: 2400, typoRate: 0.02,
+    };
+    const typoRate = typeof opts.typoRate === 'number' ? opts.typoRate : preset.typoRate;
 
     const editable = opts.editable || findCompose();
     if (!editable) throw 'compose-not-found';
 
-    // If user is in IME composition (Asian input), abort.
-    // :composing is non-standard; rely on a flag we'd set via compositionstart
-    // listener if needed. For now, we trust the caller to not invoke during IME.
-
-    const chars = Array.from(text); // handles surrogate pairs
+    const chars = Array.from(text);
     const total = chars.length;
     let typedCount = skipFirst ? 1 : 0;
     let charsSinceLastPause = 0;
 
     if (skipFirst) {
       onProgress(typedCount, total);
-      await sleep(postCharDelay(chars[0]));
+      await sleep(postCharDelay(chars[0], preset));
       charsSinceLastPause = 1;
     }
 
@@ -163,7 +133,6 @@
 
       const ch = chars[i];
 
-      // Maybe inject a typo + correction before typing the real char.
       if (isAlphaLower(ch.toLowerCase()) && Math.random() < typoRate) {
         const typo = pickTypoFor(ch);
         if (typo) {
@@ -181,9 +150,9 @@
       onProgress(typedCount, total);
       charsSinceLastPause++;
 
-      await sleep(postCharDelay(ch));
+      await sleep(postCharDelay(ch, preset));
 
-      const thinkPause = maybeThinkingPause(charsSinceLastPause);
+      const thinkPause = maybeThinkingPause(charsSinceLastPause, preset);
       if (thinkPause > 0) {
         if (signal && signal.aborted) return { aborted: true, typedCount };
         await sleep(thinkPause);
