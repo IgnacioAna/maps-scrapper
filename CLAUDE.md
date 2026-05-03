@@ -16,8 +16,15 @@ Este comando descarga la data actual del servidor Railway (historial de scraping
 1. Hacer los cambios al codigo
 2. Correr `npm run pre-deploy` (pide URL de Railway, email y password de admin)
 3. Commitear TODO (codigo + archivos de `data/`)
-4. `git push origin main && git push origin main:master` (Railway escucha `master`, mantenemos las dos en sync)
-5. Railway redeploya automaticamente
+4. **`git push origin main`** ⚠️ Railway escucha **`main`** (verificable en Railway dashboard → Settings → "Branch connected to production")
+5. (Opcional, mantener master en sync para backup): `git push origin main:master`
+6. Railway redeploya automaticamente cuando detecta push a `main`
+
+### ⚠️ ATENCION — bug operativo común (2026-05-03)
+La versión vieja de este doc decía "Railway escucha master". Es **FALSO**.
+Si pusheas SOLO a master, Railway NO redeploya. Verificar siempre el branch
+correcto en Railway dashboard. Si en el futuro se cambia el branch que
+Railway escucha, actualizar este doc inmediatamente.
 
 ### Variables de entorno necesarias en Railway:
 - `ADMIN_PASSWORD` - Contrasena del admin (NO "ADMIN_INITIAL_PASSWORD")
