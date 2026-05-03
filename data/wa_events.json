@@ -1,6 +1,948 @@
 {
   "events": [
     {
+      "id": "ev_1777833919190_32cl0f",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad WePrep - 3PL",
+        "contactName": "Comunidad WePrep - 3PL",
+        "contactPhone": null,
+        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.190Z"
+    },
+    {
+      "id": "ev_1777833919188_dn0a1m",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactName": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactPhone": null,
+        "message": "+54 9 11 7606-3632",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.188Z"
+    },
+    {
+      "id": "ev_1777833919186_zbm4n5",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5492954872601",
+        "contactName": "",
+        "contactPhone": "+5492954872601",
+        "message": "0:55",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.186Z"
+    },
+    {
+      "id": "ev_1777833919182_8f65vq",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "COMPRA Y VENTA CRYPTO 3",
+        "contactName": "COMPRA Y VENTA CRYPTO 3",
+        "contactPhone": null,
+        "message": "Compro 2000 diez abajo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.182Z"
+    },
+    {
+      "id": "ev_1777833919180_orkq47",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Facu",
+        "contactName": "Facu",
+        "contactPhone": null,
+        "message": "Ojo te manosean el roskete",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.180Z"
+    },
+    {
+      "id": "ev_1777833919178_5nhswc",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Lobos Inmortales del Tao",
+        "contactName": "Lobos Inmortales del Tao",
+        "contactPhone": null,
+        "message": "No lo ví, ya reviso maestro. Gracais!",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:45:19.178Z"
+    },
+    {
+      "id": "ev_1777833919176_yxcz8e",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-05-03T18:45:19.176Z"
+    },
+    {
+      "id": "ev_1777833919141_wtgo7n",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 7,
+        "chats": [
+          {
+            "name": "Lobos Inmortales del Tao",
+            "phone": null,
+            "lastMessage": "No lo ví, ya reviso maestro. Gracais!",
+            "unreadCount": 1
+          },
+          {
+            "name": "Facu",
+            "phone": null,
+            "lastMessage": "Ojo te manosean el roskete",
+            "unreadCount": 1
+          },
+          {
+            "name": "COMPRA Y VENTA CRYPTO 3",
+            "phone": null,
+            "lastMessage": "Compro 2000 diez abajo",
+            "unreadCount": 20
+          },
+          {
+            "name": "",
+            "phone": "+5492954872601",
+            "lastMessage": "0:55",
+            "unreadCount": 6
+          },
+          {
+            "name": "Bolsa de Trabajo - Arcadia (leer descripción)",
+            "phone": null,
+            "lastMessage": "+54 9 11 7606-3632",
+            "unreadCount": 2
+          },
+          {
+            "name": "Comunidad WePrep - 3PL",
+            "phone": null,
+            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-05-03T18:45:19.141Z"
+    },
+    {
+      "id": "ev_1777833773164_i3r4ng",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5492954872601",
+        "contactName": "",
+        "contactPhone": "+5492954872601",
+        "message": "0:55",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:53.164Z"
+    },
+    {
+      "id": "ev_1777833773162_9bows0",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad WePrep - 3PL",
+        "contactName": "Comunidad WePrep - 3PL",
+        "contactPhone": null,
+        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:53.162Z"
+    },
+    {
+      "id": "ev_1777833773159_2j3jza",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactName": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactPhone": null,
+        "message": "+54 9 11 7606-3632",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:53.159Z"
+    },
+    {
+      "id": "ev_1777833773157_50zu31",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "COMPRA Y VENTA CRYPTO 3",
+        "contactName": "COMPRA Y VENTA CRYPTO 3",
+        "contactPhone": null,
+        "message": "Compro 2000 diez abajo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:53.157Z"
+    },
+    {
+      "id": "ev_1777833773154_5be1yy",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Lobos Inmortales del Tao",
+        "contactName": "Lobos Inmortales del Tao",
+        "contactPhone": null,
+        "message": "No lo ví, ya reviso maestro. Gracais!",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:53.155Z"
+    },
+    {
+      "id": "ev_1777833773152_kf7zjx",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-05-03T18:42:53.152Z"
+    },
+    {
+      "id": "ev_1777833773128_q57klt",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 6,
+        "chats": [
+          {
+            "name": "Lobos Inmortales del Tao",
+            "phone": null,
+            "lastMessage": "No lo ví, ya reviso maestro. Gracais!",
+            "unreadCount": 1
+          },
+          {
+            "name": "COMPRA Y VENTA CRYPTO 3",
+            "phone": null,
+            "lastMessage": "Compro 2000 diez abajo",
+            "unreadCount": 20
+          },
+          {
+            "name": "",
+            "phone": "+5492954872601",
+            "lastMessage": "0:55",
+            "unreadCount": 6
+          },
+          {
+            "name": "Bolsa de Trabajo - Arcadia (leer descripción)",
+            "phone": null,
+            "lastMessage": "+54 9 11 7606-3632",
+            "unreadCount": 2
+          },
+          {
+            "name": "Comunidad WePrep - 3PL",
+            "phone": null,
+            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-05-03T18:42:53.128Z"
+    },
+    {
+      "id": "ev_1777833727245_e13uwi",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad WePrep - 3PL",
+        "contactName": "Comunidad WePrep - 3PL",
+        "contactPhone": null,
+        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:07.245Z"
+    },
+    {
+      "id": "ev_1777833727243_u0bugk",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactName": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactPhone": null,
+        "message": "+54 9 11 7606-3632",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:07.243Z"
+    },
+    {
+      "id": "ev_1777833727240_enb673",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5492954872601",
+        "contactName": "",
+        "contactPhone": "+5492954872601",
+        "message": "0:55",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:07.240Z"
+    },
+    {
+      "id": "ev_1777833727238_6bxsz8",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "COMPRA Y VENTA CRYPTO 3",
+        "contactName": "COMPRA Y VENTA CRYPTO 3",
+        "contactPhone": null,
+        "message": "Compro 2000 diez abajo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:07.238Z"
+    },
+    {
+      "id": "ev_1777833727236_ajjgtm",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Lobos Inmortales del Tao",
+        "contactName": "Lobos Inmortales del Tao",
+        "contactPhone": null,
+        "message": "Julio querido leíste los mensajes del lobo  Marcos sobre Lituana???\nestán más arriba y tocan muy de cerca algo de tu situación actual!!;",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:42:07.236Z"
+    },
+    {
+      "id": "ev_1777833727233_mg8wpq",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-05-03T18:42:07.233Z"
+    },
+    {
+      "id": "ev_1777833727197_za2221",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 6,
+        "chats": [
+          {
+            "name": "Lobos Inmortales del Tao",
+            "phone": null,
+            "lastMessage": "Julio querido leíste los mensajes del lobo  Marcos sobre Lituana???\nestán más arriba y tocan muy de cerca algo de tu situación actual!!;",
+            "unreadCount": 1
+          },
+          {
+            "name": "COMPRA Y VENTA CRYPTO 3",
+            "phone": null,
+            "lastMessage": "Compro 2000 diez abajo",
+            "unreadCount": 20
+          },
+          {
+            "name": "",
+            "phone": "+5492954872601",
+            "lastMessage": "0:55",
+            "unreadCount": 6
+          },
+          {
+            "name": "Bolsa de Trabajo - Arcadia (leer descripción)",
+            "phone": null,
+            "lastMessage": "+54 9 11 7606-3632",
+            "unreadCount": 2
+          },
+          {
+            "name": "Comunidad WePrep - 3PL",
+            "phone": null,
+            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-05-03T18:42:07.197Z"
+    },
+    {
+      "id": "ev_1777833066122_ez45tl",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad WePrep - 3PL",
+        "contactName": "Comunidad WePrep - 3PL",
+        "contactPhone": null,
+        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.122Z"
+    },
+    {
+      "id": "ev_1777833066120_6w3jvo",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactName": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactPhone": null,
+        "message": "+54 9 11 7606-3632",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.120Z"
+    },
+    {
+      "id": "ev_1777833066117_p9b8sh",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5492954872601",
+        "contactName": "",
+        "contactPhone": "+5492954872601",
+        "message": "0:55",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.117Z"
+    },
+    {
+      "id": "ev_1777833066114_mqq5cf",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Franco Carbone",
+        "contactName": "Franco Carbone",
+        "contactPhone": null,
+        "message": "0:10",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.115Z"
+    },
+    {
+      "id": "ev_1777833066113_1prkn3",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Lobos Inmortales del Tao",
+        "contactName": "Lobos Inmortales del Tao",
+        "contactPhone": null,
+        "message": "Foto",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.113Z"
+    },
+    {
+      "id": "ev_1777833066111_dhj005",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "COMPRA Y VENTA CRYPTO 3",
+        "contactName": "COMPRA Y VENTA CRYPTO 3",
+        "contactPhone": null,
+        "message": "Compro 2000 diez abajo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:31:06.111Z"
+    },
+    {
+      "id": "ev_1777833066109_ktvzdd",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-05-03T18:31:06.109Z"
+    },
+    {
+      "id": "ev_1777833066075_p5vxb2",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 7,
+        "chats": [
+          {
+            "name": "COMPRA Y VENTA CRYPTO 3",
+            "phone": null,
+            "lastMessage": "Compro 2000 diez abajo",
+            "unreadCount": 20
+          },
+          {
+            "name": "Lobos Inmortales del Tao",
+            "phone": null,
+            "lastMessage": "Foto",
+            "unreadCount": 1
+          },
+          {
+            "name": "Franco Carbone",
+            "phone": null,
+            "lastMessage": "0:10",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5492954872601",
+            "lastMessage": "0:55",
+            "unreadCount": 6
+          },
+          {
+            "name": "Bolsa de Trabajo - Arcadia (leer descripción)",
+            "phone": null,
+            "lastMessage": "+54 9 11 7606-3632",
+            "unreadCount": 2
+          },
+          {
+            "name": "Comunidad WePrep - 3PL",
+            "phone": null,
+            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-05-03T18:31:06.075Z"
+    },
+    {
+      "id": "ev_1777833009017_34638t",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad WePrep - 3PL",
+        "contactName": "Comunidad WePrep - 3PL",
+        "contactPhone": null,
+        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:30:09.017Z"
+    },
+    {
+      "id": "ev_1777833009014_3gkxaf",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5492954872601",
+        "contactName": "",
+        "contactPhone": "+5492954872601",
+        "message": "0:55",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:30:09.014Z"
+    },
+    {
+      "id": "ev_1777833009012_ebqnni",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactName": "Bolsa de Trabajo - Arcadia (leer descripción)",
+        "contactPhone": null,
+        "message": "+54 9 11 7606-3632",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:30:09.012Z"
+    },
+    {
+      "id": "ev_1777833009009_ka6s0d",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Franco Carbone",
+        "contactName": "Franco Carbone",
+        "contactPhone": null,
+        "message": "0:10",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:30:09.009Z"
+    },
+    {
+      "id": "ev_1777833009007_2o3f1o",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "COMPRA Y VENTA CRYPTO 3",
+        "contactName": "COMPRA Y VENTA CRYPTO 3",
+        "contactPhone": null,
+        "message": "Compro 2000 diez abajo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-05-03T18:30:09.007Z"
+    },
+    {
+      "id": "ev_1777833009004_v1fblo",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-05-03T18:30:09.004Z"
+    },
+    {
+      "id": "ev_1777833008962_5jlah1",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 6,
+        "chats": [
+          {
+            "name": "COMPRA Y VENTA CRYPTO 3",
+            "phone": null,
+            "lastMessage": "Compro 2000 diez abajo",
+            "unreadCount": 20
+          },
+          {
+            "name": "Franco Carbone",
+            "phone": null,
+            "lastMessage": "0:10",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5492954872601",
+            "lastMessage": "0:55",
+            "unreadCount": 6
+          },
+          {
+            "name": "Bolsa de Trabajo - Arcadia (leer descripción)",
+            "phone": null,
+            "lastMessage": "+54 9 11 7606-3632",
+            "unreadCount": 2
+          },
+          {
+            "name": "Comunidad WePrep - 3PL",
+            "phone": null,
+            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-05-03T18:30:08.962Z"
+    },
+    {
       "id": "ev_1777832381207_ebw06q",
       "type": "ai-classified-inbound",
       "accountId": "wa_1777831276977_qxby1z",
@@ -6140,190 +7082,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-04-25T15:31:00.665Z"
-    },
-    {
-      "id": "ev_1777130493594_lvhfqr",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:21:33.594Z"
-    },
-    {
-      "id": "ev_1777130493594_zn4vaz",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 3
-      },
-      "createdAt": "2026-04-25T15:21:33.594Z"
-    },
-    {
-      "id": "ev_1777130359177_4l5om7",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:19:19.177Z"
-    },
-    {
-      "id": "ev_1777130359176_bgx2ae",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2
-      },
-      "createdAt": "2026-04-25T15:19:19.176Z"
-    },
-    {
-      "id": "ev_1777130135386_g1022p",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:15:35.386Z"
-    },
-    {
-      "id": "ev_1777130121802_p5n7du",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:15:21.802Z"
-    },
-    {
-      "id": "ev_1777130121236_imtcjc",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-25T15:15:21.236Z"
-    },
-    {
-      "id": "ev_1777130120690_tkxzgu",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:15:20.690Z"
-    },
-    {
-      "id": "ev_1777130087956_nfud18",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:47.957Z"
-    },
-    {
-      "id": "ev_1777130084544_hvhwtu",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:44.544Z"
-    },
-    {
-      "id": "ev_1777130076354_1jwqki",
-      "type": "qr-visible",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:36.354Z"
-    },
-    {
-      "id": "ev_1777130075616_h4mwdu",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:35.616Z"
-    },
-    {
-      "id": "ev_1777130075537_a74x3w",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-25T15:14:35.537Z"
-    },
-    {
-      "id": "ev_1777130050270_3cimvx",
-      "type": "qr-visible",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:10.271Z"
-    },
-    {
-      "id": "ev_1777130049586_3pfgeo",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:14:09.586Z"
-    },
-    {
-      "id": "ev_1777130049506_kg6pwx",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-25T15:14:09.506Z"
-    },
-    {
-      "id": "ev_1777129973761_beyosa",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:12:53.761Z"
-    },
-    {
-      "id": "ev_1777129957630_srwcpe",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-25T15:12:37.630Z"
-    },
-    {
-      "id": "ev_1777129954908_sg1rfy",
-      "type": "window-closed",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:12:34.908Z"
-    },
-    {
-      "id": "ev_1777129954874_ipup7y",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-25T15:12:34.874Z"
-    },
-    {
-      "id": "ev_1777129525933_i1tl2p",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-25T15:05:25.933Z"
     }
   ]
 }

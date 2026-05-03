@@ -599,6 +599,26 @@ export function registerWaRoutes(app, deps) {
     res.json({ ok: true });
   });
 
+  // Forzar procesamiento INMEDIATO de UN par específico, ignorando nextActionAt.
+  // Útil para test: aprietas el botón y el sistema arranca a generar el primer
+  // mensaje YA (en vez de esperar 30-90s).
+  app.post("/api/wa/warming-network/tick-pair/:pairId", requireAuth, requireRole("admin"), async (req, res) => {
+    const orch = await import("./warming-network/orchestrator.js");
+    const result = await orch.tickSpecificPair(req.params.pairId, { forceImmediate: true });
+    res.json(result);
+  });
+
+  // Diagnóstico por par: por qué este par no avanzó / qué hizo el último tick
+  app.get("/api/wa/warming-network/diagnostic", requireAuth, requireRole("admin"), async (req, res) => {
+    const orch = await import("./warming-network/orchestrator.js");
+    const pairId = req.query.pairId;
+    if (pairId) {
+      res.json(orch.getDiagnostic(pairId) || { reason: "no diagnostic yet" });
+    } else {
+      res.json(orch.getAllDiagnostics());
+    }
+  });
+
   // Endpoint que recibe del wa-multi cuando una cuenta del pool RECIBE un
   // mensaje de otra cuenta del pool (warming inbound). Marca el historial
   // del par y NO emite evento de "ai-classified-inbound" (filtra del IA Inbox).

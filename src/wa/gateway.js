@@ -43,6 +43,7 @@ export function initGateway(httpServer, deps) {
     if (user.role === "admin") socket.join("admins");
 
     let p = presence.get(user.id);
+    const wasOffline = !p || p.sockets.size === 0;
     if (!p) {
       p = { sockets: new Set(), lastSeen: Date.now(), role: user.role, name: user.name };
       presence.set(user.id, p);
@@ -52,6 +53,14 @@ export function initGateway(httpServer, deps) {
 
     if (user.role !== "admin") {
       io.to("admins").emit("admin:presence-update", { userId: user.id, online: true, name: user.name });
+    }
+
+    // Si el user pasó de offline a online, notificar al orchestrator de
+    // warming network para que reactive sus pares en PAUSED_OFFLINE.
+    if (wasOffline) {
+      import("./warming-network/orchestrator.js").then((orch) => {
+        orch.onUserCameOnline(user.id);
+      }).catch(() => { /* warming-network no disponible, ignorar */ });
     }
 
     socket.on("heartbeat", () => {

@@ -107,12 +107,18 @@ export function computeNextActionAt(senderPersona, pair, now = new Date()) {
 
 /**
  * Para el primerísimo mensaje del par (state === PENDING_FIRST), usamos un
- * delay más corto para que el par no quede vivo eternamente sin actividad.
+ * delay corto para que el par arranque rápido. 30-90 segundos.
+ *
+ * Si forceImmediate=true, devuelve "ahora" (caso del botón Forzar tick).
  */
-export function computeFirstMessageAt(senderPersona, now = new Date()) {
-  // 1-30 minutos para arrancar el primer chat (variando por persona)
-  const baseMin = 1 + Math.floor(Math.random() * 30);
-  let target = new Date(now.getTime() + baseMin * MIN_MS);
+export function computeFirstMessageAt(senderPersona, now = new Date(), { forceImmediate = false } = {}) {
+  if (forceImmediate) return new Date(now.getTime() + 1000); // 1s, inmediato
+  // 30-90 segundos para arrancar el primer chat. Suficiente variabilidad
+  // sin que parezca eterno. La idea es que el primer mensaje arranque
+  // rápido (igual que cuando agregás a alguien y le escribís enseguida)
+  // y los DELAYS HUMANOS REALES se aplican al replyTime.
+  const baseSec = 30 + Math.floor(Math.random() * 60);
+  let target = new Date(now.getTime() + baseSec * 1000);
   let h = localHour(target, "America/Argentina/Buenos_Aires");
   let safety = 0;
   while (!isHumanHour(h) && safety++ < 24) {

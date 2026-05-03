@@ -28,9 +28,14 @@ export async function mountWa(app, httpServer, deps) {
         console.warn("⚠️  Warming network: aiClient no provisto, LLM no funcionará");
       }
 
+      // Importar isUserOnline del gateway para que el orchestrator pueda
+      // chequear presence ANTES de mandar (evita silent drops).
+      const { isUserOnline } = await import("./gateway.js");
+
       // Inyectar el orchestrator con dependencias
       orch.initOrchestrator({
         llmGenerateMessage: conv.generateMessage,
+        isUserOnline,
         wsEmit: ({ setterId, senderAccountId, receiverAccountId, text, pairId }) => {
           // Resolver el teléfono del receiver a partir del accountId
           const receiverAccount = getAccount(receiverAccountId);

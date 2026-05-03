@@ -23,21 +23,47 @@ let _orchestratorTimer = null;
 let _running = false;
 let _llmGenerateMessage = null; // inyectado en init() — depende de Wave 3
 let _wsEmit = null; // inyectado: función para mandar al wa-multi del setter dueño
+let _isUserOnline = null; // inyectado: presence check (userId) => boolean
 let _logger = console; // pluggable
+
+// Diagnóstico: último motivo por par. Permite que el panel muestre por qué
+// un par no avanza ("setter offline", "esperando reply natural", etc.)
+const _diagnostics = new Map(); // pairId → { lastTickAt, lastReason, lastError }
 
 const TICK_INTERVAL_MS = 60 * 1000; // cada 60s
 const MAX_PAIRS_GLOBAL = 200; // safety
+const ZOMBIE_PAIR_DAYS = 7; // pares sin actividad >7d se cierran
 
 /**
  * Inicializa el orchestrator.
  * @param {object} opts
  * @param {function} opts.llmGenerateMessage - async (pair, sender, receiver) => string
  * @param {function} opts.wsEmit - (userId, eventName, payload) => void
+ * @param {function} opts.isUserOnline - (userId) => boolean — presence check
  */
-export function initOrchestrator({ llmGenerateMessage, wsEmit, logger }) {
+export function initOrchestrator({ llmGenerateMessage, wsEmit, isUserOnline, logger }) {
   _llmGenerateMessage = llmGenerateMessage;
   _wsEmit = wsEmit;
+  _isUserOnline = isUserOnline;
   if (logger) _logger = logger;
+}
+
+function setDiagnostic(pairId, reason, extra = {}) {
+  _diagnostics.set(pairId, {
+    lastTickAt: new Date().toISOString(),
+    lastReason: reason,
+    ...extra,
+  });
+}
+
+export function getDiagnostic(pairId) {
+  return _diagnostics.get(pairId) || null;
+}
+
+export function getAllDiagnostics() {
+  const out = {};
+  for (const [k, v] of _diagnostics.entries()) out[k] = v;
+  return out;
 }
 
 /**
@@ -103,9 +129,21 @@ export async function tick() {
  * Evalúa el estado de un par y ejecuta la acción correspondiente si toca.
  * Devuelve true si actuó, false si no.
  */
-async function processPair(pair, now) {
-  // Si nextActionAt está en el futuro, no toca todavía
-  if (pair.nextActionAt && new Date(pair.nextActionAt) > now) {
+async function processPair(pair, now, { forceImmediate = false } = {}) {
+  // Health check: si el par no tuvo actividad en >7 días, cerrarlo
+  if (pair.lastMessageAt) {
+    const ageDays = (now.getTime() - new Date(pair.lastMessageAt).getTime()) / (24 * 3600 * 1000);
+    if (ageDays > ZOMBIE_PAIR_DAYS) {
+      store.updatePair(pair.id, { state: "CLOSED" });
+      setDiagnostic(pair.id, "ZOMBIE_CLOSED", { ageDays: Math.floor(ageDays) });
+      _logger.log(`[warming-orch] par ${pair.id} cerrado: zombie >${ZOMBIE_PAIR_DAYS}d sin actividad`);
+      return true;
+    }
+  }
+
+  // Si nextActionAt está en el futuro, no toca todavía (excepto en forceImmediate)
+  if (!forceImmediate && pair.nextActionAt && new Date(pair.nextActionAt) > now) {
+    setDiagnostic(pair.id, "WAITING_SCHEDULED", { nextActionAt: pair.nextActionAt });
     return false;
   }
 
@@ -113,16 +151,16 @@ async function processPair(pair, now) {
   const memberA = store.getPoolMember(pair.accountA);
   const memberB = store.getPoolMember(pair.accountB);
   if (!memberA || !memberB) {
-    // Alguno salió del pool — cerrar par
     store.updatePair(pair.id, { state: "CLOSED" });
+    setDiagnostic(pair.id, "MEMBER_LEFT_POOL");
     _logger.log("[warming-orch] par", pair.id, "cerrado: miembro fuera del pool");
     return true;
   }
 
   if (!memberA.active || !memberB.active) {
-    // Pausar el par — re-evaluar después
-    const next = new Date(now.getTime() + 60 * 60 * 1000); // re-check en 1h
+    const next = new Date(now.getTime() + 60 * 60 * 1000);
     store.updatePair(pair.id, { state: "PAUSED", nextActionAt: next.toISOString() });
+    setDiagnostic(pair.id, "MEMBER_PAUSED", { who: !memberA.active ? "A" : "B" });
     return true;
   }
 
@@ -151,9 +189,28 @@ async function processPair(pair, now) {
     nextWaitingState = "WAITING_REPLY_A";
   }
 
+  // CRÍTICO: chequear que el setter dueño del SENDER esté online ANTES de
+  // intentar generar el mensaje. Si no, marcamos PAUSED_OFFLINE y esperamos
+  // a que vuelva. Evita el bug de "mensajes que se pierden en silencio".
+  if (_isUserOnline && senderMember.setterId) {
+    const online = _isUserOnline(senderMember.setterId);
+    if (!online) {
+      // Re-check en 5 min (cuando el setter se reconecta, onUserOnline()
+      // explícitamente llama tickPair para no esperar)
+      const retry = new Date(now.getTime() + 5 * 60 * 1000);
+      store.updatePair(pair.id, { state: "PAUSED_OFFLINE", nextActionAt: retry.toISOString() });
+      setDiagnostic(pair.id, "SETTER_OFFLINE", {
+        setterId: senderMember.setterId,
+        senderAccountId: senderMember.accountId,
+      });
+      return true;
+    }
+  }
+
   // Generar mensaje via LLM
   if (!_llmGenerateMessage) {
     _logger.warn("[warming-orch] LLM no configurado, salteando par", pair.id);
+    setDiagnostic(pair.id, "LLM_NOT_CONFIGURED");
     return false;
   }
   let message;
@@ -161,16 +218,18 @@ async function processPair(pair, now) {
     message = await _llmGenerateMessage(pair, senderMember.persona, receiverMember.persona);
   } catch (err) {
     _logger.error("[warming-orch] LLM error en par", pair.id, ":", err.message);
-    // Reintentar en 30 minutos
-    const retry = new Date(now.getTime() + 30 * 60 * 1000);
+    // Reintentar en 5 minutos (no 30) — fallas LLM suelen ser transitorias
+    const retry = new Date(now.getTime() + 5 * 60 * 1000);
     store.updatePair(pair.id, { nextActionAt: retry.toISOString() });
+    setDiagnostic(pair.id, "LLM_ERROR", { error: err.message });
     return true;
   }
 
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     _logger.warn("[warming-orch] LLM devolvió vacío en par", pair.id);
-    const retry = new Date(now.getTime() + 30 * 60 * 1000);
+    const retry = new Date(now.getTime() + 5 * 60 * 1000);
     store.updatePair(pair.id, { nextActionAt: retry.toISOString() });
+    setDiagnostic(pair.id, "LLM_EMPTY_RESPONSE");
     return true;
   }
 
@@ -222,6 +281,12 @@ async function processPair(pair, now) {
     nextActionAt: nextAt.toISOString(),
   });
 
+  setDiagnostic(pair.id, "SENT", {
+    sender: senderMember.persona.name,
+    receiver: receiverMember.persona.name,
+    preview: message.trim().slice(0, 80),
+    nextActionAt: nextAt.toISOString(),
+  });
   _logger.log(
     `[warming-orch] sent: ${senderMember.persona.name} → ${receiverMember.persona.name}: "${message.trim().slice(0, 60)}${message.length > 60 ? "..." : ""}"`,
   );
@@ -229,27 +294,78 @@ async function processPair(pair, now) {
 }
 
 /**
+ * Forzar el procesamiento inmediato de UN par específico, ignorando
+ * nextActionAt. Usado por el endpoint /api/wa/warming-network/tick-pair/:id
+ * para debugging y por onUserCameOnline() cuando un setter se reconecta.
+ */
+export async function tickSpecificPair(pairId, { forceImmediate = false } = {}) {
+  const pair = store.getPair(pairId);
+  if (!pair) return { ok: false, reason: "par no encontrado" };
+  if (pair.state === "CLOSED") return { ok: false, reason: "par cerrado" };
+  try {
+    const acted = await processPair(pair, new Date(), { forceImmediate });
+    return { ok: true, acted, diagnostic: getDiagnostic(pairId) };
+  } catch (err) {
+    return { ok: false, reason: "exception", error: String(err) };
+  }
+}
+
+/**
+ * Llamado por gateway.js cuando un setter se conecta al socket. Busca
+ * sus pares en PAUSED_OFFLINE y los reactiva con un tick inmediato.
+ */
+export async function onUserCameOnline(userId) {
+  const pool = store.listPool();
+  const accountsOfUser = pool.filter((m) => m.setterId === userId).map((m) => m.accountId);
+  if (accountsOfUser.length === 0) return;
+  const allPairs = store.listActivePairs();
+  const myPairs = allPairs.filter(
+    (p) =>
+      (accountsOfUser.includes(p.accountA) || accountsOfUser.includes(p.accountB)) &&
+      p.state === "PAUSED_OFFLINE",
+  );
+  if (myPairs.length === 0) return;
+  _logger.log(`[warming-orch] setter ${userId} volvió online, reactivando ${myPairs.length} pares`);
+  for (const pair of myPairs) {
+    // Resetear al estado anterior basado en turn (READY_A_TO_B o READY_B_TO_A)
+    const newState = pair.turn === "A" ? "READY_A_TO_B" : "READY_B_TO_A";
+    if (pair.history.length === 0) {
+      store.updatePair(pair.id, { state: "PENDING_FIRST", nextActionAt: new Date().toISOString() });
+    } else {
+      store.updatePair(pair.id, { state: newState, nextActionAt: new Date().toISOString() });
+    }
+    // Trigger inmediato (no espera al próximo tick de 60s)
+    setTimeout(() => void tickSpecificPair(pair.id, { forceImmediate: true }), 1000);
+  }
+}
+
+/**
  * Si pasó suficiente tiempo desde el último mensaje, transiciona el par a READY.
  */
 function promoteIfReady(pair, memberA, memberB, now) {
   if (pair.state === "WAITING_REPLY_A") {
-    // A debería responder. ¿Pasó el delay esperado por su persona?
     if (!pair.nextActionAt || new Date(pair.nextActionAt) <= now) {
-      const nextAt = schedule.computeNextActionAt(memberA.persona, pair, now);
-      store.updatePair(pair.id, { state: "READY_A_TO_B", nextActionAt: nextAt.toISOString() });
+      // Promover a READY y agendar para AHORA (que el próximo tick lo procese)
+      store.updatePair(pair.id, { state: "READY_A_TO_B", nextActionAt: now.toISOString() });
+      setDiagnostic(pair.id, "PROMOTED_TO_READY", { who: "A" });
       return true;
     }
+    setDiagnostic(pair.id, "WAITING_REPLY_A", { nextActionAt: pair.nextActionAt });
   } else if (pair.state === "WAITING_REPLY_B") {
     if (!pair.nextActionAt || new Date(pair.nextActionAt) <= now) {
-      const nextAt = schedule.computeNextActionAt(memberB.persona, pair, now);
-      store.updatePair(pair.id, { state: "READY_B_TO_A", nextActionAt: nextAt.toISOString() });
+      store.updatePair(pair.id, { state: "READY_B_TO_A", nextActionAt: now.toISOString() });
+      setDiagnostic(pair.id, "PROMOTED_TO_READY", { who: "B" });
       return true;
     }
-  } else if (pair.state === "PAUSED") {
-    // Re-evaluar si ambos están active de nuevo
+    setDiagnostic(pair.id, "WAITING_REPLY_B", { nextActionAt: pair.nextActionAt });
+  } else if (pair.state === "PAUSED" || pair.state === "PAUSED_OFFLINE") {
     if (memberA.active && memberB.active) {
-      const nextAt = new Date(now.getTime() + 5 * 60 * 1000); // arranca en 5min
-      store.updatePair(pair.id, { state: "WAITING_REPLY_A", nextActionAt: nextAt.toISOString() });
+      const nextAt = new Date(now.getTime() + 30 * 1000);
+      // Si tiene historial, decidir turn por último mensaje. Si no, A arranca.
+      const lastFrom = pair.history.length > 0 ? pair.history[pair.history.length - 1].from : null;
+      const newState = lastFrom === "A" ? "READY_B_TO_A" : (pair.history.length === 0 ? "PENDING_FIRST" : "READY_A_TO_B");
+      store.updatePair(pair.id, { state: newState, nextActionAt: nextAt.toISOString() });
+      setDiagnostic(pair.id, "RESUMED_FROM_PAUSE");
       return true;
     }
   }

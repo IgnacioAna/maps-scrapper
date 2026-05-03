@@ -1054,16 +1054,17 @@ async function renderWarmingNetwork() {
 
 async function _warmingNetRefresh() {
   try {
-    const [pool, pairs, stats, messages] = await Promise.all([
+    const [pool, pairs, stats, messages, diagnostics] = await Promise.all([
       api("/api/wa/warming-network/pool"),
       api("/api/wa/warming-network/pairs"),
       api("/api/wa/warming-network/stats"),
       api("/api/wa/warming-network/messages?limit=20"),
+      api("/api/wa/warming-network/diagnostic").catch(() => ({})),
     ]);
-    _warmingNetCache = { pool, pairs, stats, messages };
+    _warmingNetCache = { pool, pairs, stats, messages, diagnostics };
     renderWarmingNetStats(stats);
     renderWarmingNetPool(pool);
-    renderWarmingNetPairs(pairs, pool);
+    renderWarmingNetPairs(pairs, pool, diagnostics);
     renderWarmingNetMessages(messages, pool);
   } catch (err) {
     console.error("warming-network refresh:", err);
@@ -1140,7 +1141,7 @@ function renderWarmingNetPool(pool) {
     </table>`;
 }
 
-function renderWarmingNetPairs(pairs, pool) {
+function renderWarmingNetPairs(pairs, pool, diagnostics) {
   const cont = $("#wn-pairs-table");
   if (!cont) return;
   if (pairs.length === 0) {
@@ -1148,9 +1149,16 @@ function renderWarmingNetPairs(pairs, pool) {
     return;
   }
   const personaOf = (id) => pool.find(p => p.accountId === id)?.persona;
+  const stateChip = (state) => {
+    if (state === "PAUSED_OFFLINE") return `<span class="chip chip-danger" style="font-size:11px;">SETTER OFFLINE</span>`;
+    if (state === "PAUSED") return `<span class="chip chip-warning" style="font-size:11px;">${escHtml(state)}</span>`;
+    if (state === "PENDING_FIRST") return `<span class="chip chip-info" style="font-size:11px;">${escHtml(state)}</span>`;
+    if (state.startsWith && state.startsWith("READY_")) return `<span class="chip chip-success" style="font-size:11px;">${escHtml(state)}</span>`;
+    return `<span class="chip" style="font-size:11px;">${escHtml(state)}</span>`;
+  };
   cont.innerHTML = `
     <table class="leads-table" style="width:100%;">
-      <thead><tr><th>Par</th><th>Estado</th><th>Mensajes</th><th>Último</th><th>Próxima acción</th></tr></thead>
+      <thead><tr><th>Par</th><th>Estado</th><th>Mensajes</th><th>Último</th><th>Próxima</th><th>Diagnóstico</th><th>Acciones</th></tr></thead>
       <tbody>
         ${pairs.map(p => {
           const a = personaOf(p.accountA);
@@ -1162,17 +1170,36 @@ function renderWarmingNetPairs(pairs, pool) {
           const nextText = nextAt
             ? (nextAt > new Date() ? `en ${Math.round((nextAt - new Date())/60000)}m` : "ahora")
             : "—";
+          const diag = diagnostics && diagnostics[p.id];
+          const diagText = diag
+            ? `<span title="${escHtml(JSON.stringify(diag))}" style="font-size:11px; color:var(--text-secondary);">${escHtml(diag.lastReason || "—")}</span>`
+            : `<span style="font-size:11px; color:var(--text-secondary);">—</span>`;
           return `<tr>
             <td>${escHtml(aName)} ↔ ${escHtml(bName)}</td>
-            <td><span class="chip" style="font-size:11px;">${escHtml(p.state)}</span></td>
+            <td>${stateChip(p.state)}</td>
             <td>${p.messageCount || 0}</td>
             <td style="font-size:11px;">${lastAgo}</td>
             <td style="font-size:11px;">${nextText}</td>
+            <td>${diagText}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="window._wnTickPair('${p.id}')">⚡ Tick ya</button></td>
           </tr>`;
         }).join("")}
       </tbody>
     </table>`;
 }
+
+window._wnTickPair = async (pairId) => {
+  try {
+    const result = await api(`/api/wa/warming-network/tick-pair/${pairId}`, { method: "POST" });
+    const reason = result.diagnostic?.lastReason || result.reason || "?";
+    setTimeout(_warmingNetRefresh, 500);
+    const toast = document.createElement("div");
+    toast.style.cssText = "position:fixed;bottom:24px;right:24px;background:var(--bg-tertiary);color:var(--text-primary);padding:12px 18px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.3);border:1px solid var(--accent);";
+    toast.textContent = `⚡ Tick: ${reason}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  } catch (err) { alert("Error: " + err.message); }
+};
 
 function renderWarmingNetMessages(messages, pool) {
   const cont = $("#wn-messages-list");
