@@ -337,14 +337,37 @@ export async function tickSpecificPair(pairId, { forceImmediate = false } = {}) 
     store.updatePair(pairId, { nextActionAt: new Date().toISOString() });
   }
 
-  // Fix 2: si force + state WAITING, promover a READY antes de procesar
-  if (forceImmediate && (pair.state === "WAITING_REPLY_A" || pair.state === "WAITING_REPLY_B")) {
-    const newState = pair.state === "WAITING_REPLY_A" ? "READY_A_TO_B" : "READY_B_TO_A";
+  // Fix 2: si force + state WAITING/PAUSED, promover a READY antes de procesar
+  if (
+    forceImmediate &&
+    (pair.state === "WAITING_REPLY_A" ||
+      pair.state === "WAITING_REPLY_B" ||
+      pair.state === "PAUSED" ||
+      pair.state === "PAUSED_OFFLINE")
+  ) {
+    let newState;
+    if (pair.state === "WAITING_REPLY_A" || (pair.history.length > 0 && pair.history[pair.history.length - 1].from === "B")) {
+      newState = "READY_A_TO_B";
+    } else if (pair.state === "WAITING_REPLY_B" || (pair.history.length > 0 && pair.history[pair.history.length - 1].from === "A")) {
+      newState = "READY_B_TO_A";
+    } else {
+      newState = pair.history.length === 0 ? "PENDING_FIRST" : "READY_A_TO_B";
+    }
     store.updatePair(pairId, { state: newState, nextActionAt: new Date().toISOString() });
   }
 
   try {
-    const acted = await processPair(store.getPair(pairId), new Date(), { forceImmediate });
+    // Iterar hasta 2 veces si forceImmediate, así un par que estaba en
+    // PAUSED/WAITING se promueva en el primer pase y mande en el segundo.
+    // Sin esto, el botón "Tick ya" solo hacía promote y no llegaba a send.
+    let acted = await processPair(store.getPair(pairId), new Date(), { forceImmediate });
+    if (forceImmediate) {
+      const updated = store.getPair(pairId);
+      if (updated && (updated.state.startsWith("READY_") || updated.state === "PENDING_FIRST")) {
+        // Quedó listo para mandar, hacer segunda pasada
+        acted = (await processPair(updated, new Date(), { forceImmediate })) || acted;
+      }
+    }
     return { ok: true, acted, diagnostic: getDiagnostic(pairId) };
   } catch (err) {
     return { ok: false, reason: "exception", error: String(err) };
