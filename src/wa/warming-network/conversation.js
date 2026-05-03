@@ -130,13 +130,18 @@ export async function generateMessage(pair, senderPersona, receiverPersona) {
     text = "todo bien?"; // fallback mínimo
   }
 
-  // Anexar metadata como propiedades del string para que orchestrator pueda
-  // loggearlas (JS permite esto vía Object wrappers, pero más simple: usamos
-  // un objeto expansible con valueOf override)
-  const wrapped = new String(text);
-  wrapped._llmCost = result.cost;
-  wrapped._llmModel = result.model;
-  wrapped._tokensIn = result.tokensIn;
-  wrapped._tokensOut = result.tokensOut;
-  return wrapped;
+  // Devolver objeto explícito con text + metadata. Antes usábamos un String
+  // wrapper (`new String(text)`) que tenía un bug fatal: `typeof new String()`
+  // es "object", NO "string". El orchestrator rechazaba TODOS los mensajes
+  // generados como "LLM_EMPTY_RESPONSE" porque el typeof check fallaba, y
+  // hacía retry cada 5 min. Loop infinito invisible — el LLM se llamaba pero
+  // los mensajes nunca llegaban a sendMessage. Bug encontrado durante smoke
+  // test del usuario el 2026-05-03.
+  return {
+    text,
+    llmCost: result.cost,
+    llmModel: result.model,
+    tokensIn: result.tokensIn,
+    tokensOut: result.tokensOut,
+  };
 }

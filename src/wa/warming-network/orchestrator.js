@@ -213,19 +213,31 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
     setDiagnostic(pair.id, "LLM_NOT_CONFIGURED");
     return false;
   }
-  let message;
+  let llmResult;
   try {
-    message = await _llmGenerateMessage(pair, senderMember.persona, receiverMember.persona);
+    llmResult = await _llmGenerateMessage(pair, senderMember.persona, receiverMember.persona);
   } catch (err) {
     _logger.error("[warming-orch] LLM error en par", pair.id, ":", err.message);
-    // Reintentar en 5 minutos (no 30) — fallas LLM suelen ser transitorias
     const retry = new Date(now.getTime() + 5 * 60 * 1000);
     store.updatePair(pair.id, { nextActionAt: retry.toISOString() });
     setDiagnostic(pair.id, "LLM_ERROR", { error: err.message });
     return true;
   }
 
-  if (!message || typeof message !== "string" || message.trim().length === 0) {
+  // llmResult es { text, llmCost, llmModel, tokensIn, tokensOut } (refactor 2026-05-03)
+  // Backward-compat: si por alguna razón llega un string plano, lo wrappeamos
+  let messageText, llmCost = 0, llmModel = null;
+  if (typeof llmResult === "string") {
+    messageText = llmResult.trim();
+  } else if (llmResult && typeof llmResult === "object") {
+    messageText = String(llmResult.text || "").trim();
+    llmCost = llmResult.llmCost || 0;
+    llmModel = llmResult.llmModel || null;
+  } else {
+    messageText = "";
+  }
+
+  if (!messageText) {
     _logger.warn("[warming-orch] LLM devolvió vacío en par", pair.id);
     const retry = new Date(now.getTime() + 5 * 60 * 1000);
     store.updatePair(pair.id, { nextActionAt: retry.toISOString() });
@@ -247,18 +259,16 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
   // Persistir el mensaje en history
   store.appendToHistory(pair.id, {
     from: senderTurnLetter,
-    text: message.trim(),
+    text: messageText,
     at: now.toISOString(),
   });
 
   // Audit log
-  const llmCost = message._llmCost || 0;
-  const llmModel = message._llmModel || null;
   store.logSentMessage({
     pairId: pair.id,
     fromAccount: senderId,
     toAccount: receiverId,
-    text: message.trim(),
+    text: messageText,
     llmCost,
     llmModel,
   });
@@ -268,7 +278,7 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
     setterId: senderSetterId,
     senderAccountId: senderId,
     receiverAccountId: receiverId,
-    text: message.trim(),
+    text: messageText,
     pairId: pair.id,
   });
 
@@ -284,11 +294,11 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
   setDiagnostic(pair.id, "SENT", {
     sender: senderMember.persona.name,
     receiver: receiverMember.persona.name,
-    preview: message.trim().slice(0, 80),
+    preview: messageText.slice(0, 80),
     nextActionAt: nextAt.toISOString(),
   });
   _logger.log(
-    `[warming-orch] sent: ${senderMember.persona.name} → ${receiverMember.persona.name}: "${message.trim().slice(0, 60)}${message.length > 60 ? "..." : ""}"`,
+    `[warming-orch] sent: ${senderMember.persona.name} → ${receiverMember.persona.name}: "${messageText.slice(0, 60)}${messageText.length > 60 ? "..." : ""}"`,
   );
   return true;
 }
