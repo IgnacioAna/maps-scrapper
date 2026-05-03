@@ -2151,11 +2151,14 @@ process.on('uncaughtException', (err) => logError(err, { source: 'uncaughtExcept
 process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? reason : new Error(String(reason)), { source: 'unhandledRejection' }));
 
 // ── Backups automáticos del data/ ──
-// Snapshot cada 6 horas a data/backups/{ISO_timestamp}/. Mantiene últimos 28 (1 semana).
-// Permite recovery si una corrupción rompe los JSON principales.
+// Snapshot cada 6 horas a data/backups/{ISO_timestamp}/. Mantiene últimos 8 (2 días).
+// Permite recovery si una corrupción rompe los JSON principales. Retention bajado
+// de 28 a 8 (2026-05-03) porque los snapshots completos consumian ~360 MB del
+// volumen Railway (cada backup pesa ~13 MB). Si se necesita retencion larga,
+// agregar archivos diarios comprimidos en lugar de copias completas.
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
-const BACKUP_KEEP = 28;
+const BACKUP_KEEP = 8;
 const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json'];
 
 function makeBackup(reason = 'auto') {
