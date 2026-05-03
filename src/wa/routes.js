@@ -608,6 +608,31 @@ export function registerWaRoutes(app, deps) {
     res.json(result);
   });
 
+  // Admin nuke option: borra TODOS los pares (incluyendo zombies/closed) del
+  // JSON. Útil cuando hay pares colgados que bloquean el re-pareo de cuentas.
+  // Después llama fillPairs() para crear pares nuevos desde cero.
+  app.post("/api/wa/warming-network/reset-pairs", requireAuth, requireRole("admin"), async (req, res) => {
+    const fs = (await import("node:fs")).default;
+    const path = (await import("node:path")).default;
+    const filePath = path.join(deps.dataDir || "data", "warming-network.json");
+    let payload;
+    try {
+      const raw = fs.readFileSync(filePath, "utf8");
+      payload = JSON.parse(raw);
+    } catch {
+      return res.json({ ok: false, reason: "warming-network.json no existe" });
+    }
+    const oldPairs = (payload.pairs || []).length;
+    payload.pairs = []; // borrar todos los pares
+    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), "utf8");
+
+    // Disparar tick para que fillPairs cree pares nuevos
+    const orch = await import("./warming-network/orchestrator.js");
+    await orch.tick();
+
+    res.json({ ok: true, deletedPairs: oldPairs, message: "pares zombi borrados, fillPairs disparado" });
+  });
+
   // Diagnóstico por par: por qué este par no avanzó / qué hizo el último tick
   app.get("/api/wa/warming-network/diagnostic", requireAuth, requireRole("admin"), async (req, res) => {
     const orch = await import("./warming-network/orchestrator.js");
