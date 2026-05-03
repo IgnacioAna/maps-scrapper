@@ -283,8 +283,16 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
   });
 
   // Schedule próxima acción: la otra cuenta debería responder
-  // Usamos la velocidad de respuesta del receiver para estimar cuándo
-  const nextAt = schedule.computeNextActionAt(receiverMember.persona, pair, now);
+  // Modo normal: usa replySpeed humano (30-480 min para "lento")
+  // Modo forceImmediate (botón Tick ya): 10-30 SEG para que el test sea
+  // fluido y se puedan ver conversaciones completas en minutos, no días.
+  let nextAt;
+  if (forceImmediate) {
+    const secs = 10 + Math.floor(Math.random() * 20);
+    nextAt = new Date(now.getTime() + secs * 1000);
+  } else {
+    nextAt = schedule.computeNextActionAt(receiverMember.persona, pair, now);
+  }
   store.updatePair(pair.id, {
     state: nextWaitingState,
     turn: senderTurnLetter === "A" ? "B" : "A",
@@ -307,13 +315,36 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
  * Forzar el procesamiento inmediato de UN par específico, ignorando
  * nextActionAt. Usado por el endpoint /api/wa/warming-network/tick-pair/:id
  * para debugging y por onUserCameOnline() cuando un setter se reconecta.
+ *
+ * CRÍTICO (fix 2026-05-03): forceImmediate ahora también:
+ *   1. Resetea nextActionAt a now ANTES de processPair (sino el check
+ *      `nextActionAt > now` rechaza el procesamiento).
+ *   2. Si el par está en WAITING_REPLY_*, lo promueve a READY_*_TO_* SIN
+ *      esperar al delay humano. Para test, queremos ver el siguiente
+ *      mensaje YA, no en 8 horas.
+ *   3. Modo "test" (forceImmediate=true): el siguiente nextActionAt de
+ *      respuesta del receiver se calcula con 10-30 SEGUNDOS (en vez de
+ *      30-480 minutos del replySpeed humano). Permite que el user vea
+ *      conversación fluida en seguidos en 1-2 min, no en 1 día.
  */
 export async function tickSpecificPair(pairId, { forceImmediate = false } = {}) {
   const pair = store.getPair(pairId);
   if (!pair) return { ok: false, reason: "par no encontrado" };
   if (pair.state === "CLOSED") return { ok: false, reason: "par cerrado" };
+
+  // Fix 1: si force, resetear nextActionAt para que ningun check lo rechace
+  if (forceImmediate && pair.nextActionAt && new Date(pair.nextActionAt) > new Date()) {
+    store.updatePair(pairId, { nextActionAt: new Date().toISOString() });
+  }
+
+  // Fix 2: si force + state WAITING, promover a READY antes de procesar
+  if (forceImmediate && (pair.state === "WAITING_REPLY_A" || pair.state === "WAITING_REPLY_B")) {
+    const newState = pair.state === "WAITING_REPLY_A" ? "READY_A_TO_B" : "READY_B_TO_A";
+    store.updatePair(pairId, { state: newState, nextActionAt: new Date().toISOString() });
+  }
+
   try {
-    const acted = await processPair(pair, new Date(), { forceImmediate });
+    const acted = await processPair(store.getPair(pairId), new Date(), { forceImmediate });
     return { ok: true, acted, diagnostic: getDiagnostic(pairId) };
   } catch (err) {
     return { ok: false, reason: "exception", error: String(err) };
