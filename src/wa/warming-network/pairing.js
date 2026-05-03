@@ -76,16 +76,20 @@ export function canPair(memberA, memberB, opts = {}) {
     return { ok: false, reason: "ya están pareadas activamente" };
   }
 
-  // Anti-incest semanal: chequear pares cerrados en últimos 7 días
+  // Anti-incest semanal: chequear pares creados en últimos 7 días que TUVIERON
+  // actividad real (al menos 1 mensaje). Pares cerrados sin actividad NO
+  // cuentan — esto permite re-parear cuentas que se desinscribieron y
+  // reinscribieron antes de que se mandara ningún mensaje.
   const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
   const recentBetween = allPairs.filter(
     (p) =>
       ((p.accountA === memberA.accountId && p.accountB === memberB.accountId) ||
         (p.accountA === memberB.accountId && p.accountB === memberA.accountId)) &&
-      new Date(p.createdAt).getTime() > weekAgo,
+      new Date(p.createdAt).getTime() > weekAgo &&
+      (p.messageCount || 0) > 0, // ← fix: solo cuentan pares con actividad real
   );
   if (recentBetween.length >= MAX_PAIRS_SAME_OTHER_PER_WEEK) {
-    return { ok: false, reason: "ya pareadas esta semana" };
+    return { ok: false, reason: "ya pareadas con actividad esta semana" };
   }
 
   return { ok: true };
