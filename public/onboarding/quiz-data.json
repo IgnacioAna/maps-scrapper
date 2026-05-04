@@ -66,10 +66,10 @@
     "titulo": "Tu rol",
     "preguntas": [
       {
-        "pregunta": "¿Cuál es tu trabajo como setter?",
+        "pregunta": "¿Cuál es tu trabajo real como setter?",
         "opciones": [
           "Cerrar la venta del sistema con el cliente",
-          "Abrir conversaciones, detectar interés y llevar oportunidades a llamada con Ignacio",
+          "Abrir conversaciones, detectar interés real y llevar oportunidades a llamada con Ignacio",
           "Convencer al cliente de que contrate SCM por chat"
         ],
         "correcta": 1,
@@ -228,57 +228,57 @@
     ]
   },
   "modulo5": {
-    "titulo": "Canales y warmeo",
+    "titulo": "Kit anti-baneo",
     "preguntas": [
       {
-        "pregunta": "¿Por qué hay que calentar (warmear) un número nuevo de WhatsApp antes de mandar volumen?",
+        "pregunta": "Cuáles son las cuatro capas de protección anti-baneo que vas a usar todos los días, y por qué importa que sean varias en lugar de una sola.",
         "opciones": [
-          "Porque WhatsApp tiene algoritmos para detectar y banear números con comportamiento de spam",
-          "Porque al principio los mensajes salen más caros",
-          "Porque el sistema necesita tiempo para configurar la cuenta"
+          "Solo importa una: la rutina de calentamiento. Las otras tres son recomendaciones opcionales si tenés tiempo.",
+          "Extensión 'Pegar como humano', multi-número con 2-3 chips, BitBrowser para fingerprint distinto por cuenta, y rutina manual de calentamiento. Importa que sean varias porque el anti-ban no se gana en una sola capa, se gana sumándolas.",
+          "WhatsApp Business, perfiles de Chrome separados, VPN distinta por cuenta, y mensajes variados. Sin VPN, todo lo demás no sirve."
+        ],
+        "correcta": 1,
+        "explicacion": "Son cuatro capas que se complementan: extensión que mata el tell número uno de bot detection (paste instantáneo), multi-número para distribuir riesgo, BitBrowser para que cada cuenta tenga fingerprint propio, y rutina de calentamiento que es el corazón del módulo. Si solo te llevás una cosa de este módulo, llevate la rutina, pero las otras capas multiplican la protección. Volvé a la sección 'Cuatro capas de protección'."
+      },
+      {
+        "pregunta": "Qué problema concreto resuelve la extensión 'Pegar como humano' y cuándo es obligatoria usarla.",
+        "opciones": [
+          "Resuelve el problema de tener que escribir mensajes largos a mano. Es opcional, solo si querés ahorrar tiempo.",
+          "Reemplaza el paste instantáneo de WhatsApp Web por tipeo letra por letra. Mata el tell número uno de bot detection, porque cuando pegás un texto largo en WhatsApp Web aparece de golpe, lo cual ningún humano hace. Es obligatoria para mensajes largos como los de calificación.",
+          "Encripta los mensajes para que Meta no pueda leerlos. Solo se usa cuando mandás info sensible al cliente."
+        ],
+        "correcta": 1,
+        "explicacion": "El paste instantáneo es la señal número uno que Meta usa para detectar bots: ningún humano pega un mensaje de 200 caracteres en una décima de segundo. La extensión simula tipeo letra por letra, matando esa señal. Es obligatoria especialmente para mensajes largos como los de calificación, donde el riesgo de paste es alto. Volvé a la sección 'Capa 1 — Extensión Pegar como humano'."
+      },
+      {
+        "pregunta": "Estás arrancando con un número nuevo. Mañana es tu primer día. Cuántos mensajes deberías mandar y con qué intervalo entre cada uno.",
+        "opciones": [
+          "Día 1: 12 mensajes con drip de 8 a 15 minutos entre cada uno. La idea es ir despacio los primeros dos días para no levantar bandera roja en Meta.",
+          "Día 1: arrancás directo con 60 mensajes y drip de 4-8 minutos. Si el número aguanta el primer día, es porque está bien calentado.",
+          "Día 1: 120 mensajes con drip de 2-4 minutos. La velocidad es lo de menos, lo importante es el volumen total."
         ],
         "correcta": 0,
-        "explicacion": "Cada número nuevo necesita warmeo sin excepción. Si no calentás, te arriesgás a baneo temporal o permanente, mensajes que nunca llegan, o ser marcado como spam. Una cuenta quemada significa días de productividad perdidos."
+        "explicacion": "Los primeros dos días son la fase más sensible. 12 mensajes al día con drip de 8-15 minutos. La curva sube progresivamente: días 3-5 vas a 30/día con drip 5-10 min, días 6-10 a 60/día con drip 4-8 min, días 11-14 a 90/día con drip 3-6 min, y desde día 15 podés ir a 120-150/día con drip 2-4 min. Saltarse la curva es la forma más rápida de perder un número. Volvé al cheat sheet en sección 10."
       },
       {
-        "pregunta": "En la fase 1 del warmeo (primera semana), ¿cuál es el volumen recomendado?",
+        "pregunta": "Por qué los drips entre mensajes se miden en minutos y no en segundos, y por qué hay que variar los tiempos dentro del rango.",
         "opciones": [
-          "Maximo 20 mensajes por dia, uno cada 5 minutos",
-          "50 mensajes por día con leads frescos",
-          "100 mensajes por día para acelerar el proceso"
-        ],
-        "correcta": 0,
-        "explicacion": "Fase 1 (primera semana, numero nuevo): maximo 20 mensajes por dia, uno cada 5 minutos para no spamear de golpe. Lo mas importante es que te respondan — recibir respuestas es lo que mas reputacion construye. Saltar fases por ansiedad termina en cuenta baneada."
-      },
-      {
-        "pregunta": "¿Cuál es el tope diario de mensajes recomendado para una cuenta de WhatsApp ya consolidada?",
-        "opciones": [
-          "500 mensajes por día para sumar volumen",
-          "100-150 mensajes por día",
-          "30 mensajes por día siempre"
+          "Por costumbre. Antes se medía en segundos pero las plataformas modernas usan minutos. Los tiempos fijos están bien si son razonables.",
+          "Estamos mandando aperturas en frío 100% sin tráfico orgánico que diluya el patrón, así que drips más largos son más realistas. Variar dentro del rango es clave porque el patrón fijo (mandar exactamente cada 5 minutos) es justamente lo que detecta Meta como bot. Mejor mandar a los 5, otro a los 8, otro a los 12.",
+          "Los drips en segundos están permitidos siempre y cuando no superes 100 mensajes por hora. La variación es estética."
         ],
         "correcta": 1,
-        "explicacion": "El objetivo realista en operación normal (cuenta consolidada de 1 mes o más) es 100-150 mensajes por día. Si querés más volumen, sumás más números, no fuerzas uno solo. Volúmenes mucho mayores en una sola cuenta levantan señal de spam."
+        "explicacion": "Cuando hacés outbound puro sin tráfico orgánico mezclado, todo el comportamiento de la cuenta es prospección, lo cual ya es una bandera. Drips largos compensan eso. Y el patrón fijo es el enemigo: si mandás siempre cada 5 minutos exactos, Meta detecta la regularidad mecánica. Variar dentro del rango (5, 8, 12) hace que el comportamiento parezca humano. Volvé a la sección 'Por qué los drips son en minutos'."
       },
       {
-        "pregunta": "Tenés un número consolidado (más de un mes de uso) y querés mandar volumen. ¿Cómo distribuís los mensajes?",
+        "pregunta": "Tu cuenta entró en ban temporal de 24 horas. Qué hacés en las próximas 24 horas para no convertir el ban temporal en ban permanente.",
         "opciones": [
-          "Mando los 100-150 mensajes de corrido sin pausa para terminar rápido",
-          "Bloques de 8-10 mensajes con pausa de 10 minutos, hasta llegar al tope diario",
-          "Mando 1 mensaje cada 30 segundos exactos toda la mañana"
+          "Sigo mandando mensajes desde el celular aunque no pueda desde WhatsApp Web. La actividad ayuda a que el número se recupere más rápido.",
+          "No mando mensajes nuevos durante las 24 horas. Puedo seguir respondiendo mensajes entrantes si vienen, pero no inicio aperturas. Cuando termina el ban, retomo desde la fase actual de calentamiento, no aumento volumen para 'recuperar'.",
+          "Activo otro chip y empiezo a usarlo desde el mismo perfil de Chrome para no perder volumen. Una vez que el primero se recupera, los uso en paralelo desde el mismo navegador."
         ],
         "correcta": 1,
-        "explicacion": "Para una cuenta consolidada, bloques de 8-10 mensajes con pausa de 10 minutos funciona bien. Si el número se traba, bajás a bloques de 3 con pausa de 10 minutos. La regularidad perfecta (1 mensaje cada exactos 30 segundos) parece automatización: variá los tiempos."
-      },
-      {
-        "pregunta": "El sistema te trae el WhatsApp de un lead pero no responde. También tenés su Instagram. ¿Qué hacés?",
-        "opciones": [
-          "Lo descarto porque no respondió por WhatsApp",
-          "Pruebo por Instagram, que es el canal secundario cuando el WhatsApp no funciona",
-          "Insisto solo por WhatsApp hasta que responda"
-        ],
-        "correcta": 1,
-        "explicacion": "WhatsApp es el canal principal pero Instagram entra como apoyo cuando WhatsApp no funciona y tenés el IG cargado. La rigidez de canal te hace perder leads. Si por ningún canal responde, lo movés a seguimiento."
+        "explicacion": "El ban temporal es la advertencia de Meta. Si seguís mandando mensajes nuevos para 'forzarlo', el siguiente ban es permanente y perdés todo el historial. La regla es no iniciar aperturas durante las 24 horas, pero podés responder entrantes. Después del ban, retomás desde la fase actual, no aumentás para compensar. Y nunca uses dos cuentas desde el mismo perfil de Chrome: cada cuenta tiene que tener su perfil aislado, idealmente con BitBrowser. Volvé a la sección 'Las 5 reglas que no se rompen'."
       }
     ]
   },
@@ -296,14 +296,14 @@
         "explicacion": "El tracking no está para llenar planillas. Está para que no se te escapen oportunidades, para saber qué retomar y para sostener volumen sin caos. Una charla abierta no puede depender de la memoria."
       },
       {
-        "pregunta": "¿Cuándo tenés que marcar el estado de un lead en el sistema?",
+        "pregunta": "¿Cuántas conversaciones por día tenés que subir al Drive como evidencia?",
         "opciones": [
-          "Al final del día, cuando ya terminé toda la operación",
-          "Apenas pasa la conversación, en el momento, no después",
-          "Solo cuando el lead se vuelve interesado o agendado"
+          "Solo las que terminaron en agendamiento",
+          "Mínimo 5 por día (mezcla de buenas y con fricción)",
+          "Todas las del día sin excepción"
         ],
         "correcta": 1,
-        "explicacion": "El marcado se hace en el momento, con el chat fresco. 'Después lo anoto' = no lo anotás. Si no marcás, no entrás en las métricas, y sin métricas no se puede comparar variantes ni mejorar la operación."
+        "explicacion": "Mínimo 5 conversaciones por día, ideal: 2 buenas + 3 con fricción/objeción/no respondió. Que se vea el contexto, no recortes mínimos. Esta evidencia es lo que entrena al sistema y al equipo."
       },
       {
         "pregunta": "Tu tasa de respuesta bajó esta semana sin razón aparente. ¿Qué deberías mirar primero?",
@@ -330,7 +330,7 @@
         "opciones": [
           "Trackear de a ratos o confiar en la memoria 'después lo anoto'",
           "Hacer planillas demasiado simples",
-          "Marcar todos los leads con el mismo estado por defecto"
+          "Subir muy pocas conversaciones al Drive"
         ],
         "correcta": 0,
         "explicacion": "'Después lo anoto' = no lo anotás. Si trackeás un día sí y dos no, los datos no sirven. Anotá en el momento, con el chat fresco. La constancia es lo que hace funcional al tracking."
@@ -378,13 +378,13 @@
           "Lo descarto porque no es decisor"
         ],
         "correcta": 1,
-        "explicacion": "No te quedés vendiendo a alguien que no decide. Llegá al decisor. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada con el socio para evitar el ida y vuelta."
+        "explicacion": "No te quedés vendiendo a alguien que no decide. Llegá al decisor real. Si la persona quiere ser el filtro intermedio, le proponés que se sume a la llamada con el socio para evitar el ida y vuelta."
       },
       {
         "pregunta": "Un lead te dice 'es caro, está fuera de presupuesto'. ¿Qué hacés?",
         "opciones": [
           "Le ofrezco un descuento por chat para cerrar la operación",
-          "Le pregunto '¿caro en relación a qué?' y le ofrezco una llamada para ver los números",
+          "Le pregunto '¿caro en relación a qué?' y le ofrezco una llamada para ver los números reales",
           "Le digo que el sistema tiene mucho valor y vale lo que cuesta"
         ],
         "correcta": 1,
@@ -443,7 +443,7 @@
           "A un caso teórico de ejemplo en los manuales"
         ],
         "correcta": 1,
-        "explicacion": "El caso Sofía es un cliente activo en Uruguay (clínica de la doctora Sofía Campanella). Genera agendas todas las semanas. Sirve como prueba social: 'sí, tenemos clientes activos'. Los números los muestra Ignacio en la llamada."
+        "explicacion": "El caso Sofía es un cliente real activo en Uruguay (clínica de la doctora Sofía Campanella). Genera agendas reales todas las semanas. Sirve como prueba social: 'sí, tenemos clientes activos'. Los números los muestra Ignacio en la llamada."
       }
     ]
   }

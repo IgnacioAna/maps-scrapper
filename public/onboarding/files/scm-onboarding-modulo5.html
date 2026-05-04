@@ -106,7 +106,6 @@
   .next-button:hover { background: var(--violet); color: var(--bg); border-color: var(--violet); }
   .next-button-arrow { transition: transform 0.2s; }
   .next-button:hover .next-button-arrow { transform: translateX(3px); }
-  /* Componentes adicionales para módulos siguientes */
   .chat-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
   .chat-msg { display: flex; gap: 10px; align-items: baseline; margin-bottom: 8px; font-size: 14px; line-height: 1.5; }
   .chat-msg:last-child { margin-bottom: 0; }
@@ -116,38 +115,58 @@
   .chat-text { color: var(--text-soft); }
   .chat-note { font-size: 12px; color: var(--text-faint); font-style: italic; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); }
   .chat-note::before { content: '→ '; color: var(--violet); font-style: normal; }
-  /* Step block */
   .step-grid { display: grid; gap: 12px; margin: 24px 0; }
   .step-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 22px; display: grid; grid-template-columns: 36px 1fr; gap: 18px; align-items: start; }
   .step-num { width: 32px; height: 32px; background: var(--violet-bg); color: var(--violet); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
   .step-content { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
   .step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
-  /* Objection card */
-  .obj-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0; }
-  .obj-header { padding: 16px 20px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
-  .obj-num { font-size: 10px; font-weight: 700; color: var(--violet); letter-spacing: 0.12em; margin-bottom: 4px; text-transform: uppercase; }
-  .obj-quote { font-size: 16px; font-weight: 600; color: var(--text); font-style: italic; }
-  .obj-row { padding: 14px 20px; border-bottom: 1px solid var(--border-soft); }
-  .obj-row:last-child { border-bottom: none; }
-  .obj-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--violet); margin-bottom: 6px; }
-  .obj-content { font-size: 14px; line-height: 1.55; color: var(--text-soft); }
-  .obj-content em { color: var(--text); font-style: italic; }
-  /* Term (glossary) */
   .term-block { padding: 16px 0; border-bottom: 1px solid var(--border-soft); }
   .term-block:last-child { border-bottom: none; }
   .term-name { font-size: 15px; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
   .term-def { font-size: 14px; line-height: 1.6; color: var(--text-soft); }
-  /* Stats card */
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 24px 0; }
-  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; min-width: 0; }
-  .stat-value { font-size: 26px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1.05; word-break: break-word; overflow-wrap: anywhere; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 24px 0; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--violet); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
   .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); font-weight: 500; }
-  /* Warning */
   .warning { background: rgba(248, 81, 73, 0.06); border-left: 3px solid var(--rose); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
   .warning strong { color: var(--rose); }
-  /* Success */
   .success { background: rgba(63, 185, 80, 0.06); border-left: 3px solid var(--green); padding: 16px 20px; margin: 24px 0; border-radius: 6px; font-size: 14px; line-height: 1.6; color: var(--text-soft); }
   .success strong { color: var(--green); }
+
+  /* Específicos para este módulo */
+  .curve-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 28px 0; }
+  .curve-phase { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 14px; text-align: center; position: relative; overflow: hidden; }
+  .curve-phase::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--violet); opacity: var(--int, 0.2); }
+  .curve-phase[data-i="1"] { --int: 0.25; }
+  .curve-phase[data-i="2"] { --int: 0.45; }
+  .curve-phase[data-i="3"] { --int: 0.65; }
+  .curve-phase[data-i="4"] { --int: 0.85; }
+  .curve-phase[data-i="5"] { --int: 1; }
+  .curve-name { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .curve-days { font-size: 12px; color: var(--text-mute); margin-bottom: 12px; }
+  .curve-msgs { font-size: 24px; font-weight: 700; color: var(--violet); line-height: 1; }
+  .curve-msgs-label { font-size: 10px; color: var(--text-faint); margin-top: 2px; }
+  .curve-drip { font-size: 12px; color: var(--text); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .curve-drip-label { font-size: 9px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+  .speed-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 24px 0; }
+  .speed-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 14px; text-align: center; }
+  .speed-card.default { border-color: var(--violet); background: linear-gradient(135deg, rgba(167,139,250,0.06), rgba(167,139,250,0.02)); }
+  .speed-emoji { font-size: 28px; margin-bottom: 6px; }
+  .speed-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .speed-time { font-size: 18px; font-weight: 700; color: var(--violet); margin: 8px 0 2px; }
+  .speed-detail { font-size: 10px; color: var(--text-faint); }
+  .video-embed { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 24px 0; display: flex; gap: 20px; align-items: center; }
+  .video-icon { flex-shrink: 0; width: 60px; height: 60px; border-radius: 12px; background: var(--violet-bg); border: 1px solid rgba(167,139,250,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .video-text { flex: 1; }
+  .video-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .video-desc { font-size: 13px; color: var(--text-mute); margin-bottom: 10px; line-height: 1.5; }
+  .video-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--violet-bg); border: 1px solid rgba(167,139,250,0.3); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--violet); text-decoration: none; transition: all 0.2s; }
+  .video-link:hover { background: var(--violet); color: var(--bg); }
+  .cheat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 24px 0; }
+  .cheat-item { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; display: flex; gap: 14px; align-items: center; }
+  .cheat-num { flex-shrink: 0; font-size: 22px; font-weight: 700; color: var(--violet); width: 50px; text-align: center; line-height: 1; }
+  .cheat-text { font-size: 13px; color: var(--text-soft); line-height: 1.4; }
+
   @media (max-width: 880px) {
     .container { grid-template-columns: 1fr; }
     .toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border-soft); padding: 24px; }
@@ -155,6 +174,10 @@
     h1.module-title { font-size: 32px; }
     .leaks { grid-template-columns: 1fr; }
     .pull-text, .rule-text { font-size: 17px; }
+    .curve-grid { grid-template-columns: repeat(2, 1fr); }
+    .speed-grid { grid-template-columns: repeat(2, 1fr); }
+    .cheat-grid { grid-template-columns: 1fr; }
+    .video-embed { flex-direction: column; align-items: flex-start; }
   }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .module-tag, h1.module-title, .module-deck, .module-meta { animation: fadeUp 0.5s ease-out backwards; }
@@ -180,7 +203,7 @@
       <li class="toc-item"><a href="#m02" class="toc-link"><span class="toc-num">02</span>Tu rol</a></li>
       <li class="toc-item"><a href="#m03" class="toc-link"><span class="toc-num">03</span>Sistema operativo</a></li>
       <li class="toc-item"><a href="#m04" class="toc-link"><span class="toc-num">04</span>Conversación</a></li>
-      <li class="toc-item"><a href="#m05" class="toc-link active"><span class="toc-num">05</span>Canales y warmeo</a></li>
+      <li class="toc-item"><a href="#m05" class="toc-link active"><span class="toc-num">05</span>Kit anti-baneo</a></li>
       <li class="toc-item"><a href="#m06" class="toc-link"><span class="toc-num">06</span>Tracking</a></li>
       <li class="toc-item"><a href="#m07" class="toc-link"><span class="toc-num">07</span>Objeciones</a></li>
       <li class="toc-item"><a href="#m08" class="toc-link"><span class="toc-num">08</span>Glosario</a></li>
@@ -188,12 +211,17 @@
 
     <p class="toc-section-label">En este módulo</p>
     <ul class="toc-list">
-      <li class="toc-item"><a href="#whatsapp" class="toc-link">WhatsApp · canal principal</a></li>
-      <li class="toc-item"><a href="#warmeo" class="toc-link">Warmeo de WhatsApp</a></li>
-      <li class="toc-item"><a href="#instagram" class="toc-link">Instagram · canal secundario</a></li>
-      <li class="toc-item"><a href="#llamadas" class="toc-link">Llamadas en frío</a></li>
-      <li class="toc-item"><a href="#reglas" class="toc-link">Reglas anti-baneo</a></li>
-      <li class="toc-item"><a href="#extras" class="toc-link">Herramientas extras</a></li>
+      <li class="toc-item"><a href="#por-que" class="toc-link">Por qué importa</a></li>
+      <li class="toc-item"><a href="#capas" class="toc-link">Las capas de protección</a></li>
+      <li class="toc-item"><a href="#extension" class="toc-link">Capa 1 · Extensión</a></li>
+      <li class="toc-item"><a href="#multi-numero" class="toc-link">Capa 2 · Multi-número</a></li>
+      <li class="toc-item"><a href="#bitbrowser" class="toc-link">Capa 3 · BitBrowser</a></li>
+      <li class="toc-item"><a href="#rutina" class="toc-link">Capa 4 · Rutina</a></li>
+      <li class="toc-item"><a href="#practica-natural" class="toc-link">Práctica natural</a></li>
+      <li class="toc-item"><a href="#do-dont" class="toc-link">Buenas y malas prácticas</a></li>
+      <li class="toc-item"><a href="#reglas" class="toc-link">Reglas de oro</a></li>
+      <li class="toc-item"><a href="#cheat" class="toc-link">Cheat sheet</a></li>
+      <li class="toc-item"><a href="#faq" class="toc-link">FAQ</a></li>
     </ul>
   </aside>
 
@@ -201,243 +229,733 @@
 
     <span class="module-tag">Módulo 05 · Lectura</span>
 
-    <h1 class="module-title">Canales y warmeo.<br>Por dónde prospectar y cómo <span class="accent">no quemar cuentas</span>.</h1>
+    <h1 class="module-title">Kit anti-baneo.<br>Cómo <span class="accent">no quemar</span> tus números.</h1>
 
-    <p class="module-deck">Cómo trabajar WhatsApp como canal principal, calentar números nuevos sin que te baneen, y cuándo usar Instagram o llamadas como apoyo.</p>
+    <p class="module-deck">Tu kit anti-ban de WhatsApp. Cómo calentar un número, mantenerlo vivo y mandar volumen sin que Meta te tire la cuenta abajo.</p>
 
     <div class="module-meta">
-      <span class="module-meta-item">⏱ Lectura ~10 min</span>
-      <span class="module-meta-item">🎯 Cómo no quemar cuentas</span>
-      <span class="module-meta-item">📍 Operativo crítico</span>
+      <span class="module-meta-item">⏱ Lectura ~12 min</span>
+      <span class="module-meta-item">🎯 Mantener tus números vivos</span>
+      <span class="module-meta-item">📍 Operativo · Fundamental</span>
     </div>
 
-
-    <div class="warning">
-      <strong>Este módulo es crítico.</strong> Una cuenta bien manejada rinde por meses. Una cuenta mal manejada se cae en una semana y te deja sin herramienta de trabajo.
+    <div class="aside">
+      <strong>Cómo usar este módulo:</strong> léelo entero una vez cuando arranques. Después es referencia: cuando aparezca una duda sobre un número, sobre cuántos mensajes mandar, sobre cómo instalar algo, volvé a la sección que necesites. La rutina de calentamiento (sección 6) y la cheat sheet (sección 10) son las que vas a consultar más seguido.
     </div>
 
-    <section id="whatsapp-principal">
+    <!-- 01 POR QUÉ IMPORTA -->
+    <section id="por-que">
       <div class="section-marker">
         <span class="section-marker-num">01</span>
-        <span class="section-marker-label">WhatsApp · canal principal</span>
+        <span class="section-marker-label">Por qué importa</span>
       </div>
-      <h2 class="section-title">WhatsApp es donde trabajás todos los días.</h2>
+      <h2 class="section-title">Un número baneado no es un mal día.</h2>
 
-      <p class="lead">El sistema te entrega los leads cargados con teléfono. Tu trabajo arranca ahí: <strong>WhatsApp es el canal principal</strong>. Instagram entra solo si el sistema te trajo el IG del lead y querés probar por ahí. Las llamadas en frío son un canal aparte que se coordina con Ignacio.</p>
+      <p class="lead">Es tiempo perdido y leads en riesgo de quedar abandonados. Si te banean el número permanentemente, perdés todo el historial de conversaciones que venías trabajando.</p>
 
-      <div class="aside">
-        El canal es una herramienta. La oportunidad es el objetivo. Si el lead no responde por WhatsApp y tenés su Instagram, probá por ahí. Si no responde por ninguno, lo movés a seguimiento.
+      <div class="leaks">
+        <div class="leak-card">
+          <div class="leak-card-num">24h</div>
+          <div class="leak-card-title">Ban temporal típico</div>
+          <div class="leak-card-body">No podés mandar mensajes nuevos durante 24hs. Ban repetido = riesgo de ban permanente del número.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">⚠ Riesgo</div>
+          <div class="leak-card-title">Leads que venías trabajando</div>
+          <div class="leak-card-body">Si pierdes el número, perdés el hilo de las conversaciones activas. Días de trabajo tirados a la basura.</div>
+        </div>
+        <div class="leak-card summary">
+          <div class="leak-card-num">→ Tu seguro de vida</div>
+          <div class="leak-card-title">El CRM <em>siempre actualizado</em>.</div>
+          <div class="leak-card-body">Si te banean, la info del lead la tenés ahí, no perdida en el chat del número caído. <em>Sin CRM al día, un ban es perder leads para siempre.</em></div>
+        </div>
       </div>
 
-      <h3 class="subsection-title">Por qué WhatsApp como base.</h3>
+      <div class="pull">
+        <div class="pull-label">El gran enemigo</div>
+        <p class="pull-text">Meta detecta bots por <em>patrones</em>. Pegar mensajes instantáneos, mandar idénticos en serie, volumen alto sin warmup, mandar a las 3 AM. Todo eso prende alarmas.</p>
+      </div>
 
-      <p>Es el canal donde más rápido se abre conversación con dueños de clínica. Tasa de apertura alta, respuesta directa, y permite mover a llamada sin fricción extra. Las clínicas viven con WhatsApp abierto todo el día.</p>
-
-      <p>El problema: WhatsApp también es el canal más sensible al baneo. Si lo trabajás mal, perdés la cuenta y perdés productividad. Por eso este módulo entero está enfocado en cómo trabajarlo bien.</p>
+      <p>Lo que vamos a ver en este módulo es cómo evitar cada uno de esos triggers.</p>
     </section>
 
-    <section id="warmeo">
+    <!-- 02 LAS CAPAS -->
+    <section id="capas">
       <div class="section-marker">
         <span class="section-marker-num">02</span>
-        <span class="section-marker-label">Warmeo de WhatsApp</span>
+        <span class="section-marker-label">Las capas</span>
       </div>
-      <h2 class="section-title">Cómo calentar un número sin que te lo baneen.</h2>
+      <h2 class="section-title">Cuatro capas de protección.</h2>
 
-      <p>WhatsApp tiene algoritmos para detectar y banear números con comportamiento sospechoso o spam. <strong>Cada número nuevo necesita warmeo</strong> antes de poder mandar mensajes en volumen.</p>
+      <p>El anti-ban no se gana en una sola capa. Se gana sumando varias que se complementan. Estas son las cuatro que vas a usar:</p>
 
-      <h3 class="subsection-title">Qué pasa si no calentás.</h3>
-
-      <ul style="list-style: none; padding: 0; margin: 16px 0;">
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--rose);">✗ Baneo temporal (24-48 horas)</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--rose);">✗ Baneo permanente</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--rose);">✗ Mensajes en estado "pendiente" que nunca llegan</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--rose);">✗ Tasa de entrega muy baja</li>
-        <li style="padding: 8px 0; font-size: 14px; color: var(--rose);">✗ Marcado como spam por receptores</li>
-      </ul>
-
-      <h3 class="subsection-title">Quién necesita warmeo.</h3>
-
-      <ul style="list-style: none; padding: 0; margin: 16px 0;">
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">Cada número nuevo de WhatsApp.</strong> Sin excepción.</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Números de negocio que recién se conectan a automatizaciones.</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Números inactivos por 30+ días (warmeo acelerado de 7 días).</li>
-        <li style="padding: 8px 0; font-size: 14px; color: var(--text-soft);">→ Después de cualquier ban (warmeo completo de 14 días desde fase 1).</li>
-      </ul>
-
-      <div class="rule-callout">
-        <div class="rule-label">El factor crítico</div>
-        <p class="rule-text">Lo que más construye reputación durante el warmeo es <em>recibir respuestas</em>. Cuanta más gente te conteste durante los primeros días, más rápido te trata WhatsApp como cuenta legítima.</p>
+      <div class="leaks">
+        <div class="leak-card">
+          <div class="leak-card-num">CAPA 1</div>
+          <div class="leak-card-title">Extensión "Pegar como humano"</div>
+          <div class="leak-card-body">Reemplaza el paste instantáneo de WhatsApp Web por tipeo letra por letra. Mata el tell #1 de bot detection.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">CAPA 2</div>
+          <div class="leak-card-title">Multi-número</div>
+          <div class="leak-card-body">2-3 chips para distribuir volumen y reducir riesgo. Si uno entra en ban temporal, seguís con los otros.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">CAPA 3</div>
+          <div class="leak-card-title">BitBrowser</div>
+          <div class="leak-card-body">Software gratuito que le da a cada cuenta su propio fingerprint. Para Meta, son dispositivos distintos.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">CAPA 4</div>
+          <div class="leak-card-title">Rutina manual de calentamiento</div>
+          <div class="leak-card-body">Plan día por día con volumen y tiempos entre mensajes. Es el corazón del módulo.</div>
+        </div>
       </div>
-
-      <h3 class="subsection-title">Las 3 fases del warmeo.</h3>
-
-      <p>El warmeo dura entre <strong>2 y 4 semanas</strong> hasta que el número está consolidado. Cada fase tiene un volumen máximo. <strong>No te saltes fases por ansiedad.</strong> Si ves problemas (mensajes que no entregan, advertencias), bajás un escalón hasta estabilizar.</p>
-
-      <h4 class="minor-title">Fase 1 · Primera semana (número completamente nuevo)</h4>
-      <ul style="list-style: none; padding: 0; margin: 12px 0;">
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">Máximo 20 mensajes por día</strong></li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">Un mensaje cada 5 minutos</strong> (no spamear de golpe)</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ Conversaciones naturales</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--violet);">Lo más importante: que te respondan.</strong> Recibir respuestas es lo que más reputación construye.</li>
-      </ul>
-
-      <h4 class="minor-title">Fase 2 · Segunda y tercera semana</h4>
-      <ul style="list-style: none; padding: 0; margin: 12px 0;">
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">30-60 mensajes por día</strong></li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ Mandás directo a los leads desde el inicio, usando los mensajes de apertura (variantes del sistema)</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">Esperá la respuesta del lead antes de mandarle el siguiente bloque de la variante</strong></li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ Variá lo que mandás (no copiar-pegar el mismo texto)</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--rose);">→ <strong>Todavía no:</strong> mensajes idénticos a todos ni links en el primer mensaje</li>
-      </ul>
-
-      <h4 class="minor-title">Fase 3 · A partir del primer mes (operación normal)</h4>
-      <ul style="list-style: none; padding: 0; margin: 12px 0;">
-        <li style="padding: 6px 0; font-size: 14px; color: var(--violet);">→ <strong style="color: var(--violet);">Objetivo: 100-150 mensajes por día.</strong></li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ Variá los mensajes con la lógica de variantes del sistema (Var I, Var II, etc.)</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ Si vas a un volumen sostenido más alto, sumás más números (no fuerzas uno solo)</li>
-      </ul>
-
-      <div class="pull" style="margin: 24px 0;">
-        <div class="pull-label">Timer del sistema</div>
-        <div class="pull-text" style="font-size: 15px;">El sistema tiene un <strong>timer integrado</strong> que te ayuda a mantener el goteo automáticamente. Configurálo según la fase en la que estés (un mensaje cada 5 minutos en Fase 1, ritmo más alto cuando la cuenta está consolidada). Eso te evita mandar dos seguidos sin querer y mantiene la cadencia que la cuenta tolera.</div>
-      </div>
-
-      <h3 class="subsection-title">Cómo distribuir los mensajes en el día.</h3>
-
-      <p>Hay dos modelos que funcionan. Podés combinarlos según cómo veas tu cuenta. Lo importante es respetar el tope diario.</p>
-
-      <h4 class="minor-title">Modelo A · Bloques con pausa (recomendado)</h4>
-      <ul style="list-style: none; padding: 0; margin: 12px 0;">
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong>Cuenta nueva o con poco tiempo:</strong> bloques de 5 mensajes con pausa de 5 minutos.</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong>Cuenta consolidada (1+ mes):</strong> bloques de 8-10 mensajes con pausa de 10 minutos.</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--rose);">→ <strong>Si el número se traba:</strong> bajá a bloques de 3 mensajes con pausa de 10 minutos hasta estabilizar.</li>
-      </ul>
-
-      <h4 class="minor-title">Modelo B · Ritmo continuo</h4>
-      <ul style="list-style: none; padding: 0; margin: 12px 0;">
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong>Cuenta nueva (primeras 2 semanas):</strong> 1 mensaje cada 2-3 minutos.</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong>Cuenta calentada (3+ semanas):</strong> 1 mensaje cada 1-2 minutos.</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--text-soft);">→ <strong>Cuenta consolidada (1+ mes):</strong> 1 mensaje cada 30-60 segundos.</li>
-        <li style="padding: 6px 0; font-size: 14px; color: var(--rose);">→ <strong>Nunca:</strong> dos mensajes seguidos sin pausa.</li>
-      </ul>
-
-      <div class="rule-callout">
-        <div class="rule-label">Variá los tiempos</div>
-        <p class="rule-text">No mandes siempre exactamente cada 60 segundos. A veces 50, a veces 70, a veces 90. <em>La regularidad perfecta parece automatización. La variación parece humano.</em></p>
-      </div>
-
-      <div class="rule-callout">
-        <div class="rule-label">Cómo trabajar en la práctica</div>
-        <p class="rule-text">Cada lead tiene su propio ritmo de conversación. Vos a uno le mandás apertura, mientras tanto a otro que ya respondió le mandás calificación, mientras tanto a un tercero le hacés seguimiento. <strong>No esperás respuesta de un lead para mandarle a otro distinto.</strong> Lo que sí hacés es esperar respuesta del MISMO lead antes de mandarle el siguiente mensaje a esa persona.</p>
-      </div>
-
-      <h3 class="subsection-title">Casos especiales.</h3>
-
-      <h4 class="minor-title">Reactivar número inactivo (30+ días sin uso)</h4>
-      <p>Empezá desde la Fase 1 pero comprimí el proceso a <strong>7 días</strong>. Monitoreá de cerca cualquier señal de problema.</p>
-
-      <h4 class="minor-title">Después de un baneo temporal</h4>
-      <p>Esperá a que el ban se levante completamente. Empezá desde Fase 1 y hacé el warmeo completo de <strong>14 días</strong>. Sé extremadamente cauto con el volumen.</p>
-
-      <h4 class="minor-title">Múltiples números a la vez</h4>
-      <p>Escaloná las fechas de inicio. <strong>NO calientes todos los números a la vez.</strong> Usá templates de mensajes diferentes por número. Monitoreá cada número independientemente.</p>
-    </section>
-
-    <section id="instagram">
-      <div class="section-marker">
-        <span class="section-marker-num">03</span>
-        <span class="section-marker-label">Instagram · canal secundario</span>
-      </div>
-      <h2 class="section-title">Cuándo usar Instagram y cómo no quemar la cuenta.</h2>
-
-      <p>Instagram entra cuando el sistema te trajo el IG del lead y querés probar por ahí (porque WhatsApp no respondió, o porque ves la cuenta de la clínica activa y conviene abordar visualmente). <strong>No es el canal principal, es apoyo.</strong></p>
-
-      <h3 class="subsection-title">Qué cuenta usar.</h3>
-
-      <p>Cuenta personal con <strong>antigüedad mínima de 6 meses</strong> y uso normal (no recién creada). Humana, no corporativa. Bio simple sin frases vendehumo. Fotos normales, historias destacadas. Más seguidos que seguidores.</p>
-
-      <p style="color: var(--rose);">Lo que mata respuesta en bio: "Ayudo a escalar negocios", "Growth con IA", "Llevo clínicas a 10k". Cualquier cosa así te marca como vendedor antes de mandar el primer DM.</p>
-
-      <h3 class="subsection-title">Reglas de uso.</h3>
-
-      <ul style="list-style: none; padding: 0; margin: 16px 0;">
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si la cuenta estuvo parada o es nueva, usala unos días como cuenta normal antes de mandar DMs (mirar contenido, seguir gente, responder historias).</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ <strong>No mandés ráfagas.</strong> 30 o 40 mensajes seguidos = restricción.</li>
-        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Bloques cortos con pausas. Aperturas variadas (no el mismo opener todo el tiempo).</li>
-        <li style="padding: 8px 0; font-size: 14px; color: var(--text-soft);">→ Cuando se puede, responder una historia o destacada antes de abrir DM directo. Se ve más natural.</li>
-      </ul>
-    </section>
-
-    <section id="llamadas">
-      <div class="section-marker">
-        <span class="section-marker-num">04</span>
-        <span class="section-marker-label">Llamadas en frío</span>
-      </div>
-      <h2 class="section-title">Si querés sumar llamadas, lo coordinás con Ignacio.</h2>
-
-      <p>Las llamadas en frío son un canal extra para los setters que se animen. Bien hechas convierten más rápido que WhatsApp porque saltás el filtro del DM, pero requieren un guion y práctica distintos.</p>
-
-      <p>Si querés probar este canal, escribile a Ignacio y arman el guion, los horarios y la lista de a quién llamar primero. <strong>No arranques solo sin coordinar</strong>: una mala llamada quema al lead para WhatsApp también.</p>
-    </section>
-
-    <section id="reglas">
-      <div class="section-marker">
-        <span class="section-marker-num">05</span>
-        <span class="section-marker-label">Reglas anti-baneo</span>
-      </div>
-      <h2 class="section-title">Las que aplican siempre.</h2>
-
-      <p>Estas reglas valen para WhatsApp y para Instagram:</p>
-
-      <ol class="numbered">
-        <li><strong>Variá los openers.</strong> Si todos tus mensajes arrancan igual, levantás señal de patrón.</li>
-        <li><strong>Pausas naturales.</strong> Bloques cortos con descansos. Nunca ráfagas.</li>
-        <li><strong>Respetá el ritmo.</strong> Especialmente en cuenta nueva o recién recuperada de un ban.</li>
-        <li><strong>Mensajes cortos.</strong> Mensajes largos parecen más automatizados que cortos.</li>
-        <li><strong>Personalizá cuando podés.</strong> Aunque sea con el nombre de la ciudad o la especialidad.</li>
-        <li><strong>NO mandes links en el primer mensaje.</strong> Eso dispara filtros automáticos.</li>
-        <li><strong>Si bajás respuesta de golpe, frená.</strong> Es señal de que algo se está marcando como spam.</li>
-      </ol>
-
-      <div class="warning">
-        <strong>Si una cuenta cae:</strong> avisale a Ignacio y mientras tanto seguí trabajando desde otra cuenta. Una cuenta quemada es <strong>días de productividad perdidos</strong>.
-      </div>
-    </section>
-
-    <section id="extras">
-      <div class="section-marker">
-        <span class="section-marker-num">06</span>
-        <span class="section-marker-label">Herramientas extras (opcional)</span>
-      </div>
-      <h2 class="section-title">Si querés ayudar a sumar volumen.</h2>
-
-      <p>El sistema te entrega los leads cargados. <strong>No es tu responsabilidad generarlos.</strong> Pero si querés sumar leads adicionales o probar perfiles que detectaste vos, estas son las herramientas que usamos.</p>
 
       <div class="aside">
-        Esta sección es opcional. Si solo querés ejecutar sobre los leads que te llegan, podés saltarla. Si querés aportar al volumen, hablá con Ignacio antes para alinear criterios.
+        <strong>Si solo te llevás una cosa de este módulo</strong>, llevate la rutina manual (capa 4). Las otras tres son refuerzos. La rutina es el piso sobre el que todo lo demás funciona.
+      </div>
+    </section>
+
+    <!-- 03 EXTENSIÓN -->
+    <section id="extension">
+      <div class="section-marker">
+        <span class="section-marker-num">03</span>
+        <span class="section-marker-label">Capa 1</span>
+      </div>
+      <h2 class="section-title">Extensión "Pegar como humano".</h2>
+
+      <p class="lead">Es una extensión de Chrome (o Brave) que reemplaza el copiar-pegar instantáneo por tipeo letra por letra. Es la forma más simple de matar el tell #1 de bot detection.</p>
+
+      <h3 class="subsection-title">Qué hace exactamente.</h3>
+
+      <p><strong>Sin la extensión:</strong> copiás un mensaje del panel, hacés Ctrl+V en WhatsApp Web, aparece todo el texto en 0,001 segundos. Ningún humano escribe así. Bandera roja para Meta.</p>
+
+      <p><strong>Con la extensión:</strong> hacés click en "Copiar humano" en el panel, vas a WhatsApp Web, Ctrl+V, y el texto se va escribiendo solo letra por letra como si lo tipearas vos. Con pausas, errores ocasionales, todo.</p>
+
+      <div class="aside">
+        La extensión <strong>solo actúa cuando copiaste desde el panel SCM</strong> (con el botón "Copiar humano"). Si copiás texto de otro lado, el paste funciona normal e instantáneo. No te rompe nada del flujo habitual.
       </div>
 
-      <h3 class="subsection-title">Instant Data Scraper.</h3>
+      <h3 class="subsection-title">Cómo instalarla.</h3>
 
-      <p>Extensión de Chrome que extrae listas (nombres, usuarios, links) de Instagram y otras páginas. Si no sabés usarla, escribile a Ignacio y te muestra cómo.</p>
+      <p>Cuatro pasos, una sola vez. Te paso el archivo por Drive.</p>
 
-      <h3 class="subsection-title">Búsquedas con operadores en Google.</h3>
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Descargá el archivo del Drive</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Bajás <strong>scm-paste-as-human</strong> y lo descomprimís en una carpeta donde no la vayas a borrar (Documentos, Escritorio, donde te quede cómodo).</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Andá a chrome://extensions/</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Pegá esa dirección en la barra del navegador (Chrome o Brave). Te lleva a la página de extensiones.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Activá "Modo desarrollador" arriba a la derecha</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Es un switch en la esquina superior derecha de la página. Cuando lo prendés, aparecen botones nuevos arriba a la izquierda: "Cargar descomprimida", "Empaquetar extensión", "Actualizar".</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Click en "Cargar descomprimida"</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Se abre el explorador. Elegí la carpeta donde descomprimiste el archivo (no el ZIP, la carpeta). Aceptá los permisos. Listo.</p>
+          </div>
+        </div>
+      </div>
 
-      <p>Reemplazá <code style="background: var(--bg-card); padding: 2px 6px; border-radius: 3px; color: var(--violet); font-family: monospace; font-size: 13px;">[keyword]</code> por lo que querés buscar (ej: "odontólogo Mendoza", "implantología La Plata"):</p>
+      <div class="success">
+        <strong>Cómo verificar que quedó bien:</strong> en la lista de extensiones tenés que ver "SCM — Pegar como humano" con un switch violeta encendido a la derecha. Si está apagado, prendelo.
+      </div>
 
-      <h4 class="minor-title">Instagram</h4>
-      <pre style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 12px; color: var(--text-soft); margin: 12px 0; line-height: 1.5;">site:instagram.com + [keyword] -inurl:/p/ -inurl:/explore/ -inurl:/reel/ -inurl:/tv/</pre>
+      <h3 class="subsection-title">Cómo se usa día a día.</h3>
 
-      <h3 class="subsection-title">Truco para encontrar decisores.</h3>
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">En el panel SCM, click en "👤 Copiar humano"</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Está al lado del botón "Copiar" normal. Lo encontrás en: card "Variante asignada esta semana" del Setteo, Banco de Respuestas, y modal de Variantes del Centro de Comando.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Andá a WhatsApp Web, abrí el chat, click en el campo</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Como siempre. Asegurate de tener el cursor en el cuadro de texto.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Ctrl+V (o Cmd+V en Mac)</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">El texto empieza a aparecer letra por letra. Vas a ver un badge violeta abajo a la derecha: "Tipeando... 47/120".</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Cuando el badge desaparece, mandá con Enter</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">El mensaje ya está completo. Si querés cancelar antes, apretá Esc o empezá a tipear vos manualmente y la extensión se pausa sola.</p>
+          </div>
+        </div>
+      </div>
 
-      <p>Mirá cuentas de servicios para clínicas (software dental, agencias de marketing). Sus seguidores y los que dan likes a sus posts suelen ser dueños o admins de clínica (porque son los que contratan esos servicios). De ahí podés sacar perfiles con probabilidad alta de ser decisores.</p>
+      <div class="warning">
+        <strong>Si ves "⚠ Sin extensión — copié normal" en el panel:</strong> significa que la extensión no está instalada o está desactivada. Volvé a chrome://extensions/ y activala.
+      </div>
+
+      <h3 class="subsection-title">Niveles de velocidad.</h3>
+
+      <p>Click en el ícono de la extensión arriba en Chrome → popup con 4 botones. Se guarda en tu PC, no hay que reconfigurar cada día.</p>
+
+      <div class="speed-grid">
+        <div class="speed-card">
+          <div class="speed-emoji">🐢</div>
+          <div class="speed-name">Lento</div>
+          <div class="speed-time">30-40s</div>
+          <div class="speed-detail">200 caracteres</div>
+        </div>
+        <div class="speed-card default">
+          <div class="speed-emoji">🚶</div>
+          <div class="speed-name">Medio · default</div>
+          <div class="speed-time">12-18s</div>
+          <div class="speed-detail">200 caracteres</div>
+        </div>
+        <div class="speed-card">
+          <div class="speed-emoji">🐇</div>
+          <div class="speed-name">Rápido</div>
+          <div class="speed-time">5-8s</div>
+          <div class="speed-detail">200 caracteres</div>
+        </div>
+        <div class="speed-card">
+          <div class="speed-emoji">🐎</div>
+          <div class="speed-name">Muy rápido</div>
+          <div class="speed-time">2-4s</div>
+          <div class="speed-detail">200 caracteres</div>
+        </div>
+      </div>
+
+      <div class="aside">
+        <strong>Recomendación:</strong> arrancá en <strong>Medio</strong> y dejalo ahí las primeras dos semanas. Si querés más velocidad después, subí a Rápido. Lento es para mensajes largos de calificación cuando la cuenta es nueva.
+      </div>
+    </section>
+
+    <!-- 04 MULTI-NÚMERO -->
+    <section id="multi-numero">
+      <div class="section-marker">
+        <span class="section-marker-num">04</span>
+        <span class="section-marker-label">Capa 2</span>
+      </div>
+      <h2 class="section-title">Multi-número: 2 o 3 chips, no uno solo.</h2>
+
+      <p class="lead">Un solo chip te limita. Dos o tres te dan margen para escalar y probar variantes en paralelo.</p>
+
+      <div class="leaks">
+        <div class="leak-card">
+          <div class="leak-card-num">A/B testing</div>
+          <div class="leak-card-title">Probás variantes en paralelo</div>
+          <div class="leak-card-body">Dos números te permiten mandar variantes distintas y comparar cuál funciona mejor sin perder días.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">Ban-resistance</div>
+          <div class="leak-card-title">Si uno entra en ban temporal</div>
+          <div class="leak-card-body">Con un solo número, ban = parás. Con dos o tres, seguís operando con los otros mientras esperás que se libere.</div>
+        </div>
+      </div>
+
+      <div class="pull">
+        <div class="pull-label">Cuántos arrancar</div>
+        <p class="pull-text"><em>Empezá con 2.</em> Hacé la curva de 15 días en los dos. Cuando ya tenés ritmo y rutina sólida, sumás un tercero. Tres es el sweet spot.</p>
+      </div>
+
+      <h3 class="subsection-title">WhatsApp Business mejor que WhatsApp normal.</h3>
+
+      <p>Hay dos versiones de WhatsApp:</p>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">WhatsApp normal:</strong> el que usa todo el mundo. Más restrictivo. Mayor probabilidad de ban si detecta uso comercial.</li>
+        <li style="padding: 10px 0; font-size: 14px; color: var(--text-soft);">→ <strong style="color: var(--text);">WhatsApp Business:</strong> diseñado para empresas. Mucho más tolerante con uso comercial. Es lo que tenés que usar para prospección.</li>
+      </ul>
+
+      <div class="aside">
+        Si podés, comprá un número nuevo y andá directo a WhatsApp Business. Si vas a usar tu personal por ahora, igual abrílo en Business cuando puedas migrarlo.
+      </div>
+
+      <h3 class="subsection-title">Cómo activar un chip nuevo.</h3>
+
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Comprá el chip en un kiosco</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Cualquier operador (Movistar, Claro, Personal). Pedí chip prepago, no necesitás abono. Algo de saldo inicial alcanza para activar.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Activalo siguiendo las instrucciones del envoltorio</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Cada operador trae sus pasos en el papel del chip. Suele ser: poner el chip en un celular, mandar un SMS o llamar a un número, esperar confirmación. 5-10 minutos.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Instalá WhatsApp Business y registrá el número</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Bajás WhatsApp Business desde la tienda, ponés el número, te llega el código por SMS, lo confirmás. Ya estás en línea.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Configurá el perfil antes de mandar nada</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Foto de perfil real (puede ser una imagen profesional, no genérica de stock), nombre coherente, descripción simple. <strong>Cuenta sin foto = sospechosa.</strong></p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Esperá 24hs antes de mandar el primer mensaje comercial</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Que la cuenta "respire" un día. Mandá uno o dos mensajes a familia o amigos para que tenga actividad inicial natural. <strong>Recién al día siguiente</strong> empezás la curva (Fase 1: 12 msgs/día).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="success">
+        <strong>Tip operativo:</strong> podés activar varios chips desde el mismo celular. Ponés el chip, lo activás, instalás WhatsApp Business, configurás la cuenta, conectás el QR a WhatsApp Web, y volvés a poner tu chip personal. La cuenta queda viva en el WhatsApp Web del navegador. Yo activé 5 chips así desde un solo celular.
+      </div>
+
+      <h3 class="subsection-title">Perfiles de Chrome: uno por número.</h3>
+
+      <p>Si abrís dos veces WhatsApp Web en el mismo navegador, te pisa la sesión. La solución básica es tener un perfil de Chrome por cuenta. Suena complicado, no lo es.</p>
+
+      <div class="step-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Click en tu foto de perfil arriba a la derecha de Chrome</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Es el círculo redondo con tu inicial o tu foto. Te abre un menú con tus perfiles actuales.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Click en "Agregar" → elegí un nombre</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Ej: "WA Número 1", "WA Número 2". Saltá el login de Google si te lo ofrece.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Cada perfil abre una ventana separada</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Es como tener dos Chromes distintos corriendo. Cada uno tiene su propia sesión, sus propias cookies, su propio WhatsApp Web logueado.</p>
+          </div>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">En cada perfil instalá la extensión y abrí WhatsApp Web</div>
+            <p style="margin: 0; font-size: 13px; color: var(--text-mute);">Sí, la extensión la instalás en cada perfil. Es 5 minutos por perfil, una sola vez.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="aside">
+        <strong>Por qué importa:</strong> dos WhatsApps en el mismo perfil de Chrome se interfieren (la sesión de uno te tira la del otro). Con perfiles separados, cada cuenta vive en su mundo. Para Meta, es como si fueran dos personas distintas trabajando en dos compus distintas.
+      </div>
+    </section>
+
+    <!-- 05 BITBROWSER -->
+    <section id="bitbrowser">
+      <div class="section-marker">
+        <span class="section-marker-num">05</span>
+        <span class="section-marker-label">Capa 3</span>
+      </div>
+      <h2 class="section-title">BitBrowser: multi-cuenta pro.</h2>
+
+      <p class="lead">Software gratuito que reemplaza los perfiles de Chrome con algo más potente. Es lo que recomendamos para que cada cuenta tenga su propio fingerprint.</p>
+
+      <div class="pull">
+        <div class="pull-label">La analogía</div>
+        <p class="pull-text">Tres cuentas en el mismo Chrome es como tres personas usando la misma compu del lobby de un hotel — sospechoso. BitBrowser es como darle a cada cuenta su propia habitación con su propio dispositivo. Para Meta, son <em>tres usuarios distintos en tres máquinas distintas.</em></p>
+      </div>
+
+      <p>Eso solo ya baja muchísimo el riesgo de baneo, especialmente cuando manejás 3+ cuentas en simultáneo desde la misma compu y la misma IP.</p>
+
+      <h3 class="subsection-title">Qué te da BitBrowser.</h3>
+
+      <div class="leaks">
+        <div class="leak-card">
+          <div class="leak-card-num">🎭</div>
+          <div class="leak-card-title">Fingerprints distintos por cuenta</div>
+          <div class="leak-card-body">Cada perfil simula un dispositivo diferente: distinto navegador, distinta resolución, distinto sistema operativo, distintas fonts.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">📦</div>
+          <div class="leak-card-title">Todo en una sola app</div>
+          <div class="leak-card-body">En vez de tener 3 perfiles de Chrome desordenados, abrís BitBrowser y desde ahí lanzás cada cuenta con un click.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">🌐</div>
+          <div class="leak-card-title">Proxies por cuenta (opcional)</div>
+          <div class="leak-card-body">Podés asignarle una IP distinta a cada cuenta. Si querés un nivel extra de separación, esto lo cubre. No es obligatorio para arrancar.</div>
+        </div>
+        <div class="leak-card">
+          <div class="leak-card-num">💰</div>
+          <div class="leak-card-title">Plan free alcanza</div>
+          <div class="leak-card-body">10 perfiles gratis. Para 2-3 números, sobra. No tenés que pagar nada para empezar.</div>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Cómo instalarlo: video tutorial.</h3>
+
+      <p>Te dejo un video que muestra el paso a paso de instalación y configuración de BitBrowser.</p>
+
+      <div class="video-embed">
+        <div class="video-icon">🎬</div>
+        <div class="video-text">
+          <div class="video-title">Tutorial: cómo instalar y configurar BitBrowser</div>
+          <div class="video-desc">El video está enfocado en Instagram, pero <strong style="color: var(--text);">la instalación y configuración es la misma para WhatsApp</strong>. Ignorá la parte específica de Instagram y enfocate solo en cómo se instala y se crean los perfiles.</div>
+          <a href="https://www.loom.com/share/ba54fa44d56743c6b341562417825b60" target="_blank" rel="noopener" class="video-link">Ver tutorial en Loom →</a>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Cómo se usa una vez instalado.</h3>
+
+      <p>Resumen de lo que vas a hacer (lo cubre el video en detalle):</p>
+
+      <ol class="numbered">
+        <li>Crear un perfil nuevo: nombre, etiquetas, plataforma (WhatsApp Web).</li>
+        <li>Configurar el dispositivo simulado: una cuenta como Mac, otra como Windows, etc. (no hay que tocar mucho, casi todo se deja en random).</li>
+        <li>Confirmar y abrir el perfil. Se abre como un navegador independiente con su fingerprint propio.</li>
+        <li>Dentro de ese navegador, abrir WhatsApp Web e instalar la extensión "Pegar como humano".</li>
+        <li>Escanear el QR con el celular del número correspondiente.</li>
+        <li>Repetir para cada número.</li>
+      </ol>
+
+      <div class="aside">
+        Una vez configurado, abrís BitBrowser, apretás "Open" en el perfil que querés usar, y se abre con la sesión guardada lista para trabajar. Mucho más prolijo que tener mil ventanas de Chrome abiertas.
+      </div>
+    </section>
+
+    <!-- 06 RUTINA -->
+    <section id="rutina">
+      <div class="section-marker">
+        <span class="section-marker-num">06</span>
+        <span class="section-marker-label">Capa 4 · El corazón</span>
+      </div>
+      <h2 class="section-title">La rutina de calentamiento.</h2>
+
+      <p class="lead">Esto es lo que te va a salvar el número. Las otras tres capas son refuerzos, pero la rutina es el piso. Si solo te llevás una cosa de este módulo, llevate esto.</p>
+
+      <h3 class="subsection-title">Por qué existe.</h3>
+
+      <p>WhatsApp evalúa tu cuenta los primeros 15 días. Si te portás como humano, te deja escalar. Si te portás como bot, te tira la cuenta.</p>
+
+      <div class="pull">
+        <div class="pull-label">Principio guía</div>
+        <p class="pull-text">Los días 1 y 2 son los más críticos. Un movimiento brusco ahí = ban casi seguro. Después la cuenta gana <em>"confianza"</em> con Meta y podés escalar. Paciencia los primeros días, agresividad después.</p>
+      </div>
+
+      <h3 class="subsection-title">La curva de 15 días.</h3>
+
+      <p>Volumen y drip por fase. Estos son los números que aplican a <strong>aperturas en frío</strong> (mensajes nuevos a leads que no te conocen). Las respuestas a leads que ya te escribieron no entran en este conteo.</p>
+
+      <div class="curve-grid">
+        <div class="curve-phase" data-i="1">
+          <div class="curve-name">Fase 1</div>
+          <div class="curve-days">Días 1-2</div>
+          <div class="curve-msgs">12</div>
+          <div class="curve-msgs-label">msgs/día</div>
+          <div class="curve-drip"><div class="curve-drip-label">Drip</div>8-15 min</div>
+        </div>
+        <div class="curve-phase" data-i="2">
+          <div class="curve-name">Fase 2</div>
+          <div class="curve-days">Días 3-5</div>
+          <div class="curve-msgs">30</div>
+          <div class="curve-msgs-label">msgs/día</div>
+          <div class="curve-drip"><div class="curve-drip-label">Drip</div>5-10 min</div>
+        </div>
+        <div class="curve-phase" data-i="3">
+          <div class="curve-name">Fase 3</div>
+          <div class="curve-days">Días 6-10</div>
+          <div class="curve-msgs">60</div>
+          <div class="curve-msgs-label">msgs/día</div>
+          <div class="curve-drip"><div class="curve-drip-label">Drip</div>4-8 min</div>
+        </div>
+        <div class="curve-phase" data-i="4">
+          <div class="curve-name">Fase 4</div>
+          <div class="curve-days">Días 11-14</div>
+          <div class="curve-msgs">90</div>
+          <div class="curve-msgs-label">msgs/día</div>
+          <div class="curve-drip"><div class="curve-drip-label">Drip</div>3-6 min</div>
+        </div>
+        <div class="curve-phase" data-i="5">
+          <div class="curve-name">Fase 5</div>
+          <div class="curve-days">Día 15+</div>
+          <div class="curve-msgs">120-150</div>
+          <div class="curve-msgs-label">msgs/día</div>
+          <div class="curve-drip"><div class="curve-drip-label">Drip</div>2-4 min</div>
+        </div>
+      </div>
+
+      <div class="aside">
+        <strong>120-150 mensajes/día es el ideal en operación normal.</strong> Si te resulta mucho, mantener <strong>60 a 90 mensajes consistentes todos los días</strong> es válido y es preferible a hacer 150 un día y 0 al siguiente. La consistencia importa más que el pico.
+      </div>
+
+      <h3 class="subsection-title">Por qué los drips son en minutos.</h3>
+
+      <p>Estamos mandando aperturas en frío 100% — no hay tráfico orgánico que diluya el patrón. Drips más largos = más realista. Mejor mandar menos y bien que más y quemar el número.</p>
+
+      <h4 class="minor-title">Variá los tiempos dentro del rango</h4>
+      <p>No mandes cada 5 minutos exactos. Mandá uno a los 5, otro a los 8, otro a los 12, etc. <strong>El patrón fijo es el enemigo.</strong> Los rangos te dan margen para improvisar.</p>
+
+      <h3 class="subsection-title">Usá el timer del CRM.</h3>
+
+      <p>El sistema tiene un timer integrado. Lo prendés vos manualmente:</p>
+
+      <ol class="numbered">
+        <li>Configurás el rango (ej: 5-10 min). El timer empieza a contar regresivo.</li>
+        <li>Mandás un mensaje. Volvés a tu trabajo.</li>
+        <li>Cuando el timer llega a cero, hace un sonido para avisarte.</li>
+        <li>Mandás el siguiente mensaje. Reiniciás el timer.</li>
+      </ol>
+
+      <div class="success">
+        <strong>El timer no te tracea ni te avisa de problemas.</strong> Es solo un cronómetro que suena cuando termina. Sirve para que no tengas que estar mirando el reloj y para no irte a ojo (que es donde terminás mandando 3 mensajes en 90 segundos sin darte cuenta).
+      </div>
+
+      <h4 class="minor-title">Si habilitás notificaciones del navegador</h4>
+      <p>Te llega el aviso aunque tengas otra pestaña abierta. Útil cuando estás haciendo otras cosas entre mensajes (responder a leads que ya te escribieron, cargar el CRM, mandar mensajes de calificación con la extensión).</p>
+
+      <h3 class="subsection-title">Aprovechá los minutos del drip.</h3>
+
+      <p>Los minutos entre apertura y apertura no son tiempo muerto. Son tiempo para:</p>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Responder a leads que te escribieron</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Mandar mensajes de calificación con la extensión</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Cargar info en el CRM</li>
+        <li style="padding: 8px 0; font-size: 14px; color: var(--text-soft);">→ Hacer seguimientos pendientes</li>
+      </ul>
+
+      <p>El drip es solo entre <strong>aperturas en frío</strong>. Las respuestas a leads activos no esperan drip — contestá rápido como cualquier humano.</p>
+
+      <h3 class="subsection-title">Horario laboral del lead.</h3>
+
+      <p>Mandá entre las <strong>9 y 19hs hora local del lead</strong>. Si vos estás en Argentina y el lead está en otro país, ajustá la franja al país de él.</p>
+
+      <div class="warning">
+        Mensajes a las 3 AM o un domingo a las 7 AM = bandera roja altísima para Meta. Es un patrón que solo bots tienen.
+      </div>
+
+      <p><strong>Si un lead te responde fuera de horario:</strong> no le contestes ahí mismo. Esperá al horario laboral siguiente. Mantener tu actividad concentrada en una franja horaria parece humano. Mandar mensajes a las 4 AM porque "el lead estaba ahí" parece bot.</p>
+
+      <h3 class="subsection-title">Días de la semana.</h3>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Lunes a viernes:</strong> <span style="color: var(--text-mute);">tu día de aperturas en frío. Volumen completo.</span></li>
+        <li style="padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px;"><strong style="color: var(--text);">Sábado:</strong> <span style="color: var(--text-mute);">buen día para responder pendientes y hacer seguimientos. Si querés mandar aperturas, volumen bajo.</span></li>
+        <li style="padding: 10px 0; font-size: 14px;"><strong style="color: var(--text);">Domingo:</strong> <span style="color: var(--text-mute);">dejá descansar la cuenta. Que respire un día le hace bien, sobre todo si está nueva. Si un lead te escribe en domingo, contestale el lunes.</span></li>
+      </ul>
+    </section>
+
+    <!-- 07 PRÁCTICA NATURAL -->
+    <section id="practica-natural">
+      <div class="section-marker">
+        <span class="section-marker-num">07</span>
+        <span class="section-marker-label">Práctica natural los primeros días</span>
+      </div>
+      <h2 class="section-title">Que parezca un humano de verdad.</h2>
+
+      <p class="lead">Más allá de la curva, los primeros días Meta mira si tu cuenta tiene actividad orgánica. Una cuenta que solo manda mensajes y nunca recibe es sospechosa.</p>
+
+      <p>Estas son tres cosas que tenés que hacer en paralelo a la rutina, sobre todo en los primeros 7 días:</p>
+
+      <h3 class="subsection-title">1. Conversaciones reales con familia o amigos.</h3>
+
+      <p>Mantené al menos <strong>una conversación entrante real por día</strong> los primeros 7 días. Familia, amigos, alguien que te conozca. No tienen que ser conversaciones largas — pueden ser cortas, naturales.</p>
+
+      <div class="aside">
+        Es mucho más fácil tener una conversación larga con alguien que te conoce que con un lead frío. Y esa conversación le da a la cuenta historial real, que es lo que Meta valora.
+      </div>
+
+      <h3 class="subsection-title">2. Sumate a grupos de WhatsApp existentes.</h3>
+
+      <p>Esta es probablemente la forma más fácil de generar actividad orgánica sin esfuerzo. Sumate a 3-5 grupos que ya existen — pueden ser de amigos, de la familia, de algún hobby, lo que sea. <strong>No crees grupos nuevos.</strong></p>
+
+      <p>¿Por qué funciona?</p>
+
+      <ul style="list-style: none; padding: 0; margin: 16px 0;">
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Los grupos generan actividad solos. Sin que vos hagas nada.</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Te llegan mensajes constantemente. Eso le da a la cuenta historial real.</li>
+        <li style="padding: 8px 0; border-bottom: 1px solid var(--border-soft); font-size: 14px; color: var(--text-soft);">→ Si interactuás aunque sea cada tanto, mejor todavía.</li>
+        <li style="padding: 8px 0; font-size: 14px; color: var(--text-soft);">→ Después podés silenciarlos y dejarlos ahí. Siguen generando actividad.</li>
+      </ul>
+
+      <div class="success">
+        Sumarse a grupos los primeros 7 días es de las cosas que más rápido cambia el perfil de una cuenta nueva. Hacelo el día 1.
+      </div>
+
+      <h3 class="subsection-title">3. Apagá WhatsApp 12hs de noche.</h3>
+
+      <p>Una cuenta humana descansa. Apagá el WhatsApp Web (o cerrá la sesión del navegador) durante la noche, idealmente 10-12hs. La cuenta sigue ahí, pero "duerme" como cualquier persona.</p>
+
+      <p>Esto no es obligatorio si trabajás en horarios normales y cerrás la compu de noche, pero es una capa extra de "humanidad" para la cuenta.</p>
+    </section>
+
+    <!-- 08 DO/DONT -->
+    <section id="do-dont">
+      <div class="section-marker">
+        <span class="section-marker-num">08</span>
+        <span class="section-marker-label">Do / Don't</span>
+      </div>
+      <h2 class="section-title">Buenas y malas prácticas.</h2>
+
+      <div class="role-table">
+        <div class="role-table-header">✓ Hacé esto</div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Variá los mensajes (4-5 plantillas distintas mínimo)</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Personalizá con el nombre y la ciudad del lead</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Usá la extensión para mensajes largos (calificación)</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Tené al menos 1 conversación real entrante por día los primeros 7 días</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Variá los drips dentro del rango — no seas mecánico</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Apagá WhatsApp 12hs de noche para simular descanso</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag si">SI</span>
+          <span class="role-text">Sumate a grupos existentes los primeros días</span>
+        </div>
+      </div>
+
+      <div class="role-table">
+        <div class="role-table-header">✕ Nunca hagas esto</div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Mandar el mismo mensaje idéntico a 10 contactos seguidos</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Pegar mensajes con Ctrl+V instantáneo (sin la extensión)</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Mandar links en el primer mensaje a un contacto nuevo</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Mandar imágenes o audios largos los primeros 3 días</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Mandar aperturas en frío domingos o feriados</span>
+        </div>
+        <div class="role-row">
+          <span class="role-tag no">NO</span>
+          <span class="role-text">Forzar el volumen máximo desde día 1 — la curva es por algo</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 REGLAS DE ORO -->
+    <section id="reglas">
+      <div class="section-marker">
+        <span class="section-marker-num">09</span>
+        <span class="section-marker-label">Reglas de oro</span>
+      </div>
+      <h2 class="section-title">Las 5 reglas que no se rompen.</h2>
+
+      <ol class="numbered">
+        <li><strong>Mantené el CRM siempre actualizado.</strong> Si te banean o pasa algo con el número, la info del lead la tenés ahí, no perdida en el chat caído.</li>
+        <li><strong>Respetá el horario laboral del lead.</strong> 9 a 19hs hora local de él, no la tuya.</li>
+        <li><strong>Usá las variantes del Centro de Comando como base, pero personalizá</strong> con nombre y ciudad del lead.</li>
+        <li><strong>Si una cuenta cae en ban temporal (24hs):</strong> no mandes mensajes nuevos durante el cooldown. Si tenés conversaciones activas, las podés seguir respondiendo desde el celular — la sesión queda abierta ahí.</li>
+        <li><strong>Si no estás seguro de algo, preguntá.</strong> Mejor parar y consultar que reventar un número.</li>
+      </ol>
+    </section>
+
+    <!-- 10 CHEAT SHEET -->
+    <section id="cheat">
+      <div class="section-marker">
+        <span class="section-marker-num">10</span>
+        <span class="section-marker-label">Cheat sheet</span>
+      </div>
+      <h2 class="section-title">Los números clave para tener al lado del monitor.</h2>
+
+      <div class="cheat-grid">
+        <div class="cheat-item"><div class="cheat-num">12</div><div class="cheat-text">msgs/día días 1-2 · drip <strong>8-15 min</strong></div></div>
+        <div class="cheat-item"><div class="cheat-num">30</div><div class="cheat-text">msgs/día días 3-5 · drip <strong>5-10 min</strong></div></div>
+        <div class="cheat-item"><div class="cheat-num">60</div><div class="cheat-text">msgs/día días 6-10 · drip <strong>4-8 min</strong></div></div>
+        <div class="cheat-item"><div class="cheat-num">90</div><div class="cheat-text">msgs/día días 11-14 · drip <strong>3-6 min</strong></div></div>
+        <div class="cheat-item"><div class="cheat-num">120</div><div class="cheat-text">a 150 msgs/día desde día 15 · drip <strong>2-4 min</strong></div></div>
+        <div class="cheat-item"><div class="cheat-num">9-19</div><div class="cheat-text">horario laboral del lead, lun-vie</div></div>
+        <div class="cheat-item"><div class="cheat-num">👤</div><div class="cheat-text">extensión obligatoria para calificación</div></div>
+        <div class="cheat-item"><div class="cheat-num">⏱</div><div class="cheat-text">timer en mano · variá tiempos en el rango</div></div>
+      </div>
+    </section>
+
+    <!-- 11 FAQ -->
+    <section id="faq">
+      <div class="section-marker">
+        <span class="section-marker-num">11</span>
+        <span class="section-marker-label">FAQ</span>
+      </div>
+      <h2 class="section-title">Preguntas frecuentes.</h2>
+
+      <h4 class="minor-title">¿Y si me banean igual haciendo todo bien?</h4>
+      <p>Pasa. Meta tiene su algoritmo y a veces falla. Si te banean siguiendo la rutina, avisá a Ignacio con captura, no te lo tomes personal. Te asignamos otro número y seguís.</p>
+
+      <h4 class="minor-title">¿La extensión funciona en celular?</h4>
+      <p>No. Solo Chrome o Brave desktop. Para calificación abrí WhatsApp Web en la compu, mandá desde ahí, después volvé al celular si querés.</p>
+
+      <h4 class="minor-title">¿Tengo que esperar el drip si el lead me escribió primero?</h4>
+      <p>No. Si el lead te escribe, contestale rápido (en minutos). El drip aplica entre <em>aperturas en frío</em>, no entre respuestas a leads activos.</p>
+
+      <h4 class="minor-title">¿Puedo activar varios chips desde el mismo celular?</h4>
+      <p>Sí. Ponés el chip, lo activás, instalás WhatsApp Business, configurás la cuenta, conectás el QR a WhatsApp Web. Después sacás el chip y volvés a poner el tuyo. La cuenta queda viva en el navegador.</p>
+
+      <h4 class="minor-title">¿Qué pasa si me equivoco y mando un mensaje fuera de horario?</h4>
+      <p>Uno solo no te va a banear. El problema es el patrón. Si mandás 30 mensajes a las 4 AM, sí. Uno a las 20:30 porque te pasaste, no.</p>
+
+      <h4 class="minor-title">¿Puedo usar mi número personal?</h4>
+      <p>Podés, pero no es lo ideal. WhatsApp Business es mucho más tolerante con uso comercial. Si vas a usar tu personal, considerá pasarlo a WhatsApp Business o comprar uno nuevo dedicado a prospección.</p>
+
+      <h4 class="minor-title">¿Cuántos mensajes mando los primeros días?</h4>
+      <p>Día 1-2: máximo 12 aperturas en frío con drip de 8-15 min entre cada una. Solo eso. Sumá conversaciones reales con familia o amigos y entrá a 3-5 grupos. Recién al día 3 subís a 30 mensajes.</p>
+
+      <h4 class="minor-title">¿Y si en el drip de 8-15 min me escribe un lead?</h4>
+      <p>Le contestás. Las respuestas a leads activos no esperan drip. El drip es solo entre las aperturas en frío.</p>
     </section>
 
     <div class="rule-callout">
       <div class="rule-label">Para llevarte</div>
-      <p class="rule-text">WhatsApp es el canal principal. Cada número nuevo necesita warmeo gradual. <em>Tope diario: 100-150 mensajes</em>. Bloques con pausa o ritmo continuo, lo que mejor te funcione, pero respetando el tope. Las cuentas calentadas y bien usadas rinden por meses; las quemadas te dejan sin trabajo.</p>
+      <p class="rule-text">Calentá despacio, <em>variá todo</em>, usá la extensión para mensajes largos, respetá el horario laboral del lead, mantené el CRM al día y cuando dudes — preguntá. <em>La rutina es el piso. Sin la rutina, las otras capas no alcanzan.</em></p>
     </div>
-
 
     <footer class="module-footer">
       <span class="footer-info">
