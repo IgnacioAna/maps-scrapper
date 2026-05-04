@@ -5293,6 +5293,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   function _asstRenderBlocks(blocks) {
     const ul = document.getElementById('asst-blocks');
     ul.innerHTML = '';
+    const noResp = document.getElementById('asst-no-response');
+    if (!blocks || !blocks.length) {
+      if (noResp) noResp.style.display = 'block';
+      // Ocultar botones de copiar todo cuando no hay respuesta
+      const ca = document.getElementById('asst-copy-all');
+      const cah = document.getElementById('asst-copy-all-human');
+      if (ca) ca.style.display = 'none';
+      if (cah) cah.style.display = 'none';
+      return;
+    }
+    if (noResp) noResp.style.display = 'none';
+    const ca = document.getElementById('asst-copy-all');
+    const cah = document.getElementById('asst-copy-all-human');
+    if (ca) ca.style.display = '';
+    if (cah) cah.style.display = '';
     blocks.forEach((b, i) => {
       const li = document.createElement('li');
       li.style.cssText = 'display:flex; gap:10px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:12px; align-items:flex-start;';
@@ -5312,7 +5327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await navigator.clipboard.writeText(b);
           ev.target.textContent = '✓ Copiado';
           setTimeout(() => { ev.target.textContent = 'Copiar'; }, 1500);
-        } catch (e) { alert('No pude copiar: ' + e.message); }
+        } catch (e) { window.showToast('No pude copiar: ' + e.message, { type: 'error' }); }
       });
       li.querySelector('.asst-block-copy-human').addEventListener('click', async (ev) => {
         try {
@@ -5320,7 +5335,34 @@ document.addEventListener('DOMContentLoaded', async () => {
           await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + b) : b);
           ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
           setTimeout(() => { ev.target.textContent = '👤 Humano'; }, 2400);
-        } catch (e) { alert('No pude copiar: ' + e.message); }
+        } catch (e) { window.showToast('No pude copiar: ' + e.message, { type: 'error' }); }
+      });
+      ul.appendChild(li);
+    });
+  }
+
+  function _asstRenderCoaching(items) {
+    const wrap = document.getElementById('asst-coaching-wrap');
+    const ul = document.getElementById('asst-coaching');
+    if (!wrap || !ul) return;
+    if (!items || !items.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    ul.innerHTML = '';
+    items.forEach((it, i) => {
+      const li = document.createElement('li');
+      li.style.cssText = 'display:flex; gap:10px; align-items:flex-start; padding:8px 10px; background:rgba(157,133,242,0.04); border:1px solid rgba(157,133,242,0.18); border-radius:8px;';
+      li.innerHTML = `
+        <span style="flex-shrink:0; width:20px; height:20px; border-radius:50%; background:rgba(157,133,242,0.18); color:var(--accent); display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">${i + 1}</span>
+        <span class="asst-coaching-text" style="flex:1; font-size:13px; line-height:1.5; color:var(--text-primary);"></span>
+        <button class="btn-table-action asst-coaching-copy" title="Copiar texto" style="font-size:10px; padding:3px 8px; flex-shrink:0;">⧉</button>
+      `;
+      li.querySelector('.asst-coaching-text').textContent = it;
+      li.querySelector('.asst-coaching-copy').addEventListener('click', async (ev) => {
+        try {
+          await navigator.clipboard.writeText(it);
+          ev.target.textContent = '✓';
+          setTimeout(() => { ev.target.textContent = '⧉'; }, 1200);
+        } catch (e) { window.showToast('No pude copiar: ' + e.message, { type: 'error' }); }
       });
       ul.appendChild(li);
     });
@@ -5389,6 +5431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _asstCurrentGen = d;
       document.getElementById('asst-output-card').style.display = 'block';
       _asstRenderBlocks(d.blocks || []);
+      _asstRenderCoaching(d.coaching || []);
       _asstRenderEjemplos(d.ejemplos || []);
       if (d.usedFallback) document.getElementById('asst-fallback-pill').style.display = 'inline-block';
       if (Array.isArray(d.violations) && d.violations.length) {
@@ -5524,9 +5567,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           document.getElementById('asst-prospect-msg').value = g.prospectMessage || '';
           if (g.context) document.getElementById('asst-context').value = g.context;
           if (g.conversationHistory) document.getElementById('asst-history').value = g.conversationHistory;
-          _asstCurrentGen = { id: g.id, blocks: g.output?.blocks || [], text: g.output?.text || '', ejemplos: g.ejemplos || [] };
+          _asstCurrentGen = { id: g.id, blocks: g.output?.blocks || [], text: g.output?.text || '', coaching: g.output?.coaching || [], ejemplos: g.ejemplos || [] };
           document.getElementById('asst-output-card').style.display = 'block';
           _asstRenderBlocks(_asstCurrentGen.blocks);
+          _asstRenderCoaching(_asstCurrentGen.coaching);
           _asstRenderEjemplos(_asstCurrentGen.ejemplos);
           window.showToast('Generación restaurada. Podés copiar o reformular.', { type: 'info' });
           window.scrollTo({ top: document.getElementById('asst-output-card').offsetTop - 80, behavior: 'smooth' });

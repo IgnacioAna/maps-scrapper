@@ -128,3 +128,84 @@ describe("detectMercuryViolations", () => {
     expect(v).toContain("stack_tecnico");
   });
 });
+
+describe("parseMercuryOutput — formato 2 secciones", () => {
+  const { parseMercuryOutput } = globalThis.__mercury;
+
+  it("parsea respuesta + sugerencias normales", () => {
+    const raw = `RESPUESTA AL LEAD:
+Te entiendo, eso lo vemos en la llamada.
+
+Le parece mañana o el miércoles?
+
+SUGERENCIAS PARA EL SETTER:
+- Mandá el PDF ejecutivo
+- Pasale el testimonio del Dr. X`;
+    const r = parseMercuryOutput(raw);
+    expect(r.responseBlocks.length).toBe(2);
+    expect(r.responseBlocks[0]).toMatch(/Te entiendo/);
+    expect(r.coaching.length).toBe(2);
+    expect(r.coaching[0]).toBe("Mandá el PDF ejecutivo");
+  });
+
+  it("respuesta vacía cuando dice (no responder ahora)", () => {
+    const raw = `RESPUESTA AL LEAD:
+(no responder ahora)
+
+SUGERENCIAS PARA EL SETTER:
+- Esperá 24h
+- Después mandale el caso de éxito`;
+    const r = parseMercuryOutput(raw);
+    expect(r.responseBlocks).toEqual([]);
+    expect(r.coaching.length).toBe(2);
+  });
+
+  it("sugerencias vacías cuando dice (ninguna)", () => {
+    const raw = `RESPUESTA AL LEAD:
+Le entiendo. Lo vemos en una llamada.
+
+SUGERENCIAS PARA EL SETTER:
+(ninguna)`;
+    const r = parseMercuryOutput(raw);
+    expect(r.responseBlocks.length).toBe(1);
+    expect(r.coaching).toEqual([]);
+  });
+
+  it("backward compat: sin headers, todo va a respuesta", () => {
+    const raw = "Te entiendo. Lo vemos mañana?";
+    const r = parseMercuryOutput(raw);
+    expect(r.responseBlocks.length).toBe(1);
+    expect(r.coaching).toEqual([]);
+  });
+
+  it("acepta encabezados con asteriscos markdown", () => {
+    const raw = `**RESPUESTA AL LEAD:**
+Hola. Le interesa una llamada?
+
+**SUGERENCIAS PARA EL SETTER:**
+- Agendá esta semana`;
+    const r = parseMercuryOutput(raw);
+    expect(r.responseBlocks.length).toBe(1);
+    expect(r.coaching.length).toBe(1);
+  });
+
+  it("strip de bullets variados (-, *, •, números)", () => {
+    const raw = `RESPUESTA AL LEAD:
+(no responder ahora)
+
+SUGERENCIAS PARA EL SETTER:
+- Acción 1
+* Acción 2
+• Acción 3
+1. Acción 4`;
+    const r = parseMercuryOutput(raw);
+    expect(r.coaching).toEqual(["Acción 1", "Acción 2", "Acción 3", "Acción 4"]);
+  });
+
+  it("cap a 6 sugerencias", () => {
+    const lines = Array.from({length: 10}, (_, i) => `- accion ${i+1}`).join("\n");
+    const raw = `RESPUESTA AL LEAD:\n(no responder ahora)\n\nSUGERENCIAS PARA EL SETTER:\n${lines}`;
+    const r = parseMercuryOutput(raw);
+    expect(r.coaching.length).toBe(6);
+  });
+});

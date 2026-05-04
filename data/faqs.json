@@ -1226,7 +1226,7 @@
       "createdBy": "Ignacio",
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-05-01T22:23:24.379Z",
-      "updatedAt": "2026-05-01T22:23:24.379Z",
+      "updatedAt": "2026-05-04T16:02:23.977Z",
       "usos": 0,
       "funcionaron": 0,
       "tagsExtra": [
@@ -1271,6 +1271,28 @@
       "createdById": "user_admin_ignacio",
       "createdAt": "2026-05-03T17:47:39.138Z",
       "updatedAt": "2026-05-03T17:47:39.138Z",
+      "usos": 0,
+      "funcionaron": 0,
+      "tagsExtra": [
+        "mercury-promoted",
+        "aprobado-admin"
+      ]
+    },
+    {
+      "id": "faq_promoted_1777910670205_rudci",
+      "pregunta": "[2/5, 16:35] Dental Artistry by Dr. Juan Carlos Castellanos: Actualmente ya contamos con nuestro sistema de seguimiento activo y además tenemos contratado este tipo de servicios por el resto del año, por lo que por ahora no estamos buscando implementar algo adicional 🙌\n[2/5, 16:35] Dental Artistry by Dr. Juan Carlos Castellanos: De cualquier forma, si hay algo que haga su propuesta diferente o algún valor adicional que consideres relevante, con gusto podemos revisarlo.",
+      "respuesta": "La propuesta consiste en implementar un sistema de reactivacion, seguimiento y fidelizacion de pacientes para que la clinica no dependa solo del trabajo manual del equipo en esa parte.\n\nSe trabaja sobre pacientes que no volvieron, consultas o presupuestos que quedaron sin avanzar, no-shows y seguimiento post turno, para que no se pierdan oportunidades por falta de continuidad.\n\nLa idea es ayudar a que la clinica pueda trabajar su base de pacientes de forma mas ordenada y constante, mejorando retencion, continuidad y vinculo con el paciente.\n\nSi les hace sentido, podemos verlo con mas profundidad en una llamada.",
+      "categoria": "general",
+      "tags": [
+        "mercury",
+        "aprobado-admin"
+      ],
+      "variantes": [],
+      "variantId": null,
+      "createdBy": "Ignacio",
+      "createdById": "user_admin_ignacio",
+      "createdAt": "2026-05-04T16:04:30.205Z",
+      "updatedAt": "2026-05-04T16:04:30.205Z",
       "usos": 0,
       "funcionaron": 0,
       "tagsExtra": [

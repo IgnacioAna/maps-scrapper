@@ -6137,10 +6137,107 @@ function detectMercuryViolations(text) {
   return out;
 }
 
+// Parsea la salida de Mercury en dos secciones: respuesta al lead + sugerencias
+// para el setter. Si no encuentra headers (output legacy o IA que no respetó el
+// formato), todo va a respuesta y coaching queda vacío.
+function parseMercuryOutput(raw) {
+  if (!raw) return { responseBlocks: [], coaching: [], responseText: '' };
+  const text = String(raw);
+  // Acepta variaciones tipo "RESPUESTA AL LEAD", "**RESPUESTA AL LEAD:**", etc.
+  const respRe = /\*{0,2}\s*RESPUESTA\s+AL\s+LEAD\s*\*{0,2}\s*:?/i;
+  const sugRe = /\*{0,2}\s*SUGERENCIAS\s+PARA\s+EL\s+SETTER\s*\*{0,2}\s*:?/i;
+  const respM = text.match(respRe);
+  const sugM = text.match(sugRe);
+
+  let responseSection = '';
+  let coachingSection = '';
+
+  if (respM && sugM) {
+    if (respM.index < sugM.index) {
+      responseSection = text.slice(respM.index + respM[0].length, sugM.index).trim();
+      coachingSection = text.slice(sugM.index + sugM[0].length).trim();
+    } else {
+      coachingSection = text.slice(sugM.index + sugM[0].length, respM.index).trim();
+      responseSection = text.slice(respM.index + respM[0].length).trim();
+    }
+  } else if (respM) {
+    responseSection = text.slice(respM.index + respM[0].length).trim();
+  } else if (sugM) {
+    coachingSection = text.slice(sugM.index + sugM[0].length).trim();
+  } else {
+    // Sin headers: todo a respuesta (backward compat con prompts viejos).
+    responseSection = text.trim();
+  }
+
+  // Si la respuesta es el placeholder "(no responder ahora)" → vacía.
+  let responseBlocks = [];
+  let responseText = '';
+  if (responseSection && !/^\s*\(?\s*no\s+responder\s+ahora\s*\)?\s*\.?\s*$/i.test(responseSection)) {
+    const sanitized = sanitizeMercuryStyle(responseSection);
+    responseBlocks = sanitized.blocks;
+    responseText = sanitized.text;
+  }
+
+  // Parse coaching: split por líneas, strip bullets/numerals, filtrar vacíos.
+  let coaching = [];
+  if (coachingSection && !/^\s*\(?\s*ninguna\s*\)?\s*\.?\s*$/i.test(coachingSection)) {
+    coaching = coachingSection
+      .split(/\n+/)
+      .map((ln) => ln.replace(/^\s*(?:[-*•·]|\d+[.)])\s*/, '').trim())
+      .filter((ln) => ln && ln.length >= 3 && ln.length < 400);
+    if (coaching.length > 6) coaching = coaching.slice(0, 6);
+  }
+
+  return { responseBlocks, coaching, responseText };
+}
+
+// Bloque de instrucciones que se anexa SIEMPRE al system prompt para forzar el
+// formato de dos secciones. Se hace en runtime (no en el prompt editable) para
+// que ediciones del admin al system prompt no rompan el contrato.
+const MERCURY_OUTPUT_FORMAT_INSTRUCTIONS = `
+
+---
+
+FORMATO DE SALIDA OBLIGATORIO
+
+Tu respuesta SIEMPRE tiene exactamente dos secciones, en este orden y con estos encabezados textuales:
+
+RESPUESTA AL LEAD:
+<bloques separados por doble salto, listos para enviar al WhatsApp>
+o el placeholder textual: (no responder ahora)
+
+SUGERENCIAS PARA EL SETTER:
+- <acción concreta 1>
+- <acción concreta 2>
+o el placeholder textual: (ninguna)
+
+CUÁNDO USAR CADA SECCIÓN
+
+1. Si el lead pide algo que NO se manda por chat ahora (su mail, un PDF, un link, info de la empresa) o está frío/dudando/silencioso, la "RESPUESTA AL LEAD" suele ser "(no responder ahora)" y vos das acciones al setter en SUGERENCIAS.
+
+2. Si el lead pregunta algo que sí se contesta por chat (objeción, pregunta sobre cómo funciona, calificación), poné los bloques en RESPUESTA AL LEAD. Sumá SUGERENCIAS si tiene sentido (ej: "después mandale el caso del Dr. X").
+
+3. Si el caso amerita ambas cosas, llenás las dos secciones.
+
+REGLAS DE LAS SUGERENCIAS
+
+- Son acciones concretas para el SETTER, NO texto para el lead.
+- En imperativo, cortas, accionables. Máximo 4 ítems.
+- Ejemplos buenos:
+  • "Mandá el PDF ejecutivo"
+  • "Pasale el testimonio del cliente activo"
+  • "Agendá llamada en 24-48h con el closer"
+  • "No respondas todavía, esperá 24h y volvé con la prueba social"
+  • "Pediles foto de la fachada de la clínica antes de seguir calificando"
+  • "Escalalo al closer ya, está caliente"
+- Ejemplos malos: "Sé empático", "Pensá lo que vas a decir" (vagos, no accionables).
+
+NUNCA mezcles: nada de instrucciones al setter dentro de RESPUESTA AL LEAD, nada de texto para el lead dentro de SUGERENCIAS.`;
+
 // Export para tests (vitest puede importar via import { sanitizeMercuryStyle } from "../index.js"
 // pero index.js arranca el server; los tests usan setup con DATA_DIR para evitar side effects).
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
-globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations };
+globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
@@ -6429,11 +6526,11 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
       const completion = await ai.chat.completions.create({
         model: AI_MODEL,
         messages: [
-          { role: "system", content: cfg.systemPrompt || _defaultMercurySystemPrompt() },
+          { role: "system", content: (cfg.systemPrompt || _defaultMercurySystemPrompt()) + MERCURY_OUTPUT_FORMAT_INSTRUCTIONS },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.4,
-        max_tokens: 500,
+        max_tokens: 700,
       });
       rawOutput = completion.choices?.[0]?.message?.content?.trim() || "";
     } catch (e) {
@@ -6452,7 +6549,9 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     });
   }
 
-  const sanitized = sanitizeMercuryStyle(rawOutput);
+  const parsed = parseMercuryOutput(rawOutput);
+  const sanitized = { text: parsed.responseText, blocks: parsed.responseBlocks };
+  const coaching = parsed.coaching;
   const violations = detectMercuryViolations(sanitized.text);
 
   const ejemplos = scored.map((x) => ({
@@ -6475,7 +6574,7 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     tone: tone || null,
     categoriaHint: categoria || null,
     variantUsed,
-    output: { text: sanitized.text, blocks: sanitized.blocks },
+    output: { text: sanitized.text, blocks: sanitized.blocks, coaching },
     rawOutput,
     ejemplos,
     usedFallback,
@@ -6506,6 +6605,7 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     id: generation.id,
     text: sanitized.text,
     blocks: sanitized.blocks,
+    coaching,
     ejemplos,
     usedFallback,
     violations,
