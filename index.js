@@ -1710,7 +1710,7 @@ const ONBOARDING_MODULES = [
   { num: 2, slug: 'tu-rol', title: 'Tu rol como setter', subtitle: 'Qué se espera de vos', minutes: 5 },
   { num: 3, slug: 'sistema-operativo', title: 'Sistema operativo', subtitle: 'Cómo usar tu panel de trabajo', minutes: 6 },
   { num: 4, slug: 'conversacion', title: 'Conversación', subtitle: 'Cómo se mueve una charla buena, paso a paso', minutes: 7 },
-  { num: 5, slug: 'canales-warmeo', title: 'Canales y warmeo', subtitle: 'Por dónde prospectar y cómo no quemar cuentas', minutes: 6 },
+  { num: 5, slug: 'kit-anti-baneo', title: 'Kit anti-baneo', subtitle: 'Cómo calentar un número y no quemar cuentas WSP', minutes: 6 },
   { num: 6, slug: 'tracking', title: 'Tracking', subtitle: 'Cómo organizar tu trabajo diario', minutes: 4 },
   { num: 7, slug: 'objeciones', title: 'Objeciones', subtitle: 'Las 10 que más vas a escuchar y cómo manejarlas', minutes: 6 },
   { num: 8, slug: 'glosario', title: 'Glosario', subtitle: 'El vocabulario común del equipo SCM', minutes: 5 }
