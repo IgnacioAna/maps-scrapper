@@ -28,23 +28,49 @@ export async function mountWa(app, httpServer, deps) {
         console.warn("⚠️  Warming network: aiClient no provisto, LLM no funcionará");
       }
 
-      // Importar isUserOnline del gateway para que el orchestrator pueda
-      // chequear presence ANTES de mandar (evita silent drops).
-      const { isUserOnline } = await import("./gateway.js");
+      // Importar helpers del gateway. isUserOnline + admin fallback.
+      const { isUserOnline, getPresenceList, sendToUser } = await import("./gateway.js");
 
-      // Inyectar el orchestrator con dependencias
+      // Helper: ¿hay algún admin online? Sirve como fallback para warming
+      // cuando el setter dueño de la cuenta no está conectado (caso típico:
+      // el admin tiene wa-multi con TODAS las cuentas — incluyendo las de
+      // setters que no están conectados — porque escaneó QR de cada una).
+      function findOnlineAdminId() {
+        const list = getPresenceList();
+        const admin = list.find((p) => p.online && p.role === "admin");
+        return admin ? admin.userId : null;
+      }
+
+      // ¿Está la cuenta accesible por algún wa-multi conectado?
+      // Devuelve el userId que debería recibir el comando, o null.
+      function findRecipientForAccount(setterId) {
+        if (isUserOnline(setterId)) return setterId; // setter dueño primero
+        const adminId = findOnlineAdminId();          // fallback: admin
+        return adminId;
+      }
+
+      // Inyectar el orchestrator con dependencias.
+      // isUserOnline considera setter directo OR admin fallback.
       orch.initOrchestrator({
         llmGenerateMessage: conv.generateMessage,
-        isUserOnline,
+        isUserOnline: (setterId) => findRecipientForAccount(setterId) !== null,
         wsEmit: ({ setterId, senderAccountId, receiverAccountId, text, pairId }) => {
-          // Resolver el teléfono del receiver a partir del accountId
           const receiverAccount = getAccount(receiverAccountId);
           if (!receiverAccount || !receiverAccount.phone) {
             console.warn("[warming-orch] receiver sin telefono:", receiverAccountId);
             return;
           }
-          // Mandar al wa-multi del setter dueño del SENDER
-          sendToUser(setterId, "warming:send-message", {
+          // Resolver destinatario del comando: setter dueño si está online,
+          // sino admin online (que tiene la sesion de la cuenta igual).
+          const targetUserId = findRecipientForAccount(setterId);
+          if (!targetUserId) {
+            console.warn(`[warming-orch] no hay recipient online para setter=${setterId}`);
+            return;
+          }
+          if (targetUserId !== setterId) {
+            console.log(`[warming-orch] setter ${setterId} offline, fallback a admin ${targetUserId}`);
+          }
+          sendToUser(targetUserId, "warming:send-message", {
             accountId: senderAccountId,
             phone: receiverAccount.phone,
             text,
