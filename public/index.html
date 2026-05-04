@@ -1431,11 +1431,7 @@
               Mercury IA
             </div>
             <h1 class="asst-h1">Asistente de respuestas</h1>
-            <p class="asst-sub">Pegá el mensaje del prospecto. Mercury arma una respuesta basada en el banco + sugerencias accionables, lista para copiar al WhatsApp.</p>
-            <div class="asst-disclaimer">
-              <span style="flex-shrink:0; font-size:14px;">⚠️</span>
-              <div><strong>Tip:</strong> Mercury es un asistente, no un oráculo. Puede equivocarse o devolver algo genérico. <strong>Usá tu criterio antes de copiar y enviar</strong>. Si la respuesta no encaja, probá los botones <em>Reformular</em> o agregale historial de conversación. Si pensás que Mercury debería responder distinto, marcala con <em>✗ No la usaría</em> — el admin la va a revisar y mejorar el sistema.</div>
-            </div>
+            <p class="asst-sub">Pegá el mensaje del prospecto y Mercury te sugiere una respuesta lista para copiar al WhatsApp. Mercury todavía está aprendiendo — usá tu criterio antes de mandar.</p>
           </header>
 
           <!-- INPUT -->
@@ -1443,27 +1439,18 @@
             <label for="asst-prospect-msg" class="asst-label">Mensaje del prospecto</label>
             <textarea id="asst-prospect-msg" class="asst-textarea asst-textarea-main" rows="5" placeholder="Pegá acá el último mensaje del prospecto…"></textarea>
 
-            <div style="margin-top:16px;">
+            <div style="margin-top:18px;">
               <label for="asst-variant" class="asst-label">Variante que le mandaste <span style="font-weight:400; opacity:0.6; text-transform:none; letter-spacing:0;">(opcional)</span></label>
-              <select id="asst-variant" class="asst-select" style="font-size:13px; padding:11px 14px;">
+              <select id="asst-variant" class="asst-select" style="font-size:14px; padding:12px 14px;">
                 <option value="">— No especificar —</option>
               </select>
             </div>
 
-            <details class="asst-details" style="margin-top:14px;">
-              <summary>Historial de conversación <span style="opacity:0.55; margin-left:4px;">(mejora coherencia)</span></summary>
-              <textarea id="asst-history" class="asst-textarea" rows="4" style="margin-top:10px; font-size:13px;" placeholder="Pegá los últimos 3-5 turnos del chat, formato libre. Ej:&#10;Setter: Hola Dr, le llegó info?&#10;Lead: Si, vi el video&#10;Setter: Bien, le hago un par de preguntas?&#10;Lead: Dale"></textarea>
-            </details>
-
-            <details class="asst-details" style="margin-top:6px;">
-              <summary>Contexto adicional <span style="opacity:0.55; margin-left:4px;">(quién es, qué software usan…)</span></summary>
-              <textarea id="asst-context" class="asst-textarea" rows="3" style="margin-top:10px;" placeholder="Nombre del prospecto, software que usan, ciudad, qué notaste de su perfil, etc."></textarea>
-            </details>
+            <!-- Campos avanzados ocultos por ahora hasta que la IA esté más entrenada -->
+            <textarea id="asst-history" style="display:none;"></textarea>
+            <textarea id="asst-context" style="display:none;"></textarea>
 
             <button id="asst-generate-btn" class="asst-cta">Generar respuesta <span class="asst-cta-kbd">Ctrl+Enter</span></button>
-            <div style="margin-top:10px; text-align:center;">
-              <button id="asst-paste-clipboard" type="button" class="asst-paste-btn">📋 Pegar último mensaje copiado</button>
-            </div>
           </div>
 
           <!-- LOADING / ERROR -->
@@ -1478,7 +1465,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
               <div class="asst-section-title" style="margin-bottom:0;">Respuesta sugerida</div>
               <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-                <span id="asst-intent-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.35); border-radius:999px;"></span>
+                <span id="asst-intent-pill" class="chip" style="display:none !important;"></span>
                 <span id="asst-variant-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(157,133,242,0.14); color:var(--accent); border:1px solid rgba(157,133,242,0.4); border-radius:999px;"></span>
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
@@ -1487,6 +1474,7 @@
               </div>
             </div>
 
+            <!-- Banner "no responder ahora" oculto por ahora — IA aún no estabilizada -->
             <div id="asst-no-response" class="asst-no-response-banner" style="display:none;">
               <span class="icon">💡</span>
               <div>Mercury sugiere <strong>no responder al lead ahora mismo</strong>. Mirá las sugerencias debajo.</div>
@@ -1494,22 +1482,13 @@
 
             <ul id="asst-blocks" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
 
-            <!-- Sugerencias para el setter -->
+            <!-- Sugerencias para el setter (oculto hasta que la IA esté lista) -->
             <div id="asst-coaching-wrap" class="asst-coaching-card" style="display:none;">
               <div class="asst-coaching-head">
                 <span style="font-size:18px;">💡</span>
                 <strong>Sugerencias para vos</strong>
-                <span style="font-size:10px; color:var(--text-secondary); margin-left:auto; opacity:0.7;">No son texto para mandar — son acciones</span>
               </div>
               <ul id="asst-coaching" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
-            </div>
-
-            <!-- Tono / Reformular -->
-            <div class="asst-tone-row">
-              <span>Reformular:</span>
-              <button class="asst-tone-btn" data-tone="corto">↘ Más corto</button>
-              <button class="asst-tone-btn" data-tone="calido">♡ Más cálido</button>
-              <button class="asst-tone-btn" data-tone="directo">→ Más directo</button>
             </div>
 
             <!-- Acciones del setter -->
@@ -1532,20 +1511,18 @@
             <!-- Status post-accion -->
             <div id="asst-status" style="display:none; margin-top:14px; padding:10px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.3); border-radius:8px; color:#5bb974; font-size:12px;"></div>
 
-            <!-- Ejemplos del banco usados (transparencia) -->
-            <details id="asst-ejemplos-wrap" style="margin-top:16px; display:none;">
-              <summary style="cursor:pointer; font-size:11px; color:var(--text-secondary); padding:6px 0;">Ver los ejemplos del banco que usó (<span id="asst-ejemplos-count">0</span>)</summary>
-              <ul id="asst-ejemplos" style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12px;"></ul>
+            <!-- Ejemplos del banco — oculto por ahora -->
+            <details id="asst-ejemplos-wrap" style="display:none;">
+              <summary><span id="asst-ejemplos-count">0</span></summary>
+              <ul id="asst-ejemplos"></ul>
             </details>
           </div>
 
-          <!-- Mis últimas generaciones (histórico personal) -->
-          <details id="asst-history-card" style="margin-top:18px;">
-            <summary style="cursor:pointer; font-size:13px; padding:14px 18px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; color:var(--text-secondary); font-weight:500;">📜 Mis últimas generaciones</summary>
-            <div style="margin-top:8px;">
-              <ul id="asst-mine-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
-              <div id="asst-mine-empty" class="muted" style="font-size:12px; padding:12px; text-align:center; display:none;">Todavía no generaste ninguna respuesta.</div>
-            </div>
+          <!-- Histórico personal oculto por ahora -->
+          <details id="asst-history-card" style="display:none;">
+            <summary>Mis últimas generaciones</summary>
+            <ul id="asst-mine-list"></ul>
+            <div id="asst-mine-empty"></div>
           </details>
         </div>
       </div>
@@ -2073,7 +2050,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430p"></script>
+  <script type="module" src="/app.js?v=20260430q"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

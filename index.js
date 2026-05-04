@@ -6590,14 +6590,18 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
       const useExperimental = cfg.abEnabled && cfg.experimentalPrompt && cfg.experimentalPrompt.trim() && Math.random() < 0.5;
       promptVariant = useExperimental ? "B" : "A";
       const basePrompt = useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt());
+      // 2026-05-04: removido MERCURY_OUTPUT_FORMAT_INSTRUCTIONS del system. La
+      // IA todavía no está estabilizada y el formato dual sumaba fricción al
+      // setter. Vuelve a respuesta plana. parseMercuryOutput sigue siendo
+      // backward-compat: sin headers, todo va a responseBlocks.
       const completion = await ai.chat.completions.create({
         model: AI_MODEL,
         messages: [
-          { role: "system", content: basePrompt + MERCURY_OUTPUT_FORMAT_INSTRUCTIONS },
+          { role: "system", content: basePrompt },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.4,
-        max_tokens: 700,
+        max_tokens: 500,
       });
       rawOutput = completion.choices?.[0]?.message?.content?.trim() || "";
     } catch (e) {

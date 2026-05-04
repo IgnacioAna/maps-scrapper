@@ -5485,16 +5485,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ul = document.getElementById('asst-blocks');
     ul.innerHTML = '';
     const noResp = document.getElementById('asst-no-response');
+    if (noResp) noResp.style.display = 'none';
     if (!blocks || !blocks.length) {
-      if (noResp) noResp.style.display = 'block';
-      // Ocultar botones de copiar todo cuando no hay respuesta
       const ca = document.getElementById('asst-copy-all');
       const cah = document.getElementById('asst-copy-all-human');
       if (ca) ca.style.display = 'none';
       if (cah) cah.style.display = 'none';
+      ul.innerHTML = '<li class="muted" style="padding:14px; text-align:center; font-size:13px;">Mercury no devolvió respuesta. Probá de nuevo o reformulá el mensaje.</li>';
       return;
     }
-    if (noResp) noResp.style.display = 'none';
     const ca = document.getElementById('asst-copy-all');
     const cah = document.getElementById('asst-copy-all-human');
     if (ca) ca.style.display = '';
@@ -5696,9 +5695,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       _asstCurrentGen = d;
       document.getElementById('asst-output-card').style.display = 'block';
       _asstRenderBlocks(d.blocks || []);
-      _asstRenderCoaching(d.coaching || []);
-      _asstRenderEjemplos(d.ejemplos || []);
-      _asstRenderIntent(d.intent || '');
+      // Coaching, ejemplos clickeables e intent pill ocultos hasta que la IA
+      // esté más estabilizada. Se siguen recibiendo pero no se renderizan.
+      // _asstRenderCoaching(d.coaching || []);
+      // _asstRenderEjemplos(d.ejemplos || []);
+      // _asstRenderIntent(d.intent || '');
       if (d.usedFallback) document.getElementById('asst-fallback-pill').style.display = 'inline-block';
       if (Array.isArray(d.violations) && d.violations.length) {
         const pill = document.getElementById('asst-violations-pill');
@@ -5742,9 +5743,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelector('[data-target="view-assistant"]')?.addEventListener('click', () => {
     _asstLoadVariants();
-    _asstLoadMine();
+    // _asstLoadMine() y otras secciones avanzadas deshabilitadas hasta que la
+    // IA esté más entrenada — vuelve a flujo simple para reducir fricción.
     setTimeout(() => {
-      // Foco automático en el textarea principal cuando se abre la vista.
       document.getElementById('asst-prospect-msg')?.focus();
     }, 100);
   });
