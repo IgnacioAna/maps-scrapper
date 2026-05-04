@@ -1232,11 +1232,19 @@
             </div>
 
             <details style="margin-top:14px;">
-              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Contexto adicional (opcional)</summary>
-              <textarea id="asst-context" rows="3" placeholder="Mensajes previos, nombre del prospecto, software que usan, ciudad, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Historial de conversación (opcional, mejora coherencia)</summary>
+              <textarea id="asst-history" rows="4" placeholder="Pegá los últimos 3-5 turnos del chat, formato libre. Ej:&#10;Setter: Hola Dr, le llegó info?&#10;Lead: Si, vi el video&#10;Setter: Bien, le hago un par de preguntas?&#10;Lead: Dale" style="width:100%; margin-top:8px; font-size:13px; line-height:1.55; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
             </details>
 
-            <button id="asst-generate-btn" class="btn-primary" style="display:block; width:100%; margin-top:18px; font-size:15px; font-weight:600; padding:14px 20px; border-radius:12px;">Generar respuesta</button>
+            <details style="margin-top:8px;">
+              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Contexto adicional (opcional)</summary>
+              <textarea id="asst-context" rows="3" placeholder="Nombre del prospecto, software que usan, ciudad, qué notaste de su perfil, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+            </details>
+
+            <button id="asst-generate-btn" class="btn-primary" style="display:block; width:100%; margin-top:18px; font-size:15px; font-weight:600; padding:14px 20px; border-radius:12px;">Generar respuesta <span style="opacity:0.6; font-weight:400; margin-left:6px; font-size:12px;">(Ctrl+Enter)</span></button>
+            <div style="margin-top:8px; text-align:center;">
+              <button id="asst-paste-clipboard" type="button" style="background:none; border:none; color:var(--accent); font-size:11px; cursor:pointer; padding:4px 8px;">📋 Pegar último mensaje copiado</button>
+            </div>
           </div>
 
           <!-- LOADING / ERROR -->
@@ -1264,6 +1272,14 @@
 
             <ul id="asst-blocks" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
 
+            <!-- Tono / Reformular -->
+            <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--border-color); display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+              <span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Reformular:</span>
+              <button class="btn-secondary asst-tone-btn" data-tone="corto" style="font-size:11px; padding:5px 10px; border-radius:6px;">↘ Más corto</button>
+              <button class="btn-secondary asst-tone-btn" data-tone="calido" style="font-size:11px; padding:5px 10px; border-radius:6px;">♡ Más cálido</button>
+              <button class="btn-secondary asst-tone-btn" data-tone="directo" style="font-size:11px; padding:5px 10px; border-radius:6px;">→ Más directo</button>
+            </div>
+
             <!-- Acciones del setter -->
             <div id="asst-actions" style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
               <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:#5bb974; font-weight:500;">✓ Buena respuesta</button>
@@ -1290,6 +1306,15 @@
               <ul id="asst-ejemplos" style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:6px; font-size:12px;"></ul>
             </details>
           </div>
+
+          <!-- Mis últimas generaciones (histórico personal) -->
+          <details id="asst-history-card" style="margin-top:18px;">
+            <summary style="cursor:pointer; font-size:13px; padding:14px 18px; background:var(--bg-card); border:1px solid var(--border-color); border-radius:12px; color:var(--text-secondary); font-weight:500;">📜 Mis últimas generaciones</summary>
+            <div style="margin-top:8px;">
+              <ul id="asst-mine-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+              <div id="asst-mine-empty" class="muted" style="font-size:12px; padding:12px; text-align:center; display:none;">Todavía no generaste ninguna respuesta.</div>
+            </div>
+          </details>
         </div>
       </div>
       <style>@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }</style>
@@ -1746,7 +1771,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430l"></script>
+  <script type="module" src="/app.js?v=20260430m"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

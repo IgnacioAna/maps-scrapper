@@ -5368,10 +5368,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  async function _asstGenerate() {
+  async function _asstGenerate(opts = {}) {
     const msg = document.getElementById('asst-prospect-msg').value.trim();
     const ctx = document.getElementById('asst-context').value.trim();
+    const history = document.getElementById('asst-history')?.value.trim() || '';
     const variantId = document.getElementById('asst-variant')?.value || '';
+    const tone = opts.tone || '';
     if (!msg) { _asstShowError('Pegá el mensaje del prospecto.'); return; }
     _asstResetUI();
     _asstSetLoading(true);
@@ -5380,7 +5382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ prospectMessage: msg, context: ctx, variantId }),
+        body: JSON.stringify({ prospectMessage: msg, context: ctx, variantId, conversationHistory: history, tone }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'http ' + r.status);
@@ -5431,13 +5433,110 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelector('[data-target="view-assistant"]')?.addEventListener('click', () => {
     _asstLoadVariants();
+    _asstLoadMine();
     setTimeout(() => {
       // Foco automático en el textarea principal cuando se abre la vista.
       document.getElementById('asst-prospect-msg')?.focus();
     }, 100);
   });
 
-  document.getElementById('asst-generate-btn')?.addEventListener('click', _asstGenerate);
+  document.getElementById('asst-generate-btn')?.addEventListener('click', () => _asstGenerate());
+
+  // Botones de tono → re-generan con el mismo input + modificador
+  document.querySelectorAll('.asst-tone-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tone = btn.getAttribute('data-tone');
+      _asstGenerate({ tone });
+    });
+  });
+
+  // Paste clipboard al mensaje principal (botón explícito porque algunos browsers
+  // no permiten clipboard read sin gesture)
+  document.getElementById('asst-paste-clipboard')?.addEventListener('click', async () => {
+    try {
+      const txt = await navigator.clipboard.readText();
+      if (!txt || !txt.trim()) { window.showToast('Clipboard vacío', { type: 'warn' }); return; }
+      const ta = document.getElementById('asst-prospect-msg');
+      ta.value = txt.trim();
+      ta.focus();
+    } catch (e) {
+      window.showToast('No pude leer el clipboard. Pegalo con Ctrl+V.', { type: 'warn' });
+    }
+  });
+
+  // Keyboard shortcuts dentro de la vista del asistente
+  document.getElementById('asst-prospect-msg')?.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd+Enter → generar
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      _asstGenerate();
+    }
+  });
+  // Ctrl+1/2/3 a nivel documento — solo si la vista del asistente está visible
+  document.addEventListener('keydown', (e) => {
+    const view = document.getElementById('view-assistant');
+    if (!view || view.classList.contains('hidden')) return;
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (e.key === '1' || e.key === '2' || e.key === '3') {
+      const idx = parseInt(e.key, 10) - 1;
+      const blocks = _asstCurrentGen?.blocks || [];
+      if (blocks[idx]) {
+        e.preventDefault();
+        navigator.clipboard.writeText(blocks[idx]);
+        window.showToast(`Bloque ${idx + 1} copiado`, { type: 'success', duration: 1500 });
+      }
+    }
+  });
+
+  // Cargar "mis últimas generaciones"
+  async function _asstLoadMine() {
+    const list = document.getElementById('asst-mine-list');
+    const empty = document.getElementById('asst-mine-empty');
+    if (!list) return;
+    try {
+      const r = await fetch('/api/mercury/generations?limit=10', { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const items = (d.generations || []).slice(0, 10);
+      list.innerHTML = '';
+      if (!items.length) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      for (const g of items) {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; cursor:pointer; transition:border-color 0.15s;';
+        const when = new Date(g.createdAt).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const prevMsg = (g.prospectMessage || '').slice(0, 90);
+        const prevOut = (g.output?.text || '').slice(0, 120);
+        li.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+            <div style="flex:1; min-width:0;">
+              <div class="asst-mine-msg" style="font-size:12px; color:var(--text-secondary); margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+              <div class="asst-mine-out" style="font-size:12px; color:var(--text-primary); line-height:1.45; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;"></div>
+            </div>
+            <div style="font-size:10px; color:var(--text-secondary); flex-shrink:0;">${when}</div>
+          </div>`;
+        li.querySelector('.asst-mine-msg').textContent = '🔵 ' + prevMsg + (g.prospectMessage.length > 90 ? '…' : '');
+        li.querySelector('.asst-mine-out').textContent = prevOut + (g.output?.text?.length > 120 ? '…' : '');
+        li.addEventListener('mouseenter', () => { li.style.borderColor = 'var(--accent)'; });
+        li.addEventListener('mouseleave', () => { li.style.borderColor = 'var(--border-color)'; });
+        li.addEventListener('click', async () => {
+          // Reusar: pegar el mensaje en el campo y popular output con la generación cacheada
+          document.getElementById('asst-prospect-msg').value = g.prospectMessage || '';
+          if (g.context) document.getElementById('asst-context').value = g.context;
+          if (g.conversationHistory) document.getElementById('asst-history').value = g.conversationHistory;
+          _asstCurrentGen = { id: g.id, blocks: g.output?.blocks || [], text: g.output?.text || '', ejemplos: g.ejemplos || [] };
+          document.getElementById('asst-output-card').style.display = 'block';
+          _asstRenderBlocks(_asstCurrentGen.blocks);
+          _asstRenderEjemplos(_asstCurrentGen.ejemplos);
+          window.showToast('Generación restaurada. Podés copiar o reformular.', { type: 'info' });
+          window.scrollTo({ top: document.getElementById('asst-output-card').offsetTop - 80, behavior: 'smooth' });
+        });
+        list.appendChild(li);
+      }
+    } catch (e) {
+      console.warn('asst-load-mine:', e.message);
+    }
+  }
 
   document.getElementById('asst-copy-all')?.addEventListener('click', async (ev) => {
     if (!_asstCurrentGen?.blocks?.length) return;

@@ -6343,12 +6343,20 @@ function saveMercuryGenerations(data) {
 // de estilo SCM. Si la IA falla o no hay key, fallback al top match del banco.
 // Persiste TODA la generacion para revision admin (Fase 4).
 app.post("/api/mercury/generate", requireAuth, async (req, res) => {
-  const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "" } = req.body || {};
+  const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "", tone = "", conversationHistory = "" } = req.body || {};
   if (!prospectMessage || !String(prospectMessage).trim()) {
     return res.status(400).json({ error: "prospectMessage requerido." });
   }
   const message = String(prospectMessage).trim().substring(0, 4000);
   const ctx = String(context || "").trim().substring(0, 4000);
+  const history = String(conversationHistory || "").trim().substring(0, 6000);
+  const TONE_INSTRUCTIONS = {
+    corto: "Tono: respuesta MUY breve y concisa. 1 bloque, máximo 2 líneas. No expandir.",
+    calido: "Tono: cálido, empático, cercano. Usar segunda persona. Que se sienta humano.",
+    directo: "Tono: directo y profesional. Ir al punto sin rodeos. Sin frases de relleno.",
+    cordial: "",
+  };
+  const toneInstruction = TONE_INSTRUCTIONS[String(tone || "").toLowerCase()] || "";
 
   const setterId = req.auth?.user?.role === "setter" ? (req.auth.user.setterId || "") : "";
   const setterName = req.auth?.user?.name || req.auth?.user?.email || "—";
@@ -6400,13 +6408,17 @@ app.post("/api/mercury/generate", requireAuth, async (req, res) => {
     }
   }
 
-  const userPrompt = `${notesBlock}${variantBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
+  const historyBlock = history
+    ? `HISTORIAL RECIENTE DE LA CONVERSACION (último mensaje al final, mantené coherencia con lo ya dicho):\n${history}\n\n`
+    : "";
+
+  const userPrompt = `${notesBlock}${variantBlock}${historyBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
 ${ejemplosTexto}
 
 ${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}MENSAJE DEL PROSPECTO A RESPONDER:
 ${message}
 
-Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`;
+${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`;
 
   let rawOutput = "";
   let usedFallback = false;
@@ -6459,6 +6471,8 @@ Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡.
     leadId: leadId || null,
     prospectMessage: message,
     context: ctx || null,
+    conversationHistory: history || null,
+    tone: tone || null,
     categoriaHint: categoria || null,
     variantUsed,
     output: { text: sanitized.text, blocks: sanitized.blocks },
