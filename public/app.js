@@ -5310,11 +5310,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cah) cah.style.display = '';
     blocks.forEach((b, i) => {
       const li = document.createElement('li');
-      li.style.cssText = 'display:flex; gap:10px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:12px; align-items:flex-start;';
+      li.className = 'asst-block';
       li.innerHTML = `
         <div style="flex:1; min-width:0;">
-          <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Bloque ${i + 1}</div>
-          <div class="asst-block-text" style="font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; color:var(--text-primary);"></div>
+          <div class="asst-block-label">Bloque ${i + 1}</div>
+          <div class="asst-block-text"></div>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
           <button class="btn-table-action asst-block-copy" style="font-size:11px;">Copiar</button>
@@ -5350,10 +5350,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     ul.innerHTML = '';
     items.forEach((it, i) => {
       const li = document.createElement('li');
-      li.style.cssText = 'display:flex; gap:10px; align-items:flex-start; padding:8px 10px; background:rgba(157,133,242,0.04); border:1px solid rgba(157,133,242,0.18); border-radius:8px;';
+      li.className = 'asst-coaching-item';
       li.innerHTML = `
-        <span style="flex-shrink:0; width:20px; height:20px; border-radius:50%; background:rgba(157,133,242,0.18); color:var(--accent); display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">${i + 1}</span>
-        <span class="asst-coaching-text" style="flex:1; font-size:13px; line-height:1.5; color:var(--text-primary);"></span>
+        <span class="asst-coaching-num">${i + 1}</span>
+        <span class="asst-coaching-text"></span>
         <button class="btn-table-action asst-coaching-copy" title="Copiar texto" style="font-size:10px; padding:3px 8px; flex-shrink:0;">⧉</button>
       `;
       li.querySelector('.asst-coaching-text').textContent = it;
@@ -5546,7 +5546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       empty.style.display = 'none';
       for (const g of items) {
         const li = document.createElement('li');
-        li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; cursor:pointer; transition:border-color 0.15s;';
+        li.className = 'asst-mine-item';
         const when = new Date(g.createdAt).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
         const prevMsg = (g.prospectMessage || '').slice(0, 90);
         const prevOut = (g.output?.text || '').slice(0, 120);
@@ -5558,10 +5558,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div style="font-size:10px; color:var(--text-secondary); flex-shrink:0;">${when}</div>
           </div>`;
-        li.querySelector('.asst-mine-msg').textContent = '🔵 ' + prevMsg + (g.prospectMessage.length > 90 ? '…' : '');
+        li.querySelector('.asst-mine-msg').textContent = '💬 ' + prevMsg + (g.prospectMessage.length > 90 ? '…' : '');
         li.querySelector('.asst-mine-out').textContent = prevOut + (g.output?.text?.length > 120 ? '…' : '');
-        li.addEventListener('mouseenter', () => { li.style.borderColor = 'var(--accent)'; });
-        li.addEventListener('mouseleave', () => { li.style.borderColor = 'var(--border-color)'; });
         li.addEventListener('click', async () => {
           // Reusar: pegar el mensaje en el campo y popular output con la generación cacheada
           document.getElementById('asst-prospect-msg').value = g.prospectMessage || '';

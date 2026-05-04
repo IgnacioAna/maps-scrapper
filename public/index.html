@@ -1209,41 +1209,260 @@
 
       <!-- Asistente de respuestas (admin + setter) — mobile-first -->
       <div id="view-assistant" class="module-view hidden">
-        <div style="max-width:780px; margin:0 auto; padding:8px 0 60px;">
-          <header style="text-align:center; margin-bottom:28px;">
-            <div style="display:inline-flex; align-items:center; gap:10px; padding:6px 14px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:11px; font-weight:600; letter-spacing:0.4px; text-transform:uppercase; margin-bottom:14px;">
+        <style>
+          /* ── Asistente IA — visual refresh ───────────────────────────── */
+          #view-assistant .asst-shell { max-width: 860px; margin: 0 auto; padding: 8px 0 60px; }
+          #view-assistant .asst-hero { text-align: center; margin-bottom: 22px; position: relative; }
+          #view-assistant .asst-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 999px;
+            background: linear-gradient(135deg, rgba(157,133,242,0.18) 0%, rgba(157,133,242,0.06) 100%);
+            color: var(--accent); font-size: 11px; font-weight: 600;
+            letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 14px;
+            border: 1px solid rgba(157,133,242,0.28);
+            box-shadow: 0 4px 16px rgba(157,133,242,0.08);
+          }
+          #view-assistant .asst-h1 {
+            font-size: 32px; font-weight: 700; margin: 0;
+            color: var(--text-primary); letter-spacing: -0.6px;
+            background: linear-gradient(180deg, var(--text-primary) 0%, color-mix(in srgb, var(--text-primary) 75%, var(--accent)) 100%);
+            -webkit-background-clip: text; background-clip: text;
+          }
+          #view-assistant .asst-sub {
+            font-size: 14px; color: var(--text-secondary);
+            margin: 10px auto 0; max-width: 540px; line-height: 1.55;
+          }
+          #view-assistant .asst-disclaimer {
+            display: flex; align-items: flex-start; gap: 10px;
+            margin: 16px auto 0; padding: 11px 16px; max-width: 620px;
+            background: rgba(255, 200, 40, 0.05);
+            border: 1px solid rgba(255, 200, 40, 0.22);
+            border-radius: 10px; font-size: 12px;
+            color: var(--text-secondary); line-height: 1.5; text-align: left;
+          }
+          #view-assistant .asst-disclaimer strong { color: #ffc828; font-weight: 600; }
+          #view-assistant .asst-card {
+            padding: 22px; border-radius: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            transition: border-color 0.2s, box-shadow 0.2s;
+          }
+          #view-assistant .asst-card.asst-input-card { padding: 24px; }
+          #view-assistant .asst-card.asst-input-card:focus-within {
+            border-color: rgba(157,133,242,0.35);
+            box-shadow: 0 0 0 4px rgba(157,133,242,0.06);
+          }
+          #view-assistant .asst-label {
+            display: block; font-size: 12px; font-weight: 600;
+            margin-bottom: 8px; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.3px;
+          }
+          #view-assistant .asst-textarea, #view-assistant .asst-select, #view-assistant .asst-input {
+            width: 100%; font-family: inherit; box-sizing: border-box;
+            padding: 13px 15px; border-radius: 11px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-app); color: var(--text-primary);
+            font-size: 14px; line-height: 1.55;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            resize: vertical;
+          }
+          #view-assistant .asst-textarea:focus, #view-assistant .asst-select:focus, #view-assistant .asst-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(157,133,242,0.12);
+          }
+          #view-assistant .asst-textarea-main {
+            font-size: 15px; line-height: 1.6; padding: 14px 16px;
+          }
+          #view-assistant .asst-details > summary {
+            cursor: pointer; font-size: 12px; color: var(--text-secondary);
+            padding: 8px 10px; margin: 0 -10px; border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+            list-style: none; display: flex; align-items: center; gap: 6px;
+          }
+          #view-assistant .asst-details > summary::before {
+            content: '▸'; font-size: 10px; transition: transform 0.2s;
+            display: inline-block;
+          }
+          #view-assistant .asst-details[open] > summary::before { transform: rotate(90deg); }
+          #view-assistant .asst-details > summary:hover {
+            background: rgba(157,133,242,0.05); color: var(--accent);
+          }
+          #view-assistant .asst-cta {
+            display: block; width: 100%; margin-top: 18px;
+            font-size: 15px; font-weight: 600; padding: 14px 20px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 80%, #fff) 100%);
+            color: #fff; border: none; cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s, opacity 0.15s;
+            box-shadow: 0 4px 14px rgba(157,133,242,0.22);
+          }
+          #view-assistant .asst-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(157,133,242,0.32);
+          }
+          #view-assistant .asst-cta:active { transform: translateY(0); }
+          #view-assistant .asst-cta-kbd {
+            opacity: 0.65; font-weight: 400; margin-left: 8px; font-size: 11px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            padding: 2px 6px; border-radius: 4px;
+            background: rgba(255,255,255,0.14);
+          }
+          #view-assistant .asst-paste-btn {
+            background: none; border: none; color: var(--accent);
+            font-size: 11px; cursor: pointer; padding: 4px 8px;
+            opacity: 0.75; transition: opacity 0.15s;
+          }
+          #view-assistant .asst-paste-btn:hover { opacity: 1; text-decoration: underline; }
+          /* ── Output ──────────────────────────────────────────────────── */
+          #view-assistant .asst-output { animation: asst-slide-in 0.35s ease-out; }
+          @keyframes asst-slide-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          #view-assistant .asst-section-title {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 14px; font-weight: 700; color: var(--text-primary);
+            margin-bottom: 14px;
+          }
+          #view-assistant .asst-section-title::before {
+            content: ''; width: 4px; height: 18px;
+            background: var(--accent); border-radius: 3px;
+          }
+          #view-assistant .asst-block {
+            display: flex; gap: 12px; padding: 14px 16px;
+            background: var(--bg-app);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--accent);
+            border-radius: 12px;
+            transition: border-color 0.15s, transform 0.15s;
+          }
+          #view-assistant .asst-block:hover {
+            border-color: rgba(157,133,242,0.35);
+            border-left-color: var(--accent);
+          }
+          #view-assistant .asst-block-label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px;
+            margin-bottom: 6px; color: var(--accent); font-weight: 700;
+          }
+          #view-assistant .asst-block-text {
+            font-size: 14px; line-height: 1.6; white-space: pre-wrap;
+            word-break: break-word; color: var(--text-primary);
+          }
+          #view-assistant .asst-coaching-card {
+            margin-top: 16px; padding: 16px 18px;
+            background: linear-gradient(135deg, rgba(157,133,242,0.08) 0%, rgba(157,133,242,0.02) 100%);
+            border: 1px solid rgba(157,133,242,0.28);
+            border-radius: 14px;
+          }
+          #view-assistant .asst-coaching-head {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+          }
+          #view-assistant .asst-coaching-head strong {
+            font-size: 13px; color: var(--accent); letter-spacing: 0.2px;
+          }
+          #view-assistant .asst-coaching-item {
+            display: flex; gap: 10px; align-items: flex-start;
+            padding: 10px 12px;
+            background: rgba(157,133,242,0.05);
+            border: 1px solid rgba(157,133,242,0.18);
+            border-radius: 10px;
+            transition: background 0.15s, border-color 0.15s;
+          }
+          #view-assistant .asst-coaching-item:hover {
+            background: rgba(157,133,242,0.10);
+            border-color: rgba(157,133,242,0.32);
+          }
+          #view-assistant .asst-coaching-num {
+            flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+            background: rgba(157,133,242,0.22); color: var(--accent);
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700;
+          }
+          #view-assistant .asst-coaching-text {
+            flex: 1; font-size: 13px; line-height: 1.5; color: var(--text-primary);
+          }
+          #view-assistant .asst-tone-row {
+            margin-top: 18px; padding-top: 14px;
+            border-top: 1px dashed var(--border-color);
+            display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+          }
+          #view-assistant .asst-tone-row > span {
+            font-size: 11px; color: var(--text-secondary); margin-right: 4px;
+            text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600;
+          }
+          #view-assistant .asst-tone-btn {
+            font-size: 11px; padding: 6px 12px; border-radius: 8px;
+            background: var(--bg-app); border: 1px solid var(--border-color);
+            color: var(--text-primary); cursor: pointer;
+            transition: all 0.15s;
+          }
+          #view-assistant .asst-tone-btn:hover {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(157,133,242,0.08);
+          }
+          #view-assistant .asst-mine-item {
+            padding: 12px 14px; background: var(--bg-app);
+            border: 1px solid var(--border-color); border-radius: 10px;
+            cursor: pointer; transition: border-color 0.15s, background 0.15s;
+          }
+          #view-assistant .asst-mine-item:hover {
+            border-color: rgba(157,133,242,0.4);
+            background: rgba(157,133,242,0.03);
+          }
+          #view-assistant .asst-no-response-banner {
+            display: flex; align-items: center; gap: 12px;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, rgba(255,200,40,0.10) 0%, rgba(255,200,40,0.03) 100%);
+            border: 1px dashed rgba(255,200,40,0.45);
+            border-radius: 12px; color: #ffc828;
+            font-size: 13px; line-height: 1.55;
+          }
+          #view-assistant .asst-no-response-banner .icon {
+            flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(255,200,40,0.18); display: inline-flex;
+            align-items: center; justify-content: center; font-size: 14px;
+          }
+        </style>
+        <div class="asst-shell">
+          <header class="asst-hero">
+            <div class="asst-badge">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
               Mercury IA
             </div>
-            <h1 style="font-size:30px; font-weight:700; margin:0; color:var(--text-primary); letter-spacing:-0.5px;">Asistente de respuestas</h1>
-            <p style="font-size:14px; color:var(--text-secondary); margin:8px auto 0; max-width:520px; line-height:1.5;">Pegá el mensaje del prospecto. Mercury arma una respuesta basada en el banco + tu system prompt, lista para copiar al WhatsApp.</p>
+            <h1 class="asst-h1">Asistente de respuestas</h1>
+            <p class="asst-sub">Pegá el mensaje del prospecto. Mercury arma una respuesta basada en el banco + sugerencias accionables, lista para copiar al WhatsApp.</p>
+            <div class="asst-disclaimer">
+              <span style="flex-shrink:0; font-size:14px;">⚠️</span>
+              <div><strong>Tip:</strong> Mercury es un asistente, no un oráculo. Puede equivocarse o devolver algo genérico. <strong>Usá tu criterio antes de copiar y enviar</strong>. Si la respuesta no encaja, probá los botones <em>Reformular</em> o agregale historial de conversación. Si pensás que Mercury debería responder distinto, marcala con <em>✗ No la usaría</em> — el admin la va a revisar y mejorar el sistema.</div>
+            </div>
           </header>
 
           <!-- INPUT -->
-          <div class="card" style="padding:24px; border-radius:16px;">
-            <label for="asst-prospect-msg" style="display:block; font-size:13px; font-weight:600; margin-bottom:8px; color:var(--text-primary);">Mensaje del prospecto</label>
-            <textarea id="asst-prospect-msg" rows="5" placeholder="Pegá acá el último mensaje del prospecto…" style="width:100%; font-size:15px; line-height:1.6; padding:14px 16px; border-radius:12px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+          <div class="asst-card asst-input-card">
+            <label for="asst-prospect-msg" class="asst-label">Mensaje del prospecto</label>
+            <textarea id="asst-prospect-msg" class="asst-textarea asst-textarea-main" rows="5" placeholder="Pegá acá el último mensaje del prospecto…"></textarea>
 
-            <div style="margin-top:14px;">
-              <label for="asst-variant" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--text-secondary);">Variante que le mandaste al lead <span style="font-weight:400; opacity:0.7;">(opcional, mejora la respuesta)</span></label>
-              <select id="asst-variant" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+            <div style="margin-top:16px;">
+              <label for="asst-variant" class="asst-label">Variante que le mandaste <span style="font-weight:400; opacity:0.6; text-transform:none; letter-spacing:0;">(opcional)</span></label>
+              <select id="asst-variant" class="asst-select" style="font-size:13px; padding:11px 14px;">
                 <option value="">— No especificar —</option>
               </select>
             </div>
 
-            <details style="margin-top:14px;">
-              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Historial de conversación (opcional, mejora coherencia)</summary>
-              <textarea id="asst-history" rows="4" placeholder="Pegá los últimos 3-5 turnos del chat, formato libre. Ej:&#10;Setter: Hola Dr, le llegó info?&#10;Lead: Si, vi el video&#10;Setter: Bien, le hago un par de preguntas?&#10;Lead: Dale" style="width:100%; margin-top:8px; font-size:13px; line-height:1.55; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+            <details class="asst-details" style="margin-top:14px;">
+              <summary>Historial de conversación <span style="opacity:0.55; margin-left:4px;">(mejora coherencia)</span></summary>
+              <textarea id="asst-history" class="asst-textarea" rows="4" style="margin-top:10px; font-size:13px;" placeholder="Pegá los últimos 3-5 turnos del chat, formato libre. Ej:&#10;Setter: Hola Dr, le llegó info?&#10;Lead: Si, vi el video&#10;Setter: Bien, le hago un par de preguntas?&#10;Lead: Dale"></textarea>
             </details>
 
-            <details style="margin-top:8px;">
-              <summary style="cursor:pointer; font-size:13px; color:var(--text-secondary); padding:6px 0;">+ Contexto adicional (opcional)</summary>
-              <textarea id="asst-context" rows="3" placeholder="Nombre del prospecto, software que usan, ciudad, qué notaste de su perfil, etc." style="width:100%; margin-top:8px; font-size:14px; line-height:1.5; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical; font-family:inherit;"></textarea>
+            <details class="asst-details" style="margin-top:6px;">
+              <summary>Contexto adicional <span style="opacity:0.55; margin-left:4px;">(quién es, qué software usan…)</span></summary>
+              <textarea id="asst-context" class="asst-textarea" rows="3" style="margin-top:10px;" placeholder="Nombre del prospecto, software que usan, ciudad, qué notaste de su perfil, etc."></textarea>
             </details>
 
-            <button id="asst-generate-btn" class="btn-primary" style="display:block; width:100%; margin-top:18px; font-size:15px; font-weight:600; padding:14px 20px; border-radius:12px;">Generar respuesta <span style="opacity:0.6; font-weight:400; margin-left:6px; font-size:12px;">(Ctrl+Enter)</span></button>
-            <div style="margin-top:8px; text-align:center;">
-              <button id="asst-paste-clipboard" type="button" style="background:none; border:none; color:var(--accent); font-size:11px; cursor:pointer; padding:4px 8px;">📋 Pegar último mensaje copiado</button>
+            <button id="asst-generate-btn" class="asst-cta">Generar respuesta <span class="asst-cta-kbd">Ctrl+Enter</span></button>
+            <div style="margin-top:10px; text-align:center;">
+              <button id="asst-paste-clipboard" type="button" class="asst-paste-btn">📋 Pegar último mensaje copiado</button>
             </div>
           </div>
 
@@ -1255,42 +1474,41 @@
           <div id="asst-error" style="display:none; padding:14px 16px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:13px; margin-top:18px;"></div>
 
           <!-- OUTPUT -->
-          <div id="asst-output-card" class="card" style="padding:24px; border-radius:16px; display:none; margin-top:18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
-              <div style="display:flex; gap:8px; align-items:center;">
-                <div style="width:6px; height:24px; background:var(--accent); border-radius:3px;"></div>
-                <strong style="font-size:15px; color:var(--text-primary);">Respuesta sugerida</strong>
-              </div>
+          <div id="asst-output-card" class="asst-card asst-output" style="display:none; margin-top:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
+              <div class="asst-section-title" style="margin-bottom:0;">Respuesta sugerida</div>
               <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                 <span id="asst-variant-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(157,133,242,0.14); color:var(--accent); border:1px solid rgba(157,133,242,0.4); border-radius:999px;"></span>
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
-                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:8px 14px; border-radius:8px;">📋 Copiar todo</button>
-                <button id="asst-copy-all-human" class="btn-secondary" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:12px; padding:8px 14px; border-radius:8px; color:var(--accent);">👤 Copiar todo humano</button>
+                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:7px 12px; border-radius:8px;">📋 Copiar todo</button>
+                <button id="asst-copy-all-human" class="btn-secondary" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:12px; padding:7px 12px; border-radius:8px; color:var(--accent);">👤 Copiar todo humano</button>
               </div>
             </div>
 
-            <div id="asst-no-response" style="display:none; padding:14px 16px; background:rgba(255,200,40,0.06); border:1px dashed rgba(255,200,40,0.4); border-radius:10px; color:#ffc828; font-size:13px; line-height:1.5; text-align:center;">
-              💡 Mercury sugiere <strong>no responder al lead ahora</strong>. Mirá las sugerencias abajo.
+            <div id="asst-no-response" class="asst-no-response-banner" style="display:none;">
+              <span class="icon">💡</span>
+              <div>Mercury sugiere <strong>no responder al lead ahora mismo</strong>. Mirá las sugerencias debajo.</div>
             </div>
 
             <ul id="asst-blocks" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
 
             <!-- Sugerencias para el setter -->
-            <div id="asst-coaching-wrap" style="display:none; margin-top:16px; padding:14px 16px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:12px;">
-              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                <span style="font-size:14px;">💡</span>
-                <strong style="font-size:13px; color:var(--accent);">Sugerencias para vos</strong>
+            <div id="asst-coaching-wrap" class="asst-coaching-card" style="display:none;">
+              <div class="asst-coaching-head">
+                <span style="font-size:18px;">💡</span>
+                <strong>Sugerencias para vos</strong>
+                <span style="font-size:10px; color:var(--text-secondary); margin-left:auto; opacity:0.7;">No son texto para mandar — son acciones</span>
               </div>
-              <ul id="asst-coaching" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px;"></ul>
+              <ul id="asst-coaching" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
             </div>
 
             <!-- Tono / Reformular -->
-            <div style="margin-top:14px; padding-top:14px; border-top:1px dashed var(--border-color); display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
-              <span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Reformular:</span>
-              <button class="btn-secondary asst-tone-btn" data-tone="corto" style="font-size:11px; padding:5px 10px; border-radius:6px;">↘ Más corto</button>
-              <button class="btn-secondary asst-tone-btn" data-tone="calido" style="font-size:11px; padding:5px 10px; border-radius:6px;">♡ Más cálido</button>
-              <button class="btn-secondary asst-tone-btn" data-tone="directo" style="font-size:11px; padding:5px 10px; border-radius:6px;">→ Más directo</button>
+            <div class="asst-tone-row">
+              <span>Reformular:</span>
+              <button class="asst-tone-btn" data-tone="corto">↘ Más corto</button>
+              <button class="asst-tone-btn" data-tone="calido">♡ Más cálido</button>
+              <button class="asst-tone-btn" data-tone="directo">→ Más directo</button>
             </div>
 
             <!-- Acciones del setter -->
@@ -1784,7 +2002,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430n"></script>
+  <script type="module" src="/app.js?v=20260430o"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
