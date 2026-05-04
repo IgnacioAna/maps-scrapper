@@ -5879,6 +5879,10 @@ function _faqScore(entry, qTokens, opts = {}) {
   score += Math.min(tagHits, 3) * 0.08;
   // Boost por categoría coincidente
   if (opts.categoria && entry.categoria && entry.categoria === opts.categoria) score += 0.10;
+  // Boost por variante coincidente: si el setter usó variante X, FAQs taggeadas
+  // con esa variante son más relevantes (+0.18, mayor que tag match porque
+  // implica contexto de mensaje inicial específico).
+  if (opts.variantId && entry.variantId && entry.variantId === opts.variantId) score += 0.18;
   // Boost por efectividad histórica
   const usos = entry.usos || 0;
   const ok = entry.funcionaron || 0;
@@ -6234,10 +6238,50 @@ REGLAS DE LAS SUGERENCIAS
 
 NUNCA mezcles: nada de instrucciones al setter dentro de RESPUESTA AL LEAD, nada de texto para el lead dentro de SUGERENCIAS.`;
 
+// Detecta la intención del lead a partir del mensaje + historial reciente.
+// Heurística keyword-based, rápida y barata. Retorna una etiqueta corta:
+// precio | objecion | agendamiento | duda_tecnica | calificacion | indeciso |
+// saludo | despedida | pide_asset | otro
+function detectMercuryIntent(message, history = "") {
+  const text = String((message || "") + " " + (history || "")).toLowerCase();
+  const norm = text.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const has = (re) => re.test(norm);
+
+  // Pide asset (mail, link, pdf, info enviada por chat → no respuesta de texto)
+  if (has(/\b(mail|email|correo|gmail|hotmail|outlook)\b/) && has(/\b(pasame|mandame|envia|tu|tenes|cual|necesito)\b/)) return "pide_asset";
+  if (has(/\b(pdf|catalogo|brochure|folleto|info|informacion|presentacion|propuesta|caso de exito|testimonio|video|landing|web)\b/) && has(/\b(mandame|enviame|envia|tenes|pasame|compartir|link|enlace|mas)\b/)) return "pide_asset";
+
+  // Agendamiento: quiere llamada / reunion / hablar
+  if (has(/\b(agendar|agend(amos|amo|emos)|llamada|reunion|videollamada|meet|zoom|google meet|cuando podemos|cuando hablamos|coordinar|cuando te viene)\b/)) return "agendamiento";
+
+  // Precio
+  if (has(/\b(cuanto|costo|cuesta|sale|precio|inversion|valor|presupuesto|cobrais|cobran|mensual|cuotas|fee|tarifa)\b/)) return "precio";
+
+  // Objeción común
+  if (has(/\b(no me interesa|no creo|no es para mi|ya tenemos|ya uso|ya tengo|no tengo tiempo|no necesito|caro|costoso|despues|mas adelante|otro momento)\b/)) return "objecion";
+
+  // Duda técnica / cómo funciona
+  if (has(/\b(como funciona|como es|que hace|que incluye|que ofrec|en que consiste|tecnologia|integraci|api|crm|software|sistema|donde lo|cuanto tarda|implementaci)\b/)) return "duda_tecnica";
+
+  // Indeciso / frio
+  if (/^(ok|dale|bueno|si|claro|perfecto|genial|barbaro|ah|aja|ya|listo|ahi|veo|pienso|tal vez|mmm|aha)\.?\s*$/i.test(String(message || "").trim())) return "indeciso";
+
+  // Saludo / apertura
+  if (has(/\b(hola|buenas|buen dia|buenas tardes|buenas noches|que tal)\b/) && String(message || "").trim().length < 60) return "saludo";
+
+  // Despedida
+  if (has(/\b(gracias|chau|nos hablamos|hasta luego|saludos|abrazo)\b/) && String(message || "").trim().length < 80) return "despedida";
+
+  // Calificación: setter pregunta o lead da info de la clínica
+  if (has(/\b(pacientes|clinica|consultorio|odontolog|equipo|recepcion|ciudad|ubicaci|cuantos)\b/)) return "calificacion";
+
+  return "otro";
+}
+
 // Export para tests (vitest puede importar via import { sanitizeMercuryStyle } from "../index.js"
 // pero index.js arranca el server; los tests usan setup con DATA_DIR para evitar side effects).
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
-globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput };
+globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
@@ -6261,6 +6305,9 @@ function loadMercuryConfig() {
       if (!cfg.systemPrompt) cfg.systemPrompt = _defaultMercurySystemPrompt();
       if (!Array.isArray(cfg.feedbackNotes)) cfg.feedbackNotes = [];
       if (typeof cfg.version !== "number") cfg.version = 1;
+      // A/B prompts: experimentalPrompt opcional. Si está vacío, no hay AB activo.
+      if (typeof cfg.experimentalPrompt !== "string") cfg.experimentalPrompt = "";
+      if (typeof cfg.abEnabled !== "boolean") cfg.abEnabled = false;
       return cfg;
     }
   } catch (e) { console.error("[mercury] Error leyendo config:", e.message); }
@@ -6268,6 +6315,8 @@ function loadMercuryConfig() {
   const seeded = {
     systemPrompt: _defaultMercurySystemPrompt(),
     feedbackNotes: [],
+    experimentalPrompt: "",
+    abEnabled: false,
     version: 1,
     updatedAt: new Date().toISOString(),
     updatedBy: "system_seed",
@@ -6351,7 +6400,7 @@ app.get("/api/mercury/config", requireAuth, (req, res) => {
 // el endpoint (max 50 notas, FIFO).
 app.put("/api/mercury/config", requireAuth, requireRole("admin"), (req, res) => {
   const cfg = loadMercuryConfig();
-  const { systemPrompt, feedbackNotes, addNote } = req.body || {};
+  const { systemPrompt, feedbackNotes, addNote, experimentalPrompt, abEnabled } = req.body || {};
   let changed = false;
 
   if (typeof systemPrompt === "string") {
@@ -6386,7 +6435,18 @@ app.put("/api/mercury/config", requireAuth, requireRole("admin"), (req, res) => 
     changed = true;
   }
 
-  if (!changed) return res.status(400).json({ error: "No hay cambios. Pasa systemPrompt, feedbackNotes o addNote." });
+  if (typeof experimentalPrompt === "string") {
+    const trimmed = experimentalPrompt.trim();
+    if (trimmed.length > 20000) return res.status(400).json({ error: "experimentalPrompt excede 20000 caracteres." });
+    cfg.experimentalPrompt = trimmed;
+    changed = true;
+  }
+  if (typeof abEnabled === "boolean") {
+    cfg.abEnabled = abEnabled;
+    changed = true;
+  }
+
+  if (!changed) return res.status(400).json({ error: "No hay cambios. Pasa systemPrompt, feedbackNotes, addNote, experimentalPrompt o abEnabled." });
 
   cfg.version = (Number(cfg.version) || 0) + 1;
   cfg.updatedAt = new Date().toISOString();
@@ -6466,10 +6526,12 @@ app.post("/api/mercury/generate", requireAuth, async (req, res) => {
   const MAX_EXAMPLES = 5;
   const scored = (faqs.entries || [])
     .filter((e) => e.respuesta && e.pregunta)
-    .map((e) => ({ entry: e, score: _faqScore(e, qTokens, { categoria }) }))
+    .map((e) => ({ entry: e, score: _faqScore(e, qTokens, { categoria, variantId }) }))
     .filter((x) => x.score >= SCORE_THRESHOLD)
     .sort((a, b) => b.score - a.score)
     .slice(0, MAX_EXAMPLES);
+
+  const intent = detectMercuryIntent(message, history);
 
   const ejemplosTexto = scored.length > 0
     ? scored.map((x, i) => `Ejemplo ${i + 1}:\nPregunta: ${x.entry.pregunta}\nRespuesta: ${x.entry.respuesta}`).join("\n\n")
@@ -6520,13 +6582,18 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
   let rawOutput = "";
   let usedFallback = false;
   let aiError = null;
+  let promptVariant = "A";
 
   if (mercuryKey || qwenKey) {
     try {
+      // A/B: si abEnabled y experimentalPrompt no vacío, 50/50 random.
+      const useExperimental = cfg.abEnabled && cfg.experimentalPrompt && cfg.experimentalPrompt.trim() && Math.random() < 0.5;
+      promptVariant = useExperimental ? "B" : "A";
+      const basePrompt = useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt());
       const completion = await ai.chat.completions.create({
         model: AI_MODEL,
         messages: [
-          { role: "system", content: (cfg.systemPrompt || _defaultMercurySystemPrompt()) + MERCURY_OUTPUT_FORMAT_INSTRUCTIONS },
+          { role: "system", content: basePrompt + MERCURY_OUTPUT_FORMAT_INSTRUCTIONS },
           { role: "user", content: userPrompt },
         ],
         temperature: 0.4,
@@ -6557,6 +6624,7 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
   const ejemplos = scored.map((x) => ({
     id: x.entry.id,
     pregunta: x.entry.pregunta,
+    respuesta: x.entry.respuesta,
     categoria: x.entry.categoria,
     score: Number(x.score.toFixed(3)),
   }));
@@ -6572,6 +6640,8 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     context: ctx || null,
     conversationHistory: history || null,
     tone: tone || null,
+    intent: intent || null,
+    promptVariant,
     categoriaHint: categoria || null,
     variantUsed,
     output: { text: sanitized.text, blocks: sanitized.blocks, coaching },
@@ -6607,10 +6677,140 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     blocks: sanitized.blocks,
     coaching,
     ejemplos,
+    intent,
     usedFallback,
     violations,
     promptVersion: cfg.version,
     variantUsed,
+  });
+});
+
+// GET /api/mercury/stats — admin/supervisor: agregaciones del asistente.
+// Query: setterId? + days? (default 30).
+// Devuelve por setter: total, byAction (good/bad/edited), used (con finalSent),
+// violationsRate, byIntent, byTone.
+app.get("/api/mercury/stats", requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== "admin" && role !== "supervisor") return res.status(403).json({ error: "Solo admin/supervisor." });
+  const days = Math.max(1, Math.min(365, parseInt(req.query.days, 10) || 30));
+  const sinceTs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const setterFilter = req.query.setterId || "";
+
+  const gens = (loadMercuryGenerations().generations || [])
+    .filter((g) => new Date(g.createdAt).getTime() >= sinceTs)
+    .filter((g) => !setterFilter || g.setterId === setterFilter);
+
+  const bySetter = {};
+  let totalAll = 0, goodAll = 0, badAll = 0, editedAll = 0, usedAll = 0, violationsAll = 0;
+  const byIntent = {};
+  const byTone = {};
+  for (const g of gens) {
+    totalAll++;
+    const sid = g.setterId || "(sin setter)";
+    if (!bySetter[sid]) bySetter[sid] = { setterId: sid, setterName: g.setterName || sid, total: 0, good: 0, bad: 0, edited: 0, used: 0, violations: 0 };
+    const s = bySetter[sid];
+    s.total++;
+    if (g.setterAction === "good") { s.good++; goodAll++; }
+    if (g.setterAction === "bad") { s.bad++; badAll++; }
+    if (g.setterAction === "edited") { s.edited++; editedAll++; }
+    if (g.finalSent) { s.used++; usedAll++; }
+    if (Array.isArray(g.violations) && g.violations.length) { s.violations++; violationsAll++; }
+    if (g.intent) byIntent[g.intent] = (byIntent[g.intent] || 0) + 1;
+    if (g.tone) byTone[g.tone] = (byTone[g.tone] || 0) + 1;
+  }
+  const team = Object.values(bySetter).sort((a, b) => b.total - a.total);
+
+  res.json({
+    days,
+    sinceISO: new Date(sinceTs).toISOString(),
+    totals: {
+      total: totalAll, good: goodAll, bad: badAll, edited: editedAll, used: usedAll, violations: violationsAll,
+      goodRate: totalAll ? +(goodAll / totalAll).toFixed(3) : 0,
+      badRate: totalAll ? +(badAll / totalAll).toFixed(3) : 0,
+      usedRate: totalAll ? +(usedAll / totalAll).toFixed(3) : 0,
+      violationsRate: totalAll ? +(violationsAll / totalAll).toFixed(3) : 0,
+    },
+    bySetter: team,
+    byIntent,
+    byTone,
+  });
+});
+
+// GET /api/mercury/drift — admin: compara violations rate semana actual vs anterior.
+// Si current > prev * 1.5 → drift detectado.
+app.get("/api/mercury/drift", requireAuth, requireRole("admin"), (req, res) => {
+  const now = Date.now();
+  const w1Start = now - 7 * 24 * 60 * 60 * 1000;
+  const w2Start = now - 14 * 24 * 60 * 60 * 1000;
+  const gens = loadMercuryGenerations().generations || [];
+  const slice = (from, to) => gens.filter((g) => {
+    const t = new Date(g.createdAt).getTime();
+    return t >= from && t < to;
+  });
+  const cur = slice(w1Start, now);
+  const prev = slice(w2Start, w1Start);
+  const rate = (arr) => arr.length ? arr.filter((g) => Array.isArray(g.violations) && g.violations.length).length / arr.length : 0;
+  const curRate = rate(cur);
+  const prevRate = rate(prev);
+  const drift = prevRate > 0 ? curRate >= prevRate * 1.5 : curRate >= 0.10;
+  // Top violations en current
+  const topViol = {};
+  for (const g of cur) for (const v of (g.violations || [])) topViol[v] = (topViol[v] || 0) + 1;
+  res.json({
+    drift,
+    currentWeek: { count: cur.length, violationsRate: +curRate.toFixed(3) },
+    previousWeek: { count: prev.length, violationsRate: +prevRate.toFixed(3) },
+    topViolations: Object.entries(topViol).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => ({ violation: k, count: v })),
+  });
+});
+
+// GET /api/mercury/candidates — admin: lista de generaciones marcadas "good" por
+// setter Y enviadas literal (finalSent === output.text) Y todavía no promovidas
+// al banco. Son candidatas para auto-promote.
+app.get("/api/mercury/candidates", requireAuth, requireRole("admin"), (req, res) => {
+  const days = Math.max(1, Math.min(365, parseInt(req.query.days, 10) || 30));
+  const sinceTs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const gens = loadMercuryGenerations().generations || [];
+  const candidates = gens.filter((g) => {
+    if (g.promotedToFaqId) return false;
+    if (g.setterAction !== "good") return false;
+    if (!g.output?.text) return false;
+    if (new Date(g.createdAt).getTime() < sinceTs) return false;
+    // Considera "usado literal" si finalSent matches output.text (con leve normalización).
+    const norm = (s) => String(s || "").trim().replace(/\s+/g, " ");
+    return g.finalSent && norm(g.finalSent) === norm(g.output.text);
+  });
+  candidates.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  res.json({ total: candidates.length, candidates: candidates.slice(0, 50) });
+});
+
+// GET /api/mercury/ab-stats — admin: compara good/bad rate de prompt A vs B.
+app.get("/api/mercury/ab-stats", requireAuth, requireRole("admin"), (req, res) => {
+  const days = Math.max(1, Math.min(365, parseInt(req.query.days, 10) || 14));
+  const sinceTs = Date.now() - days * 24 * 60 * 60 * 1000;
+  const gens = (loadMercuryGenerations().generations || [])
+    .filter((g) => new Date(g.createdAt).getTime() >= sinceTs);
+  const calc = (variant) => {
+    const arr = gens.filter((g) => (g.promptVariant || "A") === variant);
+    const good = arr.filter((g) => g.setterAction === "good").length;
+    const bad = arr.filter((g) => g.setterAction === "bad").length;
+    const used = arr.filter((g) => g.finalSent).length;
+    const violations = arr.filter((g) => Array.isArray(g.violations) && g.violations.length).length;
+    return {
+      total: arr.length, good, bad, used, violations,
+      goodRate: arr.length ? +(good / arr.length).toFixed(3) : 0,
+      badRate: arr.length ? +(bad / arr.length).toFixed(3) : 0,
+      usedRate: arr.length ? +(used / arr.length).toFixed(3) : 0,
+      violationsRate: arr.length ? +(violations / arr.length).toFixed(3) : 0,
+    };
+  };
+  const cfg = loadMercuryConfig();
+  res.json({
+    days,
+    abEnabled: cfg.abEnabled,
+    promptB_set: !!(cfg.experimentalPrompt && cfg.experimentalPrompt.trim()),
+    A: calc("A"),
+    B: calc("B"),
   });
 });
 

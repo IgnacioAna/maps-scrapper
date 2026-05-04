@@ -1478,6 +1478,7 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:18px; flex-wrap:wrap;">
               <div class="asst-section-title" style="margin-bottom:0;">Respuesta sugerida</div>
               <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                <span id="asst-intent-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.35); border-radius:999px;"></span>
                 <span id="asst-variant-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(157,133,242,0.14); color:var(--accent); border:1px solid rgba(157,133,242,0.4); border-radius:999px;"></span>
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
@@ -1796,6 +1797,76 @@
             <div class="muted" style="font-size:11px; margin-top:6px;"><span id="mercury-cfg-charcount">0</span> / 20000 caracteres</div>
           </div>
 
+          <!-- Métricas + Drift + A/B -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">📊 Métricas del asistente</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Uso, calidad, drift y A/B testing del system prompt.</div>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <select id="mercury-metrics-days" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
+                  <option value="7">Últimos 7 días</option>
+                  <option value="30" selected>Últimos 30 días</option>
+                  <option value="90">Últimos 90 días</option>
+                </select>
+                <button id="mercury-metrics-refresh" class="btn-secondary" style="font-size:12px;">↻ Refrescar</button>
+              </div>
+            </div>
+            <div id="mercury-metrics-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:14px;"></div>
+            <div id="mercury-drift-banner" style="display:none; margin-bottom:14px; padding:12px 14px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:12px; line-height:1.5;"></div>
+            <details>
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por setter / por intención / por tono</summary>
+              <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por setter</div>
+                  <ul id="mercury-metrics-setters" style="list-style:none; padding:0; margin:0; font-size:12px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por intención del lead</div>
+                  <ul id="mercury-metrics-intents" style="list-style:none; padding:0; margin:0; font-size:12px; display:flex; flex-direction:column; gap:4px;"></ul>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-top:10px; margin-bottom:6px;">Por tono usado</div>
+                  <ul id="mercury-metrics-tones" style="list-style:none; padding:0; margin:0; font-size:12px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+              </div>
+            </details>
+          </div>
+
+          <!-- Candidatos auto-promote -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+              <div>
+                <strong style="font-size:14px;">⭐ Candidatos auto-promote</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Generaciones marcadas <em>buena</em> + enviadas <em>literal</em> sin editar. Las podés promover de un click al banco.</div>
+              </div>
+              <button id="mercury-cands-refresh" class="btn-secondary" style="font-size:12px;">↻ Refrescar</button>
+            </div>
+            <ul id="mercury-cands-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+            <div id="mercury-cands-empty" class="muted" style="font-size:12px; text-align:center; padding:18px 0; display:none;">Sin candidatos pendientes.</div>
+          </div>
+
+          <!-- A/B prompts -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+              <div>
+                <strong style="font-size:14px;">🧪 A/B test del system prompt</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Probá un prompt experimental contra el actual. Mercury rutea 50/50 cuando está activado.</div>
+              </div>
+              <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
+                <input id="mercury-ab-enabled" type="checkbox">
+                <span>Activar 50/50</span>
+              </label>
+            </div>
+            <textarea id="mercury-cfg-experimental" rows="10" placeholder="Pegá acá una versión experimental del system prompt para probar contra el actual…" style="width:100%; font-family:'Geist Mono',monospace; font-size:12px; line-height:1.55; padding:12px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); resize:vertical;"></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button id="mercury-cfg-experimental-save" class="btn-primary" style="font-size:12px;">Guardar prompt B</button>
+            </div>
+            <div id="mercury-ab-stats" style="margin-top:14px; display:none; padding:12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+              <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Comparación últimos 14 días</div>
+              <div id="mercury-ab-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+            </div>
+          </div>
+
           <div class="card" style="padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
               <div>
@@ -2002,7 +2073,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430o"></script>
+  <script type="module" src="/app.js?v=20260430p"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

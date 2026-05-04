@@ -209,3 +209,51 @@ SUGERENCIAS PARA EL SETTER:
     expect(r.coaching.length).toBe(6);
   });
 });
+
+describe("detectMercuryIntent — clasificación heurística", () => {
+  const { detectMercuryIntent } = globalThis.__mercury;
+
+  it("detecta pide_asset con email", () => {
+    expect(detectMercuryIntent("pasame tu mail por favor")).toBe("pide_asset");
+    expect(detectMercuryIntent("cual es tu email?")).toBe("pide_asset");
+  });
+
+  it("detecta pide_asset con PDF/info", () => {
+    expect(detectMercuryIntent("tenes algun pdf o presentacion?")).toBe("pide_asset");
+    expect(detectMercuryIntent("mandame mas info")).toBe("pide_asset");
+  });
+
+  it("detecta agendamiento", () => {
+    expect(detectMercuryIntent("dale, cuando podemos hablar?")).toBe("agendamiento");
+    expect(detectMercuryIntent("agendamos una reunion")).toBe("agendamiento");
+  });
+
+  it("detecta precio", () => {
+    expect(detectMercuryIntent("cuanto sale?")).toBe("precio");
+    expect(detectMercuryIntent("que valor tiene la inversion mensual?")).toBe("precio");
+  });
+
+  it("detecta objecion", () => {
+    expect(detectMercuryIntent("no me interesa por ahora")).toBe("objecion");
+    expect(detectMercuryIntent("ya tenemos un sistema")).toBe("objecion");
+  });
+
+  it("detecta indeciso en respuestas cortas", () => {
+    expect(detectMercuryIntent("ok")).toBe("indeciso");
+    expect(detectMercuryIntent("dale")).toBe("indeciso");
+    expect(detectMercuryIntent("Listo.")).toBe("indeciso");
+  });
+
+  it("detecta saludo", () => {
+    expect(detectMercuryIntent("Hola buenas")).toBe("saludo");
+  });
+
+  it("detecta duda tecnica", () => {
+    expect(detectMercuryIntent("como funciona exactamente?")).toBe("duda_tecnica");
+    expect(detectMercuryIntent("que incluye el sistema?")).toBe("duda_tecnica");
+  });
+
+  it("default 'otro' si no matchea nada", () => {
+    expect(detectMercuryIntent("xyz qwerty foobar")).toBe("otro");
+  });
+});

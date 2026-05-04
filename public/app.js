@@ -5202,7 +5202,198 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.querySelector('[data-target="view-mercury-config"]')?.addEventListener('click', () => {
-    setTimeout(() => loadMercuryConfig(), 50);
+    setTimeout(() => {
+      loadMercuryConfig();
+      _loadMercuryMetrics();
+      _loadMercuryCandidates();
+      _loadMercuryAbStats();
+    }, 50);
+  });
+
+  // ── Métricas Mercury ──
+  async function _loadMercuryMetrics() {
+    const days = parseInt(document.getElementById('mercury-metrics-days')?.value || '30', 10);
+    try {
+      const [stats, drift] = await Promise.all([
+        fetch(`/api/mercury/stats?days=${days}`, { credentials: 'include' }).then(r => r.json()),
+        fetch('/api/mercury/drift', { credentials: 'include' }).then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+      const cards = document.getElementById('mercury-metrics-cards');
+      if (cards && stats?.totals) {
+        const t = stats.totals;
+        const card = (label, value, sub, color = 'var(--accent)') => `
+          <div style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+            <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">${label}</div>
+            <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
+            <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">${sub}</div>
+          </div>`;
+        cards.innerHTML =
+          card('Total', t.total, `${days}d`) +
+          card('Buenas', `${(t.goodRate * 100).toFixed(0)}%`, `${t.good} marcadas`, '#5bb974') +
+          card('Malas', `${(t.badRate * 100).toFixed(0)}%`, `${t.bad} descartadas`, '#f85149') +
+          card('Usadas', `${(t.usedRate * 100).toFixed(0)}%`, `${t.used} enviadas`, 'var(--accent)') +
+          card('Violaciones', `${(t.violationsRate * 100).toFixed(0)}%`, `${t.violations} con flags`, '#ffc828');
+      }
+      // Drift
+      const driftBanner = document.getElementById('mercury-drift-banner');
+      if (driftBanner && drift) {
+        if (drift.drift) {
+          const top = (drift.topViolations || []).slice(0, 3).map(x => `${x.violation} (${x.count})`).join(', ') || 'sin detalle';
+          driftBanner.innerHTML = `⚠ <strong>Drift detectado</strong> — violations rate subió de ${(drift.previousWeek.violationsRate * 100).toFixed(1)}% (semana pasada) a <strong>${(drift.currentWeek.violationsRate * 100).toFixed(1)}%</strong> (esta semana). Top: ${top}.`;
+          driftBanner.style.display = 'block';
+        } else {
+          driftBanner.style.display = 'none';
+        }
+      }
+      // Por setter
+      const setterUl = document.getElementById('mercury-metrics-setters');
+      if (setterUl && Array.isArray(stats.bySetter)) {
+        setterUl.innerHTML = stats.bySetter.slice(0, 12).map(s => `
+          <li style="display:flex; justify-content:space-between; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary);">${escHtml(s.setterName || s.setterId)}</span>
+            <span class="muted">${s.total} · 👍${s.good} 👎${s.bad} ✓${s.used}</span>
+          </li>`).join('') || '<li class="muted" style="text-align:center; padding:8px;">Sin datos.</li>';
+      }
+      const renderKv = (id, obj) => {
+        const ul = document.getElementById(id);
+        if (!ul) return;
+        const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+        ul.innerHTML = entries.length
+          ? entries.map(([k, v]) => `<li style="display:flex; justify-content:space-between; padding:4px 8px; background:var(--bg-app); border-radius:6px;"><span>${escHtml(k)}</span><span class="muted">${v}</span></li>`).join('')
+          : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      };
+      renderKv('mercury-metrics-intents', stats.byIntent);
+      renderKv('mercury-metrics-tones', stats.byTone);
+    } catch (e) {
+      console.warn('mercury-metrics:', e.message);
+    }
+  }
+
+  document.getElementById('mercury-metrics-refresh')?.addEventListener('click', _loadMercuryMetrics);
+  document.getElementById('mercury-metrics-days')?.addEventListener('change', _loadMercuryMetrics);
+
+  // ── Candidatos auto-promote ──
+  async function _loadMercuryCandidates() {
+    const ul = document.getElementById('mercury-cands-list');
+    const empty = document.getElementById('mercury-cands-empty');
+    if (!ul) return;
+    try {
+      const r = await fetch('/api/mercury/candidates?days=60', { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const list = d.candidates || [];
+      ul.innerHTML = '';
+      if (!list.length) { empty.style.display = 'block'; return; }
+      empty.style.display = 'none';
+      for (const g of list) {
+        const li = document.createElement('li');
+        li.style.cssText = 'padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;';
+        const when = new Date(g.createdAt).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+        li.innerHTML = `
+          <div style="display:flex; justify-content:space-between; gap:8px; margin-bottom:6px; align-items:flex-start;">
+            <div class="muted" style="font-size:11px;">💬 <span class="cand-msg" style="color:var(--text-secondary);"></span></div>
+            <span class="muted" style="font-size:10px; flex-shrink:0;">${when} · ${escHtml(g.setterName || '')}</span>
+          </div>
+          <div class="cand-out" style="font-size:13px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; padding:8px 10px; background:rgba(157,133,242,0.04); border-left:3px solid var(--accent); border-radius:6px;"></div>
+          <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end;">
+            <button class="btn-secondary cand-skip" style="font-size:11px; padding:5px 10px;">Saltar</button>
+            <button class="btn-primary cand-approve" style="font-size:11px; padding:5px 10px;">⭐ Promover al banco</button>
+          </div>
+        `;
+        li.querySelector('.cand-msg').textContent = (g.prospectMessage || '').slice(0, 140);
+        li.querySelector('.cand-out').textContent = g.output?.text || '';
+        li.querySelector('.cand-approve').addEventListener('click', async (ev) => {
+          ev.target.disabled = true;
+          ev.target.textContent = 'Promoviendo…';
+          try {
+            const ar = await fetch(`/api/mercury/generations/${encodeURIComponent(g.id)}/approve`, { method: 'POST', credentials: 'include' });
+            if (!ar.ok) throw new Error('http ' + ar.status);
+            window.showToast('Promovida al banco', { type: 'success' });
+            _loadMercuryCandidates();
+          } catch (e) {
+            window.showToast('Error: ' + e.message, { type: 'error' });
+            ev.target.disabled = false;
+            ev.target.textContent = '⭐ Promover al banco';
+          }
+        });
+        li.querySelector('.cand-skip').addEventListener('click', () => { li.remove(); });
+        ul.appendChild(li);
+      }
+    } catch (e) {
+      console.warn('mercury-cands:', e.message);
+    }
+  }
+  document.getElementById('mercury-cands-refresh')?.addEventListener('click', _loadMercuryCandidates);
+
+  // ── A/B prompts ──
+  async function _loadMercuryAbStats() {
+    try {
+      const cfg = await fetch('/api/mercury/config', { credentials: 'include' }).then(r => r.json());
+      const expEl = document.getElementById('mercury-cfg-experimental');
+      const enEl = document.getElementById('mercury-ab-enabled');
+      if (expEl) expEl.value = cfg.experimentalPrompt || '';
+      if (enEl) enEl.checked = !!cfg.abEnabled;
+      const ab = await fetch('/api/mercury/ab-stats?days=14', { credentials: 'include' }).then(r => r.ok ? r.json() : null);
+      if (!ab) return;
+      const wrap = document.getElementById('mercury-ab-stats');
+      const grid = document.getElementById('mercury-ab-grid');
+      if (!wrap || !grid) return;
+      if (!ab.promptB_set || (ab.A.total === 0 && ab.B.total === 0)) {
+        wrap.style.display = 'none';
+        return;
+      }
+      wrap.style.display = 'block';
+      const renderCol = (label, x, accent) => `
+        <div style="padding:10px; border:1px solid ${accent}; border-radius:8px; background:rgba(157,133,242,0.02);">
+          <div style="font-size:11px; font-weight:700; color:${accent}; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">${label}</div>
+          <div style="font-size:11px; color:var(--text-primary); line-height:1.7;">
+            Total: <strong>${x.total}</strong><br>
+            👍 Buenas: <strong>${(x.goodRate * 100).toFixed(0)}%</strong> (${x.good})<br>
+            👎 Malas: <strong>${(x.badRate * 100).toFixed(0)}%</strong> (${x.bad})<br>
+            ✓ Usadas: <strong>${(x.usedRate * 100).toFixed(0)}%</strong> (${x.used})<br>
+            ⚠ Violations: <strong>${(x.violationsRate * 100).toFixed(0)}%</strong>
+          </div>
+        </div>`;
+      grid.innerHTML = renderCol('Prompt A (actual)', ab.A, '#5bb974') + renderCol('Prompt B (experimental)', ab.B, 'var(--accent)');
+    } catch (e) {
+      console.warn('mercury-ab:', e.message);
+    }
+  }
+
+  document.getElementById('mercury-cfg-experimental-save')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const prompt = document.getElementById('mercury-cfg-experimental')?.value || '';
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const r = await fetch('/api/mercury/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ experimentalPrompt: prompt }),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'http ' + r.status); }
+      btn.textContent = '✓ Guardado';
+      setTimeout(() => { btn.textContent = 'Guardar prompt B'; btn.disabled = false; }, 1500);
+      _loadMercuryAbStats();
+    } catch (err) {
+      window.showToast('Error: ' + err.message, { type: 'error' });
+      btn.textContent = 'Guardar prompt B'; btn.disabled = false;
+    }
+  });
+  document.getElementById('mercury-ab-enabled')?.addEventListener('change', async (e) => {
+    try {
+      const r = await fetch('/api/mercury/config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ abEnabled: !!e.target.checked }),
+      });
+      if (!r.ok) throw new Error('http ' + r.status);
+      window.showToast(e.target.checked ? 'A/B activado (50/50)' : 'A/B desactivado', { type: 'info' });
+    } catch (err) {
+      window.showToast('Error: ' + err.message, { type: 'error' });
+      e.target.checked = !e.target.checked;
+    }
   });
 
   document.getElementById('mercury-cfg-prompt')?.addEventListener('input', (e) => {
@@ -5378,13 +5569,87 @@ document.addEventListener('DOMContentLoaded', async () => {
     ul.innerHTML = '';
     for (const e of ejemplos) {
       const li = document.createElement('li');
-      li.style.cssText = 'padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px;';
-      li.innerHTML = `<div style="font-weight:500; color:var(--text-primary);"></div><div class="muted" style="font-size:11px; margin-top:2px;">categoría: <span class="ej-cat"></span> · score: <span class="ej-score"></span></div>`;
-      li.querySelector('div').textContent = e.pregunta || '—';
+      li.style.cssText = 'padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; cursor:pointer; transition:border-color 0.15s;';
+      li.innerHTML = `
+        <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+          <div style="flex:1; min-width:0;">
+            <div class="ej-pregunta" style="font-weight:500; color:var(--text-primary); font-size:13px;"></div>
+            <div class="muted" style="font-size:10px; margin-top:3px;">
+              <span class="ej-cat" style="padding:1px 7px; background:rgba(157,133,242,0.12); color:var(--accent); border-radius:6px; font-weight:500;"></span>
+              <span style="margin-left:6px;">score: <span class="ej-score"></span></span>
+              <span style="margin-left:6px; opacity:0.7;">click para ver respuesta</span>
+            </div>
+          </div>
+          <span class="ej-toggle muted" style="font-size:14px; flex-shrink:0;">▸</span>
+        </div>
+        <div class="ej-respuesta-wrap" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border-color);">
+          <div class="muted" style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Respuesta del banco</div>
+          <div class="ej-respuesta" style="font-size:13px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap;"></div>
+          <div style="margin-top:8px; display:flex; gap:6px;">
+            <button class="btn-table-action ej-copy" style="font-size:10px; padding:4px 10px;">⧉ Copiar respuesta</button>
+            <button class="btn-table-action ej-go" style="font-size:10px; padding:4px 10px;">→ Ver en banco</button>
+          </div>
+        </div>
+      `;
+      li.querySelector('.ej-pregunta').textContent = e.pregunta || '—';
       li.querySelector('.ej-cat').textContent = e.categoria || '—';
       li.querySelector('.ej-score').textContent = e.score ?? '—';
+      li.querySelector('.ej-respuesta').textContent = e.respuesta || '(sin respuesta cacheada)';
+      li.addEventListener('click', (ev) => {
+        if (ev.target.closest('.ej-copy') || ev.target.closest('.ej-go')) return;
+        const w = li.querySelector('.ej-respuesta-wrap');
+        const t = li.querySelector('.ej-toggle');
+        const open = w.style.display !== 'none';
+        w.style.display = open ? 'none' : 'block';
+        t.textContent = open ? '▸' : '▾';
+        li.style.borderColor = open ? 'var(--border-color)' : 'rgba(157,133,242,0.4)';
+      });
+      li.querySelector('.ej-copy').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(e.respuesta || '');
+          window.showToast('Respuesta copiada', { type: 'success', duration: 1500 });
+        } catch (er) { window.showToast('No pude copiar', { type: 'error' }); }
+      });
+      li.querySelector('.ej-go').addEventListener('click', () => {
+        // Cerrar la vista de asistente y abrir banco con el id resaltado.
+        const target = document.querySelector('[data-target="view-faqs"]');
+        if (target) target.click();
+        setTimeout(() => {
+          const card = document.querySelector(`[data-faq-id="${e.id}"]`);
+          if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.boxShadow = '0 0 0 3px var(--accent)';
+            setTimeout(() => { card.style.boxShadow = ''; }, 2500);
+          }
+        }, 300);
+      });
       ul.appendChild(li);
     }
+  }
+
+  // Pill informativa de intención detectada
+  const INTENT_LABELS = {
+    pide_asset: { label: '📎 Pide info / asset', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
+    agendamiento: { label: '📅 Quiere agendar', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    precio: { label: '💲 Pregunta precio', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
+    objecion: { label: '🛑 Objeción', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
+    duda_tecnica: { label: '❓ Duda técnica', color: 'var(--accent)', bg: 'rgba(157,133,242,0.10)', border: 'rgba(157,133,242,0.4)' },
+    indeciso: { label: '🤔 Indeciso / frío', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
+    saludo: { label: '👋 Saludo', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
+    despedida: { label: '👋 Cierre', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
+    calificacion: { label: '🔍 Da info clínica', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    otro: null,
+  };
+  function _asstRenderIntent(intent) {
+    const pill = document.getElementById('asst-intent-pill');
+    if (!pill) return;
+    const meta = INTENT_LABELS[intent];
+    if (!meta) { pill.style.display = 'none'; return; }
+    pill.textContent = meta.label;
+    pill.style.background = meta.bg;
+    pill.style.color = meta.color;
+    pill.style.borderColor = meta.border;
+    pill.style.display = 'inline-flex';
   }
 
   // Cargar variantes en el selector del Asistente (solo una vez por sesión).
@@ -5433,6 +5698,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _asstRenderBlocks(d.blocks || []);
       _asstRenderCoaching(d.coaching || []);
       _asstRenderEjemplos(d.ejemplos || []);
+      _asstRenderIntent(d.intent || '');
       if (d.usedFallback) document.getElementById('asst-fallback-pill').style.display = 'inline-block';
       if (Array.isArray(d.violations) && d.violations.length) {
         const pill = document.getElementById('asst-violations-pill');
