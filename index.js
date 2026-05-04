@@ -32,6 +32,23 @@ const ai = mercuryKey
 const AI_MODEL = mercuryKey ? 'mercury-2' : 'qwen/qwen3-14b:free';
 console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'Qwen (OpenRouter)'}`);
 
+// Cliente AI separado para warming network. Mercury es un modelo de coding y
+// devuelve completions vacías (0 output tokens) en roleplay conversacional en
+// español — observado en logs producción 2026-05-03. Forzamos Qwen 14B free
+// (OpenRouter) específicamente para warming, que sí chatea bien.
+const warmingAi = qwenKey
+  ? new OpenAI({
+      apiKey: qwenKey,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        "HTTP-Referer": "http://localhost:3000",
+        "X-Title": "GoogleScraper-Warming"
+      }
+    })
+  : ai; // fallback al cliente principal si no hay Qwen
+const WARMING_AI_MODEL = qwenKey ? 'qwen/qwen3-14b:free' : AI_MODEL;
+console.log(`🔥 Warming IA: ${qwenKey ? 'Qwen 14B (OpenRouter)' : 'usa cliente principal'}`);
+
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -7000,8 +7017,8 @@ mountWa(app, server, {
   userIdFromSetterId: userIdFromSetterIdHelper,
   // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
   // network lo reusa en vez de pedir API keys nuevas.
-  aiClient: ai,
-  aiModel: AI_MODEL,
+  aiClient: warmingAi,
+  aiModel: WARMING_AI_MODEL,
 }).catch((err) => console.error("mountWa error:", err));
 
 export { app, buildWhatsAppUrl, digitsHaveKnownPrefix, sanitizeOpeningMessage, makeOpeningMessage };
