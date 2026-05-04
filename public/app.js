@@ -5301,7 +5301,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Bloque ${i + 1}</div>
           <div class="asst-block-text" style="font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; color:var(--text-primary);"></div>
         </div>
-        <button class="btn-table-action asst-block-copy" style="font-size:11px; flex-shrink:0;">Copiar</button>
+        <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
+          <button class="btn-table-action asst-block-copy" style="font-size:11px;">Copiar</button>
+          <button class="btn-table-action asst-block-copy-human" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:11px; color:var(--accent);">👤 Humano</button>
+        </div>
       `;
       li.querySelector('.asst-block-text').textContent = b;
       li.querySelector('.asst-block-copy').addEventListener('click', async (ev) => {
@@ -5309,6 +5312,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           await navigator.clipboard.writeText(b);
           ev.target.textContent = '✓ Copiado';
           setTimeout(() => { ev.target.textContent = 'Copiar'; }, 1500);
+        } catch (e) { alert('No pude copiar: ' + e.message); }
+      });
+      li.querySelector('.asst-block-copy-human').addEventListener('click', async (ev) => {
+        try {
+          const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
+          await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + b) : b);
+          ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+          setTimeout(() => { ev.target.textContent = '👤 Humano'; }, 2400);
         } catch (e) { alert('No pude copiar: ' + e.message); }
       });
       ul.appendChild(li);
@@ -5433,7 +5444,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await navigator.clipboard.writeText(_asstCurrentGen.blocks.join('\n\n'));
       ev.target.textContent = '✓ Copiado todo';
-      setTimeout(() => { ev.target.textContent = 'Copiar todo'; }, 1500);
+      setTimeout(() => { ev.target.textContent = '📋 Copiar todo'; }, 1500);
+    } catch (e) { alert('No pude copiar: ' + e.message); }
+  });
+
+  document.getElementById('asst-copy-all-human')?.addEventListener('click', async (ev) => {
+    if (!_asstCurrentGen?.blocks?.length) return;
+    try {
+      const txt = _asstCurrentGen.blocks.join('\n\n');
+      const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
+      await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + txt) : txt);
+      ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+      setTimeout(() => { ev.target.textContent = '👤 Copiar todo humano'; }, 2400);
     } catch (e) { alert('No pude copiar: ' + e.message); }
   });
 
@@ -5713,7 +5735,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let body = {};
     let path = `/api/mercury/generations/${encodeURIComponent(id)}`;
     if (action === 'approve') {
-      if (!confirm('Aprobar esta generación como ejemplo de oro? Se va a promover al banco de respuestas.')) return;
+      const ok = await window.askConfirm({
+        title: '🥇 Aprobar como ejemplo de oro',
+        message: 'Esta respuesta se va a promover al Banco de Respuestas con tag "aprobado-admin", para que Mercury la use como ejemplo few-shot en futuras generaciones similares.',
+        confirmLabel: 'Promover al banco',
+      });
+      if (!ok) return;
       path += '/approve';
     } else if (action === 'reject') {
       const reason = await window.askText({
@@ -5761,9 +5788,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+      const msgs = {
+        approve: 'Generación promovida al banco como ejemplo de oro.',
+        reject: 'Generación marcada como rechazada.',
+        rewrite: 'Reescritura promovida al banco con tag "reescrita-admin".',
+        suggest: 'Sugerencia guardada. Mercury la va a usar en futuras generaciones.',
+      };
+      window.showToast(msgs[action] || 'Acción aplicada.', { type: 'success' });
       _mrLoad();
     } catch (e) {
-      alert('Error: ' + e.message);
+      window.showToast('Error: ' + e.message, { type: 'error', duration: 5000 });
     }
   }
 
@@ -6546,6 +6580,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); _askTextDoConfirm(); }
     if (e.key === 'Escape') { e.preventDefault(); _askTextClose(null); }
   });
+
+  // ── Modal askConfirm (reemplaza confirm() nativo) ──
+  let _askConfirmResolve = null;
+  function _askConfirmClose(value) {
+    document.getElementById('ask-confirm-modal').style.display = 'none';
+    if (_askConfirmResolve) { _askConfirmResolve(value); _askConfirmResolve = null; }
+  }
+  window.askConfirm = function askConfirm(opts = {}) {
+    const {
+      title = '¿Estás seguro?',
+      message = '',
+      confirmLabel = 'Confirmar',
+      cancelLabel = 'Cancelar',
+      danger = false,
+    } = opts;
+    document.getElementById('ask-confirm-title').textContent = title;
+    document.getElementById('ask-confirm-message').textContent = message;
+    const okBtn = document.getElementById('ask-confirm-ok');
+    okBtn.textContent = confirmLabel;
+    okBtn.style.background = danger ? '#f85149' : '';
+    okBtn.style.borderColor = danger ? '#f85149' : '';
+    document.getElementById('ask-confirm-cancel').textContent = cancelLabel;
+    document.getElementById('ask-confirm-modal').style.display = 'flex';
+    setTimeout(() => okBtn.focus(), 80);
+    return new Promise((resolve) => { _askConfirmResolve = resolve; });
+  };
+  document.getElementById('ask-confirm-cancel')?.addEventListener('click', () => _askConfirmClose(false));
+  document.getElementById('ask-confirm-ok')?.addEventListener('click', () => _askConfirmClose(true));
+  document.getElementById('ask-confirm-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'ask-confirm-modal') _askConfirmClose(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    const m = document.getElementById('ask-confirm-modal');
+    if (m && m.style.display === 'flex') {
+      if (e.key === 'Escape') { e.preventDefault(); _askConfirmClose(false); }
+      if (e.key === 'Enter') { e.preventDefault(); _askConfirmClose(true); }
+    }
+  });
+
+  // ── Toast notifications (reemplaza alert() para errores y status) ──
+  window.showToast = function showToast(message, opts = {}) {
+    const { type = 'info', duration = 3500 } = opts;
+    const container = document.getElementById('toast-container');
+    if (!container) { console.log('[toast]', message); return; }
+    const colors = {
+      success: { bg: 'rgba(91,185,116,0.12)', border: 'rgba(91,185,116,0.5)', text: '#5bb974', icon: '✓' },
+      error:   { bg: 'rgba(248,81,73,0.12)',  border: 'rgba(248,81,73,0.5)',  text: '#f85149', icon: '✗' },
+      info:    { bg: 'rgba(157,133,242,0.12)', border: 'rgba(157,133,242,0.5)', text: 'var(--accent)', icon: 'ℹ' },
+      warn:    { bg: 'rgba(255,200,40,0.12)', border: 'rgba(255,200,40,0.5)', text: '#ffc828', icon: '⚠' },
+    };
+    const c = colors[type] || colors.info;
+    const el = document.createElement('div');
+    el.style.cssText = `pointer-events:auto; padding:12px 16px; background:${c.bg}; border:1px solid ${c.border}; border-radius:12px; color:${c.text}; font-size:13px; line-height:1.5; box-shadow:0 8px 24px rgba(0,0,0,0.4); backdrop-filter:blur(8px); display:flex; gap:10px; align-items:flex-start; transform:translateX(20px); opacity:0; transition:transform 0.25s, opacity 0.25s; max-width:100%; word-break:break-word;`;
+    el.innerHTML = `<span style="flex-shrink:0; font-weight:700;">${c.icon}</span><span style="flex:1;"></span>`;
+    el.querySelector('span:last-child').textContent = message;
+    container.appendChild(el);
+    requestAnimationFrame(() => { el.style.transform = 'translateX(0)'; el.style.opacity = '1'; });
+    setTimeout(() => {
+      el.style.transform = 'translateX(20px)';
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 300);
+    }, duration);
+  };
 
   // ── Modal Reasignar leads bulk (admin) ──
   let _reassignSetters = [];

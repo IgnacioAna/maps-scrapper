@@ -1258,6 +1258,7 @@
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
                 <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:8px 14px; border-radius:8px;">📋 Copiar todo</button>
+                <button id="asst-copy-all-human" class="btn-secondary" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:12px; padding:8px 14px; border-radius:8px; color:var(--accent);">👤 Copiar todo humano</button>
               </div>
             </div>
 
@@ -1586,6 +1587,23 @@
     </div>
   </div>
 
+  <!-- Modal genérico askConfirm (reemplaza confirm() nativo). -->
+  <div id="ask-confirm-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(4px); z-index:2100; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="width:min(480px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.65);">
+      <div style="padding:22px 24px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
+        <h3 id="ask-confirm-title" style="margin:0; font-size:17px; font-weight:700; letter-spacing:-0.2px; color:var(--text-primary);">Confirmar acción</h3>
+        <p id="ask-confirm-message" style="margin:8px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.55;"></p>
+      </div>
+      <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.18);">
+        <button id="ask-confirm-cancel" class="btn-secondary" style="font-size:13px; padding:9px 18px; border-radius:9px;">Cancelar</button>
+        <button id="ask-confirm-ok" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container (reemplaza alert() para errores y mensajes de status) -->
+  <div id="toast-container" style="position:fixed; bottom:24px; right:24px; z-index:2200; display:flex; flex-direction:column; gap:10px; pointer-events:none; max-width:360px;"></div>
+
   <!-- Modal Reasignar leads en bulk (admin) -->
   <div id="reassign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
@@ -1728,7 +1746,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430j"></script>
+  <script type="module" src="/app.js?v=20260430l"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
