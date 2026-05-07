@@ -1944,8 +1944,16 @@
             <input id="reassign-custom-count" type="number" min="1" placeholder="Ej: 50" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
           </label>
         </div>
+        <!-- Filtro principal: solo sin trabajar (recomendado, default ON) -->
+        <label style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:rgba(157,133,242,0.07); border:1px solid rgba(157,133,242,0.35); border-radius:10px; cursor:pointer; font-size:13px; line-height:1.5;">
+          <input id="reassign-untouched" type="checkbox" checked style="margin-top:2px; width:16px; height:16px; accent-color:var(--accent); cursor:pointer;">
+          <span>
+            <strong style="color:var(--text-primary);">Solo leads sin trabajar</strong>
+            <span class="muted" style="display:block; font-size:12px; margin-top:2px;">Únicamente los que nunca fueron contactados (sin conexión, sin interacciones, sin estado avanzado). <strong style="color:var(--accent);">Recomendado</strong> — evita que el setter destino vea leads ya trabajados por otro.</span>
+          </span>
+        </label>
         <details style="font-size:12px;">
-          <summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0;">+ Filtros opcionales (país, ciudad, estado, sin trabajar)</summary>
+          <summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0;">+ Filtros adicionales (país, ciudad, estado específico)</summary>
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:8px;">
             <input id="reassign-country" type="text" placeholder="País (ej: Bolivia)" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
             <input id="reassign-city" type="text" placeholder="Ciudad (ej: La Paz)" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
@@ -1958,10 +1966,6 @@
               <option value="interesado">Interesado</option>
             </select>
           </div>
-          <label style="display:flex; align-items:center; gap:8px; margin-top:8px; cursor:pointer;">
-            <input id="reassign-untouched" type="checkbox">
-            <span>Solo leads sin trabajar (nunca tocados — sin contacto, sin interacciones)</span>
-          </label>
         </details>
         <div id="reassign-preview" style="padding:12px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:10px; font-size:13px; display:none;">
           <strong id="reassign-preview-text"></strong>
@@ -2050,7 +2054,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430w"></script>
+  <script type="module" src="/app.js?v=20260430x"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

@@ -7222,7 +7222,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('reassign-country').value = '';
     document.getElementById('reassign-city').value = '';
     document.getElementById('reassign-estado').value = '';
-    document.getElementById('reassign-untouched').checked = false;
+    // Default ON: el caso 99% de las veces es mover leads sin trabajar.
+    // Si el admin quiere mover trabajados, lo destilda explícitamente.
+    document.getElementById('reassign-untouched').checked = true;
     _reassignUpdatePreview();
     document.getElementById('reassign-modal').style.display = 'flex';
   });
