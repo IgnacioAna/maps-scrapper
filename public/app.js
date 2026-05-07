@@ -2071,13 +2071,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Helper: sync lead from server response and refresh UI
-    function _syncLeadAndRefresh(id, serverLead) {
+    function _syncLeadAndRefresh(id, serverLead, opts = {}) {
       const idx = setterLeads.findIndex(l => l.id === id);
       if (idx >= 0 && serverLead) {
         Object.assign(setterLeads[idx], serverLead);
         // Si es sin_wsp, sacarlo de la lista del setter (va a llamadas)
         if (serverLead.conexion === 'sin_wsp') {
-          // Cerrar modal si estaba abierto para este lead
           if (currentModalLeadId === id) {
             document.getElementById('lead-modal')?.classList.add('hidden');
             currentModalLeadId = null;
@@ -2087,6 +2086,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       _updateStatsLocal();
       renderSetterLeads();
+      // Toast de confirmación: feedback visible cuando se guarda. Antes los
+      // setters pensaban que "no quedó marcado" porque al cambiar conexion
+      // de un lead, este desaparecía del filtro actual (ej: estaba en
+      // "Sin contactar", lo marcan enviada → ya no matchea ese filtro). El
+      // toast confirma que sí se guardó y opcionalmente dice a qué bucket
+      // se movió.
+      if (opts.confirmMessage && window.showToast) {
+        window.showToast(opts.confirmMessage, { type: 'success', duration: 2200 });
+      }
     }
 
     // Calcular stats locales desde setterLeads
@@ -2118,11 +2126,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await resp.json();
-        _syncLeadAndRefresh(id, data.lead);
-      } catch (e) { console.error(e); }
+        const labels = {
+          conexion: { 'enviada': '✓ Marcado como WSP enviado', 'sin_wsp': '✓ Movido a Llamadas (Sin WSP)', '': '✓ Conexión limpia' },
+          interes: { 'si': '✓ Marcado interesado', 'no': '✓ Marcado no interesa', '': '✓ Interés limpio' },
+        };
+        const msg = labels[field]?.[val || ''] || '✓ Guardado';
+        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
+      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
     };
 
-    // Respondió update
     window._updateResp = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
@@ -2130,20 +2142,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await resp.json();
-        _syncLeadAndRefresh(id, data.lead);
-      } catch (e) { console.error(e); }
+        const msg = val === 'si' ? '✓ Marcado: respondió' : '✓ Marcado: no respondió';
+        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
+      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
     };
 
     window._updateCalif = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
-      // 'si' → true, 'no' → 'no' (string para distinguir de sin evaluar), '' → false
       const body = { calificado: val === 'si' ? true : (val === 'no' ? 'no' : false) };
       try {
         const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
         const data = await resp.json();
-        _syncLeadAndRefresh(id, data.lead);
-      } catch (e) { console.error(e); }
+        const msg = val === 'si' ? '✓ Marcado: calificó' : (val === 'no' ? '✓ Marcado: no calificó' : '✓ Calificación limpia');
+        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
+      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
     };
 
     window._updateVariant = async (el) => {
