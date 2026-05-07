@@ -1748,6 +1748,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Visual cue: si el filtro tiene 0, atenuar el chip (no cliquear esperando algo)
         btn.style.opacity = counts[k] === 0 ? '0.45' : '';
       });
+
+      // Sidebar badge "Llamadas" — refleja el bucket sin_wsp del setter
+      const callsBadge = document.getElementById('sidebar-calls-badge');
+      if (callsBadge) {
+        if (counts.sin_wsp > 0) {
+          callsBadge.textContent = counts.sin_wsp;
+          callsBadge.style.display = 'inline-flex';
+        } else {
+          callsBadge.style.display = 'none';
+        }
+      }
+
+      // Banner "te quedaste sin sin_contactar pero tenés en Llamadas"
+      const banner = document.getElementById('setter-calls-pending-banner');
+      const countEl = document.getElementById('setter-calls-pending-count');
+      if (banner && countEl) {
+        const showBanner = counts.sin_contactar === 0 && counts.sin_wsp > 0;
+        if (showBanner) {
+          countEl.textContent = counts.sin_wsp;
+          banner.style.display = 'flex';
+        } else {
+          banner.style.display = 'none';
+        }
+      }
+    }
+
+    // Wire "Ir a Llamadas" del banner (solo una vez)
+    const _callsBannerBtn = document.getElementById('setter-calls-pending-go');
+    if (_callsBannerBtn && !_callsBannerBtn.dataset.wired) {
+      _callsBannerBtn.dataset.wired = '1';
+      _callsBannerBtn.addEventListener('click', () => {
+        document.querySelector('[data-target="view-calls"]')?.click();
+      });
     }
 
     function renderSetterLeads() {
