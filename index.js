@@ -2949,6 +2949,57 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
   res.json({ setter: newSetter, copiedVariants: sourceVariants.length });
 });
 
+// POST /api/setters/team/:id/reset-work — admin: deja todos los leads del
+// setter como sin_contactar. Borra conexion/respondio/calificado/interes/
+// estado avanzado / lastContactAt / fechaContacto / interactions / followUps.
+// NO toca sin_wsp (esos siguen en Llamadas) salvo que el admin pase
+// includeSinWsp=true.
+// Usado para "resetear" el trabajo de un setter antes de redistribuir leads.
+// Hace backup automático antes.
+app.post('/api/setters/team/:id/reset-work', requireAuth, requireRole('admin'), (req, res) => {
+  const setterId = req.params.id;
+  const includeSinWsp = !!req.body?.includeSinWsp;
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+
+  let resetCount = 0;
+  let skippedSinWsp = 0;
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    if (lead.assignedTo !== setterId) continue;
+    // Saltar sin_wsp salvo que se pida explícitamente
+    if (lead.conexion === 'sin_wsp' && !includeSinWsp) { skippedSinWsp++; continue; }
+    // Saltar leads ya intactos (no hay nada que limpiar)
+    const hasFlag = (lead.conexion && lead.conexion !== 'sin_wsp') || lead.respondio || lead.calificado || (lead.estado && lead.estado !== 'sin_contactar' && lead.estado !== 'sin_wsp') || lead.lastContactAt || (Array.isArray(lead.interactions) && lead.interactions.length > 0);
+    if (!hasFlag) continue;
+    lead.conexion = '';
+    lead.respondio = false;
+    lead.calificado = false;
+    lead.interes = null;
+    lead.estado = 'sin_contactar';
+    lead.lastContactAt = null;
+    lead.fechaContacto = null;
+    lead.apertura = '';
+    lead.interactions = [];
+    lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+    lead.followUpStartedAt = null;
+    resetCount++;
+  }
+
+  const backup = resetCount > 0 ? makeBackup('pre-setter-reset-work') : null;
+  saveSettersData(data);
+
+  console.log(`[setter:reset-work] ${setter.name} (${setterId}): ${resetCount} leads reseteados, ${skippedSinWsp} sin_wsp saltados. Backup: ${backup?.dir || 'none'}`);
+  res.json({
+    ok: true,
+    setterName: setter.name,
+    resetCount,
+    skippedSinWsp,
+    backup: backup?.dir || null,
+  });
+});
+
 app.delete('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res) => {
   const setterId = req.params.id;
   const data = loadSettersData();

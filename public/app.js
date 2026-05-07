@@ -2657,7 +2657,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       list.innerHTML = variantsList.map(v => {
         const isOwner = isAdmin || v.setterId === mySetterId;
-        const assignedSetters = settersList.filter(s => s.id === v.setterId).map(s => s.name).join(', ');
+        // Setters asignados: el owner principal + los compartidos
+        const sharedIds = Array.isArray(v.sharedWith) ? v.sharedWith : [];
+        const allAssignedIds = [v.setterId, ...sharedIds].filter(Boolean);
+        const assignedNames = settersList
+          .filter(s => allAssignedIds.includes(s.id))
+          .map(s => s.name)
+          .join(', ');
         const blocks = [
           { label: 'Apertura',     text: v.messages?.apertura },
           { label: 'Problema',     text: v.messages?.problema },
@@ -2675,16 +2681,66 @@ document.addEventListener('DOMContentLoaded', async () => {
               '<div class="variant-card-block-text">' + escHtml(b.text || '—') + '</div>' +
             '</div>').join('') +
           '</div>' +
-          (isAdmin ? '<div class="variant-card-assign">' +
-            '<span class="variant-card-assign-label">Asignada a:</span>' +
-            ' <strong class="variant-card-assign-value">' + (assignedSetters || 'Nadie') + '</strong>' +
-            '<div class="variant-card-assign-buttons">' +
-              settersList.map(s => '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); window._assignVariant(\'' + s.id + '\', \'' + v.id + '\')">' + escHtml(s.name) + '</button>').join('') +
+          (isAdmin ? '<div class="variant-card-assign" style="display:flex; flex-direction:column; gap:10px;">' +
+            '<div>' +
+              '<span class="variant-card-assign-label">Setters con esta variante:</span>' +
+              ' <strong class="variant-card-assign-value" style="color:var(--accent);">' + (assignedNames || 'Ninguno') + '</strong>' +
+            '</div>' +
+            '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 10px; background:rgba(157,133,242,0.04); border:1px solid var(--border-color); border-radius:8px;">' +
+              '<span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Tildá los setters que la van a usar:</span>' +
+              settersList.map(s => {
+                const isAssigned = allAssignedIds.includes(s.id);
+                return '<label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:4px 10px; border-radius:8px; background:' + (isAssigned ? 'rgba(157,133,242,0.15)' : 'transparent') + '; border:1px solid ' + (isAssigned ? 'var(--accent)' : 'var(--border-color)') + '; transition:all 0.15s;">' +
+                  '<input type="checkbox" ' + (isAssigned ? 'checked' : '') + ' onchange="window._toggleVariantSetter(\'' + v.id + '\', \'' + s.id + '\', this.checked)" style="cursor:pointer;">' +
+                  escHtml(s.name) +
+                '</label>';
+              }).join('') +
             '</div>' +
           '</div>' : '') +
         '</div>';
       }).join('');
     }
+
+    // Tildar/destildar un setter para una variante. Maneja owner principal +
+    // sharedWith de forma transparente para el admin: se ven todos los tildados
+    // como "asignados", sin distinción de owner vs shared.
+    window._toggleVariantSetter = async (variantId, setterId, checked) => {
+      try {
+        const resp = await fetch(apiUrl('/api/setters/variants'));
+        const data = await resp.json();
+        const v = (data.variants || []).find(x => x.id === variantId);
+        if (!v) return;
+        const currentShared = Array.isArray(v.sharedWith) ? [...v.sharedWith] : [];
+        const currentOwner = v.setterId || '';
+        const allCurrent = [currentOwner, ...currentShared].filter(Boolean);
+
+        let newOwner = currentOwner;
+        let newShared = [...currentShared];
+
+        if (checked) {
+          // Agregar
+          if (!allCurrent.includes(setterId)) {
+            if (!newOwner) newOwner = setterId;
+            else if (!newShared.includes(setterId)) newShared.push(setterId);
+          }
+        } else {
+          // Quitar
+          if (newOwner === setterId) {
+            newOwner = newShared.shift() || '';
+          } else {
+            newShared = newShared.filter(id => id !== setterId);
+          }
+        }
+        await fetch(apiUrl('/api/setters/variants/' + variantId), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ setterId: newOwner, sharedWith: newShared })
+        });
+        loadVariantsModal();
+      } catch (e) {
+        console.error('[toggleVariantSetter]', e);
+        window.showToast?.('Error: ' + e.message, { type: 'error' });
+      }
+    };
 
     window._deleteVariant = async (varId) => {
       if (!confirm('Eliminar variante?')) return;
@@ -2729,6 +2785,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify({ name: `${variant.name} (copia)`, weekLabel: variant.weekLabel || '', setterId: variant.setterId || '', blocks })
       });
       loadCommandCenter();
+    };
+
+    // Limpia el trabajo de un setter — deja todos sus leads como sin_contactar
+    // (excepto los sin_wsp que siguen en Llamadas). Útil antes de redistribuir
+    // sus leads para que el setter destino los reciba frescos.
+    window._resetSetterWork = async (setterId, setterName) => {
+      const ok = await window.askConfirm({
+        title: '🧹 Limpiar trabajo de ' + setterName,
+        message: 'Vas a resetear TODOS los leads trabajados de ' + setterName + ' a "sin contactar". Se borran flags de conexión, respondió, calificado, interés, follow-ups, interacciones y notas de contacto.\n\nNO toca los leads marcados "Sin WSP" (esos siguen en Llamadas).\n\nSe hace backup automático antes. Esta acción es destructiva pero recuperable desde backups.\n\n¿Confirmás?',
+        confirmLabel: 'Sí, limpiar trabajo',
+        danger: true,
+      });
+      if (!ok) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/team/' + setterId + '/reset-work'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({}),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        window.showToast?.('✓ ' + d.resetCount + ' leads de ' + d.setterName + ' reseteados a sin_contactar' + (d.skippedSinWsp ? ' (' + d.skippedSinWsp + ' sin_wsp saltados)' : ''), { type: 'success', duration: 4000 });
+        loadCommandCenter();
+        if (typeof loadSetterModule === 'function') loadSetterModule();
+      } catch (e) {
+        window.showToast?.('Error: ' + e.message, { type: 'error', duration: 5000 });
+      }
     };
 
     window._duplicateSetter = async (setterId) => {
@@ -3457,6 +3541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const sname = encodeURIComponent(user.name || '');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button>');
+              acts.push('<button type="button" class="btn-table-action" style="color:#ffc828; font-size:11px;" title="Resetear todos los leads trabajados de este setter a sin_contactar (no toca sin_wsp)" onclick="window._resetSetterWork(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">🧹 Limpiar trabajo</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>');
             }
           } else if (user.id !== currentUser.id) {
