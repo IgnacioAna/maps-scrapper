@@ -2118,45 +2118,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Inline field update (conexion, interes)
+    // Helper: hace PATCH a un lead, valida la respuesta y devuelve el lead o lanza error.
+    // Antes los handlers ignoraban silently 401/403/500 — el setter veía "no queda"
+    // sin saber por qué. Ahora cualquier error sale como toast.
+    async function _patchLead(id, body) {
+      const resp = await fetch(apiUrl('/api/setters/leads/' + id), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => '');
+        const err = new Error(`HTTP ${resp.status}${txt ? ' — ' + txt.substring(0, 120) : ''}`);
+        err.status = resp.status;
+        throw err;
+      }
+      const data = await resp.json();
+      if (!data.lead) throw new Error('Respuesta sin lead — backend no devolvió data esperada.');
+      return data.lead;
+    }
+
     window._updateField = async (el, field) => {
       const id = el.dataset.id;
       const val = el.value;
       const body = {};
       body[field] = val || null;
       try {
-        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const data = await resp.json();
+        const lead = await _patchLead(id, body);
         const labels = {
           conexion: { 'enviada': '✓ Marcado como WSP enviado', 'sin_wsp': '✓ Movido a Llamadas (Sin WSP)', '': '✓ Conexión limpia' },
           interes: { 'si': '✓ Marcado interesado', 'no': '✓ Marcado no interesa', '': '✓ Interés limpio' },
         };
         const msg = labels[field]?.[val || ''] || '✓ Guardado';
-        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
-      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
+        _syncLeadAndRefresh(id, lead, { confirmMessage: msg });
+      } catch (e) {
+        console.error('[updateField]', e);
+        window.showToast?.('No se pudo guardar: ' + e.message + (e.status === 401 ? ' (sesión expirada — recargá)' : ''), { type: 'error', duration: 5000 });
+      }
     };
 
     window._updateResp = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
-      const body = { respondio: val === 'si' ? true : false };
       try {
-        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const data = await resp.json();
+        const lead = await _patchLead(id, { respondio: val === 'si' });
         const msg = val === 'si' ? '✓ Marcado: respondió' : '✓ Marcado: no respondió';
-        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
-      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
+        _syncLeadAndRefresh(id, lead, { confirmMessage: msg });
+      } catch (e) {
+        console.error('[updateResp]', e);
+        window.showToast?.('No se pudo guardar: ' + e.message + (e.status === 401 ? ' (sesión expirada — recargá)' : ''), { type: 'error', duration: 5000 });
+      }
     };
 
     window._updateCalif = async (el) => {
       const id = el.dataset.id;
       const val = el.value;
-      const body = { calificado: val === 'si' ? true : (val === 'no' ? 'no' : false) };
       try {
-        const resp = await fetch(apiUrl('/api/setters/leads/' + id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-        const data = await resp.json();
+        const lead = await _patchLead(id, { calificado: val === 'si' ? true : (val === 'no' ? 'no' : false) });
         const msg = val === 'si' ? '✓ Marcado: calificó' : (val === 'no' ? '✓ Marcado: no calificó' : '✓ Calificación limpia');
-        _syncLeadAndRefresh(id, data.lead, { confirmMessage: msg });
-      } catch (e) { console.error(e); window.showToast?.('Error guardando: ' + e.message, { type: 'error' }); }
+        _syncLeadAndRefresh(id, lead, { confirmMessage: msg });
+      } catch (e) {
+        console.error('[updateCalif]', e);
+        window.showToast?.('No se pudo guardar: ' + e.message + (e.status === 401 ? ' (sesión expirada — recargá)' : ''), { type: 'error', duration: 5000 });
+      }
     };
 
     window._updateVariant = async (el) => {
