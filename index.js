@@ -3533,7 +3533,13 @@ function getReassignCandidates(data, { fromSetterId, country, city, estado, unto
 // lastContactAt y sin interactions registradas).
 // Devuelve { moved, skipped, fromRemaining, toTotal }.
 app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, res) => {
-  const { fromSetterId, toSetterId, count, country, city, estado, untouchedOnly } = req.body || {};
+  // 2026-05-04: untouchedOnly siempre forzado a true a nivel backend.
+  // Antes era un toggle, pero por seguridad operativa se decide que NUNCA
+  // mover leads ya trabajados — eso solo confunde al setter destino que
+  // hereda conversaciones que no tuvo. Si el caso requiere mover trabajados
+  // hay que tener un endpoint dedicado con audit log explícito.
+  const { fromSetterId, toSetterId, count, country, city, estado } = req.body || {};
+  const untouchedOnly = true;
   if (!fromSetterId || !toSetterId) {
     return res.status(400).json({ error: 'fromSetterId y toSetterId son requeridos.' });
   }
@@ -3587,7 +3593,8 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
 });
 
 app.post('/api/setters/reassign-bulk/preview', requireAuth, requireRole('admin'), (req, res) => {
-  const { fromSetterId, country, city, estado, untouchedOnly } = req.body || {};
+  const { fromSetterId, country, city, estado } = req.body || {};
+  const untouchedOnly = true;
   if (!fromSetterId) {
     return res.status(400).json({ error: 'fromSetterId es requerido.' });
   }
