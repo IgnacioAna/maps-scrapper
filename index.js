@@ -341,7 +341,25 @@ function flushOnlinePresence() {
   }
 }
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(flushOnlinePresence, 60 * 1000); // cada 60s
+  // Flush cada 20s (era 60s). Reducido porque Railway redeploya más rápido
+  // que el intervalo viejo y se perdían lastSeen en cada deploy.
+  setInterval(flushOnlinePresence, 20 * 1000);
+
+  // Graceful shutdown: cuando Railway manda SIGTERM antes de matar el
+  // container (30s de grace period), flusheamos sincrónico para no perder
+  // los lastSeen que quedaron en memoria.
+  const _gracefulExit = (signal) => {
+    try {
+      console.log(`[presence] ${signal} recibido — flusheando lastSeen antes de salir...`);
+      flushOnlinePresence();
+      console.log('[presence] flush final OK.');
+    } catch (e) {
+      console.error('[presence] flush final falló:', e.message);
+    }
+    process.exit(0);
+  };
+  process.on('SIGTERM', () => _gracefulExit('SIGTERM'));
+  process.on('SIGINT', () => _gracefulExit('SIGINT'));
 }
 
 function requireAuth(req, res, next) {
