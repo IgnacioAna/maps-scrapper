@@ -311,6 +311,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     currentUser = authState.user;
+
+    // Heartbeat de presencia: mientras la pestaña esté visible y autenticada,
+    // pingear /api/auth/me cada 60s para que attachAuth actualice lastSeen.
+    // Antes los setters mostraban 'hace 3 días' aunque tenían la pestaña abierta
+    // porque sin acción del usuario no había request al server. Ahora siempre
+    // sabe quién está realmente activo.
+    if (!window.__presence_heartbeat) {
+      window.__presence_heartbeat = setInterval(() => {
+        if (document.visibilityState !== 'hidden') {
+          fetch(apiUrl('/api/auth/me'), { credentials: 'include' }).catch(() => {});
+        }
+      }, 60 * 1000);
+    }
+
     // realRole guarda el rol REAL (cookie auth). role puede ser sobrescrito
     // por viewAs si el admin esta impersonando otro rol para preview.
     currentUser.realRole = currentUser.role;
