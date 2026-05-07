@@ -1716,13 +1716,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // el setter sepa cuántos hay ANTES de hacer click — antes pasaba que
     // hacían click en "Sin contactar" y veían vacío sin entender por qué.
     function _updatePipeFilterCounts() {
+      // Counts acumulativos en línea con los filtros: un lead que avanzó por
+      // el funnel sigue contado en los pasos previos. Ej: un lead "interesado"
+      // suma en interesado + calificado + respondio + enviada (todo lo que
+      // logró pasar). Refleja el funnel real, no excluye etapas alcanzadas.
       const counts = {
         all: setterLeads.length,
         sin_contactar: setterLeads.filter(l => !l.conexion).length,
         en_proceso: setterLeads.filter(l => l.conexion && l.conexion !== 'sin_wsp' && l.estado !== 'agendado' && l.estado !== 'descartado').length,
-        enviada: setterLeads.filter(l => l.conexion === 'enviada' && !l.respondio).length,
-        respondio: setterLeads.filter(l => l.respondio && l.calificado !== true).length,
-        calificado: setterLeads.filter(l => l.calificado === true && l.interes !== 'si').length,
+        enviada: setterLeads.filter(l => l.conexion === 'enviada').length,
+        respondio: setterLeads.filter(l => l.respondio === true).length,
+        calificado: setterLeads.filter(l => l.calificado === true).length,
         interesado: setterLeads.filter(l => l.interes === 'si').length,
         agendado: setterLeads.filter(l => l.estado === 'agendado').length,
         sin_wsp: setterLeads.filter(l => l.conexion === 'sin_wsp').length,
@@ -1760,13 +1764,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ids = new Set((_followupsCache?.overdue || []).map(f => f.leadId));
         filtered = filtered.filter(l => ids.has(l.id));
       } else if (currentPipeFilter === 'enviada') {
-        filtered = filtered.filter(l => l.conexion === 'enviada' && !l.respondio);
+        // 2026-05-04: filtros acumulativos. Antes excluía a los que respondieron
+        // → daba la sensación de que "WSP Enviado" perdía leads cuando avanzaban.
+        // Ahora muestra TODOS los que recibieron mensaje (los respondió incluidos).
+        filtered = filtered.filter(l => l.conexion === 'enviada');
       } else if (currentPipeFilter === 'sin_wsp') {
         filtered = filtered.filter(l => l.conexion === 'sin_wsp');
       } else if (currentPipeFilter === 'respondio') {
-        filtered = filtered.filter(l => l.respondio && l.calificado !== true);
+        // Acumulativo: todos los que respondieron (incluye calificados/interesados/agendados)
+        filtered = filtered.filter(l => l.respondio === true);
       } else if (currentPipeFilter === 'calificado') {
-        filtered = filtered.filter(l => l.calificado === true && l.interes !== 'si');
+        // Acumulativo: todos los calificados (incluye interesados/agendados)
+        filtered = filtered.filter(l => l.calificado === true);
       } else if (currentPipeFilter === 'interesado') {
         filtered = filtered.filter(l => l.interes === 'si');
       } else if (currentPipeFilter === 'sin_contactar') {
