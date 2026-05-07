@@ -1732,6 +1732,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         sin_wsp: setterLeads.filter(l => l.conexion === 'sin_wsp').length,
         descartado: setterLeads.filter(l => l.estado === 'descartado').length,
       };
+      // Resumen de pendientes (sin_contactar = WhatsApp por mandar + sin_wsp = llamadas pendientes).
+      // Hace visible que aunque el filtro "Sin contactar" esté en 0, todavía
+      // pueden quedar leads por trabajar en Llamadas.
+      const pendingWrap = document.getElementById('setter-pending-summary');
+      if (pendingWrap) {
+        const wa = counts.sin_contactar;
+        const calls = counts.sin_wsp;
+        const total = wa + calls;
+        document.getElementById('setter-pending-wa').textContent = wa;
+        document.getElementById('setter-pending-calls').textContent = calls;
+        document.getElementById('setter-pending-total').textContent = total;
+        const zero = document.getElementById('setter-pending-zero');
+        if (zero) zero.style.display = total === 0 ? 'inline-flex' : 'none';
+        // Ocultar el resumen completo si el setter no tiene leads en absoluto
+        pendingWrap.style.display = setterLeads.length > 0 ? 'flex' : 'none';
+      }
+
       document.querySelectorAll('.pipe-filter[data-status]').forEach(btn => {
         const k = btn.dataset.status;
         // Skip los chips dinámicos (hacer_hoy / atrasados ya tienen su badge propio)
