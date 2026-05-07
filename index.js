@@ -1240,6 +1240,25 @@ app.post('/api/admin/backups/now', requireAuth, requireRole('admin'), (req, res)
   res.json(result);
 });
 
+// GET /api/admin/backups/:name/file?file=setters.json — descargar contenido
+// de un archivo dentro de un backup específico. Pensado para recovery manual.
+app.get('/api/admin/backups/:name/file', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const name = req.params.name;
+    const file = req.query.file || 'setters.json';
+    if (!/^[\w\-:.]+$/.test(name) || !/^[\w\-.]+$/.test(file)) {
+      return res.status(400).json({ error: 'Nombre de backup o archivo inválido.' });
+    }
+    const fp = path.join(BACKUPS_DIR, name, file);
+    if (!fp.startsWith(BACKUPS_DIR)) return res.status(400).json({ error: 'Path traversal.' });
+    if (!fs.existsSync(fp)) return res.status(404).json({ error: 'Backup o archivo no encontrado.' });
+    res.setHeader('Content-Type', 'application/json');
+    res.send(fs.readFileSync(fp, 'utf8'));
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) => {
   try {
     const history = loadHistory();
