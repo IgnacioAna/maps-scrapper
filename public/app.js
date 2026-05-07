@@ -1712,7 +1712,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch {}
     }
 
+    // Calcula y muestra el contador de cada filtro en su chip. Sirve para que
+    // el setter sepa cuántos hay ANTES de hacer click — antes pasaba que
+    // hacían click en "Sin contactar" y veían vacío sin entender por qué.
+    function _updatePipeFilterCounts() {
+      const counts = {
+        all: setterLeads.length,
+        sin_contactar: setterLeads.filter(l => !l.conexion).length,
+        en_proceso: setterLeads.filter(l => l.conexion && l.conexion !== 'sin_wsp' && l.estado !== 'agendado' && l.estado !== 'descartado').length,
+        enviada: setterLeads.filter(l => l.conexion === 'enviada' && !l.respondio).length,
+        respondio: setterLeads.filter(l => l.respondio && l.calificado !== true).length,
+        calificado: setterLeads.filter(l => l.calificado === true && l.interes !== 'si').length,
+        interesado: setterLeads.filter(l => l.interes === 'si').length,
+        agendado: setterLeads.filter(l => l.estado === 'agendado').length,
+        sin_wsp: setterLeads.filter(l => l.conexion === 'sin_wsp').length,
+        descartado: setterLeads.filter(l => l.estado === 'descartado').length,
+      };
+      document.querySelectorAll('.pipe-filter[data-status]').forEach(btn => {
+        const k = btn.dataset.status;
+        // Skip los chips dinámicos (hacer_hoy / atrasados ya tienen su badge propio)
+        if (k === 'hacer_hoy' || k === 'atrasados') return;
+        if (!(k in counts)) return;
+        let countEl = btn.querySelector('.pipe-filter-count');
+        if (!countEl) {
+          countEl = document.createElement('span');
+          countEl.className = 'pipe-filter-count';
+          countEl.style.cssText = 'margin-left:6px; padding:1px 7px; border-radius:999px; background:rgba(255,255,255,0.08); font-size:10px; font-weight:600; opacity:0.75;';
+          btn.appendChild(countEl);
+        }
+        countEl.textContent = counts[k];
+        // Visual cue: si el filtro tiene 0, atenuar el chip (no cliquear esperando algo)
+        btn.style.opacity = counts[k] === 0 ? '0.45' : '';
+      });
+    }
+
     function renderSetterLeads() {
+      _updatePipeFilterCounts();
       let filtered = [...setterLeads];
       if (currentPipeFilter === 'hacer_hoy') {
         // dueToday + dueYesterday: el setter tiene que hacerlos.
