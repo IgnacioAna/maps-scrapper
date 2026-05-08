@@ -185,8 +185,22 @@ function gcExpiredSessions() {
     const before = raw.sessions.length;
     raw.sessions = raw.sessions.filter((s) => !s.expiresAt || new Date(s.expiresAt).getTime() > now);
     if (raw.sessions.length < before) {
+      // FIX 2026-05-08: race condition. Antes este save sobrescribía
+      // lastSeen con valores viejos del disco, anulando updates recientes
+      // del flushOnlinePresence. Ahora antes de guardar, mergeamos
+      // los lastSeen más nuevos desde el map en memoria.
+      for (const [userId, p] of onlinePresence.entries()) {
+        const u = (raw.users || []).find((x) => x.id === userId);
+        if (!u) continue;
+        const diskTs = u.lastSeen ? (typeof u.lastSeen === 'number' ? u.lastSeen : new Date(u.lastSeen).getTime()) : 0;
+        if (p.lastSeen > diskTs) {
+          u.lastSeen = p.lastSeen;
+          if (p.ip) u.lastIp = p.ip;
+          if (p.userAgent) u.lastUserAgent = p.userAgent;
+        }
+      }
       saveAuthData(raw);
-      console.log(`[gcExpiredSessions] purgadas ${before - raw.sessions.length} sesiones expiradas`);
+      console.log(`[gcExpiredSessions] purgadas ${before - raw.sessions.length} sesiones expiradas (preservó presencia in-memory)`);
     }
   } catch (e) {
     console.warn("[gcExpiredSessions] error:", e.message);
@@ -199,6 +213,25 @@ if (process.env.NODE_ENV !== 'test') {
 function saveAuthData(data) {
   try {
     ensureDataDir();
+    // FIX 2026-05-08: previene race condition entre saveAuthData y
+    // flushOnlinePresence. Cualquier writer de auth.json (login, logout,
+    // gc, invite, etc.) podía estar trabajando sobre data leída segundos
+    // antes — al guardar machacaba lastSeen recién actualizados.
+    // Solución: antes de escribir, mergear los lastSeen MÁS NUEVOS desde
+    // el map en memoria (onlinePresence). Solo se mergean valores más
+    // nuevos que los del data en memoria, así no rolea hacia atrás.
+    if (typeof onlinePresence !== 'undefined' && onlinePresence?.size > 0 && Array.isArray(data?.users)) {
+      for (const [userId, p] of onlinePresence.entries()) {
+        const u = data.users.find((x) => x.id === userId);
+        if (!u) continue;
+        const dataTs = u.lastSeen ? (typeof u.lastSeen === 'number' ? u.lastSeen : new Date(u.lastSeen).getTime()) : 0;
+        if (p.lastSeen > dataTs) {
+          u.lastSeen = p.lastSeen;
+          if (p.ip) u.lastIp = p.ip;
+          if (p.userAgent) u.lastUserAgent = p.userAgent;
+        }
+      }
+    }
     fs.writeFileSync(AUTH_FILE, JSON.stringify(data, null, 2), "utf8");
   } catch (e) {
     console.error("Error guardando auth data:", e);
