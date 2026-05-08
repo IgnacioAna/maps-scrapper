@@ -2982,6 +2982,47 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
   res.json({ setter: newSetter, copiedVariants: sourceVariants.length });
 });
 
+// POST /api/setters/leads/orphans/reset — admin: resetea todos los leads
+// huérfanos (sin assignedTo o asignados a un setter inexistente) a estado
+// limpio total (sin_contactar). Útil después de eliminar un setter — sus
+// leads quedan liberados pero con flags viejos; este endpoint los deja
+// como nuevos para reasignar a otro setter sin contaminación.
+// Limpia conexion, respondio, calificado, interes, estado, lastContactAt,
+// fechaContacto, apertura, interactions[], notes[], followUps, decisor.
+app.post('/api/setters/leads/orphans/reset', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  const setterIds = new Set((data.setters || []).map((s) => s.id));
+  let resetCount = 0;
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    if (lead.assignedTo && setterIds.has(lead.assignedTo)) continue; // tiene dueño válido, saltar
+    // Limpiar todo
+    lead.conexion = '';
+    lead.respondio = false;
+    lead.calificado = false;
+    lead.interes = null;
+    lead.estado = 'sin_contactar';
+    lead.lastContactAt = null;
+    lead.fechaContacto = null;
+    lead.apertura = '';
+    lead.interactions = [];
+    lead.notes = [];
+    lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+    lead.followUpStartedAt = null;
+    lead.callAttempts = 0;
+    lead.callLog = [];
+    lead.callbackAt = null;
+    lead.phoneStatus = null;
+    lead.asistio = null;
+    lead.assignedTo = ''; // normalizar a vacío
+    resetCount++;
+  }
+  const backup = resetCount > 0 ? makeBackup('pre-orphans-reset') : null;
+  saveSettersData(data);
+  console.log(`[orphans:reset] ${resetCount} leads huérfanos reseteados a limpio. Backup: ${backup?.dir || 'none'}`);
+  res.json({ ok: true, resetCount, backup: backup?.dir || null });
+});
+
 // POST /api/setters/team/:id/reset-work — admin: deja todos los leads del
 // setter como sin_contactar. Borra conexion/respondio/calificado/interes/
 // estado avanzado / lastContactAt / fechaContacto / interactions / followUps.
