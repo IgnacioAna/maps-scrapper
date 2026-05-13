@@ -467,6 +467,10 @@ function ensureLeadDefaults(lead = {}) {
   if (!lead.followUpStartedAt) lead.followUpStartedAt = null;
   if (!Array.isArray(lead.notes)) lead.notes = [];
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
+  // 2026-05-08: id de la cuenta WA del setter que se usó para contactar
+  // este lead. Permite al setter saber desde qué número escribió. Vacío
+  // hasta que el setter elige una al marcar "Enviada" o desde el modal.
+  if (typeof lead.waAccountId !== 'string') lead.waAccountId = '';
   if (!lead.country) lead.country = '';
   if (!lead.city) lead.city = '';
   if (!lead.whatsappUrl) lead.whatsappUrl = '';
@@ -3806,7 +3810,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId'];
+  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId', 'waAccountId'];
   for (const field of allowed) {
     if (req.body[field] !== undefined) lead[field] = req.body[field];
   }

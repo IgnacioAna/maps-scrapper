@@ -1442,6 +1442,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeSession = null;
     let sessionTimerInterval = null;
     let setterLeads = [];
+    // Cache de las cuentas WA del usuario actual (setter ve solo las suyas,
+    // admin ve todas). Se carga una vez al abrir el CRM.
+    let _myWaAccounts = [];
+    async function _loadMyWaAccounts() {
+      try {
+        const r = await fetch(apiUrl('/api/wa/accounts'));
+        if (!r.ok) return;
+        const d = await r.json();
+        _myWaAccounts = Array.isArray(d) ? d : (d.accounts || []);
+      } catch (e) { console.warn('[wa-accounts] load:', e.message); }
+    }
     let settersList = [];
     let variantsList = [];
     let currentPipeFilter = 'all';
@@ -1622,6 +1633,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setterLeads = leadsData.leads || [];
         settersList = stats.setters || [];
         variantsList = stats.variants || [];
+        // Cargar cuentas WA del usuario (para el selector "Mi WhatsApp" en el modal)
+        _loadMyWaAccounts();
         // Cargar follow-ups del setter (se usa para chips, badges y filtros)
         loadFollowups();
 
@@ -1954,10 +1967,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fecha: mostrar fecha de contacto si existe, sino fecha de import
         const displayDate = lead.fechaContacto || (lead.fecha || '').substring(5);
 
+        // Chip pequeño con el WA del setter usado (si está seteado)
+        const myWa = lead.waAccountId ? _myWaAccounts.find(a => a.id === lead.waAccountId) : null;
+        const myWaChip = myWa ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myWa.label || '') + '">📱 ' + escHtml((myWa.label || '').substring(0, 12)) + '</span>' : '';
+
         return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')">' +
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
-          '<td style="font-weight:500;">' + (fuChipHtml ? fuChipHtml + ' ' : '') + escHtml(lead.name).substring(0, 28) + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div>' + fuNoteHtml + '</td>' +
+          '<td style="font-weight:500;">' + (fuChipHtml ? fuChipHtml + ' ' : '') + escHtml(lead.name).substring(0, 28) + myWaChip + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div>' + fuNoteHtml + '</td>' +
           '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" title="Abrir sitio web"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
@@ -2271,6 +2288,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       document.getElementById('modal-status-select').value = lead.estado || 'sin_contactar';
       document.getElementById('modal-decisor-select').value = lead.decisor || '';
+
+      // Mi WhatsApp usado — populate select con cuentas WA del setter actual
+      const waWrap = document.getElementById('modal-wa-account-wrap');
+      const waSel = document.getElementById('modal-wa-account-select');
+      if (waWrap && waSel) {
+        if (_myWaAccounts && _myWaAccounts.length > 0) {
+          waSel.innerHTML = '<option value="">— Sin especificar —</option>' +
+            _myWaAccounts.map(a => {
+              const labelText = (a.label || '(sin nombre)') + (a.phone ? ' · ' + a.phone : '');
+              return '<option value="' + escHtml(a.id) + '"' + (lead.waAccountId === a.id ? ' selected' : '') + '>' + escHtml(labelText) + '</option>';
+            }).join('');
+          waWrap.style.display = 'flex';
+          waSel.onchange = async (e) => {
+            const val = e.target.value || '';
+            try {
+              const r = await fetch(apiUrl('/api/setters/leads/' + leadId), {
+                method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                body: JSON.stringify({ waAccountId: val }),
+              });
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              lead.waAccountId = val;
+              const account = _myWaAccounts.find(a => a.id === val);
+              window.showToast?.(val ? ('✓ Marcado: contactado desde ' + (account?.label || 'WA')) : '✓ WA usado: limpio', { type: 'success', duration: 1800 });
+              renderSetterLeads();
+            } catch (err) {
+              window.showToast?.('Error: ' + err.message, { type: 'error' });
+            }
+          };
+        } else {
+          waWrap.style.display = 'none';
+        }
+      }
 
       const visibleVariants = getVisibleVariables();
       const leadVarSelect = document.getElementById('lead-variable-select');
