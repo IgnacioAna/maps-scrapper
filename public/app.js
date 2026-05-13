@@ -1636,6 +1636,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         setterLeads = leadsData.leads || [];
         settersList = stats.setters || [];
         variantsList = stats.variants || [];
+        // Exponer al window para el command palette (Ctrl+K) y otras features
+        // que necesiten acceso al cache desde scope externo.
+        window.__setterLeads = setterLeads;
+        window.__settersList = settersList;
         // Cargar "mis números" del setter (para el selector en el modal de lead)
         _loadMyPhones();
         // Cargar follow-ups del setter (se usa para chips, badges y filtros)
@@ -7722,5 +7726,264 @@ document.addEventListener('DOMContentLoaded', async () => {
         .catch(() => {});
     }
   }, 1500);
+
+  // ── Command palette (Ctrl+K / Cmd+K) ─────────────────────────────────
+  // Quick switcher: busca leads, setters, comandos. Modal flotante con
+  // teclado-first nav (↑↓ flechas, Enter para abrir, Esc para cerrar).
+  // Index se construye on-demand desde caches en memoria.
+  let _cmdkSelectedIdx = 0;
+  let _cmdkResults = [];
+
+  function _cmdkBuildIndex() {
+    const items = [];
+    // Acciones rápidas / navegación
+    const role = window.__CURRENT_USER__?.role;
+    const isAdmin = role === 'admin';
+    const isSupervisor = role === 'supervisor';
+    const views = [
+      { id: 'v-crm', target: 'view-crm', label: 'Ir a Setteo (WhatsApp)', icon: '💬', roles: ['admin','setter','supervisor'] },
+      { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','setter','supervisor'] },
+      { id: 'v-myperf', target: 'view-myperf', label: 'Ir a Mi rendimiento', icon: '📊', roles: ['admin','setter','supervisor'] },
+      { id: 'v-assistant', target: 'view-assistant', label: 'Ir a Asistente IA', icon: '🤖', roles: ['admin','setter'] },
+      { id: 'v-faqs', target: 'view-faqs', label: 'Ir a Banco de Respuestas', icon: '📚', roles: ['admin','setter'] },
+      { id: 'v-training', target: 'view-training', label: 'Ir a Centro de Entrenamiento', icon: '🎓', roles: ['admin','setter'] },
+      { id: 'v-team', target: 'view-team', label: 'Ir a Equipo', icon: '👥', roles: ['admin','supervisor'] },
+      { id: 'v-command', target: 'view-command', label: 'Ir a Centro de Comando', icon: '🎛️', roles: ['admin'] },
+      { id: 'v-mercury-review', target: 'view-mercury-review', label: 'Ir a Revisión IA', icon: '⭐', roles: ['admin'] },
+      { id: 'v-mercury-config', target: 'view-mercury-config', label: 'Ir a Configuración Mercury', icon: '⚙️', roles: ['admin'] },
+      { id: 'v-online', target: 'view-online', label: 'Ir a Quién está conectado', icon: '🟢', roles: ['admin','supervisor'] },
+      { id: 'v-maps', target: 'view-maps', label: 'Ir a Google Maps scraper', icon: '🗺️', roles: ['admin'] },
+      { id: 'v-social', target: 'view-social', label: 'Ir a Redes (Instagram)', icon: '📷', roles: ['admin'] },
+    ];
+    for (const v of views) {
+      if (!v.roles.includes(role)) continue;
+      items.push({ type: 'view', label: v.label, sublabel: 'Vista', icon: v.icon, action: () => document.querySelector('[data-target="' + v.target + '"]')?.click() });
+    }
+    // Leads del setter actual (vía window — el closure interno los expone)
+    for (const l of (window.__setterLeads || []).slice(0, 500)) {
+      items.push({
+        type: 'lead',
+        label: l.name || '(sin nombre)',
+        sublabel: (l.phone || '—') + ' · ' + (l.estado || 'sin estado'),
+        icon: '👤',
+        action: () => {
+          // Asegurar que estamos en CRM
+          const crmMenu = document.querySelector('[data-target="view-crm"]');
+          if (crmMenu && !document.getElementById('view-crm')?.classList.contains('hidden')) {
+            window._openLeadModal?.(l.id);
+          } else {
+            crmMenu?.click();
+            setTimeout(() => window._openLeadModal?.(l.id), 250);
+          }
+        },
+      });
+    }
+    // Setters (admin/supervisor)
+    if (isAdmin || isSupervisor) {
+      for (const s of (window.__settersList || [])) {
+        items.push({
+          type: 'setter',
+          label: s.name,
+          sublabel: 'Setter',
+          icon: '🧑‍💼',
+          action: () => {
+            const sel = document.getElementById('setter-select');
+            if (sel) { sel.value = s.id; sel.dispatchEvent(new Event('change')); }
+            document.querySelector('[data-target="view-crm"]')?.click();
+          },
+        });
+      }
+    }
+    return items;
+  }
+
+  function _cmdkScore(query, item) {
+    if (!query) return 1; // sin query: orden natural
+    const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const text = (item.label + ' ' + (item.sublabel || '')).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (text.includes(q)) {
+      // Exacto al principio del label: máxima prioridad
+      if (item.label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').startsWith(q)) return 10;
+      return 5;
+    }
+    // Fuzzy: todos los chars de q en orden
+    let pos = 0;
+    for (const c of q) {
+      const found = text.indexOf(c, pos);
+      if (found < 0) return 0;
+      pos = found + 1;
+    }
+    return 1;
+  }
+
+  function _cmdkRender() {
+    const ul = document.getElementById('cmdk-results');
+    if (!ul) return;
+    ul.innerHTML = '';
+    if (_cmdkResults.length === 0) {
+      ul.innerHTML = '<li style="padding:18px; text-align:center; color:var(--text-secondary); font-size:13px;">Sin resultados.</li>';
+      return;
+    }
+    _cmdkResults.forEach((item, idx) => {
+      const li = document.createElement('li');
+      const selected = idx === _cmdkSelectedIdx;
+      li.style.cssText = 'padding:9px 14px; cursor:pointer; display:flex; gap:10px; align-items:center; border-radius:8px; margin:1px 0; transition:background 0.1s; background:' + (selected ? 'rgba(157,133,242,0.18)' : 'transparent') + ';';
+      li.innerHTML = '<span style="font-size:16px; flex-shrink:0;">' + item.icon + '</span>' +
+        '<div style="flex:1; min-width:0; overflow:hidden;">' +
+          '<div style="font-size:13px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
+          '<div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
+        '</div>' +
+        (selected ? '<span style="font-size:10px; color:var(--accent); flex-shrink:0;">↵</span>' : '');
+      li.children[1].children[0].textContent = item.label;
+      li.children[1].children[1].textContent = item.sublabel || '';
+      li.addEventListener('click', () => { _cmdkExecute(idx); });
+      li.addEventListener('mouseenter', () => { _cmdkSelectedIdx = idx; _cmdkRender(); });
+      ul.appendChild(li);
+    });
+    // Scroll selected into view
+    const sel = ul.children[_cmdkSelectedIdx];
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  function _cmdkExecute(idx) {
+    const item = _cmdkResults[idx];
+    if (!item) return;
+    _cmdkClose();
+    try { item.action(); } catch (e) { console.error('[cmdk]', e); }
+  }
+
+  function _cmdkSearch(query) {
+    const items = _cmdkBuildIndex();
+    const scored = items
+      .map(it => ({ it, score: _cmdkScore(query, it) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 30)
+      .map(x => x.it);
+    _cmdkResults = scored;
+    _cmdkSelectedIdx = 0;
+    _cmdkRender();
+  }
+
+  function _cmdkOpen() {
+    const m = document.getElementById('cmdk-modal');
+    if (!m) return;
+    m.style.display = 'flex';
+    const inp = document.getElementById('cmdk-input');
+    if (inp) {
+      inp.value = '';
+      setTimeout(() => inp.focus(), 30);
+    }
+    _cmdkSearch('');
+  }
+  function _cmdkClose() {
+    const m = document.getElementById('cmdk-modal');
+    if (m) m.style.display = 'none';
+  }
+  window._cmdkOpen = _cmdkOpen;
+
+  // Wire keyboard
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+K / Cmd+K → abrir
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      _cmdkOpen();
+      return;
+    }
+    // Solo si el modal está abierto
+    const m = document.getElementById('cmdk-modal');
+    if (!m || m.style.display === 'none') return;
+    if (e.key === 'Escape') { e.preventDefault(); _cmdkClose(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); _cmdkSelectedIdx = Math.min(_cmdkSelectedIdx + 1, _cmdkResults.length - 1); _cmdkRender(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); _cmdkSelectedIdx = Math.max(_cmdkSelectedIdx - 1, 0); _cmdkRender(); }
+    else if (e.key === 'Enter') { e.preventDefault(); _cmdkExecute(_cmdkSelectedIdx); }
+  });
+  document.getElementById('cmdk-input')?.addEventListener('input', (e) => _cmdkSearch(e.target.value));
+  document.getElementById('cmdk-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'cmdk-modal') _cmdkClose();
+  });
+
+  // ── Notificaciones nativas del browser ───────────────────────────────
+  // Pide permiso si nunca se decidió. Hace polling de eventos relevantes
+  // (follow-ups que pasan a overdue, badge que sube) y dispara una
+  // Notification para que el setter se entere aunque tenga otra pestaña.
+  const NOTIF_DISMISSED_KEY = 'notif_perm_dismissed_until';
+  function _showNotifBannerIfNeeded() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'default') return; // ya decidió
+    const dismissedUntil = parseInt(localStorage.getItem(NOTIF_DISMISSED_KEY) || '0', 10);
+    if (dismissedUntil > Date.now()) return; // dismissed reciente
+    // Mostrar banner después de 5s para no molestar al instante
+    setTimeout(() => {
+      if (Notification.permission === 'default') {
+        const b = document.getElementById('notif-perm-banner');
+        if (b) b.style.display = 'block';
+      }
+    }, 5000);
+  }
+  document.getElementById('notif-perm-yes')?.addEventListener('click', async () => {
+    document.getElementById('notif-perm-banner').style.display = 'none';
+    try {
+      const result = await Notification.requestPermission();
+      if (result === 'granted') {
+        window.showToast?.('Notificaciones activadas ✓', { type: 'success' });
+        // Notification de bienvenida
+        try { new Notification('SCM Dental', { body: 'Te vamos a avisar cuando algo importante pase.', icon: '/favicon.svg' }); } catch {}
+      } else {
+        window.showToast?.('Permiso denegado. Podés activar más tarde desde la config del browser.', { type: 'warn' });
+      }
+    } catch (e) { console.warn('[notif]', e); }
+  });
+  document.getElementById('notif-perm-no')?.addEventListener('click', () => {
+    document.getElementById('notif-perm-banner').style.display = 'none';
+    // Dismiss por 7 días
+    localStorage.setItem(NOTIF_DISMISSED_KEY, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  });
+
+  // Polling de eventos para notificaciones (cada 60s)
+  let _lastSeenOverdue = -1;
+  let _lastSeenDueToday = -1;
+  function _notifyIfNew(currentOverdue, currentDueToday) {
+    if (Notification.permission !== 'granted') return;
+    if (document.visibilityState !== 'hidden') return; // solo si la pestaña no está activa
+    if (_lastSeenOverdue < 0) { _lastSeenOverdue = currentOverdue; _lastSeenDueToday = currentDueToday; return; }
+    // Nuevos overdue desde la última vez
+    if (currentOverdue > _lastSeenOverdue) {
+      const diff = currentOverdue - _lastSeenOverdue;
+      try {
+        const n = new Notification('Follow-ups atrasados', {
+          body: 'Tenés ' + diff + ' follow-up' + (diff > 1 ? 's' : '') + ' nuevo' + (diff > 1 ? 's' : '') + ' atrasado' + (diff > 1 ? 's' : '') + '. Total: ' + currentOverdue + '.',
+          icon: '/favicon.svg',
+          tag: 'overdue',
+          requireInteraction: false,
+        });
+        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-crm"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="atrasados"]')?.click(), 200); n.close(); };
+      } catch {}
+    } else if (currentDueToday > _lastSeenDueToday) {
+      const diff = currentDueToday - _lastSeenDueToday;
+      try {
+        const n = new Notification('Follow-ups para hoy', {
+          body: 'Tenés ' + diff + ' follow-up' + (diff > 1 ? 's' : '') + ' nuevo' + (diff > 1 ? 's' : '') + ' que hacer hoy.',
+          icon: '/favicon.svg',
+          tag: 'duetoday',
+        });
+        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-crm"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="hacer_hoy"]')?.click(), 200); n.close(); };
+      } catch {}
+    }
+    _lastSeenOverdue = currentOverdue;
+    _lastSeenDueToday = currentDueToday;
+  }
+  setInterval(() => {
+    const role = window.__CURRENT_USER__?.role;
+    if (!role || (role !== 'setter' && role !== 'admin' && role !== 'supervisor')) return;
+    if (Notification.permission !== 'granted') return;
+    fetch(_fuUrlWithViewAs('/api/setters/followups/today'), { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.counts) _notifyIfNew(d.counts.overdue || 0, d.counts.dueToday || 0); })
+      .catch(() => {});
+  }, 60 * 1000);
+
+  // Mostrar banner de permiso después del primer load del user
+  setTimeout(() => { if (window.__CURRENT_USER__) _showNotifBannerIfNeeded(); }, 2000);
 
   });

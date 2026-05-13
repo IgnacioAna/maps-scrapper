@@ -1916,6 +1916,38 @@
   <!-- Toast container (reemplaza alert() para errores y mensajes de status) -->
   <div id="toast-container" style="position:fixed; bottom:24px; right:24px; z-index:2200; display:flex; flex-direction:column; gap:10px; pointer-events:none; max-width:360px;"></div>
 
+  <!-- Command palette (Ctrl+K / Cmd+K) — quick switcher universal -->
+  <div id="cmdk-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:2300; align-items:flex-start; justify-content:center; padding:80px 20px 20px;">
+    <div style="width:min(640px, 96vw); background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,0.7);">
+      <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:10px; background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent); flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="cmdk-input" type="text" placeholder="Buscar leads, setters, acciones… (Esc para cerrar)" autocomplete="off" spellcheck="false" style="flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text-primary); font-family:inherit;">
+        <kbd style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); border-radius:4px; color:var(--text-secondary); font-family:ui-monospace,monospace;">Esc</kbd>
+      </div>
+      <ul id="cmdk-results" style="list-style:none; padding:6px; margin:0; max-height:400px; overflow-y:auto;"></ul>
+      <div id="cmdk-footer" style="padding:8px 14px; border-top:1px solid var(--border-color); display:flex; gap:14px; font-size:11px; color:var(--text-secondary); background:rgba(0,0,0,0.18);">
+        <span><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↑↓</kbd> navegar</span>
+        <span><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↵</kbd> abrir</span>
+        <span style="margin-left:auto;"><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">Ctrl+K</kbd> para volver a abrir</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner pidiendo permisos de notificación (one-time, dismissible) -->
+  <div id="notif-perm-banner" style="display:none; position:fixed; bottom:24px; left:24px; z-index:2100; max-width:360px; padding:14px 18px; background:linear-gradient(135deg, rgba(157,133,242,0.95) 0%, color-mix(in srgb, var(--accent) 70%, #fff) 100%); color:#fff; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,0.4); font-size:13px; line-height:1.5;">
+    <div style="display:flex; align-items:flex-start; gap:12px;">
+      <span style="font-size:22px; flex-shrink:0;">🔔</span>
+      <div style="flex:1;">
+        <div style="font-weight:600; margin-bottom:4px;">Activá notificaciones</div>
+        <div style="opacity:0.92; margin-bottom:10px;">Te avisamos cuando vence un follow-up o llega un lead nuevo, aunque tengas otra pestaña abierta.</div>
+        <div style="display:flex; gap:8px;">
+          <button id="notif-perm-yes" style="background:#fff; color:var(--accent); border:none; padding:6px 14px; border-radius:7px; font-weight:600; font-size:12px; cursor:pointer;">Sí, activar</button>
+          <button id="notif-perm-no" style="background:rgba(255,255,255,0.15); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:6px 14px; border-radius:7px; font-size:12px; cursor:pointer;">Ahora no</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Reasignar leads en bulk (admin) -->
   <div id="reassign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
@@ -2060,7 +2092,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430ae"></script>
+  <script type="module" src="/app.js?v=20260430af"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
