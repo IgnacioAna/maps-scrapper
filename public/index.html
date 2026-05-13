@@ -564,13 +564,13 @@
                 </select>
                 <button id="modal-agendar-btn" class="btn-primary" style="margin-left:auto; padding:8px 16px; font-size:13px; border-radius:9px;">📅 Agendar reunión</button>
               </div>
-              <!-- Mi WhatsApp usado: setter elige desde cuál de sus números contactó -->
-              <div id="modal-wa-account-wrap" style="display:none; margin-top:10px; padding:10px 12px; background:rgba(91,185,116,0.05); border:1px solid rgba(91,185,116,0.28); border-radius:9px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span style="font-size:12px; color:var(--text-secondary);">📱 Mi WhatsApp:</span>
-                <select id="modal-wa-account-select" style="padding:6px 10px; border-radius:7px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px; flex:1; min-width:180px;">
+              <!-- Mi número usado: setter elige (o agrega) desde cuál de sus líneas contactó -->
+              <div id="modal-wa-account-wrap" style="display:none; margin-top:10px; padding:10px 12px; background:rgba(91,185,116,0.05); border:1px solid rgba(91,185,116,0.28); border-radius:9px; align-items:center; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:12px; color:var(--text-secondary);">📱 Mi número usado:</span>
+                <select id="modal-wa-account-select" style="padding:6px 10px; border-radius:7px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px; flex:1; min-width:200px;">
                   <option value="">— Sin especificar —</option>
                 </select>
-                <span class="muted" style="font-size:10px;">Anotá desde qué número escribiste a este lead</span>
+                <span class="muted" style="font-size:10px;">Tu lista personal · solo vos la ves</span>
               </div>
               <div id="modal-call-log" style="display:none; margin-bottom:16px; padding:14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px;"></div>
               <!-- Follow-ups: chip simple con info del activo (los checkboxes de la tabla del CRM son los que se tildan) -->
@@ -2060,7 +2060,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260430ad"></script>
+  <script type="module" src="/app.js?v=20260430ae"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

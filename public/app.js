@@ -1442,16 +1442,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeSession = null;
     let sessionTimerInterval = null;
     let setterLeads = [];
-    // Cache de las cuentas WA del usuario actual (setter ve solo las suyas,
-    // admin ve todas). Se carga una vez al abrir el CRM.
-    let _myWaAccounts = [];
-    async function _loadMyWaAccounts() {
+    // Cache de los "mis números" del setter actual (lista propia que él
+    // mantiene). Setters ven solo los suyos. Admin: vacío hasta que
+    // seleccione un setter específico (en este caso no aplica el dropdown).
+    let _myPhones = [];
+    async function _loadMyPhones() {
+      const setterId = currentUser?.setterId;
+      if (!setterId) { _myPhones = []; return; }
       try {
-        const r = await fetch(apiUrl('/api/wa/accounts'));
+        const r = await fetch(apiUrl('/api/setters/team/' + encodeURIComponent(setterId) + '/phones'));
         if (!r.ok) return;
         const d = await r.json();
-        _myWaAccounts = Array.isArray(d) ? d : (d.accounts || []);
-      } catch (e) { console.warn('[wa-accounts] load:', e.message); }
+        _myPhones = d.phones || [];
+      } catch (e) { console.warn('[my-phones] load:', e.message); }
     }
     let settersList = [];
     let variantsList = [];
@@ -1633,8 +1636,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setterLeads = leadsData.leads || [];
         settersList = stats.setters || [];
         variantsList = stats.variants || [];
-        // Cargar cuentas WA del usuario (para el selector "Mi WhatsApp" en el modal)
-        _loadMyWaAccounts();
+        // Cargar "mis números" del setter (para el selector en el modal de lead)
+        _loadMyPhones();
         // Cargar follow-ups del setter (se usa para chips, badges y filtros)
         loadFollowups();
 
@@ -1967,9 +1970,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fecha: mostrar fecha de contacto si existe, sino fecha de import
         const displayDate = lead.fechaContacto || (lead.fecha || '').substring(5);
 
-        // Chip pequeño con el WA del setter usado (si está seteado)
-        const myWa = lead.waAccountId ? _myWaAccounts.find(a => a.id === lead.waAccountId) : null;
-        const myWaChip = myWa ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myWa.label || '') + '">📱 ' + escHtml((myWa.label || '').substring(0, 12)) + '</span>' : '';
+        // Chip pequeño con el número propio del setter usado (si está seteado)
+        const myPh = lead.setterPhoneId ? (_myPhones || []).find(p => p.id === lead.setterPhoneId) : null;
+        const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">📱 ' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
 
         return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')">' +
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
@@ -2289,36 +2292,78 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('modal-status-select').value = lead.estado || 'sin_contactar';
       document.getElementById('modal-decisor-select').value = lead.decisor || '';
 
-      // Mi WhatsApp usado — populate select con cuentas WA del setter actual
+      // Mi número usado — populate select con teléfonos propios del setter
       const waWrap = document.getElementById('modal-wa-account-wrap');
       const waSel = document.getElementById('modal-wa-account-select');
       if (waWrap && waSel) {
-        if (_myWaAccounts && _myWaAccounts.length > 0) {
-          waSel.innerHTML = '<option value="">— Sin especificar —</option>' +
-            _myWaAccounts.map(a => {
-              const labelText = (a.label || '(sin nombre)') + (a.phone ? ' · ' + a.phone : '');
-              return '<option value="' + escHtml(a.id) + '"' + (lead.waAccountId === a.id ? ' selected' : '') + '>' + escHtml(labelText) + '</option>';
-            }).join('');
-          waWrap.style.display = 'flex';
-          waSel.onchange = async (e) => {
-            const val = e.target.value || '';
+        const opts = ['<option value="">— Sin especificar —</option>'];
+        for (const p of _myPhones || []) {
+          const txt = (p.label || '(sin nombre)') + (p.phone ? ' · ' + p.phone : '');
+          opts.push('<option value="' + escHtml(p.id) + '"' + (lead.setterPhoneId === p.id ? ' selected' : '') + '>' + escHtml(txt) + '</option>');
+        }
+        opts.push('<option value="__add__">➕ Agregar nuevo número…</option>');
+        waSel.innerHTML = opts.join('');
+        waWrap.style.display = 'flex';
+        waSel.onchange = async (e) => {
+          const val = e.target.value || '';
+          if (val === '__add__') {
+            e.target.value = lead.setterPhoneId || '';
+            const label = await window.askText({
+              title: '➕ Agregar mi número',
+              subtitle: 'Cargá un label corto (cómo lo reconocés) y el número de teléfono. Solo vos lo ves.',
+              type: 'input',
+              placeholder: 'Label (ej: Línea 1, Maxi nuevo, etc.)',
+              confirmLabel: 'Siguiente',
+            });
+            if (!label) return;
+            const phone = await window.askText({
+              title: '➕ Número de "' + label + '"',
+              subtitle: 'Pegá el número (con prefijo de país si corresponde). Opcional, podés dejarlo vacío.',
+              type: 'input',
+              placeholder: '+54 11 1234 5678',
+              confirmLabel: 'Guardar',
+              confirmRequired: false,
+            });
             try {
-              const r = await fetch(apiUrl('/api/setters/leads/' + leadId), {
-                method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                body: JSON.stringify({ waAccountId: val }),
+              const r = await fetch(apiUrl('/api/setters/team/' + encodeURIComponent(currentUser.setterId) + '/phones'), {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                body: JSON.stringify({ label, phone: phone || '' }),
               });
-              if (!r.ok) throw new Error('HTTP ' + r.status);
-              lead.waAccountId = val;
-              const account = _myWaAccounts.find(a => a.id === val);
-              window.showToast?.(val ? ('✓ Marcado: contactado desde ' + (account?.label || 'WA')) : '✓ WA usado: limpio', { type: 'success', duration: 1800 });
-              renderSetterLeads();
+              const d = await r.json();
+              if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+              _myPhones = d.phones || _myPhones;
+              window.showToast?.('✓ "' + label + '" agregado a tus números', { type: 'success' });
+              // Asignar el nuevo phone a este lead automáticamente
+              const newId = d.phone?.id || '';
+              if (newId) {
+                const r2 = await fetch(apiUrl('/api/setters/leads/' + leadId), {
+                  method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                  body: JSON.stringify({ setterPhoneId: newId }),
+                });
+                if (r2.ok) lead.setterPhoneId = newId;
+              }
+              // Re-renderizar el modal para que aparezca el nuevo número en el dropdown
+              window._openLeadModal(leadId);
             } catch (err) {
               window.showToast?.('Error: ' + err.message, { type: 'error' });
             }
-          };
-        } else {
-          waWrap.style.display = 'none';
-        }
+            return;
+          }
+          // Cambio normal: PATCH lead con el setterPhoneId
+          try {
+            const r = await fetch(apiUrl('/api/setters/leads/' + leadId), {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+              body: JSON.stringify({ setterPhoneId: val }),
+            });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            lead.setterPhoneId = val;
+            const p = (_myPhones || []).find(x => x.id === val);
+            window.showToast?.(val ? ('✓ Marcado: contactado desde ' + (p?.label || 'mi número')) : '✓ Número limpio', { type: 'success', duration: 1800 });
+            renderSetterLeads();
+          } catch (err) {
+            window.showToast?.('Error: ' + err.message, { type: 'error' });
+          }
+        };
       }
 
       const visibleVariants = getVisibleVariables();

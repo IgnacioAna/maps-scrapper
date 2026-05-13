@@ -467,10 +467,11 @@ function ensureLeadDefaults(lead = {}) {
   if (!lead.followUpStartedAt) lead.followUpStartedAt = null;
   if (!Array.isArray(lead.notes)) lead.notes = [];
   if (!Array.isArray(lead.interactions)) lead.interactions = [];
-  // 2026-05-08: id de la cuenta WA del setter que se usó para contactar
-  // este lead. Permite al setter saber desde qué número escribió. Vacío
-  // hasta que el setter elige una al marcar "Enviada" o desde el modal.
-  if (typeof lead.waAccountId !== 'string') lead.waAccountId = '';
+  // 2026-05-08: id del número propio del setter (de setter.myPhones[]) que
+  // se usó para contactar este lead. Permite al setter saber desde qué línea
+  // suya escribió. Independiente del módulo Multi-Account WhatsApp — es un
+  // registro manual que el setter mantiene para guiarse.
+  if (typeof lead.setterPhoneId !== 'string') lead.setterPhoneId = '';
   if (!lead.country) lead.country = '';
   if (!lead.city) lead.city = '';
   if (!lead.whatsappUrl) lead.whatsappUrl = '';
@@ -2862,6 +2863,10 @@ function loadSettersData() {
           const v = raw.variants.find((variant) => variant.id === setter.activeVariantId);
           if (v && !v.setterId) v.setterId = setter.id;
         }
+        // 2026-05-08: cada setter mantiene su propia lista de "mis números"
+        // (label + phone) para taggear desde cuál de sus líneas contactó
+        // cada lead. Independiente del módulo Multi-Account WhatsApp.
+        if (!Array.isArray(setter.myPhones)) setter.myPhones = [];
       }
       for (const key in raw.leads) {
         raw.leads[key] = ensureLeadDefaults(raw.leads[key]);
@@ -2984,6 +2989,91 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
 
   saveSettersData(data);
   res.json({ setter: newSetter, copiedVariants: sourceVariants.length });
+});
+
+// ── Mis números: lista de números propios del setter para tagging de leads ──
+// GET /api/setters/team/:id/phones — lista los números del setter.
+// Setter accede solo a los suyos; admin a cualquiera.
+app.get('/api/setters/team/:id/phones', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'Solo podés ver tus propios números.' });
+  }
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  res.json({ phones: setter.myPhones || [] });
+});
+
+// POST /api/setters/team/:id/phones — agrega un número. Body: { label, phone }
+app.post('/api/setters/team/:id/phones', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'Solo podés agregar a tus propios números.' });
+  }
+  const { label, phone } = req.body || {};
+  if (!label?.trim() && !phone?.trim()) {
+    return res.status(400).json({ error: 'Necesitás al menos un label o un número.' });
+  }
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  if (!Array.isArray(setter.myPhones)) setter.myPhones = [];
+  const newPhone = {
+    id: `sphone_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    label: String(label || '').trim().substring(0, 60),
+    phone: String(phone || '').trim().substring(0, 30),
+    createdAt: new Date().toISOString(),
+  };
+  setter.myPhones.push(newPhone);
+  saveSettersData(data);
+  res.json({ ok: true, phone: newPhone, phones: setter.myPhones });
+});
+
+// PATCH /api/setters/team/:id/phones/:phoneId — edita label/phone
+app.patch('/api/setters/team/:id/phones/:phoneId', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'Solo podés editar tus propios números.' });
+  }
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  const phone = (setter.myPhones || []).find((p) => p.id === req.params.phoneId);
+  if (!phone) return res.status(404).json({ error: 'Número no encontrado.' });
+  if (typeof req.body.label === 'string') phone.label = req.body.label.trim().substring(0, 60);
+  if (typeof req.body.phone === 'string') phone.phone = req.body.phone.trim().substring(0, 30);
+  phone.updatedAt = new Date().toISOString();
+  saveSettersData(data);
+  res.json({ ok: true, phone, phones: setter.myPhones });
+});
+
+// DELETE /api/setters/team/:id/phones/:phoneId
+app.delete('/api/setters/team/:id/phones/:phoneId', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'Solo podés borrar tus propios números.' });
+  }
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  const before = (setter.myPhones || []).length;
+  setter.myPhones = (setter.myPhones || []).filter((p) => p.id !== req.params.phoneId);
+  if (setter.myPhones.length === before) return res.status(404).json({ error: 'Número no encontrado.' });
+  // Limpiar setterPhoneId de leads que apuntaban a este teléfono borrado
+  let cleaned = 0;
+  for (const id in data.leads) {
+    if (data.leads[id].setterPhoneId === req.params.phoneId) {
+      data.leads[id].setterPhoneId = '';
+      cleaned++;
+    }
+  }
+  saveSettersData(data);
+  res.json({ ok: true, phones: setter.myPhones, leadsCleaned: cleaned });
 });
 
 // POST /api/setters/leads/orphans/reset — admin: resetea todos los leads
@@ -3810,7 +3900,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId', 'waAccountId'];
+  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId', 'setterPhoneId'];
   for (const field of allowed) {
     if (req.body[field] !== undefined) lead[field] = req.body[field];
   }
