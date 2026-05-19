@@ -1832,6 +1832,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => (l.country || '').trim() === countryFilter);
       }
 
+      // Filtro por fecha — pedido de Genaro: "no se puede buscar por fecha?"
+      // Permite ver los leads que tocaste hoy/ayer/ultima semana, util para
+      // encontrar rapido los del dia. Usa lastContactAt si existe, sino importedAt.
+      const dateFilter = (document.getElementById('setter-date-filter')?.value || '').trim();
+      if (dateFilter) {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfYesterday = startOfToday - 24*60*60*1000;
+        const _ts = (l) => {
+          const lc = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
+          const imp = l.importedAt ? new Date(l.importedAt).getTime() : 0;
+          return Math.max(lc, imp);
+        };
+        if (dateFilter === 'today') {
+          filtered = filtered.filter(l => _ts(l) >= startOfToday);
+        } else if (dateFilter === 'yesterday') {
+          filtered = filtered.filter(l => { const t = _ts(l); return t >= startOfYesterday && t < startOfToday; });
+        } else if (dateFilter === '7d') {
+          const cutoff = startOfToday - 6*24*60*60*1000;
+          filtered = filtered.filter(l => _ts(l) >= cutoff);
+        } else if (dateFilter === '30d') {
+          const cutoff = startOfToday - 29*24*60*60*1000;
+          filtered = filtered.filter(l => _ts(l) >= cutoff);
+        } else if (dateFilter === 'no-contact') {
+          filtered = filtered.filter(l => !l.lastContactAt);
+        }
+      }
+
       // Buscador general — tolerante a acentos, mayusculas, espacios y formato de telefono.
       // Antes era includes() puro: si la persona escribia '5422163791147' pero el lead
       // tenia '+54 221 637-9147', no matcheaba. Ahora:
@@ -2542,6 +2570,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       setterCountryFilter.addEventListener('change', (e) => {
         localStorage.setItem(savedKey, e.target.value);
+        setterPage = 1;
+        renderSetterLeads();
+      });
+    }
+
+    // Date filter (pedido de Genaro): re-render al cambiar.
+    const setterDateFilter = document.getElementById('setter-date-filter');
+    if (setterDateFilter) {
+      setterDateFilter.addEventListener('change', () => {
         setterPage = 1;
         renderSetterLeads();
       });

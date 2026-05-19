@@ -890,6 +890,25 @@ warmupOnlinePresenceFromDisk();
 app.use('/api', attachAuth);
 app.use('/api/setters', requireAuth);
 
+// BUGFIX (reportado por Genaro 2026-05-19): el browser cacheaba las respuestas
+// de /api/setters/stats y /api/setters/leads (Express manda ETag por default
+// pero sin Cache-Control, algunos browsers cachean agresivo). Resultado: el
+// setter trabajaba leads, llegaba a 300 conexiones, y al dia siguiente al
+// abrir la pestania veia "270" (data stale del dia anterior). Los PATCHes
+// nuevos si iban al server, pero el GET inicial servia el cache viejo.
+// Forzamos no-store en TODOS los endpoints de setters + auth/users para
+// que NUNCA se sirva data stale.
+function _noStoreCache(_req, res, next) {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+}
+app.use('/api/setters', _noStoreCache);
+app.use('/api/auth/users', _noStoreCache);
+app.use('/api/auth/online', _noStoreCache);
+app.use('/api/onboarding/progress', _noStoreCache);
+
 function setAuthCookie(res, sessionId) {
   const maxAge = Math.floor(SESSION_TTL_MS / 1000);
   res.setHeader('Set-Cookie', `gs_session=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`);
