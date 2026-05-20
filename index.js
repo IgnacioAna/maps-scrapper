@@ -2790,15 +2790,70 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
       // Estimación basada en registros previos (~20 por página)
       const estimatedPage = Math.floor(entriesCount / 20) + 1;
 
-      // Usar la página más alta: o la calculada por leads, o el número exacto guardado
-      const recordedNextPage = (history.lastPages[key] || 0) + 1;
+      // BUGFIX (reportado por user 2026-05-20): lastPages puede tener valores
+      // huerfanos de scrapes viejos donde el admin puso startPage manual alto
+      // pero no quedo ningun entry en history (porque dedup los filtro todos,
+      // o fue cancelado, o data se borro). El user veia "DESDE PAG: 40" para
+      // Cuenca aunque NUNCA habia scrapeado ahi.
+      // Si lastPages dice X pero no hay entries que lo respalden, ignoramos
+      // lastPages. Confiamos en lastPages solo si hay AL MENOS 1 entry real
+      // para esa combinacion (query, ciudad).
+      const recordedRaw = history.lastPages[key] || 0;
+      const recordedNextPage = entriesCount > 0 ? (recordedRaw + 1) : 1;
       const nextStart = Math.max(estimatedPage, recordedNextPage);
 
       if (nextStart > maxSuggested) maxSuggested = nextStart;
     }
   }
-  
+
   res.json({ suggestedPage: maxSuggested });
+});
+
+// Admin: purgar entries huerfanas de lastPages que no tienen entries respaldando.
+// Util para limpiar contaminacion de scrapes viejos/cancelados.
+app.post('/api/admin/history/clean-last-pages', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const history = loadHistory();
+  if (!history.lastPages || typeof history.lastPages !== 'object') {
+    return res.json({ scanned: 0, removed: 0, sample: [] });
+  }
+  // Index entries by (query, baseLoc) para chequeo rapido
+  const realCombos = new Set();
+  for (const k in (history.entries || {})) {
+    const e = history.entries[k];
+    if (!e.query || !e.location) continue;
+    const q = e.query.toLowerCase().trim();
+    const baseLoc = e.location.toLowerCase().trim();
+    realCombos.add(`${q}_${baseLoc}`);
+  }
+  const before = Object.keys(history.lastPages).length;
+  const removed = [];
+  for (const key of Object.keys(history.lastPages)) {
+    // key formato: "${query}_${location}". Si exact match no esta en realCombos,
+    // tampoco fuzzy match. Verificamos si HAY entries que matcheen fuzzy con
+    // esta combinacion.
+    const [keyQ, keyLoc] = key.split('_', 2);
+    let found = false;
+    for (const combo of realCombos) {
+      const [comboQ, comboLoc] = combo.split('_', 2);
+      if (!comboQ || !comboLoc) continue;
+      const qMatch = comboQ.includes(keyQ) || keyQ.includes(comboQ);
+      const lMatch = comboLoc.includes(keyLoc) || keyLoc.includes(comboLoc);
+      if (qMatch && lMatch) { found = true; break; }
+    }
+    if (!found) {
+      removed.push({ key, value: history.lastPages[key] });
+      if (!dryRun) delete history.lastPages[key];
+    }
+  }
+  if (!dryRun && removed.length > 0) saveHistory(history);
+  res.json({
+    scanned: before,
+    removed: removed.length,
+    remaining: before - removed.length,
+    dryRun,
+    sample: removed.slice(0, 15)
+  });
 });
 
 // ══════════════════════════════════════════════════════════════
