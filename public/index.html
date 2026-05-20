@@ -2080,6 +2080,33 @@
     </div>
   </div>
 
+  <!-- Modal: distribuir leads entre multiples setters -->
+  <div id="setter-distribute-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2001; align-items:center; justify-content:center; padding:20px;">
+    <div class="card" style="width:min(640px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
+      <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
+        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px;">Enviar a Setters</h3>
+        <p id="setter-distribute-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Asigná cuántos leads va a recibir cada setter.</p>
+      </div>
+      <div style="padding:18px 24px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button id="setter-distribute-even" type="button" class="btn-secondary" style="font-size:11px; padding:6px 12px; border-radius:8px;">Repartir parejo entre los tildados</button>
+            <button id="setter-distribute-clear" type="button" class="btn-secondary" style="font-size:11px; padding:6px 12px; border-radius:8px;">Limpiar todo</button>
+          </div>
+          <div style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">
+            Asignados: <strong id="setter-distribute-assigned" style="color:var(--accent);">0</strong> / <strong id="setter-distribute-total">0</strong>
+            <span id="setter-distribute-remaining-badge" style="margin-left:8px;"></span>
+          </div>
+        </div>
+        <div id="setter-distribute-list" style="max-height:380px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;"></div>
+      </div>
+      <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.15);">
+        <button id="setter-distribute-cancel" class="btn-secondary" style="font-size:13px; padding:9px 18px; border-radius:9px;">Cancelar</button>
+        <button id="setter-distribute-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;" disabled>Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Timer flotante anti-baneo WSP -->
   <div id="wsp-timer-widget" style="position:fixed; bottom:20px; right:20px; background:#1c2230; border:1px solid #2d3548; border-radius:12px; padding:14px 16px; box-shadow:0 8px 32px rgba(0,0,0,0.6); display:none; flex-direction:column; gap:10px; z-index:900; min-width:240px; backdrop-filter:none;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -2100,7 +2127,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260519a"></script>
+  <script type="module" src="/app.js?v=20260520a"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

@@ -3674,12 +3674,82 @@ function _importLeadsCore(data, incoming, assignTo) {
 
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { leads: incoming, assignTo, batchId } = req.body;
+    const { leads: incoming, assignTo, batchId, distribution } = req.body;
+    if (!Array.isArray(incoming) || incoming.length === 0) {
+      return res.status(400).json({ error: 'No hay leads para importar.' });
+    }
+
+    // Modo NUEVO: distribution = [{setterId, count}, ...]
+    // Particiona el array de leads y hace varias importaciones, una por setter.
+    if (Array.isArray(distribution) && distribution.length > 0) {
+      // Validar shape
+      let sumCount = 0;
+      for (const d of distribution) {
+        if (!d || typeof d.setterId !== 'string' || !d.setterId.trim()) {
+          return res.status(400).json({ error: 'distribution invalido: cada item necesita setterId.' });
+        }
+        const c = Number(d.count);
+        if (!Number.isFinite(c) || c < 1) {
+          return res.status(400).json({ error: 'distribution invalido: count >= 1 requerido para ' + d.setterId });
+        }
+        sumCount += Math.floor(c);
+      }
+      if (sumCount > incoming.length) {
+        return res.status(400).json({ error: `La distribucion suma ${sumCount} pero hay solo ${incoming.length} leads.` });
+      }
+
+      // Particionar leads en orden y delegar a _importLeadsToSetters por bucket
+      let cursor = 0;
+      let totalImported = 0, totalSkipped = 0;
+      const perSetter = [];
+      // Cargamos el catalogo de setters una vez para devolver nombres legibles
+      let setterCatalog = [];
+      try { setterCatalog = (loadSettersData().setters || []); } catch {}
+      const nameOf = (id) => (setterCatalog.find(s => s.id === id) || {}).name || id;
+
+      for (const d of distribution) {
+        const n = Math.floor(Number(d.count));
+        const slice = incoming.slice(cursor, cursor + n);
+        cursor += n;
+        const out = _importLeadsToSetters(slice, d.setterId);
+        if (!out.ok) {
+          return res.status(out.status || 400).json({
+            error: `Error asignando a ${nameOf(d.setterId)}: ${out.error}`,
+            partial: { perSetter, totalImported, totalSkipped }
+          });
+        }
+        totalImported += out.imported || 0;
+        totalSkipped += out.skipped || 0;
+        perSetter.push({ setterId: d.setterId, setterName: nameOf(d.setterId), imported: out.imported, skipped: out.skipped });
+      }
+
+      // Marcar batch como enviado (con setterId="multi" para flag)
+      if (batchId) {
+        try {
+          const batchesData = loadScrapeBatches();
+          const batch = (batchesData.batches || []).find(b => b.id === batchId);
+          if (batch && !batch.sentToSetter) {
+            batch.sentToSetter = {
+              setterId: distribution.length === 1 ? distribution[0].setterId : 'multi',
+              setterIds: distribution.map(d => d.setterId),
+              sentAt: new Date().toISOString(),
+              sentBy: req.auth?.user?.name || req.auth?.user?.email || 'admin',
+              imported: totalImported,
+              skipped: totalSkipped,
+              distribution: perSetter
+            };
+            saveScrapeBatches(batchesData);
+          }
+        } catch (e) { console.warn('[import] no pude marcar batch como enviado:', e.message); }
+      }
+
+      // total estimado de leads en pipeline: dejamos vacío para no recalcular sobre todo el dataset
+      return res.json({ imported: totalImported, skipped: totalSkipped, perSetter, batchUpdated: !!batchId });
+    }
+
+    // Modo LEGACY: assignTo string (1 setter solo) — back-compat
     const out = _importLeadsToSetters(incoming, assignTo);
     if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
-    // Si vino un batchId del scrape, marcamos el batch como sentToSetter para
-    // que el panel "Historial de Scrapes" muestre el estado correcto y no diga
-    // "NO ENVIADO" cuando si fue.
     if (batchId) {
       try {
         const batchesData = loadScrapeBatches();
@@ -3694,9 +3764,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
           };
           saveScrapeBatches(batchesData);
         }
-      } catch (e) {
-        console.warn('[import] no pude marcar batch como enviado:', e.message);
-      }
+      } catch (e) { console.warn('[import] no pude marcar batch como enviado:', e.message); }
     }
     res.json({ imported: out.imported, skipped: out.skipped, total: out.total, batchUpdated: !!batchId });
   } catch (err) {

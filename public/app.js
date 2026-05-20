@@ -3079,17 +3079,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const subtitle = skippedOld > 0
-        ? `${newLeads.length} leads nuevos · ${skippedOld} ya scrapeados se descartan automáticamente.`
-        : `${newLeads.length} leads para asignar.`;
+        ? `${newLeads.length} leads nuevos para repartir · ${skippedOld} ya scrapeados se descartan.`
+        : `${newLeads.length} leads para repartir. Tildá los setters destino y poné cuántos a cada uno.`;
 
-      const assignTo = await window.pickSetter({
-        title: 'Enviar a Setters',
-        subtitle,
-        allowEmpty: true,
+      const distribution = await window.pickSettersDistribution({
+        totalLeads: newLeads.length,
+        subtitle
       });
-      if (assignTo === null) return; // cancelado
+      if (!distribution || !distribution.length) return; // cancelado
+
       try {
-        const importResp = await fetch(apiUrl('/api/setters/import'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leads: newLeads, assignTo, batchId: window._lastScrapeBatchId || null }) });
+        const importResp = await fetch(apiUrl('/api/setters/import'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leads: newLeads, distribution, batchId: window._lastScrapeBatchId || null })
+        });
         if (!importResp.ok) {
           const errData = await importResp.text();
           console.error('Import error response:', importResp.status, errData);
@@ -3097,9 +3101,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         const result = await importResp.json();
-        let summary = 'Importados: ' + (result.imported || 0) + ' leads nuevos\nYa existían en setter: ' + (result.skipped || 0);
+        let summary = 'Total importado: ' + (result.imported || 0) + ' leads\n';
+        if (result.perSetter && result.perSetter.length) {
+          summary += '\nDistribucion:\n';
+          result.perSetter.forEach(p => { summary += '  • ' + (p.setterName || p.setterId) + ': ' + p.imported + (p.skipped ? ' (+' + p.skipped + ' duplicados)' : '') + '\n'; });
+        }
+        if (result.skipped) summary += '\nYa existían en algún setter: ' + result.skipped;
         if (skippedOld > 0) summary += '\nYa scrapeados antes (no enviados): ' + skippedOld;
-        summary += '\nTotal en pipeline: ' + (result.total || 0);
         alert(summary);
       } catch (e) { console.error('Import exception:', e); alert('Error al importar: ' + e.message); }
     });
@@ -7239,6 +7247,139 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (e.target.id === 'setter-picker-modal') _pickSetterClose(null);
   });
   document.getElementById('setter-picker-confirm')?.addEventListener('click', () => _pickSetterClose(_pickSetterCurrent));
+
+  // ── Modal nuevo: distribuir leads entre MULTIPLES setters ──
+  // Uso: const dist = await window.pickSettersDistribution({ totalLeads: 100 });
+  // Devuelve [{setterId, count}, ...] cuya suma de counts = totalLeads (o null si cancela).
+  let _distSettersCache = [];
+  let _distTotalLeads = 0;
+  let _distResolve = null;
+
+  function _distRender() {
+    const list = document.getElementById('setter-distribute-list');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const s of _distSettersCache) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); transition:all 0.15s;';
+      const initial = String(s.name || '?').trim().charAt(0).toUpperCase();
+      const safeName = String(s.name || '—').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+      row.innerHTML = `
+        <input type="checkbox" data-dist-check="${s.id}" style="width:16px; height:16px; cursor:pointer;">
+        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
+        <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div></div>
+        <input type="number" min="0" step="1" data-dist-count="${s.id}" placeholder="0" style="width:90px; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-elevated); color:var(--text-primary); text-align:right;">
+        <span style="font-size:11px; color:var(--text-secondary); width:48px; text-align:right;">leads</span>
+      `;
+      list.appendChild(row);
+    }
+    // Wire events
+    list.querySelectorAll('[data-dist-check]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.distCheck;
+        const inp = list.querySelector('[data-dist-count="' + id + '"]');
+        if (cb.checked && (!inp.value || Number(inp.value) <= 0)) {
+          inp.value = 0; // arranca en 0; el user pone el numero o usa "Repartir parejo"
+        } else if (!cb.checked) {
+          inp.value = '';
+        }
+        _distRecalc();
+      });
+    });
+    list.querySelectorAll('[data-dist-count]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const id = inp.dataset.distCount;
+        const cb = list.querySelector('[data-dist-check="' + id + '"]');
+        const n = Number(inp.value);
+        if (Number.isFinite(n) && n > 0) cb.checked = true;
+        else if (!inp.value) cb.checked = false;
+        _distRecalc();
+      });
+    });
+    _distRecalc();
+  }
+
+  function _distRecalc() {
+    const list = document.getElementById('setter-distribute-list');
+    if (!list) return;
+    let sum = 0;
+    list.querySelectorAll('[data-dist-count]').forEach(inp => {
+      const n = Number(inp.value);
+      if (Number.isFinite(n) && n > 0) sum += Math.floor(n);
+    });
+    document.getElementById('setter-distribute-assigned').textContent = sum;
+    document.getElementById('setter-distribute-total').textContent = _distTotalLeads;
+    const remaining = _distTotalLeads - sum;
+    const badge = document.getElementById('setter-distribute-remaining-badge');
+    if (remaining === 0 && sum > 0) {
+      badge.innerHTML = '<span style="color:var(--success); font-weight:600;">✓ Completo</span>';
+    } else if (remaining > 0) {
+      badge.innerHTML = '<span style="color:var(--warning);">' + remaining + ' sin asignar</span>';
+    } else if (remaining < 0) {
+      badge.innerHTML = '<span style="color:var(--danger);">' + Math.abs(remaining) + ' de más</span>';
+    } else {
+      badge.innerHTML = '';
+    }
+    // Confirm valid: sum > 0 AND sum <= total
+    document.getElementById('setter-distribute-confirm').disabled = !(sum > 0 && sum <= _distTotalLeads);
+  }
+
+  function _distEvenSplit() {
+    const list = document.getElementById('setter-distribute-list');
+    if (!list) return;
+    const checked = Array.from(list.querySelectorAll('[data-dist-check]:checked'));
+    if (checked.length === 0) {
+      alert('Tildá al menos un setter para repartir parejo.');
+      return;
+    }
+    const each = Math.floor(_distTotalLeads / checked.length);
+    const remainder = _distTotalLeads - (each * checked.length);
+    checked.forEach((cb, i) => {
+      const id = cb.dataset.distCheck;
+      const inp = list.querySelector('[data-dist-count="' + id + '"]');
+      inp.value = each + (i < remainder ? 1 : 0); // primeros N reciben +1 para cubrir el resto
+    });
+    _distRecalc();
+  }
+
+  function _distClear() {
+    const list = document.getElementById('setter-distribute-list');
+    if (!list) return;
+    list.querySelectorAll('[data-dist-check]').forEach(cb => cb.checked = false);
+    list.querySelectorAll('[data-dist-count]').forEach(inp => inp.value = '');
+    _distRecalc();
+  }
+
+  function _distClose(result) {
+    document.getElementById('setter-distribute-modal').style.display = 'none';
+    if (_distResolve) { _distResolve(result); _distResolve = null; }
+  }
+
+  window.pickSettersDistribution = async function pickSettersDistribution(opts = {}) {
+    const { totalLeads = 0, subtitle } = opts;
+    _distTotalLeads = totalLeads;
+    document.getElementById('setter-distribute-subtitle').textContent = subtitle || `${totalLeads} leads para repartir entre setters. Tildá los que vas a usar y poné cuántos a cada uno.`;
+    _distSettersCache = await _pickSetterFetch();
+    _distRender();
+    document.getElementById('setter-distribute-modal').style.display = 'flex';
+    return new Promise(resolve => { _distResolve = resolve; });
+  };
+
+  document.getElementById('setter-distribute-cancel')?.addEventListener('click', () => _distClose(null));
+  document.getElementById('setter-distribute-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'setter-distribute-modal') _distClose(null);
+  });
+  document.getElementById('setter-distribute-even')?.addEventListener('click', _distEvenSplit);
+  document.getElementById('setter-distribute-clear')?.addEventListener('click', _distClear);
+  document.getElementById('setter-distribute-confirm')?.addEventListener('click', () => {
+    const list = document.getElementById('setter-distribute-list');
+    const out = [];
+    list.querySelectorAll('[data-dist-count]').forEach(inp => {
+      const n = Number(inp.value);
+      if (Number.isFinite(n) && n > 0) out.push({ setterId: inp.dataset.distCount, count: Math.floor(n) });
+    });
+    _distClose(out.length ? out : null);
+  });
 
   // ── Modal genérico askText: reemplaza prompt() nativo ──
   // Uso: const text = await window.askText({ title, subtitle, type:'input'|'textarea', placeholder?, defaultValue?, confirmLabel?, confirmRequired?, hint? });
