@@ -1836,15 +1836,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Permite ver los leads que tocaste hoy/ayer/ultima semana, util para
       // encontrar rapido los del dia. Usa lastContactAt si existe, sino importedAt.
       const dateFilter = (document.getElementById('setter-date-filter')?.value || '').trim();
-      if (dateFilter) {
+      const specificDate = (document.getElementById('setter-date-specific')?.value || '').trim();
+      const _ts = (l) => {
+        const lc = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
+        const imp = l.importedAt ? new Date(l.importedAt).getTime() : 0;
+        return Math.max(lc, imp);
+      };
+
+      // Fecha específica tiene prioridad sobre los presets (más granular)
+      if (specificDate) {
+        // YYYY-MM-DD → rango de ese día completo en local time
+        const [y, m, d] = specificDate.split('-').map(Number);
+        const dayStart = new Date(y, m - 1, d).getTime();
+        const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+        filtered = filtered.filter(l => { const t = _ts(l); return t >= dayStart && t < dayEnd; });
+      } else if (dateFilter) {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const startOfYesterday = startOfToday - 24*60*60*1000;
-        const _ts = (l) => {
-          const lc = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
-          const imp = l.importedAt ? new Date(l.importedAt).getTime() : 0;
-          return Math.max(lc, imp);
-        };
         if (dateFilter === 'today') {
           filtered = filtered.filter(l => _ts(l) >= startOfToday);
         } else if (dateFilter === 'yesterday') {
@@ -2579,6 +2588,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setterDateFilter = document.getElementById('setter-date-filter');
     if (setterDateFilter) {
       setterDateFilter.addEventListener('change', () => {
+        // Si elige un preset, limpiar la fecha específica
+        const sd = document.getElementById('setter-date-specific');
+        if (sd && sd.value) sd.value = '';
+        const cl = document.getElementById('setter-date-specific-clear');
+        if (cl) cl.style.display = 'none';
+        setterPage = 1;
+        renderSetterLeads();
+      });
+    }
+    // Fecha específica: input type=date
+    const setterDateSpecific = document.getElementById('setter-date-specific');
+    const setterDateSpecificClear = document.getElementById('setter-date-specific-clear');
+    if (setterDateSpecific) {
+      setterDateSpecific.addEventListener('change', () => {
+        // Si elige una fecha específica, limpiar el preset
+        if (setterDateSpecific.value) {
+          if (setterDateFilter) setterDateFilter.value = '';
+          if (setterDateSpecificClear) setterDateSpecificClear.style.display = '';
+        } else {
+          if (setterDateSpecificClear) setterDateSpecificClear.style.display = 'none';
+        }
+        setterPage = 1;
+        renderSetterLeads();
+      });
+    }
+    if (setterDateSpecificClear) {
+      setterDateSpecificClear.addEventListener('click', () => {
+        if (setterDateSpecific) setterDateSpecific.value = '';
+        setterDateSpecificClear.style.display = 'none';
         setterPage = 1;
         renderSetterLeads();
       });
@@ -3069,18 +3107,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     sendToSettersBtn.addEventListener('click', async () => {
       if (currentData.length === 0) return;
 
-      // Filtrar los que ya fueron scrapeados anteriormente (ya contactados)
-      const newLeads = currentData.filter(l => !l.alreadyScraped);
-      const skippedOld = currentData.length - newLeads.length;
+      // 2026-05-19: respetar los filtros visuales del usuario.
+      // Antes: solo filtraba alreadyScraped, ignoraba "Solo Wsp" y
+      // "Solo nuevos" — confundía porque mostraba X y enviaba Y.
+      // Ahora: usa la misma lógica de filtrado que la tabla.
+      let newLeads = currentData.filter(l => !l.alreadyScraped);
+      const totalNuevos = newLeads.length;
+      let skippedByWspFilter = 0;
+      if (hideLandlinesCb && hideLandlinesCb.checked) {
+        const before = newLeads.length;
+        newLeads = newLeads.filter(l => (l.phone && isMobilePhone(l.phone, countrySelect.value)) || l.webWhatsApp || l.aiWhatsApp);
+        skippedByWspFilter = before - newLeads.length;
+      }
+      const skippedOld = currentData.length - totalNuevos;
 
       if (newLeads.length === 0) {
-        alert('Todos los ' + currentData.length + ' leads ya fueron scrapeados anteriormente. No hay leads nuevos para enviar.');
+        const reason = totalNuevos === 0
+          ? 'Todos los ' + currentData.length + ' leads ya fueron scrapeados anteriormente.'
+          : 'Los ' + totalNuevos + ' leads nuevos quedaron filtrados por "Solo Wsp". Destildá ese filtro si querés mandar también los sin WhatsApp.';
+        window.showToast?.(reason, { type: 'warn', duration: 5000 });
         return;
       }
 
-      const subtitle = skippedOld > 0
-        ? `${newLeads.length} leads nuevos para repartir · ${skippedOld} ya scrapeados se descartan.`
-        : `${newLeads.length} leads para repartir. Tildá los setters destino y poné cuántos a cada uno.`;
+      const subtitleParts = [`${newLeads.length} leads para repartir`];
+      if (skippedOld > 0) subtitleParts.push(`${skippedOld} ya scrapeados descartados`);
+      if (skippedByWspFilter > 0) subtitleParts.push(`${skippedByWspFilter} sin Wsp filtrados (porque "Solo Wsp" está tildado)`);
+      const subtitle = subtitleParts.join(' · ') + '. Tildá los setters destino y poné cuántos a cada uno.';
 
       const distribution = await window.pickSettersDistribution({
         totalLeads: newLeads.length,

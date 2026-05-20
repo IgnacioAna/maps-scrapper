@@ -425,7 +425,8 @@
           <button id="end-session-btn" class="btn-table-action" style="background:#f85149; color:white; border:none;">Cerrar Sesión</button>
         </div>
 
-        <!-- KPI Dashboard -->
+        <!-- KPI Dashboard — aclarado: estos son ACUMULADOS (todo el tiempo) -->
+        <div style="font-size:11px; color:var(--text-secondary); margin:6px 0 4px; letter-spacing:0.3px;">📊 TUS NÚMEROS ACUMULADOS <span style="opacity:0.6;">(todo el tiempo · para ver solo HOY → Mi rendimiento)</span></div>
         <div class="setter-stats" id="setter-stats">
           <div class="stat-card"><span class="stat-num" id="stat-total">0</span><span class="stat-label">Total</span></div>
           <div class="stat-card"><span class="stat-num" id="stat-conexiones">0</span><span class="stat-pct-sub" id="stat-pct-conexion">0%</span><span class="stat-label">Conexiones</span></div>
@@ -485,6 +486,8 @@
             <option value="30d">Últimos 30 días</option>
             <option value="no-contact">Sin contactar nunca</option>
           </select>
+          <input type="date" id="setter-date-specific" class="btn btn-ghost btn-sm" style="min-width:140px; color-scheme:dark;" title="Buscar leads trabajados en una fecha específica">
+          <button id="setter-date-specific-clear" class="btn btn-ghost btn-sm" style="display:none; padding:4px 8px;" title="Limpiar fecha">✕</button>
           <span style="flex:1;"></span>
           <span id="setter-leads-total-badge" class="setter-total-badge"></span>
           <button id="setter-dedup-btn" class="btn btn-secondary btn-sm" data-roles="admin">Limpiar duplicados</button>
@@ -2127,7 +2130,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260520a"></script>
+  <script type="module" src="/app.js?v=20260520b"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>
