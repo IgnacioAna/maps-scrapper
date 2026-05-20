@@ -2780,11 +2780,24 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
         const histQuery = e.query.toLowerCase().trim();
         const histLoc = e.location.toLowerCase().trim();
 
-        // Coincidencia más inteligente (fuzzy) para lidiar con el viejo "Santiago de Chile" vs "Santiago, Chile"
-        if ((histQuery.includes(targetQuery) || targetQuery.includes(histQuery)) &&
-            (histLoc.includes(targetBaseLoc) || targetBaseLoc.includes(histLoc))) {
-           entriesCount++;
-        }
+        // BUGFIX (2026-05-20): la fuzzy original 'histLoc.includes(target) ||
+        // target.includes(histLoc)' matcheaba cualquier histLoc corto (1-3 chars
+        // tipo 'a', 'la', 'qui') contra cualquier ciudad larga, inflando
+        // entriesCount con basura.
+        // Ahora: ambos lados deben tener al menos 4 chars para considerar inclusion
+        // bidireccional. Una sola direccion (histLoc.includes target) siempre OK
+        // si histLoc es lo suficientemente especifico.
+        const minLen = 4;
+        const locMatch = (() => {
+          if (histLoc === targetBaseLoc) return true;
+          if (histLoc.length >= minLen && histLoc.includes(targetBaseLoc)) return true;
+          if (targetBaseLoc.length >= minLen && histLoc.length >= minLen && targetBaseLoc.includes(histLoc)) return true;
+          return false;
+        })();
+        const qMatch = histQuery === targetQuery ||
+          (histQuery.length >= minLen && histQuery.includes(targetQuery)) ||
+          (targetQuery.length >= minLen && histQuery.length >= minLen && targetQuery.includes(histQuery));
+        if (qMatch && locMatch) entriesCount++;
       }
       
       // Estimación basada en registros previos (~20 por página)
