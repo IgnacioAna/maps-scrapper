@@ -2791,15 +2791,23 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
       const estimatedPage = Math.floor(entriesCount / 20) + 1;
 
       // BUGFIX (reportado por user 2026-05-20): lastPages puede tener valores
-      // huerfanos de scrapes viejos donde el admin puso startPage manual alto
-      // pero no quedo ningun entry en history (porque dedup los filtro todos,
-      // o fue cancelado, o data se borro). El user veia "DESDE PAG: 40" para
-      // Cuenca aunque NUNCA habia scrapeado ahi.
-      // Si lastPages dice X pero no hay entries que lo respalden, ignoramos
-      // lastPages. Confiamos en lastPages solo si hay AL MENOS 1 entry real
-      // para esa combinacion (query, ciudad).
+      // huerfanos o inflados de scrapes viejos donde el admin puso startPage
+      // manual alto pero no quedo ningun (o casi ningun) entry en history
+      // (porque dedup los filtro todos, o fue cancelado, o data se borro).
+      // Reglas:
+      //   - Si NO hay entries reales que respalden: ignoramos lastPages totalmente.
+      //   - Si hay POCAS entries (<20 = menos de 1 pagina real) pero lastPages
+      //     dice >5: scrape probablemente fallido, confiar en estimacion.
+      //   - Si lastPages es consistente con entries (gap razonable): usarlo.
       const recordedRaw = history.lastPages[key] || 0;
-      const recordedNextPage = entriesCount > 0 ? (recordedRaw + 1) : 1;
+      let recordedNextPage = 1;
+      if (entriesCount === 0) {
+        recordedNextPage = 1; // sin respaldo → ignorar
+      } else if (entriesCount < 20 && recordedRaw > 5) {
+        recordedNextPage = estimatedPage; // <1 pagina real pero lastPages alto → contaminado
+      } else {
+        recordedNextPage = recordedRaw + 1;
+      }
       const nextStart = Math.max(estimatedPage, recordedNextPage);
 
       if (nextStart > maxSuggested) maxSuggested = nextStart;
