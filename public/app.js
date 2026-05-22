@@ -1459,6 +1459,163 @@ document.addEventListener('DOMContentLoaded', async () => {
     let settersList = [];
     let variantsList = [];
     let currentPipeFilter = 'all';
+
+    // ── Phase 6: Telnyx Calls module ──────────────────────────────────
+    // Manejo de llamadas WebRTC desde el browser. API key del lado server,
+    // browser solo recibe ephemeral creds. Lazy init: client se crea solo
+    // cuando el setter inicia la primera llamada.
+    const _telnyx = {
+      configured: false,
+      client: null,                  // instancia TelnyxRTC
+      activeCall: null,              // call object actual
+      credentials: null,             // {sipUsername, sipPassword, expiresAt}
+      numbers: [],                   // [{id, phone, label, country}]
+      countryRouting: { default: '' },
+
+      // Mapeo prefijo telefónico → ISO country code. Heurística simple,
+      // suficiente para los países donde operamos.
+      _prefixToCountry(phone) {
+        const digits = String(phone || '').replace(/\D/g, '');
+        if (!digits) return null;
+        // Códigos de 3 dígitos primero (más específicos)
+        const three = digits.substring(0, 3);
+        const two = digits.substring(0, 2);
+        const one = digits.substring(0, 1);
+        const map = {
+          '593': 'EC', '598': 'UY', '591': 'BO', '595': 'PY', '506': 'CR',
+          '507': 'PA', '503': 'SV', '504': 'HN', '502': 'GT', '505': 'NI',
+          '809': 'DO', '829': 'DO', '849': 'DO',
+        };
+        if (map[three]) return map[three];
+        const twoMap = {
+          '34': 'ES', '52': 'MX', '54': 'AR', '55': 'BR', '56': 'CL',
+          '57': 'CO', '58': 'VE', '51': 'PE',
+        };
+        if (twoMap[two]) return twoMap[two];
+        if (one === '1') return 'US';
+        return null;
+      },
+
+      // Decide qué número saliente usar para llamar a destinationPhone.
+      // Retorna el objeto number completo o null si no hay match.
+      pickNumberForDestination(destinationPhone) {
+        const country = this._prefixToCountry(destinationPhone);
+        const routing = this.countryRouting || {};
+        // 1) Match exacto por país
+        if (country && routing[country]) {
+          const n = this.numbers.find(x => x.id === routing[country]);
+          if (n) return n;
+        }
+        // 2) Default
+        if (routing.default) {
+          const n = this.numbers.find(x => x.id === routing.default);
+          if (n) return n;
+        }
+        // 3) Cualquier número activo si no hay routing configurado
+        return this.numbers[0] || null;
+      },
+
+      async fetchConfig() {
+        try {
+          const r = await fetch(apiUrl('/api/telnyx/config'), { credentials: 'include' });
+          if (!r.ok) { this.configured = false; this.numbers = []; return; }
+          const d = await r.json();
+          // El setter recibe shape distinto al admin; ambos tienen 'configured' o lo inferimos
+          this.configured = d.configured !== undefined ? d.configured : d.hasApiKey;
+          this.numbers = d.numbers || [];
+          this.countryRouting = d.countryRouting || { default: '' };
+        } catch (e) {
+          console.warn('[telnyx] fetchConfig:', e.message);
+          this.configured = false;
+        }
+      },
+
+      async fetchCredentials() {
+        try {
+          const r = await fetch(apiUrl('/api/telnyx/webrtc-credentials'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: '{}',
+          });
+          if (!r.ok) {
+            const errData = await r.json().catch(() => ({}));
+            throw new Error(errData.error || `HTTP ${r.status}`);
+          }
+          const d = await r.json();
+          this.credentials = {
+            sipUsername: d.sipUsername,
+            sipPassword: d.sipPassword,
+            token: d.token,
+            expiresAt: d.expiresIn ? Date.now() + (d.expiresIn * 1000) : 0,
+            mode: d.mode,
+          };
+          return this.credentials;
+        } catch (e) {
+          console.warn('[telnyx] fetchCredentials failed:', e.message);
+          throw e;
+        }
+      },
+
+      // Lazy init del cliente TelnyxRTC. Re-conecta si las creds expiraron.
+      async ensureClient() {
+        if (typeof window.TelnyxRTC === 'undefined' && typeof window.TelnyxWebRTC === 'undefined') {
+          throw new Error('TelnyxRTC SDK no está cargado en el browser');
+        }
+        const TelnyxClass = window.TelnyxRTC || window.TelnyxWebRTC?.TelnyxRTC;
+        if (!TelnyxClass) throw new Error('TelnyxRTC class no encontrada en el SDK cargado');
+
+        // Si el cliente existe y las creds no expiraron, reusar
+        const credsValid = this.credentials && (this.credentials.expiresAt === 0 || this.credentials.expiresAt > Date.now() + 30000);
+        if (this.client && credsValid) return this.client;
+
+        // Si hay cliente viejo, desconectar primero
+        if (this.client) {
+          try { this.client.disconnect(); } catch {}
+          this.client = null;
+        }
+
+        await this.fetchCredentials();
+        if (!this.credentials?.sipUsername) throw new Error('Sin credenciales SIP de Telnyx');
+
+        this.client = new TelnyxClass({
+          login: this.credentials.sipUsername,
+          password: this.credentials.sipPassword,
+          ringtoneFile: null,
+        });
+
+        // Connect (returns promise resolvable cuando registra)
+        await new Promise((resolve, reject) => {
+          const onReady = () => { resolve(); cleanup(); };
+          const onError = (err) => { reject(err); cleanup(); };
+          const cleanup = () => {
+            this.client.off?.('telnyx.ready', onReady);
+            this.client.off?.('telnyx.error', onError);
+          };
+          this.client.on?.('telnyx.ready', onReady);
+          this.client.on?.('telnyx.error', onError);
+          this.client.connect();
+          // Timeout 15s
+          setTimeout(() => reject(new Error('Timeout conectando con Telnyx (15s)')), 15000);
+        });
+
+        return this.client;
+      },
+
+      // Limpia el cliente (útil al logout o cerrar pestaña)
+      disconnect() {
+        if (this.activeCall) {
+          try { this.activeCall.hangup(); } catch {}
+          this.activeCall = null;
+        }
+        if (this.client) {
+          try { this.client.disconnect(); } catch {}
+          this.client = null;
+        }
+        this.credentials = null;
+      },
+    };
+    window._telnyx = _telnyx; // expone para debug en consola
     // Cache de follow-ups del setter actual (refresca al entrar al CRM y cada
     // vez que se tilda un follow-up). Estructura igual a /api/setters/followups/today
     let _followupsCache = null;
@@ -1642,6 +1799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.__settersList = settersList;
         // Cargar "mis números" del setter (para el selector en el modal de lead)
         _loadMyPhones();
+        // Phase 6: cargar config Telnyx para saber si el botón "Llamar" se habilita
+        _telnyx.fetchConfig().catch(() => {});
         // Cargar follow-ups del setter (se usa para chips, badges y filtros)
         loadFollowups();
 
