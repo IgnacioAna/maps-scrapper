@@ -169,6 +169,10 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
             <span>Configuración Mercury</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-telnyx-config" data-label="Centralita Telnyx" data-roles="admin">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Centralita Telnyx</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-system" data-label="Sistema" data-roles="admin">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             <span>Sistema <span id="system-health-badge" class="chip" style="margin-left:auto; display:none; padding:1px 7px; font-size:10px;">●</span></span>
@@ -1794,6 +1798,112 @@
       </div>
 
       <!-- Configuración Mercury (solo admin) -->
+      <!-- Phase 6: Centralita Telnyx (admin only) -->
+      <div id="view-telnyx-config" class="module-view hidden" data-roles="admin">
+        <header class="page-header">
+          <h2 class="page-title">📞 Centralita Telnyx</h2>
+          <p class="muted" style="margin-top:6px;">Llamadas internacionales por VoIP. Configurá API key, números virtuales por país, routing y monitoreá uso + costos.</p>
+        </header>
+        <section style="margin-top:18px; display:grid; gap:18px;">
+
+          <!-- 1. CONFIG (API key + SIP creds) -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">🔑 Credenciales Telnyx</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">API key se guarda server-side, nunca se expone al browser.</div>
+              </div>
+              <span id="tlx-cfg-status" class="chip" style="padding:3px 10px; font-size:11px;">—</span>
+            </div>
+            <div style="display:grid; gap:10px; grid-template-columns:1fr 1fr;">
+              <label style="display:flex; flex-direction:column; gap:4px;">
+                <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">API Key (Bearer)</span>
+                <input type="password" id="tlx-cfg-apikey" placeholder="KEY..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px;">
+                <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Connection ID <span style="opacity:0.5;">(opcional, para ephemeral creds)</span></span>
+                <input type="text" id="tlx-cfg-connid" placeholder="123456" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px;">
+                <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Username (fallback)</span>
+                <input type="text" id="tlx-cfg-sipuser" placeholder="username del SIP Connection" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px;">
+                <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Password (fallback)</span>
+                <input type="password" id="tlx-cfg-sippass" placeholder="•••••••••" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+              </label>
+              <label style="display:flex; flex-direction:column; gap:4px; grid-column:1/-1;">
+                <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Signature Public Key (base64) <span style="opacity:0.5;">— para validar webhooks</span></span>
+                <input type="text" id="tlx-cfg-sigkey" placeholder="MCowBQYDK2VwAyEA..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:11px;">
+              </label>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+              <button id="tlx-cfg-save" class="btn-primary" style="font-size:13px;">Guardar credenciales</button>
+            </div>
+          </div>
+
+          <!-- 2. NÚMEROS VIRTUALES -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">📱 Números virtuales</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Cada número se usa como caller ID saliente. Recomendado 1 por país de destino frecuente.</div>
+              </div>
+              <button id="tlx-num-add-btn" class="btn-primary" style="font-size:12px;">+ Agregar número</button>
+            </div>
+            <ul id="tlx-numbers-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+            <div id="tlx-numbers-empty" class="muted" style="font-size:12px; text-align:center; padding:18px; display:none;">Sin números todavía. Agregá uno para empezar a llamar.</div>
+          </div>
+
+          <!-- 3. ROUTING POR PAÍS -->
+          <div class="card" style="padding:18px;">
+            <div style="margin-bottom:14px;">
+              <strong style="font-size:14px;">🌍 Caller ID por país destino</strong>
+              <div class="muted" style="font-size:12px; margin-top:2px;">Cuando llamás a un país, se usa el número saliente que asignes acá. <strong>"Default"</strong> es el fallback si no hay match.</div>
+            </div>
+            <div id="tlx-routing-grid" style="display:grid; gap:10px;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
+              <span class="muted" style="font-size:11px;">Países habilitados: <span id="tlx-routing-countries-list">—</span></span>
+              <button id="tlx-routing-save" class="btn-primary" style="font-size:12px;">Guardar routing</button>
+            </div>
+          </div>
+
+          <!-- 4. MÉTRICAS -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">📊 Uso y costos</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Calculado a partir del callLog. Auto-refresca cada 30s.</div>
+              </div>
+              <select id="tlx-metrics-range" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
+                <option value="today">Hoy</option>
+                <option value="week">Últimos 7 días</option>
+                <option value="month" selected>Últimos 30 días</option>
+                <option value="all">Todo</option>
+              </select>
+            </div>
+            <div id="tlx-metrics-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:18px;"></div>
+            <details>
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por setter / por país / por tarifa</summary>
+              <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por setter</div>
+                  <ul id="tlx-metrics-setters" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por país</div>
+                  <ul id="tlx-metrics-countries" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por tarifa</div>
+                  <ul id="tlx-metrics-tariffs" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+              </div>
+            </details>
+          </div>
+        </section>
+      </div>
+
       <div id="view-mercury-config" class="module-view hidden" data-roles="admin">
         <header class="page-header">
           <h2 class="page-title">Configuración Mercury</h2>

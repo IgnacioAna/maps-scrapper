@@ -8569,4 +8569,325 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Mostrar banner de permiso después del primer load del user
   setTimeout(() => { if (window.__CURRENT_USER__) _showNotifBannerIfNeeded(); }, 2000);
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // Phase 6: Centralita Telnyx — vista admin (config + numbers + routing + metrics)
+  // ═══════════════════════════════════════════════════════════════════════
+  let _tlxAdminCache = { numbers: [], countryRouting: {}, hasApiKey: false, hasSipCredentials: false, hasSignatureKey: false, sipConnectionId: '' };
+  let _tlxMetricsRefreshTimer = null;
+
+  async function _tlxLoadConfig() {
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/config'), { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      _tlxAdminCache = {
+        hasApiKey: !!d.hasApiKey,
+        hasSipCredentials: !!d.hasSipCredentials,
+        hasSignatureKey: !!d.hasSignatureKey,
+        sipConnectionId: d.sipConnectionId || '',
+        numbers: d.numbers || [],
+        countryRouting: d.countryRouting || { default: '' },
+      };
+      _tlxRenderAll();
+    } catch (e) { console.warn('[tlx-admin] load:', e.message); }
+  }
+
+  function _tlxRenderAll() {
+    // Status pill
+    const statusEl = document.getElementById('tlx-cfg-status');
+    if (statusEl) {
+      if (_tlxAdminCache.hasApiKey && (_tlxAdminCache.hasSipCredentials || _tlxAdminCache.sipConnectionId)) {
+        statusEl.textContent = '✓ Configurado';
+        statusEl.style.background = 'rgba(91,185,116,0.15)'; statusEl.style.color = '#5bb974';
+      } else if (_tlxAdminCache.hasApiKey) {
+        statusEl.textContent = '⚠ Falta SIP';
+        statusEl.style.background = 'rgba(255,200,40,0.15)'; statusEl.style.color = '#ffc828';
+      } else {
+        statusEl.textContent = '○ Sin configurar';
+        statusEl.style.background = 'rgba(255,255,255,0.06)'; statusEl.style.color = 'var(--text-secondary)';
+      }
+    }
+    // API key inputs — solo mostrar placeholder "configurado" si ya hay
+    const apiInput = document.getElementById('tlx-cfg-apikey');
+    if (apiInput) apiInput.placeholder = _tlxAdminCache.hasApiKey ? '✓ Configurada (dejar vacío para no cambiar)' : 'KEY_...';
+    const sipUserInput = document.getElementById('tlx-cfg-sipuser');
+    if (sipUserInput) sipUserInput.placeholder = _tlxAdminCache.hasSipCredentials ? '✓ Configurado (dejar vacío para no cambiar)' : 'username del SIP Connection';
+    const sipPassInput = document.getElementById('tlx-cfg-sippass');
+    if (sipPassInput) sipPassInput.placeholder = _tlxAdminCache.hasSipCredentials ? '✓ Configurado (dejar vacío para no cambiar)' : '•••••';
+    const connIdInput = document.getElementById('tlx-cfg-connid');
+    if (connIdInput) connIdInput.value = _tlxAdminCache.sipConnectionId || '';
+    const sigInput = document.getElementById('tlx-cfg-sigkey');
+    if (sigInput) sigInput.placeholder = _tlxAdminCache.hasSignatureKey ? '✓ Configurada (dejar vacío para no cambiar)' : 'MCowBQYDK2VwAyEA...';
+    _tlxRenderNumbers();
+    _tlxRenderRouting();
+  }
+
+  function _tlxRenderNumbers() {
+    const list = document.getElementById('tlx-numbers-list');
+    const empty = document.getElementById('tlx-numbers-empty');
+    if (!list || !empty) return;
+    const nums = _tlxAdminCache.numbers || [];
+    if (nums.length === 0) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = nums.map(n => {
+      const active = n.active !== false;
+      const country = n.country || '?';
+      return `<li style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; ${active ? '' : 'opacity:0.5;'}">
+        <span style="font-size:18px;">${country === 'ES' ? '🇪🇸' : country === 'MX' ? '🇲🇽' : country === 'CO' ? '🇨🇴' : country === 'AR' ? '🇦🇷' : country === 'CL' ? '🇨🇱' : country === 'PE' ? '🇵🇪' : country === 'US' ? '🇺🇸' : country === 'EC' ? '🇪🇨' : country === 'UY' ? '🇺🇾' : country === 'BO' ? '🇧🇴' : '🌐'}</span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:500; color:var(--text-primary); font-family:ui-monospace,monospace;">${escHtml(n.phone)}</div>
+          <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${escHtml(n.label || '(sin label)')} · ${escHtml(country)}</div>
+        </div>
+        <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary); cursor:pointer;">
+          <input type="checkbox" ${active ? 'checked' : ''} onchange="window._tlxToggleNumber('${escHtml(n.id)}', this.checked)" style="cursor:pointer;">
+          Activo
+        </label>
+        <button onclick="window._tlxDeleteNumber('${escHtml(n.id)}', '${escHtml(n.phone)}')" class="btn-table-action" style="color:#f85149; font-size:11px;">Eliminar</button>
+      </li>`;
+    }).join('');
+  }
+
+  function _tlxRenderRouting() {
+    const grid = document.getElementById('tlx-routing-grid');
+    if (!grid) return;
+    const nums = (_tlxAdminCache.numbers || []).filter(n => n.active !== false);
+    if (nums.length === 0) {
+      grid.innerHTML = '<div class="muted" style="font-size:12px; text-align:center; padding:18px;">Agregá al menos un número antes de configurar routing.</div>';
+      return;
+    }
+    // Países comunes + el de "default"
+    const commonCountries = ['default', 'ES', 'MX', 'CO', 'AR', 'CL', 'PE', 'EC', 'UY', 'BO', 'US'];
+    // Sumar países que ya están en el routing pero no en common
+    const allCountries = [...new Set([...commonCountries, ...Object.keys(_tlxAdminCache.countryRouting || {})])];
+    const flagOf = (c) => ({ ES:'🇪🇸', MX:'🇲🇽', CO:'🇨🇴', AR:'🇦🇷', CL:'🇨🇱', PE:'🇵🇪', EC:'🇪🇨', UY:'🇺🇾', BO:'🇧🇴', US:'🇺🇸', default:'🌐' })[c] || '🌐';
+    const labelOf = (c) => ({ ES:'España', MX:'México', CO:'Colombia', AR:'Argentina', CL:'Chile', PE:'Perú', EC:'Ecuador', UY:'Uruguay', BO:'Bolivia', US:'EEUU', default:'Default (fallback)' })[c] || c;
+    grid.innerHTML = allCountries.map(c => {
+      const selected = _tlxAdminCache.countryRouting[c] || '';
+      return `<label style="display:grid; grid-template-columns:140px 1fr; gap:10px; align-items:center;">
+        <span style="font-size:12px; color:var(--text-secondary);">${flagOf(c)} ${labelOf(c)}</span>
+        <select data-country="${escHtml(c)}" class="tlx-routing-select" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
+          <option value="">— Sin número —</option>
+          ${nums.map(n => `<option value="${escHtml(n.id)}" ${n.id === selected ? 'selected' : ''}>${escHtml(n.phone)} (${escHtml(n.label || n.country || '')})</option>`).join('')}
+        </select>
+      </label>`;
+    }).join('');
+    document.getElementById('tlx-routing-countries-list').textContent = allCountries.filter(c => c !== 'default').join(', ');
+  }
+
+  async function _tlxLoadMetrics() {
+    const range = document.getElementById('tlx-metrics-range')?.value || 'month';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/metrics?range=' + range), { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      // Cards
+      const cards = document.getElementById('tlx-metrics-cards');
+      if (cards) {
+        const t = d.totals || {};
+        const card = (label, value, sub, color = 'var(--accent)') => `
+          <div style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+            <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">${label}</div>
+            <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
+            <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">${sub}</div>
+          </div>`;
+        cards.innerHTML =
+          card('Llamadas', t.calls || 0, range, 'var(--accent)') +
+          card('Minutos', t.minutes?.toFixed(1) || '0', `prom ${t.avgMinutesPerCall || 0}/llamada`, '#5bb974') +
+          card('Costo USD', '$' + (t.costUSD || 0).toFixed(2), `prom $${(t.avgCostPerCall || 0).toFixed(4)}/llamada`, '#ffc828');
+      }
+      // Por setter
+      const setterUl = document.getElementById('tlx-metrics-setters');
+      if (setterUl) {
+        const rows = (d.bySetter || []).slice(0, 10);
+        setterUl.innerHTML = rows.length ? rows.map(s => `
+          <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(s.name)}</span>
+            <span class="muted" style="flex-shrink:0;">${s.calls} · ${s.minutes.toFixed(1)}m · $${s.costUSD.toFixed(2)}</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">Sin datos.</li>';
+      }
+      // Por país
+      const countryUl = document.getElementById('tlx-metrics-countries');
+      if (countryUl) {
+        const rows = (d.byCountry || []).slice(0, 10);
+        countryUl.innerHTML = rows.length ? rows.map(c => `
+          <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary);">${escHtml(c.country)}</span>
+            <span class="muted">${c.calls} · ${c.minutes.toFixed(1)}m · $${c.costUSD.toFixed(2)}</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      }
+      // Por tarifa
+      const tariffUl = document.getElementById('tlx-metrics-tariffs');
+      if (tariffUl) {
+        const rows = (d.byTariff || []).slice(0, 10);
+        tariffUl.innerHTML = rows.length ? rows.map(t => `
+          <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary); font-family:ui-monospace,monospace; font-size:10px;">${escHtml(t.tariffKey)}</span>
+            <span class="muted">${t.calls} · $${t.costUSD.toFixed(2)}</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      }
+    } catch (e) { console.warn('[tlx-metrics]', e.message); }
+  }
+
+  // Wire eventos de la vista
+  document.querySelector('[data-target="view-telnyx-config"]')?.addEventListener('click', () => {
+    setTimeout(() => {
+      _tlxLoadConfig();
+      _tlxLoadMetrics();
+      // Auto-refresh metrics cada 30s mientras la vista esté visible
+      if (_tlxMetricsRefreshTimer) clearInterval(_tlxMetricsRefreshTimer);
+      _tlxMetricsRefreshTimer = setInterval(() => {
+        const view = document.getElementById('view-telnyx-config');
+        if (view && !view.classList.contains('hidden')) {
+          _tlxLoadMetrics();
+        } else {
+          clearInterval(_tlxMetricsRefreshTimer);
+          _tlxMetricsRefreshTimer = null;
+        }
+      }, 30000);
+    }, 50);
+  });
+
+  document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);
+
+  // Guardar credenciales
+  document.getElementById('tlx-cfg-save')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const apiKey = document.getElementById('tlx-cfg-apikey').value.trim();
+    const sipConnectionId = document.getElementById('tlx-cfg-connid').value.trim();
+    const sipUsername = document.getElementById('tlx-cfg-sipuser').value.trim();
+    const sipPassword = document.getElementById('tlx-cfg-sippass').value.trim();
+    const signaturePublicKey = document.getElementById('tlx-cfg-sigkey').value.trim();
+    // Construir body solo con campos no vacíos (preservar lo ya guardado)
+    const body = {};
+    if (apiKey) body.apiKey = apiKey;
+    if (sipConnectionId || sipConnectionId === '') body.sipConnectionId = sipConnectionId;
+    if (sipUsername) body.sipUsername = sipUsername;
+    if (sipPassword) body.sipPassword = sipPassword;
+    if (signaturePublicKey) body.signaturePublicKey = signaturePublicKey;
+    if (Object.keys(body).length === 0) { window.showToast?.('Nada que guardar', { type: 'warn' }); return; }
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/config'), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      // Limpiar inputs sensibles del browser
+      document.getElementById('tlx-cfg-apikey').value = '';
+      document.getElementById('tlx-cfg-sippass').value = '';
+      document.getElementById('tlx-cfg-sigkey').value = '';
+      window.showToast?.('Credenciales guardadas ✓', { type: 'success' });
+      btn.textContent = '✓ Guardado';
+      setTimeout(() => { btn.textContent = 'Guardar credenciales'; btn.disabled = false; }, 1800);
+      _tlxLoadConfig();
+    } catch (err) {
+      window.showToast?.('Error: ' + err.message, { type: 'error' });
+      btn.textContent = 'Guardar credenciales'; btn.disabled = false;
+    }
+  });
+
+  // Agregar número
+  document.getElementById('tlx-num-add-btn')?.addEventListener('click', async () => {
+    const phone = await window.askText({
+      title: '📱 Nuevo número Telnyx',
+      subtitle: 'Pegá el número en formato E.164 (con + y código de país).',
+      type: 'input',
+      placeholder: '+34911234567',
+      confirmLabel: 'Siguiente',
+    });
+    if (!phone) return;
+    const cleanPhone = phone.trim();
+    if (!/^\+\d{6,}$/.test(cleanPhone)) {
+      window.showToast?.('Formato inválido. Debe ser +<código país><número>, ej +34911234567', { type: 'error', duration: 5000 });
+      return;
+    }
+    const label = await window.askText({
+      title: 'Label del número',
+      subtitle: 'Cómo lo querés identificar en el sistema. Ej: "España principal".',
+      type: 'input',
+      placeholder: 'España principal',
+      confirmLabel: 'Siguiente',
+      confirmRequired: false,
+    });
+    if (label === null) return;
+    const country = await window.askText({
+      title: 'Código de país (ISO)',
+      subtitle: '2 letras del país de este número. Ej: ES, MX, CO, AR.',
+      type: 'input',
+      placeholder: 'ES',
+      confirmLabel: 'Agregar',
+    });
+    if (!country) return;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/numbers'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ phone: cleanPhone, label: label || '', country: country.trim().toUpperCase() }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      window.showToast?.('Número agregado ✓', { type: 'success' });
+      _tlxLoadConfig();
+    } catch (err) { window.showToast?.('Error: ' + err.message, { type: 'error' }); }
+  });
+
+  window._tlxToggleNumber = async (id, active) => {
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/numbers/' + encodeURIComponent(id)), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ active: !!active }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      _tlxLoadConfig();
+    } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
+  };
+
+  window._tlxDeleteNumber = async (id, phone) => {
+    const ok = await window.askConfirm({
+      title: '¿Eliminar número?',
+      message: 'Vas a borrar ' + phone + '. Esto también limpia el routing que apuntaba a este número.',
+      confirmLabel: 'Sí, eliminar',
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/numbers/' + encodeURIComponent(id)), {
+        method: 'DELETE', credentials: 'include',
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.showToast?.('Eliminado ✓', { type: 'success' });
+      _tlxLoadConfig();
+    } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
+  };
+
+  // Guardar routing
+  document.getElementById('tlx-routing-save')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const selects = document.querySelectorAll('.tlx-routing-select');
+    const routing = {};
+    selects.forEach(s => {
+      const c = s.dataset.country;
+      const v = s.value;
+      if (c) routing[c] = v;
+    });
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/config'), {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ countryRouting: routing }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.showToast?.('Routing guardado ✓', { type: 'success' });
+      btn.textContent = '✓ Guardado';
+      setTimeout(() => { btn.textContent = 'Guardar routing'; btn.disabled = false; }, 1800);
+      _tlxLoadConfig();
+    } catch (err) {
+      window.showToast?.('Error: ' + err.message, { type: 'error' });
+      btn.textContent = 'Guardar routing'; btn.disabled = false;
+    }
+  });
+
   });
