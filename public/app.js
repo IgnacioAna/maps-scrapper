@@ -3438,9 +3438,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
 
-          <a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" title="${escHtml(l.phone)}">
-            📞 Llamar
-          </a>
+          ${_telnyx.configured && _telnyx.numbers.length > 0
+            ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="Llamar por Telnyx WebRTC · ${escHtml(l.phone)}">
+                📞 Llamar
+              </button>`
+            : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" title="${escHtml(l.phone)} · Telnyx no configurado, abre dialer del SO">
+                📞 Llamar
+              </a>`}
 
           <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:200px; cursor:pointer; font-family:inherit;">
             <option value="">— Resultado de la llamada —</option>
@@ -3505,6 +3509,171 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('calls-stat-pending').textContent = pending;
       document.getElementById('calls-stat-dead').textContent = dead;
     }
+
+    // ── Phase 6: Telnyx call handlers ─────────────────────────────────
+    // Estado de la llamada activa actual (UI). Persistir leadId para luego
+    // disparar disposition automática al colgar.
+    let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false };
+
+    function _updateTelnyxCallTimer() {
+      if (!_telnyxCallState.startedAt) return;
+      const secs = Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000);
+      const mm = String(Math.floor(secs / 60)).padStart(2, '0');
+      const ss = String(secs % 60).padStart(2, '0');
+      const el = document.getElementById('telnyx-call-timer');
+      if (el) el.textContent = `${mm}:${ss}`;
+    }
+
+    function _closeTelnyxCallPanel() {
+      const panel = document.getElementById('telnyx-call-panel');
+      if (panel) panel.style.display = 'none';
+      if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
+      _telnyxCallState.startedAt = 0;
+      _telnyxCallState.muted = false;
+    }
+
+    function _setTelnyxCallStatus(text, state) {
+      const statusEl = document.getElementById('telnyx-call-status');
+      const dotEl = document.getElementById('telnyx-call-status-dot');
+      if (statusEl) statusEl.textContent = text;
+      if (dotEl) {
+        const colorMap = { connecting: 'var(--warning)', ringing: 'var(--warning)', active: 'var(--success)', ending: 'var(--text-secondary)' };
+        dotEl.style.background = colorMap[state] || 'var(--warning)';
+      }
+    }
+
+    // Inicia una llamada Telnyx WebRTC para un lead.
+    // Flow: ensureClient() -> abre panel -> client.newCall() -> wire eventos.
+    window._startTelnyxCall = async (leadId) => {
+      const lead = callsLeadsCache.find(l => l.id === leadId);
+      if (!lead?.phone) {
+        window.showToast?.('Este lead no tiene teléfono cargado', { type: 'error' });
+        return;
+      }
+      if (_telnyx.activeCall) {
+        window.showToast?.('Ya tenés una llamada activa', { type: 'warn' });
+        return;
+      }
+      const fromNum = _telnyx.pickNumberForDestination(lead.phone);
+      if (!fromNum) {
+        window.showToast?.('No hay número saliente configurado para este destino. Admin debe agregar uno en Centralita Telnyx.', { type: 'error', duration: 6000 });
+        return;
+      }
+
+      // Abrir panel con estado inicial
+      const panel = document.getElementById('telnyx-call-panel');
+      document.getElementById('telnyx-call-lead-name').textContent = lead.name || '(sin nombre)';
+      document.getElementById('telnyx-call-lead-meta').textContent = `${lead.phone}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
+      document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} — ${fromNum.phone}`;
+      _setTelnyxCallStatus('Conectando…', 'connecting');
+      document.getElementById('telnyx-call-timer').textContent = '00:00';
+      panel.style.display = 'block';
+      _telnyxCallState.leadId = leadId;
+      _telnyxCallState.fromNumber = fromNum.phone;
+      _telnyxCallState.muted = false;
+
+      try {
+        // Pedir permisos de mic upfront (mejor UX que esperar a Telnyx)
+        try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
+        catch (micErr) {
+          _closeTelnyxCallPanel();
+          window.showToast?.('Necesitamos permiso del micrófono. Habilitalo en el ícono del candado de la URL y reintentá.', { type: 'error', duration: 8000 });
+          return;
+        }
+
+        await _telnyx.ensureClient();
+        const call = _telnyx.client.newCall({
+          destinationNumber: lead.phone,
+          callerNumber: fromNum.phone,
+          callerName: 'SCM',
+          audio: true,
+          video: false,
+        });
+        _telnyx.activeCall = call;
+        _telnyxCallState.startedAt = Date.now();
+        _telnyxCallState.timerInterval = setInterval(_updateTelnyxCallTimer, 1000);
+        _setTelnyxCallStatus('Sonando…', 'ringing');
+
+        // Wire eventos del call (la API de Telnyx WebRTC v2 expone .on())
+        if (typeof call.on === 'function') {
+          call.on('answered', () => _setTelnyxCallStatus('En llamada', 'active'));
+          call.on('ringing', () => _setTelnyxCallStatus('Sonando…', 'ringing'));
+          call.on('hangup', () => _onTelnyxCallEnded('remote_hangup'));
+          call.on('destroy', () => _onTelnyxCallEnded('destroy'));
+          call.on('error', (err) => {
+            console.warn('[telnyx] call error:', err);
+            window.showToast?.('Error en la llamada: ' + (err?.message || 'desconocido'), { type: 'error' });
+            _onTelnyxCallEnded('error');
+          });
+        }
+      } catch (e) {
+        console.error('[telnyx] startCall failed:', e);
+        _closeTelnyxCallPanel();
+        window.showToast?.('No se pudo iniciar la llamada: ' + e.message, { type: 'error', duration: 6000 });
+      }
+    };
+
+    // Llamado al colgar (por cualquier lado: usuario, destino, error).
+    // Cierra panel y dispara modal de disposition automático.
+    function _onTelnyxCallEnded(reason) {
+      const leadId = _telnyxCallState.leadId;
+      const durationSecs = _telnyxCallState.startedAt ? Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000) : 0;
+      _setTelnyxCallStatus('Finalizando…', 'ending');
+      _telnyx.activeCall = null;
+      setTimeout(() => {
+        _closeTelnyxCallPanel();
+        // Disparar disposition automática solo si la llamada conectó (al menos 1s).
+        // Si fue <1s probablemente ni siquiera sonó — no llenar el callLog con ruido.
+        if (leadId && durationSecs >= 1) {
+          window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')}`, { type: 'info', duration: 3000 });
+          // Scroll al dropdown de disposition del lead y darle foco
+          const dispositionSel = document.querySelector(`.call-row[data-id="${leadId}"] select`);
+          if (dispositionSel) {
+            dispositionSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => dispositionSel.focus(), 400);
+          }
+        }
+      }, 500);
+    }
+
+    // Botón colgar del panel
+    document.getElementById('telnyx-call-hangup')?.addEventListener('click', () => {
+      if (_telnyx.activeCall) {
+        try { _telnyx.activeCall.hangup(); } catch (e) { console.warn(e); }
+        // El evento 'hangup' del call dispara _onTelnyxCallEnded; pero por las dudas:
+        setTimeout(() => { if (_telnyxCallState.startedAt) _onTelnyxCallEnded('local_hangup'); }, 1500);
+      } else {
+        _closeTelnyxCallPanel();
+      }
+    });
+
+    // Botón mute toggle
+    document.getElementById('telnyx-call-mute')?.addEventListener('click', () => {
+      const btn = document.getElementById('telnyx-call-mute');
+      if (!_telnyx.activeCall) return;
+      try {
+        if (_telnyxCallState.muted) {
+          if (typeof _telnyx.activeCall.unmuteAudio === 'function') _telnyx.activeCall.unmuteAudio();
+          _telnyxCallState.muted = false;
+          btn.textContent = '🎤 Mute';
+          btn.style.background = '';
+        } else {
+          if (typeof _telnyx.activeCall.muteAudio === 'function') _telnyx.activeCall.muteAudio();
+          _telnyxCallState.muted = true;
+          btn.textContent = '🔇 Unmute';
+          btn.style.background = 'var(--accent)';
+        }
+      } catch (e) { console.warn('[telnyx] mute toggle:', e); }
+    });
+
+    // Confirm exit si hay llamada activa
+    window.addEventListener('beforeunload', (e) => {
+      if (_telnyx.activeCall) {
+        e.preventDefault();
+        e.returnValue = 'Tenés una llamada activa. ¿Salir igual?';
+        return e.returnValue;
+      }
+    });
 
     // Handler global para el dropdown de disposition
     window._handleCallDisposition = async (leadId, selectEl) => {
