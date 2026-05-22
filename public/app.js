@@ -3521,6 +3521,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     // disparar disposition automática al colgar.
     let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false };
 
+    // Ringback tone local (440Hz + 480Hz, patrón US: 2s ON / 4s OFF).
+    // Telnyx WebRTC v2 NO reproduce el ringback del carrier automáticamente
+    // — el setter no escucharía nada mientras suena en el destino. Sintetizamos
+    // el tono localmente con Web Audio API. Se inicia en 'ringing' y se detiene
+    // en 'answered' / hangup / error / destroy.
+    let _ringbackCtx = null;
+    let _ringbackNodes = null;
+    function _startRingbackTone() {
+      try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        if (!_ringbackCtx) _ringbackCtx = new Ctx();
+        if (_ringbackCtx.state === 'suspended') _ringbackCtx.resume().catch(() => {});
+        if (_ringbackNodes) _stopRingbackTone();
+        const ctx = _ringbackCtx;
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 440;
+        const osc2 = ctx.createOscillator(); osc2.type = 'sine'; osc2.frequency.value = 480;
+        const gain = ctx.createGain(); gain.gain.value = 0;
+        // Programar 20 ciclos de 6s = 2min de ringback. Suficiente: si nadie
+        // atiende en 2min cancelás vos. El SDK también puede emitir 'hangup'
+        // por timeout antes y _stopRingbackTone() corta los osciladores.
+        const cycleDuration = 6; // 2s ON + 4s OFF
+        for (let i = 0; i < 20; i++) {
+          const cycleStart = now + (i * cycleDuration);
+          gain.gain.setValueAtTime(0, cycleStart);
+          gain.gain.linearRampToValueAtTime(0.12, cycleStart + 0.04);
+          gain.gain.setValueAtTime(0.12, cycleStart + 2);
+          gain.gain.linearRampToValueAtTime(0, cycleStart + 2.04);
+        }
+        osc1.connect(gain); osc2.connect(gain); gain.connect(ctx.destination);
+        osc1.start(now); osc2.start(now);
+        _ringbackNodes = { osc1, osc2, gain };
+      } catch (e) { console.warn('[ringback] start failed:', e.message); }
+    }
+    function _stopRingbackTone() {
+      if (!_ringbackNodes) return;
+      try {
+        _ringbackNodes.osc1.stop(); _ringbackNodes.osc2.stop();
+        _ringbackNodes.osc1.disconnect(); _ringbackNodes.osc2.disconnect();
+        _ringbackNodes.gain.disconnect();
+      } catch {}
+      _ringbackNodes = null;
+    }
+
     function _updateTelnyxCallTimer() {
       if (!_telnyxCallState.startedAt) return;
       const secs = Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000);
@@ -3606,14 +3651,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         _telnyxCallState.startedAt = Date.now();
         _telnyxCallState.timerInterval = setInterval(_updateTelnyxCallTimer, 1000);
         _setTelnyxCallStatus('Sonando…', 'ringing');
+        // Audio de ringback local — sin esto el setter no escucha nada mientras
+        // suena en el destino y cree que se rompió la llamada.
+        _startRingbackTone();
 
         // Wire eventos del call (la API de Telnyx WebRTC v2 expone .on())
         if (typeof call.on === 'function') {
-          call.on('answered', () => _setTelnyxCallStatus('En llamada', 'active'));
+          call.on('answered', () => { _stopRingbackTone(); _setTelnyxCallStatus('En llamada', 'active'); });
           call.on('ringing', () => _setTelnyxCallStatus('Sonando…', 'ringing'));
-          call.on('hangup', () => _onTelnyxCallEnded('remote_hangup'));
-          call.on('destroy', () => _onTelnyxCallEnded('destroy'));
+          call.on('hangup', () => { _stopRingbackTone(); _onTelnyxCallEnded('remote_hangup'); });
+          call.on('destroy', () => { _stopRingbackTone(); _onTelnyxCallEnded('destroy'); });
           call.on('error', (err) => {
+            _stopRingbackTone();
             console.warn('[telnyx] call error:', err);
             window.showToast?.('Error en la llamada: ' + (err?.message || 'desconocido'), { type: 'error' });
             _onTelnyxCallEnded('error');
@@ -3632,6 +3681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const leadId = _telnyxCallState.leadId;
       const durationSecs = _telnyxCallState.startedAt ? Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000) : 0;
       _setTelnyxCallStatus('Finalizando…', 'ending');
+      _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
       setTimeout(() => {
         _closeTelnyxCallPanel();
