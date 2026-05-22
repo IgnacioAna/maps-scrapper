@@ -7673,6 +7673,94 @@ app.post("/api/telnyx/webhook", async (req, res) => {
   res.json({ ok: true, eventType });
 });
 
+// GET /api/telnyx/metrics — admin/supervisor: agregaciones de minutos y costo.
+// Query: range=today|week|month|all. Recorre lead.callLog en TODOS los leads
+// y suma duration + cost de las entries con channel='telnyx_webrtc'.
+// Devuelve breakdown por setter y por país, además de totales.
+app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const range = String(req.query.range || 'month');
+  const now = Date.now();
+  let sinceTs = 0;
+  if (range === 'today') {
+    const d = new Date(); d.setHours(0, 0, 0, 0); sinceTs = d.getTime();
+  } else if (range === 'week') {
+    sinceTs = now - 7 * 24 * 60 * 60 * 1000;
+  } else if (range === 'month') {
+    sinceTs = now - 30 * 24 * 60 * 60 * 1000;
+  } else if (range !== 'all') {
+    return res.status(400).json({ error: 'range debe ser today, week, month o all.' });
+  }
+
+  const data = loadSettersData();
+  const settersById = new Map((data.setters || []).map((s) => [s.id, s]));
+  let totalCalls = 0;
+  let totalMinutes = 0;
+  let totalCostUSD = 0;
+  const bySetter = {};   // setterId → { name, calls, minutes, costUSD }
+  const byCountry = {};  // country → { calls, minutes, costUSD }
+  const byTariff = {};   // tariffKey → { calls, minutes, costUSD }
+  const byDay = {};      // YYYY-MM-DD → { calls, minutes, costUSD }
+
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    if (!Array.isArray(lead.callLog)) continue;
+    const setterId = lead.assignedTo || '';
+    const setterName = settersById.get(setterId)?.name || '(sin setter)';
+    for (const entry of lead.callLog) {
+      if (entry.channel !== 'telnyx_webrtc') continue;
+      const ts = new Date(entry.ts).getTime();
+      if (!isFinite(ts) || ts < sinceTs) continue;
+      const durSecs = entry.duration || 0;
+      const minutes = durSecs / 60;
+      const cost = entry.cost || 0;
+      totalCalls++;
+      totalMinutes += minutes;
+      totalCostUSD += cost;
+      // bySetter
+      if (!bySetter[setterId]) bySetter[setterId] = { setterId, name: setterName, calls: 0, minutes: 0, costUSD: 0 };
+      bySetter[setterId].calls++;
+      bySetter[setterId].minutes += minutes;
+      bySetter[setterId].costUSD += cost;
+      // byCountry
+      const country = entry.costCountry || 'unknown';
+      if (!byCountry[country]) byCountry[country] = { country, calls: 0, minutes: 0, costUSD: 0 };
+      byCountry[country].calls++;
+      byCountry[country].minutes += minutes;
+      byCountry[country].costUSD += cost;
+      // byTariff
+      const tk = entry.costTariffKey || 'default';
+      if (!byTariff[tk]) byTariff[tk] = { tariffKey: tk, calls: 0, minutes: 0, costUSD: 0 };
+      byTariff[tk].calls++;
+      byTariff[tk].minutes += minutes;
+      byTariff[tk].costUSD += cost;
+      // byDay (para gráfico de evolución)
+      const day = new Date(entry.ts).toISOString().slice(0, 10);
+      if (!byDay[day]) byDay[day] = { day, calls: 0, minutes: 0, costUSD: 0 };
+      byDay[day].calls++;
+      byDay[day].minutes += minutes;
+      byDay[day].costUSD += cost;
+    }
+  }
+
+  // Round display values
+  const roundEntry = (o) => { o.minutes = +o.minutes.toFixed(2); o.costUSD = +o.costUSD.toFixed(4); return o; };
+  res.json({
+    range,
+    sinceISO: sinceTs ? new Date(sinceTs).toISOString() : null,
+    totals: {
+      calls: totalCalls,
+      minutes: +totalMinutes.toFixed(2),
+      costUSD: +totalCostUSD.toFixed(4),
+      avgMinutesPerCall: totalCalls ? +(totalMinutes / totalCalls).toFixed(2) : 0,
+      avgCostPerCall: totalCalls ? +(totalCostUSD / totalCalls).toFixed(4) : 0,
+    },
+    bySetter: Object.values(bySetter).map(roundEntry).sort((a, b) => b.costUSD - a.costUSD),
+    byCountry: Object.values(byCountry).map(roundEntry).sort((a, b) => b.costUSD - a.costUSD),
+    byTariff: Object.values(byTariff).map(roundEntry).sort((a, b) => b.calls - a.calls),
+    byDay: Object.values(byDay).map(roundEntry).sort((a, b) => a.day.localeCompare(b.day)),
+  });
+});
+
 // GET /api/telnyx/events — admin/supervisor: últimos eventos de webhook.
 // Útil para debug y para ver llamadas recientes.
 app.get("/api/telnyx/events", requireAuth, requireRole("admin", "supervisor"), (req, res) => {
