@@ -4383,7 +4383,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
 
-  const { outcome, notes, callbackAt, scheduled } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -4392,6 +4392,43 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
 
+  // Phase 6: metadata Telnyx. Si la llamada fue por WebRTC, agregamos
+  // duration, fromNumber, costo estimado al callLog.
+  // Tabla de tarifas USD/min Telnyx (aprox dic 2025, hardcoded).
+  const TELNYX_RATES_USD_PER_MIN = {
+    'ES_mobile': 0.034, 'ES_landline': 0.011,
+    'MX_mobile': 0.094, 'MX_landline': 0.015,
+    'CO_mobile': 0.060, 'CO_landline': 0.018,
+    'AR_mobile': 0.080, 'AR_landline': 0.060,
+    'CL_mobile': 0.070, 'CL_landline': 0.020,
+    'PE_mobile': 0.045, 'PE_landline': 0.030,
+    'EC_mobile': 0.080, 'EC_landline': 0.030,
+    'BO_mobile': 0.150, 'BO_landline': 0.090,
+    'UY_mobile': 0.100, 'UY_landline': 0.030,
+    'US_any':    0.007,
+    'default':   0.080,
+  };
+  function _estimateTelnyxCost(destinationPhone, durationSecs) {
+    const digits = String(destinationPhone || '').replace(/\D/g, '');
+    if (!digits || !durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
+    let country = 'default';
+    if (digits.startsWith('34')) country = 'ES';
+    else if (digits.startsWith('52')) country = 'MX';
+    else if (digits.startsWith('57')) country = 'CO';
+    else if (digits.startsWith('54')) country = 'AR';
+    else if (digits.startsWith('56')) country = 'CL';
+    else if (digits.startsWith('51')) country = 'PE';
+    else if (digits.startsWith('593')) country = 'EC';
+    else if (digits.startsWith('591')) country = 'BO';
+    else if (digits.startsWith('598')) country = 'UY';
+    else if (digits.startsWith('1')) country = 'US';
+    // Móvil vs landline: heurística simple. Asumimos mobile por default (peor caso = más cobertura).
+    const tariffKey = country === 'US' ? 'US_any' : `${country}_mobile`;
+    const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN['default'];
+    const minutes = durationSecs / 60;
+    return { cost: +(rate * minutes).toFixed(4), country, tariffKey };
+  }
+
   const now = new Date().toISOString();
   const logEntry = {
     ts: now,
@@ -4399,6 +4436,21 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     by: req.auth?.user?.id || '',
     notes: (notes || '').toString().slice(0, 500)
   };
+
+  // Si vino metadata de llamada Telnyx, agregar al logEntry
+  if (telnyxCallMeta && typeof telnyxCallMeta === 'object') {
+    const dur = Math.max(0, Math.min(parseInt(telnyxCallMeta.durationSecs, 10) || 0, 3600));
+    logEntry.duration = dur;
+    logEntry.fromNumber = String(telnyxCallMeta.fromNumber || '').slice(0, 30);
+    logEntry.channel = 'telnyx_webrtc';
+    const costInfo = _estimateTelnyxCost(lead.phone, dur);
+    logEntry.cost = costInfo.cost;
+    logEntry.costCountry = costInfo.country;
+    logEntry.costTariffKey = costInfo.tariffKey;
+  } else {
+    logEntry.channel = 'manual';
+  }
+
   lead.callLog.push(logEntry);
   lead.callAttempts += 1;
   lead.lastContactAt = now;

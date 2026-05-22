@@ -3625,16 +3625,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Disparar disposition automática solo si la llamada conectó (al menos 1s).
         // Si fue <1s probablemente ni siquiera sonó — no llenar el callLog con ruido.
         if (leadId && durationSecs >= 1) {
-          window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')}`, { type: 'info', duration: 3000 });
-          // Scroll al dropdown de disposition del lead y darle foco
-          const dispositionSel = document.querySelector(`.call-row[data-id="${leadId}"] select`);
-          if (dispositionSel) {
-            dispositionSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => dispositionSel.focus(), 400);
+          window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
+          // Guardar metadata pendiente para que el próximo handleCallDisposition la incluya
+          _pendingTelnyxCallMetadata[leadId] = {
+            durationSecs,
+            fromNumber: _telnyxCallState.fromNumber,
+            endedAt: new Date().toISOString(),
+          };
+          // Scroll + flash + open al dropdown de disposition
+          const callRow = document.querySelector(`.call-row[data-id="${leadId}"]`);
+          const dispositionSel = callRow?.querySelector('select');
+          if (callRow) {
+            callRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Flash visual para destacar (3 pulsos)
+            callRow.style.transition = 'box-shadow 0.4s';
+            callRow.style.boxShadow = '0 0 0 3px var(--accent)';
+            setTimeout(() => { callRow.style.boxShadow = '0 0 0 1px var(--accent)'; }, 400);
+            setTimeout(() => { callRow.style.boxShadow = '0 0 0 3px var(--accent)'; }, 800);
+            setTimeout(() => { callRow.style.boxShadow = ''; }, 2400);
           }
+          if (dispositionSel) setTimeout(() => dispositionSel.focus(), 400);
         }
       }, 500);
     }
+
+    // Map de metadata pendiente: leadId → { durationSecs, fromNumber, endedAt }
+    // Se popula en _onTelnyxCallEnded y se consume en _handleCallDisposition
+    // para enriquecer el callLog con datos reales de la llamada Telnyx.
+    const _pendingTelnyxCallMetadata = {};
 
     // Botón colgar del panel
     document.getElementById('telnyx-call-hangup')?.addEventListener('click', () => {
@@ -3694,11 +3712,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
-        // Outcomes directos
+        // Outcomes directos. Si hay metadata pendiente de una llamada Telnyx,
+        // adjuntarla al payload para que el backend la persista en callLog.
+        const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
+        const body = { outcome };
+        if (telnyxMeta) {
+          body.telnyxCallMeta = telnyxMeta;
+          delete _pendingTelnyxCallMetadata[leadId];
+        }
         const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ outcome })
+          body: JSON.stringify(body)
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
