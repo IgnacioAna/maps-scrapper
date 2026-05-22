@@ -50,7 +50,9 @@ console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 
 //   4. Si no hay nada -> reusa cliente principal
 // Default ahora: si Mercury esta seteada, usa Mercury para warming tambien.
 // Mercury con tier pago es 100x mas estable que el OpenRouter free.
-const forceMercuryWarming = process.env.WARMING_USE_MERCURY === '1' || !qwenKey;
+// Default: si Mercury esta disponible, usarla para warming. Override con
+// WARMING_USE_QWEN=1 para volver al comportamiento viejo (Qwen first).
+const forceMercuryWarming = !!mercuryKey && process.env.WARMING_USE_QWEN !== '1';
 const warmingAi = (mercuryKey && forceMercuryWarming)
   ? ai // Mercury, mismo cliente que el principal
   : (qwenKey
