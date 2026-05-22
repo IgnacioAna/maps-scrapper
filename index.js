@@ -2280,7 +2280,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'telnyx_config.json', 'telnyx_events.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json'];
 
 function makeBackup(reason = 'auto') {
   try {
@@ -7671,6 +7671,82 @@ app.post("/api/telnyx/webhook", async (req, res) => {
   // la integración con callLog completa se hace en Wave 3 task 3.1.
 
   res.json({ ok: true, eventType });
+});
+
+// ── Call Scripts: banco de guiones para llamadas (value statement framework) ──
+// Setters los consumen durante una llamada activa. Admin los edita.
+const CALL_SCRIPTS_FILE = path.join(DATA_DIR, "call_scripts.json");
+const CALL_SCRIPTS_SEED_FILE = path.join(process.cwd(), "scripts", "seed", "call-scripts.json");
+
+function loadCallScripts() {
+  try {
+    if (fs.existsSync(CALL_SCRIPTS_FILE)) {
+      return JSON.parse(fs.readFileSync(CALL_SCRIPTS_FILE, "utf8"));
+    }
+    // Lazy init desde seed
+    if (fs.existsSync(CALL_SCRIPTS_SEED_FILE)) {
+      const seed = JSON.parse(fs.readFileSync(CALL_SCRIPTS_SEED_FILE, "utf8"));
+      fs.writeFileSync(CALL_SCRIPTS_FILE, JSON.stringify(seed, null, 2), "utf8");
+      return seed;
+    }
+  } catch (e) { console.error("[call-scripts] error leyendo:", e.message); }
+  return { scripts: [] };
+}
+
+function saveCallScripts(data) {
+  try { fs.writeFileSync(CALL_SCRIPTS_FILE, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("[call-scripts] error guardando:", e.message); }
+}
+
+// GET /api/telnyx/scripts — todos los scripts (admin y setter pueden leer).
+// El setter los necesita durante una llamada activa.
+app.get('/api/telnyx/scripts', requireAuth, (_req, res) => {
+  const data = loadCallScripts();
+  res.json({ scripts: data.scripts || [] });
+});
+
+// POST /api/telnyx/scripts — crear script (admin only).
+app.post('/api/telnyx/scripts', requireAuth, requireRole('admin'), (req, res) => {
+  const { label, trigger, text, tags } = req.body || {};
+  if (!label || !text) return res.status(400).json({ error: 'label y text requeridos.' });
+  const data = loadCallScripts();
+  if (!Array.isArray(data.scripts)) data.scripts = [];
+  const newScript = {
+    id: `script_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    label: String(label).trim().substring(0, 80),
+    trigger: String(trigger || 'general').trim().substring(0, 40),
+    text: String(text).substring(0, 2000),
+    tags: Array.isArray(tags) ? tags.slice(0, 10).map(t => String(t).substring(0, 30)) : [],
+    createdAt: new Date().toISOString(),
+    createdBy: req.auth?.user?.email || 'admin',
+  };
+  data.scripts.push(newScript);
+  saveCallScripts(data);
+  res.json({ ok: true, script: newScript, scripts: data.scripts });
+});
+
+// PATCH /api/telnyx/scripts/:id — edita label/trigger/text/tags (admin).
+app.patch('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadCallScripts();
+  const s = (data.scripts || []).find(x => x.id === req.params.id);
+  if (!s) return res.status(404).json({ error: 'Script no encontrado.' });
+  if (typeof req.body.label === 'string') s.label = req.body.label.trim().substring(0, 80);
+  if (typeof req.body.trigger === 'string') s.trigger = req.body.trigger.trim().substring(0, 40);
+  if (typeof req.body.text === 'string') s.text = req.body.text.substring(0, 2000);
+  if (Array.isArray(req.body.tags)) s.tags = req.body.tags.slice(0, 10).map(t => String(t).substring(0, 30));
+  s.updatedAt = new Date().toISOString();
+  saveCallScripts(data);
+  res.json({ ok: true, script: s });
+});
+
+// DELETE /api/telnyx/scripts/:id (admin).
+app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadCallScripts();
+  const before = (data.scripts || []).length;
+  data.scripts = (data.scripts || []).filter(s => s.id !== req.params.id);
+  if (data.scripts.length === before) return res.status(404).json({ error: 'Script no encontrado.' });
+  saveCallScripts(data);
+  res.json({ ok: true, scripts: data.scripts });
 });
 
 // GET /api/telnyx/metrics — admin/supervisor: agregaciones de minutos y costo.

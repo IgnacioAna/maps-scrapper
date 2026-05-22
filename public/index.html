@@ -685,6 +685,19 @@
         </section>
       </div>
 
+      <!-- Phase 6: Script panel lateral durante la llamada -->
+      <div id="telnyx-script-panel" style="display:none; position:fixed; bottom:24px; right:380px; width:380px; max-height:calc(100vh - 60px); background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:2399; overflow:hidden; display:none; flex-direction:column;">
+        <div style="padding:12px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.08) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <strong style="font-size:13px; color:var(--text-primary);">📝 Guion de llamada</strong>
+          <button id="telnyx-script-close" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:18px; padding:0; line-height:1;">✕</button>
+        </div>
+        <div id="telnyx-script-triggers" style="padding:8px 14px; border-bottom:1px solid var(--border-color); display:flex; gap:6px; flex-wrap:wrap;"></div>
+        <div id="telnyx-script-text" style="padding:14px; font-size:13px; line-height:1.6; color:var(--text-primary); white-space:pre-wrap; flex:1; overflow-y:auto; min-height:120px;">Elegí un guion arriba ↑</div>
+        <div style="padding:10px 14px; border-top:1px solid var(--border-color); display:flex; gap:8px; background:rgba(0,0,0,0.18);">
+          <button id="telnyx-script-copy" class="btn-secondary" style="flex:1; font-size:11px; padding:7px;">📋 Copiar</button>
+        </div>
+      </div>
+
       <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) -->
       <div id="telnyx-call-panel" style="display:none; position:fixed; bottom:24px; right:24px; width:340px; background:linear-gradient(180deg, var(--bg-card) 0%, var(--bg-surface) 100%); border:1px solid var(--accent); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(157,133,242,0.3); z-index:2400; overflow:hidden;">
         <div style="padding:14px 16px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.12) 0%, transparent 100%);">
@@ -701,10 +714,11 @@
           <div id="telnyx-call-lead-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:10px;">—</div>
           <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">Desde tu número</div>
           <div id="telnyx-call-from" style="font-size:12px; color:var(--text-primary); margin-bottom:14px; padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px;">—</div>
-          <div style="display:flex; gap:8px;">
-            <button id="telnyx-call-mute" class="btn-secondary" style="flex:1; padding:10px; border-radius:9px; font-size:13px; cursor:pointer;">🎤 Mute</button>
-            <button id="telnyx-call-hangup" style="flex:1; padding:10px; border-radius:9px; font-size:13px; cursor:pointer; background:#f85149; color:#fff; border:1px solid #f85149; font-weight:600;">📵 Colgar</button>
+          <div style="display:flex; gap:8px; margin-bottom:6px;">
+            <button id="telnyx-call-script-toggle" class="btn-secondary" style="flex:1; padding:9px; border-radius:9px; font-size:12px; cursor:pointer;">📝 Guion</button>
+            <button id="telnyx-call-mute" class="btn-secondary" style="flex:1; padding:9px; border-radius:9px; font-size:12px; cursor:pointer;">🎤 Mute</button>
           </div>
+          <button id="telnyx-call-hangup" style="width:100%; padding:11px; border-radius:9px; font-size:13px; cursor:pointer; background:#f85149; color:#fff; border:1px solid #f85149; font-weight:600;">📵 Colgar</button>
         </div>
         <style>@keyframes pulse {0%,100%{opacity:1;}50%{opacity:0.3;}}</style>
       </div>
@@ -1868,6 +1882,19 @@
             </div>
           </div>
 
+          <!-- 5. SCRIPTS DE LLAMADA -->
+          <div class="card" style="padding:18px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">📝 Guiones de llamada</strong>
+                <div class="muted" style="font-size:12px; margin-top:2px;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{name}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{city}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{setterName}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{date}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{time}</code></div>
+              </div>
+              <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12px;">+ Agregar guion</button>
+            </div>
+            <ul id="tlx-scripts-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
+            <div id="tlx-scripts-empty" class="muted" style="font-size:12px; text-align:center; padding:18px; display:none;">Sin guiones cargados. Agregá el primero (apertura, objeción, etc.).</div>
+          </div>
+
           <!-- 4. MÉTRICAS -->
           <div class="card" style="padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
@@ -2266,7 +2293,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/index.iife.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260521a"></script>
+  <script type="module" src="/app.js?v=20260521b"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

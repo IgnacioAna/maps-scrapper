@@ -3527,9 +3527,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _closeTelnyxCallPanel() {
       const panel = document.getElementById('telnyx-call-panel');
       if (panel) panel.style.display = 'none';
+      // También cerrar el script panel si quedó abierto
+      const sp = document.getElementById('telnyx-script-panel');
+      if (sp) sp.style.display = 'none';
       if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
       _telnyxCallState.startedAt = 0;
       _telnyxCallState.muted = false;
+      _currentCallLead = null;
     }
 
     function _setTelnyxCallStatus(text, state) {
@@ -3571,6 +3575,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       _telnyxCallState.leadId = leadId;
       _telnyxCallState.fromNumber = fromNum.phone;
       _telnyxCallState.muted = false;
+      _currentCallLead = lead;
+      // Pre-cargar scripts si no están en cache (no bloquea la llamada)
+      if (_callScriptsCache.length === 0) _loadCallScripts();
 
       try {
         // Pedir permisos de mic upfront (mejor UX que esperar a Telnyx)
@@ -3653,6 +3660,111 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se popula en _onTelnyxCallEnded y se consume en _handleCallDisposition
     // para enriquecer el callLog con datos reales de la llamada Telnyx.
     const _pendingTelnyxCallMetadata = {};
+
+    // ── Script panel (banco de guiones durante la llamada) ──
+    let _callScriptsCache = [];
+    let _currentCallLead = null; // se setea en _startTelnyxCall, usado para interpolar variables
+
+    async function _loadCallScripts() {
+      try {
+        const r = await fetch(apiUrl('/api/telnyx/scripts'), { credentials: 'include' });
+        if (!r.ok) return;
+        const d = await r.json();
+        _callScriptsCache = d.scripts || [];
+      } catch (e) { console.warn('[call-scripts]', e.message); }
+    }
+
+    function _interpolateScript(text, lead) {
+      const setterName = window.__CURRENT_USER__?.name || window.__CURRENT_USER__?.email?.split('@')[0] || 'el equipo';
+      const repl = {
+        '{name}': (lead?.name || 'doctor/a').toString(),
+        '{city}': lead?.city || lead?.country || 'la zona',
+        '{setterName}': setterName,
+        '{setterPhone}': window.__CURRENT_USER__?.phone || '',
+        '{date}': new Date().toLocaleDateString('es-AR'),
+        '{time}': new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+      };
+      let result = text;
+      for (const [k, v] of Object.entries(repl)) result = result.split(k).join(v);
+      return result;
+    }
+
+    function _renderScriptPanel() {
+      const triggersBar = document.getElementById('telnyx-script-triggers');
+      const textEl = document.getElementById('telnyx-script-text');
+      if (!triggersBar || !textEl) return;
+      if (_callScriptsCache.length === 0) {
+        triggersBar.innerHTML = '<span class="muted" style="font-size:11px;">Sin guiones cargados</span>';
+        textEl.textContent = 'Pedile al admin que agregue guiones desde Centralita Telnyx.';
+        return;
+      }
+      // Agrupar por trigger
+      const grouped = {};
+      for (const s of _callScriptsCache) {
+        const t = s.trigger || 'general';
+        if (!grouped[t]) grouped[t] = [];
+        grouped[t].push(s);
+      }
+      const triggerLabels = {
+        first_call: '🎯 Apertura', objection: '🛡️ Objeción',
+        callback: '🔄 Callback', scheduling: '📅 Cerrar',
+        voicemail: '📭 Buzón', general: '📝 General',
+      };
+      triggersBar.innerHTML = Object.entries(grouped).map(([trigger, scripts]) => {
+        return scripts.map(s => `
+          <button class="btn-table-action tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10px; padding:4px 8px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:6px; cursor:pointer;">
+            ${triggerLabels[trigger] || s.trigger} · ${escHtml(s.label)}
+          </button>
+        `).join('');
+      }).join('');
+      // Pre-cargar el primero
+      if (_callScriptsCache.length > 0) _selectScript(_callScriptsCache[0].id);
+      // Wire clicks
+      triggersBar.querySelectorAll('.tlx-script-btn').forEach(btn => {
+        btn.addEventListener('click', () => _selectScript(btn.dataset.scriptId));
+      });
+    }
+
+    function _selectScript(scriptId) {
+      const s = _callScriptsCache.find(x => x.id === scriptId);
+      const textEl = document.getElementById('telnyx-script-text');
+      if (!s || !textEl) return;
+      textEl.textContent = _interpolateScript(s.text, _currentCallLead);
+      textEl.dataset.scriptId = scriptId;
+      // Marcar botón activo
+      document.querySelectorAll('.tlx-script-btn').forEach(btn => {
+        const active = btn.dataset.scriptId === scriptId;
+        btn.style.background = active ? 'rgba(157,133,242,0.18)' : 'var(--bg-app)';
+        btn.style.borderColor = active ? 'var(--accent)' : 'var(--border-color)';
+        btn.style.color = active ? 'var(--accent)' : '';
+      });
+    }
+
+    function _openScriptPanel() {
+      const panel = document.getElementById('telnyx-script-panel');
+      if (panel) panel.style.display = 'flex';
+      if (_callScriptsCache.length === 0) _loadCallScripts().then(_renderScriptPanel);
+      else _renderScriptPanel();
+    }
+    function _closeScriptPanel() {
+      const panel = document.getElementById('telnyx-script-panel');
+      if (panel) panel.style.display = 'none';
+    }
+
+    document.getElementById('telnyx-call-script-toggle')?.addEventListener('click', () => {
+      const panel = document.getElementById('telnyx-script-panel');
+      if (panel?.style.display === 'flex') _closeScriptPanel();
+      else _openScriptPanel();
+    });
+    document.getElementById('telnyx-script-close')?.addEventListener('click', _closeScriptPanel);
+    document.getElementById('telnyx-script-copy')?.addEventListener('click', async () => {
+      const text = document.getElementById('telnyx-script-text')?.textContent || '';
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        window.showToast?.('Guion copiado ✓', { type: 'success', duration: 1500 });
+      } catch (e) { window.showToast?.('No pude copiar', { type: 'error' }); }
+    });
 
     // Botón colgar del panel
     document.getElementById('telnyx-call-hangup')?.addEventListener('click', () => {
@@ -8732,11 +8844,109 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { console.warn('[tlx-metrics]', e.message); }
   }
 
+  // ── Scripts editor (admin) ──
+  let _tlxScriptsCache = [];
+  async function _tlxLoadScriptsAdmin() {
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/scripts'), { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      _tlxScriptsCache = d.scripts || [];
+      _tlxRenderScriptsList();
+    } catch (e) { console.warn('[tlx-scripts-admin]', e.message); }
+  }
+  function _tlxRenderScriptsList() {
+    const list = document.getElementById('tlx-scripts-list');
+    const empty = document.getElementById('tlx-scripts-empty');
+    if (!list || !empty) return;
+    if (_tlxScriptsCache.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    const triggerColors = {
+      first_call: '#5bb974', objection: '#f85149', callback: '#ffc828',
+      scheduling: 'var(--accent)', voicemail: '#7dd3fc', general: 'var(--text-secondary)',
+    };
+    list.innerHTML = _tlxScriptsCache.map(s => `
+      <li style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:6px;">
+          <div style="flex:1; min-width:0;">
+            <strong style="font-size:13px; color:var(--text-primary);">${escHtml(s.label)}</strong>
+            <span class="chip" style="margin-left:6px; padding:1px 7px; font-size:9px; background:${triggerColors[s.trigger] || 'var(--bg-card)'}22; color:${triggerColors[s.trigger] || 'var(--text-secondary)'}; border:1px solid ${triggerColors[s.trigger] || 'var(--border-color)'}; border-radius:5px; font-weight:600;">${escHtml(s.trigger || 'general')}</span>
+          </div>
+          <div style="display:flex; gap:4px;">
+            <button onclick="window._tlxEditScript('${escHtml(s.id)}')" class="btn-table-action" style="color:var(--info); font-size:10px;">Editar</button>
+            <button onclick="window._tlxDeleteScript('${escHtml(s.id)}', '${escHtml(s.label).replace(/'/g, "\\'")}')" class="btn-table-action" style="color:#f85149; font-size:10px;">Borrar</button>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary); line-height:1.55; max-height:80px; overflow:hidden; text-overflow:ellipsis; white-space:pre-wrap;">${escHtml(s.text)}</div>
+      </li>
+    `).join('');
+  }
+  document.getElementById('tlx-script-add-btn')?.addEventListener('click', async () => {
+    const label = await window.askText({ title: '📝 Nuevo guion', subtitle: 'Label corto descriptivo. Ej: "Objeción: ya tengo sistema".', type: 'input', placeholder: 'Apertura inicial', confirmLabel: 'Siguiente' });
+    if (!label) return;
+    const trigger = await window.askText({
+      title: 'Trigger', subtitle: 'Cuándo aplica este guion. Valores: first_call, objection, callback, scheduling, voicemail, general.',
+      type: 'input', placeholder: 'first_call', confirmLabel: 'Siguiente',
+    });
+    if (!trigger) return;
+    const text = await window.askText({
+      title: 'Texto del guion',
+      subtitle: 'Lo que el setter va a leer. Podés usar variables: {name}, {city}, {setterName}, {date}, {time}.',
+      type: 'textarea', placeholder: 'Hola Dr/a {name}, soy {setterName}…', confirmLabel: 'Crear',
+    });
+    if (!text) return;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/scripts'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ label, trigger: trigger.trim(), text }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      window.showToast?.('Guion agregado ✓', { type: 'success' });
+      _tlxLoadScriptsAdmin();
+    } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
+  });
+  window._tlxEditScript = async (id) => {
+    const s = _tlxScriptsCache.find(x => x.id === id);
+    if (!s) return;
+    const newText = await window.askText({
+      title: '✎ Editar: ' + s.label,
+      subtitle: 'Variables: {name}, {city}, {setterName}, {date}, {time}',
+      type: 'textarea', defaultValue: s.text, confirmLabel: 'Guardar',
+    });
+    if (!newText) return;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/scripts/' + encodeURIComponent(id)), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ text: newText }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.showToast?.('Actualizado ✓', { type: 'success' });
+      _tlxLoadScriptsAdmin();
+    } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
+  };
+  window._tlxDeleteScript = async (id, label) => {
+    const ok = await window.askConfirm({
+      title: '¿Borrar guion?', message: `Vas a borrar "${label}". Los setters dejarán de verlo.`,
+      confirmLabel: 'Borrar', danger: true,
+    });
+    if (!ok) return;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/scripts/' + encodeURIComponent(id)), {
+        method: 'DELETE', credentials: 'include',
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.showToast?.('Borrado ✓', { type: 'success' });
+      _tlxLoadScriptsAdmin();
+    } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
+  };
+
   // Wire eventos de la vista
   document.querySelector('[data-target="view-telnyx-config"]')?.addEventListener('click', () => {
     setTimeout(() => {
       _tlxLoadConfig();
       _tlxLoadMetrics();
+      _tlxLoadScriptsAdmin();
       // Auto-refresh metrics cada 30s mientras la vista esté visible
       if (_tlxMetricsRefreshTimer) clearInterval(_tlxMetricsRefreshTimer);
       _tlxMetricsRefreshTimer = setInterval(() => {
