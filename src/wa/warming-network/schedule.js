@@ -55,16 +55,23 @@ function isHumanHour(hour) {
   return hour >= 8 && hour <= 23;
 }
 
+// Override de speed para cuentas en modo boost. Independiente de su replySpeed
+// natural — siempre 'rápido' (1-30 min) mientras esta boost activo.
+const BOOST_SPEED = { minMin: 1, maxMin: 30 };
+
 /**
  * Calcula próximo timestamp en que debe mandar mensaje el sender.
  *
  * @param {object} senderPersona
  * @param {object} pair - el par actual con history
  * @param {Date} now
+ * @param {object} opts
+ * @param {boolean} opts.boost - si true, ignora replySpeed natural y usa BOOST_SPEED
  * @returns {Date} próximo action time
  */
-export function computeNextActionAt(senderPersona, pair, now = new Date()) {
-  const speedConfig = senderPersona.replySpeedConfig;
+export function computeNextActionAt(senderPersona, pair, now = new Date(), opts = {}) {
+  let speedConfig = senderPersona.replySpeedConfig;
+  if (opts.boost) speedConfig = BOOST_SPEED;
   const minMin = speedConfig.minMin;
   const maxMin = speedConfig.maxMin;
 
@@ -83,6 +90,10 @@ export function computeNextActionAt(senderPersona, pair, now = new Date()) {
     target = new Date(target.getTime() + HOUR_MS);
     h = localHour(target, "America/Argentina/Buenos_Aires");
   }
+
+  // En modo boost saltamos el check de active window (queremos volumen rapido,
+  // no respetar el patron horario humano)
+  if (opts.boost) return target;
 
   // Adicional: si la persona NO está en active window y todavía falta mucho,
   // movemos al inicio de su próxima ventana

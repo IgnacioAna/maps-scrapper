@@ -68,6 +68,16 @@ function defaultData() {
       totalLLMCostUsd: 0,
       lastResetMonth: new Date().toISOString().slice(0, 7),
     },
+    // Stats LLM persistentes (antes vivian solo en memoria, se reseteaban a cada
+    // reboot de Railway. Asi el panel muestra historico real, no del ultimo deploy).
+    llmStats: {
+      totalCalls: 0,
+      totalSuccesses: 0,
+      totalFailures: 0,
+      totalEstimatedCostUsd: 0,
+      lastCallAt: null,
+      lastError: null,
+    },
   };
 }
 
@@ -81,6 +91,7 @@ function loadData() {
       pairs: Array.isArray(parsed.pairs) ? parsed.pairs : [],
       sentMessages: Array.isArray(parsed.sentMessages) ? parsed.sentMessages : [],
       stats: parsed.stats || defaultData().stats,
+      llmStats: parsed.llmStats || defaultData().llmStats,
     };
   } catch {
     return defaultData();
@@ -121,11 +132,16 @@ export function getPoolMember(accountId) {
   return loadData().pool.find((p) => p.accountId === accountId);
 }
 
-export function enrollAccount({ accountId, setterId, persona }) {
+export function enrollAccount({ accountId, setterId, persona, boostDays = 3 }) {
   const data = loadData();
   if (data.pool.find((p) => p.accountId === accountId)) {
     return { ok: false, reason: "ya inscripta" };
   }
+  // boostUntil: durante los primeros N dias, la cuenta usa replySpeed='rápido'
+  // para que la red arranque rapido. Despues vuelve a su replySpeed natural.
+  const boostUntil = boostDays > 0
+    ? new Date(Date.now() + boostDays * 24 * 3600 * 1000).toISOString()
+    : null;
   data.pool.push({
     accountId,
     setterId: setterId || null,
@@ -134,9 +150,29 @@ export function enrollAccount({ accountId, setterId, persona }) {
     active: true,
     pausedReason: null,
     lastActivityAt: null,
+    boostUntil,
   });
   saveData(data);
   return { ok: true };
+}
+
+export function setBoost(accountId, days) {
+  const data = loadData();
+  const member = data.pool.find((p) => p.accountId === accountId);
+  if (!member) return { ok: false, reason: "no en pool" };
+  if (days <= 0) {
+    member.boostUntil = null;
+  } else {
+    const cap = Math.min(days, 7); // safety: max 7 dias para evitar abuso anti-baneo
+    member.boostUntil = new Date(Date.now() + cap * 24 * 3600 * 1000).toISOString();
+  }
+  saveData(data);
+  return { ok: true, boostUntil: member.boostUntil };
+}
+
+export function isBoostActive(member) {
+  if (!member || !member.boostUntil) return false;
+  return new Date(member.boostUntil).getTime() > Date.now();
 }
 
 export function unenrollAccount(accountId) {
@@ -280,6 +316,27 @@ export function listRecentSentMessages({ limit = 50, accountId, pairId } = {}) {
   if (accountId) msgs = msgs.filter((m) => m.fromAccount === accountId || m.toAccount === accountId);
   if (pairId) msgs = msgs.filter((m) => m.pairId === pairId);
   return msgs.slice(-limit).reverse(); // último primero
+}
+
+// ===== LLM STATS PERSISTENTES =====
+
+export function getLLMStatsPersisted() {
+  return loadData().llmStats || defaultData().llmStats;
+}
+
+export function recordLLMCall({ success, cost, error }) {
+  const data = loadData();
+  if (!data.llmStats) data.llmStats = defaultData().llmStats;
+  data.llmStats.totalCalls = (data.llmStats.totalCalls || 0) + 1;
+  if (success) {
+    data.llmStats.totalSuccesses = (data.llmStats.totalSuccesses || 0) + 1;
+    data.llmStats.totalEstimatedCostUsd = (data.llmStats.totalEstimatedCostUsd || 0) + (cost || 0);
+  } else {
+    data.llmStats.totalFailures = (data.llmStats.totalFailures || 0) + 1;
+    if (error) data.llmStats.lastError = String(error).slice(0, 300);
+  }
+  data.llmStats.lastCallAt = new Date().toISOString();
+  saveData(data);
 }
 
 // Reset mensual de stats de costo (no toca los messages, solo el contador)

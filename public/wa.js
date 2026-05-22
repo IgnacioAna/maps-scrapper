@@ -1024,7 +1024,8 @@ async function renderWarmingNetwork() {
         <p style="font-size:13px; color:var(--text-secondary); margin:4px 0 0;">Cuentas inscritas se mandan mensajes entre sí con IA conversacional. Cross-setter (Paula chatea con cuenta de Tiago, no consigo misma).</p>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <button class="btn btn-secondary btn-sm" onclick="window._warmingNetTick()">Forzar tick</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._wnSimulate()" title="Generar mensajes con IA sin enviar realmente. Cuesta tokens pero no toca WhatsApp.">🧪 Simular</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._warmingNetTick()" title="Corre un tick global del orchestrator ahora mismo.">⚡ Tick global</button>
         <button class="btn btn-secondary btn-sm" onclick="window._warmingNetRefresh()">Refrescar</button>
       </div>
     </div>
@@ -1088,11 +1089,19 @@ function renderWarmingNetStats(stats) {
       <div style="font-size:24px; font-weight:600; margin-top:4px;">${value}</div>
       ${sub ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${sub}</div>` : ""}
     </div>`;
+  // Llm stats ahora son persistidos — el badge muestra el ratio real historico.
+  const llmCalls = stats.llm?.totalCalls || 0;
+  const llmOk = stats.llm?.totalSuccesses || 0;
+  const llmFail = stats.llm?.totalFailures || 0;
+  const llmRatio = llmCalls > 0 ? Math.round((llmOk / llmCalls) * 100) : 100;
+  const llmSub = llmCalls === 0
+    ? "sin calls aun"
+    : `${llmCalls} calls · ${llmRatio}% ok${llmFail ? ` · ${llmFail} fail` : ""}`;
   cont.innerHTML = [
     card("Pool total", stats.pool.total, `${stats.pool.active} activas`),
     card("Pares activos", stats.pairs.active, ""),
     card("Mensajes (mes)", stats.messages.totalMessagesSent || 0, ""),
-    card("Costo IA (mes)", `$${(stats.messages.totalLLMCostUsd || 0).toFixed(3)}`, stats.llm.totalCalls + " calls"),
+    card("Costo IA (mes)", `$${(stats.messages.totalLLMCostUsd || 0).toFixed(3)}`, llmSub),
   ].join("");
 }
 
@@ -1108,7 +1117,7 @@ function renderWarmingNetPool(pool) {
       <thead>
         <tr>
           <th>Cuenta</th><th>Setter</th><th>Persona ficticia</th>
-          <th>Estilo</th><th>Estado</th><th>Inscrita</th><th>Acciones</th>
+          <th>Estilo</th><th>Estado / Boost</th><th>Inscrita</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -1122,17 +1131,25 @@ function renderWarmingNetPool(pool) {
           const stateBadge = m.active
             ? '<span class="chip chip-success" style="font-size:11px;">Activa</span>'
             : `<span class="chip chip-warning" style="font-size:11px;">Pausada (${escHtml(m.pausedReason || "")})</span>`;
+          // Boost badge: si boostUntil > now muestra cuanto le falta
+          let boostBadge = "";
+          if (m.boostUntil && new Date(m.boostUntil).getTime() > Date.now()) {
+            const hrs = Math.ceil((new Date(m.boostUntil).getTime() - Date.now()) / 3600000);
+            boostBadge = `<span class="chip" style="font-size:10px; background:rgba(157,133,242,0.15); color:var(--accent); margin-left:6px;" title="Modo boost: ignora replySpeed natural, manda cada 1-30 min y saltea ventana horaria humana. Util para arrancar la red rapido.">⚡ boost ${hrs}h</span>`;
+          }
           return `<tr>
             <td>${escHtml(accountLabel)}</td>
             <td>${escHtml(setterName)}</td>
             <td><span title="${escHtml(JSON.stringify(m.persona.interests))}">${escHtml(personaText)}</span></td>
             <td style="font-size:12px;">${escHtml(m.persona.style)} · ${escHtml(m.persona.replySpeed)}</td>
-            <td>${stateBadge}</td>
+            <td>${stateBadge}${boostBadge}</td>
             <td style="font-size:11px; color:var(--text-secondary);">${enrolledAgo}</td>
             <td style="white-space:nowrap;">
+              <button class="btn-table-action" onclick="window._wnBoost('${escAttr(m.accountId)}')" style="color:var(--accent);" title="Activar boost 3 dias (override replySpeed)">⚡</button>
               ${m.active
                 ? `<button class="btn-table-action" onclick="window._wnPause('${escAttr(m.accountId)}')" style="color:var(--warning);">⏸</button>`
                 : `<button class="btn-table-action" onclick="window._wnResume('${escAttr(m.accountId)}')" style="color:var(--success);">▶</button>`}
+              <button class="btn-table-action" onclick="window._wnHealth('${escAttr(m.accountId)}')" style="color:var(--info);" title="Ver salud detallada">📊</button>
               <button class="btn-table-action" onclick="window._wnUnenroll('${escAttr(m.accountId)}')" style="color:var(--danger);">🗑</button>
             </td>
           </tr>`;
@@ -1270,6 +1287,89 @@ window._wnResume = async (accountId) => {
 window._wnUnenroll = async (accountId) => {
   if (!confirm("¿Sacar la cuenta del pool de warming? Sus pares activos se cerrarán.")) return;
   try { await api(`/api/wa/warming-network/unenroll/${encodeURIComponent(accountId)}`, { method: "POST" }); await _warmingNetRefresh(); } catch (e) { alert(e.message); }
+};
+
+// P3: Boost — extiende o cancela. Prompt simple.
+window._wnBoost = async (accountId) => {
+  const d = prompt("Activar boost por cuantos dias? (0 cancela, max 7)", "3");
+  if (d === null) return;
+  const days = Number(d);
+  if (!Number.isFinite(days)) return alert("numero invalido");
+  try {
+    const r = await api(`/api/wa/warming-network/boost/${encodeURIComponent(accountId)}`, { method: "POST", body: JSON.stringify({ days }) });
+    if (r.boostUntil) alert("Boost activo hasta " + new Date(r.boostUntil).toLocaleString());
+    else alert("Boost cancelado.");
+    await _warmingNetRefresh();
+  } catch (e) { alert(e.message); }
+};
+
+// P6: Salud por cuenta — modal con datos detallados
+window._wnHealth = async (accountId) => {
+  let h;
+  try {
+    h = await api(`/api/wa/warming-network/account-health/${encodeURIComponent(accountId)}`);
+  } catch (e) { return alert("Error: " + e.message); }
+  const lastSentAt = h.activity.lastSentAt ? new Date(h.activity.lastSentAt).toLocaleString() : "nunca";
+  const lastRecAt = h.activity.lastReceivedAt ? new Date(h.activity.lastReceivedAt).toLocaleString() : "nunca";
+  const boostInfo = h.boostUntil && new Date(h.boostUntil).getTime() > Date.now()
+    ? `⚡ Boost activo hasta ${new Date(h.boostUntil).toLocaleString()}`
+    : "Sin boost";
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;";
+  overlay.innerHTML = `
+    <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:24px; max-width:560px; width:100%; max-height:80vh; overflow:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:18px;">Salud · ${escHtml(h.persona.name)}</h3>
+        <button data-close style="background:none; border:none; color:var(--text-secondary); font-size:22px; cursor:pointer;">×</button>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px;">
+        <div><strong>Persona:</strong> ${escHtml(h.persona.name)}, ${h.persona.age}a · ${escHtml(h.persona.city)}</div>
+        <div><strong>Replyspeed:</strong> ${escHtml(h.persona.replySpeed)}</div>
+        <div><strong>Active window:</strong> ${escHtml(h.persona.activeWindow)}</div>
+        <div><strong>Estado:</strong> ${h.active ? "Activa" : "Pausada (" + escHtml(h.pausedReason || "") + ")"}</div>
+        <div><strong>Pares activos:</strong> ${h.pairs.active}</div>
+        <div><strong>Mensajes 24h:</strong> ${h.activity.sentLast24h}</div>
+        <div style="grid-column:1/-1;"><strong>${boostInfo}</strong></div>
+        <div style="grid-column:1/-1;"><strong>Último enviado:</strong> ${lastSentAt}<br><span style="color:var(--text-secondary); font-size:12px;">"${escHtml(h.activity.lastSentPreview || "—")}"</span></div>
+        <div style="grid-column:1/-1;"><strong>Último recibido:</strong> ${lastRecAt}<br><span style="color:var(--text-secondary); font-size:12px;">"${escHtml(h.activity.lastReceivedPreview || "—")}"</span></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.dataset?.close !== undefined) overlay.remove(); });
+};
+
+// P7: Simulador — genera N mensajes sin enviar
+window._wnSimulate = async () => {
+  const pairs = (_warmingNetCache?.pairs || []);
+  if (pairs.length === 0) return alert("Sin pares activos para simular.");
+  const pair = pairs[0]; // por simplicidad, primer par activo
+  const count = Number(prompt(`Cuántos mensajes simular en el par ${pair.id.slice(0,12)}? (max 10)`, "4"));
+  if (!Number.isFinite(count) || count < 1) return;
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;";
+  overlay.innerHTML = `<div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:24px; max-width:600px; width:100%;"><h3 style="margin:0 0 12px;">🧪 Simulando conversación...</h3><p style="font-size:13px; color:var(--text-secondary);">Generando ${count} mensajes con IA real (no se envia nada por WhatsApp). Esto puede tardar varios segundos.</p></div>`;
+  document.body.appendChild(overlay);
+  try {
+    const r = await api("/api/wa/warming-network/simulate", { method: "POST", body: JSON.stringify({ pairId: pair.id, count }) });
+    const items = (r.generated || []).map(g => {
+      if (g.error) return `<div style="background:rgba(248,81,73,0.1); border:1px solid var(--danger); padding:10px; border-radius:6px; margin-bottom:8px;"><strong>${escHtml(g.by)}:</strong> <span style="color:var(--danger);">${escHtml(g.error)}</span></div>`;
+      return `<div style="background:var(--bg-tertiary); padding:10px; border-radius:6px; margin-bottom:8px;"><div style="font-size:11px; color:var(--text-secondary);">${escHtml(g.by)} → ${escHtml(g.to)} · $${(g.llmCost||0).toFixed(5)} · ${g.tokensIn||0}+${g.tokensOut||0}tok</div><div style="margin-top:4px;">${escHtml(g.text)}</div></div>`;
+    }).join("");
+    overlay.innerHTML = `
+      <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:12px; padding:24px; max-width:640px; width:100%; max-height:85vh; overflow:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+          <h3 style="margin:0;">🧪 Simulación: ${escHtml(r.pair.nameA)} ↔ ${escHtml(r.pair.nameB)}</h3>
+          <button data-close style="background:none; border:none; color:var(--text-secondary); font-size:22px; cursor:pointer;">×</button>
+        </div>
+        <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px;">${escHtml(r.note)}</p>
+        ${items || '<div style="color:var(--text-secondary);">Sin mensajes generados.</div>'}
+      </div>
+    `;
+    overlay.addEventListener("click", (e) => { if (e.target === overlay || e.target.dataset?.close !== undefined) overlay.remove(); });
+  } catch (e) {
+    overlay.innerHTML = `<div style="background:var(--bg-secondary); border:1px solid var(--danger); border-radius:12px; padding:24px; max-width:500px;"><h3>Error</h3><p>${escHtml(e.message)}</p><button onclick="this.parentElement.parentElement.remove()" class="btn btn-secondary btn-sm">Cerrar</button></div>`;
+  }
 };
 
 document.addEventListener("click", (e) => {

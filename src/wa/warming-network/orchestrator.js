@@ -284,14 +284,17 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
 
   // Schedule próxima acción: la otra cuenta debería responder
   // Modo normal: usa replySpeed humano (30-480 min para "lento")
+  // Modo boost: el receiver tiene boostUntil activo → ignora replySpeed,
+  //  usa 1-30 min para que la red de pocas cuentas genere volumen rapido
   // Modo forceImmediate (botón Tick ya): 10-30 SEG para que el test sea
-  // fluido y se puedan ver conversaciones completas en minutos, no días.
+  //  fluido y se puedan ver conversaciones completas en minutos, no días.
   let nextAt;
   if (forceImmediate) {
     const secs = 10 + Math.floor(Math.random() * 20);
     nextAt = new Date(now.getTime() + secs * 1000);
   } else {
-    nextAt = schedule.computeNextActionAt(receiverMember.persona, pair, now);
+    const receiverBoost = store.isBoostActive(receiverMember);
+    nextAt = schedule.computeNextActionAt(receiverMember.persona, pair, now, { boost: receiverBoost });
   }
   store.updatePair(pair.id, {
     state: nextWaitingState,

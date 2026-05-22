@@ -728,8 +728,8 @@
         </section>
       </div>
 
-      <!-- Phase 6: Script panel lateral durante la llamada -->
-      <div id="telnyx-script-panel" style="display:none; position:fixed; bottom:24px; right:380px; width:380px; max-height:calc(100vh - 60px); background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; box-shadow:0 12px 36px rgba(0,0,0,0.5); z-index:2399; overflow:hidden; display:none; flex-direction:column;">
+      <!-- Phase 6: Script panel — al lado del panel centrado durante llamada -->
+      <div id="telnyx-script-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(calc(-50% + 240px), -50%); width:420px; max-width:42vw; max-height:80vh; background:#11131A; border:1px solid rgba(157,133,242,0.4); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; flex-direction:column; animation:tlxSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
         <div style="padding:12px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.08) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:8px;">
           <strong style="font-size:13px; color:var(--text-primary);">📝 Guion de llamada</strong>
           <button id="telnyx-script-close" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:18px; padding:0; line-height:1;">✕</button>
@@ -741,8 +741,17 @@
         </div>
       </div>
 
-      <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) -->
-      <div id="telnyx-call-panel" style="display:none; position:fixed; bottom:24px; right:24px; width:360px; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.25), 0 0 60px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; font-family:inherit;">
+      <!-- Phase 6: Audio remote del SDK Telnyx — CRÍTICO para escuchar al lead.
+           Sin este element, el remote stream del peer connection no se reproduce
+           y el setter solo es escuchado pero no escucha. autoplay + playsinline
+           para que arranque sin gesture (gesture ya hecho al click "Llamar"). -->
+      <audio id="telnyx-remote-audio" autoplay playsinline style="display:none;"></audio>
+
+      <!-- Phase 6: Backdrop oscuro mientras hay llamada activa (call mode) -->
+      <div id="telnyx-call-backdrop" style="display:none; position:fixed; inset:0; background:rgba(8,9,12,0.78); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9990; animation:tlxFadeIn 0.2s ease-out;"></div>
+
+      <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) — modal centrado -->
+      <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
         <!-- Header con avatar + status + timer -->
         <div style="padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex; align-items:center; gap:14px;">
@@ -781,10 +790,16 @@
 
         <style>
           @keyframes tlxPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.85); } }
+          @keyframes tlxFadeIn { from { opacity:0; } to { opacity:1; } }
+          @keyframes tlxScaleIn { from { opacity:0; transform:translate(-50%,-50%) scale(0.92); } to { opacity:1; transform:translate(-50%,-50%) scale(1); } }
+          @keyframes tlxSlideIn { from { opacity:0; transform:translate(calc(-50% + 200px), -50%); } to { opacity:1; transform:translate(calc(-50% + 240px), -50%); } }
           .tlx-btn-action:hover { background:rgba(255,255,255,0.09) !important; border-color:rgba(157,133,242,0.4) !important; }
           .tlx-btn-action:active { transform:scale(0.97); }
+          .tlx-btn-action.tlx-mute-active { background:rgba(157,133,242,0.18) !important; border-color:rgba(157,133,242,0.5) !important; color:var(--accent) !important; }
           #telnyx-call-hangup:hover { box-shadow:0 6px 20px rgba(248,81,73,0.5); transform:translateY(-1px); }
           #telnyx-call-hangup:active { transform:translateY(0); }
+          /* Cuando el guion está abierto, el panel principal se mueve a la izquierda */
+          body.tlx-script-open #telnyx-call-panel { transform:translate(calc(-50% - 240px), -50%) !important; transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         </style>
       </div>
 
@@ -2388,6 +2403,6 @@
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
   <script type="module" src="/app.js?v=20260522f"></script>
-  <script type="module" src="/wa.js?v=20260425k"></script>
+  <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

@@ -292,7 +292,7 @@ export function registerWaRoutes(app, deps) {
   // Si la cuenta no tiene routine, busca o crea la "SCM Default" con la
   // curva pragmática SCM (defaultPhases) y se la attachea. Después arranca.
   // Idempotente: si ya está calentando, devuelve el estado actual sin re-arrancar.
-  app.post("/api/wa/accounts/:id/start-warming-default", requireAuth, requireRole("admin"), (req, res) => {
+  app.post("/api/wa/accounts/:id/start-warming-default", requireAuth, requireRole("admin"), async (req, res) => {
     let account = getAccount(req.params.id);
     if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
     const userId = ownerUserIdOfAccount(account);
@@ -348,6 +348,28 @@ export function registerWaRoutes(app, deps) {
       },
     });
 
+    // P4 (2026-05-22): si admin pide enrollInAi=true (default true), enrolar
+    // la cuenta tambien en la red de warming AI-to-AI. Asi un solo click
+    // arranca el warming clasico Y la red de chats entre cuentas propias.
+    // Si ya esta enrolada, no rompe nada (devuelve "ya inscripta").
+    const enrollInAi = req.body?.enrollInAi !== false; // default true
+    let aiEnrollResult = null;
+    if (enrollInAi) {
+      try {
+        const wnStore = await import("./warming-network/store.js");
+        const { personaFor } = await import("./warming-network/persona-generator.js");
+        const persona = personaFor(account.id);
+        aiEnrollResult = wnStore.enrollAccount({
+          accountId: account.id,
+          setterId: userId,
+          persona,
+          boostDays: 3, // arranca con boost 3d para volumen rapido
+        });
+      } catch (e) {
+        aiEnrollResult = { ok: false, reason: "AI net enroll failed: " + e.message };
+      }
+    }
+
     res.json({
       ok: true,
       routineId: routine.id,
@@ -359,6 +381,7 @@ export function registerWaRoutes(app, deps) {
         routineStartedAt: account.routineStartedAt,
         staggerOffsetMs: account.staggerOffsetMs,
       },
+      aiNetwork: aiEnrollResult,
     });
   });
 
@@ -642,6 +665,141 @@ export function registerWaRoutes(app, deps) {
     } else {
       res.json(orch.getAllDiagnostics());
     }
+  });
+
+  // P7: simular conversacion sin enviar realmente al wa-multi.
+  // body: { pairId, count: 3, alternate: true }
+  // - Si no se pasa pairId, intenta el primer par activo.
+  // - Genera N mensajes alternando A→B→A→B... usando el LLM real,
+  //   pero NO emite socket al wa-multi (no se envia nada por WhatsApp).
+  // - Devuelve los mensajes generados para preview en panel.
+  // - Cuenta tokens/costo en stats LLM (porque el call real al modelo si pasa).
+  app.post("/api/wa/warming-network/simulate", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const conv = await import("./warming-network/conversation.js");
+    const count = Math.max(1, Math.min(10, Number(req.body?.count) || 3));
+    let pairId = req.body?.pairId;
+    let pair = pairId ? wnStore.getPair(pairId) : null;
+    if (!pair) {
+      const active = wnStore.listActivePairs();
+      if (active.length === 0) return res.status(400).json({ error: "no hay pares activos para simular" });
+      pair = active[0];
+      pairId = pair.id;
+    }
+    const memberA = wnStore.getPoolMember(pair.accountA);
+    const memberB = wnStore.getPoolMember(pair.accountB);
+    if (!memberA || !memberB) return res.status(400).json({ error: "alguno de los miembros no esta en el pool" });
+
+    // Trabajamos sobre una COPIA del par para no contaminar el historial real
+    const simPair = {
+      ...pair,
+      history: [...(pair.history || [])],
+    };
+    const generated = [];
+    let nextSender = "A"; // siempre arranca A para simplicidad
+    if (simPair.history.length > 0) {
+      const last = simPair.history[simPair.history.length - 1];
+      nextSender = last.from === "A" ? "B" : "A";
+    }
+
+    for (let i = 0; i < count; i++) {
+      const sender = nextSender === "A" ? memberA : memberB;
+      const receiver = nextSender === "A" ? memberB : memberA;
+      try {
+        const result = await conv.generateMessage(simPair, sender.persona, receiver.persona);
+        const text = (result && result.text) || "";
+        if (!text) {
+          generated.push({ from: nextSender, by: sender.persona.name, error: "LLM devolvio vacio" });
+          break;
+        }
+        simPair.history.push({ from: nextSender, text, at: new Date().toISOString() });
+        generated.push({
+          from: nextSender,
+          by: sender.persona.name,
+          to: receiver.persona.name,
+          text,
+          llmCost: result.llmCost,
+          tokensIn: result.tokensIn,
+          tokensOut: result.tokensOut,
+        });
+      } catch (err) {
+        generated.push({ from: nextSender, by: sender.persona.name, error: err.message });
+        break;
+      }
+      nextSender = nextSender === "A" ? "B" : "A";
+    }
+    res.json({
+      pairId,
+      pair: {
+        accountA: pair.accountA,
+        accountB: pair.accountB,
+        state: pair.state,
+        nameA: memberA.persona.name,
+        nameB: memberB.persona.name,
+      },
+      generated,
+      note: "SIMULACION — NO se envio ningun mensaje real por WhatsApp. Costo IA si fue real.",
+    });
+  });
+
+  // P3: extender/cancelar modo boost de una cuenta.
+  // body: { days: number } - 0 cancela, >0 setea (cap interno 7d en store)
+  app.post("/api/wa/warming-network/boost/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const days = Number(req.body?.days);
+    if (!Number.isFinite(days)) return res.status(400).json({ error: "days numerico requerido" });
+    const result = wnStore.setBoost(req.params.accountId, days);
+    if (!result.ok) return res.status(404).json({ error: result.reason });
+    // Tick inmediato para que el cambio se note rapido
+    try {
+      const orch = await import("./warming-network/orchestrator.js");
+      void orch.tick();
+    } catch {}
+    res.json(result);
+  });
+
+  // P6: salud por cuenta. Devuelve datos operativos para decidir si una
+  // cuenta esta viva, activa, productiva.
+  app.get("/api/wa/warming-network/account-health/:accountId", requireAuth, requireRole("admin"), async (req, res) => {
+    const wnStore = await import("./warming-network/store.js");
+    const accountId = req.params.accountId;
+    const member = wnStore.getPoolMember(accountId);
+    if (!member) return res.status(404).json({ error: "cuenta no esta en pool" });
+
+    const pairs = wnStore.listPairsForAccount(accountId);
+    const allSent = wnStore.listRecentSentMessages({ limit: 200, accountId });
+    const lastSent = allSent.find((m) => m.fromAccount === accountId) || null;
+    const lastReceived = allSent.find((m) => m.toAccount === accountId) || null;
+    // Sumar mensajes enviados ultimas 24h por esta cuenta (para detectar inactivas)
+    const oneDayAgo = Date.now() - 24 * 3600 * 1000;
+    const sent24h = allSent.filter((m) => m.fromAccount === accountId && new Date(m.sentAt).getTime() > oneDayAgo).length;
+
+    res.json({
+      accountId,
+      setterId: member.setterId,
+      enrolledAt: member.enrolledAt,
+      active: member.active,
+      pausedReason: member.pausedReason,
+      boostUntil: member.boostUntil || null,
+      persona: {
+        name: member.persona.name,
+        age: member.persona.age,
+        city: member.persona.city,
+        replySpeed: member.persona.replySpeed,
+        activeWindow: member.persona.activeWindow,
+      },
+      pairs: {
+        active: pairs.length,
+        ids: pairs.map((p) => p.id),
+      },
+      activity: {
+        sentLast24h: sent24h,
+        lastSentAt: lastSent?.sentAt || null,
+        lastSentPreview: lastSent?.text?.slice(0, 60) || null,
+        lastReceivedAt: lastReceived?.sentAt || null,
+        lastReceivedPreview: lastReceived?.text?.slice(0, 60) || null,
+      },
+    });
   });
 
   // Endpoint que recibe del wa-multi cuando una cuenta del pool RECIBE un

@@ -16,6 +16,8 @@
  * (se pasan desde el boot del server, donde se construyen los clientes).
  */
 
+import * as store from "./store.js";
+
 let _aiClient = null;
 let _aiModel = null;
 let _logger = console;
@@ -24,7 +26,9 @@ let _logger = console;
 const COST_PER_1K_INPUT = 0.0001;  // Mercury aproximado
 const COST_PER_1K_OUTPUT = 0.0002; // Mercury aproximado
 
-const stats = {
+// In-memory mirror del proceso actual (acumulador rapido para no leer disco
+// cada vez que el panel pregunta). Se sincroniza al boot via initLLMClient().
+const memStats = {
   totalCalls: 0,
   totalSuccesses: 0,
   totalFailures: 0,
@@ -42,7 +46,16 @@ export function initLLMClient({ aiClient, aiModel, logger }) {
   _aiClient = aiClient;
   _aiModel = aiModel;
   if (logger) _logger = logger;
-  _logger.log("[warming-llm] inicializado con modelo:", aiModel);
+  // Hidratar memStats con lo persistido para que getLLMStats() devuelva
+  // el historico real desde el primer call post-reboot.
+  try {
+    const persisted = store.getLLMStatsPersisted();
+    memStats.totalCalls = persisted.totalCalls || 0;
+    memStats.totalSuccesses = persisted.totalSuccesses || 0;
+    memStats.totalFailures = persisted.totalFailures || 0;
+    memStats.totalEstimatedCostUsd = persisted.totalEstimatedCostUsd || 0;
+  } catch (e) { _logger.warn("[warming-llm] no pude hidratar stats persistidas:", e.message); }
+  _logger.log("[warming-llm] inicializado con modelo:", aiModel, "stats hidrated calls=", memStats.totalCalls);
 }
 
 /**
@@ -60,7 +73,7 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
     throw new Error("LLM client no inicializado (llamar initLLMClient primero)");
   }
 
-  stats.totalCalls++;
+  memStats.totalCalls++;
   const start = Date.now();
 
   try {
@@ -78,8 +91,9 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
     const tokensIn = response.usage?.prompt_tokens || 0;
     const tokensOut = response.usage?.completion_tokens || 0;
     const cost = (tokensIn / 1000) * COST_PER_1K_INPUT + (tokensOut / 1000) * COST_PER_1K_OUTPUT;
-    stats.totalSuccesses++;
-    stats.totalEstimatedCostUsd += cost;
+    memStats.totalSuccesses++;
+    memStats.totalEstimatedCostUsd += cost;
+    try { store.recordLLMCall({ success: true, cost }); } catch (e) {}
 
     const elapsed = Date.now() - start;
     _logger.log(
@@ -87,12 +101,13 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
     );
     return { text, tokensIn, tokensOut, cost, model: _aiModel };
   } catch (err) {
-    stats.totalFailures++;
+    memStats.totalFailures++;
+    try { store.recordLLMCall({ success: false, error: err.message }); } catch (e) {}
     _logger.error("[warming-llm] error:", err.message);
     throw err;
   }
 }
 
 export function getLLMStats() {
-  return { ...stats };
+  return { ...memStats };
 }
