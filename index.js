@@ -6850,10 +6850,34 @@ function _defaultTelnyxConfig() {
   };
 }
 
+// Campos sensibles que se pueden setear vía env var. La env var SIEMPRE gana
+// sobre el JSON (12-factor app principle). Si la env var está seteada, el
+// panel admin no puede sobrescribirla (la PUT la rechaza con error claro).
+// La idea: secrets viven en Railway env vars, NUNCA tocan disco del Volume.
+// Lo que sigue en JSON: numbers (E.164) + countryRouting (no son secretos).
+const TELNYX_ENV_FIELDS = {
+  apiKey: "TELNYX_API_KEY",
+  sipUsername: "TELNYX_SIP_USERNAME",
+  sipPassword: "TELNYX_SIP_PASSWORD",
+  sipConnectionId: "TELNYX_SIP_CONNECTION_ID",
+  signaturePublicKey: "TELNYX_SIGNATURE_PUBLIC_KEY",
+};
+
+// Devuelve qué campos vienen de env var (no de JSON). Lo usa el frontend
+// para mostrar "🔒 Configurado vía env var" en lugar de input editable.
+function _telnyxEnvSourced() {
+  const sourced = {};
+  for (const [field, envName] of Object.entries(TELNYX_ENV_FIELDS)) {
+    sourced[field] = !!(process.env[envName] && String(process.env[envName]).trim());
+  }
+  return sourced;
+}
+
 function loadTelnyxConfig() {
+  let cfg;
   try {
     if (fs.existsSync(TELNYX_CONFIG_FILE)) {
-      const cfg = JSON.parse(fs.readFileSync(TELNYX_CONFIG_FILE, "utf8"));
+      cfg = JSON.parse(fs.readFileSync(TELNYX_CONFIG_FILE, "utf8"));
       if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
       if (typeof cfg.sipUsername !== "string") cfg.sipUsername = "";
       if (typeof cfg.sipPassword !== "string") cfg.sipPassword = "";
@@ -6861,14 +6885,24 @@ function loadTelnyxConfig() {
       if (typeof cfg.signaturePublicKey !== "string") cfg.signaturePublicKey = "";
       if (!Array.isArray(cfg.numbers)) cfg.numbers = [];
       if (!cfg.countryRouting || typeof cfg.countryRouting !== "object") cfg.countryRouting = { default: "" };
-      return cfg;
     }
   } catch (e) { console.error("[telnyx] Error leyendo config:", e.message); }
-  // Lazy init
-  const seeded = _defaultTelnyxConfig();
-  try { fs.writeFileSync(TELNYX_CONFIG_FILE, JSON.stringify(seeded, null, 2), "utf8"); }
-  catch (e) { console.warn("[telnyx] No pude escribir seed config:", e.message); }
-  return seeded;
+  if (!cfg) {
+    // Lazy init
+    cfg = _defaultTelnyxConfig();
+    try { fs.writeFileSync(TELNYX_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+    catch (e) { console.warn("[telnyx] No pude escribir seed config:", e.message); }
+  }
+  // Overlay env vars con prioridad sobre JSON. Si TELNYX_API_KEY existe en
+  // process.env, sobreescribe lo que esté en disk. Esto permite operar 100%
+  // sin que ningún secret toque el filesystem (Railway env vars puras).
+  for (const [field, envName] of Object.entries(TELNYX_ENV_FIELDS)) {
+    const envVal = process.env[envName];
+    if (envVal && String(envVal).trim()) {
+      cfg[field] = String(envVal).trim();
+    }
+  }
+  return cfg;
 }
 
 function saveTelnyxConfig(cfg) {
@@ -6877,13 +6911,15 @@ function saveTelnyxConfig(cfg) {
 }
 
 // Helper para sanitizar config antes de devolverla al cliente (admin).
-// Quita los secrets pero mantiene flags útiles.
+// Quita los secrets pero mantiene flags útiles. El campo `envSourced` le dice
+// al frontend qué campos vienen de env var (input read-only, no se puede editar).
 function _publicTelnyxConfig(cfg) {
   return {
     hasApiKey: !!(cfg.apiKey && cfg.apiKey.trim()),
     hasSipCredentials: !!(cfg.sipUsername && cfg.sipPassword),
     sipConnectionId: cfg.sipConnectionId || "",
     hasSignatureKey: !!(cfg.signaturePublicKey && cfg.signaturePublicKey.trim()),
+    envSourced: _telnyxEnvSourced(),
     numbers: cfg.numbers || [],
     countryRouting: cfg.countryRouting || { default: "" },
     updatedAt: cfg.updatedAt,
@@ -7410,14 +7446,63 @@ app.get("/api/telnyx/config", requireAuth, (req, res) => {
 // PUT /api/telnyx/config — admin actualiza secrets/config.
 // Body: { apiKey?, sipUsername?, sipPassword?, sipConnectionId?, signaturePublicKey?, countryRouting? }
 // Cualquier campo omitido NO se toca (no se borran secrets sin querer).
+//
+// Si un campo viene de env var (TELNYX_API_KEY, etc.), se rechaza el update de
+// ese campo. La intención es que env vars sean inmutables desde el panel —
+// si querés cambiarlas, lo hacés en Railway y redeploy. Esto evita confusión
+// donde admin "guarda" en el JSON pero el env var sigue mandando.
 app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
   const { apiKey, sipUsername, sipPassword, sipConnectionId, signaturePublicKey, countryRouting } = req.body || {};
-  const cfg = loadTelnyxConfig();
-  if (typeof apiKey === "string") cfg.apiKey = apiKey.trim();
-  if (typeof sipUsername === "string") cfg.sipUsername = sipUsername.trim();
-  if (typeof sipPassword === "string") cfg.sipPassword = sipPassword.trim();
-  if (typeof sipConnectionId === "string") cfg.sipConnectionId = sipConnectionId.trim();
-  if (typeof signaturePublicKey === "string") cfg.signaturePublicKey = signaturePublicKey.trim();
+  const envSourced = _telnyxEnvSourced();
+
+  // Detectar intento de update a campo env-managed
+  const blockedFields = [];
+  if (typeof apiKey === "string" && envSourced.apiKey) blockedFields.push("apiKey (TELNYX_API_KEY)");
+  if (typeof sipUsername === "string" && envSourced.sipUsername) blockedFields.push("sipUsername (TELNYX_SIP_USERNAME)");
+  if (typeof sipPassword === "string" && envSourced.sipPassword) blockedFields.push("sipPassword (TELNYX_SIP_PASSWORD)");
+  if (typeof sipConnectionId === "string" && envSourced.sipConnectionId) blockedFields.push("sipConnectionId (TELNYX_SIP_CONNECTION_ID)");
+  if (typeof signaturePublicKey === "string" && envSourced.signaturePublicKey) blockedFields.push("signaturePublicKey (TELNYX_SIGNATURE_PUBLIC_KEY)");
+  if (blockedFields.length) {
+    return res.status(409).json({
+      error: "Campos gestionados por env vars no se pueden modificar desde el panel.",
+      blocked: blockedFields,
+      hint: "Editá las env vars en Railway y redeployá.",
+    });
+  }
+
+  // Leer cfg SIN aplicar env overlay para que el save preserve solo lo del JSON.
+  // (loadTelnyxConfig haría overlay, ensuciando lo persistido.)
+  let cfg;
+  try {
+    if (fs.existsSync(TELNYX_CONFIG_FILE)) {
+      cfg = JSON.parse(fs.readFileSync(TELNYX_CONFIG_FILE, "utf8"));
+    }
+  } catch {}
+  if (!cfg) cfg = _defaultTelnyxConfig();
+  // Normalizar shapes
+  if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
+  if (typeof cfg.sipUsername !== "string") cfg.sipUsername = "";
+  if (typeof cfg.sipPassword !== "string") cfg.sipPassword = "";
+  if (typeof cfg.sipConnectionId !== "string") cfg.sipConnectionId = "";
+  if (typeof cfg.signaturePublicKey !== "string") cfg.signaturePublicKey = "";
+  if (!Array.isArray(cfg.numbers)) cfg.numbers = [];
+  if (!cfg.countryRouting || typeof cfg.countryRouting !== "object") cfg.countryRouting = { default: "" };
+
+  if (typeof apiKey === "string" && !envSourced.apiKey) cfg.apiKey = apiKey.trim();
+  if (typeof sipUsername === "string" && !envSourced.sipUsername) cfg.sipUsername = sipUsername.trim();
+  if (typeof sipPassword === "string" && !envSourced.sipPassword) cfg.sipPassword = sipPassword.trim();
+  if (typeof sipConnectionId === "string" && !envSourced.sipConnectionId) cfg.sipConnectionId = sipConnectionId.trim();
+  if (typeof signaturePublicKey === "string" && !envSourced.signaturePublicKey) cfg.signaturePublicKey = signaturePublicKey.trim();
+
+  // Self-healing: si env var está activa para un campo, ese campo en JSON se
+  // limpia. Cubre el caso de migración: admin cargó secrets en panel (era
+  // pre-refactor) y ahora setea env vars. Sin esto, los secrets viejos
+  // quedarían dormidos en data/telnyx_config.json. En cada save los limpiamos.
+  for (const [field] of Object.entries(TELNYX_ENV_FIELDS)) {
+    if (envSourced[field] && cfg[field]) {
+      cfg[field] = "";
+    }
+  }
   if (countryRouting && typeof countryRouting === "object") {
     // Validar que los ids en routing existan en numbers (o sean string vacío)
     const validIds = new Set((cfg.numbers || []).map((n) => n.id));
@@ -7433,7 +7518,8 @@ app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
   cfg.updatedAt = new Date().toISOString();
   cfg.updatedBy = req.auth?.user?.email || req.auth?.user?.name || "admin";
   saveTelnyxConfig(cfg);
-  res.json(_publicTelnyxConfig(cfg));
+  // Devolver representación pública (que aplicará overlay de env vars si los hay)
+  res.json(_publicTelnyxConfig(loadTelnyxConfig()));
 });
 
 // POST /api/telnyx/numbers — admin agrega un número virtual a la lista.

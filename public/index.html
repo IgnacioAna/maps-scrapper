@@ -1825,10 +1825,11 @@
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
               <div>
                 <strong style="font-size:14px;">🔑 Credenciales Telnyx</strong>
-                <div class="muted" style="font-size:12px; margin-top:2px;">API key se guarda server-side, nunca se expone al browser.</div>
+                <div class="muted" style="font-size:12px; margin-top:2px;">Recomendado: cargar secrets como env vars en Railway (TELNYX_API_KEY, TELNYX_SIP_PASSWORD, etc.) — no tocan disco del Volume.</div>
               </div>
               <span id="tlx-cfg-status" class="chip" style="padding:3px 10px; font-size:11px;">—</span>
             </div>
+            <div id="tlx-cfg-env-banner" style="display:none; padding:10px 14px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; font-size:12px; color:var(--text-primary); margin-bottom:12px;"></div>
             <div style="display:grid; gap:10px; grid-template-columns:1fr 1fr;">
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">API Key (Bearer)</span>
@@ -2293,7 +2294,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/index.iife.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260521b"></script>
+  <script type="module" src="/app.js?v=20260522a"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

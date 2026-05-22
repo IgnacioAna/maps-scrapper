@@ -36,6 +36,26 @@ Railway escucha, actualizar este doc inmediatamente.
 - `APIFY_TOKEN` - Apify (Instagram Scraper)
 - `RESEND_API_KEY` - Resend (envío de invitaciones por email)
 - `JWT_SECRET` - secret para JWT del módulo WA (si no está, deriva de ADMIN_PASSWORD)
+- `TELNYX_API_KEY` - **Recomendado**. Si está seteada, sobrescribe la del JSON y bloquea edición desde panel admin
+- `TELNYX_SIP_USERNAME` - **Recomendado**. Idem (env > JSON)
+- `TELNYX_SIP_PASSWORD` - **Recomendado**. Idem
+- `TELNYX_SIP_CONNECTION_ID` - **Recomendado**. Idem
+- `TELNYX_SIGNATURE_PUBLIC_KEY` - **Recomendado**. Idem (es pública pero por simetría operativa va con el grupo)
+
+### Seguridad Telnyx: env vars > JSON
+
+A partir de 2026-05-22 los 5 campos sensibles de Telnyx (`apiKey`, `sipUsername`, `sipPassword`, `sipConnectionId`, `signaturePublicKey`) se pueden cargar como env vars en Railway. Si están seteados ahí, **el JSON los ignora completamente** y el panel admin bloquea su edición (PUT devuelve 409 si se intenta).
+
+Motivos:
+- Secrets no tocan el Railway Volume (no aparecen en `data/telnyx_config.json`, ni en backups locales, ni en exports del pre-deploy)
+- Imposible que un admin futuro los "vea" desde el panel
+- Rotación más segura: cambiar en Railway → redeploy → ya está
+
+El JSON `telnyx_config.json` queda solo para datos no-sensibles: `numbers[]` (E.164 + label + country) y `countryRouting`. Los `numbers` y el routing se siguen editando desde el panel.
+
+Self-healing: cuando se hace PUT de config y env var está activa para un campo, ese campo en el JSON se **limpia a `""`** automáticamente. Cubre el caso de migración (admin cargó secrets en panel pre-refactor y ahora setea env vars: en el próximo save los secrets viejos del JSON se borran).
+
+Helper expuesto: `_telnyxEnvSourced()` devuelve `{apiKey: bool, sipUsername: bool, ...}` indicando qué viene de env. El `/api/telnyx/config` GET lo incluye como `envSourced` para que el frontend muestre el lock visual 🔒 en los inputs.
 
 ## Estructura de datos
 

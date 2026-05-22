@@ -8684,7 +8684,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ═══════════════════════════════════════════════════════════════════════
   // Phase 6: Centralita Telnyx — vista admin (config + numbers + routing + metrics)
   // ═══════════════════════════════════════════════════════════════════════
-  let _tlxAdminCache = { numbers: [], countryRouting: {}, hasApiKey: false, hasSipCredentials: false, hasSignatureKey: false, sipConnectionId: '' };
+  let _tlxAdminCache = { numbers: [], countryRouting: {}, hasApiKey: false, hasSipCredentials: false, hasSignatureKey: false, sipConnectionId: '', envSourced: {} };
   let _tlxMetricsRefreshTimer = null;
 
   async function _tlxLoadConfig() {
@@ -8697,6 +8697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         hasSipCredentials: !!d.hasSipCredentials,
         hasSignatureKey: !!d.hasSignatureKey,
         sipConnectionId: d.sipConnectionId || '',
+        envSourced: d.envSourced || {},
         numbers: d.numbers || [],
         countryRouting: d.countryRouting || { default: '' },
       };
@@ -8719,17 +8720,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusEl.style.background = 'rgba(255,255,255,0.06)'; statusEl.style.color = 'var(--text-secondary)';
       }
     }
-    // API key inputs — solo mostrar placeholder "configurado" si ya hay
-    const apiInput = document.getElementById('tlx-cfg-apikey');
-    if (apiInput) apiInput.placeholder = _tlxAdminCache.hasApiKey ? '✓ Configurada (dejar vacío para no cambiar)' : 'KEY_...';
-    const sipUserInput = document.getElementById('tlx-cfg-sipuser');
-    if (sipUserInput) sipUserInput.placeholder = _tlxAdminCache.hasSipCredentials ? '✓ Configurado (dejar vacío para no cambiar)' : 'username del SIP Connection';
-    const sipPassInput = document.getElementById('tlx-cfg-sippass');
-    if (sipPassInput) sipPassInput.placeholder = _tlxAdminCache.hasSipCredentials ? '✓ Configurado (dejar vacío para no cambiar)' : '•••••';
+    // Banner global: si HAY env vars activas, mostrar info al admin
+    const banner = document.getElementById('tlx-cfg-env-banner');
+    if (banner) {
+      const env = _tlxAdminCache.envSourced || {};
+      const activeEnvs = Object.entries(env).filter(([, v]) => v).map(([k]) => k);
+      if (activeEnvs.length) {
+        banner.style.display = 'block';
+        banner.innerHTML = `🔒 <strong>Secrets via env vars en Railway:</strong> ${activeEnvs.length} campo(s) gestionado(s) fuera del panel. Para cambiarlos, editá las env vars en Railway y redeployá.`;
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+    // Helper: aplicar lock visual + placeholder a un input cuando viene de env var
+    const applyEnvLock = (id, isEnv, fallbackPlaceholder, configuredFlag) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (isEnv) {
+        el.disabled = true;
+        el.value = '';
+        el.placeholder = '🔒 Gestionado por env var';
+        el.style.opacity = '0.55';
+        el.style.cursor = 'not-allowed';
+      } else {
+        el.disabled = false;
+        el.style.opacity = '';
+        el.style.cursor = '';
+        el.placeholder = configuredFlag ? '✓ Configurada (dejar vacío para no cambiar)' : fallbackPlaceholder;
+      }
+    };
+    const env = _tlxAdminCache.envSourced || {};
+    applyEnvLock('tlx-cfg-apikey', env.apiKey, 'KEY_...', _tlxAdminCache.hasApiKey);
+    applyEnvLock('tlx-cfg-sipuser', env.sipUsername, 'username del SIP Connection', _tlxAdminCache.hasSipCredentials);
+    applyEnvLock('tlx-cfg-sippass', env.sipPassword, '•••••', _tlxAdminCache.hasSipCredentials);
+    applyEnvLock('tlx-cfg-sigkey', env.signaturePublicKey, 'MCowBQYDK2VwAyEA...', _tlxAdminCache.hasSignatureKey);
+    // Connection ID es semi-secreto: si viene de env, mostrar locked. Si no, valor editable.
     const connIdInput = document.getElementById('tlx-cfg-connid');
-    if (connIdInput) connIdInput.value = _tlxAdminCache.sipConnectionId || '';
-    const sigInput = document.getElementById('tlx-cfg-sigkey');
-    if (sigInput) sigInput.placeholder = _tlxAdminCache.hasSignatureKey ? '✓ Configurada (dejar vacío para no cambiar)' : 'MCowBQYDK2VwAyEA...';
+    if (connIdInput) {
+      if (env.sipConnectionId) {
+        connIdInput.disabled = true;
+        connIdInput.value = '🔒 Gestionado por env var';
+        connIdInput.style.opacity = '0.55';
+        connIdInput.style.cursor = 'not-allowed';
+      } else {
+        connIdInput.disabled = false;
+        connIdInput.style.opacity = '';
+        connIdInput.style.cursor = '';
+        connIdInput.value = _tlxAdminCache.sipConnectionId || '';
+      }
+    }
     _tlxRenderNumbers();
     _tlxRenderRouting();
   }
@@ -8966,30 +9005,57 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Guardar credenciales
   document.getElementById('tlx-cfg-save')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    const apiKey = document.getElementById('tlx-cfg-apikey').value.trim();
-    const sipConnectionId = document.getElementById('tlx-cfg-connid').value.trim();
-    const sipUsername = document.getElementById('tlx-cfg-sipuser').value.trim();
-    const sipPassword = document.getElementById('tlx-cfg-sippass').value.trim();
-    const signaturePublicKey = document.getElementById('tlx-cfg-sigkey').value.trim();
-    // Construir body solo con campos no vacíos (preservar lo ya guardado)
+    const env = _tlxAdminCache.envSourced || {};
+    // Construir body solo con campos editables (no env-managed) y no vacíos.
+    // Si un campo viene de env var, NI siquiera lo enviamos (el backend lo
+    // rechazaría con 409). Esto evita mensajes de error confusos.
     const body = {};
-    if (apiKey) body.apiKey = apiKey;
-    if (sipConnectionId || sipConnectionId === '') body.sipConnectionId = sipConnectionId;
-    if (sipUsername) body.sipUsername = sipUsername;
-    if (sipPassword) body.sipPassword = sipPassword;
-    if (signaturePublicKey) body.signaturePublicKey = signaturePublicKey;
-    if (Object.keys(body).length === 0) { window.showToast?.('Nada que guardar', { type: 'warn' }); return; }
+    if (!env.apiKey) {
+      const v = document.getElementById('tlx-cfg-apikey').value.trim();
+      if (v) body.apiKey = v;
+    }
+    if (!env.sipConnectionId) {
+      const v = document.getElementById('tlx-cfg-connid').value.trim();
+      // sipConnectionId admite "" para limpiar
+      if (v || v === '') body.sipConnectionId = v;
+    }
+    if (!env.sipUsername) {
+      const v = document.getElementById('tlx-cfg-sipuser').value.trim();
+      if (v) body.sipUsername = v;
+    }
+    if (!env.sipPassword) {
+      const v = document.getElementById('tlx-cfg-sippass').value.trim();
+      if (v) body.sipPassword = v;
+    }
+    if (!env.signaturePublicKey) {
+      const v = document.getElementById('tlx-cfg-sigkey').value.trim();
+      if (v) body.signaturePublicKey = v;
+    }
+    if (Object.keys(body).length === 0) {
+      const allEnvManaged = env.apiKey && env.sipUsername && env.sipPassword && env.sipConnectionId && env.signaturePublicKey;
+      window.showToast?.(allEnvManaged ? 'Todos los campos están en env vars (editá en Railway)' : 'Nada que guardar', { type: 'warn' });
+      return;
+    }
     btn.disabled = true; btn.textContent = 'Guardando…';
     try {
       const r = await fetch(apiUrl('/api/telnyx/config'), {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify(body),
       });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
+      if (!r.ok) {
+        // Error 409 = campos env-managed bloqueados (no debería pasar porque ya filtramos arriba,
+        // pero por las dudas mostramos el mensaje del backend)
+        let msg = 'HTTP ' + r.status;
+        try {
+          const d = await r.json();
+          if (d?.error) msg = d.error + (d.blocked ? ' [' + d.blocked.join(', ') + ']' : '');
+        } catch {}
+        throw new Error(msg);
+      }
       // Limpiar inputs sensibles del browser
-      document.getElementById('tlx-cfg-apikey').value = '';
-      document.getElementById('tlx-cfg-sippass').value = '';
-      document.getElementById('tlx-cfg-sigkey').value = '';
+      const apiI = document.getElementById('tlx-cfg-apikey'); if (apiI && !apiI.disabled) apiI.value = '';
+      const passI = document.getElementById('tlx-cfg-sippass'); if (passI && !passI.disabled) passI.value = '';
+      const sigI = document.getElementById('tlx-cfg-sigkey'); if (sigI && !sigI.disabled) sigI.value = '';
       window.showToast?.('Credenciales guardadas ✓', { type: 'success' });
       btn.textContent = '✓ Guardado';
       setTimeout(() => { btn.textContent = 'Guardar credenciales'; btn.disabled = false; }, 1800);
