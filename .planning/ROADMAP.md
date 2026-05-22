@@ -153,6 +153,49 @@ falla)
 
 ---
 
+## Phase 6 — Telnyx Calls Foundation
+
+**Goal:** Habilitar a setters y admin a llamar internacional desde el browser
+(WebRTC) usando números virtuales de Telnyx con caller ID local según el
+país destino. Cierra el loop de "leads sin WSP" que hoy quedan en limbo
+porque los setters no usan sus celulares personales para llamar al
+extranjero. Reusa el callLog/disposition existente — esto es la base de
+infraestructura, no es Phase 5 (Llamadas IA con voz automatizada).
+
+**Status:** Active — sprint de 2 días, 16 horas reales.
+
+**Depends on:** módulo Llamadas (view-calls) existente, callLog/disposition
+del Bloque A ya en producción.
+
+**Requirements mapped:** F-01..F-07 (nuevos, agregar a REQUIREMENTS.md)
+
+**Success criteria:**
+1. Admin configura API key Telnyx + lista de números comprados con país
+2. Botón "📞 Llamar" en cada lead de view-calls inicia llamada WebRTC
+3. Panel de llamada activa muestra timer, botón mute, botón colgar
+4. Caller ID saliente se elige automáticamente según país destino del lead
+5. Al colgar, prompt de disposition se abre (reusa endpoint existente)
+6. Stats reales: minutos consumidos hoy/mes, costo USD por setter y país
+7. Script panel inline con value statement framework adaptado a dental
+   (apertura, manejo de objeción "ya tengo sistema", doble apuesta sobre
+   la reunión, NO sobre la solución)
+
+**Out of scope (queda para Phase 5 Llamadas IA o futuras):**
+- Grabación con storage en S3/disco
+- Transcripción Whisper post-llamada
+- Mercury IA en vivo durante la llamada
+- Coaching dashboard avanzado
+- Dialer predictivo / automation
+
+**Constraints:**
+- 16 horas reales de desarrollo total
+- Distribuido en 2 días (deadline duro: plan de Claude se acaba)
+- Costo target operativo: ~$35-55/mes (vs $90-140 de CloudTalk)
+
+**UI hint:** yes (botón + panel de llamada activa + métricas + script panel)
+
+---
+
 ## Phase 5 — Bloque E: Llamadas con IA (futuro lejano)
 
 **Goal:** Llamar a leads que respondieron pero no avanzaron por chat,

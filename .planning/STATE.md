@@ -1,19 +1,21 @@
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-05-01.
+> Estado vivo del proyecto. Actualización: 2026-05-21.
 
 ---
 
 ## Current Phase
 
-**Phase 2 (Bloque B)** — UX para setters / WhatsApp warmer
+**Phase 6 — Telnyx Calls Foundation**
 
-**Status:** Pendiente de discusión y planificación. Foco operativo del
-usuario porque escaló a 15 setters y todos están comprando números —
-el calentamiento de cuentas es lo crítico.
+**Status:** Active — sprint dedicado de 2 días, 16 horas reales. Deadline
+duro: plan de Claude del usuario expira en 48 hs.
 
-**Next step:** `/gsd-discuss-phase 2` — alinear qué subset del Bloque
-B se ataca primero (warmer es el que más le importa).
+**Next step:** `/gsd-plan-phase 6` — armar PLAN.md con waves para los 2 días.
+
+**Why ahora:** El usuario evaluó CloudTalk ($90-140/mes) y decidió ir con
+Telnyx directo ($35-55/mes) construyendo la UI dentro del SCM. Sprint
+maximizado antes del corte de Claude.
 
 ---
 
@@ -22,11 +24,12 @@ B se ataca primero (warmer es el que más le importa).
 | # | Phase | Status |
 |---|-------|--------|
 | 1 | Bloque A — Cierre v1 | Mayormente done (15 setters operativos) |
-| 2 | Bloque B — UX setters / warmer | **Active — foco actual** |
+| 2 | Bloque B — UX setters / warmer | Parcialmente done (warming-lunes + warming-ai-to-ai ejecutadas) |
 | 3 | Bloque C — GHL-ready | Pending |
 | 3.5 | Bloque C.5 — Extensión "pegar humano" | ✅ **Completado y deployado v0.2.0** (2026-04-27) |
 | 4 | Bloque D — IA mejorada | Pending (futuro) |
-| 5 | Bloque E — Llamadas IA | Pending (futuro lejano) |
+| 5 | Bloque E — Llamadas IA | Pending (futuro lejano — depende de Phase 6) |
+| 6 | Telnyx Calls Foundation | **Active — foco actual** |
 
 ---
 
@@ -139,4 +142,16 @@ usuario + observar primer ciclo de mensajes generados por LLM.
 
 ---
 
-*Last updated: 2026-05-01.*
+## Accumulated Context
+
+### Roadmap Evolution
+
+- 2026-05-21 — Phase 6 added: Telnyx Calls Foundation. Sprint dedicado
+  de 2 días (16 hs) antes del corte del plan de Claude. Construye el
+  módulo de llamadas internacionales VoIP dentro del SCM usando Telnyx
+  ($35-55/mes vs CloudTalk $90-140/mes). Es la base de infraestructura
+  para Phase 5 (Llamadas IA con voz automatizada), que queda diferida.
+
+---
+
+*Last updated: 2026-05-21.*
