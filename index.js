@@ -3600,6 +3600,59 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   res.json({ leads });
 });
 
+// POST /api/setters/leads/manual-add — admin agrega un lead manualmente para
+// testing/casos puntuales. Va directo a conexion='sin_wsp' para aparecer en
+// view-calls (Llamadas). No pasa por scraping ni history dedup. Pensado para:
+// (a) testear el módulo Telnyx con tu propio celular, (b) cargar referidos
+// puntuales sin importar CSVs, (c) follow-ups manuales fuera del pipeline.
+app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (req, res) => {
+  const { name, phone, country, city, doctor, setterId } = req.body || {};
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return res.status(400).json({ error: 'name requerido' });
+  }
+  if (!phone || typeof phone !== 'string' || !phone.trim()) {
+    return res.status(400).json({ error: 'phone requerido' });
+  }
+  // Validar E.164: + seguido de 8-15 dígitos
+  const cleanPhone = String(phone).trim();
+  if (!/^\+\d{8,15}$/.test(cleanPhone)) {
+    return res.status(400).json({ error: 'phone debe estar en formato E.164 (ej +5491156789012)' });
+  }
+  const data = loadSettersData();
+  // Determinar setter destino: el pasado, o el primer setter activo, o vacío.
+  let targetSetterId = '';
+  if (setterId && typeof setterId === 'string') {
+    const found = (data.setters || []).find(s => s.id === setterId);
+    if (found) targetSetterId = found.id;
+  }
+  if (!targetSetterId) {
+    const firstActive = (data.setters || []).find(s => s.active !== false);
+    if (firstActive) targetSetterId = firstActive.id;
+  }
+  // Calcular siguiente num
+  const allLeads = Object.values(data.leads || {});
+  const maxNum = allLeads.reduce((m, l) => Math.max(m, l.num || 0), 0) + 1;
+  const now = new Date();
+  const id = `lead_manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const newLead = ensureLeadDefaults({
+    num: maxNum,
+    fecha: now.toISOString().substring(0, 10),
+    name: name.trim().substring(0, 120),
+    phone: cleanPhone,
+    country: String(country || '').trim().substring(0, 60),
+    city: String(city || '').trim().substring(0, 80),
+    doctor: String(doctor || '').trim().substring(0, 80),
+    assignedTo: targetSetterId,
+    conexion: 'sin_wsp',
+    estado: 'sin_wsp',
+    importedAt: now.toISOString(),
+    importedManually: true,  // flag para distinguir de los scrapeados
+  });
+  data.leads[id] = newLead;
+  saveSettersData(data);
+  res.json({ ok: true, lead: { id, ...newLead } });
+});
+
 // Helper compartido: importa un array de leads asignandolos a un setter.
 // Reutilizado por /api/setters/import (admin manual) y por
 // /api/admin/scrape-batches/:id/send-to-setter (re-importar batch sin re-scrapear).

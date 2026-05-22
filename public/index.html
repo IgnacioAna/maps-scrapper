@@ -649,6 +649,49 @@
             <select id="calls-setter-select" class="setter-select" data-roles="admin"><option value="">Todos</option></select>
             <select id="calls-country-filter" class="setter-select" style="min-width:160px;"><option value="">🌎 Todos los países</option></select>
             <input type="text" id="calls-search" placeholder="🔍 Buscar nombre/tel..." style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
+            <button id="calls-add-manual-btn" class="btn-primary" data-roles="admin" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;" title="Agregar un lead manualmente (testing o referidos)">＋ Lead manual</button>
+          </div>
+        </div>
+
+        <!-- Modal: agregar lead manual (admin) -->
+        <div id="calls-manual-modal" class="modal-overlay hidden" style="z-index:1200;">
+          <div class="modal-card" style="max-width:520px; width:95vw;">
+            <div class="modal-header">
+              <h3>＋ Agregar lead manual</h3>
+              <button onclick="document.getElementById('calls-manual-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+            </div>
+            <div style="padding:18px 22px;">
+              <p style="color:var(--text-secondary); font-size:12px; margin:0 0 16px; line-height:1.5;">Útil para testear con tu propio número, cargar referidos puntuales, o follow-ups manuales. El lead aparece directo en Llamadas (sin pasar por scraping).</p>
+              <div style="display:grid; gap:12px;">
+                <label style="display:flex; flex-direction:column; gap:5px;">
+                  <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Nombre <span style="color:var(--danger);">*</span></span>
+                  <input type="text" id="calls-manual-name" placeholder="Ej: Mi celular de testing" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px;">
+                </label>
+                <label style="display:flex; flex-direction:column; gap:5px;">
+                  <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Teléfono E.164 <span style="color:var(--danger);">*</span></span>
+                  <input type="tel" id="calls-manual-phone" placeholder="+5491156789012" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:ui-monospace,monospace;">
+                  <span style="font-size:10px; color:var(--text-tertiary);">Debe empezar con + seguido del código país. Ej: <code style="background:var(--bg-app); padding:1px 4px; border-radius:3px;">+5491156789012</code> (AR), <code style="background:var(--bg-app); padding:1px 4px; border-radius:3px;">+5215512345678</code> (MX)</span>
+                </label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <label style="display:flex; flex-direction:column; gap:5px;">
+                    <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">País</span>
+                    <input type="text" id="calls-manual-country" placeholder="Argentina, México…" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px;">
+                  </label>
+                  <label style="display:flex; flex-direction:column; gap:5px;">
+                    <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Ciudad</span>
+                    <input type="text" id="calls-manual-city" placeholder="Buenos Aires…" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px;">
+                  </label>
+                </div>
+                <label style="display:flex; flex-direction:column; gap:5px;">
+                  <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Doctor / Contacto (opcional)</span>
+                  <input type="text" id="calls-manual-doctor" placeholder="Dr. González" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px;">
+                </label>
+              </div>
+              <div style="display:flex; gap:10px; margin-top:20px; justify-content:flex-end;">
+                <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('calls-manual-modal').classList.add('hidden')">Cancelar</button>
+                <button class="btn-primary pill-btn" id="calls-manual-submit">＋ Crear lead</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -699,28 +742,50 @@
       </div>
 
       <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) -->
-      <div id="telnyx-call-panel" style="display:none; position:fixed; bottom:24px; right:24px; width:340px; background:#171A21; border:2px solid var(--accent); border-radius:14px; box-shadow:0 30px 80px rgba(0,0,0,0.85), 0 0 0 1px rgba(157,133,242,0.5), 0 0 40px rgba(157,133,242,0.25); z-index:9999; overflow:hidden;">
-        <div style="padding:14px 16px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.12) 0%, transparent 100%);">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span id="telnyx-call-status-dot" style="width:10px; height:10px; border-radius:50%; background:var(--warning); display:inline-block; animation:pulse 1.5s ease-in-out infinite;"></span>
-              <strong id="telnyx-call-status" style="font-size:13px; color:var(--text-primary);">Conectando…</strong>
+      <div id="telnyx-call-panel" style="display:none; position:fixed; bottom:24px; right:24px; width:360px; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 30px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.25), 0 0 60px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; font-family:inherit;">
+        <!-- Header con avatar + status + timer -->
+        <div style="padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <!-- Avatar circular con inicial -->
+            <div id="telnyx-call-avatar" style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent) 0%, #7c5ee8 100%); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; box-shadow:0 4px 12px rgba(157,133,242,0.4);">—</div>
+            <div style="flex:1; min-width:0;">
+              <div id="telnyx-call-lead-name" style="font-size:15px; font-weight:600; color:#fff; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
+              <div id="telnyx-call-lead-meta" style="font-size:11.5px; color:rgba(255,255,255,0.55); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
             </div>
-            <span id="telnyx-call-timer" style="font-family:ui-monospace,monospace; font-size:14px; font-weight:600; color:var(--accent);">00:00</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="telnyx-call-status-dot" style="width:8px; height:8px; border-radius:50%; background:#FFB341; box-shadow:0 0 12px #FFB341; display:inline-block; animation:tlxPulse 1.4s ease-in-out infinite;"></span>
+              <strong id="telnyx-call-status" style="font-size:12px; color:rgba(255,255,255,0.85); font-weight:500; letter-spacing:0.2px;">Conectando…</strong>
+            </div>
+            <span id="telnyx-call-timer" style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; font-weight:600; color:var(--accent); letter-spacing:0.5px;">00:00</span>
           </div>
         </div>
-        <div style="padding:14px 16px;">
-          <div id="telnyx-call-lead-name" style="font-size:15px; font-weight:600; color:var(--text-primary); margin-bottom:4px;">—</div>
-          <div id="telnyx-call-lead-meta" style="font-size:11px; color:var(--text-secondary); margin-bottom:10px;">—</div>
-          <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">Desde tu número</div>
-          <div id="telnyx-call-from" style="font-size:12px; color:var(--text-primary); margin-bottom:14px; padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px;">—</div>
-          <div style="display:flex; gap:8px; margin-bottom:6px;">
-            <button id="telnyx-call-script-toggle" class="btn-secondary" style="flex:1; padding:9px; border-radius:9px; font-size:12px; cursor:pointer;">📝 Guion</button>
-            <button id="telnyx-call-mute" class="btn-secondary" style="flex:1; padding:9px; border-radius:9px; font-size:12px; cursor:pointer;">🎤 Mute</button>
+
+        <!-- Cuerpo: "Desde tu número" + botones -->
+        <div style="padding:14px 20px 18px;">
+          <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:6px;">Llamando desde</div>
+          <div id="telnyx-call-from" style="font-size:12px; color:rgba(255,255,255,0.85); margin-bottom:16px; padding:9px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:9px; font-family:ui-monospace,'SF Mono',Menlo,monospace; letter-spacing:0.3px;">—</div>
+
+          <!-- Botones de acción: 2 cols (Guion / Mute) + 1 col (Colgar) -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+            <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 8px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">📝 Guion</button>
+            <button id="telnyx-call-mute" class="tlx-btn-action" style="padding:11px 8px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">🎤 Mute</button>
           </div>
-          <button id="telnyx-call-hangup" style="width:100%; padding:11px; border-radius:9px; font-size:13px; cursor:pointer; background:#f85149; color:#fff; border:1px solid #f85149; font-weight:600;">📵 Colgar</button>
+          <button id="telnyx-call-hangup" style="width:100%; padding:13px; border-radius:11px; font-size:13px; cursor:pointer; background:linear-gradient(180deg, #f85149 0%, #d63a32 100%); color:#fff; border:none; font-weight:600; box-shadow:0 4px 14px rgba(248,81,73,0.35); transition:all 0.15s;">
+            <span style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+              <span style="font-size:14px;">●</span> Colgar
+            </span>
+          </button>
         </div>
-        <style>@keyframes pulse {0%,100%{opacity:1;}50%{opacity:0.3;}}</style>
+
+        <style>
+          @keyframes tlxPulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.85); } }
+          .tlx-btn-action:hover { background:rgba(255,255,255,0.09) !important; border-color:rgba(157,133,242,0.4) !important; }
+          .tlx-btn-action:active { transform:scale(0.97); }
+          #telnyx-call-hangup:hover { box-shadow:0 6px 20px rgba(248,81,73,0.5); transform:translateY(-1px); }
+          #telnyx-call-hangup:active { transform:translateY(0); }
+        </style>
       </div>
 
       <!-- Modal: agendar llamada de ventas con admin -->
@@ -1815,21 +1880,29 @@
       <!-- Phase 6: Centralita Telnyx (admin only) -->
       <div id="view-telnyx-config" class="module-view hidden" data-roles="admin">
         <header class="page-header">
-          <h2 class="page-title">📞 Centralita Telnyx</h2>
-          <p class="muted" style="margin-top:6px;">Llamadas internacionales por VoIP. Configurá API key, números virtuales por país, routing y monitoreá uso + costos.</p>
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <div style="flex-shrink:0; width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, var(--accent) 0%, #7c5ee8 100%); display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 6px 18px rgba(157,133,242,0.35);">📞</div>
+            <div style="flex:1;">
+              <h2 class="page-title" style="margin:0;">Centralita Telnyx</h2>
+              <p class="muted" style="margin-top:4px; font-size:13px;">Llamadas internacionales por VoIP — API key, números virtuales, routing por país y métricas de uso.</p>
+            </div>
+            <span id="tlx-cfg-status" class="chip" style="padding:5px 12px; font-size:11px; font-weight:600; flex-shrink:0; align-self:center;">—</span>
+          </div>
         </header>
-        <section style="margin-top:18px; display:grid; gap:18px;">
+        <section style="margin-top:22px; display:grid; gap:16px;">
 
           <!-- 1. CONFIG (API key + SIP creds) -->
-          <div class="card" style="padding:18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
-              <div>
-                <strong style="font-size:14px;">🔑 Credenciales Telnyx</strong>
-                <div class="muted" style="font-size:12px; margin-top:2px;">Recomendado: cargar secrets como env vars en Railway (TELNYX_API_KEY, TELNYX_SIP_PASSWORD, etc.) — no tocan disco del Volume.</div>
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div style="flex:1; min-width:0;">
+                <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(157,133,242,0.15); border-radius:7px;">🔑</span>
+                  Credenciales Telnyx
+                </strong>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Recomendado: cargar secrets como env vars en Railway (<code style="font-family:ui-monospace,monospace; font-size:11px; padding:1px 5px; background:var(--bg-app); border-radius:3px;">TELNYX_API_KEY</code>, etc.) — no tocan disco del Volume.</div>
               </div>
-              <span id="tlx-cfg-status" class="chip" style="padding:3px 10px; font-size:11px;">—</span>
             </div>
-            <div id="tlx-cfg-env-banner" style="display:none; padding:10px 14px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; font-size:12px; color:var(--text-primary); margin-bottom:12px;"></div>
+            <div id="tlx-cfg-env-banner" style="display:none; padding:12px 16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.04) 100%); border:1px solid rgba(157,133,242,0.3); border-radius:10px; font-size:12.5px; color:var(--text-primary); margin-bottom:14px; line-height:1.5;"></div>
             <div style="display:grid; gap:10px; grid-template-columns:1fr 1fr;">
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">API Key (Bearer)</span>
@@ -1858,52 +1931,72 @@
           </div>
 
           <!-- 2. NÚMEROS VIRTUALES -->
-          <div class="card" style="padding:18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
-              <div>
-                <strong style="font-size:14px;">📱 Números virtuales</strong>
-                <div class="muted" style="font-size:12px; margin-top:2px;">Cada número se usa como caller ID saliente. Recomendado 1 por país de destino frecuente.</div>
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+              <div style="flex:1; min-width:0;">
+                <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(91,185,116,0.15); border-radius:7px;">📱</span>
+                  Números virtuales
+                </strong>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Cada número se usa como caller ID saliente. Recomendado 1 por país de destino frecuente.</div>
               </div>
-              <button id="tlx-num-add-btn" class="btn-primary" style="font-size:12px;">+ Agregar número</button>
+              <button id="tlx-num-add-btn" class="btn-primary" style="font-size:12.5px; padding:9px 14px;">＋ Agregar número</button>
             </div>
-            <ul id="tlx-numbers-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
-            <div id="tlx-numbers-empty" class="muted" style="font-size:12px; text-align:center; padding:18px; display:none;">Sin números todavía. Agregá uno para empezar a llamar.</div>
+            <ul id="tlx-numbers-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
+            <div id="tlx-numbers-empty" style="display:none; text-align:center; padding:36px 18px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.08); border-radius:12px;">
+              <div style="font-size:36px; margin-bottom:10px; opacity:0.5;">📱</div>
+              <div style="font-size:13px; color:var(--text-primary); font-weight:500; margin-bottom:4px;">Sin números todavía</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.5;">Agregá un número de Telnyx en formato E.164 (ej +17866870849) para empezar a llamar.</div>
+            </div>
           </div>
 
           <!-- 3. ROUTING POR PAÍS -->
-          <div class="card" style="padding:18px;">
-            <div style="margin-bottom:14px;">
-              <strong style="font-size:14px;">🌍 Caller ID por país destino</strong>
-              <div class="muted" style="font-size:12px; margin-top:2px;">Cuando llamás a un país, se usa el número saliente que asignes acá. <strong>"Default"</strong> es el fallback si no hay match.</div>
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="margin-bottom:16px;">
+              <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(125,211,252,0.15); border-radius:7px;">🌍</span>
+                Caller ID por país destino
+              </strong>
+              <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Cuando llamás a un país, se usa el número saliente que asignes acá. <strong style="color:var(--text-primary);">Default</strong> es el fallback si no hay match.</div>
             </div>
-            <div id="tlx-routing-grid" style="display:grid; gap:10px;"></div>
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px;">
-              <span class="muted" style="font-size:11px;">Países habilitados: <span id="tlx-routing-countries-list">—</span></span>
-              <button id="tlx-routing-save" class="btn-primary" style="font-size:12px;">Guardar routing</button>
+            <div id="tlx-routing-grid" style="display:grid; gap:8px;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">
+              <span class="muted" style="font-size:11px;">Países habilitados: <span id="tlx-routing-countries-list" style="color:var(--text-primary); font-weight:500;">—</span></span>
+              <button id="tlx-routing-save" class="btn-primary" style="font-size:12.5px; padding:8px 14px;">Guardar routing</button>
             </div>
           </div>
 
           <!-- 5. SCRIPTS DE LLAMADA -->
-          <div class="card" style="padding:18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
-              <div>
-                <strong style="font-size:14px;">📝 Guiones de llamada</strong>
-                <div class="muted" style="font-size:12px; margin-top:2px;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{name}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{city}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{setterName}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{date}</code> <code style="font-size:10px; padding:1px 4px; background:var(--bg-app); border-radius:3px;">{time}</code></div>
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+              <div style="flex:1; min-width:0;">
+                <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(255,179,65,0.15); border-radius:7px;">📝</span>
+                  Guiones de llamada
+                </strong>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{setterName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
               </div>
-              <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12px;">+ Agregar guion</button>
+              <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12.5px; padding:9px 14px;">＋ Agregar guion</button>
             </div>
-            <ul id="tlx-scripts-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px;"></ul>
-            <div id="tlx-scripts-empty" class="muted" style="font-size:12px; text-align:center; padding:18px; display:none;">Sin guiones cargados. Agregá el primero (apertura, objeción, etc.).</div>
+            <ul id="tlx-scripts-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
+            <div id="tlx-scripts-empty" style="display:none; text-align:center; padding:36px 18px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.08); border-radius:12px;">
+              <div style="font-size:36px; margin-bottom:10px; opacity:0.5;">📝</div>
+              <div style="font-size:13px; color:var(--text-primary); font-weight:500; margin-bottom:4px;">Sin guiones cargados</div>
+              <div style="font-size:11.5px; color:var(--text-secondary); line-height:1.5;">Agregá el primero (apertura, objeción, callback, etc.) para que aparezcan durante una llamada activa.</div>
+            </div>
           </div>
 
           <!-- 4. MÉTRICAS -->
-          <div class="card" style="padding:18px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
-              <div>
-                <strong style="font-size:14px;">📊 Uso y costos</strong>
-                <div class="muted" style="font-size:12px; margin-top:2px;">Calculado a partir del callLog. Auto-refresca cada 30s.</div>
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+              <div style="flex:1; min-width:0;">
+                <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(248,81,73,0.15); border-radius:7px;">📊</span>
+                  Uso y costos
+                </strong>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Calculado a partir del callLog. Auto-refresca cada 30s.</div>
               </div>
-              <select id="tlx-metrics-range" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
+              <select id="tlx-metrics-range" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px; cursor:pointer;">
                 <option value="today">Hoy</option>
                 <option value="week">Últimos 7 días</option>
                 <option value="month" selected>Últimos 30 días</option>
@@ -2294,7 +2387,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522e"></script>
+  <script type="module" src="/app.js?v=20260522f"></script>
   <script type="module" src="/wa.js?v=20260425k"></script>
 </body>
 </html>

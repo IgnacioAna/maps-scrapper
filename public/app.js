@@ -3592,8 +3592,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dotEl = document.getElementById('telnyx-call-status-dot');
       if (statusEl) statusEl.textContent = text;
       if (dotEl) {
-        const colorMap = { connecting: 'var(--warning)', ringing: 'var(--warning)', active: 'var(--success)', ending: 'var(--text-secondary)' };
-        dotEl.style.background = colorMap[state] || 'var(--warning)';
+        // Colores explícitos en hex para asegurar que se vean bien
+        const colorMap = {
+          connecting: '#FFB341',  // ámbar
+          ringing: '#FFB341',     // ámbar (mismo, suena)
+          active: '#5BB974',      // verde
+          ending: '#9CA3AF',      // gris
+        };
+        const color = colorMap[state] || '#FFB341';
+        dotEl.style.background = color;
+        dotEl.style.boxShadow = `0 0 12px ${color}`;
+        // Detener animación cuando está en estado "active" o "ending"
+        dotEl.style.animation = (state === 'active' || state === 'ending')
+          ? 'none' : 'tlxPulse 1.4s ease-in-out infinite';
       }
     }
 
@@ -3617,9 +3628,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Abrir panel con estado inicial
       const panel = document.getElementById('telnyx-call-panel');
-      document.getElementById('telnyx-call-lead-name').textContent = lead.name || '(sin nombre)';
+      const leadName = lead.name || '(sin nombre)';
+      document.getElementById('telnyx-call-lead-name').textContent = leadName;
       document.getElementById('telnyx-call-lead-meta').textContent = `${lead.phone}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
-      document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} — ${fromNum.phone}`;
+      // Avatar: 2 iniciales del nombre (o phone si no hay nombre)
+      const initials = (() => {
+        const words = leadName.replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ\s]/g, '').trim().split(/\s+/).filter(Boolean);
+        if (words.length === 0) return '?';
+        if (words.length === 1) return words[0].substring(0, 2).toUpperCase();
+        return (words[0][0] + words[1][0]).toUpperCase();
+      })();
+      const avatarEl = document.getElementById('telnyx-call-avatar');
+      if (avatarEl) avatarEl.textContent = initials;
+      document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} · ${fromNum.phone}`;
       _setTelnyxCallStatus('Conectando…', 'connecting');
       document.getElementById('telnyx-call-timer').textContent = '00:00';
       panel.style.display = 'block';
@@ -3969,6 +3990,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderCallsStats();
     });
     document.getElementById('calls-search').addEventListener('input', () => renderCallsList());
+
+    // Modal "Agregar lead manual" (admin only) — útil para testing y referidos
+    document.getElementById('calls-add-manual-btn')?.addEventListener('click', () => {
+      ['calls-manual-name','calls-manual-phone','calls-manual-country','calls-manual-city','calls-manual-doctor'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.value = '';
+      });
+      document.getElementById('calls-manual-modal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('calls-manual-name')?.focus(), 50);
+    });
+    document.getElementById('calls-manual-submit')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const name = document.getElementById('calls-manual-name').value.trim();
+      const phone = document.getElementById('calls-manual-phone').value.trim();
+      const country = document.getElementById('calls-manual-country').value.trim();
+      const city = document.getElementById('calls-manual-city').value.trim();
+      const doctor = document.getElementById('calls-manual-doctor').value.trim();
+      if (!name) { window.showToast?.('Nombre requerido', { type: 'warn' }); return; }
+      if (!phone) { window.showToast?.('Teléfono requerido', { type: 'warn' }); return; }
+      if (!/^\+\d{8,15}$/.test(phone)) {
+        window.showToast?.('Formato E.164: + seguido de 8-15 dígitos sin espacios. Ej: +5491156789012', { type: 'error', duration: 6000 });
+        return;
+      }
+      btn.disabled = true; const originalText = btn.textContent; btn.textContent = 'Creando…';
+      try {
+        const setter = document.getElementById('calls-setter-select')?.value || '';
+        const r = await fetch(apiUrl('/api/setters/leads/manual-add'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ name, phone, country, city, doctor, setterId: setter }),
+        });
+        if (!r.ok) {
+          let msg = 'HTTP ' + r.status;
+          try { const d = await r.json(); if (d?.error) msg = d.error; } catch {}
+          throw new Error(msg);
+        }
+        document.getElementById('calls-manual-modal').classList.add('hidden');
+        window.showToast?.(`✓ "${name}" agregado a Llamadas`, { type: 'success' });
+        await loadCallsView();
+      } catch (err) {
+        window.showToast?.('Error: ' + err.message, { type: 'error' });
+      } finally {
+        btn.disabled = false; btn.textContent = originalText;
+      }
+    });
 
     // ── Centro de Comando ──
     async function loadCommandCenter() {
