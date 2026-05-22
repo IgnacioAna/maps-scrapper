@@ -33,7 +33,7 @@ const ai = mercuryKey
 // deprecado/movido). Eso rompio warming entero hace ~3 semanas porque era
 // el fallback default. Permitimos override por env var (OPENROUTER_MODEL)
 // y usamos qwen-2.5-7b-instruct:free como default vigente probado.
-const OPENROUTER_FREE_MODEL = process.env.OPENROUTER_MODEL || 'qwen/qwen-2.5-7b-instruct:free';
+const OPENROUTER_FREE_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-instruct:free';
 const AI_MODEL = mercuryKey ? 'mercury-2' : OPENROUTER_FREE_MODEL;
 console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')'}`);
 
