@@ -29,12 +29,17 @@ const ai = mercuryKey
         "X-Title": "GoogleScraper"
       }
     });
-const AI_MODEL = mercuryKey ? 'mercury-2' : 'qwen/qwen3-14b:free';
-console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'Qwen (OpenRouter)'}`);
+// 2026-05-22: qwen/qwen3-14b:free retornaba 404 en OpenRouter (modelo
+// deprecado/movido). Eso rompio warming entero hace ~3 semanas porque era
+// el fallback default. Permitimos override por env var (OPENROUTER_MODEL)
+// y usamos qwen-2.5-7b-instruct:free como default vigente probado.
+const OPENROUTER_FREE_MODEL = process.env.OPENROUTER_MODEL || 'qwen/qwen-2.5-7b-instruct:free';
+const AI_MODEL = mercuryKey ? 'mercury-2' : OPENROUTER_FREE_MODEL;
+console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')'}`);
 
 // Cliente AI separado para warming network. Mercury es un modelo de coding y
 // devuelve completions vacías (0 output tokens) en roleplay conversacional en
-// español — observado en logs producción 2026-05-03. Forzamos Qwen 14B free
+// español — observado en logs producción 2026-05-03. Forzamos Qwen free
 // (OpenRouter) específicamente para warming, que sí chatea bien.
 const warmingAi = qwenKey
   ? new OpenAI({
@@ -46,8 +51,8 @@ const warmingAi = qwenKey
       }
     })
   : ai; // fallback al cliente principal si no hay Qwen
-const WARMING_AI_MODEL = qwenKey ? 'qwen/qwen3-14b:free' : AI_MODEL;
-console.log(`🔥 Warming IA: ${qwenKey ? 'Qwen 14B (OpenRouter)' : 'usa cliente principal'}`);
+const WARMING_AI_MODEL = qwenKey ? OPENROUTER_FREE_MODEL : AI_MODEL;
+console.log(`🔥 Warming IA: ${qwenKey ? 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')' : 'usa cliente principal'}`);
 
 
 // Middleware
