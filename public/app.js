@@ -1618,16 +1618,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ¡Atendió! Detener ringback fake y mostrar estado activo.
             _stopRingbackTone();
             _setTelnyxCallStatus('En llamada', 'active');
-            // Force audio play: algunos browsers (Brave/Chrome) requieren play()
-            // explícito post-stream attach. El gesto del click "Llamar" autoriza.
-            setTimeout(() => {
+            // Attach manual del remoteStream — el SDK lo hace internamente pero
+            // hay race conditions. Verificado en bundle.js: el call expone
+            // call.remoteStream (getter de this.options.remoteStream que el SDK
+            // setea en handleTrackEvent del peer connection). Hacemos retry
+            // con poll cada 250ms hasta 4s — cubre cualquier delay del SDK.
+            let attachRetries = 0;
+            const tryAttachRemoteStream = () => {
               const audioEl = document.getElementById('telnyx-remote-audio');
-              if (audioEl) {
+              const stream = call.remoteStream || _telnyx.activeCall?.remoteStream;
+              if (audioEl && stream && stream.getAudioTracks?.().length > 0) {
+                if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
                 audioEl.volume = 1.0;
                 audioEl.muted = false;
-                audioEl.play?.().catch(() => {});
+                audioEl.play?.().catch(err => {
+                  console.warn('[telnyx] remote audio play() rejected:', err?.message);
+                });
+                console.log('[telnyx] remote audio attached', { tracks: stream.getAudioTracks().length, paused: audioEl.paused });
+                return;
               }
-            }, 200);
+              if (++attachRetries < 16) setTimeout(tryAttachRemoteStream, 250);
+              else console.warn('[telnyx] remote audio NOT attached after 4s', { hasAudioEl: !!audioEl, hasStream: !!stream, callRemoteStream: !!call.remoteStream });
+            };
+            tryAttachRemoteStream();
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
           } else if (state === 'done' || state === 'ended' || state === 'hangup' || state === 'destroy' || state === 'purge') {
