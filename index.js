@@ -7328,6 +7328,118 @@ app.get("/api/mercury/ab-stats", requireAuth, requireRole("admin"), (req, res) =
   });
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 6: Telnyx Calls Foundation — Endpoints REST de config
+// ═══════════════════════════════════════════════════════════════════════
+
+// GET /api/telnyx/config — devuelve config sin secrets.
+// Admin recibe lista completa de numbers + routing + flags.
+// Setter recibe solo numbers activos (cliente los usa para WebRTC dialing).
+app.get("/api/telnyx/config", requireAuth, (req, res) => {
+  const cfg = loadTelnyxConfig();
+  const role = req.auth?.user?.role;
+  if (role === "admin" || role === "supervisor") {
+    return res.json(_publicTelnyxConfig(cfg));
+  }
+  // Setter: solo lo que necesita para llamar
+  return res.json(_setterTelnyxConfig(cfg));
+});
+
+// PUT /api/telnyx/config — admin actualiza secrets/config.
+// Body: { apiKey?, sipUsername?, sipPassword?, sipConnectionId?, signaturePublicKey?, countryRouting? }
+// Cualquier campo omitido NO se toca (no se borran secrets sin querer).
+app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
+  const { apiKey, sipUsername, sipPassword, sipConnectionId, signaturePublicKey, countryRouting } = req.body || {};
+  const cfg = loadTelnyxConfig();
+  if (typeof apiKey === "string") cfg.apiKey = apiKey.trim();
+  if (typeof sipUsername === "string") cfg.sipUsername = sipUsername.trim();
+  if (typeof sipPassword === "string") cfg.sipPassword = sipPassword.trim();
+  if (typeof sipConnectionId === "string") cfg.sipConnectionId = sipConnectionId.trim();
+  if (typeof signaturePublicKey === "string") cfg.signaturePublicKey = signaturePublicKey.trim();
+  if (countryRouting && typeof countryRouting === "object") {
+    // Validar que los ids en routing existan en numbers (o sean string vacío)
+    const validIds = new Set((cfg.numbers || []).map((n) => n.id));
+    validIds.add("");
+    const sanitized = {};
+    for (const [country, numId] of Object.entries(countryRouting)) {
+      if (typeof country === "string" && country.length <= 8 && validIds.has(numId)) {
+        sanitized[country] = numId;
+      }
+    }
+    cfg.countryRouting = sanitized;
+  }
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth?.user?.email || req.auth?.user?.name || "admin";
+  saveTelnyxConfig(cfg);
+  res.json(_publicTelnyxConfig(cfg));
+});
+
+// POST /api/telnyx/numbers — admin agrega un número virtual a la lista.
+// Body: { phone, label, country }
+app.post("/api/telnyx/numbers", requireAuth, requireRole("admin"), (req, res) => {
+  const { phone, label, country } = req.body || {};
+  if (!phone || typeof phone !== "string") {
+    return res.status(400).json({ error: "phone (E.164 format, ej +34911234567) requerido." });
+  }
+  const cfg = loadTelnyxConfig();
+  const cleanPhone = String(phone).trim();
+  if (!/^\+\d{6,}$/.test(cleanPhone)) {
+    return res.status(400).json({ error: "phone debe estar en formato E.164: +<código país><número>" });
+  }
+  if ((cfg.numbers || []).some((n) => n.phone === cleanPhone)) {
+    return res.status(409).json({ error: "Ese número ya está cargado." });
+  }
+  const newNum = {
+    id: `telnyx_num_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    phone: cleanPhone,
+    label: String(label || "").trim().substring(0, 60),
+    country: String(country || "").trim().toUpperCase().substring(0, 4),
+    active: true,
+    createdAt: new Date().toISOString(),
+  };
+  cfg.numbers = [...(cfg.numbers || []), newNum];
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth?.user?.email || "admin";
+  saveTelnyxConfig(cfg);
+  res.json({ ok: true, number: newNum, numbers: cfg.numbers });
+});
+
+// PATCH /api/telnyx/numbers/:id — admin edita label/active/country.
+app.patch("/api/telnyx/numbers/:id", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadTelnyxConfig();
+  const n = (cfg.numbers || []).find((x) => x.id === req.params.id);
+  if (!n) return res.status(404).json({ error: "Número no encontrado." });
+  if (typeof req.body.label === "string") n.label = req.body.label.trim().substring(0, 60);
+  if (typeof req.body.country === "string") n.country = req.body.country.trim().toUpperCase().substring(0, 4);
+  if (typeof req.body.active === "boolean") n.active = req.body.active;
+  n.updatedAt = new Date().toISOString();
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth?.user?.email || "admin";
+  saveTelnyxConfig(cfg);
+  res.json({ ok: true, number: n });
+});
+
+// DELETE /api/telnyx/numbers/:id — admin elimina un número.
+// Limpia cualquier entry de countryRouting que apuntaba a este id.
+app.delete("/api/telnyx/numbers/:id", requireAuth, requireRole("admin"), (req, res) => {
+  const cfg = loadTelnyxConfig();
+  const before = (cfg.numbers || []).length;
+  cfg.numbers = (cfg.numbers || []).filter((n) => n.id !== req.params.id);
+  if (cfg.numbers.length === before) return res.status(404).json({ error: "Número no encontrado." });
+  // Limpiar routing
+  let routingCleaned = 0;
+  for (const [country, numId] of Object.entries(cfg.countryRouting || {})) {
+    if (numId === req.params.id) {
+      cfg.countryRouting[country] = "";
+      routingCleaned++;
+    }
+  }
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth?.user?.email || "admin";
+  saveTelnyxConfig(cfg);
+  res.json({ ok: true, numbers: cfg.numbers, routingCleaned });
+});
+
 // PATCH /api/mercury/generations/:id — el setter (dueño) o admin actualizan
 // setterAction (good/bad/edited), setterEditedText, finalSent.
 app.patch("/api/mercury/generations/:id", requireAuth, (req, res) => {
