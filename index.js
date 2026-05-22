@@ -37,22 +37,36 @@ const OPENROUTER_FREE_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-
 const AI_MODEL = mercuryKey ? 'mercury-2' : OPENROUTER_FREE_MODEL;
 console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')'}`);
 
-// Cliente AI separado para warming network. Mercury es un modelo de coding y
-// devuelve completions vacías (0 output tokens) en roleplay conversacional en
-// español — observado en logs producción 2026-05-03. Forzamos Qwen free
-// (OpenRouter) específicamente para warming, que sí chatea bien.
-const warmingAi = qwenKey
-  ? new OpenAI({
-      apiKey: qwenKey,
-      baseURL: "https://openrouter.ai/api/v1",
-      defaultHeaders: {
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "GoogleScraper-Warming"
-      }
-    })
-  : ai; // fallback al cliente principal si no hay Qwen
-const WARMING_AI_MODEL = qwenKey ? OPENROUTER_FREE_MODEL : AI_MODEL;
-console.log(`🔥 Warming IA: ${qwenKey ? 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')' : 'usa cliente principal'}`);
+// Cliente AI separado para warming network.
+// Historia (2026-05-03): Mercury devolvia completions vacias en roleplay
+// conversacional en español, asi que se forzo Qwen 14B (OpenRouter).
+// Realidad (2026-05-22): qwen3-14b deprecado en OpenRouter, qwen-2.5-7b y
+// llama-3.2-3b:free saturados con 429 rate limit. Resultado: warming muerto.
+//
+// Nueva politica:
+//   1. Si WARMING_USE_MERCURY=1 explicito en env -> usa Mercury (recomendado)
+//   2. Si Mercury esta seteada y no hay Qwen -> usa Mercury (no hay otra)
+//   3. Si Qwen esta seteada -> usa Qwen con OPENROUTER_FREE_MODEL
+//   4. Si no hay nada -> reusa cliente principal
+// Default ahora: si Mercury esta seteada, usa Mercury para warming tambien.
+// Mercury con tier pago es 100x mas estable que el OpenRouter free.
+const forceMercuryWarming = process.env.WARMING_USE_MERCURY === '1' || !qwenKey;
+const warmingAi = (mercuryKey && forceMercuryWarming)
+  ? ai // Mercury, mismo cliente que el principal
+  : (qwenKey
+      ? new OpenAI({
+          apiKey: qwenKey,
+          baseURL: "https://openrouter.ai/api/v1",
+          defaultHeaders: {
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "GoogleScraper-Warming"
+          }
+        })
+      : ai);
+const WARMING_AI_MODEL = (mercuryKey && forceMercuryWarming)
+  ? 'mercury-2'
+  : (qwenKey ? OPENROUTER_FREE_MODEL : AI_MODEL);
+console.log(`🔥 Warming IA: ${WARMING_AI_MODEL} (${forceMercuryWarming && mercuryKey ? 'Mercury preferido' : (qwenKey ? 'Qwen/OpenRouter' : 'cliente principal')})`);
 
 
 // Middleware
