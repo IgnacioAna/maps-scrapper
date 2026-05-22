@@ -3373,6 +3373,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         cf.innerHTML = '<option value="">🌎 Todos los países</option>' + countries.map(c => `<option value="${escHtml(c)}">${fmtCountry(c)} ${escHtml(c)}</option>`).join('');
         if (curCountry && countries.includes(curCountry)) cf.value = curCountry;
 
+        // Phase 6: refrescar config Telnyx ANTES de render para que los
+        // botones "Llamar" salgan como WebRTC (no como fallback `tel:`).
+        // Si esta vista carga antes que la de Setteo (que también llama fetchConfig),
+        // sin esto _telnyx.configured queda en false y el botón cae a tel:.
+        await _telnyx.fetchConfig();
+
         renderCallsList();
         renderCallsStats();
       } catch (e) { console.error(e); }
