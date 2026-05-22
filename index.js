@@ -7440,6 +7440,74 @@ app.delete("/api/telnyx/numbers/:id", requireAuth, requireRole("admin"), (req, r
   res.json({ ok: true, numbers: cfg.numbers, routingCleaned });
 });
 
+// POST /api/telnyx/webrtc-credentials — devuelve credenciales WebRTC para
+// que el browser conecte vía SIP a Telnyx. Estrategia dual:
+//   1) Si apiKey + sipConnectionId configurados: pide ephemeral credentials
+//      a Telnyx (POST /v2/telephony_credentials) — recomendado prod.
+//   2) Fallback: devuelve sipUsername + sipPassword fijos (admin los pega
+//      desde dashboard Telnyx). Útil mientras se completa KYC.
+//
+// El cliente USA estas credenciales para inicializar TelnyxRTC. Las ephemeral
+// vencen en 10min — el cliente debe re-pedir cuando estén por vencer.
+app.post("/api/telnyx/webrtc-credentials", requireAuth, async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Pedile al admin que cargue la API key." });
+  }
+
+  // Estrategia 1: ephemeral via API si tenemos sipConnectionId
+  if (cfg.sipConnectionId && cfg.sipConnectionId.trim()) {
+    try {
+      const userId = req.auth?.user?.id || "unknown";
+      const credResp = await fetch("https://api.telnyx.com/v2/telephony_credentials", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${cfg.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          connection_id: cfg.sipConnectionId,
+          name: `scm_${userId}_${Date.now()}`,
+          expires_in_seconds: 600, // 10 min
+        }),
+      });
+      if (!credResp.ok) {
+        const errBody = await credResp.text().catch(() => "");
+        console.warn(`[telnyx] ephemeral credentials API falló: ${credResp.status}`, errBody.substring(0, 200));
+        // Fallback a SIP fijo si está disponible
+      } else {
+        const credData = await credResp.json();
+        const ephem = credData?.data || {};
+        // Si Telnyx devuelve un token, lo pasamos también (algunos SDKs lo prefieren)
+        return res.json({
+          mode: "ephemeral",
+          sipUsername: ephem.sip_username || ephem.login || "",
+          sipPassword: ephem.sip_password || ephem.password || "",
+          token: ephem.token || null,
+          expiresIn: 600,
+        });
+      }
+    } catch (e) {
+      console.warn("[telnyx] error pidiendo ephemeral, intentando fallback SIP fijo:", e.message);
+    }
+  }
+
+  // Estrategia 2: fallback a SIP fijo del dashboard
+  if (cfg.sipUsername && cfg.sipPassword) {
+    return res.json({
+      mode: "fixed",
+      sipUsername: cfg.sipUsername,
+      sipPassword: cfg.sipPassword,
+      token: null,
+      expiresIn: 0,
+    });
+  }
+
+  return res.status(503).json({
+    error: "Telnyx sin credenciales SIP. Admin debe cargar sipUsername+sipPassword O configurar sipConnectionId para ephemeral.",
+  });
+});
+
 // PATCH /api/mercury/generations/:id — el setter (dueño) o admin actualizan
 // setterAction (good/bad/edited), setterEditedText, finalSent.
 app.patch("/api/mercury/generations/:id", requireAuth, (req, res) => {
