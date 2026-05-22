@@ -51,7 +51,17 @@ console.log(`🔥 Warming IA: ${qwenKey ? 'Qwen 14B (OpenRouter)' : 'usa cliente
 
 
 // Middleware
-app.use(express.json({ limit: '50mb' }));
+// express.json con verify hook: guarda el body raw como string en req.rawBody
+// SOLO para rutas que lo necesitan (webhook Telnyx para validar signature ed25519).
+// Evita doble-parsear para todo el resto de endpoints.
+app.use(express.json({
+  limit: '50mb',
+  verify: (req, _res, buf, encoding) => {
+    if (req.url === '/api/telnyx/webhook') {
+      req.rawBody = buf.toString(encoding || 'utf8');
+    }
+  },
+}));
 
 // Liveness probe público para Railway / monitoreo externo (light, sin auth, sin tocar disco).
 app.get('/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
@@ -7506,6 +7516,118 @@ app.post("/api/telnyx/webrtc-credentials", requireAuth, async (req, res) => {
   return res.status(503).json({
     error: "Telnyx sin credenciales SIP. Admin debe cargar sipUsername+sipPassword O configurar sipConnectionId para ephemeral.",
   });
+});
+
+// ── Telnyx webhook + events log ──
+// Telnyx envía eventos call.initiated, call.answered, call.hangup,
+// call.machine.detection.ended, etc. al webhook URL configurado en su
+// dashboard. Acá los recibimos, validamos signature ed25519 (si key
+// configurada) y persistimos en telnyx_events.json (FIFO 1000).
+//
+// Para el MVP, lo que más nos importa de call.hangup:
+//   - duration_secs: para calcular costo
+//   - to: destino llamado (extraer país)
+//   - from: caller ID usado
+//   - hangup_cause: para diagnóstico
+//   - call_control_id: para correlar con la llamada del cliente
+
+function loadTelnyxEvents() {
+  try {
+    if (fs.existsSync(TELNYX_EVENTS_FILE)) {
+      return JSON.parse(fs.readFileSync(TELNYX_EVENTS_FILE, "utf8"));
+    }
+  } catch (e) { console.error("[telnyx] error leyendo events:", e.message); }
+  return { events: [] };
+}
+
+function saveTelnyxEvents(data) {
+  try { fs.writeFileSync(TELNYX_EVENTS_FILE, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("[telnyx] error guardando events:", e.message); }
+}
+
+// Validación ed25519 de webhook signature de Telnyx.
+// Telnyx firma con la cabecera 'telnyx-signature-ed25519' y header de timestamp.
+// Si no hay public key configurada, en dev aceptamos sin validar (con warning).
+function _verifyTelnyxSignature(req, publicKeyBase64) {
+  if (!publicKeyBase64 || !publicKeyBase64.trim()) return { ok: true, mode: "skipped" };
+  try {
+    const signature = req.headers["telnyx-signature-ed25519"];
+    const timestamp = req.headers["telnyx-timestamp"];
+    if (!signature || !timestamp) return { ok: false, reason: "missing_signature_or_timestamp" };
+    // Verificar que el timestamp no sea muy viejo (anti-replay, ventana 5 min)
+    const now = Math.floor(Date.now() / 1000);
+    const ts = parseInt(timestamp, 10);
+    if (Math.abs(now - ts) > 300) return { ok: false, reason: "timestamp_outside_window" };
+    // Reconstruir el payload firmado: "{timestamp}|{rawBody}"
+    const rawBody = req.rawBody || JSON.stringify(req.body || {});
+    const signedPayload = `${timestamp}|${rawBody}`;
+    const crypto = require("crypto");
+    const publicKey = crypto.createPublicKey({
+      key: Buffer.from(publicKeyBase64, "base64"),
+      format: "der",
+      type: "spki",
+    });
+    const sigBuf = Buffer.from(signature, "base64");
+    const verified = crypto.verify(null, Buffer.from(signedPayload), publicKey, sigBuf);
+    return { ok: verified, reason: verified ? null : "invalid_signature" };
+  } catch (e) {
+    return { ok: false, reason: "verify_error", error: e.message };
+  }
+}
+
+// POST /api/telnyx/webhook — endpoint público (sin auth, validación por signature).
+// Telnyx envía aquí eventos de llamadas. Lo loguemos en telnyx_events.json,
+// y si es call.hangup actualizamos el lead.callLog con duration + cost.
+app.post("/api/telnyx/webhook", async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  const verification = _verifyTelnyxSignature(req, cfg.signaturePublicKey);
+  if (!verification.ok && cfg.signaturePublicKey) {
+    console.warn(`[telnyx-webhook] signature rejected: ${verification.reason}`);
+    return res.status(401).json({ error: "invalid signature", reason: verification.reason });
+  }
+  if (verification.mode === "skipped") {
+    console.warn("[telnyx-webhook] WARNING: signature validation skipped (signaturePublicKey not configured)");
+  }
+
+  const event = req.body?.data || req.body || {};
+  const eventType = event.event_type || event.type || "unknown";
+  const payload = event.payload || {};
+
+  // Persistir en log FIFO 1000
+  const eventsData = loadTelnyxEvents();
+  if (!Array.isArray(eventsData.events)) eventsData.events = [];
+  eventsData.events.push({
+    id: `tlx_evt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    type: eventType,
+    receivedAt: new Date().toISOString(),
+    callControlId: payload.call_control_id || null,
+    callLegId: payload.call_leg_id || null,
+    from: payload.from || null,
+    to: payload.to || null,
+    durationSecs: typeof payload.duration_secs === "number" ? payload.duration_secs : null,
+    hangupCause: payload.hangup_cause || null,
+    hangupSource: payload.hangup_source || null,
+    direction: payload.direction || null,
+    raw: payload,
+  });
+  if (eventsData.events.length > 1000) eventsData.events = eventsData.events.slice(-1000);
+  saveTelnyxEvents(eventsData);
+
+  // Si es call.hangup, intentar correlar con un lead y actualizar callLog.
+  // Estrategia: el frontend, al iniciar la llamada, deberá enviar metadata
+  // que asocie call_control_id ↔ leadId. Por ahora solo persistimos el evento;
+  // la integración con callLog completa se hace en Wave 3 task 3.1.
+
+  res.json({ ok: true, eventType });
+});
+
+// GET /api/telnyx/events — admin/supervisor: últimos eventos de webhook.
+// Útil para debug y para ver llamadas recientes.
+app.get("/api/telnyx/events", requireAuth, requireRole("admin", "supervisor"), (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+  const data = loadTelnyxEvents();
+  const events = Array.isArray(data.events) ? data.events : [];
+  res.json({ total: events.length, events: events.slice(-limit).reverse() });
 });
 
 // PATCH /api/mercury/generations/:id — el setter (dueño) o admin actualizan
