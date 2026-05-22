@@ -1609,10 +1609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // active, held, done, ended, recovering. NO existen 'hangup'/'destroy'
         // como states. El evento de cuelgue se traduce a state='done' o 'ended'.
         this.client.on?.('telnyx.notification', (notification) => {
-          if (!notification) return;
-          // Log defensivo para debug
-          console.log('[telnyx] notification', { type: notification.type, callState: notification.call?.state, callId: notification.call?.id });
-          if (notification.type !== 'callUpdate' || !notification.call) return;
+          if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
           const call = notification.call;
           const state = call.state;
           if (state === 'ringing' || state === 'early' || state === 'recovering') {
@@ -1621,30 +1618,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             // ¡Atendió! Detener ringback fake y mostrar estado activo.
             _stopRingbackTone();
             _setTelnyxCallStatus('En llamada', 'active');
-            // Force audio play: algunos browsers (Brave/Chrome con autoplay restrictivo)
-            // pueden no arrancar el playback aunque el stream ya esté en srcObject.
-            // Lo forzamos con play() (gesto del click "Llamar" ya autoriza).
+            // Force audio play: algunos browsers (Brave/Chrome) requieren play()
+            // explícito post-stream attach. El gesto del click "Llamar" autoriza.
             setTimeout(() => {
               const audioEl = document.getElementById('telnyx-remote-audio');
               if (audioEl) {
                 audioEl.volume = 1.0;
                 audioEl.muted = false;
-                audioEl.play?.().catch(err => console.warn('[telnyx] remote audio play() rejected:', err?.message));
-                console.log('[telnyx] remote audio state', { srcObject: !!audioEl.srcObject, paused: audioEl.paused, volume: audioEl.volume });
+                audioEl.play?.().catch(() => {});
               }
             }, 200);
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
           } else if (state === 'done' || state === 'ended' || state === 'hangup' || state === 'destroy' || state === 'purge') {
             _stopRingbackTone();
-            // Solo disparar onEnded si el call era el nuestro activo (evitar
-            // re-disparar si ya cerramos por hangup local).
             if (this.activeCall && _telnyxCallState.startedAt) {
               const sameCall = this.activeCall === call || this.activeCall.id === call.id;
-              if (sameCall) {
-                console.log('[telnyx] terminal state reached:', state);
-                _onTelnyxCallEnded(state);
-              }
+              if (sameCall) _onTelnyxCallEnded(state);
             }
           }
         });

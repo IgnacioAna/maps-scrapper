@@ -742,15 +742,12 @@
       </div>
 
       <!-- Phase 6: Audio remote del SDK Telnyx — CRÍTICO para escuchar al lead.
-           Sin este element, el remote stream del peer connection no se reproduce.
-           autoplay + playsinline para que arranque sin user gesture (gesture ya
-           hecho al click "Llamar"). NO usamos display:none porque algunos
-           browsers bloquean autoplay en elementos no renderizados; lo movemos
-           off-screen pero el browser lo procesa normal. volume=1 explícito. -->
-      <audio id="telnyx-remote-audio" autoplay playsinline controls style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; pointer-events:none; opacity:0;"></audio>
+           Sin "controls" para no renderizar UI control bar (drena CPU).
+           Off-screen (no display:none) para que browser procese autoplay normal. -->
+      <audio id="telnyx-remote-audio" autoplay playsinline style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; pointer-events:none; opacity:0;"></audio>
 
-      <!-- Phase 6: Backdrop oscuro mientras hay llamada activa (call mode) -->
-      <div id="telnyx-call-backdrop" style="display:none; position:fixed; inset:0; background:rgba(8,9,12,0.78); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:9990; animation:tlxFadeIn 0.2s ease-out;"></div>
+      <!-- Phase 6: Backdrop oscuro mientras hay llamada activa (sin blur — caro en GPU) -->
+      <div id="telnyx-call-backdrop" style="display:none; position:fixed; inset:0; background:rgba(8,9,12,0.82); z-index:9990;"></div>
 
       <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) — modal centrado -->
       <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
@@ -2404,7 +2401,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522h"></script>
+  <script type="module" src="/app.js?v=20260522i"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>
