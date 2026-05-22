@@ -264,6 +264,79 @@ Módulo separado para gestión de cuentas WA con estados, warmeo, rutinas. Se mo
 ### Frontend WA
 - `public/wa.js` - lógica completa de las views WA, instanciada por `app.js`
 
+## Módulo Telnyx Calls (Phase 6 — añadido 2026-05-21)
+
+Centralita VoIP integrada en el SCM. Permite a setters/admin llamar internacional directo desde el browser (WebRTC), con caller ID local según el país destino. Reemplaza el botón `tel:` que abría el dialer del SO. **No es la Phase 5 (Llamadas IA con voz automatizada)** — esto es la base de infraestructura, voz IA queda diferida.
+
+### Decisiones arquitectónicas críticas
+1. **API key NUNCA en browser**: toda llamada a la API de Telnyx pasa por endpoints backend del SCM. Browser solo recibe ephemeral SIP credentials (TTL 10min) vía `/api/telnyx/webrtc-credentials`.
+2. **Caller ID por país destino**: tabla `countryRouting: { ES: numId, MX: numId, default: numId }`. Cuando se llama a +34, el sistema usa automáticamente el número español comprado. Mejora tasa de atención dramáticamente.
+3. **WebRTC en browser** vía `@telnyx/webrtc@2` cargado por CDN. Sin app desktop, cero distribución.
+4. **Reuso total del callLog existente**: al colgar la llamada Telnyx, se dispara el modal de disposition que ya existía. El callLog gana campos `{duration, fromNumber, channel: 'telnyx_webrtc', cost, costCountry, costTariffKey}`.
+
+### Archivos
+- **Backend** (todo en `index.js`):
+  - Helpers config: `loadTelnyxConfig`, `saveTelnyxConfig`, `_publicTelnyxConfig`, `_setterTelnyxConfig`
+  - Helpers scripts: `loadCallScripts`, `saveCallScripts`
+  - Helper signature: `_verifyTelnyxSignature` (ed25519 + anti-replay 5min)
+  - Helper costos: `_estimateTelnyxCost` (tabla hardcoded USD/min por país)
+- **Data**:
+  - `data/telnyx_config.json` — apiKey + sip creds + numbers[] + countryRouting (admin only via API)
+  - `data/telnyx_events.json` — log FIFO 1000 de webhook events
+  - `data/call_scripts.json` — scripts con seed inicial desde `scripts/seed/call-scripts.json`
+- **Frontend**:
+  - `public/app.js` — módulo `_telnyx` (cliente WebRTC), `_startTelnyxCall`, panel de llamada activa, script panel inline
+  - `public/index.html` — `#telnyx-call-panel` flotante, `#telnyx-script-panel` lateral, vista admin `#view-telnyx-config`
+
+### Endpoints clave (todos bajo `/api/telnyx`)
+- `GET /config` — auth required. Admin/supervisor reciben `_publicTelnyxConfig` (sin secrets). Setter recibe `_setterTelnyxConfig` (solo numbers activos + routing).
+- `PUT /config` — admin only. Campos opcionales: `apiKey, sipUsername, sipPassword, sipConnectionId, signaturePublicKey, countryRouting`. **Campos omitidos NO se tocan** (evita borrar secrets sin querer).
+- `POST /numbers` — admin agrega número (E.164 validado).
+- `PATCH /numbers/:id` — admin edita label/active/country.
+- `DELETE /numbers/:id` — admin elimina + limpia routing referencias.
+- `POST /webrtc-credentials` — auth required. Devuelve ephemeral SIP creds (modo dual: ephemeral via Telnyx API si hay sipConnectionId, fallback a SIP fijo si no).
+- `POST /webhook` — público, validado por signature ed25519. Persiste eventos en `telnyx_events.json`.
+- `GET /events` — admin/supervisor, log de webhook events.
+- `GET /metrics?range=today|week|month|all` — agregaciones de minutos/costo del callLog (channel='telnyx_webrtc'). Devuelve totals + bySetter + byCountry + byTariff + byDay.
+- `GET /scripts` — auth required (admin y setter). Lista de guiones.
+- `POST/PATCH/DELETE /scripts/:id` — admin CRUD de guiones.
+
+### Flujo de una llamada (end-to-end)
+1. Setter abre view-calls. Frontend hace `_telnyx.fetchConfig()` en background (no bloquea).
+2. Si config tiene numbers activos → botón "📞 Llamar" se renderiza como botón JS (WebRTC). Si no → cae a `<a href="tel:">` tradicional (fallback).
+3. Click → `_startTelnyxCall(leadId)`:
+   - Pide permiso de mic al browser
+   - `_telnyx.ensureClient()` lazy init: fetch credentials → instanciar TelnyxRTC → `connect()` con timeout 15s
+   - `_telnyx.pickNumberForDestination(lead.phone)` elige caller ID por país
+   - `client.newCall({destinationNumber, callerNumber, audio})` inicia llamada
+   - Panel `#telnyx-call-panel` se muestra con timer, mute, colgar, indicador del número saliente
+   - Script panel disponible vía botón "Guion" lateral
+4. Telnyx eventos (`answered`, `hangup`, `error`) actualizan UI.
+5. Al colgar → `_onTelnyxCallEnded`: cierra panel, scroll+flash sobre el lead, focus en dropdown de disposition.
+6. Metadata de la llamada (`duration`, `fromNumber`) se guarda en `_pendingTelnyxCallMetadata[leadId]` y se incluye en el próximo `POST /call-disposition`.
+7. Backend recibe `telnyxCallMeta` en el body, calcula costo con `_estimateTelnyxCost`, guarda en `lead.callLog[].{cost, channel: 'telnyx_webrtc', ...}`.
+8. Webhook de Telnyx llega independientemente (signature validada) y se persiste en `telnyx_events.json` para audit.
+
+### Configuración para producción
+1. Admin entra a "Centralita Telnyx" en el sidebar
+2. Carga: API Key (Bearer), SIP Connection ID (opcional, recomendado), SIP Username/Password (fallback), Signature Public Key (para webhooks)
+3. Agrega números virtuales comprados con `+ Agregar número` (E.164 + país)
+4. Configura routing por país: para cada país, dropdown con number que actúa como caller ID
+5. **En el dashboard Telnyx**: configurar webhook URL apuntando a `https://<railway-domain>/api/telnyx/webhook`
+
+### Costos esperados
+Tabla `TELNYX_RATES_USD_PER_MIN` en `index.js` con tarifas aprox de dic 2025. Hardcoded — si Telnyx cambia, actualizar manualmente. España móvil: $0.034/min. México móvil: $0.094. Argentina: $0.080. EEUU: $0.007.
+
+### Limitaciones conocidas
+- No graba llamadas (out of scope Phase 6 — queda para futuras)
+- No transcribe (Whisper integration diferida)
+- Sin Mercury IA en vivo durante la llamada (diferido)
+- Costos son **estimados** con tabla local — el dashboard Telnyx tiene el costo real exacto
+- Tabla de tarifas se actualiza manualmente
+
+### Docs adicionales
+- `docs/telnyx-quickstart.md` — guía para setters: cómo dar permiso de mic, iniciar llamada, usar el script panel, qué hacer ante objeciones
+
 ## Archivos principales
 
 ### Backend

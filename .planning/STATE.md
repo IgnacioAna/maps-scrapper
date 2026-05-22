@@ -8,14 +8,35 @@
 
 **Phase 6 — Telnyx Calls Foundation**
 
-**Status:** Active — sprint dedicado de 2 días, 16 horas reales. Deadline
-duro: plan de Claude del usuario expira en 48 hs.
+**Status:** Wave 1-3 ✅ completas (~13 hs de 16 hs). Wave 4 en curso —
+falta solo testing E2E (bloqueado por KYC Telnyx del usuario).
 
-**Next step:** `/gsd-plan-phase 6` — armar PLAN.md con waves para los 2 días.
+**Wave breakdown:**
+- ✅ Wave 1 (4h): Backend foundation — config + endpoints + ephemeral
+  creds proxy + webhook con ed25519 signature validation
+- ✅ Wave 2 (5h): Frontend dialer MVP — SDK Telnyx WebRTC + botón
+  Llamar + panel de llamada activa + disposition auto
+- ✅ Wave 3 (4h): Polish — endpoint /metrics + vista admin
+  Centralita Telnyx (5 secciones) + script panel value statement
+  framework adaptado a dental
+- 🔄 Wave 4 (~3h): Docs + deploy. Testing E2E pendiente del KYC
 
-**Why ahora:** El usuario evaluó CloudTalk ($90-140/mes) y decidió ir con
-Telnyx directo ($35-55/mes) construyendo la UI dentro del SCM. Sprint
-maximizado antes del corte de Claude.
+**Commits acumulados:**
+1. `ec7e9f5` Add phase 6
+2. `272a111` Plan wave breakdown
+3. `7033bc5` Wave 1.1 config storage
+4. `2571e9a` Wave 1.2 endpoints REST
+5. `7cd3034` Wave 1.3 ephemeral creds proxy
+6. `cce191f` Wave 1.4 webhook + events
+7. `20e7e71` Wave 2.1 SDK + cliente module
+8. `bfedd21` Wave 2.2+2.3 botón Llamar + panel WebRTC
+9. `915e83e` Wave 2.4 disposition con metadata + costos
+10. `6b73f4c` Wave 3.1 endpoint /metrics
+11. `82b3b6f` Wave 3.2 vista admin Centralita Telnyx
+12. `fb5c319` Wave 3.3 script panel + value statement framework
+
+**Next step:** Deploy a Railway (Task 4.3). Testing E2E (Task 4.1) cuando
+el usuario tenga KYC Telnyx aprobado.
 
 ---
 
