@@ -1605,28 +1605,46 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Notification pattern de Telnyx WebRTC v2: TODOS los state changes
         // del call vienen por 'telnyx.notification' con type='callUpdate'.
-        // call.on('answered', ...) NO existe en v2 (era de v1/Twilio-like).
-        // Sin este listener, el ringback no se detiene cuando atiende, ni se
-        // detecta hangup correctamente.
+        // Estados REALES del SDK v2 (verificado en bundle.js): new, ringing,
+        // active, held, done, ended, recovering. NO existen 'hangup'/'destroy'
+        // como states. El evento de cuelgue se traduce a state='done' o 'ended'.
         this.client.on?.('telnyx.notification', (notification) => {
-          if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
+          if (!notification) return;
+          // Log defensivo para debug
+          console.log('[telnyx] notification', { type: notification.type, callState: notification.call?.state, callId: notification.call?.id });
+          if (notification.type !== 'callUpdate' || !notification.call) return;
           const call = notification.call;
           const state = call.state;
-          console.log('[telnyx] callUpdate state:', state);
-          // Estados v2: new / trying / requesting / recovering / ringing / answering / early / active / held / hangup / destroy / purge
-          if (state === 'ringing' || state === 'early') {
+          if (state === 'ringing' || state === 'early' || state === 'recovering') {
             _setTelnyxCallStatus('Sonando…', 'ringing');
           } else if (state === 'active') {
             // ¡Atendió! Detener ringback fake y mostrar estado activo.
             _stopRingbackTone();
             _setTelnyxCallStatus('En llamada', 'active');
+            // Force audio play: algunos browsers (Brave/Chrome con autoplay restrictivo)
+            // pueden no arrancar el playback aunque el stream ya esté en srcObject.
+            // Lo forzamos con play() (gesto del click "Llamar" ya autoriza).
+            setTimeout(() => {
+              const audioEl = document.getElementById('telnyx-remote-audio');
+              if (audioEl) {
+                audioEl.volume = 1.0;
+                audioEl.muted = false;
+                audioEl.play?.().catch(err => console.warn('[telnyx] remote audio play() rejected:', err?.message));
+                console.log('[telnyx] remote audio state', { srcObject: !!audioEl.srcObject, paused: audioEl.paused, volume: audioEl.volume });
+              }
+            }, 200);
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
-          } else if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+          } else if (state === 'done' || state === 'ended' || state === 'hangup' || state === 'destroy' || state === 'purge') {
             _stopRingbackTone();
-            // Solo disparar onEnded si el call era el nuestro activo
-            if (this.activeCall && (this.activeCall.id === call.id || this.activeCall === call)) {
-              _onTelnyxCallEnded(state);
+            // Solo disparar onEnded si el call era el nuestro activo (evitar
+            // re-disparar si ya cerramos por hangup local).
+            if (this.activeCall && _telnyxCallState.startedAt) {
+              const sameCall = this.activeCall === call || this.activeCall.id === call.id;
+              if (sameCall) {
+                console.log('[telnyx] terminal state reached:', state);
+                _onTelnyxCallEnded(state);
+              }
             }
           }
         });
