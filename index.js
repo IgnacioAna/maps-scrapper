@@ -2270,7 +2270,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'telnyx_config.json', 'telnyx_events.json'];
 
 function makeBackup(reason = 'auto') {
   try {
@@ -6755,6 +6755,90 @@ function loadMercuryConfig() {
 function saveMercuryConfig(cfg) {
   try { fs.writeFileSync(MERCURY_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
   catch (e) { console.error("[mercury] Error guardando config:", e.message); }
+}
+
+// ── Phase 6: Telnyx Calls Foundation ──────────────────────────────────────
+// Config storage para llamadas internacionales VoIP. Estructura:
+//   - apiKey: API key de Telnyx (Bearer, write-only desde panel admin)
+//   - sipUsername / sipPassword: credenciales SIP fijas del dashboard de Telnyx
+//     (fallback si no usamos ephemeral credentials del endpoint v2/telephony_credentials)
+//   - sipConnectionId: ID del SIP Connection en Telnyx (necesario para crear
+//     ephemeral credentials). Lo obtiene el admin desde dashboard.
+//   - numbers: array de números virtuales comprados, cada uno con country
+//   - countryRouting: mapeo "ES" → number.id que se usa como caller ID saliente
+//     cuando el destino es España. "default" para fallback.
+//   - signaturePublicKey: clave pública para validar webhooks de Telnyx (ed25519)
+//
+// SEGURIDAD CRÍTICA: apiKey y sipPassword NUNCA se devuelven al browser.
+// GET /api/telnyx/config solo devuelve flags + numbers públicos + routing.
+const TELNYX_CONFIG_FILE = path.join(DATA_DIR, "telnyx_config.json");
+const TELNYX_EVENTS_FILE = path.join(DATA_DIR, "telnyx_events.json");
+
+function _defaultTelnyxConfig() {
+  return {
+    apiKey: "",
+    sipUsername: "",
+    sipPassword: "",
+    sipConnectionId: "",
+    signaturePublicKey: "",
+    numbers: [],
+    countryRouting: { default: "" },
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system_seed",
+  };
+}
+
+function loadTelnyxConfig() {
+  try {
+    if (fs.existsSync(TELNYX_CONFIG_FILE)) {
+      const cfg = JSON.parse(fs.readFileSync(TELNYX_CONFIG_FILE, "utf8"));
+      if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
+      if (typeof cfg.sipUsername !== "string") cfg.sipUsername = "";
+      if (typeof cfg.sipPassword !== "string") cfg.sipPassword = "";
+      if (typeof cfg.sipConnectionId !== "string") cfg.sipConnectionId = "";
+      if (typeof cfg.signaturePublicKey !== "string") cfg.signaturePublicKey = "";
+      if (!Array.isArray(cfg.numbers)) cfg.numbers = [];
+      if (!cfg.countryRouting || typeof cfg.countryRouting !== "object") cfg.countryRouting = { default: "" };
+      return cfg;
+    }
+  } catch (e) { console.error("[telnyx] Error leyendo config:", e.message); }
+  // Lazy init
+  const seeded = _defaultTelnyxConfig();
+  try { fs.writeFileSync(TELNYX_CONFIG_FILE, JSON.stringify(seeded, null, 2), "utf8"); }
+  catch (e) { console.warn("[telnyx] No pude escribir seed config:", e.message); }
+  return seeded;
+}
+
+function saveTelnyxConfig(cfg) {
+  try { fs.writeFileSync(TELNYX_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+  catch (e) { console.error("[telnyx] Error guardando config:", e.message); }
+}
+
+// Helper para sanitizar config antes de devolverla al cliente (admin).
+// Quita los secrets pero mantiene flags útiles.
+function _publicTelnyxConfig(cfg) {
+  return {
+    hasApiKey: !!(cfg.apiKey && cfg.apiKey.trim()),
+    hasSipCredentials: !!(cfg.sipUsername && cfg.sipPassword),
+    sipConnectionId: cfg.sipConnectionId || "",
+    hasSignatureKey: !!(cfg.signaturePublicKey && cfg.signaturePublicKey.trim()),
+    numbers: cfg.numbers || [],
+    countryRouting: cfg.countryRouting || { default: "" },
+    updatedAt: cfg.updatedAt,
+    updatedBy: cfg.updatedBy,
+  };
+}
+
+// Helper para que el frontend del setter sepa qué numbers existen
+// (sin secretos). Devuelve solo lo público.
+function _setterTelnyxConfig(cfg) {
+  return {
+    configured: !!(cfg.apiKey && cfg.apiKey.trim()),
+    numbers: (cfg.numbers || [])
+      .filter((n) => n.active !== false)
+      .map((n) => ({ id: n.id, phone: n.phone, label: n.label, country: n.country })),
+    countryRouting: cfg.countryRouting || { default: "" },
+  };
 }
 
 // ── Google Calendar embed (Appointment Scheduling) ──
