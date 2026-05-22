@@ -1582,6 +1582,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           login: this.credentials.sipUsername,
           password: this.credentials.sipPassword,
           ringtoneFile: null,
+          // CRÍTICO: remoteElement le dice al SDK dónde montar el audio del lead.
+          // Sin esto, el remote stream del peer connection no se reproduce y vos
+          // no escuchás al otro lado (aunque él te escucha a vos).
+          remoteElement: 'telnyx-remote-audio',
         });
 
         // Connect (returns promise resolvable cuando registra)
@@ -1597,6 +1601,34 @@ document.addEventListener('DOMContentLoaded', async () => {
           this.client.connect();
           // Timeout 15s
           setTimeout(() => reject(new Error('Timeout conectando con Telnyx (15s)')), 15000);
+        });
+
+        // Notification pattern de Telnyx WebRTC v2: TODOS los state changes
+        // del call vienen por 'telnyx.notification' con type='callUpdate'.
+        // call.on('answered', ...) NO existe en v2 (era de v1/Twilio-like).
+        // Sin este listener, el ringback no se detiene cuando atiende, ni se
+        // detecta hangup correctamente.
+        this.client.on?.('telnyx.notification', (notification) => {
+          if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
+          const call = notification.call;
+          const state = call.state;
+          console.log('[telnyx] callUpdate state:', state);
+          // Estados v2: new / trying / requesting / recovering / ringing / answering / early / active / held / hangup / destroy / purge
+          if (state === 'ringing' || state === 'early') {
+            _setTelnyxCallStatus('Sonando…', 'ringing');
+          } else if (state === 'active') {
+            // ¡Atendió! Detener ringback fake y mostrar estado activo.
+            _stopRingbackTone();
+            _setTelnyxCallStatus('En llamada', 'active');
+          } else if (state === 'held') {
+            _setTelnyxCallStatus('En espera', 'ending');
+          } else if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+            _stopRingbackTone();
+            // Solo disparar onEnded si el call era el nuestro activo
+            if (this.activeCall && (this.activeCall.id === call.id || this.activeCall === call)) {
+              _onTelnyxCallEnded(state);
+            }
+          }
         });
 
         return this.client;
@@ -3578,16 +3610,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _closeTelnyxCallPanel() {
       const panel = document.getElementById('telnyx-call-panel');
       if (panel) panel.style.display = 'none';
+      // Backdrop fade out
+      const backdrop = document.getElementById('telnyx-call-backdrop');
+      if (backdrop) backdrop.style.display = 'none';
       // También cerrar el script panel si quedó abierto
       const sp = document.getElementById('telnyx-script-panel');
       if (sp) sp.style.display = 'none';
+      document.body.classList.remove('tlx-script-open');
+      // Reset mute button visual
+      const muteBtn = document.getElementById('telnyx-call-mute');
+      if (muteBtn) { muteBtn.classList.remove('tlx-mute-active'); muteBtn.textContent = '🎤 Mute'; }
       if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
+      if (_telnyxCallState.noAnswerTimeout) { clearTimeout(_telnyxCallState.noAnswerTimeout); _telnyxCallState.noAnswerTimeout = null; }
       _telnyxCallState.startedAt = 0;
       _telnyxCallState.muted = false;
+      _telnyxCallState.statusState = null;
       _currentCallLead = null;
     }
 
     function _setTelnyxCallStatus(text, state) {
+      _telnyxCallState.statusState = state;
       const statusEl = document.getElementById('telnyx-call-status');
       const dotEl = document.getElementById('telnyx-call-status-dot');
       if (statusEl) statusEl.textContent = text;
@@ -3643,6 +3685,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} · ${fromNum.phone}`;
       _setTelnyxCallStatus('Conectando…', 'connecting');
       document.getElementById('telnyx-call-timer').textContent = '00:00';
+      // Mostrar backdrop primero, después el panel (orden visual correcto)
+      const backdrop = document.getElementById('telnyx-call-backdrop');
+      if (backdrop) backdrop.style.display = 'block';
       panel.style.display = 'block';
       _telnyxCallState.leadId = leadId;
       _telnyxCallState.fromNumber = fromNum.phone;
@@ -3675,20 +3720,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Audio de ringback local — sin esto el setter no escucha nada mientras
         // suena en el destino y cree que se rompió la llamada.
         _startRingbackTone();
+        // Los eventos del call vienen por 'telnyx.notification' en el CLIENT
+        // (configurado en ensureClient). No usamos call.on() — eso es API de
+        // v1 / Twilio. En v2 todos los state changes son via client notifications.
 
-        // Wire eventos del call (la API de Telnyx WebRTC v2 expone .on())
-        if (typeof call.on === 'function') {
-          call.on('answered', () => { _stopRingbackTone(); _setTelnyxCallStatus('En llamada', 'active'); });
-          call.on('ringing', () => _setTelnyxCallStatus('Sonando…', 'ringing'));
-          call.on('hangup', () => { _stopRingbackTone(); _onTelnyxCallEnded('remote_hangup'); });
-          call.on('destroy', () => { _stopRingbackTone(); _onTelnyxCallEnded('destroy'); });
-          call.on('error', (err) => {
-            _stopRingbackTone();
-            console.warn('[telnyx] call error:', err);
-            window.showToast?.('Error en la llamada: ' + (err?.message || 'desconocido'), { type: 'error' });
-            _onTelnyxCallEnded('error');
-          });
-        }
+        // Safety timeout: si después de 60s seguimos en estado 'ringing'
+        // (nadie atendió), cortamos para no quedar colgados infinitos.
+        _telnyxCallState.noAnswerTimeout = setTimeout(() => {
+          if (_telnyx.activeCall && _telnyxCallState.startedAt) {
+            const secs = Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000);
+            // Si pasaron 60s y nunca llegamos a "active" → asumir no answer
+            if (secs >= 60 && _telnyxCallState.statusState !== 'active') {
+              console.log('[telnyx] No answer timeout (60s), hanging up');
+              try { call.hangup(); } catch {}
+              _stopRingbackTone();
+              _onTelnyxCallEnded('no_answer_timeout');
+            }
+          }
+        }, 60000);
       } catch (e) {
         console.error('[telnyx] startCall failed:', e);
         _closeTelnyxCallPanel();
@@ -3820,12 +3869,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _openScriptPanel() {
       const panel = document.getElementById('telnyx-script-panel');
       if (panel) panel.style.display = 'flex';
+      // Body class triggers el shift del call panel a la izquierda vía CSS
+      document.body.classList.add('tlx-script-open');
       if (_callScriptsCache.length === 0) _loadCallScripts().then(_renderScriptPanel);
       else _renderScriptPanel();
     }
     function _closeScriptPanel() {
       const panel = document.getElementById('telnyx-script-panel');
       if (panel) panel.style.display = 'none';
+      document.body.classList.remove('tlx-script-open');
     }
 
     document.getElementById('telnyx-call-script-toggle')?.addEventListener('click', () => {
@@ -3854,21 +3906,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    // Botón mute toggle
+    // Botón mute toggle — usa class .tlx-mute-active para el state visual
+    // (definida en el <style> del panel). Evita el "blanco roto" al setear
+    // style.background='' directo.
     document.getElementById('telnyx-call-mute')?.addEventListener('click', () => {
       const btn = document.getElementById('telnyx-call-mute');
-      if (!_telnyx.activeCall) return;
+      if (!btn || !_telnyx.activeCall) return;
       try {
         if (_telnyxCallState.muted) {
           if (typeof _telnyx.activeCall.unmuteAudio === 'function') _telnyx.activeCall.unmuteAudio();
           _telnyxCallState.muted = false;
           btn.textContent = '🎤 Mute';
-          btn.style.background = '';
+          btn.classList.remove('tlx-mute-active');
         } else {
           if (typeof _telnyx.activeCall.muteAudio === 'function') _telnyx.activeCall.muteAudio();
           _telnyxCallState.muted = true;
-          btn.textContent = '🔇 Unmute';
-          btn.style.background = 'var(--accent)';
+          btn.textContent = '🔇 Muteado';
+          btn.classList.add('tlx-mute-active');
         }
       } catch (e) { console.warn('[telnyx] mute toggle:', e); }
     });
