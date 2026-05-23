@@ -5015,8 +5015,15 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
         break;
       case 'move_to_setteo':
         // Si dejabas conexion='sin_wsp' (estaba en Llamadas), limpiarlo
-        // para que reaparezca en view-crm.
+        // para que reaparezca en view-crm. Audit fix Sprint 36 (bug 4):
+        // también limpiar phoneStatus + resetear descartado-por-phone, sino
+        // el lead aparece en Setteo con flag "número equivocado" lo cual no
+        // tiene sentido si lo movieron acá manualmente.
         lead.conexion = '';
+        if (['wrong','invalid','voicemail'].includes(lead.phoneStatus)) {
+          lead.phoneStatus = '';
+          if (lead.estado === 'descartado') lead.estado = 'sin_contactar';
+        }
         break;
     }
     if (!Array.isArray(lead.interactions)) lead.interactions = [];

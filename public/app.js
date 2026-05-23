@@ -4275,6 +4275,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Refrescar lista de Llamadas para que se actualicen los counts
       loadCallsView();
     };
+    // Audit fix Sprint 36 (edge case): si el setter cambia de view via sidebar
+    // mientras el power dialer está activo, cerrarlo limpiamente — sin esto
+    // queda overflow:hidden residual y el overlay invisible.
+    document.querySelectorAll('.menu-item[data-target]').forEach(item => {
+      item.addEventListener('click', () => {
+        if (_pd.active) window._pdExit();
+      });
+    });
     function _pdAdvance() {
       _pd.currentIdx++;
       _pd.processed++;
@@ -4296,6 +4304,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const currentId = _pd.queue[_pd.currentIdx];
       const lead = callsLeadsCache.find(l => l.id === currentId);
       if (!lead) { _pdAdvance(); return; }
+      // Audit fix Sprint 36 (bug 5): si el lead se descartó/agendó/tiene
+      // callback futuro (puede pasar si el setter cambió algo en otra pestaña
+      // o el flow del power dialer dejó el cache desactualizado), skipear.
+      if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
+      if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
       const flag = fmtCountry(lead.country) || '📞';
       const attempts = lead.callAttempts || 0;
       const lastCall = lead.callLog && lead.callLog.length > 0 ? lead.callLog[lead.callLog.length - 1] : null;
@@ -4328,7 +4341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>` : ''}
       ${lastCall ? `<div style="margin-top:14px; font-size:12px; color:var(--text-tertiary);">Último intento: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR')}</div>` : ''}
       <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px;">
-        <select onchange="window._handleCallDisposition('${escHtml(lead.id)}', this); setTimeout(() => window._pdAdvance(), 600);" style="grid-column:1/-1; padding:11px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
+        <select onchange="window._pdHandleDisposition('${escHtml(lead.id)}', this);" style="grid-column:1/-1; padding:11px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
           <option value="">— Resultado (1-7 atajos) —</option>
           <option value="answered_interested">✅ 1 — Interesado</option>
           <option value="answered_not_interested">❌ 2 — No interesado</option>
@@ -4359,6 +4372,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window._pdSkip = function() { _pdAdvance(); };
     window._pdAdvance = _pdAdvance;
+
+    // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
+    // dialer. Para outcomes que ABREN modal (callback_later, scheduled_with_admin,
+    // answered_not_interested), NO auto-avanzar — el modal define el flow y al
+    // cerrarse exitosamente _handleCallDisposition ya refresca _callsLeadsCache.
+    // El advance lo dispara el botón explícito del usuario cuando vuelve.
+    window._pdHandleDisposition = async function(leadId, selectEl) {
+      const outcome = selectEl?.value;
+      if (!outcome) return;
+      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
+      await window._handleCallDisposition(leadId, selectEl);
+      // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
+      // hasta 30s. Si el setter cierra sin guardar (cancel), no avanza.
+      if (modalOpening) {
+        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal'];
+        // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
+        let waited = 0;
+        const check = () => {
+          const anyOpen = modalIds.some(id => {
+            const m = document.getElementById(id);
+            return m && !m.classList.contains('hidden');
+          });
+          if (anyOpen && waited < 60000) {
+            waited += 400;
+            setTimeout(check, 400);
+            return;
+          }
+          // Avanzar solo si el lead realmente cambió de estado (la disposition
+          // fue confirmada). Si el setter canceló, el lead sigue accionable.
+          const lead = callsLeadsCache.find(l => l.id === leadId);
+          const stillActionable = lead && !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
+          if (!stillActionable) _pdAdvance();
+        };
+        setTimeout(check, 600);
+      } else {
+        // Outcomes directos (no_answer, voicemail, wrong_number, invalid_number,
+        // answered_interested) — auto-avanzar
+        setTimeout(() => _pdAdvance(), 600);
+      }
+    };
 
     // Wiring botones power dialer
     document.getElementById('calls-power-dialer-btn')?.addEventListener('click', () => window._pdStart());
@@ -5830,6 +5883,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...data.lead, id: leadId };
         renderCallsList();
         renderCallsStats();
+        // Audit fix Sprint 36 (bug 3): refrescar barra de quota tras cada disposition
+        _callsRenderQuota?.();
       } catch (e) {
         alert('Error guardando: ' + e.message);
         selectEl.disabled = false;
@@ -5953,14 +6008,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('call-obj-note').value = '';
       modal.classList.remove('hidden');
 
-      // Audit fix Sprint 30: Esc cierra el modal (sin guardar)
+      // Audit fix Sprint 30 + 36: Esc cierra el modal. Cleanup en cualquier
+      // forma de cierre (Esc, X, Saltear, Guardar) para evitar listeners huérfanos.
       const escHandler = (e) => {
         if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
           modal.classList.add('hidden');
-          document.removeEventListener('keydown', escHandler);
         }
       };
       document.addEventListener('keydown', escHandler);
+      // Observador que limpia el listener cuando el modal se oculta por cualquier vía
+      const cleanup = () => { document.removeEventListener('keydown', escHandler); obs.disconnect(); };
+      const obs = new MutationObserver(() => {
+        if (modal.classList.contains('hidden')) cleanup();
+      });
+      obs.observe(modal, { attributes: true, attributeFilter: ['class'] });
 
       const submit = async (withTags) => {
         try {
@@ -6106,7 +6167,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             throw new Error(err.error || 'HTTP ' + r.status);
           }
           const d = await r.json();
-          window.showToast?.(`✓ ${d.affected} lead(s) actualizado(s)`, { type: 'success' });
+          // Audit fix Sprint 36 (bug 6): comunicar skipped si los hubo
+          const msg = d.skipped > 0
+            ? `✓ ${d.affected} lead(s) actualizado(s) · ${d.skipped} skipped (no encontrados)`
+            : `✓ ${d.affected} lead(s) actualizado(s)`;
+          window.showToast?.(msg, { type: 'success' });
           _callsSelected.clear();
           await loadCallsView();
         } catch (e) {
