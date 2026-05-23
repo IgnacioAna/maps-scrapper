@@ -3687,28 +3687,45 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
 
-          ${_telnyx.configured && _telnyx.numbers.length > 0
-            ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" title="Llamar por Telnyx WebRTC · ${escHtml(l.phone)}">
-                📞 Llamar
-              </button>`
-            : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" title="${escHtml(l.phone)} · Telnyx no configurado, abre dialer del SO">
-                📞 Llamar
-              </a>`}
+          ${(() => {
+            // "Última llamada hace X días" para no quemar leads
+            const lastCallTs = _callsLastCallTs(l);
+            let lastBadge = '';
+            let cooldownWarn = '';
+            if (lastCallTs > 0) {
+              const hoursAgo = (Date.now() - lastCallTs) / (1000 * 60 * 60);
+              const daysAgo = Math.floor(hoursAgo / 24);
+              if (hoursAgo < 24) {
+                cooldownWarn = `title="⚠ Lo llamaste hace ${Math.round(hoursAgo)}h — esperá 24h+ para no quemar. Click igual si querés." `;
+                lastBadge = `<span style="font-size:9px; color:#FFB341; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.35); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${Math.round(hoursAgo)}h</span>`;
+              } else if (daysAgo < 7) {
+                lastBadge = `<span style="font-size:9px; color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${daysAgo}d</span>`;
+              }
+            }
+            const btnTitle = cooldownWarn || (_telnyx.configured ? `title="Llamar por Telnyx WebRTC · ${escHtml(l.phone)}"` : `title="${escHtml(l.phone)} · Telnyx no configurado, abre dialer del SO"`);
+            return (_telnyx.configured && _telnyx.numbers.length > 0)
+              ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" ${btnTitle}>
+                  📞 Llamar${lastBadge}
+                </button>`
+              : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" ${btnTitle}>
+                  📞 Llamar${lastBadge}
+                </a>`;
+          })()}
 
-          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:200px; cursor:pointer; font-family:inherit;">
-            <option value="">— Resultado de la llamada —</option>
+          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" title="Atajos numéricos post-llamada: 1=Interesado · 2=No interesado · 3=No atendió · 4=Buzón · 5=Callback · 6=Equivocado · 7=No existe" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:230px; cursor:pointer; font-family:inherit;">
+            <option value="">— Resultado (1-7 atajos) —</option>
             <optgroup label="Atendió">
-              ${interesado ? '<option value="scheduled_with_admin">📅 Agendar con Ignacio</option>' : '<option value="answered_interested">✅ Interesado</option>'}
-              <option value="answered_not_interested">❌ No interesado</option>
+              ${interesado ? '<option value="scheduled_with_admin">📅 Agendar con Ignacio</option>' : '<option value="answered_interested">✅ 1 — Interesado</option>'}
+              <option value="answered_not_interested">❌ 2 — No interesado</option>
             </optgroup>
             <optgroup label="No atendió">
-              <option value="no_answer">📵 No atendió / sonó nada</option>
-              <option value="voicemail">📭 Buzón de voz</option>
-              <option value="callback_later">🔄 Volver a llamar después</option>
+              <option value="no_answer">📵 3 — No atendió / sonó nada</option>
+              <option value="voicemail">📭 4 — Buzón de voz</option>
+              <option value="callback_later">🔄 5 — Volver a llamar después</option>
             </optgroup>
             <optgroup label="Número no sirve">
-              <option value="wrong_number">🔢 Número equivocado</option>
-              <option value="invalid_number">🚫 No existe / no funciona</option>
+              <option value="wrong_number">🔢 6 — Número equivocado</option>
+              <option value="invalid_number">🚫 7 — No existe / no funciona</option>
             </optgroup>
           </select>
         </div>`;
@@ -3824,6 +3841,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Backdrop fade out
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'none';
+      // Limpiar ficha y histórico
+      const leadfile = document.getElementById('telnyx-call-leadfile');
+      if (leadfile) leadfile.style.display = 'none';
+      const history = document.getElementById('telnyx-call-history');
+      if (history) history.style.display = 'none';
       // También cerrar el script panel si quedó abierto
       const sp = document.getElementById('telnyx-script-panel');
       if (sp) sp.style.display = 'none';
@@ -3837,6 +3859,90 @@ document.addEventListener('DOMContentLoaded', async () => {
       _telnyxCallState.muted = false;
       _telnyxCallState.statusState = null;
       _currentCallLead = null;
+    }
+
+    // Ficha del lead durante la llamada: muestra todos los datos scrapeados
+    // (rating, reseñas, dirección, sitio, instagram, fb, doctor) + quick-links
+    // para abrir website / Google Maps / Instagram en pestaña nueva sin perder
+    // el contexto de la llamada.
+    function _renderLeadFile(lead) {
+      const box = document.getElementById('telnyx-call-leadfile');
+      const content = document.getElementById('telnyx-call-leadfile-content');
+      const links = document.getElementById('telnyx-call-leadfile-quicklinks');
+      if (!box || !content) return;
+      if (!lead) { box.style.display = 'none'; return; }
+      const rows = [];
+      if (lead.doctor && !lead.doctor.includes('N/A')) rows.push(`<div><strong style="color:#fff;">Doctor:</strong> ${escHtml(lead.doctor)}</div>`);
+      if (lead.address) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">📍</strong> ${escHtml(lead.address)}</div>`);
+      const ratingReviews = [];
+      if (lead.rating) ratingReviews.push(`★ ${escHtml(String(lead.rating))}`);
+      if (lead.reviews) ratingReviews.push(`${lead.reviews} reseñas`);
+      if (ratingReviews.length) rows.push(`<div><strong style="color:#FFB341;">${ratingReviews.join(' · ')}</strong></div>`);
+      if (lead.email && !lead.email.includes('N/A')) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">✉</strong> ${escHtml(lead.email)}</div>`);
+      // Notas previas (últimas 2)
+      const recentNotes = (lead.notes || []).slice(-2);
+      if (recentNotes.length) {
+        const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid rgba(157,133,242,0.3); color:rgba(255,255,255,0.65);">📝 ${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
+        rows.push(`<div style="margin-top:6px;">${notesHtml}</div>`);
+      }
+      if (rows.length === 0) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'block';
+      content.innerHTML = rows.join('');
+      // Quick-links: abrir website / Google Maps / Instagram / Facebook en pestaña nueva
+      const linkBtns = [];
+      if (lead.website && !lead.website.includes('N/A')) {
+        linkBtns.push(`<a href="${escHtml(lead.website)}" target="_blank" rel="noopener" title="Abrir sitio web" style="font-size:11px; padding:2px 7px; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
+      }
+      // Google Maps directo desde nombre + ciudad
+      if (lead.name) {
+        const mapsQuery = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
+        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:11px; padding:2px 7px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">🗺 Maps</a>`);
+      }
+      if (lead.instagram && !lead.instagram.includes('N/A')) {
+        const igUrl = lead.instagram.startsWith('http') ? lead.instagram : `https://www.instagram.com/${lead.instagram.replace(/^@/, '')}/`;
+        linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener" title="Abrir Instagram" style="font-size:11px; padding:2px 7px; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
+      }
+      if (lead.facebook && !lead.facebook.includes('N/A')) {
+        const fbUrl = lead.facebook.startsWith('http') ? lead.facebook : `https://www.facebook.com/${lead.facebook}`;
+        linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener" title="Abrir Facebook" style="font-size:11px; padding:2px 7px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
+      }
+      if (links) links.innerHTML = linkBtns.join('');
+    }
+
+    // Histórico inline: si el lead ya tiene callLog, mostrar último intento.
+    // Permite al setter saber "ya lo llamé el lunes y dijo X" sin ir a buscar.
+    function _renderCallHistory(lead) {
+      const box = document.getElementById('telnyx-call-history');
+      const content = document.getElementById('telnyx-call-history-content');
+      if (!box || !content) return;
+      const log = (lead && Array.isArray(lead.callLog)) ? lead.callLog : [];
+      if (log.length === 0) { box.style.display = 'none'; return; }
+      const last = log[log.length - 1];
+      const lastDate = new Date(last.ts);
+      const daysAgo = Math.floor((Date.now() - lastDate.getTime()) / (24 * 60 * 60 * 1000));
+      const daysTxt = daysAgo === 0 ? 'hoy' : daysAgo === 1 ? 'ayer' : `hace ${daysAgo} días`;
+      const outcomeMap = {
+        answered_interested: '✅ Interesado',
+        answered_not_interested: '❌ No interesado',
+        no_answer: '📵 No atendió',
+        voicemail: '📭 Buzón',
+        wrong_number: '🔢 Número equivocado',
+        invalid_number: '🚫 No existe',
+        callback_later: '🔄 Callback',
+        scheduled_with_admin: '📅 Agendado',
+      };
+      const outcomeTxt = outcomeMap[last.outcome] || last.outcome || '—';
+      const duration = last.duration ? ` · ${Math.floor(last.duration / 60)}:${String(last.duration % 60).padStart(2, '0')}` : '';
+      const attemptsCount = log.length;
+      content.innerHTML = `
+        <div><strong>${outcomeTxt}</strong> — ${daysTxt}${duration}</div>
+        ${last.notes ? `<div style="margin-top:3px; font-size:10.5px; color:rgba(255,255,255,0.55); font-style:italic;">"${escHtml(last.notes.substring(0, 120))}${last.notes.length > 120 ? '…' : ''}"</div>` : ''}
+        ${attemptsCount > 1 ? `<div style="margin-top:3px; font-size:10px; color:rgba(255,255,255,0.4);">${attemptsCount} intentos totales</div>` : ''}
+      `;
+      box.style.display = 'block';
     }
 
     function _setTelnyxCallStatus(text, state) {
@@ -3896,6 +4002,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} · ${fromNum.phone}`;
       _setTelnyxCallStatus('Conectando…', 'connecting');
       document.getElementById('telnyx-call-timer').textContent = '00:00';
+      // Ficha del lead + histórico (datos scrapeados disponibles durante la llamada)
+      _renderLeadFile(lead);
+      _renderCallHistory(lead);
       // Mostrar backdrop primero, después el panel (orden visual correcto)
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'block';
@@ -3994,7 +4103,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => { callRow.style.boxShadow = '0 0 0 3px var(--accent)'; }, 800);
             setTimeout(() => { callRow.style.boxShadow = ''; }, 2400);
           }
-          if (dispositionSel) setTimeout(() => dispositionSel.focus(), 400);
+          if (dispositionSel) {
+            setTimeout(() => dispositionSel.focus(), 400);
+            // Shortcut numérico 1-7 para elegir disposition rápido sin tocar mouse
+            // Solo activo durante 30s post-cuelgue mientras el dropdown está en foco.
+            const shortcutMap = {
+              '1': 'answered_interested', '2': 'answered_not_interested',
+              '3': 'no_answer', '4': 'voicemail', '5': 'callback_later',
+              '6': 'wrong_number', '7': 'invalid_number',
+            };
+            const keyHandler = (e) => {
+              if (shortcutMap[e.key]) {
+                const targetOption = dispositionSel.querySelector(`option[value="${shortcutMap[e.key]}"]`);
+                if (targetOption) {
+                  dispositionSel.value = shortcutMap[e.key];
+                  dispositionSel.dispatchEvent(new Event('change'));
+                  document.removeEventListener('keydown', keyHandler);
+                }
+              }
+            };
+            document.addEventListener('keydown', keyHandler);
+            // Auto-remove después de 30s para no quedarse listening
+            setTimeout(() => document.removeEventListener('keydown', keyHandler), 30000);
+          }
         }
       }, 500);
     }
@@ -4019,9 +4150,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function _interpolateScript(text, lead) {
       const setterName = window.__CURRENT_USER__?.name || window.__CURRENT_USER__?.email?.split('@')[0] || 'el equipo';
+      // Reviews: si tenemos número, lo usamos; si no, fallback genérico
+      const reviewsCount = lead?.reviews || lead?.reviewsCount || 0;
+      const reviewsTxt = (typeof reviewsCount === 'number' && reviewsCount > 0)
+        ? `${reviewsCount} reseñas` : 'varias reseñas';
+      // Years: si tenemos años explícitos, los usamos. Si no, derivamos del
+      // first_seen del scraping (fecha import) — eso no es real "antigüedad
+      // del negocio" pero es una proxy razonable. Si tampoco, fallback genérico.
+      let yearsTxt = 'varios años';
+      if (lead?.yearsActive && typeof lead.yearsActive === 'number') {
+        yearsTxt = `${lead.yearsActive} años`;
+      } else if (lead?.importedAt) {
+        const importedDate = new Date(lead.importedAt);
+        const monthsAgo = Math.floor((Date.now() - importedDate.getTime()) / (30 * 24 * 60 * 60 * 1000));
+        if (monthsAgo > 12) yearsTxt = 'varios años';
+      }
       const repl = {
         '{name}': (lead?.name || 'doctor/a').toString(),
         '{city}': lead?.city || lead?.country || 'la zona',
+        '{country}': lead?.country || '',
+        '{years}': yearsTxt,
+        '{reviews}': reviewsTxt,
+        '{rating}': lead?.rating ? `${lead.rating}★` : '',
         '{setterName}': setterName,
         '{setterPhone}': window.__CURRENT_USER__?.phone || '',
         '{date}': new Date().toLocaleDateString('es-AR'),
