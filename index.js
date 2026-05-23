@@ -521,6 +521,17 @@ function ensureLeadDefaults(lead = {}) {
   if (lead.asistio === undefined) lead.asistio = null;
   if (!lead.asistioAt) lead.asistioAt = '';
   if (!lead.asistioBy) lead.asistioBy = '';
+  // Audit fix Sprint 13: campos enriquecidos desde Google Maps (manual-add).
+  // Sin esto, leads viejos tienen undefined, frontend tiene que coalescer.
+  if (typeof lead.rating !== 'string' && typeof lead.rating !== 'number') lead.rating = '';
+  if (typeof lead.reviews !== 'number') lead.reviews = parseInt(lead.reviews, 10) || 0;
+  if (typeof lead.website !== 'string') lead.website = '';
+  if (typeof lead.address !== 'string') lead.address = '';
+  if (typeof lead.instagram !== 'string') lead.instagram = '';
+  if (typeof lead.facebook !== 'string') lead.facebook = '';
+  if (typeof lead.email !== 'string') lead.email = '';
+  if (typeof lead.doctor !== 'string') lead.doctor = '';
+  if (typeof lead.importedManually !== 'boolean') lead.importedManually = false;
   return lead;
 }
 
@@ -3966,9 +3977,11 @@ app.post('/api/setters/leads/enrich-from-maps', requireAuth, requireRole('admin'
   try {
     const locationPart = [city, country].filter(Boolean).join(', ');
     const searchQuery = locationPart ? `${name.trim()} en ${locationPart}` : name.trim();
-    const json = await getJson({
-      engine: 'google_maps', api_key: apiKey, type: 'search', q: searchQuery,
-    });
+    // Audit fix: timeout 15s para que SerpAPI no cuelgue indefinidamente
+    const json = await Promise.race([
+      getJson({ engine: 'google_maps', api_key: apiKey, type: 'search', q: searchQuery }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('SerpAPI timeout 15s')), 15000)),
+    ]);
     if (json.error) return res.status(502).json({ error: 'Google Maps: ' + json.error });
     const localResults = json.local_results || [];
     if (localResults.length === 0) {
@@ -4026,6 +4039,24 @@ app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (re
     return res.status(400).json({ error: 'phone debe estar en formato E.164 (ej +5491156789012)' });
   }
   const data = loadSettersData();
+  // Audit fix: chequear phone duplicado contra leads existentes (normalizado: solo dígitos, últimos 10)
+  // El frontend puede pasar { allowDuplicate: true } para skip si quiere agregar igual (referido nuevo del mismo número)
+  const allowDup = req.body?.allowDuplicate === true;
+  if (!allowDup) {
+    const cleanPhoneDigits = cleanPhone.replace(/\D/g, '').slice(-10);
+    const existing = Object.entries(data.leads || {}).find(([_, l]) => {
+      if (!l.phone) return false;
+      const lDigits = String(l.phone).replace(/\D/g, '').slice(-10);
+      return lDigits === cleanPhoneDigits;
+    });
+    if (existing) {
+      return res.status(409).json({
+        error: `Ya existe un lead con ese teléfono: "${existing[1].name || existing[0]}"`,
+        existingLeadId: existing[0],
+        hint: 'Para crear igual (caso referido nuevo del mismo número), reenviá con allowDuplicate=true',
+      });
+    }
+  }
   // Determinar setter destino: el pasado, o el primer setter activo, o vacío.
   let targetSetterId = '';
   if (setterId && typeof setterId === 'string') {
@@ -8477,7 +8508,10 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
       if (fromTs > 0 && ts < fromTs) continue;
       const isScheduled = scheduledOutcomes.has(c.outcome);
       const isReached = reachedOutcomes.has(c.outcome);
-      for (const scriptId of c.scriptIdsUsed) {
+      // Audit fix: deduplicar scriptIds dentro de una misma llamada para no
+      // inflar artificialmente stats si el setter clickea el mismo script 2 veces.
+      const uniqScriptIds = [...new Set(c.scriptIdsUsed)];
+      for (const scriptId of uniqScriptIds) {
         if (!stats[scriptId]) {
           const s = scriptsById[scriptId];
           stats[scriptId] = {
@@ -8603,9 +8637,13 @@ ANALIZÁ EL TRANSCRIPT Y DEVOLVÉ JSON ESTRICTO (sin markdown wrapping):
 }
 
 DEVOLVÉ SOLO EL JSON. NADA MÁS. SIN \`\`\`json wrappers, sin texto explicativo antes/después.`;
+  // Audit fix: sanitize lead.name (max 120 chars) para no inflar tokens
+  const safeName = String(lead.name || 'N/A').slice(0, 120);
+  const safeCity = String(lead.city || '').slice(0, 80);
+  const safeCountry = String(lead.country || '').slice(0, 60);
   const userPrompt = `OUTCOME DE LA LLAMADA: ${call.outcome || 'no_disposition'}
 DURACIÓN: ${call.duration || 0} segundos
-LEAD: ${lead.name || 'N/A'} (${lead.city || ''}, ${lead.country || ''})
+LEAD: ${safeName} (${safeCity}, ${safeCountry})
 
 TRANSCRIPT:
 ${transcriptText}
@@ -8625,22 +8663,37 @@ Analizá según el framework. Devolvé SOLO el JSON estructurado.`;
     const raw = completion.choices?.[0]?.message?.content || '{}';
     let parsed;
     try {
-      // Si el modelo devolvió wrapping con ```json (a pesar de la instrucción)
-      const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-      parsed = JSON.parse(cleaned);
+      // Audit fix: parsing más robusto. Algunos modelos (Qwen/OpenRouter free)
+      // no respetan response_format y meten texto antes/después del JSON.
+      // 1) intentar parse directo
+      // 2) intentar quitar ```json wrappers
+      // 3) extraer el primer {...} con regex como fallback
+      const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('No JSON object found in response');
+        parsed = JSON.parse(match[0]);
+      }
     } catch (e) {
       console.warn('[mercury-analyze] JSON parse failed:', e.message, '\n--- raw:', raw.substring(0, 300));
       return res.status(502).json({ error: 'IA devolvió un JSON inválido. Reintentá.' });
     }
-    // Guardar en lead.callLog
+    // Audit fix: recargar fresh antes de save (TOCTOU). Mercury tarda ~5-30s.
+    const fresh = loadSettersData();
+    const freshLead = fresh.leads?.[leadId];
+    if (!freshLead || !Array.isArray(freshLead.callLog) || !freshLead.callLog[callIdx]) {
+      return res.status(409).json({ error: 'Call log fue modificado/eliminado durante el análisis. Reintentá.' });
+    }
     const analysis = {
       ...parsed,
       analyzedAt: new Date().toISOString(),
       analyzedBy: req.auth?.user?.email || 'admin',
       modelUsed: AI_MODEL,
     };
-    lead.callLog[callIdx].mercuryAnalysis = analysis;
-    saveSettersData(data);
+    freshLead.callLog[callIdx].mercuryAnalysis = analysis;
+    saveSettersData(fresh);
     res.json({ ok: true, analysis, cached: false });
   } catch (e) {
     console.error('[mercury-analyze] failed:', e?.message || e);
@@ -8734,7 +8787,7 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
     return res.status(503).json({ error: 'OPENAI_API_KEY no configurada. Setear como env var en Railway.' });
   }
   const { leadId } = req.params;
-  const { setterAudioB64, leadAudioB64, mimeType } = req.body || {};
+  const { setterAudioB64, leadAudioB64, mimeType, callStartedAt } = req.body || {};
   if (!setterAudioB64 && !leadAudioB64) {
     return res.status(400).json({ error: 'Al menos uno de setterAudioB64 o leadAudioB64 requerido' });
   }
@@ -8777,20 +8830,52 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       transcribe(leadAudioB64, 'lead'),
     ]);
     const merged = [...setterSegs, ...leadSegs].sort((a, b) => a.start - b.start);
-    // Persistir en lead.callLog[ultimo].transcript
-    const data = loadSettersData();
-    const lead = data.leads?.[leadId];
-    if (lead && Array.isArray(lead.callLog) && lead.callLog.length > 0) {
-      const lastIdx = lead.callLog.length - 1;
-      lead.callLog[lastIdx].transcript = {
+    // Audit fix: recargar fresh data justo antes de escribir (TOCTOU). Whisper
+    // tarda ~5-30s, otros endpoints pueden haber escrito en el JSON entre tanto.
+    // Audit fix: matching del callLog entry correcto por callStartedAt si vino.
+    // Sin esto, lastIdx puede apuntar a otra llamada agregada entre tanto.
+    // Polling 500ms × 30s: el transcribe llega ANTES de que el setter elija
+    // disposition (que es lo que crea el callLog entry). Esperamos a que aparezca.
+    let saved = false;
+    let lastAttemptIdx = -1;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const fresh = loadSettersData();
+      const lead = fresh.leads?.[leadId];
+      if (!lead || !Array.isArray(lead.callLog) || lead.callLog.length === 0) {
+        if (attempt === 0 && !callStartedAt) {
+          // Sin callStartedAt y sin callLog: no podemos esperar nada
+          break;
+        }
+        await new Promise(r => setTimeout(r, 500));
+        continue;
+      }
+      // Buscar el entry: por callStartedAt si vino (tolerancia ±10s), sino el último
+      let idx = -1;
+      if (callStartedAt) {
+        const targetTs = new Date(callStartedAt).getTime();
+        idx = lead.callLog.findIndex(c => {
+          const cTs = new Date(c.ts).getTime();
+          return Math.abs(cTs - targetTs) <= 10000;
+        });
+      }
+      if (idx < 0) idx = lead.callLog.length - 1;
+      // Asegurar que el entry no tenga transcript ya (race protection)
+      if (lead.callLog[idx]?.transcript) {
+        console.log('[transcribe] entry idx=' + idx + ' ya tiene transcript, sobreescribiendo (force)');
+      }
+      lead.callLog[idx].transcript = {
         segments: merged,
         transcribedAt: new Date().toISOString(),
         whisperModel: 'whisper-1',
         language: 'es',
       };
-      saveSettersData(data);
+      saveSettersData(fresh);
+      saved = true;
+      lastAttemptIdx = idx;
+      break;
     }
-    res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length });
+    if (!saved) console.warn('[transcribe] No se pudo persistir transcript (lead/callLog no encontrado tras 30s)');
+    res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length, savedToIdx: lastAttemptIdx });
   } catch (e) {
     res.status(500).json({ error: 'Error transcribiendo: ' + (e?.message || 'unknown') });
   }

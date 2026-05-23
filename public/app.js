@@ -1713,9 +1713,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Notification pattern de Telnyx WebRTC v2: TODOS los state changes
         // del call vienen por 'telnyx.notification' con type='callUpdate'.
-        // Estados REALES del SDK v2 (verificado en bundle.js): new, ringing,
-        // active, held, done, ended, recovering. NO existen 'hangup'/'destroy'
-        // como states. El evento de cuelgue se traduce a state='done' o 'ended'.
+        // Estados REALES verificados contra source del SDK (BaseCall.setState
+        // del bundle.js): new, requesting, trying, recovering, ringing,
+        // answering, early, active, held, hangup, destroy, purge.
+        // Los terminales son: hangup, destroy, purge (en ese orden de transición
+        // típica: BYE recibido → peer.close() → estado limpio).
+        // NO existen 'done'/'ended' como Call states (fueron false positives
+        // de grep en el bundle minified — son otros enums internos).
         this.client.on?.('telnyx.notification', (notification) => {
           if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
           const call = notification.call;
@@ -2111,6 +2115,151 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // PHASE setter-ux-redesign — Modo tabla simple (7 cols)
+    // ═══════════════════════════════════════════════════════════
+    // Setters arrancan en 'simple'. Admin puede togglear a 'complete'.
+    // Preferencia se guarda en localStorage por usuario.
+    const _tableModeKey = 'scm_setter_table_mode_' + (currentUser?.id || 'anon');
+    let _tableMode = (function determineInitialMode() {
+      const saved = localStorage.getItem(_tableModeKey);
+      if (saved === 'simple' || saved === 'complete') return saved;
+      // Default: setters → simple, admin/supervisor → complete (mantienen vista actual)
+      return currentUser?.role === 'setter' ? 'simple' : 'complete';
+    })();
+
+    // Headers para los 2 modos
+    const _theadSimple = `
+      <tr>
+        <th style="width:4%; text-align:center;">#</th>
+        <th style="width:26%;">Lead / Ciudad</th>
+        <th style="width:14%;">Teléfono</th>
+        <th style="width:13%;">Estado</th>
+        <th style="width:11%;">Última acción</th>
+        <th style="width:17%;">Próximo paso</th>
+        <th style="width:15%; text-align:center;">Acciones</th>
+      </tr>`;
+    const _theadComplete = `
+      <tr>
+        <th style="width:3%">#</th>
+        <th style="width:5%">Fecha</th>
+        <th style="width:14%">Nombre</th>
+        <th style="width:9%">Teléfono</th>
+        <th style="width:4%">Web</th>
+        <th style="width:7%">Conexión</th>
+        <th style="width:5%">Resp?</th>
+        <th style="width:5%">Calif?</th>
+        <th style="width:5%">Int?</th>
+        <th style="width:4%">Var</th>
+        <th style="width:14%">Notas</th>
+        <th style="width:7%">Doctor</th>
+        <th style="width:3%">IG</th>
+        <th style="width:3%">24h</th>
+        <th style="width:3%">48h</th>
+        <th style="width:3%">72h</th>
+        <th style="width:3%">7d</th>
+        <th style="width:3%">15d</th>
+        <th style="width:4%">Est</th>
+      </tr>`;
+
+    function _applyTableMode() {
+      const table = document.getElementById('setter-table');
+      const thead = table?.querySelector('thead');
+      if (!table || !thead) return;
+      table.setAttribute('data-mode', _tableMode);
+      thead.innerHTML = _tableMode === 'simple' ? _theadSimple : _theadComplete;
+      const toggleBtn = document.getElementById('setter-table-mode-toggle');
+      if (toggleBtn) {
+        toggleBtn.textContent = _tableMode === 'simple' ? '🔧 Ver tabla completa' : '◀ Vista simple';
+      }
+    }
+    window._toggleTableMode = function toggleTableMode() {
+      _tableMode = _tableMode === 'simple' ? 'complete' : 'simple';
+      localStorage.setItem(_tableModeKey, _tableMode);
+      _applyTableMode();
+      renderSetterLeads();
+    };
+    document.getElementById('setter-table-mode-toggle')?.addEventListener('click', window._toggleTableMode);
+    // Aplicar mode inicial al cargar
+    _applyTableMode();
+
+    // Helper: formato "hace X" para fechas relativas (Última acción)
+    function _formatAgo(iso) {
+      if (!iso) return '—';
+      const diff = Date.now() - new Date(iso).getTime();
+      if (diff < 0 || isNaN(diff)) return '—';
+      const min = Math.floor(diff / 60000);
+      if (min < 1) return 'ahora';
+      if (min < 60) return `hace ${min}m`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `hace ${h}h`;
+      const d = Math.floor(h / 24);
+      if (d < 7) return `hace ${d}d`;
+      if (d < 30) return `hace ${Math.floor(d / 7)}sem`;
+      return `hace ${Math.floor(d / 30)}m`;
+    }
+
+    // Helper: derivar chip de estado semántico (modo simple)
+    function _semanticStatusChip(lead) {
+      const map = {
+        agendado: ['📅', 'Agendado', 'rgba(91,185,116,0.18)', '#5bb974'],
+        cerrado: ['✅', 'Cerrado', 'rgba(91,185,116,0.15)', '#5bb974'],
+        descartado: ['🚫', 'Descartado', 'rgba(248,81,73,0.15)', '#f85149'],
+        sin_wsp: ['📞', 'Sin WSP', 'rgba(255,200,40,0.12)', '#ffc828'],
+      };
+      if (lead.estado && map[lead.estado]) {
+        const [icon, label, bg, col] = map[lead.estado];
+        return `<span class="chip-semantic" style="background:${bg}; color:${col}; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">${icon} ${label}</span>`;
+      }
+      if (lead.interes === 'si') return `<span class="chip-semantic" style="background:rgba(248,81,73,0.15); color:#f85149; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">🔥 Interesado</span>`;
+      if (lead.calificado === true) return `<span class="chip-semantic" style="background:rgba(157,133,242,0.18); color:#9d85f2; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">✓ Calificado</span>`;
+      if (lead.respondio === true) return `<span class="chip-semantic" style="background:rgba(255,165,80,0.15); color:#ffa550; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">💬 Respondió</span>`;
+      if (lead.conexion === 'enviada') return `<span class="chip-semantic" style="background:rgba(121,184,255,0.15); color:#79b8ff; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">📤 Enviado</span>`;
+      return `<span class="chip-semantic" style="background:rgba(126,132,148,0.12); color:#9CA3AF; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">📋 Sin contactar</span>`;
+    }
+
+    // Helper: inferir "próximo paso" sugerido al setter
+    function _nextStepFor(lead) {
+      if (lead.estado === 'agendado') return ['Esperar reunión', '#5bb974'];
+      if (lead.estado === 'cerrado' || lead.estado === 'descartado') return ['Listo', '#7E8494'];
+      if (lead.interes === 'si') return ['📅 Agendar reunión', '#f85149'];
+      if (lead.calificado === true && lead.interes !== 'no') return ['Marcar interés', '#9d85f2'];
+      if (lead.respondio === true) return ['Calificar', '#ffa550'];
+      if (lead.conexion === 'enviada') {
+        const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+        if (lc && (Date.now() - lc) > 24 * 3600 * 1000) return ['Hacer follow-up', '#ffc828'];
+        return ['Esperar respuesta', '#7E8494'];
+      }
+      return ['Mandar saludo', '#79b8ff'];
+    }
+
+    // Render en modo simple (7 columnas, mas aireado, focus en accion)
+    function _renderRowSimple(lead) {
+      const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
+      const lastAgo = _formatAgo(lead.lastContactAt);
+      const statusChip = _semanticStatusChip(lead);
+      const [nextStep, nextColor] = _nextStepFor(lead);
+      const waUrl = phone ? buildSetterWaUrl(lead, 'apertura') : '';
+      const city = lead.city || lead.country || '';
+      const cityHtml = city ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:3px;">${escHtml(city)}</div>` : '';
+      const phoneHtml = phone
+        ? `<a href="${escHtml(waUrl)}" target="_blank" class="text-link" style="color:var(--success); white-space:nowrap;" onclick="window._waClickCopy(this, event);">${escHtml(phone)}</a>`
+        : '<span class="text-muted">—</span>';
+      return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')" style="cursor:pointer;">' +
+        '<td style="text-align:center; color:var(--text-secondary); font-weight:500;">' + (lead.num || '') + '</td>' +
+        '<td><div style="font-weight:600; color:var(--text-primary);">' + escHtml(lead.name || '—') + '</div>' + cityHtml + '</td>' +
+        '<td onclick="event.stopPropagation()">' + phoneHtml + '</td>' +
+        '<td>' + statusChip + '</td>' +
+        '<td style="font-size:12px; color:var(--text-secondary);">' + lastAgo + '</td>' +
+        '<td><span style="font-size:12px; color:' + nextColor + '; font-weight:500;">' + nextStep + '</span></td>' +
+        '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' +
+          (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="window._waClickCopy(this, event);">💬</a>' : '') +
+          '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(157,133,242,0.10); color:#9d85f2; margin:0 2px; display:inline-block;">📋</a>' +
+          '<a href="#" title="Programar seguimiento" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
+        '</td>' +
+      '</tr>';
+    }
+
     function renderSetterLeads() {
       _updatePipeFilterCounts();
       let filtered = [...setterLeads];
@@ -2226,7 +2375,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (filtered.length === 0) {
-        setterLeadsBody.innerHTML = '<tr><td colspan="19" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
+        const cols = _tableMode === 'simple' ? 7 : 19;
+        setterLeadsBody.innerHTML = '<tr><td colspan="' + cols + '" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
         // Marcar tabla vacía para que CSS quite el min-width 1800 y no aparezca
         // doble scrollbar al pegarse con el floating scrollbar.
         document.getElementById('setter-table')?.setAttribute('data-empty', '1');
@@ -2264,6 +2414,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         pagEl.innerHTML = '<span style="color:var(--text-secondary);font-size:12px;">' + filtered.length + ' leads</span>';
       }
 
+      // ── Rama: modo SIMPLE renderiza 7 columnas (default setter) ──
+      if (_tableMode === 'simple') {
+        setterLeadsBody.innerHTML = pageLeads.map(_renderRowSimple).join('');
+        _syncFloatingScrollbar();
+        if (typeof window.renderHoyWidget === 'function') {
+          try { window.renderHoyWidget(); } catch (e) {}
+        }
+        return;
+      }
+
+      // ── Modo COMPLETE (19 columnas, vista admin/power-user) ──
       setterLeadsBody.innerHTML = pageLeads.map(lead => {
         const lastNote = lead.notes && lead.notes.length > 0 ? lead.notes[lead.notes.length - 1] : null;
         const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
@@ -3975,7 +4136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    async function _stopCallRecordingAndTranscribe(leadId) {
+    async function _stopCallRecordingAndTranscribe(leadId, callStartedAtIso) {
       // Detener recorders. Esperamos un poco para que el último chunk caiga.
       const stopRecorder = (rec) => new Promise((resolve) => {
         if (!rec || rec.state === 'inactive') { resolve(); return; }
@@ -4019,7 +4180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
         const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/transcribe`), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm' }),
+          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm', callStartedAt: callStartedAtIso || null }),
         });
         if (!r.ok) {
           let msg = 'HTTP ' + r.status;
@@ -4110,9 +4271,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (muteBtn) { muteBtn.classList.remove('tlx-mute-active'); muteBtn.textContent = '🎤 Mute'; }
       if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
       if (_telnyxCallState.noAnswerTimeout) { clearTimeout(_telnyxCallState.noAnswerTimeout); _telnyxCallState.noAnswerTimeout = null; }
+      // Audit fix: liberar tracks del mic si quedaron abiertos (ej. si ensureClient
+      // falló después de getUserMedia). Sin esto el mic queda tomado hasta refresh.
+      if (_telnyxCallState.localStreamForRec) {
+        try { _telnyxCallState.localStreamForRec.getTracks().forEach(t => t.stop()); } catch {}
+        _telnyxCallState.localStreamForRec = null;
+      }
       _telnyxCallState.startedAt = 0;
       _telnyxCallState.muted = false;
       _telnyxCallState.statusState = null;
+      _telnyxCallState.scriptIdsUsed = [];
       _currentCallLead = null;
     }
 
@@ -4349,7 +4517,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // rápidos sin audio significativo).
       if (leadId && durationSecs >= 5 && (_setterRecorder || _leadRecorder)) {
         // No bloquear el cierre del panel por esperar transcripción.
-        _stopCallRecordingAndTranscribe(leadId).catch(e => console.warn('[transcribe] fire-and-forget failed:', e?.message));
+        // Pasar el callStartedAt para que el backend matchee el callLog correcto
+        const callStartedAtIso = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
+        _stopCallRecordingAndTranscribe(leadId, callStartedAtIso).catch(e => console.warn('[transcribe] fire-and-forget failed:', e?.message));
       } else {
         // Limpieza si no transcribimos
         try { _setterRecorder?.stop(); } catch {}
@@ -4395,19 +4565,35 @@ document.addEventListener('DOMContentLoaded', async () => {
               '3': 'no_answer', '4': 'voicemail', '5': 'callback_later',
               '6': 'wrong_number', '7': 'invalid_number',
             };
+            // Audit fix: limpiar handler anterior si quedó colgado de una llamada previa
+            // (sino se acumulan listeners si haces 2-3 llamadas en <30s).
+            if (window._activeDispositionShortcut) {
+              document.removeEventListener('keydown', window._activeDispositionShortcut);
+            }
             const keyHandler = (e) => {
               if (shortcutMap[e.key]) {
+                // Verificar que el dispositionSel siga en el DOM (puede haber sido re-renderizado)
+                if (!dispositionSel.isConnected) {
+                  document.removeEventListener('keydown', keyHandler);
+                  if (window._activeDispositionShortcut === keyHandler) window._activeDispositionShortcut = null;
+                  return;
+                }
                 const targetOption = dispositionSel.querySelector(`option[value="${shortcutMap[e.key]}"]`);
                 if (targetOption) {
                   dispositionSel.value = shortcutMap[e.key];
                   dispositionSel.dispatchEvent(new Event('change'));
                   document.removeEventListener('keydown', keyHandler);
+                  if (window._activeDispositionShortcut === keyHandler) window._activeDispositionShortcut = null;
                 }
               }
             };
+            window._activeDispositionShortcut = keyHandler;
             document.addEventListener('keydown', keyHandler);
             // Auto-remove después de 30s para no quedarse listening
-            setTimeout(() => document.removeEventListener('keydown', keyHandler), 30000);
+            setTimeout(() => {
+              document.removeEventListener('keydown', keyHandler);
+              if (window._activeDispositionShortcut === keyHandler) window._activeDispositionShortcut = null;
+            }, 30000);
           }
         }
       }, 500);
