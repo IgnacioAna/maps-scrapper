@@ -99,6 +99,10 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Llamadas (Sin WSP)</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-call-history" data-label="Historial llamadas" data-roles="admin,supervisor">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Historial llamadas</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-myperf" data-label="Mi rendimiento">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
             <span>Mi rendimiento</span>
@@ -778,6 +782,64 @@
               </span>
               <button id="calls-pag-next" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Siguiente">→</button>
               <button id="calls-pag-end" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Última página">⟫</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Phase 6 Sprint 8: Historial de llamadas con transcripciones (admin only) -->
+      <div id="view-call-history" class="module-view hidden" data-roles="admin,supervisor">
+        <header class="page-header">
+          <div style="display:flex; align-items:flex-start; gap:14px;">
+            <div style="flex-shrink:0; width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, #5bb974 0%, #3a8e4e 100%); display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 6px 18px rgba(91,185,116,0.35);">⏱</div>
+            <div style="flex:1;">
+              <h2 class="page-title" style="margin:0;">Historial de llamadas</h2>
+              <p class="muted" style="margin-top:4px; font-size:13px;">Todas las llamadas Telnyx con transcripción Whisper (si está disponible). Buscá por keyword en el contenido para encontrar patrones.</p>
+            </div>
+            <span id="chist-count-badge" class="chip" style="padding:5px 12px; font-size:11px; font-weight:600; flex-shrink:0; align-self:center;">— llamadas</span>
+          </div>
+        </header>
+        <section style="margin-top:18px; padding:0 32px 40px; display:grid; gap:14px; grid-template-columns:1fr 1.4fr;">
+          <!-- Columna izquierda: lista de llamadas + filtros -->
+          <div class="card" style="padding:16px; border-radius:14px;">
+            <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
+              <input type="text" id="chist-search" placeholder="🔍 Buscar en transcripciones, notas, nombre..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12.5px;">
+              <select id="chist-outcome" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
+                <option value="">Todos los resultados</option>
+                <option value="answered_interested">✅ Interesado</option>
+                <option value="answered_not_interested">❌ No interesado</option>
+                <option value="scheduled_with_admin">📅 Agendado</option>
+                <option value="no_answer">📵 No atendió</option>
+                <option value="voicemail">📭 Buzón</option>
+                <option value="callback_later">🔄 Callback</option>
+                <option value="wrong_number">🔢 Equivocado</option>
+                <option value="invalid_number">🚫 No existe</option>
+              </select>
+            </div>
+            <ul id="chist-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto;"></ul>
+            <div id="chist-empty" class="muted" style="display:none; text-align:center; padding:36px 18px; font-size:12.5px;">Sin llamadas con esos filtros.</div>
+          </div>
+          <!-- Columna derecha: detalle + transcript -->
+          <div class="card" style="padding:18px; border-radius:14px;">
+            <div id="chist-detail-placeholder" style="text-align:center; padding:50px 18px; color:var(--text-secondary); font-size:13px;">
+              <div style="font-size:48px; margin-bottom:14px; opacity:0.3;">⏱</div>
+              Elegí una llamada de la lista para ver el detalle y la transcripción.
+            </div>
+            <div id="chist-detail" style="display:none;">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:14px;">
+                <div style="flex:1; min-width:0;">
+                  <strong id="chist-d-name" style="font-size:15px; color:var(--text-primary);">—</strong>
+                  <div id="chist-d-meta" class="muted" style="font-size:11.5px; margin-top:3px;">—</div>
+                </div>
+                <span id="chist-d-outcome" class="chip" style="padding:4px 10px; font-size:11px; flex-shrink:0;">—</span>
+              </div>
+              <div id="chist-d-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px; margin-bottom:14px;"></div>
+              <div id="chist-d-notes" style="display:none; padding:10px 12px; background:rgba(255,179,65,0.08); border:1px solid rgba(255,179,65,0.2); border-radius:9px; margin-bottom:14px; font-size:12px; color:var(--text-primary); line-height:1.5;"></div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <strong style="font-size:13px; color:var(--text-primary);">🎤 Transcripción</strong>
+                <span id="chist-d-transcript-meta" class="muted" style="font-size:10px;"></span>
+              </div>
+              <div id="chist-d-transcript" style="padding:12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; max-height:50vh; overflow-y:auto; font-size:12.5px; line-height:1.6;"></div>
             </div>
           </div>
         </section>
@@ -2531,7 +2593,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522q"></script>
+  <script type="module" src="/app.js?v=20260522r"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

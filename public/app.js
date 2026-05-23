@@ -8001,6 +8001,141 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.getElementById('myp-period')?.addEventListener('change', () => _mypLoad());
   document.getElementById('myp-setter')?.addEventListener('change', () => _mypLoad());
+
+  // ───────────────────────────────────────────────────────────────
+  // Phase 6 Sprint 8: Historial de llamadas con transcripciones
+  // ───────────────────────────────────────────────────────────────
+  let _chistCache = [];
+  let _chistSelected = null;
+
+  async function _chistLoad() {
+    const search = document.getElementById('chist-search')?.value || '';
+    const outcome = document.getElementById('chist-outcome')?.value || '';
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (outcome) params.set('outcome', outcome);
+      params.set('limit', '100');
+      const r = await fetch(apiUrl('/api/telnyx/calls/recent?' + params.toString()), { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      _chistCache = d.calls || [];
+      const badge = document.getElementById('chist-count-badge');
+      if (badge) badge.textContent = `${d.total || 0} llamadas`;
+      _chistRenderList();
+    } catch (e) { console.warn('[chist]', e.message); }
+  }
+
+  function _chistRenderList() {
+    const list = document.getElementById('chist-list');
+    const empty = document.getElementById('chist-empty');
+    if (!list) return;
+    if (_chistCache.length === 0) {
+      list.innerHTML = '';
+      if (empty) empty.style.display = 'block';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    const outcomeIcon = {
+      answered_interested: '✅', answered_not_interested: '❌',
+      no_answer: '📵', voicemail: '📭', callback_later: '🔄',
+      wrong_number: '🔢', invalid_number: '🚫',
+      scheduled_with_admin: '📅',
+    };
+    list.innerHTML = _chistCache.map(c => {
+      const date = new Date(c.ts);
+      const dateTxt = date.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' }) + ' ' + date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      const dur = c.duration ? `${Math.floor(c.duration / 60)}:${String(c.duration % 60).padStart(2, '0')}` : '—';
+      const transcriptIcon = c.hasTranscript ? '🎤' : '';
+      const isSelected = _chistSelected && _chistSelected.leadId === c.leadId && _chistSelected.callIdx === c.callIdx;
+      return `<li onclick="window._chistSelect('${escHtml(c.leadId)}', ${c.callIdx})" style="padding:10px 12px; background:${isSelected ? 'rgba(157,133,242,0.12)' : 'var(--bg-app)'}; border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-color)'}; border-radius:9px; cursor:pointer; transition:all 0.15s;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:12.5px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${outcomeIcon[c.outcome] || '📞'} ${escHtml(c.leadName || c.leadPhone)} ${transcriptIcon}
+            </div>
+            <div style="font-size:10.5px; color:var(--text-secondary); margin-top:3px;">
+              ${escHtml(c.leadCity || '')}${c.leadCity && c.leadCountry ? ' · ' : ''}${escHtml(c.leadCountry || '')} · ${dur}
+            </div>
+          </div>
+          <div style="font-size:10px; color:var(--text-tertiary); flex-shrink:0; text-align:right;">
+            ${dateTxt}
+            ${c.cost ? `<br><span style="color:#FFB341;">$${c.cost.toFixed(3)}</span>` : ''}
+          </div>
+        </div>
+      </li>`;
+    }).join('');
+  }
+
+  window._chistSelect = async (leadId, callIdx) => {
+    _chistSelected = { leadId, callIdx };
+    _chistRenderList();
+    const placeholder = document.getElementById('chist-detail-placeholder');
+    const detail = document.getElementById('chist-detail');
+    if (placeholder) placeholder.style.display = 'none';
+    if (detail) detail.style.display = 'block';
+    try {
+      const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/${callIdx}/transcript`), { credentials: 'include' });
+      if (!r.ok) {
+        document.getElementById('chist-d-transcript').innerHTML = '<span class="muted">No se pudo cargar.</span>';
+        return;
+      }
+      const d = await r.json();
+      const lead = d.lead;
+      const c = d.call;
+      const outcomeLabel = {
+        answered_interested: '✅ Interesado',
+        answered_not_interested: '❌ No interesado',
+        no_answer: '📵 No atendió', voicemail: '📭 Buzón',
+        callback_later: '🔄 Callback', wrong_number: '🔢 Equivocado',
+        invalid_number: '🚫 No existe', scheduled_with_admin: '📅 Agendado',
+      };
+      document.getElementById('chist-d-name').textContent = `${lead.name || lead.phone} ${lead.doctor && !lead.doctor.includes('N/A') ? ' · ' + lead.doctor : ''}`;
+      document.getElementById('chist-d-meta').textContent = `${lead.phone}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''} · ${new Date(c.ts).toLocaleString('es-AR')}`;
+      document.getElementById('chist-d-outcome').textContent = outcomeLabel[c.outcome] || c.outcome || '—';
+      const statCard = (l, v, col = 'var(--text-primary)') => `<div style="padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:7px;"><div style="font-size:9.5px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px;">${l}</div><div style="font-size:14px; font-weight:600; color:${col}; margin-top:2px;">${v}</div></div>`;
+      const dur = c.duration ? `${Math.floor(c.duration / 60)}:${String(c.duration % 60).padStart(2, '0')}` : '—';
+      document.getElementById('chist-d-stats').innerHTML =
+        statCard('Duración', dur) +
+        (c.cost ? statCard('Costo', `$${c.cost.toFixed(3)}`, '#FFB341') : '') +
+        (c.fromNumber ? statCard('Caller ID', c.fromNumber, '#7dd3fc') : '');
+      const notesEl = document.getElementById('chist-d-notes');
+      if (c.notes) { notesEl.style.display = 'block'; notesEl.innerHTML = '📝 ' + escHtml(c.notes); }
+      else { notesEl.style.display = 'none'; }
+      const transcriptEl = document.getElementById('chist-d-transcript');
+      const transcriptMetaEl = document.getElementById('chist-d-transcript-meta');
+      if (c.transcript?.segments?.length) {
+        transcriptMetaEl.textContent = `${c.transcript.segments.length} fragmentos · ${c.transcript.whisperModel || 'whisper-1'}`;
+        // Renderizar segments con speaker tags. Resaltar el keyword si hay búsqueda activa.
+        const searchTerm = (document.getElementById('chist-search')?.value || '').toLowerCase().trim();
+        transcriptEl.innerHTML = c.transcript.segments.map(s => {
+          const speakerColor = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+          const speakerLabel = s.speaker === 'setter' ? '👤 Setter' : '🎯 Lead';
+          let text = escHtml(s.text);
+          if (searchTerm && text.toLowerCase().includes(searchTerm)) {
+            const re = new RegExp('(' + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+            text = text.replace(re, '<mark style="background:rgba(157,133,242,0.35); color:#fff; padding:0 2px; border-radius:2px;">$1</mark>');
+          }
+          const ts = `${Math.floor(s.start / 60)}:${String(Math.floor(s.start % 60)).padStart(2, '0')}`;
+          return `<div style="display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+            <span style="flex-shrink:0; font-size:10px; color:var(--text-tertiary); font-family:ui-monospace,monospace; padding-top:2px;">${ts}</span>
+            <span style="flex-shrink:0; font-size:10px; color:${speakerColor}; font-weight:600; padding-top:2px; min-width:65px;">${speakerLabel}</span>
+            <span style="flex:1; color:var(--text-primary);">${text}</span>
+          </div>`;
+        }).join('');
+      } else {
+        transcriptMetaEl.textContent = '';
+        transcriptEl.innerHTML = '<div class="muted" style="text-align:center; padding:24px; font-size:12px;">Sin transcripción disponible.<br><small>Se requiere OPENAI_API_KEY en Railway y llamada >5s.</small></div>';
+      }
+    } catch (e) { console.warn('[chist] detail load:', e.message); }
+  };
+
+  document.querySelector('[data-target="view-call-history"]')?.addEventListener('click', () => { setTimeout(_chistLoad, 80); });
+  document.getElementById('chist-search')?.addEventListener('input', () => {
+    clearTimeout(window.__chistSearchTimer);
+    window.__chistSearchTimer = setTimeout(_chistLoad, 350);
+  });
+  document.getElementById('chist-outcome')?.addEventListener('change', _chistLoad);
   document.getElementById('myp-refresh')?.addEventListener('click', () => _mypLoad());
 
   // ─── Vista 📅 Mis programados ──────────────────────────────────

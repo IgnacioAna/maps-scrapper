@@ -8217,6 +8217,77 @@ app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, r
   res.json({ ok: true, scripts: data.scripts });
 });
 
+// GET /api/telnyx/calls/recent — lista de llamadas Telnyx recientes con
+// transcripts disponibles. admin/supervisor ve todas, setter solo las suyas.
+// Query: ?limit=50&search=keyword&outcome=answered_interested
+app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
+  const eff = getEffectiveAuth(req);
+  const role = eff.role;
+  const authSetterId = role === 'setter' ? eff.setterId : '';
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
+  const search = (req.query.search || '').toString().toLowerCase().trim();
+  const outcomeFilter = (req.query.outcome || '').toString().trim();
+  const data = loadSettersData();
+  const calls = [];
+  for (const [leadId, lead] of Object.entries(data.leads || {})) {
+    if (!Array.isArray(lead.callLog) || lead.callLog.length === 0) continue;
+    if (authSetterId && lead.assignedTo !== authSetterId) continue;
+    for (let i = 0; i < lead.callLog.length; i++) {
+      const c = lead.callLog[i];
+      if (c.channel !== 'telnyx_webrtc') continue; // solo Telnyx
+      if (outcomeFilter && c.outcome !== outcomeFilter) continue;
+      const transcriptText = (c.transcript?.segments || []).map(s => s.text).join(' ');
+      if (search) {
+        const hay = [
+          lead.name, lead.city, lead.country, lead.phone, c.outcome,
+          c.notes, transcriptText,
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(search)) continue;
+      }
+      calls.push({
+        leadId, callIdx: i,
+        leadName: lead.name || '',
+        leadPhone: lead.phone || '',
+        leadCity: lead.city || '', leadCountry: lead.country || '',
+        ts: c.ts, duration: c.duration || 0,
+        outcome: c.outcome || '',
+        fromNumber: c.fromNumber || '',
+        cost: c.cost || 0, costCountry: c.costCountry || '',
+        notes: c.notes || '',
+        hasTranscript: !!(c.transcript?.segments?.length),
+        transcriptSegCount: c.transcript?.segments?.length || 0,
+        setterId: lead.assignedTo || '',
+      });
+    }
+  }
+  calls.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+  res.json({ calls: calls.slice(0, limit), total: calls.length });
+});
+
+// GET /api/telnyx/calls/:leadId/:callIdx/transcript — devuelve el transcript completo
+// de una llamada específica. admin/supervisor todas, setter solo las suyas.
+app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res) => {
+  const eff = getEffectiveAuth(req);
+  const role = eff.role;
+  const authSetterId = role === 'setter' ? eff.setterId : '';
+  const { leadId } = req.params;
+  const callIdx = parseInt(req.params.callIdx, 10);
+  const data = loadSettersData();
+  const lead = data.leads?.[leadId];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado' });
+  if (authSetterId && lead.assignedTo !== authSetterId) return res.status(403).json({ error: 'No autorizado' });
+  if (!Array.isArray(lead.callLog) || !lead.callLog[callIdx]) return res.status(404).json({ error: 'Call log no encontrado' });
+  const call = lead.callLog[callIdx];
+  res.json({
+    lead: { id: leadId, name: lead.name, phone: lead.phone, city: lead.city, country: lead.country, doctor: lead.doctor },
+    call: {
+      ts: call.ts, duration: call.duration, outcome: call.outcome,
+      fromNumber: call.fromNumber, cost: call.cost, notes: call.notes,
+      transcript: call.transcript || null,
+    },
+  });
+});
+
 // POST /api/telnyx/calls/:leadId/transcribe — transcribe el audio de una
 // llamada usando OpenAI Whisper. Recibe 2 audios separados (setter + lead)
 // como base64 (uno por canal), los transcribe en paralelo y mergea por
