@@ -532,12 +532,16 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.email !== 'string') lead.email = '';
   if (typeof lead.doctor !== 'string') lead.doctor = '';
   if (typeof lead.importedManually !== 'boolean') lead.importedManually = false;
+  // Sprint 24: Nota pre-call. Texto que el setter prepara ANTES de discar.
+  // Distinto del array `notes[]` (que son post-interacciones). Útil para
+  // guion personalizado del lead, contexto que descubrió en la web, etc.
+  if (typeof lead.precallNote !== 'string') lead.precallNote = '';
   return lead;
 }
 
-// Sprint 19: Normaliza a E.164 estricto (Telnyx-compatible).
+// Sprint 19/22: Normaliza a E.164 estricto (Telnyx-compatible).
 // Saca espacios, guiones, paréntesis. Garantiza que arranque con +.
-// Devuelve null si no se puede normalizar (sin código país detectable).
+// Devuelve null si no se puede normalizar.
 // Mirror server-side del helper en public/app.js — mantener en sync.
 function sanitizePhoneE164(phone) {
   if (!phone) return null;
@@ -555,7 +559,15 @@ function sanitizePhoneE164(phone) {
     if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
     return null;
   }
-  // Caso 3: solo dígitos sin código país. No podemos adivinar.
+  // Caso 3 (Sprint 22): dígitos puros. Si tiene 10-15 dígitos y arranca
+  // con un dígito que es plausible primer dígito de código país (1-9, no 0),
+  // asumir que ya trae código país y prependerle "+".
+  // Heurística aplicada a leads scrapeados de Google Maps donde MUCHOS
+  // vienen como "59899504576" en lugar de "+59899504576".
+  const digits = raw.replace(/\D/g, '');
+  if (/^[1-9]\d{9,14}$/.test(digits)) {
+    return '+' + digits;
+  }
   return null;
 }
 
@@ -4806,6 +4818,23 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   });
 });
 
+// Sprint 24: Nota pre-call (planificación). Texto único editable por el setter
+// antes de discar. Distinto de notes[] (post-interacción).
+app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+  ensureLeadDefaults(lead);
+  const text = String(req.body?.text || '').trim();
+  if (text.length > 2000) return res.status(400).json({ error: "Nota pre-call demasiado larga (máx 2000 chars)." });
+  lead.precallNote = text;
+  saveSettersData(data);
+  res.json({ ok: true, precallNote: lead.precallNote });
+});
+
 // Notas
 app.post('/api/setters/leads/:id/note', requireAuth, (req, res) => {
   const { text, by } = req.body;
@@ -4989,9 +5018,22 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
+  }
+  // Sprint 25: tags de objeción válidos (solo para answered_not_interested,
+  // pero los permitimos en cualquier outcome por si en el futuro se usan
+  // en otros casos). Whitelist estricta para evitar inyección de tags raros.
+  const VALID_OBJECTION_TAGS = new Set([
+    'precio', 'ya_tiene_sistema', 'tiempo', 'no_es_decisor',
+    'no_entiende_valor', 'desconfia', 'mal_momento', 'otra'
+  ]);
+  let cleanObjectionTags = [];
+  if (Array.isArray(objectionTags)) {
+    cleanObjectionTags = objectionTags
+      .filter(t => typeof t === 'string' && VALID_OBJECTION_TAGS.has(t))
+      .slice(0, 6); // max 6 tags por entry
   }
 
   // Asegurar arrays/campos
@@ -5073,6 +5115,10 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     by: req.auth?.user?.id || '',
     notes: (notes || '').toString().slice(0, 500)
   };
+  // Sprint 25: persistir objection tags si vinieron y son válidos
+  if (cleanObjectionTags.length > 0) {
+    logEntry.objectionTags = cleanObjectionTags;
+  }
 
   // Si vino metadata de llamada Telnyx, agregar al logEntry
   if (telnyxCallMeta && typeof telnyxCallMeta === 'object') {

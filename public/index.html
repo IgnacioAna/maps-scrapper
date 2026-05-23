@@ -1088,8 +1088,13 @@
             <button onclick="document.getElementById('call-callback-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:20px 24px;">
-            <p style="color:var(--text-secondary); font-size:13px; margin:0 0 16px;">El lead va a aparecer recién a partir de esta fecha.</p>
-            <label style="font-size:12px; color:var(--text-secondary); display:block; margin-bottom:6px; font-weight:500;">Cuándo</label>
+            <p style="color:var(--text-secondary); font-size:13px; margin:0 0 14px;">El lead va a aparecer recién a partir de esta fecha. Elegí un quick-pick o ajustá la fecha exacta.</p>
+
+            <!-- Sprint 23: Quick-picks -->
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:8px; font-weight:600;">Atajos</label>
+            <div id="call-cb-quickpicks" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:18px;"></div>
+
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
             <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
             <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
@@ -2713,7 +2718,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260523d"></script>
+  <script type="module" src="/app.js?v=20260523f"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

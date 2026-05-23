@@ -4070,6 +4070,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
 
+    // Sprint 24: guardar precallNote (debounced al blur)
+    window._callsSavePrecallNote = async function(leadId) {
+      const ta = document.getElementById('call-precall-note-' + leadId);
+      if (!ta) return;
+      const text = (ta.value || '').trim();
+      const lead = callsLeadsCache.find(l => l.id === leadId);
+      if (lead && (lead.precallNote || '') === text) return; // sin cambios
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/precall-note'), {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        if (lead) lead.precallNote = d.precallNote;
+        // Mini feedback visual (sin renderizar todo, solo borde verde 1s)
+        ta.style.borderColor = 'var(--success)';
+        setTimeout(() => { ta.style.borderColor = ''; }, 800);
+      } catch (e) {
+        window.showToast?.('Error guardando pre-call: ' + e.message, { type: 'error' });
+      }
+    };
+
     // Sprint 21: "Este sí tenía WSP" → vuelve a Setteo (limpia conexion='sin_wsp')
     window._callsMarkHasWsp = async function(leadId) {
       if (!confirm('¿Confirmás que este lead SÍ tiene WhatsApp? Va a volver a la vista de Setteo.')) return;
@@ -4144,10 +4167,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const time = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
             const dur = entry.duration ? ` · ${entry.duration}s` : '';
             const cost = entry.cost ? ` · $${Number(entry.cost).toFixed(3)}` : '';
+            // Sprint 25: si la entry tiene objection tags, mostrarlos como chips
+            const tagLabelMap = { precio: '💸 precio', ya_tiene_sistema: '⚙️ otro sistema', tiempo: '⏳ tiempo', no_es_decisor: '🪑 no decisor', no_entiende_valor: '🤷 no valor', desconfia: '🛑 desconfía', mal_momento: '📆 mal momento', otra: '➕ otra' };
+            const objTags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
+            const objTagsHtml = objTags.length > 0 ? `<div style="grid-column:2; display:flex; gap:4px; flex-wrap:wrap; margin-top:3px;">${objTags.map(t => `<span style="font-size:9.5px; background:rgba(244,114,114,0.12); border:1px solid rgba(244,114,114,0.28); color:#f47272; padding:1px 6px; border-radius:5px;">${tagLabelMap[t] || t}</span>`).join('')}</div>` : '';
             return `<div class="call-history-item">
               <span class="call-history-icon">${icon}</span>
               <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}</span>
               <span class="call-history-time">${time}</span>
+              ${objTagsHtml}
             </div>`;
           }).join('');
 
@@ -4184,8 +4212,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         </div>
 
-        <!-- Columna derecha: notas + follow-ups -->
+        <!-- Columna derecha: pre-call + notas + follow-ups -->
         <div class="call-detail-section">
+          <h4 class="call-detail-section-title">🎯 Nota pre-call (qué decir / contexto)</h4>
+          <textarea id="call-precall-note-${escHtml(l.id)}" class="call-note-input" style="min-height:60px; max-height:140px;" placeholder="Antes de discar: contexto del lead, ángulo de apertura, info que vi en su web…" onblur="window._callsSavePrecallNote('${escHtml(l.id)}')">${escHtml(l.precallNote || '')}</textarea>
+          <p style="font-size:10px; color:var(--text-tertiary); margin:-4px 0 8px;">Se guarda al hacer click afuera. Aparece también en el panel de llamada activa.</p>
+
           <h4 class="call-detail-section-title">📅 Follow-up programado</h4>
           <div class="call-followups">
             ${fupSteps.map(s => `<button class="call-fup-chip${fups[s.key] ? ' is-on' : ''}" onclick="window._callsToggleFollowup('${escHtml(l.id)}', '${s.key}')">${s.label}</button>`).join('')}
@@ -4299,6 +4331,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hasFup = ['24hs','48hs','72hs','7d','15d'].some(k => fups[k]);
         const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:rgba(157,133,242,0.12); padding:2px 7px; border-radius:6px;">📝 ${notesCount}</span>` : '';
         const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">🔔 follow-up</span>' : '';
+        // Sprint 23: badge de callback programado (si está en el futuro)
+        let callbackBadge = '';
+        if (l.callbackAt) {
+          const cbDate = new Date(l.callbackAt);
+          const cbTs = cbDate.getTime();
+          if (cbTs > Date.now()) {
+            const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+            const cbLabel = `${dayNames[cbDate.getDay()]} ${cbDate.getDate()}/${cbDate.getMonth()+1} ${String(cbDate.getHours()).padStart(2,'0')}:${String(cbDate.getMinutes()).padStart(2,'0')}`;
+            callbackBadge = `<span style="font-size:10px; color:var(--info, #5BA3F2); background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">📅 ${cbLabel}</span>`;
+          }
+        }
 
         const cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
         const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
@@ -4314,6 +4357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
               ${notesBadge}
               ${fupBadge}
+              ${callbackBadge}
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -4623,6 +4667,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!box || !content) return;
       if (!lead) { box.style.display = 'none'; return; }
       const rows = [];
+      // Sprint 24: Nota pre-call — destacada al tope (lo que el setter
+      // preparó antes de discar). Si está vacía, no se renderiza.
+      if (lead.precallNote && lead.precallNote.trim()) {
+        rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🎯 Pre-call</div>
+          <div style="color:#fff; font-size:12px; line-height:1.45; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
+        </div>`);
+      }
       if (lead.doctor && !lead.doctor.includes('N/A')) rows.push(`<div><strong style="color:#fff;">Doctor:</strong> ${escHtml(lead.doctor)}</div>`);
       if (lead.address) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">📍</strong> ${escHtml(lead.address)}</div>`);
       const ratingReviews = [];
@@ -5198,6 +5250,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
+        // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
+        // El popover deja saltear (skip) si el setter no quiere taggear.
+        if (outcome === 'answered_not_interested') {
+          openObjectionModal(leadId);
+          selectEl.value = '';
+          selectEl.disabled = false;
+          return;
+        }
         // Outcomes directos. Si hay metadata pendiente de una llamada Telnyx,
         // adjuntarla al payload para que el backend la persista en callLog.
         const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
@@ -5229,7 +5289,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       const fechaInput = document.getElementById('call-cb-fecha');
       // Default: mañana 10am hora local
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
-      fechaInput.value = m.toISOString().substring(0, 16);
+      fechaInput.value = _toDatetimeLocal(m);
+
+      // Sprint 23: render quick-picks. Calculados al abrir el modal así
+      // siempre son relativos a "ahora" (no se cachean stale).
+      const picks = _buildCallbackQuickPicks();
+      const qpWrap = document.getElementById('call-cb-quickpicks');
+      if (qpWrap) {
+        qpWrap.innerHTML = picks.map((p, i) => `<button type="button" class="cb-quickpick" data-iso="${p.date.toISOString()}" style="padding:9px 11px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-primary); font-size:12px; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit;">
+          <div style="font-weight:600; font-size:11.5px;">${p.label}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">${p.subtitle}</div>
+        </button>`).join('');
+        qpWrap.querySelectorAll('.cb-quickpick').forEach(btn => {
+          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+          btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-surface)'; });
+          btn.addEventListener('click', () => {
+            const iso = btn.getAttribute('data-iso');
+            fechaInput.value = _toDatetimeLocal(new Date(iso));
+            // Highlight selected
+            qpWrap.querySelectorAll('.cb-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.background = 'rgba(157,133,242,0.12)';
+          });
+        });
+      }
+
       modal.classList.remove('hidden');
       document.getElementById('call-cb-confirm').onclick = async () => {
         const fecha = fechaInput.value;
@@ -5245,6 +5329,131 @@ document.addEventListener('DOMContentLoaded', async () => {
           await loadCallsView();
         } catch (e) { alert('Error: ' + e.message); }
       };
+    }
+
+    // Sprint 23: helper para input datetime-local (necesita formato sin timezone)
+    function _toDatetimeLocal(d) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // Sprint 25: modal para taggear objeción al marcar "No interesado".
+    // Se puede saltar (skip) si el setter no quiere etiquetar. Feed para
+    // Mercury IA + analytics de objeciones más comunes.
+    const OBJECTION_TAGS = [
+      { key: 'precio',             label: '💸 Precio',           hint: 'Caro / no tiene presupuesto' },
+      { key: 'ya_tiene_sistema',   label: '⚙️ Ya tiene sistema', hint: 'Trabaja con otra agencia/CRM' },
+      { key: 'tiempo',             label: '⏳ Tiempo',           hint: 'No tiene tiempo ahora' },
+      { key: 'no_es_decisor',      label: '🪑 No es decisor',    hint: 'Hay que hablar con otra persona' },
+      { key: 'no_entiende_valor',  label: '🤷 No entiende valor',hint: 'No vio el ROI claro' },
+      { key: 'desconfia',          label: '🛑 Desconfía',        hint: 'No cree / cree que es scam' },
+      { key: 'mal_momento',        label: '📆 Mal momento',      hint: 'Vacaciones, mudanza, etc.' },
+      { key: 'otra',               label: '➕ Otra',             hint: 'Distinta a las anteriores' },
+    ];
+    function openObjectionModal(leadId) {
+      let modal = document.getElementById('call-objection-modal');
+      if (!modal) {
+        // Inyectar el modal una sola vez
+        modal = document.createElement('div');
+        modal.id = 'call-objection-modal';
+        modal.className = 'modal-overlay hidden';
+        modal.style.zIndex = '1200';
+        modal.innerHTML = `<div class="modal-card" style="max-width:480px; width:95vw;">
+          <div class="modal-header">
+            <h3>❌ ¿Por qué dijo que no?</h3>
+            <button onclick="document.getElementById('call-objection-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div style="padding:18px 22px;">
+            <p style="color:var(--text-secondary); font-size:12.5px; margin:0 0 14px; line-height:1.5;">Elegí uno o más motivos (multi-select). Los tags alimentan al Mercury IA y muestran qué objeciones son las más comunes. Podés saltearlo si no querés taggear.</p>
+            <div id="call-obj-tags" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:16px;"></div>
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">Nota libre (opcional)</label>
+            <textarea id="call-obj-note" rows="2" placeholder="Ej: dijo que está pensando en cerrar la clínica…" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; resize:vertical;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:16px; justify-content:space-between; align-items:center;">
+              <button id="call-obj-skip" class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);">Saltear</button>
+              <button id="call-obj-confirm" class="btn-primary pill-btn">Guardar y descartar</button>
+            </div>
+          </div>
+        </div>`;
+        document.body.appendChild(modal);
+      }
+      // Render tags (re-render limpia selección)
+      const selectedTags = new Set();
+      const tagsWrap = document.getElementById('call-obj-tags');
+      tagsWrap.innerHTML = OBJECTION_TAGS.map(t => `<button type="button" data-tag="${t.key}" class="obj-tag" style="padding:9px 11px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; color:var(--text-primary); font-size:12px; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit;">
+        <div style="font-weight:600; font-size:11.5px;">${t.label}</div>
+        <div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">${t.hint}</div>
+      </button>`).join('');
+      tagsWrap.querySelectorAll('.obj-tag').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const k = btn.getAttribute('data-tag');
+          if (selectedTags.has(k)) {
+            selectedTags.delete(k);
+            btn.style.borderColor = 'var(--border-subtle)';
+            btn.style.background = 'var(--bg-surface)';
+          } else {
+            selectedTags.add(k);
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.background = 'rgba(157,133,242,0.14)';
+          }
+        });
+      });
+      // Reset nota libre
+      document.getElementById('call-obj-note').value = '';
+      modal.classList.remove('hidden');
+
+      const submit = async (withTags) => {
+        try {
+          const note = document.getElementById('call-obj-note').value.trim();
+          const body = {
+            outcome: 'answered_not_interested',
+            notes: note,
+            objectionTags: withTags ? [...selectedTags] : []
+          };
+          // Adjuntar telnyxMeta si hay
+          const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
+          if (telnyxMeta) {
+            body.telnyxCallMeta = telnyxMeta;
+            delete _pendingTelnyxCallMetadata[leadId];
+          }
+          const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          modal.classList.add('hidden');
+          await loadCallsView();
+        } catch (e) {
+          alert('Error guardando: ' + e.message);
+        }
+      };
+      document.getElementById('call-obj-skip').onclick = () => submit(false);
+      document.getElementById('call-obj-confirm').onclick = () => submit(true);
+    }
+
+    // Sprint 23: quick-picks típicos de callback. Devuelve {label, subtitle, date}.
+    function _buildCallbackQuickPicks() {
+      const now = new Date();
+      const dayNames = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+      const mkDate = (daysAhead, hour, min = 0) => {
+        const d = new Date(now); d.setDate(d.getDate() + daysAhead); d.setHours(hour, min, 0, 0); return d;
+      };
+      const nextWeekday = (targetDay /* 1=lun */) => {
+        const d = new Date(now);
+        let diff = (targetDay - d.getDay() + 7) % 7;
+        if (diff === 0) diff = 7; // siempre la próxima ocurrencia
+        d.setDate(d.getDate() + diff); d.setHours(10, 0, 0, 0);
+        return d;
+      };
+      const fmt = (d) => `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const picks = [
+        { label: '⏰ En 2 horas',     subtitle: fmt(new Date(now.getTime() + 2*3600*1000)), date: new Date(now.getTime() + 2*3600*1000) },
+        { label: '🌞 Mañana 10am',    subtitle: fmt(mkDate(1, 10)),  date: mkDate(1, 10) },
+        { label: '🌇 Mañana 4pm',     subtitle: fmt(mkDate(1, 16)),  date: mkDate(1, 16) },
+        { label: '📆 Pasado 10am',    subtitle: fmt(mkDate(2, 10)),  date: mkDate(2, 10) },
+        { label: '🗓️ Próximo lunes',  subtitle: fmt(nextWeekday(1)), date: nextWeekday(1) },
+        { label: '🗓️ Próximo viernes',subtitle: fmt(nextWeekday(5)), date: nextWeekday(5) },
+      ];
+      return picks;
     }
 
     function openScheduleModal(leadId) {
