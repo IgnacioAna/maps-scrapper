@@ -361,17 +361,28 @@ body {
 }
 
 .menu-group-label {
-  font-size: var(--text-2xs);
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wider);
-  color: var(--text-faint);
-  font-weight: var(--weight-semibold);
-  padding: 0 var(--space-2);
-  margin-top: var(--space-5);
-  margin-bottom: var(--space-2);
+  letter-spacing: 0.13em;
+  color: rgba(229, 231, 226, 0.35);
+  font-weight: 700;
+  padding: 0 12px;
+  margin-top: 18px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.menu-group-label:first-child { margin-top: 0; }
+/* Línea sutil después del label para separar visualmente la categoría */
+.menu-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(229, 231, 226, 0.08), transparent 80%);
+}
+
+.menu-group-label:first-child { margin-top: 4px; }
 
 .menu-item {
   display: flex;
