@@ -153,7 +153,7 @@ Todos los views viven en `public/index.html` como `<div id="view-X" class="modul
 
 ### Setters
 - `view-crm` - Setteo (WhatsApp) - vista principal del setter
-- `view-calls` - Llamadas (Sin WSP)
+- `view-calls` - **Llamadas (Sin WSP)** — admin+supervisor only desde 2026-05-22 (setters siguen con WA). Lista paginada 50/página con sort dropdown (nunca llamados / recientes / país / intentos / última llamada). Botón "+ Lead manual" para crear leads ad-hoc sin pasar por scraping (testing + referidos). Sort preference persiste en localStorage por user.
 - `view-myperf` - **Mi rendimiento** (todos los roles): 7 KPI cards con delta vs período anterior + Chart.js evolución (selector día/semana/mes). Setter ve solo lo suyo (`setterScope: 'self'`); admin/supervisor pueden filtrar por setter o ver el equipo.
 - `view-assistant` - **Asistente de respuestas** (admin + setter): pegás mensaje del prospecto, Mercury genera respuesta sanitizada en bloques (sin `¿¡`, sin precios, sin stack técnico). Setter marca buena/mala/edita y se persiste en `mercury_generations.json`.
 - `view-faqs` - **Banco de Respuestas** con sugerencias IA (few-shot RAG con Mercury → Qwen fallback)
@@ -418,6 +418,72 @@ Comandos:
 - Al cambiar app.js o style.css, **siempre** actualizar el cache-buster
 - `express.static` tiene `maxAge: 0, etag: false`
 - **CASO REAL — bug invisible**: si cambiás `style.css` y NO bumpeás el cache-buster, los browsers que ya tienen ese `?v=...` cacheado **NO van a re-bajar el archivo nuevo**. El user reporta "el fix ya no está" cuando en realidad sigue en disco — solo que ellos ven la versión vieja. Verificás contra prod con `fetch('/style.css?v=...').text()` y el archivo está bien, pero el browser muestra otra cosa. Bumpear el cache-buster en CADA edit a style.css/app.js, sin excepción, aunque sea un cambio de 1 línea.
+
+## Telnyx Calls — Scripts oficiales SCM Cold Call v2 (2026-05-22)
+
+`scripts/seed/call-scripts.json` contiene **30 guiones** organizados en **12 triggers** que representan el flow completo de una cold call. Basados en `SCM_Cold_Call_v2.docx` del usuario + frameworks de Julio Sagantini (PACE, 3-S, problem-based pitch).
+
+### Triggers (en orden del flow)
+
+| Trigger | Descripción | Cuándo se usa |
+|---|---|---|
+| `rules` | Meta-scripts: reglas globales + 3-S tono + framework PACE de referencia | Sticky en panel — siempre visible |
+| `before_call` | Checklist pre-llamada | Antes de marcar |
+| `gatekeeper` | Pasar recepción: con nombre / sin nombre + 3 rutas (A pedir nombre / B mensaje curiosidad / C enganchar recepcionista) | Recepción contesta |
+| `opener` | Apertura con decisor (27 seg + salida fácil + contexto fugas) | Decisor atiende |
+| `pitch` | Pattern interrupt con dato real (`{years}` + `{reviews}`) + caso de éxito (119 pacientes UY) | Después de opener |
+| `ask_meeting` | 3 variaciones (A/B/C) usando el "no" a favor | Para cerrar reunión |
+| `confirm` | Calificar + pedir email + reconfirmación anti-cancelación | Si dice sí |
+| `objection_brushoff` | Brush-offs (no interesa / email / no tiempo) → directo a Engage | Reacción instantánea |
+| `objection_real` | Objeciones reales (agencia / ya sistema / precio / quién son / pensar) → PACE completo | Lo pensó, tiene sustancia |
+| `callback` | Si no agendó pero no dijo no | Cierre con fecha concreta |
+| `whatsapp_msg` | Mensaje WA post-callback | Mismo día de la llamada |
+| `email_template` | Templates email (confirmación + reminder 24h) | Post-agenda |
+
+### Endpoint para recargar el seed en producción
+
+`POST /api/telnyx/scripts/reset-to-seed` (admin only):
+- Backupea `data/call_scripts.json` con timestamp
+- Sobrescribe con el seed actual de `scripts/seed/call-scripts.json`
+- Devuelve count + backup path
+- Confirmación por texto "REEMPLAZAR" en la UI antes de disparar
+
+Hay un botón **"♻️ Recargar oficial v2"** en Centralita Telnyx → tab Guiones.
+
+### Variables interpolables en los scripts
+
+`{name}`, `{city}`, `{country}`, `{years}` (años activos), `{reviews}` (cantidad de reseñas Google), `{setterName}`, `{date}`, `{time}`.
+
+→ Cuando editás el .docx oficial, el flujo es: actualizar el JSON del seed con los cambios → commit + push → click "Recargar oficial v2" en producción.
+
+### Panel de scripts durante llamada (UI)
+
+- **Header con TONE chip** "🐢 Slow · 😊 Smile · 💪 Strong" siempre visible (matchear al prospect, sonreír, hablar lento+confiado)
+- **PACE card sticky** debajo: P-A-C-E con colores (P ámbar, A verde, C celeste, E rojo) + nota "solo objeciones reales · brush-off directo a Engage · max 3 intentos"
+- **Buscador** filtra botones por keyword (label, text, tags) en tiempo real
+- Scripts `rules` EXCLUIDOS del flow de botones (están en PACE card sticky)
+- Botones ordenados por flow real + colores por categoría
+- Texto del script con background propio + line-height 1.65 para lectura cómoda
+
+## Bugs aprendidos del SDK Telnyx WebRTC v2
+
+Si en el futuro hay que tocar el módulo Telnyx, estos son los gotchas verificados contra el bundle source:
+
+1. **CDN bundle correcto**: `https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js` (NO `lib/index.iife.js` que devuelve 404). El bundle expone `window.TelnyxWebRTC.TelnyxRTC`.
+
+2. **`remoteElement` debe ir en `client.newCall(options)`, no solo en el constructor del client.** Sin esto, el `<audio>` para audio entrante no se monta automáticamente y el setter no escucha al lead. El SDK lee `this.options.remoteElement` del Call, no del Client.
+
+3. **Estados terminales reales del SDK**: `hangup`, `destroy`, `purge`. NO `done`/`ended` (esos están en el bundle como strings pero son otros enums internos, no del Call). Verificado en source de `BaseCall.setState()` vía agent Explore.
+
+4. **Ringback fake**: Telnyx WebRTC v2 NO reproduce el ringback del carrier en outbound. Sintetizamos local con Web Audio API (440Hz + 480Hz, patrón US 2s ON / 4s OFF). Arranca cuando state='ringing', se detiene en 'active'/'hangup'/'destroy'.
+
+5. **Manual attach del remoteStream con retry**: el SDK intenta auto-mount pero hay race conditions. Backup defensivo: cuando state='active', poll cada 250ms (hasta 4s) y attachar `call.remoteStream` manualmente al `<audio>` element con force `play() + volume=1 + muted=false`.
+
+6. **Performance**: NUNCA usar `backdrop-filter: blur(Xpx)` fullscreen (GPU expensive). NUNCA `controls` attribute en el `<audio>` (renderiza UI bar drena CPU). NUNCA `console.log` en cada notification del SDK (flood DevTools).
+
+7. **Audio element posicionado off-screen**, no `display:none` — algunos browsers (Brave) bloquean autoplay en elementos no renderizados. Usar `position:absolute; left:-9999px; width:1px; height:1px; opacity:0`.
+
+8. **Notification pattern**: en v2, TODOS los state changes vienen por `client.on('telnyx.notification', notification => {...})` con `notification.type === 'callUpdate'` y `notification.call.state`. NO existe `call.on('answered', ...)` — eso es v1/Twilio-like.
 
 ## Notas para otra IA que continue
 
