@@ -2157,13 +2157,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Headers para los 2 modos
     const _theadSimple = `
       <tr>
-        <th style="width:4%; text-align:center;">#</th>
-        <th style="width:26%;">Lead / Ciudad</th>
-        <th style="width:14%;">Teléfono</th>
-        <th style="width:13%;">Estado</th>
-        <th style="width:11%;">Última acción</th>
-        <th style="width:17%;">Próximo paso</th>
-        <th style="width:15%; text-align:center;">Acciones</th>
+        <th style="width:3%; text-align:center;">#</th>
+        <th style="width:22%;">Lead / Ciudad</th>
+        <th style="width:12%;">Teléfono</th>
+        <th style="width:11%;">Estado</th>
+        <th style="width:9%;">Última acción</th>
+        <th style="width:14%;">Próximo paso</th>
+        <th style="width:16%; text-align:center;" title="Seguimientos programados: tildá para activar el follow-up en esa franja">📅 Seguimientos</th>
+        <th style="width:13%; text-align:center;">Acciones</th>
       </tr>`;
     const _theadComplete = `
       <tr>
@@ -2259,7 +2260,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return ['Mandar saludo', '#79b8ff'];
     }
 
-    // Render en modo simple (7 columnas, mas aireado, focus en accion)
+    // Render en modo simple (8 columnas, mas aireado, focus en accion + seguimientos)
     function _renderRowSimple(lead) {
       const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
       const lastAgo = _formatAgo(lead.lastContactAt);
@@ -2271,6 +2272,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const phoneHtml = phone
         ? `<a href="${escHtml(waUrl)}" target="_blank" class="text-link" style="color:var(--success); white-space:nowrap;" onclick="window._waClickCopy(this, event);">${escHtml(phone)}</a>`
         : '<span class="text-muted">—</span>';
+      // Seguimientos: 5 checkboxes compactos para 24h/48h/72h/7d/15d
+      // Mismo flow que la tabla completa (window._toggleFU). Si esta tildado,
+      // chip violeta visible; si no, checkbox tachado pequenio.
+      const fu = lead.followUps || {};
+      const fuSteps = [
+        { k: '24hs', label: '24h' },
+        { k: '48hs', label: '48h' },
+        { k: '72hs', label: '72h' },
+        { k: '7d',   label: '7d'  },
+        { k: '15d',  label: '15d' },
+      ];
+      const fuHtml = fuSteps.map(s => {
+        const active = !!fu[s.k];
+        const bg = active ? 'background:rgba(157,133,242,0.18); color:#9d85f2; border:1px solid rgba(157,133,242,0.40);' : 'background:transparent; color:var(--text-tertiary); border:1px solid var(--border-color);';
+        return `<label style="display:inline-flex; align-items:center; justify-content:center; min-width:34px; padding:4px 6px; margin:0 2px; border-radius:6px; cursor:pointer; font-size:10px; font-weight:600; ${bg} transition:all 0.15s;" title="Follow-up programado a ${s.label}">
+          <input type="checkbox" class="fu-cb" data-id="${escHtml(lead.id)}" data-step="${s.k}" ${active ? 'checked' : ''} onclick="event.stopPropagation(); window._toggleFU(this);" style="display:none;">
+          ${s.label}
+        </label>`;
+      }).join('');
       return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')" style="cursor:pointer;">' +
         '<td style="text-align:center; color:var(--text-secondary); font-weight:500;">' + (lead.num || '') + '</td>' +
         '<td><div style="font-weight:600; color:var(--text-primary);">' + escHtml(lead.name || '—') + '</div>' + cityHtml + '</td>' +
@@ -2278,10 +2298,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<td>' + statusChip + '</td>' +
         '<td style="font-size:12px; color:var(--text-secondary);">' + lastAgo + '</td>' +
         '<td><span style="font-size:12px; color:' + nextColor + '; font-weight:500;">' + nextStep + '</span></td>' +
+        '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' + fuHtml + '</td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' +
           (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="window._waClickCopy(this, event);">💬</a>' : '') +
           '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(157,133,242,0.10); color:#9d85f2; margin:0 2px; display:inline-block;">📋</a>' +
-          '<a href="#" title="Programar seguimiento" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
+          '<a href="#" title="Programar seguimiento custom" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
         '</td>' +
       '</tr>';
     }
@@ -2401,7 +2422,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (filtered.length === 0) {
-        const cols = _tableMode === 'simple' ? 7 : 19;
+        const cols = _tableMode === 'simple' ? 8 : 19;
         setterLeadsBody.innerHTML = '<tr><td colspan="' + cols + '" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';
         // Marcar tabla vacía para que CSS quite el min-width 1800 y no aparezca
         // doble scrollbar al pegarse con el floating scrollbar.
