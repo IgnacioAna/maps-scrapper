@@ -3475,6 +3475,55 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
 // ── Mis números: lista de números propios del setter para tagging de leads ──
 // GET /api/setters/team/:id/phones — lista los números del setter.
 // Setter accede solo a los suyos; admin a cualquiera.
+// Sprint 33: Meta diaria de llamadas por setter. GET es público al setter
+// (necesita verla en su header de Llamadas). PATCH solo admin.
+app.get('/api/setters/team/:id/quota', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'Solo podés ver tu propia meta.' });
+  }
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  res.json({ dailyCallQuota: setter.dailyCallQuota || 0 });
+});
+
+app.patch('/api/setters/team/:id/quota', requireAuth, requireRole('admin'), (req, res) => {
+  const setterId = req.params.id;
+  const data = loadSettersData();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
+  const quota = parseInt(req.body?.dailyCallQuota, 10);
+  if (!Number.isFinite(quota) || quota < 0 || quota > 999) {
+    return res.status(400).json({ error: 'dailyCallQuota inválido (0-999).' });
+  }
+  setter.dailyCallQuota = quota;
+  saveSettersData(data);
+  res.json({ ok: true, dailyCallQuota: setter.dailyCallQuota });
+});
+
+// Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
+app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
+  const setterId = req.params.id;
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor' && req.auth?.user?.setterId !== setterId) {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+  const data = loadSettersData();
+  const todayKey = new Date().toISOString().substring(0, 10);
+  let count = 0;
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    if (lead.assignedTo !== setterId) continue;
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    for (const entry of log) {
+      if ((entry.ts || '').substring(0, 10) === todayKey) count++;
+    }
+  }
+  res.json({ count, date: todayKey });
+});
+
 app.get('/api/setters/team/:id/phones', requireAuth, (req, res) => {
   const setterId = req.params.id;
   const role = req.auth?.user?.role;
@@ -3974,6 +4023,70 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   }
   leads.sort((a, b) => (a.num || 0) - (b.num || 0));
   res.json({ leads });
+});
+
+// Sprint 32: Analytics de objeciones agregadas. Devuelve counts por tag,
+// por país, por setter. Range: today | week | month | all. Admin/supervisor only.
+app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const range = (req.query.range || 'month').toString();
+  const now = Date.now();
+  let cutoff = 0;
+  if (range === 'today') cutoff = now - 24 * 3600 * 1000;
+  else if (range === 'week') cutoff = now - 7 * 24 * 3600 * 1000;
+  else if (range === 'month') cutoff = now - 30 * 24 * 3600 * 1000;
+  // 'all' → cutoff = 0
+
+  const data = loadSettersData();
+  const byTag = {};
+  const byCountry = {};
+  const bySetter = {};
+  const tagByCountry = {}; // {country: {tag: count}}
+  let totalRejected = 0;
+  let totalWithTags = 0;
+
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    for (const entry of log) {
+      if (entry.outcome !== 'answered_not_interested') continue;
+      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      if (cutoff && ts < cutoff) continue;
+      totalRejected++;
+      const tags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
+      if (tags.length > 0) totalWithTags++;
+      const country = (lead.country || 'Sin país').trim();
+      const setterId = lead.assignedTo || 'Sin setter';
+      for (const tag of tags) {
+        byTag[tag] = (byTag[tag] || 0) + 1;
+        if (!tagByCountry[country]) tagByCountry[country] = {};
+        tagByCountry[country][tag] = (tagByCountry[country][tag] || 0) + 1;
+      }
+      if (tags.length > 0) {
+        byCountry[country] = (byCountry[country] || 0) + 1;
+        bySetter[setterId] = (bySetter[setterId] || 0) + 1;
+      }
+    }
+  }
+
+  // Map setterId → setter name
+  const setterMap = {};
+  for (const s of (data.setters || [])) setterMap[s.id] = s.name;
+  const bySetterNamed = {};
+  for (const id in bySetter) bySetterNamed[setterMap[id] || id] = bySetter[id];
+
+  // Sort by count desc
+  const sortDesc = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ key: k, count: v }));
+
+  res.json({
+    range,
+    totalRejected,
+    totalWithTags,
+    coverage: totalRejected > 0 ? Math.round((totalWithTags / totalRejected) * 100) : 0,
+    byTag: sortDesc(byTag),
+    byCountry: sortDesc(byCountry),
+    bySetter: sortDesc(bySetterNamed),
+    tagByCountry,
+  });
 });
 
 // Sprint 27: Lightweight poll de callbacks vencidos en los últimos N minutos.
@@ -4847,6 +4960,78 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   });
 });
 
+// Sprint 31: Bulk operations en Llamadas. Admin only. Acciones soportadas:
+// 'mark_wrong', 'mark_invalid', 'discard', 'assign', 'move_to_setteo'.
+// Body: { leadIds: [], action: '...', assignTo?: setterId }. Devuelve count.
+app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res) => {
+  const { leadIds, action, assignTo } = req.body || {};
+  if (!Array.isArray(leadIds) || leadIds.length === 0) {
+    return res.status(400).json({ error: 'leadIds vacío.' });
+  }
+  if (leadIds.length > 500) {
+    return res.status(400).json({ error: 'Máximo 500 leads por operación bulk.' });
+  }
+  const VALID_ACTIONS = ['mark_wrong','mark_invalid','discard','assign','move_to_setteo'];
+  if (!VALID_ACTIONS.includes(action)) {
+    return res.status(400).json({ error: `action inválida. Esperado uno de: ${VALID_ACTIONS.join(', ')}` });
+  }
+  if (action === 'assign' && (!assignTo || typeof assignTo !== 'string')) {
+    return res.status(400).json({ error: 'assignTo requerido para action=assign.' });
+  }
+  const data = loadSettersData();
+  if (action === 'assign') {
+    const setter = (data.setters || []).find(s => s.id === assignTo);
+    if (!setter) return res.status(400).json({ error: 'Setter no encontrado.' });
+  }
+  const now = new Date().toISOString();
+  const byName = req.auth?.user?.name || req.auth?.user?.email || 'Admin';
+  let affected = 0;
+  let skipped = 0;
+  for (const id of leadIds) {
+    const lead = data.leads[id];
+    if (!lead) { skipped++; continue; }
+    ensureLeadDefaults(lead);
+    switch (action) {
+      case 'mark_wrong':
+        lead.phoneStatus = 'wrong';
+        lead.estado = 'descartado';
+        lead.callLog.push({ ts: now, outcome: 'wrong_number', by: req.auth?.user?.id || '', notes: 'Bulk: marcado como número equivocado', channel: 'manual' });
+        lead.callAttempts += 1;
+        lead.lastContactAt = now;
+        break;
+      case 'mark_invalid':
+        lead.phoneStatus = 'invalid';
+        lead.estado = 'descartado';
+        lead.callLog.push({ ts: now, outcome: 'invalid_number', by: req.auth?.user?.id || '', notes: 'Bulk: marcado como inválido', channel: 'manual' });
+        lead.callAttempts += 1;
+        lead.lastContactAt = now;
+        break;
+      case 'discard':
+        lead.estado = 'descartado';
+        lead.interes = 'no';
+        break;
+      case 'assign':
+        lead.assignedTo = assignTo;
+        break;
+      case 'move_to_setteo':
+        // Si dejabas conexion='sin_wsp' (estaba en Llamadas), limpiarlo
+        // para que reaparezca en view-crm.
+        lead.conexion = '';
+        break;
+    }
+    if (!Array.isArray(lead.interactions)) lead.interactions = [];
+    lead.interactions.push({
+      action: 'bulk_' + action,
+      by: req.auth?.user?.id || '',
+      byName,
+      createdAt: now
+    });
+    affected++;
+  }
+  saveSettersData(data);
+  res.json({ ok: true, affected, skipped, action, total: leadIds.length });
+});
+
 // Sprint 28: Reactivar lead descartado. Admin only — limpia campos de
 // descarte y vuelve a estado='sin_contactar'. No borra histórico (callLog,
 // interactions, notes se preservan). Loguea un interaction 'reactivated'.
@@ -5131,6 +5316,12 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     'UY_mobile': 0.100, 'UY_landline': 0.030,
     'BR_mobile': 0.080, 'BR_landline': 0.020,
     'US_any':    0.007,
+    // Audit fix Sprint 30: tarifas Europa (aprox dic 2025).
+    'FR_mobile': 0.080, 'FR_landline': 0.012,
+    'DE_mobile': 0.110, 'DE_landline': 0.012,
+    'IT_mobile': 0.090, 'IT_landline': 0.012,
+    'UK_mobile': 0.030, 'UK_landline': 0.012,
+    'PT_mobile': 0.080, 'PT_landline': 0.012,
     'default':   0.080,
   };
   // Audit fix Sprint 17: detectar mobile vs landline correctamente por país.
@@ -5166,6 +5357,21 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     // ES: +346/+347 = móvil España (móviles empiezan con 6 o 7), +349/+348 = fijo
     if (/^34[67]/.test(digits)) return { country: 'ES', isMobile: true };
     if (digits.startsWith('34')) return { country: 'ES', isMobile: false };
+    // FR: +336/+337 = móvil Francia. +33{1-5,9} = fijo
+    if (/^33[67]/.test(digits)) return { country: 'FR', isMobile: true };
+    if (digits.startsWith('33'))  return { country: 'FR', isMobile: false };
+    // DE: +49{15-17} = móvil. Resto = fijo (simplificado).
+    if (/^491[5-7]/.test(digits)) return { country: 'DE', isMobile: true };
+    if (digits.startsWith('49'))  return { country: 'DE', isMobile: false };
+    // IT: +393 = móvil Italia. Resto = fijo
+    if (digits.startsWith('393')) return { country: 'IT', isMobile: true };
+    if (digits.startsWith('39'))  return { country: 'IT', isMobile: false };
+    // UK: +447 = móvil. Resto = fijo
+    if (digits.startsWith('447')) return { country: 'UK', isMobile: true };
+    if (digits.startsWith('44'))  return { country: 'UK', isMobile: false };
+    // PT: +3519 = móvil Portugal. Resto = fijo.
+    if (digits.startsWith('3519'))return { country: 'PT', isMobile: true };
+    if (digits.startsWith('351')) return { country: 'PT', isMobile: false };
     // BR: +55<DD>9<NUM> = móvil (con 9 después del DD de área), +55<DD><NUM> = fijo
     if (/^55\d{2}9/.test(digits)) return { country: 'BR', isMobile: true };
     if (digits.startsWith('55'))  return { country: 'BR', isMobile: false };

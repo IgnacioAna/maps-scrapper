@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260523h">
+  <link rel="stylesheet" href="/style.css?v=20260523i">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -143,6 +143,10 @@
           <a href="#" class="menu-item" data-target="view-team" data-label="Equipo" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Equipo</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-objections" data-label="Objeciones" data-roles="admin,supervisor">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+            <span>Objeciones</span>
           </a>
           <a href="#" class="menu-item" data-target="view-online" data-label="Equipo online" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
@@ -754,11 +758,12 @@
               <option value="attempts_asc">🔄 Menos intentos primero</option>
               <option value="last_call">🕐 Última llamada (recientes)</option>
             </select>
-            <input type="text" id="calls-search" placeholder="🔍 Buscar nombre/tel..." style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
+            <input type="text" id="calls-search" placeholder="🔍 Nombre, teléfono o ciudad..." title="Buscá por nombre del lead, número, ciudad, dirección o doctor" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
             <label data-roles="admin" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); cursor:pointer; padding:6px 10px; border-radius:8px; background:var(--bg-input); border:1px solid var(--border-default);" title="Sprint 28: Ver y reactivar leads descartados">
               <input type="checkbox" id="calls-show-discarded" style="accent-color:var(--accent); margin:0;">
               <span>🗑️ Descartados</span>
             </label>
+            <button id="calls-power-dialer-btn" data-roles="admin,supervisor,setter" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%); color:#0F1115; border:none; cursor:pointer;" title="Modo continuous calling — full-screen sin distracciones">🚀 Power dialer</button>
             <button id="calls-add-manual-btn" class="btn-primary" data-roles="admin" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;" title="Agregar un lead manualmente (testing o referidos)">＋ Lead manual</button>
           </div>
         </div>
@@ -810,6 +815,23 @@
           </div>
         </div>
 
+        <!-- Sprint 33: Daily quota progress bar (solo si hay setter elegido) -->
+        <section id="calls-quota-wrap" style="padding:0 32px 14px; display:none;">
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:12px 16px; display:flex; align-items:center; gap:14px;">
+            <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; min-width:80px;">Meta diaria</div>
+            <div style="flex:1; min-width:0;">
+              <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px;">
+                <strong id="calls-quota-text" style="font-size:14px; color:var(--text-primary); font-variant-numeric:tabular-nums;">0 / 0 llamadas</strong>
+                <span id="calls-quota-pct" style="font-size:11.5px; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">—</span>
+              </div>
+              <div style="height:8px; background:var(--bg-app); border-radius:4px; overflow:hidden;">
+                <div id="calls-quota-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--success) 0%, #3a8e4e 100%); border-radius:4px; transition:width 0.4s, background 0.3s;"></div>
+              </div>
+            </div>
+            <button id="calls-quota-edit" data-roles="admin" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); padding:6px 11px; border-radius:7px; font-size:11px; cursor:pointer;" title="Cambiar meta diaria del setter">✏️ Editar</button>
+          </div>
+        </section>
+
         <!-- Stats bar -->
         <section style="padding: 0 32px;">
           <div id="calls-stats-bar" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:18px;">
@@ -850,6 +872,27 @@
         <!-- Sprint 21: Chips de filtro por país con bandera + count -->
         <section style="padding: 0 32px 14px;">
           <div id="calls-country-chips" class="calls-country-chips"></div>
+        </section>
+
+        <!-- Sprint 31: Bulk operations bar (aparece cuando hay selección) -->
+        <section id="calls-bulk-bar" data-roles="admin" style="padding: 0 32px 14px; display:none;">
+          <div style="background:linear-gradient(135deg, rgba(157,133,242,0.15) 0%, rgba(124,93,219,0.08) 100%); border:1px solid rgba(157,133,242,0.4); border-radius:10px; padding:11px 16px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <strong style="color:var(--accent); font-size:13px;"><span id="calls-bulk-count">0</span> seleccionados</strong>
+              <button id="calls-bulk-clear" type="button" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-secondary); padding:5px 11px; font-size:11.5px; border-radius:6px; cursor:pointer;">Limpiar</button>
+              <button id="calls-bulk-select-page" type="button" style="background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-secondary); padding:5px 11px; font-size:11.5px; border-radius:6px; cursor:pointer;">Toda la página</button>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <select id="calls-bulk-assign-setter" style="padding:6px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:140px;">
+                <option value="">Asignar a setter…</option>
+              </select>
+              <button data-bulk-action="assign" class="call-action-btn">Asignar</button>
+              <button data-bulk-action="move_to_setteo" class="call-action-btn">💬 A Setteo</button>
+              <button data-bulk-action="mark_wrong" class="call-action-btn">🔢 Wrong</button>
+              <button data-bulk-action="mark_invalid" class="call-action-btn">🚫 Inválidos</button>
+              <button data-bulk-action="discard" class="call-action-btn" style="border-color:rgba(244,114,114,0.4); color:#f47272;">🗑️ Descartar</button>
+            </div>
+          </div>
         </section>
 
         <section class="results-panel">
@@ -988,6 +1031,41 @@
       <div id="telnyx-call-backdrop" style="display:none; position:fixed; inset:0; background:rgba(8,9,12,0.82); z-index:9990;"></div>
 
       <!-- Phase 6: Panel de llamada activa Telnyx (WebRTC) — modal centrado -->
+      <!-- Sprint 34: Power Dialer fullscreen overlay -->
+      <div id="power-dialer" style="display:none; position:fixed; inset:0; background:linear-gradient(180deg, #0A0C12 0%, #0F1115 100%); z-index:9998; overflow:auto; font-family:inherit;">
+        <div style="max-width:1100px; margin:0 auto; padding:32px 28px; min-height:100vh; display:flex; flex-direction:column; gap:24px;">
+          <header style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; padding:5px 12px; background:linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%); color:#0F1115; border-radius:999px;">🚀 Power Dialer</span>
+              <span style="font-size:13px; color:var(--text-secondary);">Modo continuous calling · Esc para salir</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <span id="pd-progress" style="font-size:13px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">0 procesadas</span>
+              <button id="pd-exit-btn" style="padding:8px 14px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-primary); border-radius:8px; font-size:13px; cursor:pointer;">✕ Salir</button>
+            </div>
+          </header>
+
+          <!-- Lead actual: ficha grande -->
+          <main id="pd-current-wrap" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:16px; padding:28px; box-shadow:0 16px 50px rgba(0,0,0,0.4);">
+            <div id="pd-current-content"></div>
+          </main>
+
+          <!-- Cola siguiente -->
+          <aside>
+            <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px;">Próximos en cola</div>
+            <div id="pd-queue" style="display:flex; flex-direction:column; gap:6px;"></div>
+          </aside>
+
+          <!-- Shortcuts ayuda -->
+          <footer style="font-size:11px; color:var(--text-tertiary); padding:10px 0; border-top:1px solid var(--border-subtle); display:flex; gap:18px; flex-wrap:wrap;">
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">C</kbd> Llamar</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">S</kbd> Saltar lead</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">1-7</kbd> Disposition (durante/post llamada)</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">Esc</kbd> Salir</span>
+          </footer>
+        </div>
+      </div>
+
       <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
         <!-- Header con avatar + status + timer -->
         <div style="padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
@@ -1226,6 +1304,46 @@
             <button id="faq-import-submit-btn" onclick="window._faqImportSubmit()" class="btn btn-primary">Importar</button>
           </div>
         </div>
+      </div>
+
+      <!-- Sprint 32: VISTA OBJECIONES -->
+      <div id="view-objections" class="module-view hidden" data-roles="admin,supervisor">
+        <div class="content-header">
+          <h2>Objeciones</h2>
+          <div class="header-actions">
+            <select id="obj-range" class="setter-select">
+              <option value="today">Hoy</option>
+              <option value="week">Última semana</option>
+              <option value="month" selected>Último mes</option>
+              <option value="all">Todo el tiempo</option>
+            </select>
+            <button id="obj-refresh" class="btn-ghost pill-btn">↻ Actualizar</button>
+          </div>
+        </div>
+        <section style="padding:0 32px 14px;">
+          <p style="color:var(--text-secondary); font-size:13px; margin:0 0 18px; max-width:680px; line-height:1.55;">Análisis de objeciones taggeadas cuando un lead dice "No interesado" (Sprint 25). Sirve para identificar qué objeciones son más comunes por país, por setter, y refinar el guion de cold calling.</p>
+
+          <div id="obj-summary" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:22px;"></div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+            <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
+              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Top objeciones (total)</h3>
+              <div id="obj-by-tag"></div>
+            </div>
+            <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
+              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Por país</h3>
+              <div id="obj-by-country"></div>
+            </div>
+            <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
+              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Por setter</h3>
+              <div id="obj-by-setter"></div>
+            </div>
+            <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
+              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Objeciones × país (matriz)</h3>
+              <div id="obj-matrix" style="overflow-x:auto;"></div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <!-- VISTA: QUIÉN ESTÁ CONECTADO -->
@@ -2733,7 +2851,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260523h"></script>
+  <script type="module" src="/app.js?v=20260523i"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

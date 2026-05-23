@@ -4051,6 +4051,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           callsSelect.appendChild(opt);
         });
         if (curVal) callsSelect.value = curVal;
+        // Sprint 31: poblar también el select de bulk-assign con los mismos setters
+        const bulkAssign = document.getElementById('calls-bulk-assign-setter');
+        if (bulkAssign) {
+          const curBulk = bulkAssign.value;
+          bulkAssign.innerHTML = '<option value="">Asignar a setter…</option>';
+          (info.setters || []).forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id; opt.textContent = s.name;
+            bulkAssign.appendChild(opt);
+          });
+          if (curBulk) bulkAssign.value = curBulk;
+        }
 
         const resp = await fetch(apiUrl(url));
         const data = await resp.json();
@@ -4074,8 +4086,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         _callsRenderCountryChips();
         // Sprint 26: render mini-calendario de callbacks futuros
         _callsRenderCallbackAgenda();
+        // Sprint 31: refresh bulk-bar (puede haber persistido selección entre views)
+        _callsRenderBulkBar();
         renderCallsList();
         renderCallsStats();
+        // Sprint 33: render barra de quota diaria si hay setter elegido
+        _callsRenderQuota();
       } catch (e) { console.error(e); }
     }
 
@@ -4177,6 +4193,260 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _callsCurrentPage = 1;
     // Sprint 21: estado de expansión por lead (set de IDs abiertos)
     const _callsExpanded = new Set();
+    // Sprint 31: selección bulk (set de IDs seleccionados)
+    const _callsSelected = new Set();
+    function _callsRenderBulkBar() {
+      const bar = document.getElementById('calls-bulk-bar');
+      const countEl = document.getElementById('calls-bulk-count');
+      if (!bar) return;
+      const isAdmin = currentUser?.role === 'admin';
+      if (!isAdmin || _callsSelected.size === 0) {
+        bar.style.display = 'none';
+        return;
+      }
+      bar.style.display = 'block';
+      if (countEl) countEl.textContent = String(_callsSelected.size);
+    }
+    window._callsToggleSelect = function(leadId, checked) {
+      if (checked) _callsSelected.add(leadId);
+      else _callsSelected.delete(leadId);
+      _callsRenderBulkBar();
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // Sprint 34: Power Dialer — modo full-screen continuous calling
+    // ─────────────────────────────────────────────────────────────
+    const _pd = {
+      active: false,
+      queue: [],          // array de lead IDs en orden
+      currentIdx: 0,
+      processed: 0,
+    };
+    function _pdBuildQueue() {
+      // Tomar los leads visibles según los filtros actuales, sort actual,
+      // EXCLUYENDO descartados/agendados/callbacks futuros — esos no se quieren llamar ahora.
+      const country = document.getElementById('calls-country-filter')?.value || '';
+      const search = (document.getElementById('calls-search')?.value || '').toLowerCase().trim();
+      const sortMode = document.getElementById('calls-sort-select')?.value || 'never_called';
+      const now = Date.now();
+      let leads = callsLeadsCache.slice();
+      if (country) leads = leads.filter(l => (l.country || '').trim() === country);
+      if (search) leads = leads.filter(l => (
+        (l.name || '').toLowerCase().includes(search) ||
+        (l.phone || '').toLowerCase().includes(search) ||
+        (l.city || '').toLowerCase().includes(search)
+      ));
+      leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
+      leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
+      // Sort: usar el actual de Llamadas para consistencia
+      switch (sortMode) {
+        case 'recent':       leads.sort((a, b) => new Date(b.importedAt || 0) - new Date(a.importedAt || 0)); break;
+        case 'oldest':       leads.sort((a, b) => new Date(a.importedAt || 0) - new Date(b.importedAt || 0)); break;
+        case 'country':      leads.sort((a, b) => (a.country || '').localeCompare(b.country || '')); break;
+        case 'attempts_desc':leads.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0)); break;
+        case 'attempts_asc': leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0)); break;
+        case 'last_call':    leads.sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a)); break;
+        default:             leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+      }
+      return leads.map(l => l.id);
+    }
+    window._pdStart = function() {
+      if (callsLeadsCache.length === 0) {
+        window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
+        return;
+      }
+      _pd.queue = _pdBuildQueue();
+      if (_pd.queue.length === 0) {
+        window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
+        return;
+      }
+      _pd.currentIdx = 0;
+      _pd.processed = 0;
+      _pd.active = true;
+      document.getElementById('power-dialer').style.display = 'block';
+      document.body.style.overflow = 'hidden';
+      _pdRender();
+      window.showToast?.(`Power dialer activado · ${_pd.queue.length} leads en cola`, { type: 'success', duration: 2500 });
+    };
+    window._pdExit = function() {
+      _pd.active = false;
+      document.getElementById('power-dialer').style.display = 'none';
+      document.body.style.overflow = '';
+      // Refrescar lista de Llamadas para que se actualicen los counts
+      loadCallsView();
+    };
+    function _pdAdvance() {
+      _pd.currentIdx++;
+      _pd.processed++;
+      if (_pd.currentIdx >= _pd.queue.length) {
+        // Fin de cola
+        document.getElementById('pd-current-content').innerHTML = `<div style="text-align:center; padding:40px 20px;">
+          <div style="font-size:48px; margin-bottom:18px;">🎉</div>
+          <h2 style="margin:0 0 8px;">¡Cola completa!</h2>
+          <p style="color:var(--text-secondary); margin:0 0 24px;">Procesaste ${_pd.processed} leads en esta sesión.</p>
+          <button onclick="window._pdExit()" class="btn-primary pill-btn">Salir</button>
+        </div>`;
+        document.getElementById('pd-queue').innerHTML = '';
+        document.getElementById('pd-progress').textContent = `${_pd.processed} procesadas · completado`;
+        return;
+      }
+      _pdRender();
+    }
+    function _pdRender() {
+      const currentId = _pd.queue[_pd.currentIdx];
+      const lead = callsLeadsCache.find(l => l.id === currentId);
+      if (!lead) { _pdAdvance(); return; }
+      const flag = fmtCountry(lead.country) || '📞';
+      const attempts = lead.callAttempts || 0;
+      const lastCall = lead.callLog && lead.callLog.length > 0 ? lead.callLog[lead.callLog.length - 1] : null;
+      const interesado = lead.estado === 'interesado';
+
+      const main = document.getElementById('pd-current-content');
+      main.innerHTML = `<div style="display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;">
+        <div style="font-size:48px;">${flag}</div>
+        <div style="min-width:0;">
+          <h2 style="margin:0 0 4px; font-size:28px; line-height:1.2;">${escHtml(lead.name)}</h2>
+          <div style="color:var(--text-secondary); font-size:14px;">
+            ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
+            ${lead.doctor && !lead.doctor.includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}
+          </div>
+          <div style="margin-top:8px; font-family:ui-monospace,monospace; font-size:18px; color:var(--accent); font-weight:600;">${escHtml(lead.phone)}</div>
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            ${attempts > 0 ? `<span style="font-size:11px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 10px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
+            ${interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600;">✅ INTERESADO</span>' : ''}
+            ${lead.rating ? `<span style="font-size:11px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 10px; border-radius:6px;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; min-width:180px;">
+          <button onclick="window._startTelnyxCall('${escHtml(lead.id)}')" style="padding:18px 24px; font-size:18px; font-weight:700; background:var(--success); color:#0F1115; border:none; border-radius:14px; cursor:pointer; box-shadow:0 6px 22px rgba(91,185,116,0.35);">📞 Llamar (C)</button>
+          <button onclick="window._pdSkip()" style="padding:11px 20px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:10px; cursor:pointer; font-size:13px;">⏭ Saltar (S)</button>
+        </div>
+      </div>
+      ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:18px; background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:11px 14px; border-radius:9px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🎯 Pre-call</div>
+        <div style="color:#fff; font-size:13px; line-height:1.5; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
+      </div>` : ''}
+      ${lastCall ? `<div style="margin-top:14px; font-size:12px; color:var(--text-tertiary);">Último intento: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR')}</div>` : ''}
+      <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px;">
+        <select onchange="window._handleCallDisposition('${escHtml(lead.id)}', this); setTimeout(() => window._pdAdvance(), 600);" style="grid-column:1/-1; padding:11px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
+          <option value="">— Resultado (1-7 atajos) —</option>
+          <option value="answered_interested">✅ 1 — Interesado</option>
+          <option value="answered_not_interested">❌ 2 — No interesado</option>
+          <option value="no_answer">📵 3 — No atendió</option>
+          <option value="voicemail">📭 4 — Buzón</option>
+          <option value="callback_later">🔄 5 — Volver a llamar</option>
+          <option value="wrong_number">🔢 6 — Equivocado</option>
+          <option value="invalid_number">🚫 7 — No existe</option>
+        </select>
+      </div>`;
+
+      // Cola siguiente (próximos 5)
+      const queue = document.getElementById('pd-queue');
+      const upcoming = _pd.queue.slice(_pd.currentIdx + 1, _pd.currentIdx + 6);
+      queue.innerHTML = upcoming.map((id, i) => {
+        const l = callsLeadsCache.find(x => x.id === id);
+        if (!l) return '';
+        const f = fmtCountry(l.country) || '📞';
+        return `<div style="display:grid; grid-template-columns:30px 26px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
+          <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${i + 2}.</span>
+          <span style="font-size:16px;">${f}</span>
+          <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)} ${l.city ? '<span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}</span>
+          <span style="color:var(--text-tertiary); font-family:ui-monospace,monospace; font-size:11px;">${escHtml(l.phone)}</span>
+        </div>`;
+      }).join('');
+
+      document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas`;
+    }
+    window._pdSkip = function() { _pdAdvance(); };
+    window._pdAdvance = _pdAdvance;
+
+    // Wiring botones power dialer
+    document.getElementById('calls-power-dialer-btn')?.addEventListener('click', () => window._pdStart());
+    document.getElementById('pd-exit-btn')?.addEventListener('click', () => window._pdExit());
+
+    // Shortcuts globales para power dialer
+    document.addEventListener('keydown', (e) => {
+      if (!_pd.active) return;
+      // Ignorar si está tipeando en input/textarea
+      if (e.target?.matches?.('input,textarea,select')) return;
+      if (e.key === 'Escape') { window._pdExit(); }
+      else if (e.key === 'c' || e.key === 'C') {
+        const lead = callsLeadsCache.find(l => l.id === _pd.queue[_pd.currentIdx]);
+        if (lead) window._startTelnyxCall?.(lead.id);
+      }
+      else if (e.key === 's' || e.key === 'S') { window._pdSkip(); }
+    });
+
+    // Sprint 33: render barra de quota diaria
+    async function _callsRenderQuota() {
+      const wrap = document.getElementById('calls-quota-wrap');
+      if (!wrap) return;
+      // Resolver setterId target: si admin filtra por uno, usar ese; si es setter, usar el suyo
+      const role = currentUser?.role;
+      const selectedSetter = document.getElementById('calls-setter-select')?.value || '';
+      let targetSetterId = '';
+      if (role === 'setter') targetSetterId = currentUser?.setterId || '';
+      else if (selectedSetter) targetSetterId = selectedSetter;
+      if (!targetSetterId) { wrap.style.display = 'none'; return; }
+      try {
+        const [qResp, cResp] = await Promise.all([
+          fetch(apiUrl('/api/setters/team/' + encodeURIComponent(targetSetterId) + '/quota')),
+          fetch(apiUrl('/api/setters/team/' + encodeURIComponent(targetSetterId) + '/calls-today'))
+        ]);
+        if (!qResp.ok || !cResp.ok) { wrap.style.display = 'none'; return; }
+        const q = await qResp.json();
+        const c = await cResp.json();
+        const quota = q.dailyCallQuota || 0;
+        const count = c.count || 0;
+        if (quota === 0) {
+          // Sin quota configurada → mostrar solo si admin (para que pueda editar)
+          if (role !== 'admin') { wrap.style.display = 'none'; return; }
+          wrap.style.display = 'block';
+          document.getElementById('calls-quota-text').textContent = `${count} llamadas · meta sin configurar`;
+          document.getElementById('calls-quota-pct').textContent = '—';
+          document.getElementById('calls-quota-bar').style.width = '0%';
+          return;
+        }
+        wrap.style.display = 'block';
+        const pct = Math.min(100, Math.round((count / quota) * 100));
+        document.getElementById('calls-quota-text').textContent = `${count} / ${quota} llamadas`;
+        document.getElementById('calls-quota-pct').textContent = pct + '%';
+        const bar = document.getElementById('calls-quota-bar');
+        bar.style.width = pct + '%';
+        // Color: verde si >=75%, amarillo si >=40%, rojo si <40% (asumiendo que el setter ya arrancó el día)
+        let grad = 'linear-gradient(90deg, var(--success) 0%, #3a8e4e 100%)';
+        if (pct < 40) grad = 'linear-gradient(90deg, #f47272 0%, #c44141 100%)';
+        else if (pct < 75) grad = 'linear-gradient(90deg, #FFB341 0%, #d88f1c 100%)';
+        bar.style.background = grad;
+      } catch (e) { wrap.style.display = 'none'; }
+    }
+    // Sprint 33: admin edita quota del setter
+    document.addEventListener('click', (e) => {
+      const btn = e.target?.closest?.('#calls-quota-edit');
+      if (!btn) return;
+      const selectedSetter = document.getElementById('calls-setter-select')?.value || '';
+      if (!selectedSetter) {
+        window.showToast?.('Elegí un setter del dropdown primero', { type: 'warning' });
+        return;
+      }
+      const current = (document.getElementById('calls-quota-text')?.textContent || '').match(/\d+/g);
+      const currentVal = current && current.length > 1 ? current[1] : '50';
+      const nuevo = prompt('Meta diaria de llamadas para este setter (0-999):', currentVal);
+      if (nuevo === null) return;
+      const n = parseInt(nuevo, 10);
+      if (!Number.isFinite(n) || n < 0 || n > 999) {
+        alert('Número inválido (0-999)');
+        return;
+      }
+      fetch(apiUrl('/api/setters/team/' + encodeURIComponent(selectedSetter) + '/quota'), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dailyCallQuota: n })
+      }).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        window.showToast?.('Meta actualizada', { type: 'success' });
+        _callsRenderQuota();
+      }).catch(err => window.showToast?.('Error: ' + err.message, { type: 'error' }));
+    });
     function _callsLastCallTs(l) {
       const last = l.callLog && l.callLog.length > 0 ? l.callLog[l.callLog.length - 1] : null;
       return last ? new Date(last.ts).getTime() : 0;
@@ -4186,17 +4456,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _callsRenderCountryChips() {
       const wrap = document.getElementById('calls-country-chips');
       if (!wrap) return;
-      // Contar leads por país sobre el cache (sin filtro de search activo — vista
-      // global de "qué hay en cada país")
+      // Audit fix Sprint 30: el count respeta el toggle "ver descartados"
+      // para que coincida con lo que se muestra abajo.
+      const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
       const counts = {};
       for (const l of callsLeadsCache) {
+        if (l.estado === 'agendado') continue;
+        if (!showDiscarded && l.estado === 'descartado') continue;
         const c = (l.country || '').trim();
         if (!c) continue;
         counts[c] = (counts[c] || 0) + 1;
       }
       const sortedCountries = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
       const currentFilter = document.getElementById('calls-country-filter').value || '';
-      const totalAll = callsLeadsCache.length;
+      const totalAll = Object.values(counts).reduce((s, n) => s + n, 0);
       const chips = [`<button class="calls-country-chip${!currentFilter ? ' is-active' : ''}" data-country="">
         <span class="chip-flag">🌎</span>
         <span>Todos</span>
@@ -4548,7 +4821,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       const endIdx = Math.min(startIdx + CALLS_PAGE_SIZE, total);
 
       if (total === 0) {
-        list.innerHTML = '<p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">No hay llamadas pendientes con esos filtros. 🎉</p>';
+        // Sprint 35: empty state con personalidad SCM
+        const country = document.getElementById('calls-country-filter')?.value || '';
+        const search = (document.getElementById('calls-search')?.value || '').trim();
+        let emptyMsg, emptyHint;
+        if (search || country) {
+          emptyMsg = 'Nada acá con esos filtros.';
+          emptyHint = 'Limpiá la búsqueda o el filtro de país y va a aparecer todo de nuevo.';
+        } else {
+          emptyMsg = 'Cola vacía. Buen trabajo. 💪';
+          emptyHint = 'O bien procesaste todo, o el scraper todavía no trajo leads sin WhatsApp. Andá a "Búsqueda" para traer más.';
+        }
+        list.innerHTML = `<div style="padding:60px 20px; text-align:center;">
+          <div style="font-size:48px; margin-bottom:14px; opacity:0.6;">📞</div>
+          <h3 style="color:var(--text-primary); font-weight:600; margin:0 0 6px; font-size:16px;">${emptyMsg}</h3>
+          <p style="color:var(--text-tertiary); font-size:13px; margin:0 auto; max-width:380px; line-height:1.5;">${emptyHint}</p>
+        </div>`;
         if (pagFooter) pagFooter.style.display = 'none';
         return;
       }
@@ -4603,7 +4891,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
         const discardedBadge = isDiscarded ? `<span style="background:rgba(255,255,255,0.05); color:var(--text-tertiary); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">🗑️ DESCARTADO${l.interes === 'no' ? ' (no interesado)' : l.phoneStatus === 'wrong' ? ' (número equivocado)' : l.phoneStatus === 'invalid' ? ' (no existe)' : ''}</span>` : '';
 
-        const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: 36px 1fr auto auto auto; gap:14px; align-items:center;">
+        const isSelected = _callsSelected.has(l.id);
+        const isAdminUser = currentUser?.role === 'admin';
+        const checkboxCol = isAdminUser ? `<input type="checkbox" class="call-row-checkbox" data-lead-id="${escHtml(l.id)}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); window._callsToggleSelect('${escHtml(l.id)}', this.checked);" style="accent-color:var(--accent); cursor:pointer; width:16px; height:16px;">` : '';
+        const gridCols = isAdminUser ? '22px 30px 1fr auto auto auto' : '36px 1fr auto auto auto';
+
+        const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}${isSelected ? ' is-selected' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}; ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: ${gridCols}; gap:14px; align-items:center;">
+          ${checkboxCol}
           <div style="font-size:20px; opacity:0.7;">${flag || '📞'}</div>
 
           <div style="min-width:0;">
@@ -5659,6 +5953,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('call-obj-note').value = '';
       modal.classList.remove('hidden');
 
+      // Audit fix Sprint 30: Esc cierra el modal (sin guardar)
+      const escHandler = (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+
       const submit = async (withTags) => {
         try {
           const note = document.getElementById('call-obj-note').value.trim();
@@ -5757,7 +6060,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.getElementById('calls-search').addEventListener('input', () => { _callsCurrentPage = 1; renderCallsList(); });
     // Sprint 28: toggle "Ver descartados"
-    document.getElementById('calls-show-discarded')?.addEventListener('change', () => { _callsCurrentPage = 1; renderCallsList(); });
+    document.getElementById('calls-show-discarded')?.addEventListener('change', () => { _callsCurrentPage = 1; _callsRenderCountryChips(); renderCallsList(); });
+    // Sprint 31: bulk operations wiring
+    document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
+      _callsSelected.clear();
+      _callsRenderBulkBar();
+      renderCallsList();
+    });
+    document.getElementById('calls-bulk-select-page')?.addEventListener('click', () => {
+      // Seleccionar todos los leads visibles en la página actual
+      document.querySelectorAll('.call-row-checkbox').forEach(cb => {
+        const id = cb.getAttribute('data-lead-id');
+        if (id) { _callsSelected.add(id); cb.checked = true; }
+      });
+      _callsRenderBulkBar();
+      renderCallsList();
+    });
+    document.querySelectorAll('[data-bulk-action]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const action = btn.getAttribute('data-bulk-action');
+        if (_callsSelected.size === 0) {
+          window.showToast?.('No hay leads seleccionados', { type: 'warning' });
+          return;
+        }
+        const labels = {
+          mark_wrong: 'marcar como número equivocado',
+          mark_invalid: 'marcar como número inválido',
+          discard: 'descartar (no interesado)',
+          assign: 'asignar',
+          move_to_setteo: 'mover a Setteo (vista WhatsApp)',
+        };
+        let assignTo = '';
+        if (action === 'assign') {
+          assignTo = document.getElementById('calls-bulk-assign-setter')?.value || '';
+          if (!assignTo) { window.showToast?.('Elegí un setter primero', { type: 'warning' }); return; }
+        }
+        if (!confirm(`¿${labels[action]} ${_callsSelected.size} lead(s)? Esta acción se loguea en cada lead.`)) return;
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/bulk'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadIds: [..._callsSelected], action, assignTo })
+          });
+          if (!r.ok) {
+            const err = await r.json().catch(() => ({}));
+            throw new Error(err.error || 'HTTP ' + r.status);
+          }
+          const d = await r.json();
+          window.showToast?.(`✓ ${d.affected} lead(s) actualizado(s)`, { type: 'success' });
+          _callsSelected.clear();
+          await loadCallsView();
+        } catch (e) {
+          window.showToast?.('Error bulk: ' + e.message, { type: 'error' });
+        }
+      });
+    });
     // Sort dropdown: persiste en localStorage para no perder la preferencia
     const sortSelect = document.getElementById('calls-sort-select');
     if (sortSelect) {
@@ -9913,6 +10269,100 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('[data-target="view-team"]')?.addEventListener('click', () => {
     setTimeout(() => _teamLoad(), 80);
   });
+
+  // Sprint 32: Dashboard de objeciones
+  async function _objLoad() {
+    try {
+      const range = document.getElementById('obj-range')?.value || 'month';
+      const r = await fetch(apiUrl('/api/setters/objection-analytics?range=' + encodeURIComponent(range)));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      _objRender(d);
+    } catch (e) {
+      window.showToast?.('Error cargando objeciones: ' + e.message, { type: 'error' });
+    }
+  }
+  function _objRender(d) {
+    const tagLabelMap = { precio: '💸 Precio', ya_tiene_sistema: '⚙️ Ya tiene sistema', tiempo: '⏳ Tiempo', no_es_decisor: '🪑 No es decisor', no_entiende_valor: '🤷 No entiende valor', desconfia: '🛑 Desconfía', mal_momento: '📆 Mal momento', otra: '➕ Otra' };
+    // Summary cards
+    const summary = document.getElementById('obj-summary');
+    if (summary) {
+      summary.innerHTML = `
+        <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Total rechazos</div>
+          <div style="font-size:24px; font-weight:700; color:var(--text-primary); margin-top:4px;">${d.totalRejected}</div>
+        </div>
+        <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Con tags</div>
+          <div style="font-size:24px; font-weight:700; color:var(--accent); margin-top:4px;">${d.totalWithTags}</div>
+        </div>
+        <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Cobertura</div>
+          <div style="font-size:24px; font-weight:700; color:var(--success); margin-top:4px;">${d.coverage}%</div>
+          <div style="font-size:10px; color:var(--text-tertiary); margin-top:3px;">% de rechazos con tags</div>
+        </div>`;
+    }
+    const renderList = (containerId, items, labelMap = null) => {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      if (!items || items.length === 0) {
+        el.innerHTML = '<p class="empty-state" style="color:var(--text-tertiary); font-size:12px;">Sin data en este rango.</p>';
+        return;
+      }
+      const max = items[0].count || 1;
+      el.innerHTML = items.map(it => {
+        const label = labelMap ? (labelMap[it.key] || it.key) : it.key;
+        const pct = Math.round((it.count / max) * 100);
+        return `<div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border-subtle);">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+              <span style="font-size:12.5px; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(label)}</span>
+              <strong style="font-size:12.5px; color:var(--accent); font-variant-numeric:tabular-nums;">${it.count}</strong>
+            </div>
+            <div style="height:4px; background:var(--bg-app); border-radius:3px; overflow:hidden;">
+              <div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--accent) 0%, #7C5DDB 100%); border-radius:3px; transition:width 0.4s;"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    };
+    renderList('obj-by-tag', d.byTag, tagLabelMap);
+    renderList('obj-by-country', d.byCountry);
+    renderList('obj-by-setter', d.bySetter);
+    // Matriz
+    const matrix = document.getElementById('obj-matrix');
+    if (matrix) {
+      const countries = Object.keys(d.tagByCountry || {}).sort();
+      const allTags = Object.keys(tagLabelMap);
+      if (countries.length === 0) {
+        matrix.innerHTML = '<p class="empty-state" style="color:var(--text-tertiary); font-size:12px;">Sin data.</p>';
+      } else {
+        matrix.innerHTML = `<table style="width:100%; border-collapse:collapse; font-size:11.5px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-subtle);">
+              <th style="text-align:left; padding:7px 8px; color:var(--text-tertiary); font-weight:600; text-transform:uppercase; letter-spacing:0.4px; font-size:10px;">País</th>
+              ${allTags.map(t => `<th style="text-align:center; padding:7px 4px; color:var(--text-tertiary); font-weight:600; font-size:10px;" title="${escHtml(tagLabelMap[t])}">${tagLabelMap[t].split(' ')[0]}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${countries.map(c => `<tr style="border-bottom:1px solid var(--border-subtle);">
+              <td style="padding:7px 8px; color:var(--text-primary);">${escHtml(c)}</td>
+              ${allTags.map(t => {
+                const n = (d.tagByCountry[c] || {})[t] || 0;
+                const bg = n > 0 ? `background:rgba(157,133,242,${Math.min(0.06 + n * 0.025, 0.35)});` : '';
+                return `<td style="text-align:center; padding:7px 4px; color:${n > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'}; font-variant-numeric:tabular-nums; ${bg}">${n || '—'}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+          </tbody>
+        </table>`;
+      }
+    }
+  }
+  document.querySelector('[data-target="view-objections"]')?.addEventListener('click', () => {
+    setTimeout(() => _objLoad(), 80);
+  });
+  document.getElementById('obj-range')?.addEventListener('change', () => _objLoad());
+  document.getElementById('obj-refresh')?.addEventListener('click', () => _objLoad());
   document.getElementById('team-period')?.addEventListener('change', () => _teamLoad());
   document.getElementById('team-refresh')?.addEventListener('click', () => _teamLoad());
 
