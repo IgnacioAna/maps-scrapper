@@ -4257,6 +4257,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Backdrop fade out
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'none';
+      // Sprint 15: quitar indicador "has-active-call" del body
+      document.body.classList.remove('has-active-call');
       // Limpiar ficha y histórico
       const leadfile = document.getElementById('telnyx-call-leadfile');
       if (leadfile) leadfile.style.display = 'none';
@@ -4435,6 +4437,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'block';
       panel.style.display = 'block';
+      // Sprint 15: indicador visual en el sidebar logo (pulse) que hay llamada activa
+      document.body.classList.add('has-active-call');
       _telnyxCallState.leadId = leadId;
       _telnyxCallState.fromNumber = fromNum.phone;
       _telnyxCallState.muted = false;
