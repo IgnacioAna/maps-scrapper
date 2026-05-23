@@ -2144,14 +2144,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ═══════════════════════════════════════════════════════════
     // PHASE setter-ux-redesign — Modo tabla simple (7 cols)
     // ═══════════════════════════════════════════════════════════
-    // Setters arrancan en 'simple'. Admin puede togglear a 'complete'.
-    // Preferencia se guarda en localStorage por usuario.
+    // ROLLBACK 2026-05-23: el modo simple ocultaba doctor + variantes + notas
+    // inline + chips fu visibles → setters perdian su workflow. Volvemos a
+    // 'complete' como default UNIVERSAL. El toggle simple queda como opt-in
+    // experimental — nadie arranca ahi.
     const _tableModeKey = 'scm_setter_table_mode_' + (currentUser?.id || 'anon');
     let _tableMode = (function determineInitialMode() {
       const saved = localStorage.getItem(_tableModeKey);
-      if (saved === 'simple' || saved === 'complete') return saved;
-      // Default: setters → simple, admin/supervisor → complete (mantienen vista actual)
-      return currentUser?.role === 'setter' ? 'simple' : 'complete';
+      // Respetar preferencia explicita (si alguien clickeo el toggle simple a
+      // proposito); pero si nunca tocó nada → siempre complete.
+      if (saved === 'simple') return 'simple';
+      return 'complete';
     })();
 
     // Headers para los 2 modos
@@ -3927,6 +3930,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // sin esto _telnyx.configured queda en false y el botón cae a tel:.
         await _telnyx.fetchConfig();
 
+        // Sprint 21: render chips de filtro por país con count
+        _callsRenderCountryChips();
         renderCallsList();
         renderCallsStats();
       } catch (e) { console.error(e); }
@@ -3934,10 +3939,255 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const CALLS_PAGE_SIZE = 50;
     let _callsCurrentPage = 1;
+    // Sprint 21: estado de expansión por lead (set de IDs abiertos)
+    const _callsExpanded = new Set();
     function _callsLastCallTs(l) {
       const last = l.callLog && l.callLog.length > 0 ? l.callLog[l.callLog.length - 1] : null;
       return last ? new Date(last.ts).getTime() : 0;
     }
+
+    // Sprint 21: Render de chips de filtro por país (con bandera + count)
+    function _callsRenderCountryChips() {
+      const wrap = document.getElementById('calls-country-chips');
+      if (!wrap) return;
+      // Contar leads por país sobre el cache (sin filtro de search activo — vista
+      // global de "qué hay en cada país")
+      const counts = {};
+      for (const l of callsLeadsCache) {
+        const c = (l.country || '').trim();
+        if (!c) continue;
+        counts[c] = (counts[c] || 0) + 1;
+      }
+      const sortedCountries = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+      const currentFilter = document.getElementById('calls-country-filter').value || '';
+      const totalAll = callsLeadsCache.length;
+      const chips = [`<button class="calls-country-chip${!currentFilter ? ' is-active' : ''}" data-country="">
+        <span class="chip-flag">🌎</span>
+        <span>Todos</span>
+        <span class="chip-count">${totalAll}</span>
+      </button>`];
+      for (const c of sortedCountries) {
+        chips.push(`<button class="calls-country-chip${currentFilter === c ? ' is-active' : ''}" data-country="${escHtml(c)}">
+          <span class="chip-flag">${fmtCountry(c) || '🏳️'}</span>
+          <span>${escHtml(c)}</span>
+          <span class="chip-count">${counts[c]}</span>
+        </button>`);
+      }
+      wrap.innerHTML = chips.join('');
+      // Click handler
+      wrap.querySelectorAll('.calls-country-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const c = btn.getAttribute('data-country') || '';
+          const select = document.getElementById('calls-country-filter');
+          select.value = c;
+          try { localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), c); } catch {}
+          _callsCurrentPage = 1;
+          _callsRenderCountryChips();
+          renderCallsList();
+          renderCallsStats();
+        });
+      });
+    }
+
+    // Sprint 21: Toggle expand de una row
+    window._callsToggleExpand = function(leadId) {
+      if (_callsExpanded.has(leadId)) _callsExpanded.delete(leadId);
+      else _callsExpanded.add(leadId);
+      renderCallsList();
+    };
+
+    // Sprint 21: Agregar nota al lead desde la vista Llamadas
+    window._callsAddNote = async function(leadId) {
+      const ta = document.getElementById('call-note-input-' + leadId);
+      if (!ta) return;
+      const text = (ta.value || '').trim();
+      if (!text) return;
+      const by = currentUser?.name || currentUser?.email || 'Sistema';
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/note'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, by })
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        // Actualizar cache local
+        const lead = callsLeadsCache.find(l => l.id === leadId);
+        if (lead) lead.notes = d.notes;
+        ta.value = '';
+        renderCallsList();
+        window.showToast?.('Nota agregada', { type: 'success', duration: 1500 });
+      } catch (e) {
+        window.showToast?.('Error guardando nota: ' + e.message, { type: 'error' });
+      }
+    };
+
+    // Sprint 21: Borrar nota
+    window._callsDeleteNote = async function(leadId, noteIdx) {
+      if (!confirm('¿Borrar esta nota?')) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/note/' + noteIdx), { method: 'DELETE' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const lead = callsLeadsCache.find(l => l.id === leadId);
+        if (lead) lead.notes = d.notes;
+        renderCallsList();
+      } catch (e) {
+        window.showToast?.('Error borrando nota: ' + e.message, { type: 'error' });
+      }
+    };
+
+    // Sprint 21: Toggle follow-up
+    window._callsToggleFollowup = async function(leadId, step) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/followup'), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ step })
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const lead = callsLeadsCache.find(l => l.id === leadId);
+        if (lead) {
+          lead.followUps = d.followUps;
+          lead.followUpStartedAt = d.followUpStartedAt;
+        }
+        renderCallsList();
+      } catch (e) {
+        window.showToast?.('Error guardando follow-up: ' + e.message, { type: 'error' });
+      }
+    };
+
+    // Sprint 21: "Este sí tenía WSP" → vuelve a Setteo (limpia conexion='sin_wsp')
+    window._callsMarkHasWsp = async function(leadId) {
+      if (!confirm('¿Confirmás que este lead SÍ tiene WhatsApp? Va a volver a la vista de Setteo.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conexion: '' })
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        // Sacar del cache local
+        callsLeadsCache = callsLeadsCache.filter(l => l.id !== leadId);
+        _callsExpanded.delete(leadId);
+        renderCallsList();
+        _callsRenderCountryChips();
+        window.showToast?.('Lead movido a Setteo', { type: 'success' });
+      } catch (e) {
+        window.showToast?.('Error: ' + e.message, { type: 'error' });
+      }
+    };
+
+    // Sprint 21: Renderiza el panel expandido de un lead en Llamadas.
+    // Devuelve HTML que se inserta debajo de la row.
+    function _callsRenderExpandedPanel(l) {
+      const notes = Array.isArray(l.notes) ? l.notes : [];
+      const callLog = Array.isArray(l.callLog) ? l.callLog : [];
+      const fups = l.followUps || {};
+      const followUpStartedAt = l.followUpStartedAt;
+      const fupSteps = [
+        { key: '24hs', label: '24h', hours: 24 },
+        { key: '48hs', label: '48h', hours: 48 },
+        { key: '72hs', label: '72h', hours: 72 },
+        { key: '7d', label: '7d', hours: 168 },
+        { key: '15d', label: '15d', hours: 360 },
+      ];
+      const activeFup = fupSteps.find(s => fups[s.key]);
+      let dueText = '';
+      if (activeFup && followUpStartedAt) {
+        const dueAt = new Date(followUpStartedAt).getTime() + activeFup.hours * 3600 * 1000;
+        const hoursLeft = (dueAt - Date.now()) / 3600 / 1000;
+        if (hoursLeft <= 0) {
+          dueText = `⏰ Follow-up vencido (era ${activeFup.label} desde el ${new Date(followUpStartedAt).toLocaleDateString('es-AR')})`;
+        } else if (hoursLeft < 24) {
+          dueText = `🔔 Falta ${Math.round(hoursLeft)}h para el follow-up`;
+        } else {
+          dueText = `🔔 Falta ${Math.round(hoursLeft/24)}d para el follow-up`;
+        }
+      }
+
+      // Ficha rica
+      const fichaItems = [];
+      if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(l.phone)}</span>`);
+      if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">⭐ ${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
+      if (l.address) fichaItems.push(`<span class="label">Dirección</span><span class="value">${escHtml(l.address)}</span>`);
+      if (l.website) fichaItems.push(`<span class="label">Web</span><span class="value"><a href="${escHtml(l.website)}" target="_blank" rel="noopener">${escHtml(l.website.replace(/^https?:\/\//, '').substring(0, 40))}</a></span>`);
+      if (l.email) fichaItems.push(`<span class="label">Email</span><span class="value"><a href="mailto:${escHtml(l.email)}">${escHtml(l.email)}</a></span>`);
+      if (l.instagram) fichaItems.push(`<span class="label">Instagram</span><span class="value"><a href="${escHtml(l.instagram.startsWith('http') ? l.instagram : 'https://instagram.com/' + l.instagram.replace(/^@/, ''))}" target="_blank" rel="noopener">${escHtml(l.instagram)}</a></span>`);
+      if (l.doctor && !l.doctor.includes('N/A')) fichaItems.push(`<span class="label">Doctor</span><span class="value">${escHtml(l.doctor)}</span>`);
+      if (l.facebook) fichaItems.push(`<span class="label">Facebook</span><span class="value"><a href="${escHtml(l.facebook)}" target="_blank" rel="noopener">FB</a></span>`);
+      if (l.importedAt) fichaItems.push(`<span class="label">Importado</span><span class="value">${new Date(l.importedAt).toLocaleDateString('es-AR')}</span>`);
+
+      // Histórico
+      const historyHtml = callLog.length === 0
+        ? '<p style="color:var(--text-tertiary); font-size:12px; margin:0;">Sin llamadas previas.</p>'
+        : callLog.slice().reverse().slice(0, 20).map(entry => {
+            const icon = ({
+              answered_interested: '✅', answered_not_interested: '❌',
+              no_answer: '📵', voicemail: '📭',
+              wrong_number: '🔢', invalid_number: '🚫',
+              callback_later: '🔄', scheduled_with_admin: '📅'
+            })[entry.outcome] || '📞';
+            const label = callOutcomeLabel(entry.outcome);
+            const time = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+            const dur = entry.duration ? ` · ${entry.duration}s` : '';
+            const cost = entry.cost ? ` · $${Number(entry.cost).toFixed(3)}` : '';
+            return `<div class="call-history-item">
+              <span class="call-history-icon">${icon}</span>
+              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}</span>
+              <span class="call-history-time">${time}</span>
+            </div>`;
+          }).join('');
+
+      // Notas
+      const notesHtml = notes.length === 0
+        ? '<p style="color:var(--text-tertiary); font-size:12px; margin:0;">Sin notas todavía.</p>'
+        : notes.slice().reverse().map((n, revIdx) => {
+            const realIdx = notes.length - 1 - revIdx;
+            const when = n.date ? new Date(n.date).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+            return `<div class="call-note-item">
+              ${escHtml(n.text)}
+              <div class="call-note-meta">
+                <span>${escHtml(n.by || '')} · ${when}</span>
+                <button class="call-note-delete" onclick="window._callsDeleteNote('${escHtml(l.id)}', ${realIdx})" title="Borrar nota">✕</button>
+              </div>
+            </div>`;
+          }).join('');
+
+      return `<div class="call-detail-panel">
+        <!-- Columna izquierda: ficha + histórico -->
+        <div class="call-detail-section">
+          <h4 class="call-detail-section-title">📋 Ficha del lead</h4>
+          <div class="call-detail-grid">${fichaItems.join('')}</div>
+
+          <h4 class="call-detail-section-title" style="margin-top:14px;">📞 Histórico de llamadas (${callLog.length})</h4>
+          <div class="call-history-timeline">${historyHtml}</div>
+
+          <div class="call-action-row">
+            <button class="call-action-btn is-wsp" onclick="window._callsMarkHasWsp('${escHtml(l.id)}')" title="Si descubrís que el lead SÍ atiende por WhatsApp, mandalo de vuelta a Setteo">
+              💬 Este sí tenía WSP → Setteo
+            </button>
+            ${l.email ? `<a href="mailto:${escHtml(l.email)}" class="call-action-btn">✉️ Mandar mail</a>` : ''}
+            ${l.website ? `<a href="${escHtml(l.website)}" target="_blank" rel="noopener" class="call-action-btn">🌐 Abrir web</a>` : ''}
+          </div>
+        </div>
+
+        <!-- Columna derecha: notas + follow-ups -->
+        <div class="call-detail-section">
+          <h4 class="call-detail-section-title">📅 Follow-up programado</h4>
+          <div class="call-followups">
+            ${fupSteps.map(s => `<button class="call-fup-chip${fups[s.key] ? ' is-on' : ''}" onclick="window._callsToggleFollowup('${escHtml(l.id)}', '${s.key}')">${s.label}</button>`).join('')}
+          </div>
+          ${dueText ? `<div class="call-fup-due">${dueText}</div>` : ''}
+
+          <h4 class="call-detail-section-title" style="margin-top:14px;">📝 Notas (${notes.length})</h4>
+          <div class="call-notes-list">${notesHtml}</div>
+          <div class="call-note-input-row">
+            <textarea id="call-note-input-${escHtml(l.id)}" class="call-note-input" placeholder="Nueva nota… (Ctrl+Enter para guardar)" rows="1" onkeydown="if(event.ctrlKey&&event.key==='Enter'){event.preventDefault();window._callsAddNote('${escHtml(l.id)}')}"></textarea>
+            <button class="call-note-add-btn" onclick="window._callsAddNote('${escHtml(l.id)}')">+ Nota</button>
+          </div>
+        </div>
+      </div>`;
+    }
+
     function renderCallsList() {
       const list = document.getElementById('calls-list');
       const country = document.getElementById('calls-country-filter').value;
@@ -4027,11 +4277,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lastCall = l.callLog && l.callLog.length > 0 ? l.callLog[l.callLog.length - 1] : null;
         const attempts = l.callAttempts || 0;
         const interesado = l.estado === 'interesado';
+        const isExpanded = _callsExpanded.has(l.id);
+
+        // Sprint 21: badges adicionales
+        const notesCount = Array.isArray(l.notes) ? l.notes.length : 0;
+        const fups = l.followUps || {};
+        const hasFup = ['24hs','48hs','72hs','7d','15d'].some(k => fups[k]);
+        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:rgba(157,133,242,0.12); padding:2px 7px; border-radius:6px;">📝 ${notesCount}</span>` : '';
+        const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">🔔 follow-up</span>' : '';
 
         const cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
         const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
 
-        return `<div class="call-row" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: 36px 1fr auto auto; gap:14px; align-items:center;">
+        const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: 36px 1fr auto auto auto; gap:14px; align-items:center;">
           <div style="font-size:20px; opacity:0.7;">${flag || '📞'}</div>
 
           <div style="min-width:0;">
@@ -4040,6 +4298,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${interesadoBadge}
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
+              ${notesBadge}
+              ${fupBadge}
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -4090,7 +4350,12 @@ document.addEventListener('DOMContentLoaded', async () => {
               <option value="invalid_number">🚫 7 — No existe / no funciona</option>
             </optgroup>
           </select>
-        </div>`;
+
+          <button class="call-expand-btn${isExpanded ? ' is-open' : ''}" onclick="window._callsToggleExpand('${escHtml(l.id)}')" title="${isExpanded ? 'Cerrar detalle' : 'Ver ficha, notas, follow-ups e histórico'}" aria-label="${isExpanded ? 'Cerrar' : 'Expandir detalle'}">
+            ${isExpanded ? '▴' : '▾'}
+          </button>
+        </div>${isExpanded ? _callsRenderExpandedPanel(l) : ''}`;
+        return rowHtml;
       }).join('');
     }
 
