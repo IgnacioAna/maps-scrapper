@@ -345,6 +345,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.dataset.viewAs = '1';
     }
 
+    // Sprint 14: Speed-to-Lead Alert — polling cada 15s para detectar
+    // leads que respondieron en WA. Toast prominente + sonido beep.
+    // Solo admin/supervisor (los que pueden llamar) tienen este alert.
+    if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+      _startSpeedToLeadPolling();
+    }
+
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
         try {
@@ -465,6 +472,107 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!str) return '';
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     };
+
+    // ───────────────────────────────────────────────────────────────
+    // Sprint 14: Speed-to-Lead Polling (solo admin/supervisor)
+    // ───────────────────────────────────────────────────────────────
+    let _speedLastCheck = new Date().toISOString();
+    let _speedPollTimer = null;
+    let _speedAudioCtx = null;
+    async function _startSpeedToLeadPolling() {
+      if (_speedPollTimer) clearInterval(_speedPollTimer);
+      _speedLastCheck = new Date().toISOString();
+      const poll = async () => {
+        try {
+          const r = await fetch(apiUrl('/api/setters/recent-responses?since=' + encodeURIComponent(_speedLastCheck)), { credentials: 'include' });
+          if (!r.ok) return;
+          const d = await r.json();
+          _speedLastCheck = d.serverTs || _speedLastCheck;
+          if (Array.isArray(d.responses) && d.responses.length > 0) {
+            for (const resp of d.responses) {
+              _showSpeedToLeadAlert(resp);
+            }
+          }
+        } catch (e) { /* silent */ }
+      };
+      _speedPollTimer = setInterval(poll, 15000);
+      // Primera ejecución después de 2s (no inmediata para no spam al load)
+      setTimeout(poll, 2000);
+    }
+    function _playBeepSound() {
+      try {
+        if (!_speedAudioCtx) _speedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = _speedAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        const now = ctx.currentTime;
+        // 2 beeps: 880Hz → 1100Hz (alerta agradable)
+        [880, 1100].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, now + i * 0.18);
+          gain.gain.linearRampToValueAtTime(0.18, now + i * 0.18 + 0.02);
+          gain.gain.setValueAtTime(0.18, now + i * 0.18 + 0.13);
+          gain.gain.linearRampToValueAtTime(0, now + i * 0.18 + 0.16);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(now + i * 0.18);
+          osc.stop(now + i * 0.18 + 0.18);
+        });
+      } catch {}
+    }
+    function _showSpeedToLeadAlert(resp) {
+      _playBeepSound();
+      // Crear toast prominente custom (no usar showToast normal — este es VIP)
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed; top:24px; right:24px; max-width:380px; background:linear-gradient(135deg, #5bb974 0%, #3a8e4e 100%); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 12px 40px rgba(91,185,116,0.5), 0 0 0 2px rgba(255,255,255,0.1); z-index:99999; animation:tlxSlideInRight 0.3s cubic-bezier(0.16,1,0.3,1); cursor:pointer;';
+      const cityCountry = [resp.leadCity, resp.leadCountry].filter(Boolean).join(', ');
+      wrap.innerHTML = `
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <div style="font-size:24px; flex-shrink:0;">🔥</div>
+          <div style="flex:1;">
+            <div style="font-size:11px; opacity:0.9; text-transform:uppercase; letter-spacing:0.6px; font-weight:600;">Speed-to-lead — LLAMÁ YA</div>
+            <div style="font-size:14px; font-weight:700; margin-top:3px;">${escHtml(resp.leadName || resp.leadPhone || 'Lead')} respondió</div>
+            <div style="font-size:11.5px; opacity:0.85; margin-top:2px;">${escHtml(cityCountry)} · ${escHtml(resp.leadPhone || '')}</div>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <button data-action="call" style="background:#fff; color:#3a8e4e; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">📞 Llamar ahora</button>
+              <button data-action="dismiss" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:5px 11px; border-radius:6px; font-size:11px; cursor:pointer;">Después</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+      // Wire botones
+      wrap.querySelector('[data-action="call"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrap.remove();
+        // Ir a view-calls
+        document.querySelector('[data-target="view-calls"]')?.click();
+        // Después de un tick, scroll al lead si está visible
+        setTimeout(() => {
+          const row = document.querySelector(`.call-row[data-id="${resp.leadId}"]`);
+          if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.style.boxShadow = '0 0 0 3px #5bb974';
+            setTimeout(() => { row.style.boxShadow = ''; }, 3000);
+          } else {
+            window.showToast?.(`El lead ${resp.leadName} está en Setteo (WA), no en Llamadas.`, { type: 'info' });
+          }
+        }, 400);
+      });
+      wrap.querySelector('[data-action="dismiss"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrap.remove();
+      });
+      // Auto-dismiss después de 25s si no clickea
+      setTimeout(() => { if (wrap.parentNode) wrap.remove(); }, 25000);
+    }
+    // CSS animation para el toast
+    if (!document.getElementById('tlx-speed-css')) {
+      const s = document.createElement('style');
+      s.id = 'tlx-speed-css';
+      s.textContent = '@keyframes tlxSlideInRight { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }';
+      document.head.appendChild(s);
+    }
 
     // Poblar selector de países
     const countries = Object.keys(LOCATIONS_DB).sort();
@@ -3825,7 +3933,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Phase 6: Telnyx call handlers ─────────────────────────────────
     // Estado de la llamada activa actual (UI). Persistir leadId para luego
     // disparar disposition automática al colgar.
-    let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false };
+    let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false, scriptIdsUsed: [] };
 
     // ───────────────────────────────────────────────────────────────
     // Phase 6 Sprint 7: Transcripción Whisper post-llamada
@@ -4149,6 +4257,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('telnyx-call-from').textContent = `${fromNum.label || fromNum.country || 'Línea'} · ${fromNum.phone}`;
       _setTelnyxCallStatus('Conectando…', 'connecting');
       document.getElementById('telnyx-call-timer').textContent = '00:00';
+      // Limpiar nota rápida del panel anterior
+      const quickNoteEl = document.getElementById('telnyx-call-quick-note');
+      if (quickNoteEl) quickNoteEl.value = '';
       // Ficha del lead + histórico (datos scrapeados disponibles durante la llamada)
       _renderLeadFile(lead);
       _renderCallHistory(lead);
@@ -4159,6 +4270,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _telnyxCallState.leadId = leadId;
       _telnyxCallState.fromNumber = fromNum.phone;
       _telnyxCallState.muted = false;
+      _telnyxCallState.scriptIdsUsed = []; // Sprint 12: tracking A/B
       _currentCallLead = lead;
       // Pre-cargar scripts si no están en cache (no bloquea la llamada)
       if (_callScriptsCache.length === 0) _loadCallScripts();
@@ -4252,11 +4364,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Si fue <1s probablemente ni siquiera sonó — no llenar el callLog con ruido.
         if (leadId && durationSecs >= 1) {
           window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
+          // Capturar la nota rápida ANTES de cerrar el panel
+          const quickNoteText = document.getElementById('telnyx-call-quick-note')?.value?.trim() || '';
           // Guardar metadata pendiente para que el próximo handleCallDisposition la incluya
           _pendingTelnyxCallMetadata[leadId] = {
             durationSecs,
             fromNumber: _telnyxCallState.fromNumber,
             endedAt: new Date().toISOString(),
+            quickNote: quickNoteText || null,
+            scriptIdsUsed: _telnyxCallState.scriptIdsUsed.slice(), // Sprint 12: A/B tracking
           };
           // Scroll + flash + open al dropdown de disposition
           const callRow = document.querySelector(`.call-row[data-id="${leadId}"]`);
@@ -4442,6 +4558,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!s || !textEl) return;
       textEl.textContent = _interpolateScript(s.text, _currentCallLead);
       textEl.dataset.scriptId = scriptId;
+      // Sprint 12: trackear scripts usados en la llamada activa (solo si hay llamada)
+      if (_telnyx.activeCall && _telnyxCallState.startedAt > 0 && !_telnyxCallState.scriptIdsUsed.includes(scriptId)) {
+        _telnyxCallState.scriptIdsUsed.push(scriptId);
+      }
       // Marcar botón activo (compat con el nuevo styling del panel rediseñado)
       document.querySelectorAll('.tlx-script-btn').forEach(btn => {
         const active = btn.dataset.scriptId === scriptId;
@@ -4660,12 +4780,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calls-pag-end')?.addEventListener('click', () => { _callsCurrentPage = 9999; renderCallsList(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
     // Modal "Agregar lead manual" (admin only) — útil para testing y referidos
+    let _callsManualEnriched = null; // Sprint 13: datos enriquecidos cacheados
     document.getElementById('calls-add-manual-btn')?.addEventListener('click', () => {
       ['calls-manual-name','calls-manual-phone','calls-manual-country','calls-manual-city','calls-manual-doctor'].forEach(id => {
         const el = document.getElementById(id); if (el) el.value = '';
       });
+      _callsManualEnriched = null;
+      const enrichEl = document.getElementById('calls-manual-enrich-result');
+      if (enrichEl) { enrichEl.style.display = 'none'; enrichEl.innerHTML = ''; }
       document.getElementById('calls-manual-modal').classList.remove('hidden');
       setTimeout(() => document.getElementById('calls-manual-name')?.focus(), 50);
+    });
+
+    // Sprint 13: botón "Enriquecer desde Maps"
+    document.getElementById('calls-manual-enrich-btn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const name = document.getElementById('calls-manual-name').value.trim();
+      const city = document.getElementById('calls-manual-city').value.trim();
+      const country = document.getElementById('calls-manual-country').value.trim();
+      const phone = document.getElementById('calls-manual-phone').value.trim();
+      if (!name) { window.showToast?.('Ingresá al menos el nombre antes de enriquecer', { type: 'warn' }); return; }
+      const enrichEl = document.getElementById('calls-manual-enrich-result');
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = '🔍 Buscando…';
+      enrichEl.style.display = 'block';
+      enrichEl.innerHTML = '<div style="color:var(--text-secondary);">Buscando en Google Maps…</div>';
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/enrich-from-maps'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ name, city, country, phone }),
+        });
+        if (!r.ok) {
+          let msg = 'HTTP ' + r.status;
+          try { const d = await r.json(); if (d?.error) msg = d.error; } catch {}
+          enrichEl.innerHTML = `<div style="color:#f85149;">Error: ${escHtml(msg)}</div>`;
+          return;
+        }
+        const d = await r.json();
+        if (d.found === 0 || !d.best) {
+          enrichEl.innerHTML = '<div style="color:var(--text-secondary);">Sin resultados en Google Maps. Podés crear igual el lead manualmente.</div>';
+          return;
+        }
+        // Auto-llenar campos
+        _callsManualEnriched = d.best;
+        const fields = [
+          ['calls-manual-phone', d.best.phone],
+          ['calls-manual-city', d.best.city],
+          ['calls-manual-country', d.best.country],
+        ];
+        for (const [id, val] of fields) {
+          const el = document.getElementById(id);
+          if (el && !el.value && val) el.value = val;
+        }
+        enrichEl.innerHTML = `
+          <div style="font-size:11px; color:#5bb974; font-weight:600; margin-bottom:5px;">✓ Encontrado en Google Maps</div>
+          <div style="line-height:1.5;">
+            <strong>${escHtml(d.best.name)}</strong><br>
+            ${d.best.rating ? '★ ' + escHtml(String(d.best.rating)) + ' · ' : ''}${d.best.reviews ? d.best.reviews + ' reseñas' : ''}<br>
+            ${d.best.address ? '📍 ' + escHtml(d.best.address) + '<br>' : ''}
+            ${d.best.website ? '🌐 <a href="' + escHtml(d.best.website) + '" target="_blank" rel="noopener" style="color:#7dd3fc;">' + escHtml(d.best.website) + '</a><br>' : ''}
+            ${d.found > 1 ? `<small style="color:var(--text-tertiary);">Hay ${d.found} candidatos. Mostrando el mejor match.</small>` : ''}
+          </div>
+        `;
+      } catch (err) {
+        enrichEl.innerHTML = `<div style="color:#f85149;">Error: ${escHtml(err.message)}</div>`;
+      } finally {
+        btn.disabled = false; btn.textContent = orig;
+      }
     });
     document.getElementById('calls-manual-submit')?.addEventListener('click', async (e) => {
       const btn = e.currentTarget;
@@ -4683,9 +4863,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.disabled = true; const originalText = btn.textContent; btn.textContent = 'Creando…';
       try {
         const setter = document.getElementById('calls-setter-select')?.value || '';
+        const payload = { name, phone, country, city, doctor, setterId: setter };
+        // Sprint 13: si se enriqueció desde Maps, mandar también los datos extras
+        if (_callsManualEnriched) {
+          payload.rating = _callsManualEnriched.rating;
+          payload.reviews = _callsManualEnriched.reviews;
+          payload.website = _callsManualEnriched.website;
+          payload.address = _callsManualEnriched.address;
+        }
         const r = await fetch(apiUrl('/api/setters/leads/manual-add'), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ name, phone, country, city, doctor, setterId: setter }),
+          body: JSON.stringify(payload),
         });
         if (!r.ok) {
           let msg = 'HTTP ' + r.status;
@@ -8253,7 +8441,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         (c.cost ? statCard('Costo', `$${c.cost.toFixed(3)}`, '#FFB341') : '') +
         (c.fromNumber ? statCard('Caller ID', c.fromNumber, '#7dd3fc') : '');
       const notesEl = document.getElementById('chist-d-notes');
-      if (c.notes) { notesEl.style.display = 'block'; notesEl.innerHTML = '📝 ' + escHtml(c.notes); }
+      // Sprint 11: mostrar quickNote (durante/post-call) Y notes (de disposition)
+      const parts = [];
+      if (c.quickNote) parts.push(`<div style="margin-bottom:6px;"><strong style="color:#FFB341; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">📓 Nota del setter (during-call)</strong><div style="margin-top:3px;">${escHtml(c.quickNote)}</div></div>`);
+      if (c.notes) parts.push(`<div><strong style="color:var(--text-secondary); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">📝 Nota disposition</strong><div style="margin-top:3px;">${escHtml(c.notes)}</div></div>`);
+      if (parts.length > 0) { notesEl.style.display = 'block'; notesEl.innerHTML = parts.join(''); }
       else { notesEl.style.display = 'none'; }
       // Sprint 10: bloque Mercury IA entre notes y transcript
       let analysisBlockEl = document.getElementById('chist-d-mercury');

@@ -3929,13 +3929,91 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   res.json({ leads });
 });
 
+// ──────────────────────────────────────────────────────────────────
+// Sprint 14: Speed-to-Lead Alert
+// Buffer in-memory de respuestas WA recientes. El admin polling cada 15s
+// para mostrar toast "🔥 X respondió, llamá YA". Buffer circular max 200.
+// ──────────────────────────────────────────────────────────────────
+const _recentLeadResponses = [];
+function _registerLeadResponse(entry) {
+  _recentLeadResponses.push(entry);
+  if (_recentLeadResponses.length > 200) _recentLeadResponses.shift();
+}
+
+// GET /api/setters/recent-responses?since=<ISO ts> — admin/supervisor.
+// Devuelve respuestas que llegaron después de ese timestamp. El frontend
+// polling pasa el ts del último check para evitar duplicados.
+app.get('/api/setters/recent-responses', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  const sinceTs = req.query.since ? new Date(req.query.since).getTime() : Date.now() - 60000;
+  const newResponses = _recentLeadResponses.filter(r => new Date(r.ts).getTime() > sinceTs);
+  res.json({ responses: newResponses, serverTs: new Date().toISOString() });
+});
+
+// POST /api/setters/leads/enrich-from-maps — Sprint 13: busca un lead en
+// Google Maps por nombre + ciudad/país y devuelve datos para pre-llenar el
+// modal de "Lead manual". Útil para que el setter agregue un referido y
+// automáticamente tenga rating, reseñas, website, dirección sin tipear todo.
+// Body JSON: { name, city?, country?, phone? }
+app.post('/api/setters/leads/enrich-from-maps', requireAuth, requireRole('admin'), async (req, res) => {
+  const { name, city, country, phone } = req.body || {};
+  if (!name || typeof name !== 'string' || name.trim().length < 3) {
+    return res.status(400).json({ error: 'name requerido (min 3 chars)' });
+  }
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada en Railway' });
+  try {
+    const locationPart = [city, country].filter(Boolean).join(', ');
+    const searchQuery = locationPart ? `${name.trim()} en ${locationPart}` : name.trim();
+    const json = await getJson({
+      engine: 'google_maps', api_key: apiKey, type: 'search', q: searchQuery,
+    });
+    if (json.error) return res.status(502).json({ error: 'Google Maps: ' + json.error });
+    const localResults = json.local_results || [];
+    if (localResults.length === 0) {
+      return res.json({ ok: true, found: 0, candidates: [] });
+    }
+    // Devolver hasta 5 candidatos para que admin elija manualmente si hay match dudoso
+    const candidates = localResults.slice(0, 5).map(item => {
+      const parts = parseLocationParts(item.address || '');
+      return {
+        name: item.title || '',
+        phone: item.phone || '',
+        rating: item.rating || null,
+        reviews: item.reviews || 0,
+        website: item.website || '',
+        address: item.address || '',
+        city: parts.city || city || '',
+        country: parts.country || country || '',
+        category: item.type || '',
+        yearsActive: null, // SerpAPI no devuelve "years in business" en local search
+        googleMapsUrl: item.gps_coordinates ? `https://www.google.com/maps/?q=${item.gps_coordinates.latitude},${item.gps_coordinates.longitude}` : '',
+        placeId: item.place_id || '',
+      };
+    });
+    // Si phone fue pasado, priorizar match exacto por phone
+    if (phone) {
+      const cleanPhone = String(phone).replace(/\D/g, '');
+      const exactMatch = candidates.find(c => c.phone && String(c.phone).replace(/\D/g, '').includes(cleanPhone.slice(-8)));
+      if (exactMatch) {
+        return res.json({ ok: true, found: candidates.length, best: exactMatch, candidates });
+      }
+    }
+    res.json({ ok: true, found: candidates.length, best: candidates[0], candidates });
+  } catch (e) {
+    console.error('[enrich-from-maps]', e?.message || e);
+    res.status(500).json({ error: 'Error enriqueciendo: ' + (e?.message || 'unknown') });
+  }
+});
+
 // POST /api/setters/leads/manual-add — admin agrega un lead manualmente para
 // testing/casos puntuales. Va directo a conexion='sin_wsp' para aparecer en
 // view-calls (Llamadas). No pasa por scraping ni history dedup. Pensado para:
 // (a) testear el módulo Telnyx con tu propio celular, (b) cargar referidos
 // puntuales sin importar CSVs, (c) follow-ups manuales fuera del pipeline.
 app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (req, res) => {
-  const { name, phone, country, city, doctor, setterId } = req.body || {};
+  const { name, phone, country, city, doctor, setterId, rating, reviews, website, address, instagram, facebook, email } = req.body || {};
   if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'name requerido' });
   }
@@ -3971,6 +4049,14 @@ app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (re
     country: String(country || '').trim().substring(0, 60),
     city: String(city || '').trim().substring(0, 80),
     doctor: String(doctor || '').trim().substring(0, 80),
+    // Sprint 13: campos enriquecidos desde Google Maps
+    rating: rating !== undefined ? String(rating).slice(0, 10) : '',
+    reviews: typeof reviews === 'number' ? reviews : (parseInt(reviews, 10) || 0),
+    website: String(website || '').trim().substring(0, 200),
+    address: String(address || '').trim().substring(0, 200),
+    instagram: String(instagram || '').trim().substring(0, 100),
+    facebook: String(facebook || '').trim().substring(0, 100),
+    email: String(email || '').trim().substring(0, 100),
     assignedTo: targetSetterId,
     conexion: 'sin_wsp',
     estado: 'sin_wsp',
@@ -4473,9 +4559,22 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
     lead.interes = null;
   }
   if (req.body.respondio === true) {
+    const wasAlreadyResponded = lead.respondio === true;
     if (!lead.conexion) lead.conexion = 'enviada';
     lead.estado = 'respondio';
     lead.lastContactAt = new Date().toISOString();
+    // Sprint 14: si pasa de NO respondió → respondió, registrar para speed-to-lead alert
+    if (!wasAlreadyResponded) {
+      _registerLeadResponse({
+        leadId: req.params.id,
+        leadName: lead.name || '',
+        leadCity: lead.city || '',
+        leadCountry: lead.country || '',
+        leadPhone: lead.phone || '',
+        setterId: lead.assignedTo || '',
+        ts: new Date().toISOString(),
+      });
+    }
   }
   if (req.body.calificado === true) {
     if (!lead.conexion) lead.conexion = 'enviada';
@@ -4829,6 +4928,17 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     logEntry.cost = costInfo.cost;
     logEntry.costCountry = costInfo.country;
     logEntry.costTariffKey = costInfo.tariffKey;
+    // Sprint 11: nota rapida del setter durante/post-call
+    if (typeof telnyxCallMeta.quickNote === 'string' && telnyxCallMeta.quickNote.trim()) {
+      logEntry.quickNote = telnyxCallMeta.quickNote.trim().slice(0, 1000);
+    }
+    // Sprint 12: tracking de scripts usados en la llamada para A/B testing
+    if (Array.isArray(telnyxCallMeta.scriptIdsUsed) && telnyxCallMeta.scriptIdsUsed.length > 0) {
+      logEntry.scriptIdsUsed = telnyxCallMeta.scriptIdsUsed
+        .filter(id => typeof id === 'string')
+        .slice(0, 20)
+        .map(id => id.substring(0, 80));
+    }
   } else {
     logEntry.channel = 'manual';
   }
@@ -8336,6 +8446,59 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     byHour: hoursArr,
     byDayOfWeek: daysArr,
   });
+});
+
+// GET /api/telnyx/script-effectiveness — Sprint 12: stats por script.
+// Cruza scriptIdsUsed con outcomes para calcular qué scripts convierten mejor.
+// admin/supervisor only. Query: ?range=today|week|month|all
+app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  const range = (req.query.range || 'month').toString();
+  const now = Date.now();
+  let fromTs = 0;
+  if (range === 'today') fromTs = new Date().setHours(0, 0, 0, 0);
+  else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
+  else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
+  const settersData = loadSettersData();
+  const scriptsData = loadCallScripts();
+  const scriptsById = {};
+  for (const s of (scriptsData.scripts || [])) scriptsById[s.id] = s;
+  // Acumular stats por scriptId
+  const stats = {};
+  const scheduledOutcomes = new Set(['scheduled_with_admin', 'answered_interested']);
+  const reachedOutcomes = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']);
+  for (const lead of Object.values(settersData.leads || {})) {
+    if (!Array.isArray(lead.callLog)) continue;
+    for (const c of lead.callLog) {
+      if (c.channel !== 'telnyx_webrtc') continue;
+      if (!Array.isArray(c.scriptIdsUsed) || c.scriptIdsUsed.length === 0) continue;
+      const ts = new Date(c.ts).getTime();
+      if (fromTs > 0 && ts < fromTs) continue;
+      const isScheduled = scheduledOutcomes.has(c.outcome);
+      const isReached = reachedOutcomes.has(c.outcome);
+      for (const scriptId of c.scriptIdsUsed) {
+        if (!stats[scriptId]) {
+          const s = scriptsById[scriptId];
+          stats[scriptId] = {
+            scriptId, label: s?.label || '(eliminado)',
+            trigger: s?.trigger || 'general',
+            variant: s?.variant || '',
+            used: 0, reached: 0, scheduled: 0,
+          };
+        }
+        stats[scriptId].used++;
+        if (isReached) stats[scriptId].reached++;
+        if (isScheduled) stats[scriptId].scheduled++;
+      }
+    }
+  }
+  const arr = Object.values(stats).map(s => ({
+    ...s,
+    reachedPct: s.used > 0 ? Math.round((s.reached / s.used) * 100) : 0,
+    scheduledPct: s.used > 0 ? Math.round((s.scheduled / s.used) * 100) : 0,
+  })).sort((a, b) => b.scheduled - a.scheduled || b.used - a.used);
+  res.json({ range, scripts: arr, totalDistinctScripts: arr.length });
 });
 
 // POST /api/telnyx/calls/:leadId/:callIdx/analyze — Mercury IA analiza el
