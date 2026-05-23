@@ -9856,6 +9856,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { console.warn('[tlx-metrics]', e.message); }
   }
 
+  // Sprint 9: KPIs de efectividad cold calling. Calcula los ratios reales
+  // del flow v2 (opener pasado, atendidas, agendadas) + breakdown por país,
+  // hora del día, día de la semana. Identifica patterns útiles para optimizar.
+  async function _tlxLoadEffectiveness() {
+    const range = document.getElementById('tlx-eff-range')?.value || 'month';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/cold-call-effectiveness?range=' + range), { credentials: 'include' });
+      if (!r.ok) return;
+      const d = await r.json();
+      const ratios = d.ratios || {};
+      const totals = d.totals || {};
+      // KPI cards principales
+      const kpiCards = document.getElementById('tlx-eff-kpis');
+      if (kpiCards) {
+        // Color del ratio opener: verde si >=70%, ámbar si >=50%, rojo si <50%
+        const openerColor = ratios.openerPassedPct >= 70 ? '#5bb974' : ratios.openerPassedPct >= 50 ? '#FFB341' : '#f85149';
+        const card = (icon, label, value, sub, color = 'var(--text-primary)', tooltip = '') => `
+          <div title="${tooltip}" style="padding:14px 16px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+            <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px;">${icon} ${label}</div>
+            <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
+            <div style="font-size:10px; color:var(--text-secondary); margin-top:5px;">${sub}</div>
+          </div>`;
+        kpiCards.innerHTML =
+          card('📞', 'Total llamadas', totals.calls || 0, `${totals.minutes || 0} min · $${(totals.costUSD || 0).toFixed(2)}`, 'var(--accent)') +
+          card('🎯', 'Ratio opener (>30s)', `${ratios.openerPassedPct || 0}%`, `Target: 70%+ — ${d.breakdown?.openerPassedCount || 0} pasaron`, openerColor, 'Si está debajo de 70%, hay algo roto en la apertura. Cambiá script.') +
+          card('👋', 'Hablaste con humano', `${ratios.reachedHumanPct || 0}%`, `${d.breakdown?.reachedCount || 0} contactados`, '#7dd3fc', 'Llamadas donde realmente hablaste con el decisor o respondieron (excluye buzón, no atendió).') +
+          card('📅', 'Agendadas / contactados', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, '#5bb974', 'De los que hablaron con vos, cuántos terminaron agendando.') +
+          card('✅', 'Interesados / contactados', `${ratios.interestedFromReachedPct || 0}%`, `${d.breakdown?.interestedCount || 0} interesados`, '#FFB341');
+      }
+      // Por país
+      const ulCountries = document.getElementById('tlx-eff-countries');
+      if (ulCountries) {
+        const rows = (d.byCountry || []).slice(0, 8);
+        ulCountries.innerHTML = rows.length ? rows.map(c => `
+          <li style="display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
+            <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;">${escHtml(c.country)}</span>
+            <span class="muted" style="font-size:10px; text-align:right;">${c.calls} calls</span>
+            <span style="color:${c.scheduledPct >= 5 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${c.scheduledPct}% 📅</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">Sin datos.</li>';
+      }
+      // Por hora
+      const ulHours = document.getElementById('tlx-eff-hours');
+      if (ulHours) {
+        const rows = (d.byHour || []);
+        ulHours.innerHTML = rows.length ? rows.map(h => `
+          <li style="display:grid; grid-template-columns:0.6fr 1fr 1fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
+            <span style="color:var(--text-primary); font-family:ui-monospace,monospace; font-size:11px;">${String(h.hour).padStart(2, '0')}h</span>
+            <span class="muted" style="font-size:10px; text-align:right;">${h.calls}</span>
+            <span style="color:${h.reachedPct >= 25 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${h.reachedPct}% 👋</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      }
+      // Por día de la semana
+      const ulDays = document.getElementById('tlx-eff-days');
+      if (ulDays) {
+        const rows = (d.byDayOfWeek || []);
+        ulDays.innerHTML = rows.length ? rows.map(day => `
+          <li style="display:grid; grid-template-columns:1fr 0.7fr 0.7fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
+            <span style="color:var(--text-primary); font-size:11px;">${escHtml(day.dayLabel)}</span>
+            <span class="muted" style="font-size:10px; text-align:right;">${day.calls}</span>
+            <span style="color:${day.reachedPct >= 25 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${day.reachedPct}%</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      }
+    } catch (e) { console.warn('[tlx-effectiveness]', e.message); }
+  }
+
   // ── Scripts editor (admin) ──
   let _tlxScriptsCache = [];
   async function _tlxLoadScriptsAdmin() {
@@ -9997,13 +10062,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
       _tlxLoadConfig();
       _tlxLoadMetrics();
+      _tlxLoadEffectiveness();      // Sprint 9: KPIs cold calling
       _tlxLoadScriptsAdmin();
-      // Auto-refresh metrics cada 30s mientras la vista esté visible
+      // Auto-refresh metrics + efectividad cada 30s mientras la vista esté visible
       if (_tlxMetricsRefreshTimer) clearInterval(_tlxMetricsRefreshTimer);
       _tlxMetricsRefreshTimer = setInterval(() => {
         const view = document.getElementById('view-telnyx-config');
         if (view && !view.classList.contains('hidden')) {
           _tlxLoadMetrics();
+          _tlxLoadEffectiveness();
         } else {
           clearInterval(_tlxMetricsRefreshTimer);
           _tlxMetricsRefreshTimer = null;
@@ -10013,6 +10080,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);
+  document.getElementById('tlx-eff-range')?.addEventListener('change', _tlxLoadEffectiveness);
 
   // Guardar credenciales
   document.getElementById('tlx-cfg-save')?.addEventListener('click', async (e) => {

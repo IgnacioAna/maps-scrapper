@@ -437,6 +437,16 @@
           <button id="end-session-btn" class="btn-table-action" style="background:#f85149; color:white; border:none;">Cerrar Sesión</button>
         </div>
 
+        <!-- 👋 Widget "Hoy" — qué hacer ahora (Phase setter-ux-redesign) -->
+        <div id="hoy-widget" class="hoy-widget" style="display:none;">
+          <div class="hoy-greet">
+            <span id="hoy-greet-text">Hola 👋</span>
+            <span class="hoy-date" id="hoy-date"></span>
+          </div>
+          <div class="hoy-actions" id="hoy-actions"></div>
+          <div class="hoy-today" id="hoy-today"></div>
+        </div>
+
         <!-- KPI Dashboard — aclarado: estos son ACUMULADOS (todo el tiempo) -->
         <div style="font-size:11px; color:var(--text-secondary); margin:6px 0 4px; letter-spacing:0.3px;">📊 TUS NÚMEROS ACUMULADOS <span style="opacity:0.6;">(todo el tiempo · para ver solo HOY → Mi rendimiento)</span></div>
         <div class="setter-stats" id="setter-stats">
@@ -561,6 +571,7 @@
               <button id="modal-close" class="modal-close-btn">✕</button>
             </div>
             <div class="lead-modal-body">
+              <!-- Info fija arriba (siempre visible) -->
               <div class="lead-modal-info">
                 <div><strong>Teléfono:</strong> <span id="modal-phone">—</span></div>
                 <div><strong>Web:</strong> <span id="modal-web">—</span></div>
@@ -569,6 +580,16 @@
                 <div><strong>Doctor:</strong> <span id="modal-owner">—</span></div>
                 <div><strong>Redes:</strong> <span id="modal-social">—</span></div>
               </div>
+
+              <!-- Tabs nav -->
+              <div class="lead-tabs-nav" role="tablist">
+                <button class="lead-tab-btn active" data-lead-tab="convo" role="tab">💬 Conversación</button>
+                <button class="lead-tab-btn" data-lead-tab="estado" role="tab">🎯 Estado</button>
+                <button class="lead-tab-btn" data-lead-tab="programar" role="tab">📅 Programar</button>
+              </div>
+
+              <!-- TAB: 🎯 Estado (incluye selectores y followups info) -->
+              <div class="lead-tab-content" data-lead-tab-panel="estado" style="display:none;">
               <div class="lead-modal-status">
                 <label><strong>Estado:</strong></label>
                 <select id="modal-status-select">
@@ -598,6 +619,10 @@
               <div id="modal-call-log" style="display:none; margin-bottom:16px; padding:14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px;"></div>
               <!-- Follow-ups: chip simple con info del activo (los checkboxes de la tabla del CRM son los que se tildan) -->
               <div id="modal-followups-info" style="display:none; margin-bottom:16px; padding:12px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:10px; font-size:13px;"></div>
+              </div><!-- /tab-panel estado -->
+
+              <!-- TAB: 💬 Conversación (default activa) -->
+              <div class="lead-tab-content" data-lead-tab-panel="convo">
               <div class="lead-modal-notes">
                 <h4>Conversación / Notas</h4>
                 <div id="modal-notes-list" class="notes-list"></div>
@@ -2228,6 +2253,46 @@
               </div>
             </details>
           </div>
+
+          <!-- 6. EFECTIVIDAD COLD CALLING (Sprint 9) -->
+          <div class="card" style="padding:20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+              <div style="flex:1; min-width:0;">
+                <strong style="font-size:14px; display:flex; align-items:center; gap:8px;">
+                  <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(91,185,116,0.15); border-radius:7px;">🎯</span>
+                  Efectividad Cold Calling
+                </strong>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">KPIs del flow v2 (script SCM Cold Call). Si el ratio opener (&gt;30s connected) está debajo del 70%, hay algo roto en la apertura.</div>
+              </div>
+              <select id="tlx-eff-range" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px; cursor:pointer;">
+                <option value="today">Hoy</option>
+                <option value="week">Últimos 7 días</option>
+                <option value="month" selected>Últimos 30 días</option>
+                <option value="all">Todo</option>
+              </select>
+            </div>
+            <!-- KPI cards principales -->
+            <div id="tlx-eff-kpis" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:18px;"></div>
+            <!-- Breakdown: por país, hora, día -->
+            <details>
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Breakdown por país / hora / día</summary>
+              <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">🌍 Por país</div>
+                  <ul id="tlx-eff-countries" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">🕐 Por hora</div>
+                  <ul id="tlx-eff-hours" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+                <div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">📅 Por día semana</div>
+                  <ul id="tlx-eff-days" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
+                </div>
+              </div>
+            </details>
+          </div>
+
         </section>
       </div>
 
@@ -2593,7 +2658,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522r"></script>
+  <script type="module" src="/app.js?v=20260522s"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

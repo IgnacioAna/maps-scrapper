@@ -8217,6 +8217,127 @@ app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, r
   res.json({ ok: true, scripts: data.scripts });
 });
 
+// GET /api/telnyx/cold-call-effectiveness — métricas de efectividad cold calling.
+// Calcula los KPIs reales del flow v2: ratio de opener pasado (>30s connected),
+// ratio agendada/contactada, % por outcome, mejor hora del día, mejor día,
+// mejor país. admin/supervisor only. Query: ?range=today|week|month|all
+app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  const range = (req.query.range || 'month').toString();
+  const now = Date.now();
+  let fromTs = 0;
+  if (range === 'today') fromTs = new Date().setHours(0, 0, 0, 0);
+  else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
+  else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
+  const data = loadSettersData();
+  // Recolectar todas las calls Telnyx en rango
+  const calls = [];
+  for (const [leadId, lead] of Object.entries(data.leads || {})) {
+    if (!Array.isArray(lead.callLog)) continue;
+    for (const c of lead.callLog) {
+      if (c.channel !== 'telnyx_webrtc') continue;
+      const ts = new Date(c.ts).getTime();
+      if (fromTs > 0 && ts < fromTs) continue;
+      calls.push({ ...c, leadId, leadCountry: lead.country || '', leadCity: lead.city || '', setterId: lead.assignedTo || '' });
+    }
+  }
+  // Totales generales
+  const total = calls.length;
+  const totalSecs = calls.reduce((sum, c) => sum + (c.duration || 0), 0);
+  const totalCost = calls.reduce((sum, c) => sum + (c.cost || 0), 0);
+  // Outcomes
+  const byOutcome = {};
+  for (const c of calls) {
+    const o = c.outcome || 'no_disposition';
+    if (!byOutcome[o]) byOutcome[o] = { count: 0, secs: 0 };
+    byOutcome[o].count++;
+    byOutcome[o].secs += c.duration || 0;
+  }
+  // KPIs flow v2:
+  // - Ratio opener pasado (target >70%): cualquier llamada que duró >30s = pasó el opener
+  // - Ratio atendidas: outcomes que indican atención (answered_*, scheduled_*, voicemail, callback)
+  // - Ratio agendadas: scheduled_with_admin / atendidas
+  // - Ratio interesado: answered_interested / atendidas
+  const attendedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'voicemail', 'callback_later'];
+  const reachedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']; // hablaste con humano
+  const openerPassedCount = calls.filter(c => (c.duration || 0) > 30).length;
+  const attendedCount = calls.filter(c => attendedOutcomes.includes(c.outcome)).length;
+  const reachedCount = calls.filter(c => reachedOutcomes.includes(c.outcome)).length;
+  const scheduledCount = (byOutcome.scheduled_with_admin?.count || 0);
+  const interestedCount = (byOutcome.answered_interested?.count || 0) + scheduledCount;
+  const ratios = {
+    openerPassedPct: total > 0 ? Math.round((openerPassedCount / total) * 100) : 0,
+    attendedPct: total > 0 ? Math.round((attendedCount / total) * 100) : 0,
+    reachedHumanPct: total > 0 ? Math.round((reachedCount / total) * 100) : 0,
+    scheduledFromReachedPct: reachedCount > 0 ? Math.round((scheduledCount / reachedCount) * 100) : 0,
+    interestedFromReachedPct: reachedCount > 0 ? Math.round((interestedCount / reachedCount) * 100) : 0,
+    scheduledFromTotalPct: total > 0 ? Math.round((scheduledCount / total) * 100) : 0,
+  };
+  // Por país
+  const byCountry = {};
+  for (const c of calls) {
+    const k = c.leadCountry || 'Sin país';
+    if (!byCountry[k]) byCountry[k] = { calls: 0, scheduled: 0, reached: 0 };
+    byCountry[k].calls++;
+    if (c.outcome === 'scheduled_with_admin') byCountry[k].scheduled++;
+    if (reachedOutcomes.includes(c.outcome)) byCountry[k].reached++;
+  }
+  const countriesArr = Object.entries(byCountry).map(([country, v]) => ({
+    country, calls: v.calls,
+    reachedPct: v.calls > 0 ? Math.round((v.reached / v.calls) * 100) : 0,
+    scheduledPct: v.calls > 0 ? Math.round((v.scheduled / v.calls) * 100) : 0,
+    scheduledFromReachedPct: v.reached > 0 ? Math.round((v.scheduled / v.reached) * 100) : 0,
+  })).sort((a, b) => b.calls - a.calls);
+  // Por hora del día (mejor momento para llamar)
+  const byHour = {};
+  for (const c of calls) {
+    const h = new Date(c.ts).getHours();
+    if (!byHour[h]) byHour[h] = { calls: 0, reached: 0, scheduled: 0 };
+    byHour[h].calls++;
+    if (reachedOutcomes.includes(c.outcome)) byHour[h].reached++;
+    if (c.outcome === 'scheduled_with_admin') byHour[h].scheduled++;
+  }
+  const hoursArr = Object.entries(byHour).map(([h, v]) => ({
+    hour: parseInt(h, 10), calls: v.calls,
+    reachedPct: v.calls > 0 ? Math.round((v.reached / v.calls) * 100) : 0,
+    scheduledPct: v.calls > 0 ? Math.round((v.scheduled / v.calls) * 100) : 0,
+  })).sort((a, b) => a.hour - b.hour);
+  // Por día de la semana
+  const dayLabels = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const byDayOfWeek = {};
+  for (const c of calls) {
+    const d = new Date(c.ts).getDay();
+    if (!byDayOfWeek[d]) byDayOfWeek[d] = { calls: 0, reached: 0, scheduled: 0 };
+    byDayOfWeek[d].calls++;
+    if (reachedOutcomes.includes(c.outcome)) byDayOfWeek[d].reached++;
+    if (c.outcome === 'scheduled_with_admin') byDayOfWeek[d].scheduled++;
+  }
+  const daysArr = Object.entries(byDayOfWeek).map(([d, v]) => ({
+    day: parseInt(d, 10), dayLabel: dayLabels[parseInt(d, 10)],
+    calls: v.calls,
+    reachedPct: v.calls > 0 ? Math.round((v.reached / v.calls) * 100) : 0,
+    scheduledPct: v.calls > 0 ? Math.round((v.scheduled / v.calls) * 100) : 0,
+  })).sort((a, b) => a.day - b.day);
+  res.json({
+    range,
+    totals: {
+      calls: total,
+      minutes: Math.round(totalSecs / 60),
+      costUSD: Math.round(totalCost * 100) / 100,
+      avgMinPerCall: total > 0 ? Math.round((totalSecs / 60 / total) * 10) / 10 : 0,
+    },
+    ratios,
+    breakdown: {
+      openerPassedCount, attendedCount, reachedCount, scheduledCount, interestedCount,
+    },
+    byOutcome,
+    byCountry: countriesArr,
+    byHour: hoursArr,
+    byDayOfWeek: daysArr,
+  });
+});
+
 // GET /api/telnyx/calls/recent — lista de llamadas Telnyx recientes con
 // transcripts disponibles. admin/supervisor ve todas, setter solo las suyas.
 // Query: ?limit=50&search=keyword&outcome=answered_interested
