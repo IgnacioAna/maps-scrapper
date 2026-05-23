@@ -1643,7 +1643,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             tryAttachRemoteStream();
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
-          } else if (state === 'done' || state === 'ended' || state === 'hangup' || state === 'destroy' || state === 'purge') {
+          } else if (state === 'hangup' || state === 'destroy' || state === 'purge') {
+            // Estados terminales REALES verificados contra el source del SDK
+            // (BaseCall.setState con enum State.[Hangup|Destroy|Purge] lowercased).
+            // 'done' / 'ended' NO existen como call states — fueron asunción mía
+            // mirando grep del bundle minified (eran otros estados, no de Call).
             _stopRingbackTone();
             if (this.activeCall && _telnyxCallState.startedAt) {
               const sameCall = this.activeCall === call || this.activeCall.id === call.id;
@@ -3733,6 +3737,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           callerName: 'SCM',
           audio: true,
           video: false,
+          // CRÍTICO: el SDK lee remoteElement de options del CALL (no solo del
+          // client). Sin esto, attachMediaStream() del SDK puede no encontrar
+          // el element y no monta el audio entrante. Confirmado via inspección
+          // del source: BaseCall.options.remoteElement es lo que usa el handler
+          // 'track' del RTCPeerConnection.
+          remoteElement: 'telnyx-remote-audio',
         });
         _telnyx.activeCall = call;
         _telnyxCallState.startedAt = Date.now();
