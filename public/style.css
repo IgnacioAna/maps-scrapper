@@ -979,6 +979,250 @@ body:has(#view-social.active) .global-location-panel {
   min-width: 1800px;
   table-layout: auto;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   PHASE setter-ux-redesign (2026-05-22)
+   Mejoras de UX para setters: tabla mas aireada, modal con tabs,
+   widget Hoy, banner welcome, sidebar separadores
+═════════════════════════════════════════════════════════════════ */
+
+/* Modo simple de la tabla del CRM (default para setters).
+   Cuando setter-table tiene data-mode="simple", solo se muestran las
+   columnas marcadas con data-essential="1" en el render. */
+#setter-table[data-mode="simple"] {
+  min-width: 0;
+  width: 100%;
+}
+#setter-table[data-mode="simple"] td,
+#setter-table[data-mode="simple"] th {
+  padding: 16px 14px;
+  font-size: 13px;
+}
+#setter-table[data-mode="simple"] tbody tr {
+  min-height: 60px;
+  transition: background-color 0.12s ease;
+}
+#setter-table[data-mode="simple"] tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.012);
+}
+#setter-table[data-mode="simple"] tbody tr:hover {
+  background: rgba(157, 133, 242, 0.07);
+}
+/* Cuando modo simple esta activo, ocultar el floating scrollbar (no necesario) */
+#view-crm:has(#setter-table[data-mode="simple"]) #crm-floating-scrollbar {
+  display: none !important;
+}
+
+/* Botón toggle "ver tabla completa" — solo admin */
+.table-mode-toggle {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(157, 133, 242, 0.08);
+  color: var(--accent, #9d85f2);
+  border: 1px solid rgba(157, 133, 242, 0.25);
+  cursor: pointer;
+  margin-left: 8px;
+}
+.table-mode-toggle:hover {
+  background: rgba(157, 133, 242, 0.15);
+}
+
+/* ── Widget "Hoy" ────────────────────────────────────────── */
+.hoy-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px;
+  margin: 10px 0 14px;
+  background: linear-gradient(135deg, rgba(157, 133, 242, 0.08) 0%, rgba(157, 133, 242, 0.02) 100%);
+  border: 1px solid rgba(157, 133, 242, 0.22);
+  border-radius: 14px;
+}
+.hoy-greet {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hoy-greet #hoy-greet-text {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary, #E6EDF3);
+}
+.hoy-date {
+  font-size: 12px;
+  color: var(--text-secondary, #B8C2CC);
+}
+.hoy-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.hoy-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color, #21262D);
+  color: var(--text-primary, #E6EDF3);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.hoy-action-chip:hover {
+  background: rgba(157, 133, 242, 0.10);
+  border-color: var(--accent, #9d85f2);
+  transform: translateY(-1px);
+}
+.hoy-action-chip.urgent {
+  background: rgba(248, 81, 73, 0.10);
+  border-color: rgba(248, 81, 73, 0.35);
+  color: #f85149;
+}
+.hoy-action-chip.urgent:hover { background: rgba(248, 81, 73, 0.18); }
+.hoy-action-chip.attention {
+  background: rgba(255, 200, 40, 0.10);
+  border-color: rgba(255, 200, 40, 0.35);
+  color: #ffc828;
+}
+.hoy-action-chip.attention:hover { background: rgba(255, 200, 40, 0.18); }
+.hoy-action-chip .num {
+  font-weight: 700;
+  font-size: 14px;
+}
+.hoy-today {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-secondary, #B8C2CC);
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color, #21262D);
+  flex-wrap: wrap;
+}
+.hoy-today strong { color: var(--text-primary, #E6EDF3); margin-right: 4px; }
+
+/* ── Modal del lead: tabs ────────────────────────────────── */
+.lead-tabs-nav {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0 12px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #21262D);
+}
+.lead-tab-btn {
+  flex: 1;
+  padding: 9px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--text-secondary, #B8C2CC);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.lead-tab-btn:hover {
+  color: var(--text-primary, #E6EDF3);
+  background: rgba(255, 255, 255, 0.03);
+}
+.lead-tab-btn.active {
+  background: var(--accent, #9d85f2);
+  color: #0E1117;
+  font-weight: 600;
+}
+.lead-tab-content {
+  animation: leadTabFadeIn 0.18s ease-out;
+}
+@keyframes leadTabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Banner de bienvenida ────────────────────────────────── */
+.welcome-banner {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  padding: 0;
+  margin: 0 0 16px;
+  background: linear-gradient(135deg, rgba(157, 133, 242, 0.12) 0%, rgba(91, 185, 116, 0.06) 100%);
+  border: 1px solid rgba(157, 133, 242, 0.30);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-banner::before {
+  content: '';
+  width: 5px;
+  background: linear-gradient(180deg, var(--accent, #9d85f2) 0%, var(--success, #5bb974) 100%);
+}
+.welcome-content {
+  padding: 18px 20px;
+  flex: 1;
+}
+
+/* ── Toast unificado (action feedback) ───────────────────── */
+#scm-toast-container {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+  pointer-events: none;
+}
+.scm-toast {
+  pointer-events: auto;
+  padding: 11px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 33, 40, 0.95);
+  backdrop-filter: blur(8px);
+  animation: scmToastIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.scm-toast.success { background: rgba(91, 185, 116, 0.96); }
+.scm-toast.error { background: rgba(248, 81, 73, 0.96); }
+.scm-toast.warning { background: rgba(255, 200, 40, 0.96); color: #1a1d24; }
+.scm-toast.info { background: rgba(121, 184, 255, 0.96); color: #0E1117; }
+.scm-toast.removing {
+  animation: scmToastOut 0.2s ease-in forwards;
+}
+@keyframes scmToastIn {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes scmToastOut {
+  to { opacity: 0; transform: translateX(40px); }
+}
+
+/* ── Sidebar separadores entre secciones ─────────────────── */
+.sidebar-menu .menu-divider {
+  height: 1px;
+  margin: 14px 16px 6px;
+  background: var(--border-color, #21262D);
+  opacity: 0.5;
+}
+.sidebar-menu .menu-section-label {
+  padding: 8px 18px 4px;
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #7E8494);
+  font-weight: 600;
+}
+
 /* Cuando la tabla está vacía (filtros sin resultados), quitar el min-width para
    que no aparezca scroll horizontal innecesario (causaba doble scrollbar al
    verse junto al floating scrollbar del viewport). */
