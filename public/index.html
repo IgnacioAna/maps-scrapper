@@ -762,8 +762,23 @@
         </section>
 
         <section class="results-panel">
-          <div id="calls-list" style="padding: 0 32px 40px; display:flex; flex-direction:column; gap:10px;">
+          <div id="calls-list" style="padding: 0 32px 12px; display:flex; flex-direction:column; gap:10px;">
             <p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">Cargando...</p>
+          </div>
+          <!-- Paginación -->
+          <div id="calls-pagination" style="display:none; padding:14px 32px 32px; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+            <div style="font-size:12px; color:var(--text-secondary);">
+              Mostrando <span id="calls-pag-from" style="color:var(--text-primary); font-weight:600;">—</span>–<span id="calls-pag-to" style="color:var(--text-primary); font-weight:600;">—</span> de <span id="calls-pag-total" style="color:var(--text-primary); font-weight:600;">—</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <button id="calls-pag-first" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Primera página">⟪</button>
+              <button id="calls-pag-prev" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Anterior">←</button>
+              <span style="font-size:12px; color:var(--text-primary); padding:0 10px; font-family:ui-monospace,monospace;">
+                <span id="calls-pag-current" style="font-weight:700; color:var(--accent);">1</span> / <span id="calls-pag-last" style="color:var(--text-secondary);">1</span>
+              </span>
+              <button id="calls-pag-next" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Siguiente">→</button>
+              <button id="calls-pag-end" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Última página">⟫</button>
+            </div>
           </div>
         </section>
       </div>
@@ -2463,7 +2478,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522l"></script>
+  <script type="module" src="/app.js?v=20260522m"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

@@ -3570,10 +3570,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); }
     }
 
+    const CALLS_PAGE_SIZE = 50;
+    let _callsCurrentPage = 1;
+    function _callsLastCallTs(l) {
+      const last = l.callLog && l.callLog.length > 0 ? l.callLog[l.callLog.length - 1] : null;
+      return last ? new Date(last.ts).getTime() : 0;
+    }
     function renderCallsList() {
       const list = document.getElementById('calls-list');
       const country = document.getElementById('calls-country-filter').value;
       const search = (document.getElementById('calls-search')?.value || '').toLowerCase().trim();
+      const sortMode = document.getElementById('calls-sort-select')?.value || 'never_called';
       const now = Date.now();
 
       let leads = callsLeadsCache.slice();
@@ -3593,13 +3600,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Ocultar descartados/agendados (ya no son accionables)
       leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
 
-      // Ordenar: nunca llamados primero, luego por menos intentos
-      leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+      // Sort configurable según el dropdown
+      switch (sortMode) {
+        case 'recent':
+          leads.sort((a, b) => new Date(b.importedAt || 0).getTime() - new Date(a.importedAt || 0).getTime());
+          break;
+        case 'oldest':
+          leads.sort((a, b) => new Date(a.importedAt || 0).getTime() - new Date(b.importedAt || 0).getTime());
+          break;
+        case 'country':
+          leads.sort((a, b) => (a.country || '').localeCompare(b.country || '') || (a.callAttempts || 0) - (b.callAttempts || 0));
+          break;
+        case 'attempts_desc':
+          leads.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0));
+          break;
+        case 'attempts_asc':
+          leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+          break;
+        case 'last_call':
+          leads.sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a));
+          break;
+        case 'never_called':
+        default:
+          // Nunca llamados primero (callAttempts=0), después por intentos asc
+          leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+          break;
+      }
 
-      if (leads.length === 0) {
+      // Paginación
+      const pagFooter = document.getElementById('calls-pagination');
+      const total = leads.length;
+      const totalPages = Math.max(1, Math.ceil(total / CALLS_PAGE_SIZE));
+      if (_callsCurrentPage > totalPages) _callsCurrentPage = totalPages;
+      if (_callsCurrentPage < 1) _callsCurrentPage = 1;
+      const startIdx = (_callsCurrentPage - 1) * CALLS_PAGE_SIZE;
+      const endIdx = Math.min(startIdx + CALLS_PAGE_SIZE, total);
+
+      if (total === 0) {
         list.innerHTML = '<p class="empty-state" style="padding:60px 0; text-align:center; color:var(--text-tertiary);">No hay llamadas pendientes con esos filtros. 🎉</p>';
+        if (pagFooter) pagFooter.style.display = 'none';
         return;
       }
+
+      // Render footer de paginación (oculto si hay 1 sola página)
+      if (pagFooter) {
+        pagFooter.style.display = total > CALLS_PAGE_SIZE ? 'flex' : 'none';
+        document.getElementById('calls-pag-from').textContent = startIdx + 1;
+        document.getElementById('calls-pag-to').textContent = endIdx;
+        document.getElementById('calls-pag-total').textContent = total;
+        document.getElementById('calls-pag-current').textContent = _callsCurrentPage;
+        document.getElementById('calls-pag-last').textContent = totalPages;
+        document.getElementById('calls-pag-first').disabled = _callsCurrentPage === 1;
+        document.getElementById('calls-pag-prev').disabled = _callsCurrentPage === 1;
+        document.getElementById('calls-pag-next').disabled = _callsCurrentPage === totalPages;
+        document.getElementById('calls-pag-end').disabled = _callsCurrentPage === totalPages;
+      }
+      // Solo renderizar la página actual
+      leads = leads.slice(startIdx, endIdx);
 
       list.innerHTML = leads.map(l => {
         const tel = buildTelLink(l.phone, l.country);
@@ -4197,13 +4254,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const callsMenuItem = document.querySelector('[data-target="view-calls"]');
     if (callsMenuItem) callsMenuItem.addEventListener('click', () => { loadCallsView(); });
-    document.getElementById('calls-setter-select').addEventListener('change', () => { loadCallsView(); });
+    document.getElementById('calls-setter-select').addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
     document.getElementById('calls-country-filter').addEventListener('change', (e) => {
       localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), e.target.value);
+      _callsCurrentPage = 1;
       renderCallsList();
       renderCallsStats();
     });
-    document.getElementById('calls-search').addEventListener('input', () => renderCallsList());
+    document.getElementById('calls-search').addEventListener('input', () => { _callsCurrentPage = 1; renderCallsList(); });
+    // Sort dropdown: persiste en localStorage para no perder la preferencia
+    const sortSelect = document.getElementById('calls-sort-select');
+    if (sortSelect) {
+      const savedSort = localStorage.getItem('calls_sort_' + (currentUser?.id || 'anon'));
+      if (savedSort) sortSelect.value = savedSort;
+      sortSelect.addEventListener('change', (e) => {
+        localStorage.setItem('calls_sort_' + (currentUser?.id || 'anon'), e.target.value);
+        _callsCurrentPage = 1;
+        renderCallsList();
+      });
+    }
+    // Controles de paginación
+    document.getElementById('calls-pag-first')?.addEventListener('click', () => { _callsCurrentPage = 1; renderCallsList(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    document.getElementById('calls-pag-prev')?.addEventListener('click', () => { _callsCurrentPage = Math.max(1, _callsCurrentPage - 1); renderCallsList(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    document.getElementById('calls-pag-next')?.addEventListener('click', () => { _callsCurrentPage = _callsCurrentPage + 1; renderCallsList(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    document.getElementById('calls-pag-end')?.addEventListener('click', () => { _callsCurrentPage = 9999; renderCallsList(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
 
     // Modal "Agregar lead manual" (admin only) — útil para testing y referidos
     document.getElementById('calls-add-manual-btn')?.addEventListener('click', () => {
