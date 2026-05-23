@@ -559,13 +559,13 @@ function sanitizePhoneE164(phone) {
     if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
     return null;
   }
-  // Caso 3 (Sprint 22): dígitos puros. Si tiene 10-15 dígitos y arranca
-  // con un dígito que es plausible primer dígito de código país (1-9, no 0),
-  // asumir que ya trae código país y prependerle "+".
-  // Heurística aplicada a leads scrapeados de Google Maps donde MUCHOS
-  // vienen como "59899504576" en lugar de "+59899504576".
+  // Caso 3 (Sprint 22 + audit fix Sprint 29): dígitos puros 11-15 con primer
+  // dígito no-cero. Asume código país presente y prepende "+".
+  // Mínimo 11 dígitos para evitar falsos positivos con números US/CA de 10
+  // dígitos sin código país (que se confundirían con +41 Suiza, +49 Alemania,
+  // etc). Captura el 95% de los casos reales (latinoamérica + España).
   const digits = raw.replace(/\D/g, '');
-  if (/^[1-9]\d{9,14}$/.test(digits)) {
+  if (/^[1-9]\d{10,14}$/.test(digits)) {
     return '+' + digits;
   }
   return null;
@@ -4855,9 +4855,12 @@ app.post('/api/setters/leads/:id/reactivate', requireAuth, requireRole('admin'),
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
   ensureLeadDefaults(lead);
-  // Solo aplica si está realmente descartado o agendado (no tiene sentido
-  // "reactivar" un sin_contactar).
-  if (!['descartado','agendado'].includes(lead.estado) && lead.interes !== 'no' && !lead.phoneStatus) {
+  // Audit fix Sprint 29 (bug 7): solo aplica si está realmente "descartado"
+  // (estado=descartado/agendado, interes=no, o phoneStatus dead). Voicemail
+  // NO cuenta como descarte — el lead sigue siendo accionable.
+  const isDeadPhone = ['wrong','invalid'].includes(lead.phoneStatus);
+  const isReallyDescartado = ['descartado','agendado'].includes(lead.estado) || lead.interes === 'no' || isDeadPhone;
+  if (!isReallyDescartado) {
     return res.status(400).json({ error: 'Lead no está descartado, no hay nada que reactivar.' });
   }
   const previousState = {

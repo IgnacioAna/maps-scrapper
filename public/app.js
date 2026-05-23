@@ -497,11 +497,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
         return null;
       }
-      // Caso 3 (Sprint 22): dígitos puros 10-15 con primer dígito no-cero →
-      // asumir que ya trae código país y prepender "+". Heurística para
-      // leads scrapeados que vienen sin + (ej "59899504576" → "+59899504576").
+      // Caso 3 (Sprint 22 + audit fix Sprint 29): dígitos puros 11-15 con
+      // primer dígito no-cero. Mínimo 11 dígitos para no confundir números
+      // US/CA de 10 dígitos sin código país con prefijos europeos válidos.
       const digits = raw.replace(/\D/g, '');
-      if (/^[1-9]\d{9,14}$/.test(digits)) {
+      if (/^[1-9]\d{10,14}$/.test(digits)) {
         return '+' + digits;
       }
       return null;
@@ -698,10 +698,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     async function _startCallbackDuePolling() {
       if (_cbPollTimer) clearInterval(_cbPollTimer);
-      _cbLastCheck = new Date().toISOString();
+      // Audit fix Sprint 29 (bug 1): arrancar con since='' en el primer poll
+      // para que se rescaten callbacks que vencieron ANTES del login (caso:
+      // setter abre la app a las 11am y tenía un callback agendado para 9am).
+      // Después del primer poll, _cbLastCheck queda con serverTime y el
+      // backend hace ts > since correctamente. La dedup por localStorage
+      // garantiza que no se re-notifique entre sesiones.
+      _cbLastCheck = '';
       const poll = async () => {
         try {
-          const r = await fetch(apiUrl('/api/setters/callbacks/due?since=' + encodeURIComponent(_cbLastCheck) + '&window=90'), { credentials: 'include' });
+          const sinceParam = _cbLastCheck ? '&since=' + encodeURIComponent(_cbLastCheck) : '';
+          const r = await fetch(apiUrl('/api/setters/callbacks/due?window=90' + sinceParam), { credentials: 'include' });
           if (!r.ok) return;
           const d = await r.json();
           _cbLastCheck = d.serverTime || _cbLastCheck;
@@ -4093,7 +4100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       wrap.style.display = 'block';
-      countEl.textContent = `(${items.length} próximo${items.length === 1 ? '' : 's'})`;
+      // Audit fix Sprint 29 (bug 2): null-safe — el span puede no existir
+      if (countEl) countEl.textContent = `(${items.length} próximo${items.length === 1 ? '' : 's'})`;
 
       // Agrupar por día (YYYY-MM-DD local)
       const todayKey = new Date().toISOString().substring(0, 10);
@@ -5710,9 +5718,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = callsLeadsCache.find(l => l.id === leadId);
       const modal = document.getElementById('call-schedule-modal');
       document.getElementById('call-sched-nombre').value = lead?.name || '';
-      // Default: mañana 11am
+      // Default: mañana 11am. Audit fix Sprint 29 (bug 3): usar _toDatetimeLocal
+      // (no toISOString que devuelve UTC y se ve 3hs atrasado en AR).
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(11, 0, 0, 0);
-      document.getElementById('call-sched-fecha').value = m.toISOString().substring(0, 16);
+      document.getElementById('call-sched-fecha').value = _toDatetimeLocal(m);
       document.getElementById('call-sched-notas').value = '';
       modal.classList.remove('hidden');
       document.getElementById('call-sched-confirm').onclick = async () => {
