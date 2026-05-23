@@ -494,8 +494,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
         return null;
       }
-      // Caso 3: solo dígitos sin código país. No podemos adivinar — devolver null.
-      // (Cualquier código que llame esto debería normalizar antes con default country)
+      // Caso 3 (Sprint 22): dígitos puros 10-15 con primer dígito no-cero →
+      // asumir que ya trae código país y prepender "+". Heurística para
+      // leads scrapeados que vienen sin + (ej "59899504576" → "+59899504576").
+      const digits = raw.replace(/\D/g, '');
+      if (/^[1-9]\d{9,14}$/.test(digits)) {
+        return '+' + digits;
+      }
       return null;
     }
 
@@ -2149,10 +2154,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 'complete' como default UNIVERSAL. El toggle simple queda como opt-in
     // experimental — nadie arranca ahi.
     const _tableModeKey = 'scm_setter_table_mode_' + (currentUser?.id || 'anon');
+    // Reset one-time del localStorage para usuarios que ya tenían 'simple'
+    // guardado del deploy anterior. Si la flag de reset no está marcada,
+    // limpiamos la preferencia y la marcamos como reseteada.
+    try {
+      if (!localStorage.getItem('scm_table_mode_reset_v2')) {
+        localStorage.removeItem(_tableModeKey);
+        localStorage.setItem('scm_table_mode_reset_v2', '1');
+      }
+    } catch (e) {}
     let _tableMode = (function determineInitialMode() {
       const saved = localStorage.getItem(_tableModeKey);
       // Respetar preferencia explicita (si alguien clickeo el toggle simple a
-      // proposito); pero si nunca tocó nada → siempre complete.
+      // proposito DESPUES del reset); pero si nunca tocó nada → siempre complete.
       if (saved === 'simple') return 'simple';
       return 'complete';
     })();
