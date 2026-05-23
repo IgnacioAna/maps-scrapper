@@ -784,15 +784,49 @@
       </div>
 
       <!-- Phase 6: Script panel — al lado del panel centrado durante llamada -->
-      <div id="telnyx-script-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(calc(-50% + 240px), -50%); width:420px; max-width:42vw; max-height:80vh; background:#11131A; border:1px solid rgba(157,133,242,0.4); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; flex-direction:column; animation:tlxSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-        <div style="padding:12px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.08) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:8px;">
-          <strong style="font-size:13px; color:var(--text-primary);">📝 Guion de llamada</strong>
-          <button id="telnyx-script-close" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:18px; padding:0; line-height:1;">✕</button>
+      <div id="telnyx-script-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(calc(-50% + 240px), -50%); width:460px; max-width:46vw; max-height:88vh; background:#11131A; border:1px solid rgba(157,133,242,0.4); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; flex-direction:column; animation:tlxSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+        <!-- Header: título + tone chip + cerrar -->
+        <div style="padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.06); background:linear-gradient(180deg, rgba(157,133,242,0.1) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <strong style="font-size:13.5px; color:#fff; font-weight:600;">📝 Guion de llamada</strong>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span title="3-S del tono: matchea al prospect" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:rgba(157,133,242,0.9); padding:3px 9px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.25); border-radius:6px; font-weight:500; cursor:default;">🐢 Slow · 😊 Smile · 💪 Strong</span>
+            <button id="telnyx-script-close" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); cursor:pointer; font-size:14px; padding:3px 8px; line-height:1; border-radius:6px;">✕</button>
+          </div>
         </div>
-        <div id="telnyx-script-triggers" style="padding:8px 14px; border-bottom:1px solid var(--border-color); display:flex; gap:6px; flex-wrap:wrap;"></div>
-        <div id="telnyx-script-text" style="padding:14px; font-size:13px; line-height:1.6; color:var(--text-primary); white-space:pre-wrap; flex:1; overflow-y:auto; min-height:120px;">Elegí un guion arriba ↑</div>
-        <div style="padding:10px 14px; border-top:1px solid var(--border-color); display:flex; gap:8px; background:rgba(0,0,0,0.18);">
-          <button id="telnyx-script-copy" class="btn-secondary" style="flex:1; font-size:11px; padding:7px;">📋 Copiar</button>
+
+        <!-- Sticky: PACE framework (siempre visible para objeciones) -->
+        <div id="telnyx-script-pace-card" style="margin:10px 14px 0; padding:9px 12px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.22); border-radius:9px; font-size:10.5px; color:rgba(255,255,255,0.85); line-height:1.5;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
+            <strong style="color:var(--accent); font-size:11px; letter-spacing:0.3px;">🧠 Framework PACE</strong>
+            <span style="font-size:9.5px; color:rgba(255,255,255,0.45); font-style:italic;">solo objeciones reales</span>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#FFB341;">P</strong>ausa 2-3s</span>
+            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#5bb974;">A</strong>ceptar (sin pero)</span>
+            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#7dd3fc;">C</strong>onsentimiento</span>
+            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#f85149;">E</strong>ngage (pregunta)</span>
+          </div>
+          <div style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.05); font-size:9.5px; color:rgba(255,255,255,0.55);">
+            ⚡ Brush-off → directo a Engage. Máx 3 intentos por objeción.
+          </div>
+        </div>
+
+        <!-- Buscador interno por keyword -->
+        <div style="padding:10px 14px 0;">
+          <input type="text" id="telnyx-script-search" placeholder="🔍 Buscar guion por keyword (ej: precio, sistema, tiempo...)" style="width:100%; padding:8px 11px; border-radius:7px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#fff; font-size:11.5px; box-sizing:border-box;">
+        </div>
+
+        <!-- Botones de scripts (filtrables por buscador, ordenados por flow) -->
+        <div id="telnyx-script-triggers" style="padding:10px 14px 0; display:flex; gap:5px; flex-wrap:wrap; max-height:120px; overflow-y:auto;"></div>
+
+        <!-- Texto del script seleccionado -->
+        <div id="telnyx-script-text" style="margin:10px 14px 0; padding:14px; font-size:13px; line-height:1.65; color:#fff; white-space:pre-wrap; flex:1; overflow-y:auto; min-height:120px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:10px;">Elegí un guion arriba ↑</div>
+
+        <!-- Footer: copiar -->
+        <div style="padding:10px 14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; gap:8px; background:rgba(0,0,0,0.2);">
+          <button id="telnyx-script-copy" class="btn-secondary" style="flex:1; font-size:11px; padding:8px; border-radius:8px;">📋 Copiar texto del guion</button>
         </div>
       </div>
 
@@ -2481,7 +2515,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522n"></script>
+  <script type="module" src="/app.js?v=20260522o"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

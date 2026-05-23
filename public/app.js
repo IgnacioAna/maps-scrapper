@@ -4041,49 +4041,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         textEl.textContent = 'Pedile al admin que agregue guiones desde Centralita Telnyx.';
         return;
       }
-      // Agrupar por trigger. ORDEN del flow de llamada (v2 script SCM):
-      // 1. rules (siempre arriba — meta)
-      // 2. before_call → gatekeeper → opener → pitch → ask_meeting → confirm
-      // 3. objection_brushoff / objection_real (sub-grupos de objection)
-      // 4. callback / whatsapp_msg / email_template (post)
-      // 5. legacy (first_call, objection, scheduling, voicemail, general)
+      // Cache para filtrado por buscador (lo usa el listener del input)
+      _renderScriptButtons(_callScriptsCache, '');
+      // Pre-cargar primer script no-meta. Saltea 'rules' (son referencia, no
+      // se "lee" durante una llamada — están en la PACE card sticky).
+      const firstActionable = _callScriptsCache.find(s => s.trigger !== 'rules') || _callScriptsCache[0];
+      if (firstActionable) _selectScript(firstActionable.id);
+    }
+
+    // Render solo los botones (factorizado para que el buscador pueda re-render).
+    // Excluye scripts trigger='rules' del flow (están en PACE card + son meta).
+    function _renderScriptButtons(scripts, searchQuery) {
+      const triggersBar = document.getElementById('telnyx-script-triggers');
+      if (!triggersBar) return;
+      const q = (searchQuery || '').toLowerCase().trim();
+      // Excluir scripts meta (rules) — esos están en la PACE card sticky arriba
+      let pool = scripts.filter(s => s.trigger !== 'rules');
+      if (q) {
+        pool = pool.filter(s =>
+          (s.label || '').toLowerCase().includes(q) ||
+          (s.text || '').toLowerCase().includes(q) ||
+          (Array.isArray(s.tags) && s.tags.some(t => (t || '').toLowerCase().includes(q)))
+        );
+      }
+      // Orden del flow de llamada
       const triggerOrder = [
-        'rules', 'before_call', 'gatekeeper', 'opener', 'pitch',
+        'before_call', 'gatekeeper', 'opener', 'pitch',
         'ask_meeting', 'confirm',
         'objection_brushoff', 'objection_real',
         'callback', 'whatsapp_msg', 'email_template',
         'first_call', 'objection', 'scheduling', 'voicemail', 'general',
       ];
       const grouped = {};
-      for (const s of _callScriptsCache) {
+      for (const s of pool) {
         const t = s.trigger || 'general';
         if (!grouped[t]) grouped[t] = [];
         grouped[t].push(s);
       }
       const triggerLabels = {
-        // v2 script SCM
-        rules: '📜 Reglas',
-        before_call: '✅ Pre-call',
-        gatekeeper: '🚪 Recepción',
-        opener: '🎯 Apertura',
-        pitch: '💡 Pitch',
-        ask_meeting: '📅 Pedir reunión',
-        confirm: '🔒 Confirmar',
-        objection_brushoff: '⚡ Brush-off',
-        objection_real: '🛡️ Objeción real',
-        callback: '🔄 Callback',
-        whatsapp_msg: '💬 WhatsApp',
-        email_template: '📧 Email',
-        // legacy
-        first_call: '🎯 Apertura',
-        objection: '🛡️ Objeción',
-        scheduling: '📅 Cerrar',
-        voicemail: '📭 Buzón',
-        general: '📝 General',
+        before_call: '✅ Pre-call', gatekeeper: '🚪 Recepción',
+        opener: '🎯 Apertura', pitch: '💡 Pitch',
+        ask_meeting: '📅 Pedir reunión', confirm: '🔒 Confirmar',
+        objection_brushoff: '⚡ Brush-off', objection_real: '🛡️ Real',
+        callback: '🔄 Callback', whatsapp_msg: '💬 WhatsApp', email_template: '📧 Email',
+        first_call: '🎯 Apertura', objection: '🛡️ Objeción',
+        scheduling: '📅 Cerrar', voicemail: '📭 Buzón', general: '📝 General',
       };
-      // Colores por categoría para distinguir visualmente
       const triggerColors = {
-        rules: '#9D85F2', before_call: '#7dd3fc',
+        before_call: '#7dd3fc',
         gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
         ask_meeting: '#FFB341', confirm: '#FFB341',
         objection_brushoff: '#FFB341', objection_real: '#f85149',
@@ -4095,18 +4100,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ai = triggerOrder.indexOf(a); const bi = triggerOrder.indexOf(b);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
       });
+      if (sortedTriggers.length === 0) {
+        triggersBar.innerHTML = '<span style="font-size:11px; color:rgba(255,255,255,0.4); padding:6px 4px;">Sin resultados para esa búsqueda.</span>';
+        return;
+      }
       triggersBar.innerHTML = sortedTriggers.map((trigger) => {
-        const scripts = grouped[trigger];
+        const list = grouped[trigger];
         const color = triggerColors[trigger] || 'rgba(255,255,255,0.5)';
-        return scripts.map(s => `
-          <button class="btn-table-action tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10px; padding:5px 9px; background:var(--bg-app); border:1px solid ${color}33; border-radius:6px; cursor:pointer; color:${color};">
+        return list.map(s => `
+          <button class="tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10.5px; padding:5px 10px; background:rgba(255,255,255,0.03); border:1px solid ${color}40; border-radius:7px; cursor:pointer; color:${color}; transition:all 0.15s; font-weight:500;">
             ${triggerLabels[trigger] || s.trigger} · ${escHtml(s.label)}
           </button>
         `).join('');
       }).join('');
-      // Pre-cargar el primer script no-meta (saltea 'rules' que son recordatorios)
-      const firstActionable = _callScriptsCache.find(s => s.trigger !== 'rules') || _callScriptsCache[0];
-      if (firstActionable) _selectScript(firstActionable.id);
       // Wire clicks
       triggersBar.querySelectorAll('.tlx-script-btn').forEach(btn => {
         btn.addEventListener('click', () => _selectScript(btn.dataset.scriptId));
@@ -4119,12 +4125,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!s || !textEl) return;
       textEl.textContent = _interpolateScript(s.text, _currentCallLead);
       textEl.dataset.scriptId = scriptId;
-      // Marcar botón activo
+      // Marcar botón activo (compat con el nuevo styling del panel rediseñado)
       document.querySelectorAll('.tlx-script-btn').forEach(btn => {
         const active = btn.dataset.scriptId === scriptId;
-        btn.style.background = active ? 'rgba(157,133,242,0.18)' : 'var(--bg-app)';
-        btn.style.borderColor = active ? 'var(--accent)' : 'var(--border-color)';
-        btn.style.color = active ? 'var(--accent)' : '';
+        if (active) {
+          btn.style.background = 'rgba(157,133,242,0.18)';
+          btn.style.borderColor = 'var(--accent)';
+          btn.style.boxShadow = '0 0 0 1px rgba(157,133,242,0.4)';
+          btn.style.fontWeight = '600';
+        } else {
+          btn.style.background = 'rgba(255,255,255,0.03)';
+          btn.style.boxShadow = '';
+          btn.style.fontWeight = '500';
+          // El borderColor original se setea en el render — no lo tocamos
+        }
       });
     }
 
@@ -4148,6 +4162,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       else _openScriptPanel();
     });
     document.getElementById('telnyx-script-close')?.addEventListener('click', _closeScriptPanel);
+    // Buscador interno del panel de scripts: re-renderiza botones filtrados
+    document.getElementById('telnyx-script-search')?.addEventListener('input', (e) => {
+      _renderScriptButtons(_callScriptsCache, e.target.value);
+    });
     document.getElementById('telnyx-script-copy')?.addEventListener('click', async () => {
       const text = document.getElementById('telnyx-script-text')?.textContent || '';
       if (!text) return;
