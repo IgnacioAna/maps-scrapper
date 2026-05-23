@@ -6166,6 +6166,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderHoyWidget() {
       const widget = document.getElementById('hoy-widget');
       if (!widget) return;
+      // Solo setters ven el widget "Hoy" — admin/supervisor no trabajan leads
+      // dia a dia, el widget no aporta valor (mostraba "0 leads tocados" siempre).
+      // Si admin entra en "Ver como setter", el effectiveRole pasaria a 'setter'
+      // y entonces si lo ven. Para ahora: solo role real = setter.
+      if (currentUser?.role !== 'setter') { widget.style.display = 'none'; return; }
       const leads = Array.isArray(setterLeads) ? setterLeads : [];
       if (leads.length === 0) { widget.style.display = 'none'; return; }
 
