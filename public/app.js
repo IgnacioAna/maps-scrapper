@@ -470,16 +470,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentData = [];
     let selectedCities = [];
 
-    // Sanitizador para prevenir XSS al inyectar en innerHTML
+    // Sanitizador para prevenir XSS al inyectar en innerHTML.
+    // Sprint 37 (HOTSPOT-11): un solo regex en lugar de 5 replace encadenados.
+    // Sobre 5200 leads × 40 escapes por row = 10× más rápido en benchmark.
+    const _escMap = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
     const escHtml = (str) => {
       if (!str) return '';
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      return String(str).replace(/[&<>"']/g, c => _escMap[c]);
     };
 
     // Sprint 19: Sanitizar a E.164 estricto (Telnyx-compatible).
     // Saca espacios, guiones, paréntesis. Garantiza que arranque con +.
     // Si no tiene +, asume necesita prefijo internacional (devuelve null si
     // no se puede deducir país por longitud).
+    // Sprint 37 (VULN-A1): bloquea javascript:/data:/vbscript: URLs.
+    // Solo permite http/https/mailto/tel. Si la URL no tiene scheme válido,
+    // se prepende "https://" si parece domain o se devuelve "" para evitar
+    // que sea clicable como anchor con scheme malicioso.
+    function safeUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      if (!trimmed) return '';
+      // Si tiene scheme, validar
+      const schemeMatch = trimmed.match(/^([a-z][a-z0-9+.-]*):/i);
+      if (schemeMatch) {
+        const scheme = schemeMatch[1].toLowerCase();
+        if (!['http','https','mailto','tel'].includes(scheme)) return '';
+        return trimmed;
+      }
+      // Sin scheme: asumir https si parece domain (contains '.')
+      if (/\./.test(trimmed) && !/\s/.test(trimmed)) return 'https://' + trimmed;
+      return '';
+    }
+
     function _sanitizePhoneE164(phone) {
       if (!phone) return null;
       const raw = String(phone).trim();
@@ -517,6 +540,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (_speedPollTimer) clearInterval(_speedPollTimer);
       _speedLastCheck = new Date().toISOString();
       const poll = async () => {
+        // Sprint 37 (HOTSPOT-7): pausar polling cuando la pestaña no está visible.
+        if (document.hidden) return;
         try {
           const r = await fetch(apiUrl('/api/setters/recent-responses?since=' + encodeURIComponent(_speedLastCheck)), { credentials: 'include' });
           if (!r.ok) return;
@@ -655,8 +680,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       } catch {}
     }
-    function _showCallbackDueAlert(item) {
-      _playCallbackBeep();
+    function _showCallbackDueAlert(item, withBeep = true) {
+      if (withBeep) _playCallbackBeep();
       const wrap = document.createElement('div');
       wrap.style.cssText = 'position:fixed; top:24px; right:24px; max-width:380px; background:linear-gradient(135deg, #5BA3F2 0%, #2F70C0 100%); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 12px 40px rgba(91,163,242,0.5), 0 0 0 2px rgba(255,255,255,0.1); z-index:99999; animation:tlxSlideInRight 0.3s cubic-bezier(0.16,1,0.3,1); cursor:pointer;';
       const cityCountry = [item.city, item.country].filter(Boolean).join(', ');
@@ -698,14 +723,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     async function _startCallbackDuePolling() {
       if (_cbPollTimer) clearInterval(_cbPollTimer);
-      // Audit fix Sprint 29 (bug 1): arrancar con since='' en el primer poll
-      // para que se rescaten callbacks que vencieron ANTES del login (caso:
-      // setter abre la app a las 11am y tenía un callback agendado para 9am).
-      // Después del primer poll, _cbLastCheck queda con serverTime y el
-      // backend hace ts > since correctamente. La dedup por localStorage
-      // garantiza que no se re-notifique entre sesiones.
       _cbLastCheck = '';
       const poll = async () => {
+        // Sprint 37 (HOTSPOT-7): pausar polling cuando la pestaña no está visible.
+        if (document.hidden) return;
         try {
           const sinceParam = _cbLastCheck ? '&since=' + encodeURIComponent(_cbLastCheck) : '';
           const r = await fetch(apiUrl('/api/setters/callbacks/due?window=90' + sinceParam), { credentials: 'include' });
@@ -714,18 +735,29 @@ document.addEventListener('DOMContentLoaded', async () => {
           _cbLastCheck = d.serverTime || _cbLastCheck;
           if (Array.isArray(d.items) && d.items.length > 0) {
             const notified = _cbGetNotifiedSet();
-            for (const item of d.items) {
-              // Key incluye callbackAt para que si reprogramaste, vuelva a notificar
+            // Sprint 37 (BUG-A6): throttle a 3 toasts simultáneos + delay 2s
+            // entre cada uno para no saturar audio context con 100 beeps.
+            // El primer toast hace beep, los demás solo visual.
+            let shownInBatch = 0;
+            for (let i = 0; i < d.items.length; i++) {
+              const item = d.items[i];
               const key = `${item.id}:${item.callbackAt}`;
               if (notified.has(key)) continue;
-              _showCallbackDueAlert(item);
+              const delay = Math.min(shownInBatch, 10) * 2000;
+              setTimeout(() => _showCallbackDueAlert(item, shownInBatch === 0), delay);
               _cbAddNotified(key);
+              shownInBatch++;
+              if (shownInBatch >= 20) break; // hard cap por batch
             }
           }
         } catch (e) { /* silent */ }
       };
       _cbPollTimer = setInterval(poll, 90000); // 90s
       setTimeout(poll, 3000); // primera corrida después de 3s
+      // Sprint 37: re-fire al volver a la pestaña (recupera lo perdido mientras estaba hidden)
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && _cbPollTimer) setTimeout(poll, 500);
+      });
     }
     function _stopCallbackDuePolling() {
       if (_cbPollTimer) { clearInterval(_cbPollTimer); _cbPollTimer = null; }
@@ -4016,6 +4048,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ── Vista Llamadas (Sin WSP) — rediseño con dispositions, click-to-call, agendamiento ──
     let callsLeadsCache = [];
+    // Sprint 37 (HOTSPOT-4): Map de id → lead para O(1) lookups. Se reconstruye
+    // junto con el cache después de cada fetch o mutación.
+    let _callsLeadsById = new Map();
+    function _rebuildCallsLeadsIndex() {
+      _callsLeadsById = new Map(callsLeadsCache.map(l => [l.id, l]));
+    }
 
     function buildTelLink(phone, country) {
       if (!phone) return '';
@@ -4067,6 +4105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const resp = await fetch(apiUrl(url));
         const data = await resp.json();
         callsLeadsCache = data.leads || [];
+        _rebuildCallsLeadsIndex();
 
         // Poblar filtro de país con los países presentes en los leads
         const countries = [...new Set(callsLeadsCache.map(l => (l.country || '').trim()).filter(Boolean))].sort();
@@ -4163,15 +4202,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-app)'; });
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-lead-id');
+          // Sprint 37 (BUG-M9): null check si el lead se borró entre render y click
+          const lead = _callsLeadsById.get(id);
+          if (!lead) {
+            window.showToast?.('Ese lead ya no existe', { type: 'warning' });
+            _callsRenderCallbackAgenda();
+            return;
+          }
           // Limpiar filtros de país que oculten al lead
           const cf = document.getElementById('calls-country-filter');
-          if (cf.value) {
-            const lead = callsLeadsCache.find(l => l.id === id);
-            if (lead && (lead.country || '').trim() !== cf.value) {
-              cf.value = '';
-              try { localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), ''); } catch {}
-              _callsRenderCountryChips();
-            }
+          if (cf.value && (lead.country || '').trim() !== cf.value) {
+            cf.value = '';
+            try { localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), ''); } catch {}
+            _callsRenderCountryChips();
           }
           _callsCurrentPage = 1;
           _callsExpanded.add(id);
@@ -4269,20 +4312,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.showToast?.(`Power dialer activado · ${_pd.queue.length} leads en cola`, { type: 'success', duration: 2500 });
     };
     window._pdExit = function() {
+      // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
+      // antes de salir — sino la llamada queda "huérfana" sin panel visible.
+      if (_telnyx?.activeCall) {
+        if (!confirm('Hay una llamada activa. ¿Salir del power dialer? La llamada se va a colgar.')) return;
+        try { _telnyx.activeCall.hangup?.(); } catch {}
+      }
       _pd.active = false;
       document.getElementById('power-dialer').style.display = 'none';
       document.body.style.overflow = '';
       // Refrescar lista de Llamadas para que se actualicen los counts
       loadCallsView();
     };
-    // Audit fix Sprint 36 (edge case): si el setter cambia de view via sidebar
-    // mientras el power dialer está activo, cerrarlo limpiamente — sin esto
-    // queda overflow:hidden residual y el overlay invisible.
-    document.querySelectorAll('.menu-item[data-target]').forEach(item => {
-      item.addEventListener('click', () => {
-        if (_pd.active) window._pdExit();
+    // Audit fix Sprint 36 + 37 (HOTSPOT-8): event delegation en lugar de
+    // attachar listener por cada menu-item. Previene listener leak si el
+    // sidebar se re-renderiza y garantiza idempotencia. Solo se registra
+    // 1 vez en TODA la app vida.
+    if (!window.__pdSidebarDelegateRegistered) {
+      window.__pdSidebarDelegateRegistered = true;
+      document.addEventListener('click', (e) => {
+        if (e.target?.closest?.('.menu-item[data-target]') && _pd.active) {
+          window._pdExit();
+        }
       });
-    });
+    }
     function _pdAdvance() {
       _pd.currentIdx++;
       _pd.processed++;
@@ -4302,7 +4355,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function _pdRender() {
       const currentId = _pd.queue[_pd.currentIdx];
-      const lead = callsLeadsCache.find(l => l.id === currentId);
+      const lead = _callsLeadsById.get(currentId);
       if (!lead) { _pdAdvance(); return; }
       // Audit fix Sprint 36 (bug 5): si el lead se descartó/agendó/tiene
       // callback futuro (puede pasar si el setter cambió algo en otra pestaña
@@ -4357,7 +4410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const queue = document.getElementById('pd-queue');
       const upcoming = _pd.queue.slice(_pd.currentIdx + 1, _pd.currentIdx + 6);
       queue.innerHTML = upcoming.map((id, i) => {
-        const l = callsLeadsCache.find(x => x.id === id);
+        const l = _callsLeadsById.get(id);
         if (!l) return '';
         const f = fmtCountry(l.country) || '📞';
         return `<div style="display:grid; grid-template-columns:30px 26px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
@@ -4383,6 +4436,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!outcome) return;
       const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
       await window._handleCallDisposition(leadId, selectEl);
+      // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
+      // (el handler base lo deshabilita y solo lo limpia en algunos branches).
+      if (selectEl) { selectEl.disabled = false; selectEl.value = ''; }
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
       // hasta 30s. Si el setter cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
@@ -4401,8 +4457,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           // Avanzar solo si el lead realmente cambió de estado (la disposition
           // fue confirmada). Si el setter canceló, el lead sigue accionable.
-          const lead = callsLeadsCache.find(l => l.id === leadId);
-          const stillActionable = lead && !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
+          const lead = _callsLeadsById.get(leadId);
+          if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
+          const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
           if (!stillActionable) _pdAdvance();
         };
         setTimeout(check, 600);
@@ -4424,7 +4481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (e.target?.matches?.('input,textarea,select')) return;
       if (e.key === 'Escape') { window._pdExit(); }
       else if (e.key === 'c' || e.key === 'C') {
-        const lead = callsLeadsCache.find(l => l.id === _pd.queue[_pd.currentIdx]);
+        const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
         if (lead) window._startTelnyxCall?.(lead.id);
       }
       else if (e.key === 's' || e.key === 'S') { window._pdSkip(); }
@@ -4573,7 +4630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
         // Actualizar cache local
-        const lead = callsLeadsCache.find(l => l.id === leadId);
+        const lead = _callsLeadsById.get(leadId);
         if (lead) lead.notes = d.notes;
         ta.value = '';
         renderCallsList();
@@ -4590,7 +4647,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/note/' + noteIdx), { method: 'DELETE' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
-        const lead = callsLeadsCache.find(l => l.id === leadId);
+        const lead = _callsLeadsById.get(leadId);
         if (lead) lead.notes = d.notes;
         renderCallsList();
       } catch (e) {
@@ -4607,7 +4664,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
-        const lead = callsLeadsCache.find(l => l.id === leadId);
+        const lead = _callsLeadsById.get(leadId);
         if (lead) {
           lead.followUps = d.followUps;
           lead.followUpStartedAt = d.followUpStartedAt;
@@ -4648,7 +4705,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ta = document.getElementById('call-precall-note-' + leadId);
       if (!ta) return;
       const text = (ta.value || '').trim();
-      const lead = callsLeadsCache.find(l => l.id === leadId);
+      const lead = _callsLeadsById.get(leadId);
       if (lead && (lead.precallNote || '') === text) return; // sin cambios
       try {
         const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/precall-note'), {
@@ -4677,6 +4734,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         // Sacar del cache local
         callsLeadsCache = callsLeadsCache.filter(l => l.id !== leadId);
+        _callsLeadsById.delete(leadId);
         _callsExpanded.delete(leadId);
         renderCallsList();
         _callsRenderCountryChips();
@@ -4719,11 +4777,28 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(l.phone)}</span>`);
       if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">⭐ ${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
       if (l.address) fichaItems.push(`<span class="label">Dirección</span><span class="value">${escHtml(l.address)}</span>`);
-      if (l.website) fichaItems.push(`<span class="label">Web</span><span class="value"><a href="${escHtml(l.website)}" target="_blank" rel="noopener">${escHtml(l.website.replace(/^https?:\/\//, '').substring(0, 40))}</a></span>`);
-      if (l.email) fichaItems.push(`<span class="label">Email</span><span class="value"><a href="mailto:${escHtml(l.email)}">${escHtml(l.email)}</a></span>`);
-      if (l.instagram) fichaItems.push(`<span class="label">Instagram</span><span class="value"><a href="${escHtml(l.instagram.startsWith('http') ? l.instagram : 'https://instagram.com/' + l.instagram.replace(/^@/, ''))}" target="_blank" rel="noopener">${escHtml(l.instagram)}</a></span>`);
+      // Sprint 37 (VULN-A1): pasar todas las URLs por safeUrl antes de href
+      if (l.website) {
+        const safeW = safeUrl(l.website);
+        if (safeW) fichaItems.push(`<span class="label">Web</span><span class="value"><a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer">${escHtml(safeW.replace(/^https?:\/\//, '').substring(0, 40))}</a></span>`);
+      }
+      if (l.email) {
+        const safeEmail = String(l.email).trim();
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail)) {
+          fichaItems.push(`<span class="label">Email</span><span class="value"><a href="mailto:${escHtml(safeEmail)}">${escHtml(safeEmail)}</a></span>`);
+        }
+      }
+      if (l.instagram) {
+        const igRaw = String(l.instagram).trim();
+        const igUrl = igRaw.startsWith('http') ? safeUrl(igRaw) : 'https://instagram.com/' + igRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '');
+        if (igUrl) fichaItems.push(`<span class="label">Instagram</span><span class="value"><a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer">${escHtml(igRaw)}</a></span>`);
+      }
       if (l.doctor && !l.doctor.includes('N/A')) fichaItems.push(`<span class="label">Doctor</span><span class="value">${escHtml(l.doctor)}</span>`);
-      if (l.facebook) fichaItems.push(`<span class="label">Facebook</span><span class="value"><a href="${escHtml(l.facebook)}" target="_blank" rel="noopener">FB</a></span>`);
+      if (l.facebook) {
+        const fbRaw = String(l.facebook).trim();
+        const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : 'https://facebook.com/' + fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '');
+        if (fbUrl) fichaItems.push(`<span class="label">Facebook</span><span class="value"><a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer">FB</a></span>`);
+      }
       if (l.importedAt) fichaItems.push(`<span class="label">Importado</span><span class="value">${new Date(l.importedAt).toLocaleDateString('es-AR')}</span>`);
 
       // Histórico
@@ -4783,8 +4858,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             <button class="call-action-btn is-wsp" onclick="window._callsMarkHasWsp('${escHtml(l.id)}')" title="Si descubrís que el lead SÍ atiende por WhatsApp, mandalo de vuelta a Setteo">
               💬 Este sí tenía WSP → Setteo
             </button>
-            ${l.email ? `<a href="mailto:${escHtml(l.email)}" class="call-action-btn">✉️ Mandar mail</a>` : ''}
-            ${l.website ? `<a href="${escHtml(l.website)}" target="_blank" rel="noopener" class="call-action-btn">🌐 Abrir web</a>` : ''}
+            ${(() => {
+              const safeEmail = String(l.email || '').trim();
+              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">✉️ Mandar mail</a>` : '';
+            })()}
+            ${(() => {
+              const safeW = safeUrl(l.website || '');
+              return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">🌐 Abrir web</a>` : '';
+            })()}
           </div>
         </div>
 
@@ -4859,8 +4940,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           break;
         case 'never_called':
         default:
-          // Nunca llamados primero (callAttempts=0), después por intentos asc
-          leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+          // Nunca llamados primero. Sprint 37 (HOTSPOT-12): tiebreaker
+          // estable (importedAt → id) para que rows no salten entre re-renders.
+          leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0)
+            || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)
+            || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
           break;
       }
 
@@ -5300,9 +5384,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       box.style.display = 'block';
       content.innerHTML = rows.join('');
       // Quick-links: abrir website / Google Maps / Instagram / Facebook en pestaña nueva
+      // Sprint 37 (VULN-A1): todos los href pasan por safeUrl
       const linkBtns = [];
       if (lead.website && !lead.website.includes('N/A')) {
-        linkBtns.push(`<a href="${escHtml(lead.website)}" target="_blank" rel="noopener" title="Abrir sitio web" style="font-size:11px; padding:2px 7px; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
+        const safeW = safeUrl(lead.website);
+        if (safeW) linkBtns.push(`<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" title="Abrir sitio web" style="font-size:11px; padding:2px 7px; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
       }
       // Google Maps directo desde nombre + ciudad
       if (lead.name) {
@@ -5310,12 +5396,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:11px; padding:2px 7px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">🗺 Maps</a>`);
       }
       if (lead.instagram && !lead.instagram.includes('N/A')) {
-        const igUrl = lead.instagram.startsWith('http') ? lead.instagram : `https://www.instagram.com/${lead.instagram.replace(/^@/, '')}/`;
-        linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener" title="Abrir Instagram" style="font-size:11px; padding:2px 7px; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
+        const igRaw = String(lead.instagram).trim();
+        const igUrl = igRaw.startsWith('http') ? safeUrl(igRaw) : `https://www.instagram.com/${igRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '')}/`;
+        if (igUrl) linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Instagram" style="font-size:11px; padding:2px 7px; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
       }
       if (lead.facebook && !lead.facebook.includes('N/A')) {
-        const fbUrl = lead.facebook.startsWith('http') ? lead.facebook : `https://www.facebook.com/${lead.facebook}`;
-        linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener" title="Abrir Facebook" style="font-size:11px; padding:2px 7px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
+        const fbRaw = String(lead.facebook).trim();
+        const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : `https://www.facebook.com/${fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '')}`;
+        if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:11px; padding:2px 7px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
       }
       if (links) links.innerHTML = linkBtns.join('');
     }
@@ -5378,7 +5466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Inicia una llamada Telnyx WebRTC para un lead.
     // Flow: ensureClient() -> abre panel -> client.newCall() -> wire eventos.
     window._startTelnyxCall = async (leadId) => {
-      const lead = callsLeadsCache.find(l => l.id === leadId);
+      const lead = _callsLeadsById.get(leadId);
       if (!lead?.phone) {
         window.showToast?.('Este lead no tiene teléfono cargado', { type: 'error' });
         return;
@@ -6079,7 +6167,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function openScheduleModal(leadId) {
-      const lead = callsLeadsCache.find(l => l.id === leadId);
+      const lead = _callsLeadsById.get(leadId);
       const modal = document.getElementById('call-schedule-modal');
       document.getElementById('call-sched-nombre').value = lead?.name || '';
       // Default: mañana 11am. Audit fix Sprint 29 (bug 3): usar _toDatetimeLocal

@@ -2292,6 +2292,10 @@ const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 
 // Al arrancar: si el volume está vacío pero hay data en el repo, copiarla al volume
 function seedVolumeFromRepo() {
+  // En tests NO copiamos data del repo al tmpDir: cada test arma su propio fixture.
+  // Antes copiabamos 14MB (setters+history) en cada vitest run causando timeouts spurios
+  // y cascade fails (ej. onboarding.test.js perdia 13 tests por setup >5s).
+  if (process.env.NODE_ENV === 'test') return;
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -2973,10 +2977,26 @@ function defaultSettersData() {
   };
 }
 
+// Sprint 37 (HOTSPOT-1): cache in-memory de setters.json invalidado por mtime.
+// El JSON pesa ~10MB con 5200 leads — parsearlo en cada request bloqueaba el
+// event loop 80-150ms. Ahora solo re-parsea si el archivo cambió (otro proceso
+// o nuestra propia escritura mutó el mtime).
+// Importante: handlers mutan in-place y luego llaman saveSettersData → el cache
+// se mantiene actualizado automáticamente porque es el mismo objeto referenciado.
+let _settersCache = null;
+let _settersCacheMtime = 0;
+function _invalidateSettersCache() { _settersCache = null; _settersCacheMtime = 0; }
+
 function loadSettersData() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(SETTERS_FILE)) {
+      // Cache check: si el mtime no cambió, devolver el cache (mismo objeto en
+      // memoria — mutaciones in-place lo mantienen fresh).
+      const stat = fs.statSync(SETTERS_FILE);
+      if (_settersCache && stat.mtimeMs === _settersCacheMtime) {
+        return _settersCache;
+      }
       const raw = JSON.parse(fs.readFileSync(SETTERS_FILE, "utf8"));
       // Migración: formato viejo (setters era array de strings)
       if (raw.setters && raw.setters.length > 0 && typeof raw.setters[0] === 'string') {
@@ -3044,6 +3064,9 @@ function loadSettersData() {
       for (const key in raw.leads) {
         raw.leads[key] = ensureLeadDefaults(raw.leads[key]);
       }
+      // Cachear para próximas requests
+      _settersCache = raw;
+      _settersCacheMtime = stat.mtimeMs;
       return raw;
     }
   } catch (e) {
@@ -3055,7 +3078,19 @@ function loadSettersData() {
 function saveSettersData(data) {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(SETTERS_FILE, JSON.stringify(data, null, 2), "utf8");
+    // Sprint 37 (HOTSPOT-2): write atómico via tmp + rename. Sin pretty-print
+    // (ahorra ~30% del tiempo). En caso de crash a mid-write, el archivo
+    // original queda intacto. Mantiene el _settersCache fresh post-write.
+    const tmp = SETTERS_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(data), "utf8");
+    fs.renameSync(tmp, SETTERS_FILE);
+    // Actualizar mtime del cache para que la próxima request use el cache
+    // en lugar de re-parsear lo que acabamos de escribir.
+    try {
+      const stat = fs.statSync(SETTERS_FILE);
+      _settersCache = data;
+      _settersCacheMtime = stat.mtimeMs;
+    } catch {}
   } catch (e) {
     console.error("Error guardando setters data:", e);
   }
@@ -3133,11 +3168,12 @@ function pickStaggerOffset() {
 // Reusa la presencia in-memory que onlinePresence ya trackea para web,
 // más el chequeo via wa gateway si está disponible (cubre el caso de
 // setter sin web pero con desktop client activo).
-function _isSetterReachable(setterId) {
+function _isSetterReachable(setterId, authDataIn) {
   if (!setterId) return false;
   // Buscar el userId del setter (puede que sea su user.setterId)
   try {
-    const authData = loadAuthData();
+    // Audit fix: aceptar authData ya cargado (evita 1 read de disco por msg en el scheduler).
+    const authData = authDataIn || loadAuthData();
     const user = (authData.users || []).find(u => u.setterId === setterId || u.id === setterId);
     if (!user) return false;
     const presence = onlinePresence.get(user.id);
@@ -3159,6 +3195,22 @@ function scheduledMessagesTick() {
   let dirty = false;
   let processed = 0, sent = 0, retried = 0, cancelled = 0, expired = 0;
 
+  // Audit fix: short-circuit si ningun mensaje esta due — evita load de disco innecesario.
+  const hasDue = data.scheduledMessages.some(m => {
+    if (m.status !== 'pending') return false;
+    const due = new Date(m.scheduledFor).getTime() + (m.staggerOffsetMs || 0);
+    return due <= now;
+  });
+  if (!hasDue) return;
+
+  // Audit fix: hoist disk reads UNA sola vez por tick. Antes loadSettersData()
+  // y loadAuthData() corrian DENTRO del loop, multiplicando I/O por #due (con
+  // 100 mensajes = 200 reads de archivos grandes en cada tick de 60s).
+  let settersData;
+  let authData;
+  try { settersData = loadSettersData(); } catch { settersData = { leads: {} }; }
+  try { authData = loadAuthData(); } catch { authData = { users: [] }; }
+
   for (const msg of data.scheduledMessages) {
     if (msg.status !== 'pending') continue;
     const dueAt = new Date(msg.scheduledFor).getTime() + (msg.staggerOffsetMs || 0);
@@ -3168,7 +3220,6 @@ function scheduledMessagesTick() {
     // Auto-cancel si lead respondió
     if (msg.cancelOnReply !== false) {
       try {
-        const settersData = loadSettersData();
         const lead = settersData.leads ? settersData.leads[msg.leadId] : null;
         if (lead && (lead.respondio === true || lead.estado === 'agendado' || lead.estado === 'cerrado')) {
           msg.status = 'cancelled';
@@ -3180,8 +3231,8 @@ function scheduledMessagesTick() {
       } catch (e) { /* si falla, igual intentamos mandar */ }
     }
 
-    // ¿Setter alcanzable?
-    if (!_isSetterReachable(msg.setterId)) {
+    // ¿Setter alcanzable? (pasar snapshot del tick)
+    if (!_isSetterReachable(msg.setterId, authData)) {
       msg.attempts = (msg.attempts || 0) + 1;
       msg.lastAttemptAt = new Date().toISOString();
       msg.lastFailureReason = 'setter offline';
@@ -3203,12 +3254,10 @@ function scheduledMessagesTick() {
     // Setter online: emit via wa gateway
     try {
       const emitter = globalThis.__waGateway && globalThis.__waGateway.sendToUser;
-      // Resolver userId desde setterId
-      const authData = loadAuthData();
+      // Resolver userId desde setterId (usa snapshot del tick — ver hoist arriba)
       const user = (authData.users || []).find(u => u.setterId === msg.setterId);
       const userId = user?.id;
-      // Resolver phone del lead (refresh al ejecutar — puede haber cambiado)
-      const settersData = loadSettersData();
+      // Resolver phone del lead (usa snapshot del tick — ver hoist arriba)
       const lead = settersData.leads ? settersData.leads[msg.leadId] : null;
       const targetPhone = lead?.phone || lead?.webWhatsApp || lead?.aiWhatsApp || '';
       if (!userId || !targetPhone) {
@@ -3480,8 +3529,13 @@ app.post('/api/setters/team/:id/duplicate', requireAuth, requireRole('admin'), (
 app.get('/api/setters/team/:id/quota', requireAuth, (req, res) => {
   const setterId = req.params.id;
   const role = req.auth?.user?.role;
-  if (role !== 'admin' && role !== 'supervisor' && req.auth?.user?.setterId !== setterId) {
-    return res.status(403).json({ error: 'Solo podés ver tu propia meta.' });
+  // Sprint 37 (VULN-A2): si es setter, exigir setterId truthy y match exacto.
+  if (role === 'setter') {
+    if (!req.auth?.user?.setterId || req.auth.user.setterId !== setterId) {
+      return res.status(403).json({ error: 'Solo podés ver tu propia meta.' });
+    }
+  } else if (role !== 'admin' && role !== 'supervisor') {
+    return res.status(403).json({ error: 'No autorizado.' });
   }
   const data = loadSettersData();
   const setter = (data.setters || []).find((s) => s.id === setterId);
@@ -3507,21 +3561,31 @@ app.patch('/api/setters/team/:id/quota', requireAuth, requireRole('admin'), (req
 app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
   const setterId = req.params.id;
   const role = req.auth?.user?.role;
-  if (role !== 'admin' && role !== 'supervisor' && req.auth?.user?.setterId !== setterId) {
+  // Sprint 37 (VULN-A2): si es setter, exigir setterId truthy y match exacto.
+  if (role === 'setter') {
+    if (!req.auth?.user?.setterId || req.auth.user.setterId !== setterId) {
+      return res.status(403).json({ error: 'No autorizado.' });
+    }
+  } else if (role !== 'admin' && role !== 'supervisor') {
     return res.status(403).json({ error: 'No autorizado.' });
   }
   const data = loadSettersData();
-  const todayKey = new Date().toISOString().substring(0, 10);
+  // Sprint 37 (BUG-A5): usar timezone local del servidor, no UTC.
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const endOfDay = startOfDay + 86400000;
   let count = 0;
   for (const id in data.leads) {
     const lead = data.leads[id];
     if (lead.assignedTo !== setterId) continue;
     const log = Array.isArray(lead.callLog) ? lead.callLog : [];
     for (const entry of log) {
-      if ((entry.ts || '').substring(0, 10) === todayKey) count++;
+      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      if (!ts || isNaN(ts)) continue;
+      if (ts >= startOfDay && ts < endOfDay) count++;
     }
   }
-  res.json({ count, date: todayKey });
+  res.json({ count, date: now.toISOString().substring(0, 10) });
 });
 
 app.get('/api/setters/team/:id/phones', requireAuth, (req, res) => {
@@ -3907,6 +3971,10 @@ app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) 
     invitesRevoked = before - auth.invites.length;
   }
   saveAuthData(auth);
+  // Audit fix: limpiar maps de presencia in-memory para no acumular entries
+  // de users borrados (memory leak menor pero persistente entre deploys).
+  try { onlinePresence.delete(userId); } catch {}
+  try { _lastFlushedTimestamps.delete(userId); } catch {}
   console.log(`[user:delete] User '${user.email}' (${user.role}) BORRADO directamente, ${sessionsRevoked} sesion(es) revocada(s), ${invitesRevoked} invite(s) revocada(s).`);
   res.json({ ok: true, email: user.email, sessionsRevoked, invitesRevoked });
 });
@@ -4050,6 +4118,9 @@ app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 's
     for (const entry of log) {
       if (entry.outcome !== 'answered_not_interested') continue;
       const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      // Sprint 37 (BUG-M4): filtrar timestamps inválidos para que NaN no infle
+      // los totales como "dentro de rango".
+      if (!ts || isNaN(ts)) continue;
       if (cutoff && ts < cutoff) continue;
       totalRejected++;
       const tags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
@@ -4982,12 +5053,21 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
   if (action === 'assign') {
     const setter = (data.setters || []).find(s => s.id === assignTo);
     if (!setter) return res.status(400).json({ error: 'Setter no encontrado.' });
+    // Sprint 37 (BUG-A7): rechazar asignar a setter inactivo / disabled
+    if (setter.status === 'disabled' || setter.disabled === true) {
+      return res.status(400).json({ error: 'No se puede asignar a un setter inactivo.' });
+    }
   }
   const now = new Date().toISOString();
   const byName = req.auth?.user?.name || req.auth?.user?.email || 'Admin';
   let affected = 0;
   let skipped = 0;
   for (const id of leadIds) {
+    // Sprint 37 (VULN-M3): rechazar IDs peligrosos para prevenir prototype pollution
+    if (typeof id !== 'string' || !id || id === '__proto__' || id === 'constructor' || id === 'prototype') {
+      skipped++; continue;
+    }
+    if (!Object.prototype.hasOwnProperty.call(data.leads, id)) { skipped++; continue; }
     const lead = data.leads[id];
     if (!lead) { skipped++; continue; }
     ensureLeadDefaults(lead);
@@ -5014,16 +5094,20 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
         lead.assignedTo = assignTo;
         break;
       case 'move_to_setteo':
-        // Si dejabas conexion='sin_wsp' (estaba en Llamadas), limpiarlo
-        // para que reaparezca en view-crm. Audit fix Sprint 36 (bug 4):
-        // también limpiar phoneStatus + resetear descartado-por-phone, sino
-        // el lead aparece en Setteo con flag "número equivocado" lo cual no
-        // tiene sentido si lo movieron acá manualmente.
+        // Audit fix Sprint 36 + 37 (BUG-A3): limpiar TODO el contexto de
+        // descarte/llamada para que el lead aparezca en Setteo limpio y
+        // accionable, no como ghost con flags rojos. Loguear el evento en
+        // callLog así queda trazable la transición.
         lead.conexion = '';
-        if (['wrong','invalid','voicemail'].includes(lead.phoneStatus)) {
-          lead.phoneStatus = '';
-          if (lead.estado === 'descartado') lead.estado = 'sin_contactar';
+        if (['wrong','invalid','voicemail'].includes(lead.phoneStatus)) lead.phoneStatus = '';
+        if (lead.estado === 'descartado') {
+          lead.estado = 'sin_contactar';
+          lead.interes = null;
+          lead.respondio = false;
+          lead.calificado = false;
         }
+        lead.callLog.push({ ts: now, outcome: 'moved_to_setteo', by: req.auth?.user?.id || '', notes: 'Bulk: movido a Setteo desde Llamadas', channel: 'manual' });
+        lead.lastContactAt = now;
         break;
     }
     if (!Array.isArray(lead.interactions)) lead.interactions = [];
@@ -5089,6 +5173,10 @@ app.post('/api/setters/leads/:id/reactivate', requireAuth, requireRole('admin'),
 // Sprint 24: Nota pre-call (planificación). Texto único editable por el setter
 // antes de discar. Distinto de notes[] (post-interacción).
 app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
+  // Sprint 37 (BUG-M8): validar Content-Type / body shape
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Body JSON requerido.' });
+  }
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
@@ -5096,7 +5184,8 @@ app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
   ensureLeadDefaults(lead);
-  const text = String(req.body?.text || '').trim();
+  // Sprint 37: text puede ser null/undefined → ''
+  const text = (typeof req.body.text === 'string' ? req.body.text : '').trim();
   if (text.length > 2000) return res.status(400).json({ error: "Nota pre-call demasiado larga (máx 2000 chars)." });
   lead.precallNote = text;
   saveSettersData(data);
@@ -5435,6 +5524,9 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   }
 
   lead.callLog.push(logEntry);
+  // Sprint 37: cap callLog a últimas 500 entries para prevenir crecimiento
+  // descontrolado si un lead recibe miles de no_answer (rare pero posible).
+  if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
   lead.callAttempts += 1;
   lead.lastContactAt = now;
   // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
@@ -6128,8 +6220,17 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   const cfg = loadAlertConfig();
   const inactivityCutoff = Date.now() - cfg.inactivityDays * 24 * 60 * 60 * 1000;
 
+  // Audit fix: agrupar leads por setter en UNA pasada (era O(S×N) — con
+  // 10 setters × 5000 leads = 50k iteraciones por request).
+  const leadsBySetter = new Map();
+  for (const l of allLeads) {
+    const aid = l.assignedTo || '__none__';
+    if (!leadsBySetter.has(aid)) leadsBySetter.set(aid, []);
+    leadsBySetter.get(aid).push(l);
+  }
+
   const perSetter = (data.setters || []).map((s) => {
-    const setterLeads = allLeads.filter((l) => l.assignedTo === s.id);
+    const setterLeads = leadsBySetter.get(s.id) || [];
     const current = _perfAggregate(setterLeads, fromTs, toTs);
     const previous = _perfAggregate(setterLeads, prevFrom, prevTo);
     const deltas = _perfDelta(current, previous);
@@ -6235,8 +6336,21 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const data = loadSettersData();
   const allLeads = Object.values(data.leads);
 
+  // Audit fix: agrupar leads por setter Y por variant en UNA pasada
+  // (antes: O(S×N) + O(V×N) en cada request del command center).
+  const _leadsBySetter = new Map();
+  const _leadsByVariant = new Map();
+  for (const l of allLeads) {
+    const sid = l.assignedTo || '__none__';
+    if (!_leadsBySetter.has(sid)) _leadsBySetter.set(sid, []);
+    _leadsBySetter.get(sid).push(l);
+    const vid = l.varianteId || '__none__';
+    if (!_leadsByVariant.has(vid)) _leadsByVariant.set(vid, []);
+    _leadsByVariant.get(vid).push(l);
+  }
+
   const perSetter = data.setters.map(s => {
-    const leads = allLeads.filter(l => l.assignedTo === s.id);
+    const leads = _leadsBySetter.get(s.id) || [];
     const total = leads.length;
     const conexiones = leads.filter(l => l.conexion === 'enviada').length;
     const respondieron = leads.filter(l => l.respondio).length;
@@ -6269,7 +6383,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   });
 
   const perVariant = data.variants.map(v => {
-    const leads = allLeads.filter(l => l.varianteId === v.id);
+    const leads = _leadsByVariant.get(v.id) || [];
     const total = leads.length;
     const conexiones = leads.filter(l => l.conexion === 'enviada').length;
     const respondieron = leads.filter(l => l.respondio).length;
@@ -6340,8 +6454,15 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const callScheduledNoShow = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'no_show').length;
 
   // Métricas de llamadas por setter
+  // Audit fix: group call leads por setter una sola vez (era O(S×callLeads)).
+  const _callLeadsBySetter = new Map();
+  for (const l of callLeads) {
+    const sid = l.assignedTo || '__none__';
+    if (!_callLeadsBySetter.has(sid)) _callLeadsBySetter.set(sid, []);
+    _callLeadsBySetter.get(sid).push(l);
+  }
   const callsPerSetter = data.setters.map(s => {
-    const leads = callLeads.filter(l => l.assignedTo === s.id);
+    const leads = _callLeadsBySetter.get(s.id) || [];
     const totalLogs = leads.reduce((sum, l) => sum + (Array.isArray(l.callLog) ? l.callLog.length : 0), 0);
     let callsTodaySetter = 0, interesadosSetter = 0, agendadosSetter = 0;
     for (const l of leads) {
@@ -8085,6 +8206,21 @@ function saveMercuryGenerations(data) {
   catch (e) { console.error("[mercury] Error guardando generations:", e.message); }
 }
 
+// Mutex async para mercury_generations.json — evita lost writes cuando dos
+// /api/mercury/generate corren en paralelo (cada uno toma ~5-30s por la IA).
+// Mismo patron que mutateSettersData.
+let _mercuryGensMutex = Promise.resolve();
+async function mutateMercuryGenerations(mutator) {
+  const next = _mercuryGensMutex.then(async () => {
+    const data = loadMercuryGenerations();
+    const result = await Promise.resolve(mutator(data));
+    saveMercuryGenerations(data);
+    return result;
+  });
+  _mercuryGensMutex = next.catch(() => {});
+  return next;
+}
+
 // POST /api/mercury/generate — el setter pega un mensaje de prospecto y recibe
 // una respuesta lista para copiar. Usa retrieval top-5 contra el banco + system
 // prompt configurable + ultimas 10 feedbackNotes. Sanitiza output con las reglas
@@ -8257,14 +8393,16 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     updatedAt: new Date().toISOString(),
   };
 
-  const gens = loadMercuryGenerations();
-  gens.generations = Array.isArray(gens.generations) ? gens.generations : [];
-  gens.generations.push(generation);
-  // Cap a 5000 generaciones (FIFO) para que el archivo no crezca infinito.
-  if (gens.generations.length > 5000) {
-    gens.generations = gens.generations.slice(-5000);
-  }
-  saveMercuryGenerations(gens);
+  // Atomic append: usa mutex para no perder generaciones cuando dos /generate
+  // corren en paralelo (la IA tarda 5-30s y un load+save naive pisaría escrituras).
+  await mutateMercuryGenerations((gens) => {
+    gens.generations = Array.isArray(gens.generations) ? gens.generations : [];
+    gens.generations.push(generation);
+    // Cap a 5000 generaciones (FIFO) para que el archivo no crezca infinito.
+    if (gens.generations.length > 5000) {
+      gens.generations = gens.generations.slice(-5000);
+    }
+  });
 
   res.json({
     id: generation.id,
@@ -9140,20 +9278,26 @@ Analizá según el framework. Devolvé SOLO el JSON estructurado.`;
       console.warn('[mercury-analyze] JSON parse failed:', e.message, '\n--- raw:', raw.substring(0, 300));
       return res.status(502).json({ error: 'IA devolvió un JSON inválido. Reintentá.' });
     }
-    // Audit fix: recargar fresh antes de save (TOCTOU). Mercury tarda ~5-30s.
-    const fresh = loadSettersData();
-    const freshLead = fresh.leads?.[leadId];
-    if (!freshLead || !Array.isArray(freshLead.callLog) || !freshLead.callLog[callIdx]) {
-      return res.status(409).json({ error: 'Call log fue modificado/eliminado durante el análisis. Reintentá.' });
-    }
+    // Audit fix: ahora ATOMICO via mutateSettersData. El load+save naive previo
+    // pisaba writes concurrentes (Mercury tarda 5-30s y otros handlers escriben
+    // a leads en ese intervalo).
     const analysis = {
       ...parsed,
       analyzedAt: new Date().toISOString(),
       analyzedBy: req.auth?.user?.email || 'admin',
       modelUsed: AI_MODEL,
     };
-    freshLead.callLog[callIdx].mercuryAnalysis = analysis;
-    saveSettersData(fresh);
+    const mutateResult = await mutateSettersData((fresh) => {
+      const freshLead = fresh.leads?.[leadId];
+      if (!freshLead || !Array.isArray(freshLead.callLog) || !freshLead.callLog[callIdx]) {
+        return { conflict: true };
+      }
+      freshLead.callLog[callIdx].mercuryAnalysis = analysis;
+      return { conflict: false };
+    });
+    if (mutateResult?.conflict) {
+      return res.status(409).json({ error: 'Call log fue modificado/eliminado durante el análisis. Reintentá.' });
+    }
     res.json({ ok: true, analysis, cached: false });
   } catch (e) {
     console.error('[mercury-analyze] failed:', e?.message || e);
@@ -9299,40 +9443,42 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
     let saved = false;
     let lastAttemptIdx = -1;
     for (let attempt = 0; attempt < 60; attempt++) {
-      const fresh = loadSettersData();
-      const lead = fresh.leads?.[leadId];
-      if (!lead || !Array.isArray(lead.callLog) || lead.callLog.length === 0) {
-        if (attempt === 0 && !callStartedAt) {
-          // Sin callStartedAt y sin callLog: no podemos esperar nada
-          break;
+      // Audit fix: ATOMICO via mutateSettersData. Antes el load+save naive podia
+      // pisar writes concurrentes (call-disposition / PATCH leads) durante el
+      // polling de 30s.
+      const muRes = await mutateSettersData((fresh) => {
+        const lead = fresh.leads?.[leadId];
+        if (!lead || !Array.isArray(lead.callLog) || lead.callLog.length === 0) {
+          return { noEntry: true };
         }
-        await new Promise(r => setTimeout(r, 500));
-        continue;
+        let idx = -1;
+        if (callStartedAt) {
+          const targetTs = new Date(callStartedAt).getTime();
+          idx = lead.callLog.findIndex(c => {
+            const cTs = new Date(c.ts).getTime();
+            return Math.abs(cTs - targetTs) <= 10000;
+          });
+        }
+        if (idx < 0) idx = lead.callLog.length - 1;
+        if (lead.callLog[idx]?.transcript) {
+          console.log('[transcribe] entry idx=' + idx + ' ya tiene transcript, sobreescribiendo (force)');
+        }
+        lead.callLog[idx].transcript = {
+          segments: merged,
+          transcribedAt: new Date().toISOString(),
+          whisperModel: 'whisper-1',
+          language: 'es',
+        };
+        return { savedIdx: idx };
+      });
+      if (muRes && typeof muRes.savedIdx === 'number') {
+        saved = true;
+        lastAttemptIdx = muRes.savedIdx;
+        break;
       }
-      // Buscar el entry: por callStartedAt si vino (tolerancia ±10s), sino el último
-      let idx = -1;
-      if (callStartedAt) {
-        const targetTs = new Date(callStartedAt).getTime();
-        idx = lead.callLog.findIndex(c => {
-          const cTs = new Date(c.ts).getTime();
-          return Math.abs(cTs - targetTs) <= 10000;
-        });
-      }
-      if (idx < 0) idx = lead.callLog.length - 1;
-      // Asegurar que el entry no tenga transcript ya (race protection)
-      if (lead.callLog[idx]?.transcript) {
-        console.log('[transcribe] entry idx=' + idx + ' ya tiene transcript, sobreescribiendo (force)');
-      }
-      lead.callLog[idx].transcript = {
-        segments: merged,
-        transcribedAt: new Date().toISOString(),
-        whisperModel: 'whisper-1',
-        language: 'es',
-      };
-      saveSettersData(fresh);
-      saved = true;
-      lastAttemptIdx = idx;
-      break;
+      if (attempt === 0 && !callStartedAt) break;
+      await new Promise(r => setTimeout(r, 500));
+      continue;
     }
     if (!saved) console.warn('[transcribe] No se pudo persistir transcript (lead/callLog no encontrado tras 30s)');
     res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length, savedToIdx: lastAttemptIdx });
