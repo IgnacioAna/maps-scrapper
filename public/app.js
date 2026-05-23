@@ -754,10 +754,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       _cbPollTimer = setInterval(poll, 90000); // 90s
       setTimeout(poll, 3000); // primera corrida después de 3s
-      // Sprint 37: re-fire al volver a la pestaña (recupera lo perdido mientras estaba hidden)
-      document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && _cbPollTimer) setTimeout(poll, 500);
-      });
+      // Sprint 37 (re-audit fix): visibilitychange listener una sola vez en
+      // toda la vida de la app (sino acumula handlers en cada re-login).
+      if (!window.__cbVisibilityRegistered) {
+        window.__cbVisibilityRegistered = true;
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && _cbPollTimer) setTimeout(() => {
+            // re-disparar el polling al volver (sin redeclarar poll)
+            _cbPollTimer && _cbPollTimer._fn?.();
+          }, 500);
+        });
+      }
+      // Guardar fn en el timer para que el visibilitychange pueda invocarlo
+      if (_cbPollTimer) _cbPollTimer._fn = poll;
     }
     function _stopCallbackDuePolling() {
       if (_cbPollTimer) { clearInterval(_cbPollTimer); _cbPollTimer = null; }
@@ -4289,7 +4298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         case 'attempts_desc':leads.sort((a, b) => (b.callAttempts || 0) - (a.callAttempts || 0)); break;
         case 'attempts_asc': leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0)); break;
         case 'last_call':    leads.sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a)); break;
-        default:             leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0));
+        default:             leads.sort((a, b) => (a.callAttempts || 0) - (b.callAttempts || 0)
+                                || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)
+                                || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
       }
       return leads.map(l => l.id);
     }

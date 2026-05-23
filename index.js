@@ -1405,13 +1405,34 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
     let faqs = null, training = null;
     try { faqs = loadFaqs(); } catch {}
     try { training = loadTraining(); } catch {}
+    // Audit fix (2026-05-23): los siguientes archivos antes NO se exportaban —
+    // un container nuevo de Railway perdia config Mercury, generaciones, alertas,
+    // config Telnyx, eventos, scripts y mensajes programados. Mismo bug historico
+    // que tuvimos con faqs/training. Cada loader esta en try/catch para que un
+    // archivo corrupto no rompa el export entero.
+    let mercuryConfig = null, mercuryGenerations = null, alertConfig = null;
+    let telnyxConfig = null, telnyxEvents = null, callScripts = null, scheduledMessages = null;
+    try { mercuryConfig = loadMercuryConfig(); } catch {}
+    try { mercuryGenerations = loadMercuryGenerations(); } catch {}
+    try { alertConfig = loadAlertConfig(); } catch {}
+    try { telnyxConfig = loadTelnyxConfig(); } catch {}
+    try { telnyxEvents = loadTelnyxEvents(); } catch {}
+    try { callScripts = loadCallScripts(); } catch {}
+    try { scheduledMessages = loadScheduledMessages(); } catch {}
     res.json({
       exportedAt: new Date().toISOString(),
       history,
       auth,
       setters,
       faqs,
-      training
+      training,
+      mercuryConfig,
+      mercuryGenerations,
+      alertConfig,
+      telnyxConfig,
+      telnyxEvents,
+      callScripts,
+      scheduledMessages
     });
   } catch (e) {
     console.error('Export error:', e);
@@ -5076,6 +5097,7 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
         lead.phoneStatus = 'wrong';
         lead.estado = 'descartado';
         lead.callLog.push({ ts: now, outcome: 'wrong_number', by: req.auth?.user?.id || '', notes: 'Bulk: marcado como número equivocado', channel: 'manual' });
+        if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
         lead.callAttempts += 1;
         lead.lastContactAt = now;
         break;
@@ -5083,6 +5105,7 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
         lead.phoneStatus = 'invalid';
         lead.estado = 'descartado';
         lead.callLog.push({ ts: now, outcome: 'invalid_number', by: req.auth?.user?.id || '', notes: 'Bulk: marcado como inválido', channel: 'manual' });
+        if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
         lead.callAttempts += 1;
         lead.lastContactAt = now;
         break;
@@ -5107,6 +5130,7 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
           lead.calificado = false;
         }
         lead.callLog.push({ ts: now, outcome: 'moved_to_setteo', by: req.auth?.user?.id || '', notes: 'Bulk: movido a Setteo desde Llamadas', channel: 'manual' });
+        if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
         lead.lastContactAt = now;
         break;
     }
@@ -7122,6 +7146,22 @@ function saveFaqs(data) {
   catch (e) { console.error("Error guardando faqs:", e); }
 }
 
+// Mutex async para faqs.json — los handlers POST/PUT esperan a `_autoTagFaq()`
+// (llamada IA de ~3s) ANTES de load+save. Sin mutex, dos requests concurrentes
+// cargan el mismo snapshot, agregan/editan distinto, y el segundo save pisa al
+// primero (TOCTOU). Mismo patron que mutateSettersData / mutateMercuryGenerations.
+let _faqsMutex = Promise.resolve();
+async function mutateFaqs(mutator) {
+  const next = _faqsMutex.then(async () => {
+    const data = loadFaqs();
+    const result = await Promise.resolve(mutator(data));
+    saveFaqs(data);
+    return result;
+  });
+  _faqsMutex = next.catch(() => {});
+  return next;
+}
+
 // GET /api/faqs — listar con búsqueda opcional
 //   sort=usos      (default, más usados primero)
 //   sort=top       (mejor ratio funcionaron/usos; requiere usos>=2 para puntuar)
@@ -7227,7 +7267,6 @@ app.post('/api/faqs', requireAuth, async (req, res) => {
   const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null, variantes = [] } = req.body;
   if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
   const auto = await _autoTagFaq({ pregunta: pregunta.trim(), respuesta: respuesta.trim(), categoria, tags });
-  const data = loadFaqs();
   const entry = {
     id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     pregunta: pregunta.trim(),
@@ -7243,8 +7282,12 @@ app.post('/api/faqs', requireAuth, async (req, res) => {
     usos: 0,
     funcionaron: 0
   };
-  data.entries.push(entry);
-  saveFaqs(data);
+  // Audit fix: ATOMICO via mutateFaqs. Antes era load+save naive despues de un await
+  // (TOCTOU race entre POST concurrentes que cargaban el mismo snapshot).
+  await mutateFaqs((data) => {
+    data.entries = data.entries || [];
+    data.entries.push(entry);
+  });
   res.json({ entry });
 });
 
@@ -7380,30 +7423,49 @@ app.post('/api/faqs/import', requireAuth, (req, res) => {
 // Cambio 2026-04-29: setters NO pueden editar entradas del banco, ni siquiera
 // las que crearon. Decision del admin para mantener calidad del banco.
 app.put('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), async (req, res) => {
-  const data = loadFaqs();
-  const idx = data.entries.findIndex(e => e.id === req.params.id);
-  if (idx < 0) return res.status(404).json({ error: 'No encontrado' });
-  const e = data.entries[idx];
-  const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
-  if (pregunta !== undefined) e.pregunta = pregunta.trim();
-  if (respuesta !== undefined) e.respuesta = respuesta.trim();
-  if (categoria !== undefined) e.categoria = categoria;
-  if (tags !== undefined) e.tags = Array.isArray(tags) ? tags : [];
-  if (variantes !== undefined) e.variantes = _faqNormalizeVariantes(variantes);
-  if (variantId !== undefined) e.variantId = variantId;
-
-  // Auto-tag: si el user dejó tags vacíos o categoria='general', re-generamos.
-  // Importante: solo si pregunta o respuesta cambiaron (para no llamar IA al pedo en un PUT que solo toca tags).
-  const contentTouched = pregunta !== undefined || respuesta !== undefined;
-  if (contentTouched) {
-    const auto = await _autoTagFaq({ pregunta: e.pregunta, respuesta: e.respuesta, categoria: e.categoria, tags: e.tags });
-    e.categoria = auto.categoria;
-    e.tags = auto.tags;
+  // Pre-check sin lock (solo para devolver 404 rapido sin esperar el mutex).
+  const preData = loadFaqs();
+  if (!preData.entries.find(e => e.id === req.params.id)) {
+    return res.status(404).json({ error: 'No encontrado' });
   }
 
-  e.updatedAt = new Date().toISOString();
-  saveFaqs(data);
-  res.json({ entry: e });
+  const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
+  const contentTouched = pregunta !== undefined || respuesta !== undefined;
+
+  // Auto-tag fuera del mutex (no toca disco, solo llama IA con timeout 3s).
+  // Si dispara, usamos el snapshot pre-mutex para calcular tags; las concurrentes
+  // re-ejecutan dentro del mutex contra el estado fresco.
+  let autoTags = null;
+  if (contentTouched) {
+    const cur = preData.entries.find(e => e.id === req.params.id);
+    const newPregunta = pregunta !== undefined ? pregunta.trim() : cur.pregunta;
+    const newRespuesta = respuesta !== undefined ? respuesta.trim() : cur.respuesta;
+    const newCategoria = categoria !== undefined ? categoria : cur.categoria;
+    const newTags = tags !== undefined ? (Array.isArray(tags) ? tags : []) : cur.tags;
+    autoTags = await _autoTagFaq({ pregunta: newPregunta, respuesta: newRespuesta, categoria: newCategoria, tags: newTags });
+  }
+
+  // Audit fix: ATOMICO via mutateFaqs.
+  const result = await mutateFaqs((data) => {
+    const idx = data.entries.findIndex(e => e.id === req.params.id);
+    if (idx < 0) return { notFound: true };
+    const e = data.entries[idx];
+    if (pregunta !== undefined) e.pregunta = pregunta.trim();
+    if (respuesta !== undefined) e.respuesta = respuesta.trim();
+    if (categoria !== undefined) e.categoria = categoria;
+    if (tags !== undefined) e.tags = Array.isArray(tags) ? tags : [];
+    if (variantes !== undefined) e.variantes = _faqNormalizeVariantes(variantes);
+    if (variantId !== undefined) e.variantId = variantId;
+    if (autoTags) {
+      e.categoria = autoTags.categoria;
+      e.tags = autoTags.tags;
+    }
+    e.updatedAt = new Date().toISOString();
+    return { entry: e };
+  });
+
+  if (result?.notFound) return res.status(404).json({ error: 'No encontrado (deleted concurrently)' });
+  res.json(result);
 });
 
 // DELETE /api/faqs/:id — solo admin o supervisor
