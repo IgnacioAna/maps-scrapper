@@ -8217,6 +8217,52 @@ app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, r
   res.json({ ok: true, scripts: data.scripts });
 });
 
+// POST /api/telnyx/scripts/reset-to-seed — recarga scripts desde scripts/seed/call-scripts.json
+// admin only. Sobrescribe TODO data/call_scripts.json con el seed actual. Útil cuando se
+// actualiza el script oficial (SCM_Cold_Call_v2.docx) y querés que producción adopte
+// los cambios sin tener que crear los scripts uno por uno. Backup del archivo viejo
+// se guarda con timestamp para poder revertir.
+app.post('/api/telnyx/scripts/reset-to-seed', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    if (!fs.existsSync(CALL_SCRIPTS_SEED_FILE)) {
+      return res.status(404).json({ error: 'Seed file no encontrado en scripts/seed/call-scripts.json' });
+    }
+    const seed = JSON.parse(fs.readFileSync(CALL_SCRIPTS_SEED_FILE, 'utf8'));
+    if (!seed || !Array.isArray(seed.scripts)) {
+      return res.status(500).json({ error: 'Seed file malformado.' });
+    }
+    // Backup del archivo actual antes de sobrescribir
+    let backupPath = null;
+    if (fs.existsSync(CALL_SCRIPTS_FILE)) {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      backupPath = path.join(DATA_DIR, `call_scripts.json.bak-${ts}`);
+      try { fs.copyFileSync(CALL_SCRIPTS_FILE, backupPath); }
+      catch (e) { console.warn('[scripts:reset] backup fallido:', e.message); }
+    }
+    // Re-marcar metadata
+    const now = new Date().toISOString();
+    const enriched = seed.scripts.map((s) => ({
+      ...s,
+      id: s.id || `script_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: s.createdAt || now,
+      createdBy: 'seed',
+      updatedAt: now,
+    }));
+    const data = { _meta: seed._meta, scripts: enriched };
+    saveCallScripts(data);
+    console.log(`[scripts:reset] recargado seed: ${enriched.length} scripts. Backup: ${backupPath || 'none'}.`);
+    res.json({
+      ok: true,
+      replaced: enriched.length,
+      backupPath: backupPath ? path.basename(backupPath) : null,
+      scripts: enriched,
+    });
+  } catch (e) {
+    console.error('[scripts:reset] error:', e);
+    res.status(500).json({ error: 'Error recargando seed: ' + e.message });
+  }
+});
+
 // GET /api/telnyx/metrics — admin/supervisor: agregaciones de minutos y costo.
 // Query: range=today|week|month|all. Recorre lead.callLog en TODOS los leads
 // y suma duration + cost de las entries con channel='telnyx_webrtc'.

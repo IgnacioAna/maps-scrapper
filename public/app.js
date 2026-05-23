@@ -4041,7 +4041,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         textEl.textContent = 'Pedile al admin que agregue guiones desde Centralita Telnyx.';
         return;
       }
-      // Agrupar por trigger
+      // Agrupar por trigger. ORDEN del flow de llamada (v2 script SCM):
+      // 1. rules (siempre arriba — meta)
+      // 2. before_call → gatekeeper → opener → pitch → ask_meeting → confirm
+      // 3. objection_brushoff / objection_real (sub-grupos de objection)
+      // 4. callback / whatsapp_msg / email_template (post)
+      // 5. legacy (first_call, objection, scheduling, voicemail, general)
+      const triggerOrder = [
+        'rules', 'before_call', 'gatekeeper', 'opener', 'pitch',
+        'ask_meeting', 'confirm',
+        'objection_brushoff', 'objection_real',
+        'callback', 'whatsapp_msg', 'email_template',
+        'first_call', 'objection', 'scheduling', 'voicemail', 'general',
+      ];
       const grouped = {};
       for (const s of _callScriptsCache) {
         const t = s.trigger || 'general';
@@ -4049,19 +4061,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         grouped[t].push(s);
       }
       const triggerLabels = {
-        first_call: '🎯 Apertura', objection: '🛡️ Objeción',
-        callback: '🔄 Callback', scheduling: '📅 Cerrar',
-        voicemail: '📭 Buzón', general: '📝 General',
+        // v2 script SCM
+        rules: '📜 Reglas',
+        before_call: '✅ Pre-call',
+        gatekeeper: '🚪 Recepción',
+        opener: '🎯 Apertura',
+        pitch: '💡 Pitch',
+        ask_meeting: '📅 Pedir reunión',
+        confirm: '🔒 Confirmar',
+        objection_brushoff: '⚡ Brush-off',
+        objection_real: '🛡️ Objeción real',
+        callback: '🔄 Callback',
+        whatsapp_msg: '💬 WhatsApp',
+        email_template: '📧 Email',
+        // legacy
+        first_call: '🎯 Apertura',
+        objection: '🛡️ Objeción',
+        scheduling: '📅 Cerrar',
+        voicemail: '📭 Buzón',
+        general: '📝 General',
       };
-      triggersBar.innerHTML = Object.entries(grouped).map(([trigger, scripts]) => {
+      // Colores por categoría para distinguir visualmente
+      const triggerColors = {
+        rules: '#9D85F2', before_call: '#7dd3fc',
+        gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
+        ask_meeting: '#FFB341', confirm: '#FFB341',
+        objection_brushoff: '#FFB341', objection_real: '#f85149',
+        callback: '#9D85F2', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
+        first_call: '#5bb974', objection: '#f85149',
+        scheduling: '#FFB341', voicemail: '#7dd3fc', general: 'rgba(255,255,255,0.5)',
+      };
+      const sortedTriggers = Object.keys(grouped).sort((a, b) => {
+        const ai = triggerOrder.indexOf(a); const bi = triggerOrder.indexOf(b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+      triggersBar.innerHTML = sortedTriggers.map((trigger) => {
+        const scripts = grouped[trigger];
+        const color = triggerColors[trigger] || 'rgba(255,255,255,0.5)';
         return scripts.map(s => `
-          <button class="btn-table-action tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10px; padding:4px 8px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:6px; cursor:pointer;">
+          <button class="btn-table-action tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10px; padding:5px 9px; background:var(--bg-app); border:1px solid ${color}33; border-radius:6px; cursor:pointer; color:${color};">
             ${triggerLabels[trigger] || s.trigger} · ${escHtml(s.label)}
           </button>
         `).join('');
       }).join('');
-      // Pre-cargar el primero
-      if (_callScriptsCache.length > 0) _selectScript(_callScriptsCache[0].id);
+      // Pre-cargar el primer script no-meta (saltea 'rules' que son recordatorios)
+      const firstActionable = _callScriptsCache.find(s => s.trigger !== 'rules') || _callScriptsCache[0];
+      if (firstActionable) _selectScript(firstActionable.id);
       // Wire clicks
       triggersBar.querySelectorAll('.tlx-script-btn').forEach(btn => {
         btn.addEventListener('click', () => _selectScript(btn.dataset.scriptId));
@@ -9403,8 +9448,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (_tlxScriptsCache.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
     const triggerColors = {
-      first_call: '#5bb974', objection: '#f85149', callback: '#ffc828',
-      scheduling: 'var(--accent)', voicemail: '#7dd3fc', general: 'var(--text-secondary)',
+      // v2 SCM
+      rules: '#9D85F2', before_call: '#7dd3fc',
+      gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
+      ask_meeting: '#ffc828', confirm: '#ffc828',
+      objection_brushoff: '#ffc828', objection_real: '#f85149',
+      callback: '#9D85F2', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
+      // legacy
+      first_call: '#5bb974', objection: '#f85149', scheduling: 'var(--accent)',
+      voicemail: '#7dd3fc', general: 'var(--text-secondary)',
     };
     list.innerHTML = _tlxScriptsCache.map(s => `
       <li style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
@@ -9422,12 +9474,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       </li>
     `).join('');
   }
+  // Botón "Recargar oficial v2": reemplaza todos los scripts con el seed actual
+  document.getElementById('tlx-script-reset-seed-btn')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const confirmed = await (window.askText
+      ? window.askText({ title: '♻️ Recargar guiones oficiales v2', subtitle: 'Esto REEMPLAZA todos los guiones actuales con la versión oficial (SCM_Cold_Call_v2). Se guarda un backup automático. Escribí REEMPLAZAR para confirmar.', type: 'input', placeholder: 'REEMPLAZAR', confirmLabel: 'Recargar' })
+      : Promise.resolve(prompt('Escribí REEMPLAZAR para confirmar:')));
+    if (confirmed !== 'REEMPLAZAR') {
+      if (confirmed !== null && confirmed !== undefined && confirmed !== '') {
+        window.showToast?.('Cancelado (texto no coincide)', { type: 'warn' });
+      }
+      return;
+    }
+    btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Recargando…';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/scripts/reset-to-seed'), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      });
+      if (!r.ok) {
+        let msg = 'HTTP ' + r.status;
+        try { const d = await r.json(); if (d?.error) msg = d.error; } catch {}
+        throw new Error(msg);
+      }
+      const d = await r.json();
+      window.showToast?.(`✓ ${d.replaced} guiones oficiales recargados. Backup: ${d.backupPath || 'n/a'}`, { type: 'success', duration: 5000 });
+      _tlxLoadScriptsAdmin();
+    } catch (err) {
+      window.showToast?.('Error: ' + err.message, { type: 'error', duration: 6000 });
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+    }
+  });
+
   document.getElementById('tlx-script-add-btn')?.addEventListener('click', async () => {
     const label = await window.askText({ title: '📝 Nuevo guion', subtitle: 'Label corto descriptivo. Ej: "Objeción: ya tengo sistema".', type: 'input', placeholder: 'Apertura inicial', confirmLabel: 'Siguiente' });
     if (!label) return;
     const trigger = await window.askText({
-      title: 'Trigger', subtitle: 'Cuándo aplica este guion. Valores: first_call, objection, callback, scheduling, voicemail, general.',
-      type: 'input', placeholder: 'first_call', confirmLabel: 'Siguiente',
+      title: 'Trigger', subtitle: 'Cuándo aplica este guion. Valores: before_call, gatekeeper, opener, pitch, ask_meeting, confirm, objection_brushoff, objection_real, callback, whatsapp_msg, email_template, rules, general.',
+      type: 'input', placeholder: 'opener', confirmLabel: 'Siguiente',
     });
     if (!trigger) return;
     const text = await window.askText({

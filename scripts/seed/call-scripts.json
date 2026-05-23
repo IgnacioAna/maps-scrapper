@@ -1,53 +1,221 @@
 {
+  "_meta": {
+    "version": "scm-cold-call-v2",
+    "based_on": "SCM_Cold_Call_v2.docx + frameworks Julio Sagantini (PACE, 3-S, problem-based pitch)",
+    "objetivo": "Pasar recepción + agendar call de cierre con el decisor",
+    "metrica_clave": "Si no pasás el opener el 70% de las veces, algo está roto",
+    "variables": ["{name}", "{city}", "{country}", "{years}", "{reviews}", "{setterName}", "{date}", "{time}"]
+  },
   "scripts": [
     {
-      "id": "opener_default",
-      "label": "Opener inicial",
-      "trigger": "first_call",
-      "text": "Hola Dr/a {name}, soy {setterName} del equipo SCM. Trabajo con clínicas dentales como la suya en temas de reactivación de pacientes que dejaron de venir y seguimiento de presupuestos no cerrados. Lo llamé puntualmente porque vimos su clínica en {city} y queríamos coordinar una llamada corta esta semana para presentarle cómo otras clínicas en su área están automatizando esto. ¿Cómo le viene el miércoles o jueves?",
-      "tags": ["apertura", "first-call"]
+      "id": "rules_global",
+      "label": "📜 Reglas (siempre presentes)",
+      "trigger": "rules",
+      "text": "🚫 NUNCA: tirar precio · mandar email · explicar el sistema completo · decir nombres de plataformas (GHL etc) · ofrecer fechas abiertas (\"cuándo le viene bien\")\n\n✅ SIEMPRE: generar curiosidad + agendar · preguntar por el decisor · ofrecer 2 días cerrados · SILENCIO después de pedir reunión · máx 3 intentos por objección · máx 2-3 min por llamada · shufflear papeles cuando decís \"estuve revisando\" · sonreí (se escucha)",
+      "tags": ["meta", "reglas", "anclado"]
     },
     {
-      "id": "objection_ya_tengo_sistema",
-      "label": "Objeción: ya tengo sistema",
-      "trigger": "objection",
-      "text": "Justo por eso lo llamé. Trabajamos seguido con clínicas que ya tienen sistema y a veces hay gaps que cubrimos — sin necesidad de cambiar lo que ya usan. Si no hay fit perfecto, igual quedamos en contacto. ¿Tiene 20 min el jueves para verlo sin compromiso?",
-      "tags": ["objecion", "ya-tiene-sistema"]
+      "id": "tone_reminder",
+      "label": "🎙️ Tono — 3S",
+      "trigger": "rules",
+      "text": "🐢 SLOW: lento, articular cada palabra. Que cada frase respire.\n😊 SMILE: sonreí al hablar. Se escucha por teléfono.\n💪 STRONG: confiado, como si pertenecieras en esa llamada.\n\n🪞 MIRROR: matcheá al que contesta. Si habla rápido, subí un poco. Si habla lento, bajá.\n\nFamiliar, un poco confuso. NUNCA tono de vendedor.",
+      "tags": ["meta", "tono", "anclado"]
+    },
+    {
+      "id": "before_call_checklist",
+      "label": "✅ Antes de llamar",
+      "trigger": "before_call",
+      "text": "□ Nombre del decisor (si lo tenés)\n□ Nombre de la clínica + ciudad\n□ Ficha de Google abierta (reseñas, fotos, años activos)\n□ Papeles en la mano para shufflear\n□ Objetivo: agendar la call con Ignacio. NADA más.\n\nLead actual: {name} ({city}, {country})",
+      "tags": ["pre-call", "checklist"]
+    },
+    {
+      "id": "gatekeeper_pasame_con_decisor",
+      "label": "🚪 Con nombre · pedir al decisor",
+      "trigger": "gatekeeper",
+      "text": "Tono familiar, como si ya lo conocieras:\n\n\"Hola, qué tal... me pasa con {name} por favor?\"\n\nSi pregunta de parte de quién:\n\"De {setterName}, de SCM Dental. Él ya sabe.\"\n\nSi dice que no está:\n\"A qué hora lo puedo encontrar? Lo vuelvo a llamar.\"\n\n▶ NO dejes mensaje. NO expliques nada. Volvé a llamar.",
+      "tags": ["recepcion", "con-nombre"]
+    },
+    {
+      "id": "gatekeeper_sin_nombre",
+      "label": "🚪 Sin nombre · ambigüedad",
+      "trigger": "gatekeeper",
+      "text": "Ambigüedad. Que piense que es algo que tiene que pasar:\n\n\"Hola, qué tal. Estoy revisando la ficha de Google de la clínica y hay unas cosas que necesitaría comentar con el doctor o la doctora a cargo. Me lo podría comunicar?\"\n\nSi pregunta qué es:\n\"Es sobre la presencia online de la clínica, unas cosas que detectamos. Es breve, me lo pasa?\"\n\nSi insiste:\n\"Es algo específico que prefiero hablar directamente con él. No le quito más de un minuto.\"",
+      "tags": ["recepcion", "sin-nombre"]
+    },
+    {
+      "id": "gatekeeper_ruta_a_pedir_nombre",
+      "label": "🚪 Ruta A · pedir nombre y rellamar",
+      "trigger": "gatekeeper",
+      "text": "Si no te pasa, primera ruta:\n\n\"Cómo se llama el doctor?\"\n\n▶ Guardá el nombre. Llamá de nuevo con tono familiar usando el flujo \"Con nombre · pedir al decisor\".",
+      "tags": ["recepcion", "ruta-a"]
+    },
+    {
+      "id": "gatekeeper_ruta_b_mensaje_curiosidad",
+      "label": "🚪 Ruta B · mensaje con curiosidad",
+      "trigger": "gatekeeper",
+      "text": "Si no te pasa, segunda ruta — dejar mensaje pero con anzuelo:\n\n\"Entiendo, no hay problema. Le puede decir que llamó {setterName} de SCM Dental, que trabajamos con clínicas dentales y detecté una oportunidad en su base de pacientes que le podría interesar? Que me devuelva la llamada a este número cuando pueda.\"\n\n▶ \"Detecté una oportunidad en su base de pacientes\" genera curiosidad. NO suena a venta genérica.",
+      "tags": ["recepcion", "ruta-b", "mensaje"]
+    },
+    {
+      "id": "gatekeeper_ruta_c_enganchar_recepcion",
+      "label": "🚪 Ruta C · enganchar recepcionista",
+      "trigger": "gatekeeper",
+      "text": "Si sentís que la recepcionista tiene apertura, tirale el problema en SU idioma:\n\n\"Le hago una pregunta rápida: ustedes tienen algún sistema para contactar pacientes que hace meses que no vienen, o eso lo hacen manual?\"\n\nSi dice \"manual\" o \"no hacemos nada\":\n\n\"Eso es exactamente lo que resolvemos. Automatizamos todo eso para que no tengan que estar persiguiendo pacientes uno por uno. Por eso quería hablar con el doctor, porque lo que les puedo armar les sacaría esa carga de encima. Le puede comentar eso?\"\n\n▶ La recepcionista no pasa \"llamó un vendedor\". Pasa \"llamó uno que dice que nos saca de encima lo de perseguir pacientes\".\n▶ Leé si tiene apertura. Si está seca, no fuerces — Ruta A o B.",
+      "tags": ["recepcion", "ruta-c", "enganchar"]
+    },
+    {
+      "id": "opener_decisor",
+      "label": "🎯 Apertura con decisor",
+      "trigger": "opener",
+      "text": "Pausa corta entre nombre y nombre. Como si ya te conociera. Shuffleá papeles.\n\n\"Hola... Doctor {name}?\"\n\n\"Sí, qué tal, soy {setterName}... {setterName} de SCM Dental. Estuve revisando la presencia online de la clínica y quería comentarle algo. Le tomo 27 segundos, si no le hace sentido no lo molesto más.\"\n\n▶ \"27 segundos\" rompe el patrón. Nadie dice 27.\n▶ \"Si no le hace sentido no lo molesto más\" = darle la salida. Baja la guardia.",
+      "tags": ["apertura", "decisor"]
+    },
+    {
+      "id": "opener_contexto_fugas",
+      "label": "🎯 Contexto · posibles fugas",
+      "trigger": "opener",
+      "text": "Si dice \"sí, decime\" o \"quién es?\":\n\n\"Miré, no estoy seguro si tiene sentido que hablemos, pero estuve viendo que la clínica lleva {years} operando y quise llamar porque trabajamos con clínicas dentales ayudándolas a detectar posibles fugas en su base de pacientes... gente que dejó de ir, presupuestos que quedaron en el aire, no-shows... cosas que normalmente cuestan plata pero nadie las trabaja de forma sistemática.\"\n\n▶ \"No estoy seguro si tiene sentido\" = vender la salida.\n▶ \"Posibles fugas\" = palabra neutra, no acusa.",
+      "tags": ["apertura", "contexto"]
+    },
+    {
+      "id": "pitch_dato_real",
+      "label": "💡 Pattern interrupt · dato real",
+      "trigger": "pitch",
+      "text": "Dato real de su ficha = credibilidad. NO es speech genérico:\n\n\"De hecho, estuve viendo la ficha de Google y tienen {reviews} reseñas. Bastante bien. Pero con la cantidad de años que llevan, probablemente tienen una base de pacientes grande que no se está trabajando. Le suena eso?\"\n\n▶ Espera respuesta. Que él hable.",
+      "tags": ["pitch", "pattern-interrupt"]
+    },
+    {
+      "id": "pitch_caso_exito",
+      "label": "💡 Caso de éxito · 119 pacientes UY",
+      "trigger": "pitch",
+      "text": "Si muestra interés:\n\n\"Bien, justamente lo que hacemos es implementar un sistema que reactiva esa base automáticamente. Una clínica en Uruguay recuperó 119 pacientes en 6 semanas sin que el equipo hiciera nada.\"\n\n\"Lo que me gustaría es agendar 20 minutos para que Ignacio, que es quien implementa los sistemas, le muestre cómo funcionaría aplicado a su clínica.\"",
+      "tags": ["pitch", "social-proof"]
+    },
+    {
+      "id": "ask_meeting_opcion_a",
+      "label": "📅 Pedir reunión · A",
+      "trigger": "ask_meeting",
+      "text": "\"Estaría en contra de tener una conversación breve para ver si tiene sentido? Le queda mejor el martes o el jueves?\"\n\n▶ Después de la pregunta: SILENCIO. Que él responda primero.",
+      "tags": ["ask-meeting", "variante-a"]
+    },
+    {
+      "id": "ask_meeting_opcion_b",
+      "label": "📅 Pedir reunión · B",
+      "trigger": "ask_meeting",
+      "text": "\"Sería una mala idea que nos sentemos 20 minutos a verlo? Le viene mejor miércoles o viernes?\"\n\n▶ Después de la pregunta: SILENCIO. Que él responda primero.",
+      "tags": ["ask-meeting", "variante-b"]
+    },
+    {
+      "id": "ask_meeting_opcion_c",
+      "label": "📅 Pedir reunión · C",
+      "trigger": "ask_meeting",
+      "text": "\"Ha cerrado la puerta a la idea de que esto pueda funcionar para la clínica? Qué le queda mejor, martes o jueves?\"\n\n▶ Las 3 variaciones usan el NO a favor. Es difícil decir \"sí, estoy en contra\".\n▶ SIEMPRE dos días cerrados, nunca \"cuándo le viene bien\".\n▶ Después de la pregunta: SILENCIO.",
+      "tags": ["ask-meeting", "variante-c"]
+    },
+    {
+      "id": "confirm_calificar",
+      "label": "✅ Calificar + pedir email",
+      "trigger": "confirm",
+      "text": "Si dice sí:\n\n\"Perfecto. Me pasa su email así le mando la invitación de calendario? Una cosa: usted es quien toma las decisiones de inversión o hay alguien más que tendría que estar?\"\n\n\"Y más o menos, tiene idea de cuántos pacientes tienen en la base? Aunque sea a ojo.\"\n\n▶ Más de 800: perfecto. Menos de 500: igual agendá, Ignacio evalúa.",
+      "tags": ["confirm", "calificar"]
+    },
+    {
+      "id": "confirm_anti_cancelacion",
+      "label": "🔒 Reconfirmación anti-cancelación",
+      "trigger": "confirm",
+      "text": "\"Una última cosa: hay alguna razón por la que el {date} a la mañana vaya a pensar que esto no vale la pena y cancele?\"\n\n▶ Fuerza dudas ocultas a salir AHORA en vez del día de la call.",
+      "tags": ["confirm", "anti-cancel"]
+    },
+    {
+      "id": "objection_no_me_interesa",
+      "label": "⚡ Brush-off · \"no me interesa\"",
+      "trigger": "objection_brushoff",
+      "text": "Brush-off → directo a Engage:\n\n\"Entiendo. Solo para que lo tenga en mente: la mayoría de clínicas con {years} operando tienen entre un 3% y 5% de su base como plata dormida. Si en algún momento quieren revisarlo, me tiene acá.\"\n\n▶ Si no se abre, no insistás. Dejá la semilla.",
+      "tags": ["objection", "brush-off", "no-me-interesa"]
+    },
+    {
+      "id": "objection_mandame_email",
+      "label": "⚡ Brush-off · \"mandame email\"",
+      "trigger": "objection_brushoff",
+      "text": "Brush-off → directo a Engage:\n\n\"Podría, pero lo que hacemos es tan personalizado que por email no le haría justicia. Son 20 minutos donde Ignacio le muestra cómo funcionaría aplicado a su clínica. Le viene mejor el martes o el jueves?\"\n\n▶ NUNCA mandes email. Redirigí a la reunión.",
+      "tags": ["objection", "brush-off", "email"]
     },
     {
       "id": "objection_no_tengo_tiempo",
-      "label": "Objeción: no tengo tiempo",
-      "trigger": "objection",
-      "text": "Entiendo, son 15 minutos máximo. La idea es solo mostrarle 2 o 3 cosas concretas que pueden aplicar — usted decide después si profundizamos. ¿Le viene mejor un horario al final del día?",
-      "tags": ["objecion", "tiempo"]
+      "label": "⚡ Brush-off · \"no tengo tiempo\"",
+      "trigger": "objection_brushoff",
+      "text": "Brush-off → directo a Engage:\n\n\"Mi timing es pésimo. Le dejo agendados 20 minutos para la semana que viene o le tomo 27 segundos más ahora y si no le sirve no lo molesto más. Qué prefiere?\"",
+      "tags": ["objection", "brush-off", "tiempo"]
     },
     {
-      "id": "objection_mandame_info",
-      "label": "Objeción: mandame info por mail",
-      "trigger": "objection",
-      "text": "Por supuesto, igual prefiero que primero charlemos 15 minutos para entender bien qué necesita su clínica, y después le mando solo lo que aplica. Si no, le mando un PDF genérico que probablemente no le sirva. ¿Le viene mejor mañana o el miércoles?",
-      "tags": ["objecion", "mail"]
+      "id": "objection_ya_tengo_agencia",
+      "label": "🛡️ Real · \"ya tengo agencia/marketing\"",
+      "trigger": "objection_real",
+      "text": "PACE completo:\n\n🅿️ Pausa 2-3 seg\n🅰️ Aceptar: \"Tiene sentido.\"\n🅲 Consentimiento: \"Me deja hacerle una pregunta sobre eso?\"\n🅴 Engage:\n\n\"Lo que hacemos NO es marketing. No buscamos pacientes nuevos. Activamos los que ya están en su base y dejaron de ir. Es el opuesto. Ha cerrado la puerta a la idea de que esto pueda funcionar en paralelo a lo que ya hacen?\"",
+      "tags": ["objection", "real", "agencia"]
     },
     {
-      "id": "callback",
-      "label": "Callback (segundo intento)",
+      "id": "objection_ya_tenemos_sistema",
+      "label": "🛡️ Real · \"ya tenemos sistema\" (la mejor)",
+      "trigger": "objection_real",
+      "text": "PACE completo. Esta es la MEJOR objeción: acaba de decirte que compra lo que vendés.\n\n🅿️ Pausa 2-3 seg\n🅰️ Aceptar: \"Bien, se nota que ya identificaron el problema.\"\n🅲 Consentimiento: \"Me deja hacerle una pregunta?\"\n🅴 Engage:\n\n\"Eso significa que nunca considerarían una alternativa, incluso si pudiera mejorar lo que ya tienen?\"",
+      "tags": ["objection", "real", "ya-sistema"]
+    },
+    {
+      "id": "objection_cuanto_sale",
+      "label": "🛡️ Real · \"cuánto sale?\"",
+      "trigger": "objection_real",
+      "text": "PACE completo. NUNCA tires precio en llamada fría:\n\n\"Depende del tamaño de la clínica y la base. Eso es lo que Ignacio evalúa en la llamada. Si tiene sentido, le pasa los números. Si no, se lo dice. Sin compromiso. Le viene el martes o el jueves?\"",
+      "tags": ["objection", "real", "precio"]
+    },
+    {
+      "id": "objection_quien_son_uds",
+      "label": "🛡️ Real · \"quién son ustedes?\"",
+      "trigger": "objection_real",
+      "text": "\"Trabajamos exclusivamente con clínicas dentales. Implementamos un sistema que reactiva pacientes que dejaron de ir, seguimiento automático, y gestión de no-shows. Ya lo implementamos en Uruguay, México y Colombia. La reunión es para mostrarle si tiene sentido para su caso.\"",
+      "tags": ["objection", "real", "quienes-son"]
+    },
+    {
+      "id": "objection_lo_tengo_que_pensar",
+      "label": "🛡️ Real · \"lo tengo que pensar\"",
+      "trigger": "objection_real",
+      "text": "PACE completo:\n\n🅿️ Pausa 2-3 seg\n🅰️ Aceptar: \"Tiene sentido.\"\n🅲 Consentimiento: \"Me deja hacerle una pregunta directa?\"\n🅴 Engage:\n\n\"Ha cerrado su mente a la idea de que podría haber una forma de recuperar esos pacientes, o simplemente nunca lo exploró?\"",
+      "tags": ["objection", "real", "pensar"]
+    },
+    {
+      "id": "callback_propuesta",
+      "label": "🔄 Callback · no agendó pero no dijo no",
       "trigger": "callback",
-      "text": "Hola Dr/a {name}, soy {setterName} de SCM, le había llamado hace unos días sobre reactivación de pacientes para clínicas dentales. ¿Tiene unos minutos ahora o le viene mejor que coordinemos un horario fijo?",
-      "tags": ["callback", "segundo-intento"]
+      "text": "\"Entiendo. Le propongo algo: lo llamo en dos semanas para retomarlo. Le mando un recordatorio por WhatsApp así no se pierde. Le parece?\"\n\n▶ Salir con fecha CONCRETA de callback, no \"lo vuelvo a llamar\".\n▶ Mandar WhatsApp el mismo día (usar el template).",
+      "tags": ["callback", "no-now"]
     },
     {
-      "id": "scheduling_pitch",
-      "label": "Cierre: agendar llamada con Ignacio",
-      "trigger": "scheduling",
-      "text": "Perfecto. Lo agendo entonces con Ignacio, que es quien lleva la parte comercial. Es una llamada de 30 minutos por Google Meet. ¿{date} a las {time} le viene bien? Le mando la invitación por mail apenas confirmemos.",
-      "tags": ["cierre", "agendamiento"]
+      "id": "whatsapp_post_callback",
+      "label": "💬 WhatsApp · post-callback",
+      "trigger": "whatsapp_msg",
+      "text": "\"Doctor {name}, fue un gusto hablar. Lo llamo el {date} como quedamos.\"\n\n▶ Mandar el mismo día que la llamada.",
+      "tags": ["whatsapp", "callback"]
     },
     {
-      "id": "voicemail",
-      "label": "Buzón de voz (mensaje corto)",
-      "trigger": "voicemail",
-      "text": "Hola Dr/a {name}, le habla {setterName} de SCM Dental. Le llamé porque trabajamos reactivando pacientes para clínicas dentales como la suya en {city}. Lo intento de nuevo más tarde. Si quiere puede agendarme directamente por WhatsApp al {setterPhone}. Gracias y buen día.",
-      "tags": ["voicemail"]
+      "id": "email_confirm_agendada",
+      "label": "📧 Email · confirmación de reunión",
+      "trigger": "email_template",
+      "text": "Asunto: Reunión confirmada · SCM Dental + {name}\n\nDoctor {name},\n\nLe confirmo la reunión del {date} a las {time} con Ignacio de SCM Dental.\n\nLe envío el enlace de la videollamada:\n[LINK]\n\nCualquier cambio me avisa.\n\nSaludos,\n{setterName}\nSCM Dental",
+      "tags": ["email", "confirm"]
+    },
+    {
+      "id": "email_reminder_24h",
+      "label": "📧 Email · recordatorio 24h antes",
+      "trigger": "email_template",
+      "text": "Asunto: Mañana a las {time} · reunión con Ignacio\n\nDoctor {name},\n\nLe recuerdo que mañana a las {time} tiene la reunión con Ignacio.\n\nEnlace: [LINK]\n\nSaludos,\n{setterName}",
+      "tags": ["email", "reminder"]
+    },
+    {
+      "id": "pace_framework_reference",
+      "label": "🧠 Framework PACE — referencia rápida",
+      "trigger": "rules",
+      "text": "Solo para OBJECIONES REALES (lo pensó, tiene sustancia).\n\n🅿️ PAUSA: 2-3 seg de silencio. Dejá que respire.\n🅰️ ACEPTAR: \"Tiene sentido\" / \"Es justo\" / \"Entiendo\". Sin pero. SIN PERO.\n🅲 CONSENTIMIENTO: \"Me deja hacerle una pregunta sobre eso?\" Sí pequeño = ganaste control.\n🅴 ENGAGE: La pregunta que lo hace pensar. NUNCA argumentes, preguntá.\n\n⚡ Brush-offs (\"no me interesa\", \"email\", \"no tiempo\"): saltá directo a Engage.\n\nMáx 3 intentos por objeción. Al tercero, si sigue firme: \"Entiendo, gracias por su tiempo\" y siguiente lead.",
+      "tags": ["framework", "pace", "anclado"]
     }
   ]
 }

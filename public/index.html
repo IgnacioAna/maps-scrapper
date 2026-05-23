@@ -2067,7 +2067,10 @@
                 </strong>
                 <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{setterName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
               </div>
-              <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12.5px; padding:9px 14px;">＋ Agregar guion</button>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <button id="tlx-script-reset-seed-btn" class="btn-secondary" style="font-size:12.5px; padding:9px 14px;" title="Recarga los guiones desde scripts/seed/call-scripts.json (versión oficial SCM Cold Call v2). Reemplaza TODOS los guiones actuales — guarda backup automático.">♻️ Recargar oficial v2</button>
+                <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12.5px; padding:9px 14px;">＋ Agregar guion</button>
+              </div>
             </div>
             <ul id="tlx-scripts-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:10px;"></ul>
             <div id="tlx-scripts-empty" style="display:none; text-align:center; padding:36px 18px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.08); border-radius:12px;">
@@ -2478,7 +2481,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522m"></script>
+  <script type="module" src="/app.js?v=20260522n"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>
