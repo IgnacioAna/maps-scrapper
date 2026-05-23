@@ -8,6 +8,12 @@ export async function mountWa(app, httpServer, deps) {
   initWaData(deps.dataDir);
   if (httpServer) initGateway(httpServer, deps);
   registerWaRoutes(app, deps);
+  // Exponer helpers del gateway globalmente para que el scheduler de
+  // mensajes programados pueda emitir sin tener import circular con index.js.
+  try {
+    const gw = await import("./gateway.js");
+    if (gw.exposeGlobals) gw.exposeGlobals();
+  } catch (e) { /* no romper boot si falla */ }
   if (process.env.NODE_ENV !== "test") console.log("✅ Módulo WhatsApp Multi-Account montado en /api/wa");
 
   // ── Warming network (AI-to-AI) ──

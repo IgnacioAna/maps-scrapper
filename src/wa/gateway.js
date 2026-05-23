@@ -174,3 +174,14 @@ export function sendToUser(userId, event, payload) {
   io.to(`user:${userId}`).emit(event, payload);
   return true;
 }
+
+// Expose helpers to globalThis para que index.js (modulo grande) los pueda
+// usar desde el scheduler de mensajes programados sin import circular.
+// Esto se setea en mountWa() al final.
+export function exposeGlobals() {
+  globalThis.__waGateway = {
+    sendToUser,
+    isUserConnected: isUserOnline,
+    getPresenceList,
+  };
+}

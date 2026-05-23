@@ -3034,6 +3034,314 @@ async function mutateSettersData(mutator) {
   return next;
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── SCHEDULED MESSAGES (Automatizaciones de seguimiento)
+// ══════════════════════════════════════════════════════════════
+// Phase setter-automations-followups (2026-05-22).
+// El setter carga "mañana 10am mandar este texto a este lead" y el sistema
+// lo despacha solo via wa-multi. Requiere PC del setter prendida con
+// wa-multi conectado a esa hora. Si offline, reagenda +5min hasta 24h.
+const SCHEDULED_FILE = path.join(DATA_DIR, "scheduled_messages.json");
+const SCHEDULED_CAP = 5000; // FIFO cap para no inflar archivo
+const SCHEDULED_MAX_ATTEMPTS = 288; // 24h * 60min / 5min retry
+
+function loadScheduledMessages() {
+  try {
+    if (!fs.existsSync(SCHEDULED_FILE)) {
+      const seed = { scheduledMessages: [] };
+      fs.writeFileSync(SCHEDULED_FILE, JSON.stringify(seed, null, 2), "utf8");
+      return seed;
+    }
+    const raw = JSON.parse(fs.readFileSync(SCHEDULED_FILE, "utf8"));
+    if (!Array.isArray(raw.scheduledMessages)) raw.scheduledMessages = [];
+    return raw;
+  } catch (e) {
+    console.error("[scheduled] load error:", e.message);
+    return { scheduledMessages: [] };
+  }
+}
+
+function saveScheduledMessages(data) {
+  try {
+    // FIFO cap: solo aplicamos a sent/failed/cancelled/expired (no a pending)
+    if (Array.isArray(data.scheduledMessages) && data.scheduledMessages.length > SCHEDULED_CAP) {
+      const pending = data.scheduledMessages.filter(m => m.status === 'pending');
+      const terminal = data.scheduledMessages.filter(m => m.status !== 'pending');
+      const trimmed = terminal.slice(-(SCHEDULED_CAP - pending.length));
+      data.scheduledMessages = [...pending, ...trimmed];
+    }
+    fs.writeFileSync(SCHEDULED_FILE, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {
+    console.error("[scheduled] save error:", e.message);
+  }
+}
+
+// Stagger anti-baneo: cada mensaje tiene un offset random 0-5min para no
+// mandar 20 mensajes en el mismo segundo (patrón sospechoso para WhatsApp).
+function pickStaggerOffset() {
+  return Math.floor(Math.random() * 5 * 60 * 1000); // 0-5min en ms
+}
+
+// Helper: ¿este setter está conectado por wa-multi ahora?
+// Reusa la presencia in-memory que onlinePresence ya trackea para web,
+// más el chequeo via wa gateway si está disponible (cubre el caso de
+// setter sin web pero con desktop client activo).
+function _isSetterReachable(setterId) {
+  if (!setterId) return false;
+  // Buscar el userId del setter (puede que sea su user.setterId)
+  try {
+    const authData = loadAuthData();
+    const user = (authData.users || []).find(u => u.setterId === setterId || u.id === setterId);
+    if (!user) return false;
+    const presence = onlinePresence.get(user.id);
+    if (presence && (Date.now() - presence.lastSeen) < 5 * 60 * 1000) return true;
+    // Fallback: chequeo del wa gateway si globalThis.__waGateway tiene helper
+    if (globalThis.__waGateway && typeof globalThis.__waGateway.isUserConnected === 'function') {
+      return globalThis.__waGateway.isUserConnected(user.id);
+    }
+  } catch (e) { /* ignore */ }
+  return false;
+}
+
+// El tick del scheduler — corre cada 60s en producción.
+function scheduledMessagesTick() {
+  let data;
+  try { data = loadScheduledMessages(); } catch { return; }
+  if (!data.scheduledMessages || data.scheduledMessages.length === 0) return;
+  const now = Date.now();
+  let dirty = false;
+  let processed = 0, sent = 0, retried = 0, cancelled = 0, expired = 0;
+
+  for (const msg of data.scheduledMessages) {
+    if (msg.status !== 'pending') continue;
+    const dueAt = new Date(msg.scheduledFor).getTime() + (msg.staggerOffsetMs || 0);
+    if (dueAt > now) continue; // todavía no toca
+    processed++;
+
+    // Auto-cancel si lead respondió
+    if (msg.cancelOnReply !== false) {
+      try {
+        const settersData = loadSettersData();
+        const lead = settersData.leads ? settersData.leads[msg.leadId] : null;
+        if (lead && (lead.respondio === true || lead.estado === 'agendado' || lead.estado === 'cerrado')) {
+          msg.status = 'cancelled';
+          msg.cancelReason = `lead respondio o cambio de estado a ${lead.estado || 'respondio'}`;
+          msg.cancelledAt = new Date().toISOString();
+          cancelled++; dirty = true;
+          continue;
+        }
+      } catch (e) { /* si falla, igual intentamos mandar */ }
+    }
+
+    // ¿Setter alcanzable?
+    if (!_isSetterReachable(msg.setterId)) {
+      msg.attempts = (msg.attempts || 0) + 1;
+      msg.lastAttemptAt = new Date().toISOString();
+      msg.lastFailureReason = 'setter offline';
+      if (msg.attempts >= SCHEDULED_MAX_ATTEMPTS) {
+        msg.status = 'expired';
+        msg.expiredAt = new Date().toISOString();
+        expired++;
+      } else {
+        // Reagendar +5min
+        const next = new Date(now + 5 * 60 * 1000).toISOString();
+        msg.scheduledFor = next;
+        msg.staggerOffsetMs = pickStaggerOffset();
+        retried++;
+      }
+      dirty = true;
+      continue;
+    }
+
+    // Setter online: emit via wa gateway
+    try {
+      const emitter = globalThis.__waGateway && globalThis.__waGateway.sendToUser;
+      // Resolver userId desde setterId
+      const authData = loadAuthData();
+      const user = (authData.users || []).find(u => u.setterId === msg.setterId);
+      const userId = user?.id;
+      // Resolver phone del lead (refresh al ejecutar — puede haber cambiado)
+      const settersData = loadSettersData();
+      const lead = settersData.leads ? settersData.leads[msg.leadId] : null;
+      const targetPhone = lead?.phone || lead?.webWhatsApp || lead?.aiWhatsApp || '';
+      if (!userId || !targetPhone) {
+        msg.attempts = (msg.attempts || 0) + 1;
+        msg.lastFailureReason = !userId ? 'setter sin user' : 'lead sin telefono';
+        msg.status = 'failed';
+        msg.failedAt = new Date().toISOString();
+        dirty = true;
+        continue;
+      }
+      if (emitter) {
+        emitter(userId, 'followup:send-message', {
+          scheduledMsgId: msg.id,
+          accountId: msg.setterPhoneId || null,
+          targetPhone,
+          text: msg.message,
+          leadId: msg.leadId,
+        });
+      } else {
+        console.warn('[scheduled] wa gateway no disponible — msg marcado sent pero NO se envio');
+      }
+      msg.status = 'sent';
+      msg.sentAt = new Date().toISOString();
+      msg.attempts = (msg.attempts || 0) + 1;
+      sent++; dirty = true;
+    } catch (err) {
+      msg.attempts = (msg.attempts || 0) + 1;
+      msg.lastFailureReason = String(err.message || err).slice(0, 200);
+      if (msg.attempts >= SCHEDULED_MAX_ATTEMPTS) {
+        msg.status = 'failed';
+        msg.failedAt = new Date().toISOString();
+      } else {
+        msg.scheduledFor = new Date(now + 5 * 60 * 1000).toISOString();
+      }
+      dirty = true;
+    }
+  }
+
+  if (dirty) saveScheduledMessages(data);
+  if (processed > 0) {
+    console.log(`[scheduled] tick: ${processed} due (${sent} sent · ${retried} retry · ${cancelled} cancel · ${expired} expired)`);
+  }
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(scheduledMessagesTick, 60 * 1000); // cada 60s
+  // Primer tick a los 5s del boot, no inmediato (deja que el resto del server suba)
+  setTimeout(scheduledMessagesTick, 5000);
+}
+
+// ─── ENDPOINTS ───
+
+// Crear un mensaje programado. Body: { leadId, scheduledFor (ISO o Date),
+// message, setterPhoneId?, cancelOnReply? }
+// El setter solo puede crear para sus propios leads. Admin/supervisor pueden
+// crear para cualquier lead.
+app.post('/api/scheduled-messages', requireAuth, (req, res) => {
+  const { leadId, scheduledFor, message, setterPhoneId, cancelOnReply = true } = req.body || {};
+  if (!leadId || !scheduledFor || !message) {
+    return res.status(400).json({ error: 'leadId, scheduledFor y message son obligatorios.' });
+  }
+  const when = new Date(scheduledFor).getTime();
+  if (!Number.isFinite(when)) return res.status(400).json({ error: 'scheduledFor invalido.' });
+  if (when < Date.now() - 60 * 1000) {
+    return res.status(400).json({ error: 'scheduledFor debe ser en el futuro (o ahora).' });
+  }
+  const text = String(message).trim();
+  if (text.length < 1 || text.length > 4000) {
+    return res.status(400).json({ error: 'mensaje debe tener entre 1 y 4000 chars.' });
+  }
+  const settersData = loadSettersData();
+  const lead = settersData.leads ? settersData.leads[leadId] : null;
+  if (!lead) return res.status(404).json({ error: 'lead no encontrado.' });
+  const me = req.auth.user;
+  const setterId = me.role === 'setter' ? me.setterId : (lead.assignedTo || me.setterId);
+  if (me.role === 'setter' && lead.assignedTo !== me.setterId) {
+    return res.status(403).json({ error: 'No podes programar para leads de otros setters.' });
+  }
+  if (!setterId) return res.status(400).json({ error: 'lead sin setter asignado.' });
+
+  const data = loadScheduledMessages();
+  const id = `sched_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const entry = {
+    id,
+    leadId,
+    setterId,
+    setterPhoneId: setterPhoneId || null,
+    scheduledFor: new Date(when).toISOString(),
+    message: text,
+    status: 'pending',
+    attempts: 0,
+    createdAt: new Date().toISOString(),
+    createdBy: me.id,
+    cancelOnReply: !!cancelOnReply,
+    staggerOffsetMs: pickStaggerOffset(),
+    templateUsed: req.body?.templateUsed || null,
+  };
+  data.scheduledMessages.push(entry);
+  saveScheduledMessages(data);
+  res.json({ ok: true, scheduled: entry });
+});
+
+// Listar mensajes programados. Setter ve solo los suyos; admin/supervisor todos.
+// Filtros: ?status=pending&leadId=X&from=ISO&to=ISO&limit=200
+app.get('/api/scheduled-messages', requireAuth, (req, res) => {
+  const me = req.auth.user;
+  const data = loadScheduledMessages();
+  let list = data.scheduledMessages || [];
+  if (me.role === 'setter') list = list.filter(m => m.setterId === me.setterId);
+  const { status, leadId, from, to } = req.query;
+  if (status) list = list.filter(m => m.status === status);
+  if (leadId) list = list.filter(m => m.leadId === leadId);
+  if (from) { const t = new Date(from).getTime(); if (Number.isFinite(t)) list = list.filter(m => new Date(m.scheduledFor).getTime() >= t); }
+  if (to) { const t = new Date(to).getTime(); if (Number.isFinite(t)) list = list.filter(m => new Date(m.scheduledFor).getTime() <= t); }
+  const limit = Math.min(500, parseInt(req.query.limit, 10) || 200);
+  // Ordenar: pendientes próximos primero, después por fecha desc
+  list.sort((a, b) => {
+    if (a.status === 'pending' && b.status !== 'pending') return -1;
+    if (b.status === 'pending' && a.status !== 'pending') return 1;
+    return new Date(b.scheduledFor).getTime() - new Date(a.scheduledFor).getTime();
+  });
+  list = list.slice(0, limit);
+  res.json({ scheduledMessages: list, total: list.length });
+});
+
+// Editar un programado pendiente. Body: { scheduledFor?, message?, cancelOnReply? }
+app.patch('/api/scheduled-messages/:id', requireAuth, (req, res) => {
+  const me = req.auth.user;
+  const data = loadScheduledMessages();
+  const msg = data.scheduledMessages.find(m => m.id === req.params.id);
+  if (!msg) return res.status(404).json({ error: 'no encontrado.' });
+  if (msg.status !== 'pending') return res.status(400).json({ error: 'solo se pueden editar los pending.' });
+  if (me.role === 'setter' && msg.setterId !== me.setterId) return res.status(403).json({ error: 'no autorizado.' });
+  const { scheduledFor, message, cancelOnReply } = req.body || {};
+  if (scheduledFor !== undefined) {
+    const when = new Date(scheduledFor).getTime();
+    if (!Number.isFinite(when) || when < Date.now() - 60 * 1000) {
+      return res.status(400).json({ error: 'scheduledFor invalido.' });
+    }
+    msg.scheduledFor = new Date(when).toISOString();
+    msg.staggerOffsetMs = pickStaggerOffset();
+  }
+  if (message !== undefined) {
+    const text = String(message).trim();
+    if (text.length < 1 || text.length > 4000) return res.status(400).json({ error: 'mensaje invalido.' });
+    msg.message = text;
+  }
+  if (cancelOnReply !== undefined) msg.cancelOnReply = !!cancelOnReply;
+  msg.updatedAt = new Date().toISOString();
+  saveScheduledMessages(data);
+  res.json({ ok: true, scheduled: msg });
+});
+
+// Cancelar (soft delete — el log queda).
+app.delete('/api/scheduled-messages/:id', requireAuth, (req, res) => {
+  const me = req.auth.user;
+  const data = loadScheduledMessages();
+  const msg = data.scheduledMessages.find(m => m.id === req.params.id);
+  if (!msg) return res.status(404).json({ error: 'no encontrado.' });
+  if (me.role === 'setter' && msg.setterId !== me.setterId) return res.status(403).json({ error: 'no autorizado.' });
+  if (msg.status !== 'pending') return res.status(400).json({ error: 'solo se pueden cancelar los pending.' });
+  msg.status = 'cancelled';
+  msg.cancelReason = 'cancelado por usuario';
+  msg.cancelledAt = new Date().toISOString();
+  msg.cancelledBy = me.id;
+  saveScheduledMessages(data);
+  res.json({ ok: true });
+});
+
+// Próximas 24h del setter (badge sidebar)
+app.get('/api/scheduled-messages/upcoming', requireAuth, (req, res) => {
+  const me = req.auth.user;
+  const data = loadScheduledMessages();
+  let list = (data.scheduledMessages || []).filter(m => m.status === 'pending');
+  if (me.role === 'setter') list = list.filter(m => m.setterId === me.setterId);
+  const horizon = Date.now() + 24 * 60 * 60 * 1000;
+  list = list.filter(m => new Date(m.scheduledFor).getTime() <= horizon);
+  res.json({ count: list.length, next: list[0]?.scheduledFor || null });
+});
+
 // ── Setters: Info general ──
 app.get('/api/setters', requireAuth, (req, res) => {
   const data = loadSettersData();

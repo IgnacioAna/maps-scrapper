@@ -95,13 +95,17 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
             <span>Setteo (WhatsApp)<span id="sidebar-followups-badge" class="sidebar-badge" style="display:none;">0</span></span>
           </a>
-          <a href="#" class="menu-item" data-target="view-calls" data-label="Llamadas">
+          <a href="#" class="menu-item" data-target="view-calls" data-label="Llamadas" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Llamadas (Sin WSP)</span>
           </a>
           <a href="#" class="menu-item" data-target="view-myperf" data-label="Mi rendimiento">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
             <span>Mi rendimiento</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-scheduled" data-label="Mis programados">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Mis programados <span id="sidebar-scheduled-badge" style="display:none; background:var(--accent); color:#0E1117; font-size:9px; padding:1px 6px; border-radius:8px; margin-left:6px; font-weight:700;"></span></span>
           </a>
           <a href="#" class="menu-item" data-target="view-assistant" data-label="Asistente de respuestas">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1"/><circle cx="13" cy="10" r="1"/><circle cx="17" cy="10" r="1"/></svg>
@@ -608,6 +612,33 @@
                 </div>
                 <div id="lead-variable-blocks" class="quick-message-grid"></div>
               </div>
+
+              <!-- 📅 Programar mensaje (automatizaciones de seguimiento) -->
+              <div class="lead-modal-actions" id="lead-schedule-section" style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border-color);">
+                <h4 style="display:flex; align-items:center; justify-content:space-between;">
+                  📅 Programar mensaje
+                  <span id="lead-schedule-count" style="font-size:11px; color:var(--text-secondary); font-weight:400;"></span>
+                </h4>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                  <input type="datetime-local" id="schedule-datetime" style="padding:8px 10px; font-size:13px; background:var(--bg-app); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px;">
+                  <div style="display:flex; gap:4px; flex-wrap:wrap; align-items:center;">
+                    <button type="button" class="btn-table-action" data-schedule-preset="24h" style="font-size:11px;">+24h</button>
+                    <button type="button" class="btn-table-action" data-schedule-preset="48h" style="font-size:11px;">+48h</button>
+                    <button type="button" class="btn-table-action" data-schedule-preset="72h" style="font-size:11px;">+72h</button>
+                    <button type="button" class="btn-table-action" data-schedule-preset="7d" style="font-size:11px;">+7d</button>
+                    <button type="button" class="btn-table-action" data-schedule-preset="15d" style="font-size:11px;">+15d</button>
+                  </div>
+                </div>
+                <textarea id="schedule-message" placeholder="Mensaje que se va a mandar (puede ser distinto del openMessage)" rows="3" style="width:100%; padding:8px 10px; font-size:13px; background:var(--bg-app); color:var(--text-primary); border:1px solid var(--border-color); border-radius:8px; box-sizing:border-box; resize:vertical;"></textarea>
+                <div style="display:flex; gap:10px; align-items:center; margin-top:8px; flex-wrap:wrap;">
+                  <label style="font-size:12px; color:var(--text-secondary); display:flex; align-items:center; gap:6px;">
+                    <input type="checkbox" id="schedule-cancel-on-reply" checked> Cancelar auto si lead responde
+                  </label>
+                  <span style="flex:1;"></span>
+                  <button id="schedule-submit-btn" class="btn-primary pill-btn" style="padding:8px 16px;">📅 Programar</button>
+                </div>
+                <div id="schedule-existing-list" style="margin-top:12px;"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -648,6 +679,15 @@
           <div class="header-actions">
             <select id="calls-setter-select" class="setter-select" data-roles="admin"><option value="">Todos</option></select>
             <select id="calls-country-filter" class="setter-select" style="min-width:160px;"><option value="">🌎 Todos los países</option></select>
+            <select id="calls-sort-select" class="setter-select" style="min-width:180px;" title="Cómo ordenar los leads">
+              <option value="never_called">🆕 Nunca llamados primero</option>
+              <option value="recent">⬇️ Más recientes</option>
+              <option value="oldest">⬆️ Más viejos</option>
+              <option value="country">🌎 Por país</option>
+              <option value="attempts_desc">📞 Más intentos primero</option>
+              <option value="attempts_asc">🔄 Menos intentos primero</option>
+              <option value="last_call">🕐 Última llamada (recientes)</option>
+            </select>
             <input type="text" id="calls-search" placeholder="🔍 Buscar nombre/tel..." style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
             <button id="calls-add-manual-btn" class="btn-primary" data-roles="admin" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;" title="Agregar un lead manualmente (testing o referidos)">＋ Lead manual</button>
           </div>
@@ -1305,6 +1345,28 @@
       </div>
 
       <!-- Mi rendimiento (setter + admin + supervisor) — mobile-first -->
+      <!-- 📅 Mis programados (automatizaciones de seguimiento) -->
+      <div id="view-scheduled" class="module-view hidden">
+        <header class="page-header">
+          <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:14px;">
+            <div>
+              <h2 class="page-title">📅 Mis programados</h2>
+              <p class="muted" style="margin-top:6px;">Mensajes de seguimiento que el sistema va a mandar solo por vos. Requiere que tengas wa-multi prendido a la hora programada.</p>
+            </div>
+            <button id="scheduled-refresh-btn" class="btn btn-secondary btn-sm">↻ Refrescar</button>
+          </div>
+        </header>
+        <div style="margin-top:18px; display:flex; gap:6px; flex-wrap:wrap;">
+          <button class="pipe-filter active" data-scheduled-tab="pending">Pendientes <span id="sched-tab-count-pending" class="muted" style="font-size:10px;"></span></button>
+          <button class="pipe-filter" data-scheduled-tab="sent">Enviados <span id="sched-tab-count-sent" class="muted" style="font-size:10px;"></span></button>
+          <button class="pipe-filter" data-scheduled-tab="failed">Fallidos <span id="sched-tab-count-failed" class="muted" style="font-size:10px;"></span></button>
+          <button class="pipe-filter" data-scheduled-tab="cancelled">Cancelados <span id="sched-tab-count-cancelled" class="muted" style="font-size:10px;"></span></button>
+          <button class="pipe-filter" data-scheduled-tab="expired">Expirados <span id="sched-tab-count-expired" class="muted" style="font-size:10px;"></span></button>
+          <button class="pipe-filter" data-scheduled-tab="all">Todos</button>
+        </div>
+        <div id="scheduled-list" style="margin-top:14px;"></div>
+      </div>
+
       <div id="view-myperf" class="module-view hidden">
         <header class="page-header">
           <h2 class="page-title">Mi rendimiento</h2>
@@ -2401,7 +2463,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260522k"></script>
+  <script type="module" src="/app.js?v=20260522l"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

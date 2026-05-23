@@ -2703,6 +2703,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         notesList.innerHTML = '<p class="text-muted" style="font-size:12px; text-align:center; padding:16px;">Sin notas aún.</p>';
       }
       document.getElementById('modal-note-input').value = '';
+      // Hidratar seccion 📅 Programar mensaje: input default = mañana 10am,
+      // textarea precargado con openMessage actual del lead, lista de
+      // programados ya existentes del lead.
+      try {
+        const dtInput = document.getElementById('schedule-datetime');
+        if (dtInput) {
+          const tomorrow10 = new Date();
+          tomorrow10.setDate(tomorrow10.getDate() + 1);
+          tomorrow10.setHours(10, 0, 0, 0);
+          // Format yyyy-mm-ddThh:mm (sin segundos)
+          const pad = n => String(n).padStart(2, '0');
+          dtInput.value = `${tomorrow10.getFullYear()}-${pad(tomorrow10.getMonth() + 1)}-${pad(tomorrow10.getDate())}T${pad(tomorrow10.getHours())}:${pad(tomorrow10.getMinutes())}`;
+        }
+        const msgArea = document.getElementById('schedule-message');
+        if (msgArea) msgArea.value = lead.openMessage || '';
+        const cancelCb = document.getElementById('schedule-cancel-on-reply');
+        if (cancelCb) cancelCb.checked = true;
+        // Cargar programados existentes del lead
+        if (typeof window._loadScheduledForLead === 'function') window._loadScheduledForLead(leadId);
+      } catch (e) { console.warn('schedule hydrate err:', e); }
       leadModal.classList.remove('hidden');
     };
 
@@ -2742,6 +2762,115 @@ document.addEventListener('DOMContentLoaded', async () => {
         window._openLeadModal(currentModalLeadId);
       } catch (err) { console.error(err); }
     });
+
+    // ─── 📅 PROGRAMAR MENSAJE ───────────────────────────────────────
+    // Phase setter-automations-followups (2026-05-22)
+    // Setter elige fecha + escribe mensaje + (opcionalmente) cancelar-si-responde
+    // → POST a /api/scheduled-messages → entrada en queue del scheduler server-side
+    function _scheduleFormatDatetimeLocal(d) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    // Presets +24h/+48h/+72h/+7d/+15d → cargan el datetime input
+    document.querySelectorAll('[data-schedule-preset]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const preset = btn.dataset.schedulePreset;
+        const map = { '24h': 24*3600, '48h': 48*3600, '72h': 72*3600, '7d': 7*24*3600, '15d': 15*24*3600 };
+        const secs = map[preset];
+        if (!secs) return;
+        const target = new Date(Date.now() + secs * 1000);
+        // Si es +24h o +48h o +72h, mantener la hora actual.
+        // Si es +7d o +15d, default a las 10am de ese día (mas razonable como horario laboral)
+        if (preset === '7d' || preset === '15d') target.setHours(10, 0, 0, 0);
+        const dtInput = document.getElementById('schedule-datetime');
+        if (dtInput) dtInput.value = _scheduleFormatDatetimeLocal(target);
+      });
+    });
+
+    document.getElementById('schedule-submit-btn')?.addEventListener('click', async () => {
+      if (!currentModalLeadId) return;
+      const dtVal = document.getElementById('schedule-datetime').value;
+      const msgVal = document.getElementById('schedule-message').value.trim();
+      const cancelOnReply = document.getElementById('schedule-cancel-on-reply').checked;
+      if (!dtVal) return alert('Elegí fecha y hora.');
+      if (!msgVal) return alert('Escribí el mensaje a mandar.');
+      const when = new Date(dtVal);
+      if (when.getTime() < Date.now() - 60_000) return alert('La fecha tiene que ser en el futuro.');
+      const btn = document.getElementById('schedule-submit-btn');
+      btn.disabled = true; const prevTxt = btn.textContent; btn.textContent = 'Programando...';
+      try {
+        const r = await fetch(apiUrl('/api/scheduled-messages'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            leadId: currentModalLeadId,
+            scheduledFor: when.toISOString(),
+            message: msgVal,
+            cancelOnReply,
+          }),
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+        btn.textContent = '✓ Programado';
+        setTimeout(() => { btn.textContent = prevTxt; btn.disabled = false; }, 1500);
+        // Refrescar lista de programados del lead
+        if (typeof window._loadScheduledForLead === 'function') window._loadScheduledForLead(currentModalLeadId);
+      } catch (e) {
+        alert('Error: ' + e.message);
+        btn.textContent = prevTxt; btn.disabled = false;
+      }
+    });
+
+    // Lista de programados de este lead (renderiza dentro del modal)
+    window._loadScheduledForLead = async (leadId) => {
+      const cont = document.getElementById('schedule-existing-list');
+      const countEl = document.getElementById('lead-schedule-count');
+      if (!cont) return;
+      try {
+        const r = await fetch(apiUrl('/api/scheduled-messages?leadId=' + encodeURIComponent(leadId) + '&limit=20'));
+        const data = await r.json();
+        const list = data.scheduledMessages || [];
+        const pending = list.filter(m => m.status === 'pending');
+        if (countEl) countEl.textContent = pending.length > 0 ? `${pending.length} pendiente${pending.length === 1 ? '' : 's'}` : '';
+        if (list.length === 0) { cont.innerHTML = ''; return; }
+        const statusChip = (s) => {
+          const map = {
+            pending: ['rgba(157,133,242,0.15)', 'var(--accent)', '⏳ Pendiente'],
+            sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
+            failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
+            cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
+            expired: ['rgba(248,81,73,0.10)', 'var(--danger)', '⌛ Expirado'],
+          };
+          const [bg, col, label] = map[s] || ['rgba(0,0,0,0.1)', 'var(--text)', s];
+          return `<span style="font-size:10px; padding:2px 8px; background:${bg}; color:${col}; border-radius:6px;">${label}</span>`;
+        };
+        cont.innerHTML = '<div style="margin-top:10px; font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Programados de este lead</div>' +
+          list.map(m => {
+            const when = new Date(m.scheduledFor);
+            const whenStr = when.toLocaleString();
+            const canCancel = m.status === 'pending';
+            return `<div style="display:flex; align-items:start; gap:10px; padding:8px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; margin-top:6px;">
+              <div style="flex:1; min-width:0;">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                  <span style="font-size:12px; color:var(--text-secondary);">${escHtml(whenStr)}</span>
+                  ${statusChip(m.status)}
+                </div>
+                <div style="font-size:12px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escHtml(m.message)}">${escHtml(m.message.slice(0, 100))}${m.message.length > 100 ? '…' : ''}</div>
+                ${m.lastFailureReason ? `<div style="font-size:10px; color:var(--danger); margin-top:2px;">⚠ ${escHtml(m.lastFailureReason)}</div>` : ''}
+              </div>
+              ${canCancel ? `<button onclick="window._cancelScheduled('${escHtml(m.id)}')" style="padding:4px 8px; background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; font-size:11px; cursor:pointer;">Cancelar</button>` : ''}
+            </div>`;
+          }).join('');
+      } catch (e) { console.warn('schedule list err:', e); }
+    };
+    window._cancelScheduled = async (id) => {
+      if (!confirm('¿Cancelar este mensaje programado?')) return;
+      try {
+        const r = await fetch(apiUrl('/api/scheduled-messages/' + encodeURIComponent(id)), { method: 'DELETE' });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || 'HTTP ' + r.status); }
+        if (currentModalLeadId) window._loadScheduledForLead(currentModalLeadId);
+      } catch (e) { alert('Error: ' + e.message); }
+    };
 
     // Filtros
     document.querySelectorAll('.pipe-filter').forEach(btn => {
@@ -7463,6 +7592,100 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('myp-period')?.addEventListener('change', () => _mypLoad());
   document.getElementById('myp-setter')?.addEventListener('change', () => _mypLoad());
   document.getElementById('myp-refresh')?.addEventListener('click', () => _mypLoad());
+
+  // ─── Vista 📅 Mis programados ──────────────────────────────────
+  let _scheduledTab = 'pending';
+  let _scheduledCache = [];
+  async function _loadScheduled() {
+    const cont = document.getElementById('scheduled-list');
+    if (!cont) return;
+    cont.innerHTML = '<div class="muted" style="padding:20px; text-align:center;">Cargando...</div>';
+    try {
+      // Pedimos sin filtro para poder contar por tab
+      const r = await fetch(apiUrl('/api/scheduled-messages?limit=500'));
+      const data = await r.json();
+      _scheduledCache = data.scheduledMessages || [];
+      _renderScheduled();
+    } catch (e) {
+      cont.innerHTML = '<div class="muted" style="padding:20px; color:var(--danger);">Error: ' + escHtml(e.message) + '</div>';
+    }
+  }
+  function _renderScheduled() {
+    const cont = document.getElementById('scheduled-list');
+    if (!cont) return;
+    // Counts por tab
+    const counts = { pending: 0, sent: 0, failed: 0, cancelled: 0, expired: 0, all: _scheduledCache.length };
+    _scheduledCache.forEach(m => { if (counts[m.status] !== undefined) counts[m.status]++; });
+    ['pending','sent','failed','cancelled','expired'].forEach(s => {
+      const el = document.getElementById('sched-tab-count-' + s);
+      if (el) el.textContent = '(' + counts[s] + ')';
+    });
+    const filtered = _scheduledTab === 'all' ? _scheduledCache : _scheduledCache.filter(m => m.status === _scheduledTab);
+    if (filtered.length === 0) {
+      cont.innerHTML = '<div class="empty-state" style="padding:40px; text-align:center; color:var(--text-secondary);">Sin mensajes en esta categoría.</div>';
+      return;
+    }
+    const statusChip = (s) => {
+      const map = {
+        pending: ['rgba(157,133,242,0.15)', 'var(--accent)', '⏳ Pendiente'],
+        sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
+        failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
+        cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
+        expired: ['rgba(248,81,73,0.10)', 'var(--danger)', '⌛ Expirado'],
+      };
+      const [bg, col, label] = map[s] || ['rgba(0,0,0,0.1)', 'var(--text)', s];
+      return '<span style="font-size:10px; padding:2px 8px; background:' + bg + '; color:' + col + '; border-radius:6px;">' + label + '</span>';
+    };
+    // Necesitamos los nombres de leads — los cacheamos del setterLeads global si está
+    const leadName = (id) => {
+      const l = (window.__setterLeads || []).find(x => x.id === id);
+      return l ? l.name : id;
+    };
+    cont.innerHTML = '<table style="width:100%; border-collapse:collapse;"><thead><tr style="text-align:left; font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">' +
+      '<th style="padding:8px 10px;">Cuándo</th><th style="padding:8px 10px;">Lead</th><th style="padding:8px 10px;">Mensaje</th><th style="padding:8px 10px;">Estado</th><th style="padding:8px 10px;">Acciones</th>' +
+      '</tr></thead><tbody>' +
+      filtered.map(m => {
+        const when = new Date(m.scheduledFor);
+        const whenStr = when.toLocaleString();
+        const canCancel = m.status === 'pending';
+        return '<tr style="border-top:1px solid var(--border-color);">' +
+          '<td style="padding:10px; font-size:12px; color:var(--text-primary); white-space:nowrap;">' + escHtml(whenStr) + '</td>' +
+          '<td style="padding:10px; font-size:12px;"><a href="#" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(m.leadId) + '\');" style="color:var(--accent); text-decoration:none;">' + escHtml(leadName(m.leadId).substring(0, 40)) + '</a></td>' +
+          '<td style="padding:10px; font-size:12px; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="' + escHtml(m.message) + '">' + escHtml(m.message.slice(0, 80)) + (m.message.length > 80 ? '…' : '') + '</td>' +
+          '<td style="padding:10px;">' + statusChip(m.status) + (m.lastFailureReason ? '<div style="font-size:10px; color:var(--danger); margin-top:3px;">' + escHtml(m.lastFailureReason) + '</div>' : '') + '</td>' +
+          '<td style="padding:10px;">' + (canCancel ? '<button onclick="window._cancelScheduled(\'' + escHtml(m.id) + '\').then(() => window._loadScheduled())" style="padding:4px 10px; background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; font-size:11px; cursor:pointer;">Cancelar</button>' : '—') + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+  window._loadScheduled = _loadScheduled;
+  document.querySelectorAll('[data-scheduled-tab]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-scheduled-tab]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _scheduledTab = btn.dataset.scheduledTab;
+      _renderScheduled();
+    });
+  });
+  document.querySelector('[data-target="view-scheduled"]')?.addEventListener('click', () => {
+    setTimeout(_loadScheduled, 80);
+  });
+  document.getElementById('scheduled-refresh-btn')?.addEventListener('click', _loadScheduled);
+
+  // Badge del sidebar: cada 60s consulta cuántos pendientes en las próximas 24h
+  async function _updateScheduledBadge() {
+    try {
+      const r = await fetch(apiUrl('/api/scheduled-messages/upcoming'));
+      const d = await r.json();
+      const badge = document.getElementById('sidebar-scheduled-badge');
+      if (badge) {
+        if (d.count > 0) { badge.textContent = d.count; badge.style.display = 'inline-block'; }
+        else { badge.style.display = 'none'; }
+      }
+    } catch {}
+  }
+  _updateScheduledBadge();
+  setInterval(_updateScheduledBadge, 60_000);
 
   // ── Equipo (admin + supervisor) ──
   let _teamData = null;
