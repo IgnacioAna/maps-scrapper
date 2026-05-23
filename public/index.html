@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCM</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%239D85F2'/%3E%3Cstop offset='100%25' stop-color='%237C5DDB'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='url(%23g)'/%3E%3Cpath fill='%230F1115' d='M30 36 L46 36 L50 56 L54 36 L70 36 L62 68 L46 68 L42 50 L38 68 L22 68 Z'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="/style.css?v=20260522c">
+  <title>SCM Dental — Sales Closing Machine</title>
+  <link rel="icon" type="image/png" href="/assets/scm-mark.png">
+  <link rel="apple-touch-icon" href="/assets/scm-mark.png">
+  <meta name="theme-color" content="#0F1115">
+  <link rel="stylesheet" href="/style.css?v=20260523a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -30,12 +32,10 @@
 <body>
   <div id="auth-screen" class="auth-screen">
     <div class="auth-card">
-      <div class="auth-brand">
-        <div class="logo">
-          <span class="logo-mark" style="width:28px;height:28px;font-size:14px;">S</span>
-          <h1>SCM</h1>
-        </div>
-        <p class="auth-subtitle" id="auth-subtitle">Acceso por rol para admin y setters</p>
+      <div class="auth-brand auth-brand-enhanced">
+        <img src="/assets/scm-logo.png" alt="SCM Dental" class="auth-logo-img" />
+        <p class="auth-tagline">Sales Closing Machine</p>
+        <p class="auth-subtitle" id="auth-subtitle">Una máquina diseñada para cerrar — no para distraer.</p>
       </div>
 
       <form id="auth-form" class="auth-form">
@@ -70,9 +70,12 @@
   <div id="main-layout" class="ai-studio-layout hidden">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <button class="logo logo-toggle" type="button" aria-label="Colapsar / expandir menú" title="Colapsar / expandir">
-          <span class="logo-mark">S</span>
-          <h1>SCM</h1>
+        <button class="logo logo-toggle" type="button" aria-label="Colapsar / expandir menú" title="SCM Dental — Sales Closing Machine">
+          <img src="/assets/scm-mark.png" alt="SCM" class="logo-mark-img" />
+          <div class="sidebar-brand-text">
+            <h1>SCM Dental</h1>
+            <span class="sidebar-brand-tagline">Sales Closing Machine</span>
+          </div>
         </button>
         <button class="menu-toggle" type="button" aria-label="Colapsar sidebar">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -2700,7 +2703,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260523a"></script>
+  <script type="module" src="/app.js?v=20260523b"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>

@@ -4917,26 +4917,57 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     'EC_mobile': 0.080, 'EC_landline': 0.030,
     'BO_mobile': 0.150, 'BO_landline': 0.090,
     'UY_mobile': 0.100, 'UY_landline': 0.030,
+    'BR_mobile': 0.080, 'BR_landline': 0.020,
     'US_any':    0.007,
     'default':   0.080,
   };
+  // Audit fix Sprint 17: detectar mobile vs landline correctamente por país.
+  // Las heurísticas usan los prefijos internacionales E.164 oficiales. Más
+  // preciso que asumir mobile siempre (que sobreestimaba ~25-35%).
+  function _detectCountryAndType(digits) {
+    if (!digits) return { country: 'default', isMobile: true };
+    // AR: +549<NUM> = móvil, +54<NUM> sin 9 = fijo (NUM sigue con prefijo área)
+    if (digits.startsWith('549')) return { country: 'AR', isMobile: true };
+    if (digits.startsWith('54'))  return { country: 'AR', isMobile: false };
+    // MX: +521<NUM> o +5219... = móvil (después del 52 va el "1"), +52<área 2-3 dígitos> = fijo
+    // En 2026, México usa 521 oficial para móviles desde el exterior
+    if (digits.startsWith('521')) return { country: 'MX', isMobile: true };
+    if (digits.startsWith('52'))  return { country: 'MX', isMobile: false };
+    // CL: +569<NUM> = móvil (Chile móvil 9 dígitos comienza con 9), +562<NUM> = fijo Santiago
+    if (digits.startsWith('569')) return { country: 'CL', isMobile: true };
+    if (digits.startsWith('56'))  return { country: 'CL', isMobile: false };
+    // CO: +573<NUM> = móvil (Colombia móvil empieza con 3), +57<área 1-2 dígitos> = fijo
+    if (digits.startsWith('573')) return { country: 'CO', isMobile: true };
+    if (digits.startsWith('57'))  return { country: 'CO', isMobile: false };
+    // PE: +519<NUM> = móvil (Perú móvil 9 dígitos comienza con 9), +511 = fijo Lima
+    if (digits.startsWith('519')) return { country: 'PE', isMobile: true };
+    if (digits.startsWith('51'))  return { country: 'PE', isMobile: false };
+    // EC: +5939<NUM> = móvil (Ecuador móvil), +593<área 1-2 dígitos no-9> = fijo
+    if (digits.startsWith('5939')) return { country: 'EC', isMobile: true };
+    if (digits.startsWith('593'))  return { country: 'EC', isMobile: false };
+    // BO: Bolivia mobile empieza con 6 o 7 después del 591. Fijo con 2/3/4.
+    if (/^591[67]/.test(digits)) return { country: 'BO', isMobile: true };
+    if (digits.startsWith('591')) return { country: 'BO', isMobile: false };
+    // UY: +5989<NUM> = móvil (Uruguay móvil 9 dígitos comienza con 9), +5982/4 = fijo
+    if (digits.startsWith('5989')) return { country: 'UY', isMobile: true };
+    if (digits.startsWith('598'))  return { country: 'UY', isMobile: false };
+    // ES: +346/+347 = móvil España (móviles empiezan con 6 o 7), +349/+348 = fijo
+    if (/^34[67]/.test(digits)) return { country: 'ES', isMobile: true };
+    if (digits.startsWith('34')) return { country: 'ES', isMobile: false };
+    // BR: +55<DD>9<NUM> = móvil (con 9 después del DD de área), +55<DD><NUM> = fijo
+    if (/^55\d{2}9/.test(digits)) return { country: 'BR', isMobile: true };
+    if (digits.startsWith('55'))  return { country: 'BR', isMobile: false };
+    // US/CA: no distinguimos mobile vs landline (tarifa unificada en Telnyx)
+    if (digits.startsWith('1')) return { country: 'US', isMobile: false };
+    return { country: 'default', isMobile: true };
+  }
+
   function _estimateTelnyxCost(destinationPhone, durationSecs) {
     const digits = String(destinationPhone || '').replace(/\D/g, '');
     if (!digits || !durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
-    let country = 'default';
-    if (digits.startsWith('34')) country = 'ES';
-    else if (digits.startsWith('52')) country = 'MX';
-    else if (digits.startsWith('57')) country = 'CO';
-    else if (digits.startsWith('54')) country = 'AR';
-    else if (digits.startsWith('56')) country = 'CL';
-    else if (digits.startsWith('51')) country = 'PE';
-    else if (digits.startsWith('593')) country = 'EC';
-    else if (digits.startsWith('591')) country = 'BO';
-    else if (digits.startsWith('598')) country = 'UY';
-    else if (digits.startsWith('1')) country = 'US';
-    // Móvil vs landline: heurística simple. Asumimos mobile por default (peor caso = más cobertura).
-    const tariffKey = country === 'US' ? 'US_any' : `${country}_mobile`;
-    const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN['default'];
+    const { country, isMobile } = _detectCountryAndType(digits);
+    const tariffKey = country === 'US' ? 'US_any' : `${country}_${isMobile ? 'mobile' : 'landline'}`;
+    const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN[`${country}_mobile`] || TELNYX_RATES_USD_PER_MIN['default'];
     const minutes = durationSecs / 60;
     return { cost: +(rate * minutes).toFixed(4), country, tariffKey };
   }

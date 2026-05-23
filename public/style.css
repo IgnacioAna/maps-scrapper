@@ -2755,56 +2755,33 @@ a:focus-visible {
 
 .auth-brand-enhanced {
   margin-bottom: 28px;
-}
-
-.logo-hero {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
-}
-
-.logo-mark-hero {
-  width: 44px !important;
-  height: 44px !important;
-  font-size: 22px !important;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--accent) 0%, #7c5ee8 100%);
-  color: #fff;
-  border-radius: 12px;
-  box-shadow:
-    0 8px 20px rgba(157, 133, 242, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  letter-spacing: -0.02em;
-}
-
-.logo-hero-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  line-height: 1;
+  align-items: flex-start;
+  gap: 4px;
 }
 
-.logo-hero-title {
-  font-size: 28px !important;
-  font-weight: 800 !important;
-  letter-spacing: -0.02em;
-  margin: 0 !important;
-  line-height: 1 !important;
-  background: linear-gradient(180deg, var(--text-primary) 0%, rgba(229, 231, 226, 0.7) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* Logo del login: imagen real SCM_logo2 (azul oscuro + celeste) */
+.auth-logo-img {
+  width: 160px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 16px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  display: block;
+  margin-bottom: 8px;
 }
 
-.logo-hero-tagline {
+.auth-tagline {
   font-size: 10.5px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  margin-top: 2px;
-  opacity: 0.85;
+  letter-spacing: 0.22em;
+  margin: 0 !important;
+  opacity: 0.9;
 }
 
 .auth-subtitle {
@@ -2813,6 +2790,31 @@ a:focus-visible {
   max-width: 320px;
   margin-top: 4px !important;
   color: rgba(229, 231, 226, 0.65) !important;
+}
+
+/* Logo mark del sidebar — imagen real */
+.logo-mark-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.logo-toggle:hover .logo-mark-img {
+  transform: scale(1.06);
+  box-shadow:
+    0 6px 16px rgba(157, 133, 242, 0.35),
+    0 0 0 1px rgba(157, 133, 242, 0.3);
+}
+
+/* En sidebar colapsado, el logo-mark queda solo (sin texto) */
+.sidebar.is-collapsed .logo-mark-img {
+  margin: 0 auto;
 }
 
 /* Sidebar branding con tagline mini */
@@ -2880,7 +2882,8 @@ a:focus-visible {
   50% { box-shadow: 0 0 0 6px rgba(157, 133, 242, 0.18); }
 }
 
-body.has-active-call .sidebar .logo-mark {
+body.has-active-call .sidebar .logo-mark,
+body.has-active-call .sidebar .logo-mark-img {
   animation: scmLogoPulse 2s ease-in-out infinite;
 }
 
@@ -2888,5 +2891,185 @@ body.has-active-call .sidebar .logo-mark {
 .empty-state {
   font-style: italic;
   opacity: 0.7;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   SCM IDENTITY v2 — PREMIUM POLISH
+   ─────────────────────────────────────────────────────────────
+   Refinamiento general — sin cambiar paleta. Más jerarquía,
+   espaciado, sombras sofisticadas, microinteracciones sutiles.
+═════════════════════════════════════════════════════════════════ */
+
+/* Cards más definidas con borde + sombra interna sutil */
+.card {
+  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.4) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Headers de página — más impactantes */
+.page-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 22px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+/* Menu items del sidebar — premium hover state */
+.menu-item {
+  position: relative;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menu-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+  transition: height 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu-item.active::before {
+  height: 60%;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.menu-item.active {
+  background: linear-gradient(90deg, rgba(157, 133, 242, 0.1), rgba(157, 133, 242, 0.02));
+}
+
+/* Botones premium con micro lift */
+.btn-primary,
+.btn-secondary {
+  transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+/* Stats prominentes con sombra interna sutil */
+.stat-card {
+  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(157, 133, 242, 0.18);
+}
+
+/* Inputs con focus state más prominente */
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(157, 133, 242, 0.12);
+}
+
+/* Modal overlays con backdrop más sofisticado */
+.modal-overlay {
+  background: rgba(8, 9, 12, 0.7) !important;
+  animation: scmFadeIn 0.18s ease-out;
+}
+
+.modal-card {
+  animation: scmModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+@keyframes scmFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scmModalIn {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Scrollbars premium dark */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 133, 242, 0.3);
+  background-clip: padding-box;
+}
+
+/* Chips premium */
+.chip {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Disabled state con menos opacity pero coherente */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+}
+
+/* Loader spinner sutil pero premium */
+.loader {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: scmSpin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes scmSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Selection color con brand */
+::selection {
+  background: rgba(157, 133, 242, 0.35);
+  color: #fff;
 }
 
