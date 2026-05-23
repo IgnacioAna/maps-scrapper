@@ -351,6 +351,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (currentUser.role === 'admin' || currentUser.role === 'supervisor') {
       _startSpeedToLeadPolling();
     }
+    // Sprint 27: Callback Due polling — admin + supervisor + setter (cada uno
+    // ve solo los suyos en backend). Lightweight, cada 90s.
+    _startCallbackDuePolling();
 
     if (logoutBtn) {
       logoutBtn.addEventListener('click', async () => {
@@ -603,6 +606,122 @@ document.addEventListener('DOMContentLoaded', async () => {
       s.id = 'tlx-speed-css';
       s.textContent = '@keyframes tlxSlideInRight { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }';
       document.head.appendChild(s);
+    }
+
+    // ───────────────────────────────────────────────────────────────
+    // Sprint 27: Callback Due Polling
+    // Cada 90s, fetch callbacks vencidos en los últimos 90 minutos
+    // (no notificados aún). Toast + beep distintivo. LocalStorage de
+    // IDs notificados para no spammear entre refreshes.
+    // ───────────────────────────────────────────────────────────────
+    let _cbLastCheck = new Date().toISOString();
+    let _cbPollTimer = null;
+    function _cbGetNotifiedSet() {
+      try {
+        const raw = localStorage.getItem('scm_cb_notified_' + (currentUser?.id || 'anon'));
+        if (!raw) return new Set();
+        const arr = JSON.parse(raw);
+        return new Set(Array.isArray(arr) ? arr : []);
+      } catch { return new Set(); }
+    }
+    function _cbAddNotified(id) {
+      try {
+        const set = _cbGetNotifiedSet();
+        set.add(id);
+        // Cap a últimos 500 para no crecer indefinidamente
+        const arr = [...set].slice(-500);
+        localStorage.setItem('scm_cb_notified_' + (currentUser?.id || 'anon'), JSON.stringify(arr));
+      } catch {}
+    }
+    function _playCallbackBeep() {
+      // Patrón distinto al speed-to-lead: 3 beeps cortos descendentes
+      try {
+        if (!_speedAudioCtx) _speedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = _speedAudioCtx;
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        const now = ctx.currentTime;
+        [1200, 1000, 800].forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0, now + i * 0.13);
+          gain.gain.linearRampToValueAtTime(0.14, now + i * 0.13 + 0.015);
+          gain.gain.setValueAtTime(0.14, now + i * 0.13 + 0.09);
+          gain.gain.linearRampToValueAtTime(0, now + i * 0.13 + 0.11);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(now + i * 0.13);
+          osc.stop(now + i * 0.13 + 0.12);
+        });
+      } catch {}
+    }
+    function _showCallbackDueAlert(item) {
+      _playCallbackBeep();
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'position:fixed; top:24px; right:24px; max-width:380px; background:linear-gradient(135deg, #5BA3F2 0%, #2F70C0 100%); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 12px 40px rgba(91,163,242,0.5), 0 0 0 2px rgba(255,255,255,0.1); z-index:99999; animation:tlxSlideInRight 0.3s cubic-bezier(0.16,1,0.3,1); cursor:pointer;';
+      const cityCountry = [item.city, item.country].filter(Boolean).join(', ');
+      const cbTime = new Date(item.callbackAt);
+      const timeStr = `${String(cbTime.getHours()).padStart(2,'0')}:${String(cbTime.getMinutes()).padStart(2,'0')}`;
+      wrap.innerHTML = `
+        <div style="display:flex; align-items:flex-start; gap:10px;">
+          <div style="font-size:24px; flex-shrink:0;">📅</div>
+          <div style="flex:1;">
+            <div style="font-size:11px; opacity:0.9; text-transform:uppercase; letter-spacing:0.6px; font-weight:600;">Callback programado — ${timeStr}</div>
+            <div style="font-size:14px; font-weight:700; margin-top:3px;">${escHtml(item.name || item.phone || 'Lead')}</div>
+            <div style="font-size:11.5px; opacity:0.85; margin-top:2px;">${escHtml(cityCountry)} · ${escHtml(item.phone || '')}</div>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <button data-action="call" style="background:#fff; color:#2F70C0; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">📞 Llamar ahora</button>
+              <button data-action="dismiss" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:5px 11px; border-radius:6px; font-size:11px; cursor:pointer;">Cerrar</button>
+            </div>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+      wrap.querySelector('[data-action="call"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrap.remove();
+        document.querySelector('[data-target="view-calls"]')?.click();
+        setTimeout(() => {
+          const row = document.querySelector(`.call-row[data-id="${CSS.escape(item.id)}"]`);
+          if (row) {
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            row.style.outline = '2px solid #5BA3F2';
+            setTimeout(() => { row.style.outline = ''; }, 2000);
+          }
+        }, 400);
+      });
+      wrap.querySelector('[data-action="dismiss"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        wrap.remove();
+      });
+      // Auto-dismiss tras 40s (más tiempo que speed-to-lead porque es menos urgente)
+      setTimeout(() => { if (wrap.parentNode) wrap.remove(); }, 40000);
+    }
+    async function _startCallbackDuePolling() {
+      if (_cbPollTimer) clearInterval(_cbPollTimer);
+      _cbLastCheck = new Date().toISOString();
+      const poll = async () => {
+        try {
+          const r = await fetch(apiUrl('/api/setters/callbacks/due?since=' + encodeURIComponent(_cbLastCheck) + '&window=90'), { credentials: 'include' });
+          if (!r.ok) return;
+          const d = await r.json();
+          _cbLastCheck = d.serverTime || _cbLastCheck;
+          if (Array.isArray(d.items) && d.items.length > 0) {
+            const notified = _cbGetNotifiedSet();
+            for (const item of d.items) {
+              // Key incluye callbackAt para que si reprogramaste, vuelva a notificar
+              const key = `${item.id}:${item.callbackAt}`;
+              if (notified.has(key)) continue;
+              _showCallbackDueAlert(item);
+              _cbAddNotified(key);
+            }
+          }
+        } catch (e) { /* silent */ }
+      };
+      _cbPollTimer = setInterval(poll, 90000); // 90s
+      setTimeout(poll, 3000); // primera corrida después de 3s
+    }
+    function _stopCallbackDuePolling() {
+      if (_cbPollTimer) { clearInterval(_cbPollTimer); _cbPollTimer = null; }
     }
 
     // Poblar selector de países
@@ -3946,9 +4065,104 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Sprint 21: render chips de filtro por país con count
         _callsRenderCountryChips();
+        // Sprint 26: render mini-calendario de callbacks futuros
+        _callsRenderCallbackAgenda();
         renderCallsList();
         renderCallsStats();
       } catch (e) { console.error(e); }
+    }
+
+    // Sprint 26: Render agenda de próximos callbacks (próximos 14 días).
+    // Agrupado por día. Click en un row → expande ese lead en la lista.
+    function _callsRenderCallbackAgenda() {
+      const wrap = document.getElementById('calls-callback-agenda-wrap');
+      const body = document.getElementById('calls-callback-agenda-body');
+      const countEl = document.getElementById('calls-callback-agenda-count');
+      if (!wrap || !body) return;
+
+      const now = Date.now();
+      const horizon = now + (14 * 24 * 3600 * 1000); // próximas 2 semanas
+      const items = callsLeadsCache
+        .filter(l => l.callbackAt && !['descartado','agendado'].includes(l.estado))
+        .map(l => ({ lead: l, ts: new Date(l.callbackAt).getTime() }))
+        .filter(x => x.ts > now && x.ts <= horizon)
+        .sort((a, b) => a.ts - b.ts);
+
+      if (items.length === 0) {
+        wrap.style.display = 'none';
+        return;
+      }
+      wrap.style.display = 'block';
+      countEl.textContent = `(${items.length} próximo${items.length === 1 ? '' : 's'})`;
+
+      // Agrupar por día (YYYY-MM-DD local)
+      const todayKey = new Date().toISOString().substring(0, 10);
+      const tomorrowKey = new Date(now + 86400000).toISOString().substring(0, 10);
+      const groups = {};
+      const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+      for (const it of items) {
+        const d = new Date(it.ts);
+        const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        if (!groups[key]) {
+          let label;
+          if (key === todayKey) label = '🔥 Hoy';
+          else if (key === tomorrowKey) label = '🌞 Mañana';
+          else label = `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+          groups[key] = { label, items: [] };
+        }
+        groups[key].items.push(it);
+      }
+
+      const sortedKeys = Object.keys(groups).sort();
+      body.innerHTML = sortedKeys.map(k => {
+        const g = groups[k];
+        return `<div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary); margin-top:6px;">${g.label} <span style="color:var(--text-tertiary); font-weight:500;">· ${g.items.length}</span></div>
+          ${g.items.map(({ lead: l, ts }) => {
+            const d = new Date(ts);
+            const hour = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            const overdue = ts <= now;
+            const flag = fmtCountry(l.country) || '📞';
+            return `<button type="button" class="cb-agenda-item" data-lead-id="${escHtml(l.id)}" style="display:grid; grid-template-columns:54px 20px 1fr auto; gap:10px; align-items:center; padding:7px 10px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; cursor:pointer; transition:all 0.15s; font-family:inherit; text-align:left;">
+              <span style="font-family:ui-monospace,monospace; font-weight:600; color:${overdue ? 'var(--warning)' : 'var(--accent)'}; font-size:12.5px; font-variant-numeric:tabular-nums;">${hour}</span>
+              <span style="font-size:14px;">${flag}</span>
+              <span style="color:var(--text-primary); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' · <span style=\"color:var(--text-tertiary);\">' + escHtml(l.city) + '</span>' : ''}</span>
+              <span style="font-size:10px; color:var(--text-tertiary);">${overdue ? '⏰ vencido' : 'click para abrir →'}</span>
+            </button>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+
+      // Click handler — abrir el lead en la lista principal
+      body.querySelectorAll('.cb-agenda-item').forEach(btn => {
+        btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-app)'; });
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-lead-id');
+          // Limpiar filtros de país que oculten al lead
+          const cf = document.getElementById('calls-country-filter');
+          if (cf.value) {
+            const lead = callsLeadsCache.find(l => l.id === id);
+            if (lead && (lead.country || '').trim() !== cf.value) {
+              cf.value = '';
+              try { localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), ''); } catch {}
+              _callsRenderCountryChips();
+            }
+          }
+          _callsCurrentPage = 1;
+          _callsExpanded.add(id);
+          renderCallsList();
+          // Scroll al row del lead
+          setTimeout(() => {
+            const row = document.querySelector(`.call-row[data-id="${CSS.escape(id)}"]`);
+            if (row) {
+              row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              row.style.outline = '2px solid var(--accent)';
+              setTimeout(() => { row.style.outline = ''; }, 1400);
+            }
+          }, 100);
+        });
+      });
     }
 
     const CALLS_PAGE_SIZE = 50;
@@ -4067,6 +4281,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCallsList();
       } catch (e) {
         window.showToast?.('Error guardando follow-up: ' + e.message, { type: 'error' });
+      }
+    };
+
+    // Sprint 28: Reactivar lead descartado (admin only)
+    window._callsReactivate = async function(leadId) {
+      if (!confirm('¿Reactivar este lead? Va a volver a estado "sin contactar" y vas a poder llamarlo de nuevo. El histórico de llamadas anteriores se conserva.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/reactivate'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }
+        });
+        if (!r.ok) {
+          const errData = await r.json().catch(() => ({}));
+          throw new Error(errData.error || ('HTTP ' + r.status));
+        }
+        const d = await r.json();
+        // Actualizar cache local con el lead reactivado
+        const idx = callsLeadsCache.findIndex(l => l.id === leadId);
+        if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...d.lead, id: leadId };
+        else callsLeadsCache.push({ ...d.lead, id: leadId });
+        _callsRenderCountryChips();
+        renderCallsList();
+        renderCallsStats();
+        window.showToast?.('Lead reactivado — ya está en cola para llamar', { type: 'success', duration: 3000 });
+      } catch (e) {
+        window.showToast?.('Error reactivando: ' + e.message, { type: 'error' });
       }
     };
 
@@ -4204,6 +4443,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="call-history-timeline">${historyHtml}</div>
 
           <div class="call-action-row">
+            ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:#5bb974; font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
+              🔄 Reactivar lead
+            </button>` : ''}
             <button class="call-action-btn is-wsp" onclick="window._callsMarkHasWsp('${escHtml(l.id)}')" title="Si descubrís que el lead SÍ atiende por WhatsApp, mandalo de vuelta a Setteo">
               💬 Este sí tenía WSP → Setteo
             </button>
@@ -4255,8 +4497,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
       }
 
-      // Ocultar descartados/agendados (ya no son accionables)
-      leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
+      // Ocultar agendados (ya pasaron). Sprint 28: si toggle "Ver descartados"
+      // está ON, los descartados se muestran (con UI degradada y botón reactivar).
+      const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
+      const hiddenStates = showDiscarded ? ['agendado'] : ['descartado','agendado'];
+      leads = leads.filter(l => !hiddenStates.includes(l.estado));
 
       // Sort configurable según el dropdown
       switch (sortMode) {
@@ -4343,8 +4588,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }
 
-        const cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
+        // Sprint 28: visualizar descartados con UI degradada
+        const isDiscarded = l.estado === 'descartado';
+        let cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
+        if (isDiscarded) cardBorder = 'border-left:4px solid var(--text-tertiary); opacity:0.65;';
         const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
+        const discardedBadge = isDiscarded ? `<span style="background:rgba(255,255,255,0.05); color:var(--text-tertiary); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">🗑️ DESCARTADO${l.interes === 'no' ? ' (no interesado)' : l.phoneStatus === 'wrong' ? ' (número equivocado)' : l.phoneStatus === 'invalid' ? ' (no existe)' : ''}</span>` : '';
 
         const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: 36px 1fr auto auto auto; gap:14px; align-items:center;">
           <div style="font-size:20px; opacity:0.7;">${flag || '📞'}</div>
@@ -4352,6 +4601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="min-width:0;">
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
               <strong style="color:var(--text-primary); font-size:14px;">${escHtml(l.name)}</strong>
+              ${discardedBadge}
               ${interesadoBadge}
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
@@ -5497,6 +5747,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderCallsStats();
     });
     document.getElementById('calls-search').addEventListener('input', () => { _callsCurrentPage = 1; renderCallsList(); });
+    // Sprint 28: toggle "Ver descartados"
+    document.getElementById('calls-show-discarded')?.addEventListener('change', () => { _callsCurrentPage = 1; renderCallsList(); });
     // Sort dropdown: persiste en localStorage para no perder la preferencia
     const sortSelect = document.getElementById('calls-sort-select');
     if (sortSelect) {

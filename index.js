@@ -3976,6 +3976,35 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   res.json({ leads });
 });
 
+// Sprint 27: Lightweight poll de callbacks vencidos en los últimos N minutos.
+// Devuelve solo los campos necesarios para el toast (id, name, phone, callbackAt).
+// El frontend pollea cada 90s mientras la app está abierta y notifica los nuevos.
+// Query params: since=<ISO ts>, window=<minutos> (default 90).
+app.get('/api/setters/callbacks/due', requireAuth, (req, res) => {
+  const since = req.query.since ? new Date(req.query.since).getTime() : 0;
+  const windowMin = Math.min(Math.max(parseInt(req.query.window, 10) || 90, 1), 1440);
+  const data = loadSettersData();
+  const eff = getEffectiveAuth(req);
+  const authSetterId = eff.role === 'setter' ? eff.setterId : '';
+  const now = Date.now();
+  const cutoffPast = now - (windowMin * 60 * 1000);
+  const items = [];
+  for (const id in data.leads) {
+    const l = data.leads[id];
+    if (!l.callbackAt) continue;
+    if (['descartado','agendado'].includes(l.estado)) continue;
+    if (authSetterId && l.assignedTo !== authSetterId) continue;
+    const ts = new Date(l.callbackAt).getTime();
+    if (isNaN(ts)) continue;
+    // Vencido entre cutoffPast y now (no incluir los del futuro)
+    if (ts <= now && ts >= cutoffPast && ts > since) {
+      items.push({ id, name: l.name || '', phone: l.phone || '', country: l.country || '', city: l.city || '', callbackAt: l.callbackAt });
+    }
+  }
+  items.sort((a, b) => new Date(a.callbackAt).getTime() - new Date(b.callbackAt).getTime());
+  res.json({ items, serverTime: new Date().toISOString() });
+});
+
 // ──────────────────────────────────────────────────────────────────
 // Sprint 14: Speed-to-Lead Alert
 // Buffer in-memory de respuestas WA recientes. El admin polling cada 15s
@@ -4816,6 +4845,50 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
     followUpStartedAt: lead.followUpStartedAt,
     lead: { id: req.params.id, ...lead },
   });
+});
+
+// Sprint 28: Reactivar lead descartado. Admin only — limpia campos de
+// descarte y vuelve a estado='sin_contactar'. No borra histórico (callLog,
+// interactions, notes se preservan). Loguea un interaction 'reactivated'.
+app.post('/api/setters/leads/:id/reactivate', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  ensureLeadDefaults(lead);
+  // Solo aplica si está realmente descartado o agendado (no tiene sentido
+  // "reactivar" un sin_contactar).
+  if (!['descartado','agendado'].includes(lead.estado) && lead.interes !== 'no' && !lead.phoneStatus) {
+    return res.status(400).json({ error: 'Lead no está descartado, no hay nada que reactivar.' });
+  }
+  const previousState = {
+    estado: lead.estado,
+    interes: lead.interes,
+    phoneStatus: lead.phoneStatus,
+    respondio: lead.respondio,
+    calificado: lead.calificado,
+    callbackAt: lead.callbackAt
+  };
+  lead.estado = 'sin_contactar';
+  lead.interes = null;
+  lead.phoneStatus = '';
+  lead.respondio = false;
+  lead.calificado = false;
+  lead.callbackAt = '';
+  // Conexion sin_wsp se mantiene si estaba ahí (sigue siendo lead de Llamadas)
+  // Asegurar que sigue en Llamadas — si no estaba en sin_wsp, lo marcamos
+  if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
+
+  // Log de interaction reactivada
+  if (!Array.isArray(lead.interactions)) lead.interactions = [];
+  lead.interactions.push({
+    action: 'reactivated',
+    by: req.auth?.user?.id || '',
+    byName: req.auth?.user?.name || req.auth?.user?.email || 'Admin',
+    previousState,
+    createdAt: new Date().toISOString()
+  });
+  saveSettersData(data);
+  res.json({ ok: true, lead: { id: req.params.id, ...lead } });
 });
 
 // Sprint 24: Nota pre-call (planificación). Texto único editable por el setter
