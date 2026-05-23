@@ -2267,6 +2267,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
       // Despues de renderizar, sincronizar el scrollbar flotante
       _syncFloatingScrollbar();
+      // Refrescar widget "Hoy" — depende del estado actual de los leads
+      if (typeof window.renderHoyWidget === 'function') {
+        try { window.renderHoyWidget(); } catch (e) { /* no critico */ }
+      }
     }
 
     // ── Twin scrollbar flotante (siempre visible al fondo del viewport) ──
@@ -2522,6 +2526,44 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderSetterLeads();
     };
 
+    // ═══════════════════════════════════════════════════════════
+    // PHASE setter-ux-redesign — helpers nuevos
+    // ═══════════════════════════════════════════════════════════
+
+    // Toast unificado para feedback de acciones (reemplaza alerts/sin-feedback).
+    // Uso: window.showToast('Texto', { type: 'success'|'error'|'warning'|'info', duration: 2500 })
+    window.showToast = function showToast(msg, opts = {}) {
+      const { type = 'success', duration = 2500 } = opts;
+      let cont = document.getElementById('scm-toast-container');
+      if (!cont) {
+        cont = document.createElement('div');
+        cont.id = 'scm-toast-container';
+        document.body.appendChild(cont);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'scm-toast ' + type;
+      toast.textContent = msg;
+      cont.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 250);
+      }, duration);
+    };
+
+    // Switch entre tabs del modal del lead.
+    window._switchLeadTab = function switchLeadTab(tabId) {
+      document.querySelectorAll('.lead-tab-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.leadTab === tabId);
+      });
+      document.querySelectorAll('.lead-tab-content').forEach(p => {
+        p.style.display = p.dataset.leadTabPanel === tabId ? '' : 'none';
+      });
+    };
+    // Wire los botones de tab del modal (una sola vez al init)
+    document.querySelectorAll('.lead-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => window._switchLeadTab(btn.dataset.leadTab));
+    });
+
     // Modal de lead
     window._openLeadModal = async (leadId) => {
       const lead = setterLeads.find(l => l.id === leadId);
@@ -2725,6 +2767,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cargar programados existentes del lead
         if (typeof window._loadScheduledForLead === 'function') window._loadScheduledForLead(leadId);
       } catch (e) { console.warn('schedule hydrate err:', e); }
+      // Reset modal tabs al default: empezar siempre en 💬 Conversación
+      if (typeof window._switchLeadTab === 'function') window._switchLeadTab('convo');
       leadModal.classList.remove('hidden');
     };
 
@@ -5671,12 +5715,121 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Cargar módulo cuando se cambia a la vista
     const crmMenuItem = document.querySelector('[data-target="view-crm"]');
-    if (crmMenuItem) { crmMenuItem.addEventListener('click', () => { loadSetterModule(); }); }
+    if (crmMenuItem) {
+      crmMenuItem.addEventListener('click', () => {
+        loadSetterModule();
+        setTimeout(() => { renderHoyWidget(); checkWelcomeBanner(); }, 200);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // PHASE setter-ux-redesign — Widget "Hoy" + Welcome banner
+    // ═══════════════════════════════════════════════════════════
+
+    // Calcula y renderiza el widget "Hoy" arriba del view-crm.
+    // Lee setterLeads del cache local (no requiere endpoint nuevo).
+    function renderHoyWidget() {
+      const widget = document.getElementById('hoy-widget');
+      if (!widget) return;
+      const leads = Array.isArray(setterLeads) ? setterLeads : [];
+      if (leads.length === 0) { widget.style.display = 'none'; return; }
+
+      const name = currentUser?.name || 'Setter';
+      const greetEl = document.getElementById('hoy-greet-text');
+      if (greetEl) greetEl.textContent = `Hola ${name} 👋`;
+
+      const dateEl = document.getElementById('hoy-date');
+      if (dateEl) {
+        const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+        const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+        const now = new Date();
+        dateEl.textContent = `${days[now.getDay()]} ${now.getDate()} de ${months[now.getMonth()]}`;
+      }
+
+      const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+      const startOfTodayMs = startOfToday.getTime();
+      // Métricas accionables
+      const sinContactar = leads.filter(l => !l.conexion && !l.lastContactAt).length;
+      const respondieronPendientes = leads.filter(l => l.respondio === true && l.interes !== 'si' && l.interes !== 'no' && l.estado !== 'agendado' && l.estado !== 'cerrado').length;
+      // Follow-ups vencidos: lead con followUpsPlanned activo y followUpStartedAt > 24h
+      // (simple proxy: leads con followUps tildados y lastContactAt antiguo)
+      const followUpsVencidos = leads.filter(l => {
+        const fu = l.followUps || {};
+        const anyActive = fu['24hs'] || fu['48hs'] || fu['72hs'] || fu['7d'] || fu['15d'];
+        if (!anyActive) return false;
+        const lc = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
+        return lc > 0 && (Date.now() - lc) > 24 * 60 * 60 * 1000;
+      }).length;
+
+      // Métricas del día (acumuladas hoy)
+      const tocadosHoy = leads.filter(l => l.lastContactAt && new Date(l.lastContactAt).getTime() >= startOfTodayMs).length;
+      const conexionesHoy = leads.filter(l => l.conexion === 'enviada' && l.lastContactAt && new Date(l.lastContactAt).getTime() >= startOfTodayMs).length;
+      const agendadosHoy = leads.filter(l => l.estado === 'agendado' && l.lastContactAt && new Date(l.lastContactAt).getTime() >= startOfTodayMs).length;
+
+      const actionsEl = document.getElementById('hoy-actions');
+      if (actionsEl) {
+        const chips = [];
+        if (followUpsVencidos > 0) {
+          chips.push(`<button class="hoy-action-chip urgent" onclick="window._hoyClickFilter('seguimiento')">⏳ <span class="num">${followUpsVencidos}</span> follow-ups vencidos</button>`);
+        }
+        if (sinContactar > 0) {
+          chips.push(`<button class="hoy-action-chip" onclick="window._hoyClickFilter('sin_contactar')">📋 <span class="num">${sinContactar}</span> sin contactar</button>`);
+        }
+        if (respondieronPendientes > 0) {
+          chips.push(`<button class="hoy-action-chip attention" onclick="window._hoyClickFilter('respondio')">💬 <span class="num">${respondieronPendientes}</span> respondieron — atender</button>`);
+        }
+        actionsEl.innerHTML = chips.join('') || '<span style="color:var(--text-secondary); font-size:13px;">🎉 No hay urgencias. Buen momento para nuevos contactos.</span>';
+      }
+
+      const todayEl = document.getElementById('hoy-today');
+      if (todayEl) {
+        todayEl.innerHTML = `
+          📊 Tu día: <span><strong>${tocadosHoy}</strong> leads tocados</span>
+          <span>· <strong>${conexionesHoy}</strong> conexiones</span>
+          <span>· <strong>${agendadosHoy}</strong> agendados</span>
+        `;
+      }
+      widget.style.display = 'flex';
+    }
+    window.renderHoyWidget = renderHoyWidget;
+
+    // Click en chip del Hoy → setea filtro del pipeline y scrolea a la tabla
+    window._hoyClickFilter = function hoyClickFilter(status) {
+      const btn = document.querySelector('.pipe-filter[data-status="' + status + '"]');
+      if (btn) {
+        btn.click();
+        setTimeout(() => {
+          document.querySelector('#view-crm .table-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    };
+
+    // Welcome banner: solo primera vez por usuario
+    function checkWelcomeBanner() {
+      const banner = document.getElementById('welcome-banner');
+      if (!banner) return;
+      const key = 'scm_welcome_seen_' + (currentUser?.id || 'anon');
+      if (localStorage.getItem(key)) { banner.style.display = 'none'; return; }
+      // Solo setters lo ven (admin/supervisor saltean — son power users)
+      if (currentUser?.role !== 'setter') { banner.style.display = 'none'; return; }
+      banner.style.display = 'flex';
+      const dismiss = document.getElementById('welcome-dismiss');
+      if (dismiss && !dismiss.dataset._wired) {
+        dismiss.dataset._wired = '1';
+        dismiss.addEventListener('click', () => {
+          localStorage.setItem(key, '1');
+          banner.style.display = 'none';
+        });
+      }
+    }
+    window.checkWelcomeBanner = checkWelcomeBanner;
 
     if (currentUser?.role === 'setter') {
       const setterMenuItem = document.querySelector('[data-target="view-crm"]');
       setterMenuItem?.click();
-      loadSetterModule();
+      loadSetterModule().then(() => {
+        setTimeout(() => { renderHoyWidget(); checkWelcomeBanner(); }, 200);
+      });
     } else {
       const mapsMenuItem = document.querySelector('[data-target="view-maps"]');
       mapsMenuItem?.click();
@@ -8102,6 +8255,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       const notesEl = document.getElementById('chist-d-notes');
       if (c.notes) { notesEl.style.display = 'block'; notesEl.innerHTML = '📝 ' + escHtml(c.notes); }
       else { notesEl.style.display = 'none'; }
+      // Sprint 10: bloque Mercury IA entre notes y transcript
+      let analysisBlockEl = document.getElementById('chist-d-mercury');
+      if (!analysisBlockEl) {
+        analysisBlockEl = document.createElement('div');
+        analysisBlockEl.id = 'chist-d-mercury';
+        analysisBlockEl.style.marginBottom = '14px';
+        const transcriptHeader = document.getElementById('chist-d-transcript').previousElementSibling;
+        transcriptHeader.parentNode.insertBefore(analysisBlockEl, transcriptHeader);
+      }
+      if (c.mercuryAnalysis) {
+        _chistRenderMercuryAnalysis(c.mercuryAnalysis, leadId, callIdx);
+      } else if (c.transcript?.segments?.length) {
+        analysisBlockEl.innerHTML = `
+          <div style="padding:14px; background:rgba(157,133,242,0.05); border:1px dashed rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
+            <div style="font-size:13px; color:var(--text-primary); margin-bottom:8px; font-weight:600;">🧠 Análisis Mercury IA disponible</div>
+            <button onclick="window._chistAnalyzeWithMercury('${escHtml(leadId)}', ${callIdx})" class="btn-primary" style="padding:9px 16px; border-radius:9px; font-size:12.5px;">🧠 Analizar con Mercury IA</button>
+            <div style="font-size:10.5px; color:var(--text-secondary); margin-top:6px;">Evalúa según framework PACE, 3-S, opener 27s, reglas SCM v2</div>
+          </div>`;
+      } else {
+        analysisBlockEl.innerHTML = '';
+      }
       const transcriptEl = document.getElementById('chist-d-transcript');
       const transcriptMetaEl = document.getElementById('chist-d-transcript-meta');
       if (c.transcript?.segments?.length) {
@@ -8128,6 +8302,132 @@ document.addEventListener('DOMContentLoaded', async () => {
         transcriptEl.innerHTML = '<div class="muted" style="text-align:center; padding:24px; font-size:12px;">Sin transcripción disponible.<br><small>Se requiere OPENAI_API_KEY en Railway y llamada >5s.</small></div>';
       }
     } catch (e) { console.warn('[chist] detail load:', e.message); }
+  };
+
+  // Sprint 10: análisis Mercury IA del transcript
+  window._chistAnalyzeWithMercury = async (leadId, callIdx) => {
+    const block = document.getElementById('chist-d-mercury');
+    if (!block) return;
+    block.innerHTML = `
+      <div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
+        <div style="font-size:13px; color:var(--text-primary); margin-bottom:6px;">🧠 Mercury analizando…</div>
+        <div style="font-size:11px; color:var(--text-secondary);">Esto puede tardar 5-15 seg según largo del transcript.</div>
+      </div>`;
+    try {
+      const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/${callIdx}/analyze`), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      });
+      if (!r.ok) {
+        let msg = 'HTTP ' + r.status;
+        try { const d = await r.json(); if (d?.error) msg = d.error; } catch {}
+        block.innerHTML = `<div style="padding:12px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); border-radius:9px; color:#f85149; font-size:12px;">Error: ${escHtml(msg)}</div>`;
+        return;
+      }
+      const d = await r.json();
+      _chistRenderMercuryAnalysis(d.analysis, leadId, callIdx);
+      if (d.cached) window.showToast?.('Análisis recuperado de cache (ya estaba guardado)', { type: 'info' });
+      else window.showToast?.('✓ Análisis Mercury listo', { type: 'success' });
+    } catch (e) {
+      block.innerHTML = `<div style="padding:12px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); border-radius:9px; color:#f85149; font-size:12px;">Error: ${escHtml(e.message)}</div>`;
+    }
+  };
+
+  function _chistRenderMercuryAnalysis(a, leadId, callIdx) {
+    const block = document.getElementById('chist-d-mercury');
+    if (!block || !a) return;
+    // Score color: verde >=7, ámbar 5-6, rojo <5
+    const score = a.score || 0;
+    const scoreColor = score >= 7 ? '#5bb974' : score >= 5 ? '#FFB341' : '#f85149';
+    const passedColor = a.passedOpener ? '#5bb974' : '#f85149';
+    const paceOk = a.paceCompliance?.objections_handled_correctly || 0;
+    const paceFail = a.paceCompliance?.objections_failed || 0;
+    const violations = Array.isArray(a.ruleViolations) ? a.ruleViolations : [];
+    const opportunities = Array.isArray(a.missedOpportunities) ? a.missedOpportunities : [];
+    const suggestions = Array.isArray(a.specificSuggestions) ? a.specificSuggestions : [];
+    block.innerHTML = `
+      <div style="padding:16px; background:linear-gradient(135deg, rgba(157,133,242,0.08) 0%, rgba(157,133,242,0.02) 100%); border:1px solid rgba(157,133,242,0.3); border-radius:12px;">
+        <!-- Header: score + estado opener + PACE -->
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:54px; height:54px; border-radius:14px; background:${scoreColor}22; border:2px solid ${scoreColor}; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:${scoreColor};">${score}</div>
+            <div>
+              <div style="font-size:12.5px; color:var(--text-primary); font-weight:600;">🧠 Score Mercury IA</div>
+              <div style="font-size:11px; color:var(--text-secondary); margin-top:2px; max-width:280px;">${escHtml(a.scoreReason || '')}</div>
+            </div>
+          </div>
+          <div style="flex:1; min-width:120px; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
+            <span style="font-size:10.5px; padding:3px 9px; background:${passedColor}22; color:${passedColor}; border:1px solid ${passedColor}55; border-radius:6px; font-weight:600;">${a.passedOpener ? '✅ Pasó opener' : '❌ No pasó opener'}</span>
+            <span style="font-size:10px; color:var(--text-secondary);">PACE: <strong style="color:#5bb974;">${paceOk} ✓</strong> · <strong style="color:#f85149;">${paceFail} ✗</strong></span>
+          </div>
+        </div>
+
+        <!-- Strength + Mistake -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+          ${a.biggestStrength ? `<div style="padding:10px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); border-radius:8px;">
+            <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">✅ Tu fortaleza</div>
+            <div style="font-size:11.5px; color:var(--text-primary); line-height:1.5;">${escHtml(a.biggestStrength)}</div>
+          </div>` : ''}
+          ${a.biggestMistake ? `<div style="padding:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.25); border-radius:8px;">
+            <div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">❌ Tu error principal</div>
+            <div style="font-size:11.5px; color:var(--text-primary); line-height:1.5;">${escHtml(a.biggestMistake)}</div>
+          </div>` : ''}
+        </div>
+
+        <!-- Missed opportunities + Rule violations -->
+        ${opportunities.length > 0 ? `<div style="margin-bottom:10px;">
+          <div style="font-size:10.5px; color:#FFB341; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">⚠ Oportunidades perdidas</div>
+          <ul style="margin:0; padding:0 0 0 16px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
+            ${opportunities.map(o => `<li>${escHtml(o)}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        ${violations.length > 0 ? `<div style="margin-bottom:10px;">
+          <div style="font-size:10.5px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">🚫 Reglas violadas</div>
+          <ul style="margin:0; padding:0 0 0 16px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
+            ${violations.map(v => `<li>${escHtml(v)}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+        ${a.paceCompliance?.notes ? `<div style="padding:8px 11px; background:rgba(255,255,255,0.03); border-radius:7px; margin-bottom:10px; font-size:11px; color:var(--text-secondary); line-height:1.5; border-left:3px solid #7dd3fc;"><strong style="color:#7dd3fc;">PACE:</strong> ${escHtml(a.paceCompliance.notes)}</div>` : ''}
+
+        <!-- Sugerencias accionables -->
+        ${suggestions.length > 0 ? `<div style="padding:11px; background:rgba(125,211,252,0.06); border:1px solid rgba(125,211,252,0.2); border-radius:9px; margin-bottom:10px;">
+          <div style="font-size:11px; color:#7dd3fc; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">💡 Sugerencias específicas</div>
+          <ul style="margin:0; padding:0 0 0 18px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
+            ${suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')}
+          </ul>
+        </div>` : ''}
+
+        ${a.nextCallTip ? `<div style="padding:12px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.35); border-radius:9px; text-align:center;">
+          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">🎯 Cambio #1 para la próxima</div>
+          <div style="font-size:12.5px; color:#fff; font-weight:600; line-height:1.5;">${escHtml(a.nextCallTip)}</div>
+        </div>` : ''}
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05);">
+          <span style="font-size:9.5px; color:var(--text-tertiary);">Analizado: ${a.analyzedAt ? new Date(a.analyzedAt).toLocaleString('es-AR') : '—'} · ${a.modelUsed || 'IA'}</span>
+          <button onclick="window._chistReAnalyze('${escHtml(leadId)}', ${callIdx})" style="background:none; border:1px solid rgba(255,255,255,0.1); color:var(--text-secondary); cursor:pointer; padding:3px 8px; border-radius:5px; font-size:10px;">↻ Re-analizar</button>
+        </div>
+      </div>`;
+  }
+
+  window._chistReAnalyze = async (leadId, callIdx) => {
+    const block = document.getElementById('chist-d-mercury');
+    if (!block) return;
+    block.innerHTML = `<div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center; color:var(--text-secondary); font-size:12px;">🧠 Re-analizando con Mercury…</div>`;
+    try {
+      const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/${callIdx}/analyze`), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ force: true }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        block.innerHTML = `<div style="padding:12px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); border-radius:9px; color:#f85149; font-size:12px;">Error: ${escHtml(d.error || ('HTTP ' + r.status))}</div>`;
+        return;
+      }
+      const d = await r.json();
+      _chistRenderMercuryAnalysis(d.analysis, leadId, callIdx);
+      window.showToast?.('✓ Re-analizado', { type: 'success' });
+    } catch (e) {
+      block.innerHTML = `<div style="padding:12px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); border-radius:9px; color:#f85149; font-size:12px;">Error: ${escHtml(e.message)}</div>`;
+    }
   };
 
   document.querySelector('[data-target="view-call-history"]')?.addEventListener('click', () => { setTimeout(_chistLoad, 80); });

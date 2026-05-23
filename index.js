@@ -8338,6 +8338,153 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   });
 });
 
+// POST /api/telnyx/calls/:leadId/:callIdx/analyze — Mercury IA analiza el
+// transcript de una llamada según el framework v2 (Julio Sagantini + script
+// SCM). Devuelve un análisis estructurado: score 1-10, qué hiciste bien,
+// qué fallaste, oportunidades perdidas, compliance con PACE/opener/silencio.
+// Guarda el análisis en lead.callLog[callIdx].mercuryAnalysis para no re-cobrar.
+app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  if (!mercuryKey && !qwenKey) {
+    return res.status(503).json({ error: 'Sin IA disponible. Configurá MERCURY_API_KEY o QWEN_API_KEY en Railway.' });
+  }
+  const { leadId } = req.params;
+  const callIdx = parseInt(req.params.callIdx, 10);
+  const data = loadSettersData();
+  const lead = data.leads?.[leadId];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado' });
+  if (!Array.isArray(lead.callLog) || !lead.callLog[callIdx]) return res.status(404).json({ error: 'Call log no encontrado' });
+  const call = lead.callLog[callIdx];
+  const transcript = call.transcript;
+  if (!transcript?.segments?.length) return res.status(400).json({ error: 'Sin transcripción disponible para analizar.' });
+  // Si ya hay análisis y no se forzó re-analyze, devolver el existente
+  if (call.mercuryAnalysis && !req.body?.force) {
+    return res.json({ ok: true, analysis: call.mercuryAnalysis, cached: true });
+  }
+  // Armar el texto del transcript para el prompt
+  const transcriptText = transcript.segments.map(s => {
+    const role = s.speaker === 'setter' ? 'IGNACIO (setter)' : 'LEAD (decisor)';
+    const m = Math.floor(s.start / 60);
+    const ss = Math.floor(s.start % 60);
+    return `[${m}:${String(ss).padStart(2,'0')}] ${role}: ${s.text}`;
+  }).join('\n');
+  // Prompt MASIVO con todo el framework v2 + contexto de outcome
+  const systemPrompt = `Sos un coach experto en cold calling B2B para clínicas dentales. Analizás llamadas reales según el framework SCM Cold Call v2 (basado en Julio Sagantini: PACE, 3-S, problem-based pitch).
+
+OBJETIVO DE LA LLAMADA: agendar reunión de 20min con el decisor (Doctor) para que Ignacio le muestre el sistema de reactivación de pacientes.
+
+OFERTA SCM: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Caso de éxito: 119 pacientes en Uruguay en 6 semanas. Ya operan en UY, MX, CO.
+
+FRAMEWORK QUE EVALUÁS:
+
+1. OPENER (primeros 27 segundos):
+   - "Hola Doctor [nombre]?" + pausa + "Soy Ignacio de SCM Dental"
+   - "Estuve revisando la presencia online de la clínica"
+   - "Le tomo 27 segundos, si no le hace sentido no lo molesto más" → DARLE LA SALIDA
+   - Si pasa el opener (>30 seg sin colgar) → flag PASSED_OPENER
+
+2. PITCH PROBLEM-BASED:
+   - Mencionar dato real de ficha Google (años, reseñas) → credibilidad
+   - "Detectar posibles fugas en base de pacientes" → palabra neutra
+   - "Le suena eso?" → que él hable, no monólogo
+   - Caso UY 119 pacientes como social proof
+
+3. ASK MEETING (usar NO a favor):
+   - "Estaría en contra de tener una conversación?"
+   - "Sería una mala idea que nos sentemos 20 minutos?"
+   - "Ha cerrado la puerta a la idea?"
+   - SIEMPRE 2 días cerrados, nunca "cuándo le viene bien"
+   - SILENCIO post-pregunta
+
+4. OBJECIONES - Framework PACE:
+   - BRUSH-OFFS (reacción instantánea: "no me interesa", "email", "no tiempo"): saltar directo a Engage
+   - OBJECIONES REALES (lo pensó: agencia, ya sistema, precio, pensar): PACE completo
+     P - Pausa 2-3 seg
+     A - Aceptar ("tiene sentido", "es justo") SIN PERO
+     C - Consentimiento ("me deja hacerle una pregunta?")
+     E - Engage (pregunta que lo hace pensar, NO argumentar)
+   - Máx 3 intentos por objeción
+
+5. REGLAS DURAS:
+   - NUNCA tirar precio
+   - NUNCA mandar email (redirige a reunión)
+   - NUNCA decir "GHL" ni nombres de plataformas
+   - NUNCA explicar el sistema completo (genera curiosidad)
+   - SIEMPRE preguntar por decisor antes de colgar
+   - SIEMPRE silencio post-pregunta
+
+6. TONO 3-S:
+   - SLOW (lento, articular)
+   - SMILE (sonreír al hablar)
+   - STRONG (confiado)
+   - MIRROR (matchear al prospect)
+
+ANALIZÁ EL TRANSCRIPT Y DEVOLVÉ JSON ESTRICTO (sin markdown wrapping):
+
+{
+  "score": <1-10>,
+  "scoreReason": "<una frase justificando>",
+  "passedOpener": <true|false>,
+  "biggestStrength": "<lo mejor que hizo Ignacio>",
+  "biggestMistake": "<el error más grande, si hay>",
+  "missedOpportunities": ["<oportunidad 1 perdida con timestamp>", "<oportunidad 2>"],
+  "paceCompliance": {
+    "objections_handled_correctly": <int>,
+    "objections_failed": <int>,
+    "notes": "<observación sobre uso de PACE>"
+  },
+  "ruleViolations": ["<regla violada con timestamp>"],
+  "specificSuggestions": ["<sugerencia accionable concreta 1>", "<sugerencia 2>", "<sugerencia 3>"],
+  "nextCallTip": "<el 1 cambio más impactante para próxima llamada>"
+}
+
+DEVOLVÉ SOLO EL JSON. NADA MÁS. SIN \`\`\`json wrappers, sin texto explicativo antes/después.`;
+  const userPrompt = `OUTCOME DE LA LLAMADA: ${call.outcome || 'no_disposition'}
+DURACIÓN: ${call.duration || 0} segundos
+LEAD: ${lead.name || 'N/A'} (${lead.city || ''}, ${lead.country || ''})
+
+TRANSCRIPT:
+${transcriptText}
+
+Analizá según el framework. Devolvé SOLO el JSON estructurado.`;
+  try {
+    const completion = await ai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.3,
+      max_tokens: 1500,
+      response_format: { type: 'json_object' },
+    });
+    const raw = completion.choices?.[0]?.message?.content || '{}';
+    let parsed;
+    try {
+      // Si el modelo devolvió wrapping con ```json (a pesar de la instrucción)
+      const cleaned = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      console.warn('[mercury-analyze] JSON parse failed:', e.message, '\n--- raw:', raw.substring(0, 300));
+      return res.status(502).json({ error: 'IA devolvió un JSON inválido. Reintentá.' });
+    }
+    // Guardar en lead.callLog
+    const analysis = {
+      ...parsed,
+      analyzedAt: new Date().toISOString(),
+      analyzedBy: req.auth?.user?.email || 'admin',
+      modelUsed: AI_MODEL,
+    };
+    lead.callLog[callIdx].mercuryAnalysis = analysis;
+    saveSettersData(data);
+    res.json({ ok: true, analysis, cached: false });
+  } catch (e) {
+    console.error('[mercury-analyze] failed:', e?.message || e);
+    res.status(500).json({ error: 'Error analizando: ' + (e?.message || 'unknown') });
+  }
+});
+
 // GET /api/telnyx/calls/recent — lista de llamadas Telnyx recientes con
 // transcripts disponibles. admin/supervisor ve todas, setter solo las suyas.
 // Query: ?limit=50&search=keyword&outcome=answered_interested
