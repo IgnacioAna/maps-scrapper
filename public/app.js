@@ -473,6 +473,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     };
 
+    // Sprint 19: Sanitizar a E.164 estricto (Telnyx-compatible).
+    // Saca espacios, guiones, paréntesis. Garantiza que arranque con +.
+    // Si no tiene +, asume necesita prefijo internacional (devuelve null si
+    // no se puede deducir país por longitud).
+    function _sanitizePhoneE164(phone) {
+      if (!phone) return null;
+      const raw = String(phone).trim();
+      if (!raw) return null;
+      // Caso 1: ya viene con + → solo limpiar
+      if (raw.startsWith('+')) {
+        const cleaned = '+' + raw.substring(1).replace(/\D/g, '');
+        // Validar: + seguido de 8-15 dígitos (estándar E.164)
+        if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
+        return null;
+      }
+      // Caso 2: empieza con 00 → reemplazar por + (prefijo internacional alt)
+      if (raw.startsWith('00')) {
+        const cleaned = '+' + raw.substring(2).replace(/\D/g, '');
+        if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
+        return null;
+      }
+      // Caso 3: solo dígitos sin código país. No podemos adivinar — devolver null.
+      // (Cualquier código que llame esto debería normalizar antes con default country)
+      return null;
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Sprint 14: Speed-to-Lead Polling (solo admin/supervisor)
     // ───────────────────────────────────────────────────────────────
@@ -4463,9 +4489,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         _telnyxCallState.localStreamForRec = localStreamForRec;
 
         await _telnyx.ensureClient();
+        // Sprint 19: sanitize phone a E.164 estricto antes de pasar a Telnyx.
+        // Los leads scrapeados pueden venir con espacios "+591 77750733" o
+        // formato raro. Telnyx WebRTC necesita E.164 limpio (+591777507333).
+        const cleanDestination = _sanitizePhoneE164(lead.phone);
+        if (!cleanDestination) {
+          window.showToast?.('Teléfono inválido: ' + (lead.phone || '(vacío)'), { type: 'error' });
+          _closeTelnyxCallPanel();
+          return;
+        }
+        const cleanCaller = _sanitizePhoneE164(fromNum.phone);
         const call = _telnyx.client.newCall({
-          destinationNumber: lead.phone,
-          callerNumber: fromNum.phone,
+          destinationNumber: cleanDestination,
+          callerNumber: cleanCaller || fromNum.phone,
           callerName: 'SCM',
           audio: true,
           video: false,
@@ -5603,7 +5639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const url = inviteResultUrl?.value || '';
         const name = inviteResultDiv?.dataset.inviteName || '';
         if (!url) return;
-        const msg = `Hola ${name}! Te invité a SCM Dental Setting App. Creá tu contraseña acá: ${url}`;
+        const msg = `Hola ${name}! Te invité a SCM — Sales Closing Machine. Creá tu contraseña acá: ${url}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
       });
     }
@@ -10278,7 +10314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (result === 'granted') {
         window.showToast?.('Notificaciones activadas ✓', { type: 'success' });
         // Notification de bienvenida
-        try { new Notification('SCM Dental', { body: 'Te vamos a avisar cuando algo importante pase.', icon: '/favicon.svg' }); } catch {}
+        try { new Notification('SCM', { body: 'Te vamos a avisar cuando algo importante pase.', icon: '/favicon.svg' }); } catch {}
       } else {
         window.showToast?.('Permiso denegado. Podés activar más tarde desde la config del browser.', { type: 'warn' });
       }

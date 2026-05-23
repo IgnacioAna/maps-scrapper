@@ -535,6 +535,30 @@ function ensureLeadDefaults(lead = {}) {
   return lead;
 }
 
+// Sprint 19: Normaliza a E.164 estricto (Telnyx-compatible).
+// Saca espacios, guiones, paréntesis. Garantiza que arranque con +.
+// Devuelve null si no se puede normalizar (sin código país detectable).
+// Mirror server-side del helper en public/app.js — mantener en sync.
+function sanitizePhoneE164(phone) {
+  if (!phone) return null;
+  const raw = String(phone).trim();
+  if (!raw) return null;
+  // Caso 1: ya viene con + → solo limpiar
+  if (raw.startsWith('+')) {
+    const cleaned = '+' + raw.substring(1).replace(/\D/g, '');
+    if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  // Caso 2: empieza con 00 → reemplazar por + (prefijo internacional alt)
+  if (raw.startsWith('00')) {
+    const cleaned = '+' + raw.substring(2).replace(/\D/g, '');
+    if (/^\+\d{8,15}$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  // Caso 3: solo dígitos sin código país. No podemos adivinar.
+  return null;
+}
+
 // Clasifica si el lead es candidato a WhatsApp o sólo a llamada,
 // usando los campos que YA salen del enrichment (regex + IA).
 function computeWspProbability(lead = {}) {
@@ -4178,6 +4202,14 @@ function _importLeadsCore(data, incoming, assignTo) {
     // digitos), es senial de que el campo viene corrupto del CSV (dos numeros
     // pegados o basura). Mejor descartarlo que generar una URL rota.
     if (cleanPhone.replace(/\D/g, '').length > 15) cleanPhone = '';
+    // Sprint 19: normalizar a E.164 estricto si trae prefijo internacional.
+    // Esto saca espacios "+591 77750733" → "+59177750733" para Telnyx WebRTC.
+    // Si no se puede normalizar (sin código país), conservamos el original
+    // para que el setter pueda corregirlo manualmente — NO descartamos.
+    if (cleanPhone && !cleanPhone.includes('wa.me/')) {
+      const normalized = sanitizePhoneE164(cleanPhone);
+      if (normalized) cleanPhone = normalized;
+    }
     let importedWaUrl = lead.whatsappUrl || '';
     let importedOpenMsg = lead.openMessage || '';
     if (cleanPhone.includes('wa.me/')) {
@@ -4240,12 +4272,17 @@ function _importLeadsCore(data, incoming, assignTo) {
     } else {
       baseLead.whatsappUrl = buildWhatsAppUrl(baseLead.phone || baseLead.webWhatsApp || baseLead.aiWhatsApp || '', finalCountry, finalOpenMsg);
     }
-    // Re-evaluar wspProbability con los datos finales. Esto es info SOLO INFORMATIVA:
-    // NO auto-ruteamos porque la heurística (sin wa.me en web) tiene muchos falsos
-    // positivos — la mayoría de las clínicas SÍ tienen WSP aunque no lo pongan en su web.
-    // El setter sigue marcando "Sin WSP" manualmente cuando confirma que el número no
-    // responde por WSP, igual que hoy.
+    // Sprint 19: Re-evaluar wspProbability con los datos finales y auto-rutear.
+    // Cambio de política respecto de versiones anteriores: si el lead tiene
+    // teléfono pero NO tiene NINGUNA señal de WhatsApp (ni wa.me en web, ni
+    // detectado por IA), lo mandamos directo a Llamadas (conexion='sin_wsp').
+    // Esto destraba el flujo de cold calling: el scraper se vuelve la fuente
+    // primaria de leads para llamar, sin que el setter tenga que marcar a mano.
+    // El setter puede revertir manualmente si confirma que el lead sí tiene WSP.
     baseLead.wspProbability = computeWspProbability(baseLead);
+    if (baseLead.wspProbability === 'low' && !baseLead.conexion) {
+      baseLead.conexion = 'sin_wsp';
+    }
     data.leads[id] = {
       ...baseLead,
       followUps: baseLead.followUps || { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }
@@ -4865,6 +4902,63 @@ app.post('/api/setters/asistencia/backfill', requireAuth, requireRole('admin'), 
   }
   if (updated > 0) saveSettersData(data);
   res.json({ ok: true, updated, skipped });
+});
+
+// Sprint 19: Migración one-shot — normalizar todos los teléfonos a E.164
+// estricto (sin espacios, paréntesis, guiones). Idempotente: solo toca los
+// que cambian. Devuelve diff para audit. Admin only.
+app.post('/api/setters/leads/migrate-phones', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  let updated = 0;
+  let skipped = 0;
+  let invalid = 0;
+  const samples = [];
+  for (const id in data.leads) {
+    const l = data.leads[id];
+    if (!l || !l.phone) { skipped++; continue; }
+    const before = String(l.phone).trim();
+    const after = sanitizePhoneE164(before);
+    if (!after) {
+      invalid++;
+      if (samples.length < 10) samples.push({ id, before, after: null, reason: 'unparseable' });
+      continue;
+    }
+    if (after === before) { skipped++; continue; }
+    if (samples.length < 10) samples.push({ id, before, after, reason: 'normalized' });
+    l.phone = after;
+    updated++;
+  }
+  if (updated > 0) saveSettersData(data);
+  res.json({ ok: true, updated, skipped, invalid, total: Object.keys(data.leads).length, samples });
+});
+
+// Sprint 19: Reclasificar leads existentes — los que tienen teléfono pero
+// ninguna señal de WhatsApp pasan a conexion='sin_wsp' (van a Llamadas).
+// Idempotente: solo toca leads con conexion vacía (no pisa estado del setter).
+// Admin only. Devuelve cuenta + samples para audit.
+app.post('/api/setters/leads/reroute-no-wsp', requireAuth, requireRole('admin'), (req, res) => {
+  const data = loadSettersData();
+  let rerouted = 0;
+  let skipped = 0;
+  const samples = [];
+  for (const id in data.leads) {
+    const l = data.leads[id];
+    if (!l) { skipped++; continue; }
+    // Solo tocar leads sin progreso de setteo
+    if (l.conexion) { skipped++; continue; }
+    if (l.respondio || l.calificado || l.estado !== 'sin_contactar') { skipped++; continue; }
+    const prob = computeWspProbability(l);
+    if (prob === 'low') {
+      l.wspProbability = 'low';
+      l.conexion = 'sin_wsp';
+      rerouted++;
+      if (samples.length < 10) samples.push({ id, name: l.name, phone: l.phone });
+    } else {
+      skipped++;
+    }
+  }
+  if (rerouted > 0) saveSettersData(data);
+  res.json({ ok: true, rerouted, skipped, total: Object.keys(data.leads).length, samples });
 });
 
 app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, res) => {
