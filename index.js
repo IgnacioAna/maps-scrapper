@@ -8217,6 +8217,83 @@ app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, r
   res.json({ ok: true, scripts: data.scripts });
 });
 
+// POST /api/telnyx/calls/:leadId/transcribe — transcribe el audio de una
+// llamada usando OpenAI Whisper. Recibe 2 audios separados (setter + lead)
+// como base64 (uno por canal), los transcribe en paralelo y mergea por
+// timestamps. NO persiste audio — solo guarda el transcript final en
+// lead.callLog[ultimo].transcript. Requiere OPENAI_API_KEY env var.
+//
+// Body JSON: { setterAudioB64?: string, leadAudioB64?: string, mimeType?: string }
+// Al menos uno de los dos audios debe estar.
+app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  if (!process.env.OPENAI_API_KEY) {
+    return res.status(503).json({ error: 'OPENAI_API_KEY no configurada. Setear como env var en Railway.' });
+  }
+  const { leadId } = req.params;
+  const { setterAudioB64, leadAudioB64, mimeType } = req.body || {};
+  if (!setterAudioB64 && !leadAudioB64) {
+    return res.status(400).json({ error: 'Al menos uno de setterAudioB64 o leadAudioB64 requerido' });
+  }
+  const fileType = mimeType || 'audio/webm';
+  const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
+  const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const transcribe = async (b64, speakerLabel) => {
+    if (!b64) return [];
+    try {
+      const buf = Buffer.from(b64, 'base64');
+      // Whisper limit es 25MB. Para audios webm opus, 25MB son ~3hs. Phase 6
+      // max llamada es ~10min → no llegamos al límite.
+      if (buf.byteLength > 25 * 1024 * 1024) {
+        console.warn(`[transcribe] ${speakerLabel} audio excede 25MB, saltando`);
+        return [];
+      }
+      // File global está en Node 20+. Pasamos al SDK.
+      const file = new File([buf], `${speakerLabel}.${fileExt}`, { type: fileType });
+      const result = await openaiClient.audio.transcriptions.create({
+        file,
+        model: 'whisper-1',
+        language: 'es',
+        response_format: 'verbose_json',
+        timestamp_granularities: ['segment'],
+      });
+      return (result.segments || []).map((s) => ({
+        speaker: speakerLabel,
+        start: Math.round(s.start * 10) / 10,
+        end: Math.round(s.end * 10) / 10,
+        text: (s.text || '').trim(),
+      })).filter((s) => s.text);
+    } catch (e) {
+      console.error(`[transcribe] ${speakerLabel} Whisper error:`, e?.message || e);
+      throw e;
+    }
+  };
+  try {
+    const [setterSegs, leadSegs] = await Promise.all([
+      transcribe(setterAudioB64, 'setter'),
+      transcribe(leadAudioB64, 'lead'),
+    ]);
+    const merged = [...setterSegs, ...leadSegs].sort((a, b) => a.start - b.start);
+    // Persistir en lead.callLog[ultimo].transcript
+    const data = loadSettersData();
+    const lead = data.leads?.[leadId];
+    if (lead && Array.isArray(lead.callLog) && lead.callLog.length > 0) {
+      const lastIdx = lead.callLog.length - 1;
+      lead.callLog[lastIdx].transcript = {
+        segments: merged,
+        transcribedAt: new Date().toISOString(),
+        whisperModel: 'whisper-1',
+        language: 'es',
+      };
+      saveSettersData(data);
+    }
+    res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length });
+  } catch (e) {
+    res.status(500).json({ error: 'Error transcribiendo: ' + (e?.message || 'unknown') });
+  }
+});
+
 // POST /api/telnyx/scripts/reset-to-seed — recarga scripts desde scripts/seed/call-scripts.json
 // admin only. Sobrescribe TODO data/call_scripts.json con el seed actual. Útil cuando se
 // actualiza el script oficial (SCM_Cold_Call_v2.docx) y querés que producción adopte

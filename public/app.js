@@ -1619,10 +1619,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             _stopRingbackTone();
             _setTelnyxCallStatus('En llamada', 'active');
             // Attach manual del remoteStream — el SDK lo hace internamente pero
-            // hay race conditions. Verificado en bundle.js: el call expone
-            // call.remoteStream (getter de this.options.remoteStream que el SDK
-            // setea en handleTrackEvent del peer connection). Hacemos retry
-            // con poll cada 250ms hasta 4s — cubre cualquier delay del SDK.
+            // hay race conditions.
             let attachRetries = 0;
             const tryAttachRemoteStream = () => {
               const audioEl = document.getElementById('telnyx-remote-audio');
@@ -1634,11 +1631,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 audioEl.play?.().catch(err => {
                   console.warn('[telnyx] remote audio play() rejected:', err?.message);
                 });
-                console.log('[telnyx] remote audio attached', { tracks: stream.getAudioTracks().length, paused: audioEl.paused });
+                // Iniciar grabacion para Whisper transcript (Sprint 7)
+                // local stream para setter, remote stream para lead. Audio in-memory,
+                // se descarta tras transcribir.
+                if (!_setterRecorder && _telnyxCallState.localStreamForRec) {
+                  _startCallRecording(_telnyxCallState.localStreamForRec, stream);
+                }
                 return;
               }
               if (++attachRetries < 16) setTimeout(tryAttachRemoteStream, 250);
-              else console.warn('[telnyx] remote audio NOT attached after 4s', { hasAudioEl: !!audioEl, hasStream: !!stream, callRemoteStream: !!call.remoteStream });
+              else console.warn('[telnyx] remote audio NOT attached after 4s');
             };
             tryAttachRemoteStream();
           } else if (state === 'held') {
@@ -3781,6 +3783,107 @@ document.addEventListener('DOMContentLoaded', async () => {
     // disparar disposition automática al colgar.
     let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false };
 
+    // ───────────────────────────────────────────────────────────────
+    // Phase 6 Sprint 7: Transcripción Whisper post-llamada
+    // Grabamos 2 streams separados (setter mic + lead audio) en memoria del
+    // browser. Al colgar, los mandamos como base64 al backend. NO se persiste
+    // audio — solo el transcript que vuelve queda en lead.callLog[].transcript.
+    // ───────────────────────────────────────────────────────────────
+    let _setterRecorder = null;
+    let _leadRecorder = null;
+    let _setterChunks = [];
+    let _leadChunks = [];
+    let _localStreamForRecording = null;
+
+    function _startCallRecording(localStream, remoteStream) {
+      _setterChunks = [];
+      _leadChunks = [];
+      _localStreamForRecording = localStream; // referencia para detener tracks al hangup
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      if (!mimeType) {
+        console.warn('[transcribe] MediaRecorder no soporta webm — transcripción deshabilitada');
+        return;
+      }
+      try {
+        if (localStream) {
+          _setterRecorder = new MediaRecorder(localStream, { mimeType, audioBitsPerSecond: 32000 });
+          _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
+          _setterRecorder.start(1000); // chunk cada 1s
+        }
+        if (remoteStream) {
+          _leadRecorder = new MediaRecorder(remoteStream, { mimeType, audioBitsPerSecond: 32000 });
+          _leadRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _leadChunks.push(e.data); };
+          _leadRecorder.start(1000);
+        }
+        console.log('[transcribe] Grabación iniciada (setter + lead)');
+      } catch (e) {
+        console.warn('[transcribe] start failed:', e.message);
+      }
+    }
+
+    async function _stopCallRecordingAndTranscribe(leadId) {
+      // Detener recorders. Esperamos un poco para que el último chunk caiga.
+      const stopRecorder = (rec) => new Promise((resolve) => {
+        if (!rec || rec.state === 'inactive') { resolve(); return; }
+        rec.addEventListener('stop', () => resolve(), { once: true });
+        try { rec.stop(); } catch { resolve(); }
+      });
+      await Promise.all([stopRecorder(_setterRecorder), stopRecorder(_leadRecorder)]);
+      _setterRecorder = null;
+      _leadRecorder = null;
+      // Detener tracks del local stream para liberar el mic
+      if (_localStreamForRecording) {
+        try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}
+        _localStreamForRecording = null;
+      }
+      const setterBlob = _setterChunks.length ? new Blob(_setterChunks, { type: 'audio/webm' }) : null;
+      const leadBlob = _leadChunks.length ? new Blob(_leadChunks, { type: 'audio/webm' }) : null;
+      _setterChunks = [];
+      _leadChunks = [];
+      // Si no hay audio o llamada muy corta, no transcribir
+      const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
+      if (totalBytes < 5000) {
+        console.log('[transcribe] Audio muy corto (<5KB), saltando');
+        return;
+      }
+      // Convertir a base64
+      const blobToB64 = (blob) => new Promise((resolve) => {
+        if (!blob) { resolve(null); return; }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result;
+          const b64 = (dataUrl || '').split(',')[1] || null;
+          resolve(b64);
+        };
+        reader.readAsDataURL(blob);
+      });
+      try {
+        window.showToast?.('🎤 Transcribiendo llamada (Whisper)…', { type: 'info', duration: 4000 });
+        const [setterAudioB64, leadAudioB64] = await Promise.all([
+          blobToB64(setterBlob),
+          blobToB64(leadBlob),
+        ]);
+        const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/transcribe`), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm' }),
+        });
+        if (!r.ok) {
+          let msg = 'HTTP ' + r.status;
+          try { const d = await r.json(); if (d?.error) msg = d.error; } catch {}
+          console.warn('[transcribe] Error:', msg);
+          window.showToast?.('Transcripción no disponible: ' + msg, { type: 'warn', duration: 5000 });
+          return;
+        }
+        const d = await r.json();
+        console.log('[transcribe] OK, segments:', d.segmentCount);
+        window.showToast?.(`✓ Transcripción lista (${d.segmentCount} fragmentos)`, { type: 'success' });
+      } catch (e) {
+        console.warn('[transcribe] failed:', e?.message || e);
+      }
+    }
+
     // Ringback tone local (440Hz + 480Hz, patrón US: 2s ON / 4s OFF).
     // Telnyx WebRTC v2 NO reproduce el ringback del carrier automáticamente
     // — el setter no escucharía nada mientras suena en el destino. Sintetizamos
@@ -4018,12 +4121,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         // Pedir permisos de mic upfront (mejor UX que esperar a Telnyx)
-        try { await navigator.mediaDevices.getUserMedia({ audio: true }); }
+        // Guardamos la referencia para grabar tambien (Sprint 7: transcripcion)
+        let localStreamForRec = null;
+        try {
+          localStreamForRec = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
         catch (micErr) {
           _closeTelnyxCallPanel();
           window.showToast?.('Necesitamos permiso del micrófono. Habilitalo en el ícono del candado de la URL y reintentá.', { type: 'error', duration: 8000 });
           return;
         }
+        // Guardar para iniciar recording cuando entremos en state='active'
+        _telnyxCallState.localStreamForRec = localStreamForRec;
 
         await _telnyx.ensureClient();
         const call = _telnyx.client.newCall({
@@ -4079,6 +4188,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       _setTelnyxCallStatus('Finalizando…', 'ending');
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
+      // Sprint 7: detener recording + disparar transcripción Whisper en background.
+      // Solo si la llamada llegó a ser activa (durationSecs > 5 — descarta cuelgues
+      // rápidos sin audio significativo).
+      if (leadId && durationSecs >= 5 && (_setterRecorder || _leadRecorder)) {
+        // No bloquear el cierre del panel por esperar transcripción.
+        _stopCallRecordingAndTranscribe(leadId).catch(e => console.warn('[transcribe] fire-and-forget failed:', e?.message));
+      } else {
+        // Limpieza si no transcribimos
+        try { _setterRecorder?.stop(); } catch {}
+        try { _leadRecorder?.stop(); } catch {}
+        if (_localStreamForRecording) { try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}; _localStreamForRecording = null; }
+        _setterRecorder = null; _leadRecorder = null;
+        _setterChunks = []; _leadChunks = [];
+      }
       setTimeout(() => {
         _closeTelnyxCallPanel();
         // Disparar disposition automática solo si la llamada conectó (al menos 1s).

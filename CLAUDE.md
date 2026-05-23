@@ -41,6 +41,7 @@ Railway escucha, actualizar este doc inmediatamente.
 - `TELNYX_SIP_PASSWORD` - **Recomendado**. Idem
 - `TELNYX_SIP_CONNECTION_ID` - **Recomendado**. Idem
 - `TELNYX_SIGNATURE_PUBLIC_KEY` - **Recomendado**. Idem (es pública pero por simetría operativa va con el grupo)
+- `OPENAI_API_KEY` - **Opcional**. Si está set, se habilita transcripción Whisper post-llamada (~$0.006/min). Sin esto, el endpoint `/api/telnyx/calls/:leadId/transcribe` devuelve 503.
 
 ### Seguridad Telnyx: env vars > JSON
 
