@@ -1034,8 +1034,17 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
 
   const data = loadAuthData();
   const allUsers = data.users.filter(u => u.status === 'active').map(u => {
+    // Bug fix 2026-05-24: antes solo leiamos `onlinePresence` (Map in-memory).
+    // Tras cada redeploy de Railway ese Map arranca vacio → todos los users
+    // mostraban "Sin actividad registrada" hasta que volvieran a entrar al
+    // sistema, aun teniendo `lastSeen` persistido en auth.json (flusheado
+    // periodicamente por `flushOnlinePresence`). Ahora hacemos fallback a los
+    // campos persistidos cuando el Map no tiene la entry.
     const presence = onlinePresence.get(u.id);
-    const age = presence ? now - presence.lastSeen : Infinity;
+    const lastSeenTs = presence?.lastSeen || u.lastSeen || null;
+    const ip = presence?.ip || u.lastIp || null;
+    const userAgent = presence?.userAgent || u.lastUserAgent || null;
+    const age = lastSeenTs ? now - lastSeenTs : Infinity;
     let status = 'offline';
     if (age < ONLINE_THRESHOLD) status = 'online';
     else if (age < RECENT_THRESHOLD) status = 'recent';
@@ -1045,9 +1054,9 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
       email: u.email,
       role: u.role,
       status,
-      lastSeen: presence?.lastSeen || null,
-      ip: presence?.ip || null,
-      userAgent: presence?.userAgent || null
+      lastSeen: lastSeenTs,
+      ip,
+      userAgent
     };
   });
   // Ordenar: online > recent > offline; dentro de cada grupo, lastSeen desc
