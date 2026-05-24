@@ -942,10 +942,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return url;
     };
 
+    // 2026-05-24: TODOS los setters acceden a TODAS las variantes (pedido del user).
+    // Antes filtraba por setterId — cada setter solo veia las suyas o globales.
+    // Ahora todas son visibles. El campo `setterId` queda como info de ownership
+    // pero ya no restringe visibilidad.
     const getVisibleVariables = () => {
-      const setterId = setterSelect?.value || (currentUser?.role === 'setter' ? currentUser.setterId : '');
-      if (!setterId) return variantsList.filter(v => !v.setterId);
-      return variantsList.filter((v) => !v.setterId || v.setterId === setterId);
+      return Array.isArray(variantsList) ? [...variantsList] : [];
     };
 
     const getVariantById = (id) => variantsList.find((v) => v.id === id) || null;
@@ -3738,8 +3740,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       let allVariants = data.variants || [];
       const isAdmin = currentUser?.role === 'admin';
       const mySetterId = currentUser?.setterId || '';
-      // Setters ven variables propias + las compartidas con ellos
-      variantsList = isAdmin ? allVariants : allVariants.filter(v => v.setterId === mySetterId || (Array.isArray(v.sharedWith) && v.sharedWith.includes(mySetterId)));
+      // 2026-05-24: TODOS los setters acceden a TODAS las variantes (pedido del user).
+      // Antes solo veian propias o las que un admin compartio. Ahora todas.
+      variantsList = allVariants;
       const list = document.getElementById('variants-list');
       renderVariantEditor();
 
