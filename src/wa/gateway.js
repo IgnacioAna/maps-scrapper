@@ -47,7 +47,13 @@ export function initGateway(httpServer, deps) {
   let corsOrigin;
   if (process.env.NODE_ENV === "production") {
     const csv = process.env.WA_CORS_ORIGINS || "";
-    const list = csv.split(",").map((s) => s.trim()).filter(Boolean);
+    // Strip trailing slash — los browsers mandan Origin sin barra final.
+    // Si el admin pega "https://app.up.railway.app/" desde el address bar,
+    // Socket.IO no matcheaba. Tolerante por defecto.
+    const list = csv
+      .split(",")
+      .map((s) => s.trim().replace(/\/+$/, ""))
+      .filter(Boolean);
     corsOrigin = list.length > 0 ? list : false; // false = same-origin only
   } else {
     corsOrigin = true; // dev/test: permisivo
