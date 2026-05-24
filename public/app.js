@@ -4330,9 +4330,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       let leads = callsLeadsCache.slice();
       if (country) leads = leads.filter(l => (l.country || '').trim() === country);
       if (search) leads = leads.filter(l => (
+        // Audit Sprint 37: matchear universalmente como el buscador de Setteo
+        // (nombre, teléfono, país, ciudad, doctor, dirección, email, website).
         (l.name || '').toLowerCase().includes(search) ||
         (l.phone || '').toLowerCase().includes(search) ||
-        (l.city || '').toLowerCase().includes(search)
+        (l.city || '').toLowerCase().includes(search) ||
+        (l.country || '').toLowerCase().includes(search) ||
+        (l.doctor || '').toLowerCase().includes(search) ||
+        (l.address || '').toLowerCase().includes(search) ||
+        (l.email || '').toLowerCase().includes(search) ||
+        (l.website || '').toLowerCase().includes(search)
       ));
       leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
@@ -5069,9 +5076,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       let leads = callsLeadsCache.slice();
       if (country) leads = leads.filter(l => (l.country || '').trim() === country);
       if (search) leads = leads.filter(l => (
+        // Audit Sprint 37: matchear universalmente como el buscador de Setteo
+        // (nombre, teléfono, país, ciudad, doctor, dirección, email, website).
         (l.name || '').toLowerCase().includes(search) ||
         (l.phone || '').toLowerCase().includes(search) ||
-        (l.city || '').toLowerCase().includes(search)
+        (l.city || '').toLowerCase().includes(search) ||
+        (l.country || '').toLowerCase().includes(search) ||
+        (l.doctor || '').toLowerCase().includes(search) ||
+        (l.address || '').toLowerCase().includes(search) ||
+        (l.email || '').toLowerCase().includes(search) ||
+        (l.website || '').toLowerCase().includes(search)
       ));
 
       // Ocultar leads con callbackAt en el futuro (excepto si el filtro lo pide)
@@ -6226,7 +6240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.innerHTML = `<div class="modal-card" style="max-width:480px; width:95vw;">
           <div class="modal-header">
             <h3>❌ ¿Por qué dijo que no?</h3>
-            <button onclick="document.getElementById('call-objection-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+            <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-objection-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:18px 22px;">
             <p style="color:var(--text-secondary); font-size:12.5px; margin:0 0 14px; line-height:1.5;">Elegí uno o más motivos (multi-select). Los tags alimentan al Mercury IA y muestran qué objeciones son las más comunes. Podés saltearlo si no querés taggear.</p>
@@ -7736,7 +7750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const newBtn = document.getElementById('faq-new-btn');
       if (newBtn) newBtn.style.display = '';
     } catch(err) {
-      list.innerHTML = '<p style="color:var(--danger);">Error cargando respuestas: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error cargando respuestas: ' + escHtml(err.message) + '</p>';
     }
   };
 
@@ -8069,7 +8083,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '</div>';
       }).join('');
     } catch(err) {
-      list.innerHTML = '<p style="color:var(--danger);">Error cargando materiales: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error cargando materiales: ' + escHtml(err.message) + '</p>';
     }
   };
 
@@ -8371,7 +8385,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </details>`
           : '');
     } catch(err) {
-      list.innerHTML = '<p style="color:var(--danger);">Error: ' + err.message + '</p>';
+      list.innerHTML = '<p style="color:var(--danger);">Error: ' + escHtml(err.message) + '</p>';
     } finally {
       // Restaurar boton
       refreshBtns.forEach(b => { b.disabled = false; b.textContent = b.dataset._origText || '↻ Refrescar'; });
@@ -8404,7 +8418,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       detectAndNotifyOverdue();
       updateScheduledBadge();
     } catch (e) {
-      if (list && !silent) list.innerHTML = '<p style="color:var(--danger); padding:40px 0; text-align:center;">Error: ' + e.message + '</p>';
+      if (list && !silent) list.innerHTML = '<p style="color:var(--danger); padding:40px 0; text-align:center;">Error: ' + escHtml(e.message) + '</p>';
     }
   };
 
@@ -8613,7 +8627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderSystemHealth(data);
     } catch (e) {
       const grid = document.getElementById('system-stats-grid');
-      if (grid) grid.innerHTML = '<p style="color:var(--danger);">Error: ' + e.message + '</p>';
+      if (grid) grid.innerHTML = '<p style="color:var(--danger);">Error: ' + escHtml(e.message) + '</p>';
     }
   };
 
@@ -11676,11 +11690,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isSupervisor = role === 'supervisor';
     const views = [
       { id: 'v-crm', target: 'view-crm', label: 'Ir a Setteo (WhatsApp)', icon: '💬', roles: ['admin','setter','supervisor'] },
-      { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','setter','supervisor'] },
+      // Audit Sprint 37: alinear con sidebar — `view-calls` es admin+supervisor only
+      // desde 2026-05-22 (setters siguen con WA). Antes era setter-accesible vía
+      // cmdk, ahora se oculta para coincidir con sidebar.
+      { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','supervisor'] },
       { id: 'v-myperf', target: 'view-myperf', label: 'Ir a Mi rendimiento', icon: '📊', roles: ['admin','setter','supervisor'] },
       { id: 'v-assistant', target: 'view-assistant', label: 'Ir a Asistente IA', icon: '🤖', roles: ['admin','setter'] },
-      { id: 'v-faqs', target: 'view-faqs', label: 'Ir a Banco de Respuestas', icon: '📚', roles: ['admin','setter'] },
-      { id: 'v-training', target: 'view-training', label: 'Ir a Centro de Entrenamiento', icon: '🎓', roles: ['admin','setter'] },
+      { id: 'v-faqs', target: 'view-faqs', label: 'Ir a Banco de Respuestas', icon: '📚', roles: ['admin','setter','supervisor'] },
+      { id: 'v-training', target: 'view-training', label: 'Ir a Centro de Entrenamiento', icon: '🎓', roles: ['admin','setter','supervisor'] },
       { id: 'v-team', target: 'view-team', label: 'Ir a Equipo', icon: '👥', roles: ['admin','supervisor'] },
       { id: 'v-command', target: 'view-command', label: 'Ir a Centro de Comando', icon: '🎛️', roles: ['admin'] },
       { id: 'v-mercury-review', target: 'view-mercury-review', label: 'Ir a Revisión IA', icon: '⭐', roles: ['admin'] },

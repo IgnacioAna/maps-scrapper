@@ -33,6 +33,13 @@ const _diagnostics = new Map(); // pairId → { lastTickAt, lastReason, lastErro
 const TICK_INTERVAL_MS = 60 * 1000; // cada 60s
 const MAX_PAIRS_GLOBAL = 200; // safety
 const ZOMBIE_PAIR_DAYS = 7; // pares sin actividad >7d se cierran
+// Audit 2026-05-23: cap de pares procesados por tick. Cada llamada al LLM
+// puede tardar hasta 30s (timeout). Sin tope, si 100 pares vencen al mismo
+// segundo el tick se cuelga 50min y bloquea el siguiente. Con cap=30 el tick
+// completa en <15min worst case y los pares restantes se procesan al
+// siguiente tick (en 60s). El orden de listActivePairs es estable, así que
+// la rotación natural cubre todos sin starvation.
+const MAX_PAIRS_PER_TICK = 30;
 
 /**
  * Inicializa el orchestrator.
@@ -107,16 +114,39 @@ export async function tick() {
 
     const now = new Date();
     let processed = 0;
+    let llmCallsThisTick = 0;
+    let deferred = 0;
     for (const pair of pairs) {
+      // Audit 2026-05-23: cap de LLM calls por tick. Solo cuenta los pares
+      // que efectivamente entran a generar mensaje (sendStates), no los que
+      // están en WAITING/PAUSED — esos son no-ops baratos y siempre pueden
+      // procesarse. Si llegamos al cap, los siguientes pairs "send-ready"
+      // se difieren al próximo tick (60s).
+      const isSendReady = ["PENDING_FIRST", "READY_A_TO_B", "READY_B_TO_A"].includes(pair.state);
+      if (isSendReady && llmCallsThisTick >= MAX_PAIRS_PER_TICK) {
+        deferred++;
+        continue;
+      }
       try {
         const acted = await processPair(pair, now);
         if (acted) processed++;
+        if (isSendReady && acted) llmCallsThisTick++;
       } catch (err) {
         _logger.error("[warming-orch] error procesando par", pair.id, err);
       }
     }
-    if (processed > 0) {
-      _logger.log(`[warming-orch] tick: ${processed}/${pairs.length} pares procesados`);
+    if (processed > 0 || deferred > 0) {
+      _logger.log(`[warming-orch] tick: ${processed}/${pairs.length} pares procesados${deferred ? `, ${deferred} diferidos por cap LLM` : ""}`);
+    }
+
+    // Cleanup diagnostics huérfanos: si la entrada del Map refiere a un par
+    // que ya no existe en el store (borrado por reset-pairs o nuke), removerla.
+    // Evita memory leak a largo plazo si el panel nunca se abre.
+    if (_diagnostics.size > 500) {
+      const knownIds = new Set(store.listPairs().map((p) => p.id));
+      for (const k of _diagnostics.keys()) {
+        if (!knownIds.has(k)) _diagnostics.delete(k);
+      }
     }
   } catch (err) {
     _logger.error("[warming-orch] tick error global:", err);
@@ -137,6 +167,9 @@ async function processPair(pair, now, { forceImmediate = false } = {}) {
       store.updatePair(pair.id, { state: "CLOSED" });
       setDiagnostic(pair.id, "ZOMBIE_CLOSED", { ageDays: Math.floor(ageDays) });
       _logger.log(`[warming-orch] par ${pair.id} cerrado: zombie >${ZOMBIE_PAIR_DAYS}d sin actividad`);
+      // Cleanup diagnostic en el próximo tick (no inmediato, así el panel
+      // todavía puede mostrar el "ZOMBIE_CLOSED" si alguien pregunta)
+      setTimeout(() => _diagnostics.delete(pair.id), 60 * 60 * 1000);
       return true;
     }
   }
@@ -334,6 +367,17 @@ export async function tickSpecificPair(pairId, { forceImmediate = false } = {}) 
   const pair = store.getPair(pairId);
   if (!pair) return { ok: false, reason: "par no encontrado" };
   if (pair.state === "CLOSED") return { ok: false, reason: "par cerrado" };
+
+  // Coordinar con el tick global: si está corriendo, esperar un poco para
+  // evitar race condition de saveData() (load → modify → save no es atómico,
+  // y dos writes concurrentes al mismo JSON pierden cambios).
+  if (_running) {
+    // Espera corta no bloqueante; si sigue corriendo, seguimos igual con
+    // tolerancia (el peor caso es un write extra, no corrupción de estado).
+    for (let i = 0; i < 20 && _running; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
 
   // Fix 1: si force, resetear nextActionAt para que ningun check lo rechace
   if (forceImmediate && pair.nextActionAt && new Date(pair.nextActionAt) > new Date()) {

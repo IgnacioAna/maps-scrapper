@@ -76,16 +76,27 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
   memStats.totalCalls++;
   const start = Date.now();
 
+  // Timeout guard: si el LLM cuelga (red, modelo lento, etc.), abortamos
+  // a los 30s para no bloquear el orchestrator (que tiene lock _running).
+  // Sin esto, un único call colgado paralizaba TODOS los ticks futuros.
+  const LLM_TIMEOUT_MS = 30000;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`LLM timeout >${LLM_TIMEOUT_MS}ms`)), LLM_TIMEOUT_MS),
+  );
+
   try {
-    const response = await _aiClient.chat.completions.create({
-      model: _aiModel,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-      max_tokens: maxTokens,
-      temperature,
-    });
+    const response = await Promise.race([
+      _aiClient.chat.completions.create({
+        model: _aiModel,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        max_tokens: maxTokens,
+        temperature,
+      }),
+      timeoutPromise,
+    ]);
 
     const text = (response.choices[0]?.message?.content || "").trim();
     const tokensIn = response.usage?.prompt_tokens || 0;
@@ -93,7 +104,9 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
     const cost = (tokensIn / 1000) * COST_PER_1K_INPUT + (tokensOut / 1000) * COST_PER_1K_OUTPUT;
     memStats.totalSuccesses++;
     memStats.totalEstimatedCostUsd += cost;
-    try { store.recordLLMCall({ success: true, cost }); } catch (e) {}
+    try { store.recordLLMCall({ success: true, cost }); } catch (e) {
+      _logger.warn("[warming-llm] recordLLMCall(success) failed:", e?.message);
+    }
 
     const elapsed = Date.now() - start;
     _logger.log(
@@ -102,7 +115,9 @@ export async function callLLM({ system, user, maxTokens = 200, temperature = 0.8
     return { text, tokensIn, tokensOut, cost, model: _aiModel };
   } catch (err) {
     memStats.totalFailures++;
-    try { store.recordLLMCall({ success: false, error: err.message }); } catch (e) {}
+    try { store.recordLLMCall({ success: false, error: err.message }); } catch (e) {
+      _logger.warn("[warming-llm] recordLLMCall(failure) failed:", e?.message);
+    }
     _logger.error("[warming-llm] error:", err.message);
     throw err;
   }

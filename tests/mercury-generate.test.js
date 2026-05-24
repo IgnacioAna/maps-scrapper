@@ -5,6 +5,7 @@
 // RBAC.
 
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
+// timeout 20s viene de vitest.config.js globalmente.
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -39,6 +40,16 @@ fs.writeFileSync(
     invites: [],
     sessions: [],
   }, null, 2)
+);
+
+// Pre-poblar setters/history vacios para que el seed del repo (>14MB) no contamine.
+fs.writeFileSync(
+  path.join(tmpData, "setters.json"),
+  JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2)
+);
+fs.writeFileSync(
+  path.join(tmpData, "history.json"),
+  JSON.stringify({ entries: {}, lastPages: {} }, null, 2)
 );
 
 // Pre-poblar faqs con entradas que matcheen el mensaje de prueba.

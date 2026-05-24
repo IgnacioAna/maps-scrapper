@@ -83,40 +83,66 @@ async function main() {
   // 4. Guardar archivos
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-  if (data.history) {
-    const histPath = path.join(DATA_DIR, "history.json");
-    fs.writeFileSync(histPath, JSON.stringify(data.history, null, 2));
-    const entries = Object.keys(data.history.entries || {}).length;
-    console.log(`  history.json guardado (${entries} entries)`);
+  // Helper para escribir cada archivo de forma aislada: un fallo de uno no
+  // bloquea el resto del backup. Loguea con tag claro de éxito/error.
+  const results = { saved: [], skipped: [], failed: [] };
+  function saveFile(fname, payload, summary = "") {
+    if (payload == null) { results.skipped.push(`${fname} (server devolvió null)`); return; }
+    const fpath = path.join(DATA_DIR, fname);
+    try {
+      fs.writeFileSync(fpath, JSON.stringify(payload, null, 2));
+      console.log(`  ok  ${fname}${summary ? "  (" + summary + ")" : ""}`);
+      results.saved.push(fname);
+    } catch (e) {
+      console.error(`  ERR ${fname}: ${e.message}`);
+      results.failed.push(`${fname}: ${e.message}`);
+    }
   }
 
+  if (data.history) {
+    const entries = Object.keys(data.history.entries || {}).length;
+    saveFile("history.json", data.history, `${entries} entries`);
+  } else { results.skipped.push("history.json (no en payload)"); }
+
   if (data.auth) {
-    const authPath = path.join(DATA_DIR, "auth.json");
-    fs.writeFileSync(authPath, JSON.stringify(data.auth, null, 2));
     const users = (data.auth.users || []).length;
     const invites = (data.auth.invites || []).length;
     const sessions = (data.auth.sessions || []).length;
-    console.log(`  auth.json guardado (${users} users, ${invites} invites, ${sessions} sessions)`);
-  }
+    saveFile("auth.json", data.auth, `${users} users, ${invites} invites, ${sessions} sessions`);
+  } else { results.skipped.push("auth.json (no en payload)"); }
 
   if (data.setters) {
-    const settersPath = path.join(DATA_DIR, "setters.json");
-    fs.writeFileSync(settersPath, JSON.stringify(data.setters, null, 2));
-    console.log(`  setters.json guardado`);
-  }
+    const setters = (data.setters.setters || []).length;
+    const leads = Object.keys(data.setters.leads || {}).length;
+    saveFile("setters.json", data.setters, `${setters} setters, ${leads} leads`);
+  } else { results.skipped.push("setters.json (no en payload)"); }
 
   if (data.faqs) {
-    const faqsPath = path.join(DATA_DIR, "faqs.json");
-    fs.writeFileSync(faqsPath, JSON.stringify(data.faqs, null, 2));
     const entries = (data.faqs.entries || []).length;
-    console.log(`  faqs.json guardado (${entries} entradas)`);
-  }
+    saveFile("faqs.json", data.faqs, `${entries} entradas`);
+  } else { results.skipped.push("faqs.json (no en payload)"); }
 
   if (data.training) {
-    const trainingPath = path.join(DATA_DIR, "training.json");
-    fs.writeFileSync(trainingPath, JSON.stringify(data.training, null, 2));
     const materials = (data.training.materials || []).length;
-    console.log(`  training.json guardado (${materials} materiales)`);
+    saveFile("training.json", data.training, `${materials} materiales`);
+  } else { results.skipped.push("training.json (no en payload)"); }
+
+  // Audit fix (2026-05-23): persistir el resto de los archivos que el endpoint
+  // ahora expone. Sin esto, un container nuevo de Railway perdia config Mercury,
+  // generaciones, alertas, config Telnyx, eventos, scripts y mensajes programados.
+  // Nota: el server hace try/catch por loader, asi que un loader que falla devuelve
+  // null. Por eso saveFile() chequea null y skippea en vez de escribir "null" a disco.
+  const extras = [
+    ['mercuryConfig', 'mercury_config.json'],
+    ['mercuryGenerations', 'mercury_generations.json'],
+    ['alertConfig', 'alert_config.json'],
+    ['telnyxConfig', 'telnyx_config.json'],
+    ['telnyxEvents', 'telnyx_events.json'],
+    ['callScripts', 'call_scripts.json'],
+    ['scheduledMessages', 'scheduled_messages.json'],
+  ];
+  for (const [key, fname] of extras) {
+    saveFile(fname, data[key]);
   }
 
   // 5. Bajar data del módulo WA (si existe el endpoint)
@@ -124,26 +150,30 @@ async function main() {
     const waResp = await fetch(`${baseUrl}/api/wa/admin/export`, { headers: { Cookie: cookies } });
     if (waResp.ok) {
       const waData = await waResp.json();
-      if (waData.accounts) {
-        fs.writeFileSync(path.join(DATA_DIR, "wa_accounts.json"), JSON.stringify(waData.accounts, null, 2));
-        console.log(`  wa_accounts.json guardado (${(waData.accounts.accounts || []).length} cuentas)`);
-      }
-      if (waData.routines) {
-        fs.writeFileSync(path.join(DATA_DIR, "wa_routines.json"), JSON.stringify(waData.routines, null, 2));
-        console.log(`  wa_routines.json guardado (${(waData.routines.routines || []).length} rutinas)`);
-      }
-      if (waData.events) {
-        fs.writeFileSync(path.join(DATA_DIR, "wa_events.json"), JSON.stringify(waData.events, null, 2));
-        console.log(`  wa_events.json guardado`);
-      }
+      if (waData.accounts) saveFile("wa_accounts.json", waData.accounts, `${(waData.accounts.accounts || []).length} cuentas`);
+      if (waData.routines) saveFile("wa_routines.json", waData.routines, `${(waData.routines.routines || []).length} rutinas`);
+      if (waData.events) saveFile("wa_events.json", waData.events, `${(waData.events.events || []).length} eventos`);
     } else if (waResp.status !== 404) {
-      console.warn(`  ⚠ módulo WA respondió ${waResp.status}, skipping wa_*.json`);
+      console.warn(`  WARN módulo WA respondió ${waResp.status}, skipping wa_*.json`);
+      results.skipped.push(`wa_*.json (HTTP ${waResp.status})`);
     }
   } catch (e) {
-    console.warn(`  ⚠ módulo WA no disponible (${e.message}), skipping wa_*.json`);
+    console.warn(`  WARN módulo WA no disponible (${e.message}), skipping wa_*.json`);
+    results.skipped.push(`wa_*.json (${e.message})`);
   }
 
-  console.log("\n Backup completo. Ahora podés commitear y pushear.\n");
+  // 6. Resumen final
+  console.log(`\n=== RESUMEN ===`);
+  console.log(`  Guardados: ${results.saved.length} archivos`);
+  console.log(`  Omitidos:  ${results.skipped.length} (${results.skipped.join(", ") || "ninguno"})`);
+  if (results.failed.length) {
+    console.error(`  FALLARON:  ${results.failed.length} archivos`);
+    for (const f of results.failed) console.error(`    - ${f}`);
+    console.error(`\nNO commitear. Resolver fallos primero.`);
+    process.exit(1);
+  }
+
+  console.log("\nBackup completo. Ahora podés commitear y pushear.\n");
 }
 
 main().catch((e) => { console.error("Error:", e); process.exit(1); });

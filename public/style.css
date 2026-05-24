@@ -22,7 +22,10 @@
   --text-primary: #E5E7E2;
   --text-secondary: #B4B8C2;
   --text-tertiary: #7E8494;
-  --text-faint: #565C6E;
+  /* UX audit 2026-05-23: --text-faint era #565C6E sobre bg-app #0F1115 ≈ 2.82:1
+     contrast — falla WCAG AA. Subido a #7E8494 (igual a --text-tertiary,
+     5.05:1 → pasa AA) para labels footer/meta. */
+  --text-faint: #7E8494;
 
   /* ───── ACCENT (violeta menos saturado, sostenible 8h) ───── */
   --accent: #9D85F2;
@@ -214,7 +217,10 @@ body {
 
 .ai-studio-layout {
   display: flex;
-  height: 100vh;
+  /* UX audit 2026-05-23: 100vh rompe iOS Safari (chrome bar). 100dvh es dynamic
+     viewport units, ajusta automaticamente cuando aparece/desaparece la barra. */
+  height: 100dvh;
+  min-height: 100vh; /* fallback para browsers que no soporten dvh */
   overflow: hidden;
 }
 

@@ -20,3 +20,4 @@ test_qwen.js
 .env.local
 # Archivo personal con notas/credenciales scratch — nunca subirlo
 Scapper.txt
+.claude/

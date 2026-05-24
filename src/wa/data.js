@@ -116,21 +116,9 @@ export function resetWarming(accountId) {
   return startWarming(accountId, { status: "DISCONNECTED" });
 }
 
-export function incrementCounter(accountId, field, by = 1) {
-  const acc = getAccount(accountId);
-  if (!acc) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  const patch = {};
-  if (acc.dailyKey !== today) {
-    patch.dailyKey = today;
-    patch.msgsSentToday = 0;
-    patch.responsesToday = 0;
-    patch.pendingCount = 0;
-    patch.deliveryFails = 0;
-  }
-  patch[field] = (patch[field] !== undefined ? patch[field] : (acc[field] || 0)) + by;
-  return updateAccount(accountId, patch);
-}
+// NOTE (audit 2026-05-23): `incrementCounter` se eliminó por dead code — los
+// counters diarios los actualiza la desktop wa-multi vía eventos, no este file.
+// Si alguna vez se necesita un helper similar, recuperalo del git history.
 
 export function updateAccount(id, patch) {
   const data = loadJson(FILES.accounts, { accounts: [] });

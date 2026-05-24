@@ -3,6 +3,7 @@ import { getJson } from "serpapi";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { mountWa } from "./src/wa/index.js";
@@ -11,6 +12,14 @@ dotenv.config();
 const apiKey = process.env.API_KEY;
 
 const app = express();
+// Performance audit 2026-05-23: compression middleware. Sin esto, app.js (~400KB)
+// + style.css (~100KB) + html viajaban crudos. Con gzip/brotli reduce ~70% wire
+// size → time-to-interactive significativamente mejor en first paint.
+// En NODE_ENV=test lo desactivamos: supertest + compression dispara timeouts
+// flakys en handlers async con mutex (mercury/generate, etc).
+if (process.env.NODE_ENV !== 'test') {
+  app.use(compression());
+}
 const PORT = process.env.PORT || 3000;
 
 // Configurar IA para enriquecimiento: Mercury (Inception Labs) si hay API key, sino Qwen como fallback
@@ -536,6 +545,16 @@ function ensureLeadDefaults(lead = {}) {
   // Distinto del array `notes[]` (que son post-interacciones). Útil para
   // guion personalizado del lead, contexto que descubrió en la web, etc.
   if (typeof lead.precallNote !== 'string') lead.precallNote = '';
+  // 2026-05-23: campos del módulo follow-ups extendido. El backend los lee
+  // (_isFollowupHidden + _computeFollowupsDue) pero antes no los inicializaba,
+  // así que aparecían undefined hasta que algún handler los seteaba — generaba
+  // potencial inconsistencia. Defaults conservadores:
+  //   followUpsReactivated: false → respeta el ocultamiento estándar
+  //   followUpNotes: {} keyed por step
+  //   followUpDueOverrides: {} keyed por step
+  if (typeof lead.followUpsReactivated !== 'boolean') lead.followUpsReactivated = false;
+  if (!lead.followUpNotes || typeof lead.followUpNotes !== 'object') lead.followUpNotes = {};
+  if (!lead.followUpDueOverrides || typeof lead.followUpDueOverrides !== 'object') lead.followUpDueOverrides = {};
   return lead;
 }
 
@@ -987,13 +1006,19 @@ app.use('/api/auth/users', _noStoreCache);
 app.use('/api/auth/online', _noStoreCache);
 app.use('/api/onboarding/progress', _noStoreCache);
 
+// Security audit 2026-05-23 (C-5): agregamos `Secure` flag en produccion.
+// Sin esto, un MITM en la red local podia inyectar un <img src="http://app/..."/>
+// y el browser mandaba la cookie por HTTP plain. Railway sirve solo HTTPS asi
+// que en prod siempre queremos Secure. En tests (NODE_ENV=test) lo dejamos sin
+// Secure porque supertest usa http://127.0.0.1.
+const _COOKIE_SECURE = process.env.NODE_ENV === 'production' ? '; Secure' : '';
 function setAuthCookie(res, sessionId) {
   const maxAge = Math.floor(SESSION_TTL_MS / 1000);
-  res.setHeader('Set-Cookie', `gs_session=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`);
+  res.setHeader('Set-Cookie', `gs_session=${encodeURIComponent(sessionId)}; Path=/; HttpOnly; SameSite=Lax${_COOKIE_SECURE}; Max-Age=${maxAge}`);
 }
 
 function clearAuthCookie(res) {
-  res.setHeader('Set-Cookie', 'gs_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+  res.setHeader('Set-Cookie', `gs_session=; Path=/; HttpOnly; SameSite=Lax${_COOKIE_SECURE}; Max-Age=0`);
 }
 
 app.get('/api/auth/me', (req, res) => {
@@ -1036,7 +1061,10 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
 
 app.post('/api/auth/login', loginLimiter, (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'Email y contraseña requeridos.' });
+  // 2026-05-23: tipos. Antes email.toLowerCase() crasheaba si venía number/array.
+  if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
+    return res.status(400).json({ error: 'Email y contraseña requeridos (strings).' });
+  }
 
   const data = loadAuthData();
   const user = data.users.find((u) => u.email.toLowerCase() === String(email).toLowerCase().trim() && u.status === 'active');
@@ -1257,6 +1285,16 @@ app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), asy
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
   if (!name || !email || !role) return res.status(400).json({ error: 'Nombre, email y rol son requeridos.' });
+  // 2026-05-23: tipos + validacion mínima de email + length caps
+  if (typeof name !== 'string' || typeof email !== 'string' || typeof role !== 'string') {
+    return res.status(400).json({ error: 'name/email/role deben ser strings.' });
+  }
+  if (name.trim().length < 2 || name.trim().length > 80) {
+    return res.status(400).json({ error: 'name debe tener entre 2 y 80 caracteres.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.length > 200) {
+    return res.status(400).json({ error: 'email inválido.' });
+  }
   if (!['admin', 'supervisor', 'setter'].includes(role)) return res.status(400).json({ error: 'Rol inválido.' });
 
   const data = loadAuthData();
@@ -1301,8 +1339,12 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
 
 app.post('/api/auth/accept-invite', (req, res) => {
   const { token, password } = req.body || {};
-  if (!token || !password) return res.status(400).json({ error: 'Token y contraseña requeridos.' });
-  if (String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  // 2026-05-23: tipos + length max para password (anti-DOS scrypt overload).
+  if (typeof token !== 'string' || typeof password !== 'string' || !token.trim() || !password) {
+    return res.status(400).json({ error: 'Token y contraseña requeridos (strings).' });
+  }
+  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  if (password.length > 200) return res.status(400).json({ error: 'La contraseña es demasiado larga.' });
 
   const data = loadAuthData();
   const invite = data.invites.find((item) => item.token === token && item.status === 'pending');
@@ -1443,7 +1485,15 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
 // ── Admin: Importar data (restore después de deploy) ──
 app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { history, auth, setters, faqs, training } = req.body;
+    // Bug fix 2026-05-23: el body antes solo destructuraba history/auth/setters/faqs/training.
+    // Los archivos nuevos (mercury, alert, telnyx, call scripts, scheduled msgs) se
+    // exportaban en /export-data pero el /import-data los ignoraba silenciosamente,
+    // así que el pre-deploy de Railway perdía esas configs al re-importar.
+    const {
+      history, auth, setters, faqs, training,
+      mercuryConfig, mercuryGenerations, alertConfig,
+      telnyxConfig, telnyxEvents, callScripts, scheduledMessages,
+    } = req.body || {};
 
     // Validacion de shape ANTES de tocar nada. Un payload malo no debe llegar
     // a sobrescribir los archivos vivos. Cada bloque tiene su forma minima.
@@ -1477,8 +1527,34 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
         errors.push('training.materials debe ser array');
       }
     }
-    if (history === undefined && auth === undefined && setters === undefined && faqs === undefined && training === undefined) {
-      errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training');
+    if (mercuryConfig !== undefined && (!mercuryConfig || typeof mercuryConfig !== 'object')) {
+      errors.push('mercuryConfig debe ser objeto');
+    }
+    if (mercuryGenerations !== undefined && (!mercuryGenerations || typeof mercuryGenerations !== 'object' || !Array.isArray(mercuryGenerations.generations))) {
+      errors.push('mercuryGenerations.generations debe ser array');
+    }
+    if (alertConfig !== undefined && (!alertConfig || typeof alertConfig !== 'object')) {
+      errors.push('alertConfig debe ser objeto');
+    }
+    if (telnyxConfig !== undefined && (!telnyxConfig || typeof telnyxConfig !== 'object')) {
+      errors.push('telnyxConfig debe ser objeto');
+    }
+    if (telnyxEvents !== undefined && (!telnyxEvents || typeof telnyxEvents !== 'object' || !Array.isArray(telnyxEvents.events))) {
+      errors.push('telnyxEvents.events debe ser array');
+    }
+    if (callScripts !== undefined && (!callScripts || typeof callScripts !== 'object' || !Array.isArray(callScripts.scripts))) {
+      errors.push('callScripts.scripts debe ser array');
+    }
+    if (scheduledMessages !== undefined && (!scheduledMessages || typeof scheduledMessages !== 'object' || !Array.isArray(scheduledMessages.scheduledMessages))) {
+      errors.push('scheduledMessages.scheduledMessages debe ser array');
+    }
+    const hasAny = history !== undefined || auth !== undefined || setters !== undefined ||
+      faqs !== undefined || training !== undefined || mercuryConfig !== undefined ||
+      mercuryGenerations !== undefined || alertConfig !== undefined ||
+      telnyxConfig !== undefined || telnyxEvents !== undefined ||
+      callScripts !== undefined || scheduledMessages !== undefined;
+    if (!hasAny) {
+      errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training/mercuryConfig/mercuryGenerations/alertConfig/telnyxConfig/telnyxEvents/callScripts/scheduledMessages');
     }
     if (errors.length) {
       return res.status(400).json({ error: 'Validacion fallida', detalles: errors });
@@ -1486,12 +1562,20 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 
     // Backup ANTES de sobrescribir, para poder revertir si algo sale mal.
     const backup = makeBackup('pre-import');
-    if (history) saveHistory(history);
-    if (auth) saveAuthData(auth);
-    if (setters) saveSettersData(setters);
-    if (faqs) saveFaqs(faqs);
-    if (training) saveTraining(training);
-    res.json({ ok: true, message: 'Data importada correctamente', backup: backup?.path || null });
+    const restored = [];
+    if (history) { saveHistory(history); restored.push('history'); }
+    if (auth) { saveAuthData(auth); restored.push('auth'); }
+    if (setters) { saveSettersData(setters); restored.push('setters'); }
+    if (faqs) { saveFaqs(faqs); restored.push('faqs'); }
+    if (training) { saveTraining(training); restored.push('training'); }
+    if (mercuryConfig) { saveMercuryConfig(mercuryConfig); restored.push('mercuryConfig'); }
+    if (mercuryGenerations) { saveMercuryGenerations(mercuryGenerations); restored.push('mercuryGenerations'); }
+    if (alertConfig) { saveAlertConfig(alertConfig); restored.push('alertConfig'); }
+    if (telnyxConfig) { saveTelnyxConfig(telnyxConfig); restored.push('telnyxConfig'); }
+    if (telnyxEvents) { saveTelnyxEvents(telnyxEvents); restored.push('telnyxEvents'); }
+    if (callScripts) { saveCallScripts(callScripts); restored.push('callScripts'); }
+    if (scheduledMessages) { saveScheduledMessages(scheduledMessages); restored.push('scheduledMessages'); }
+    res.json({ ok: true, message: 'Data importada correctamente', restored, backup: backup?.path || null });
   } catch (e) {
     console.error('Import error:', e);
     res.status(500).json({ error: 'Error importando data' });
@@ -1652,10 +1736,14 @@ app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, r
 
 // API de Apify (Buscador de Instagram Puro)
 app.post('/api/apify-scrape', requireAuth, requireRole('admin'), scrapeLimiter, async (req, res) => {
-  const { query, maxItems } = req.body;
+  const { query, maxItems } = req.body || {};
   const apifyToken = process.env.APIFY_TOKEN;
-  
+
   if (!apifyToken) return res.status(401).json({ error: 'Falta Token de APIFY en .env' });
+  // Bug fix 2026-05-23: query.startsWith crasheaba si query venía undefined o no-string.
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    return res.status(400).json({ error: 'query requerido (string: URL, @usuario o #hashtag).' });
+  }
 
   try {
     const isUrl = query.startsWith('http') || query.startsWith('www') || query.startsWith('instagram.com');
@@ -1698,8 +1786,9 @@ app.post('/api/apify-scrape', requireAuth, requireRole('admin'), scrapeLimiter, 
     // Si excede el tiempo del sync (normalmente 1-2 min), Apify devuelve error de timeout pero deja el dataset creado.
     // Para resultados chicos (20 items de Ig) suele retornar instantaneo en JSON.
     const items = await startResp.json();
-    console.log(`Apify Response Status: ${startResp.status}`);
-    
+    // 2026-05-23: bajado de log a debug — no aporta valor operativo en cada scrape.
+    if (process.env.NODE_ENV !== 'production') console.debug(`[apify] response status: ${startResp.status}`);
+
     if (items.error || !Array.isArray(items)) {
         console.error('Apify Error Detail:', items);
         return res.status(500).json({ error: items.error || items.message || 'Error desconocido de Apify' });
@@ -1780,7 +1869,7 @@ app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
 // ── POST /api/admin/history/import — import leads with deduplication ──
 app.post('/api/admin/history/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { leads } = req.body;
+    const { leads } = req.body || {};
     if (!Array.isArray(leads)) return res.status(400).json({ error: 'leads must be an array' });
 
     const history = loadHistory();
@@ -1882,8 +1971,8 @@ app.post('/api/admin/history/dedup', requireAuth, requireRole('admin'), (req, re
 // ── DELETE /api/admin/history/entry — delete a specific entry ──
 app.delete('/api/admin/history/entry', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { key } = req.body;
-    if (!key) return res.status(400).json({ error: 'key is required' });
+    const { key } = req.body || {};
+    if (!key || typeof key !== 'string') return res.status(400).json({ error: 'key is required (string)' });
 
     const history = loadHistory();
     if (!history.entries[key]) return res.status(404).json({ error: 'Entry not found' });
@@ -2603,10 +2692,15 @@ function saveScrapeBatches(data) {
 
 // ── Endpoint principal ──
 app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async (req, res) => {
-  const { query, location, maxPages = 1, startPage = 1 } = req.body;
+  const { query, location, maxPages = 1, startPage = 1 } = req.body || {};
 
-  if (!query) {
-    return res.status(400).json({ error: "La búsqueda (query) es requerida." });
+  // Bug fix 2026-05-23: antes asumíamos query string. Si llegaba un objeto
+  // ({ query: { foo: 1 } }) crasheaba en query.split(). Validamos type explícito.
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    return res.status(400).json({ error: "La búsqueda (query) es requerida (string no vacío)." });
+  }
+  if (location !== undefined && location !== null && typeof location !== 'string') {
+    return res.status(400).json({ error: "location debe ser string (ciudades separadas por ;)." });
   }
 
   try {
@@ -2836,7 +2930,8 @@ app.get('/api/history/stats', requireAuth, requireRole('admin'), (req, res) => {
 // ── Limpiar historial ──
 app.delete('/api/history', requireAuth, requireRole('admin'), (req, res) => {
   saveHistory({ entries: {}, searches: [], lastPages: {} });
-  res.json({ message: "Historial limpiado." });
+  // 2026-05-23: normalizado a { ok, message } como el resto del API.
+  res.json({ ok: true, message: "Historial limpiado." });
 });
 
 // ── Sugerir próxima página ──
@@ -3468,8 +3563,9 @@ app.get('/api/setters', requireAuth, (req, res) => {
 
 // ── Setters: Gestionar equipo ──
 app.post('/api/setters/team', requireAuth, requireRole('admin'), (req, res) => {
-  const { name } = req.body;
-  if (!name || !name.trim()) return res.status(400).json({ error: "Nombre requerido." });
+  const { name } = req.body || {};
+  if (!name || typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: "Nombre requerido (string no vacío)." });
+  if (name.trim().length > 80) return res.status(400).json({ error: "Nombre demasiado largo (max 80 chars)." });
   const data = loadSettersData();
   const id = `setter_${name.trim().toLowerCase().replace(/\s+/g, '_')}_${Date.now()}`;
   if (data.setters.find(s => s.name.toLowerCase() === name.trim().toLowerCase())) {
@@ -3720,8 +3816,11 @@ app.post('/api/setters/leads/orphans/reset', requireAuth, requireRole('admin'), 
     lead.followUpStartedAt = null;
     lead.callAttempts = 0;
     lead.callLog = [];
-    lead.callbackAt = null;
-    lead.phoneStatus = null;
+    // Bug fix 2026-05-23: ensureLeadDefaults usa '' para callbackAt/phoneStatus.
+    // Antes acá los seteábamos a null, generando shape inconsistente que el frontend
+    // necesitaba coalescer en cada render (null vs '' para strings).
+    lead.callbackAt = '';
+    lead.phoneStatus = '';
     lead.asistio = null;
     lead.assignedTo = ''; // normalizar a vacío
     resetCount++;
@@ -4007,8 +4106,8 @@ app.get('/api/setters/variants', requireAuth, (req, res) => {
 });
 
 app.post('/api/setters/variants', requireAuth, (req, res) => {
-  const { name, weekLabel, setterId, blocks = [], active = true } = req.body;
-  if (!name) return res.status(400).json({ error: "Nombre requerido." });
+  const { name, weekLabel, setterId, blocks = [], active = true } = req.body || {};
+  if (!name || typeof name !== 'string' || !name.trim()) return res.status(400).json({ error: "Nombre requerido (string)." });
   const role = req.auth?.user?.role;
   let finalSetterId = setterId || '';
   if (role !== 'admin') {
@@ -4542,7 +4641,7 @@ function _importLeadsCore(data, incoming, assignTo) {
 
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
-    const { leads: incoming, assignTo, batchId, distribution } = req.body;
+    const { leads: incoming, assignTo, batchId, distribution } = req.body || {};
     if (!Array.isArray(incoming) || incoming.length === 0) {
       return res.status(400).json({ error: 'No hay leads para importar.' });
     }
@@ -4855,7 +4954,14 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'assignedTo', 'varianteId', 'setterPhoneId'];
+  // Security audit 2026-05-23 (C-1): `assignedTo` SACADO del mass-assign abierto.
+  // Antes un setter podia mandar {assignedTo:"otro"} y transferir su lead (lead
+  // huerfano si el id no existe → invisible para todos). Solo admin puede reasignar
+  // ahora; para bulk usar /api/setters/reassign-bulk.
+  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'varianteId', 'setterPhoneId'];
+  if (req.auth?.user?.role === 'admin' && typeof req.body.assignedTo === 'string') {
+    lead.assignedTo = req.body.assignedTo;
+  }
   for (const field of allowed) {
     if (req.body[field] !== undefined) lead[field] = req.body[field];
   }
@@ -4923,12 +5029,17 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
     lead.calificado = false;
     lead.interes = null;
     if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    // Backend audit 2026-05-23 (MR1): preservar sin_wsp en reverse cascade. Antes
+    // destildar "respondio" en un lead Sin WSP reseteaba a 'sin_contactar' y lo
+    // sacaba de la vista Llamadas → bug operativo.
+    else if (lead.conexion === 'sin_wsp') lead.estado = 'sin_wsp';
     else lead.estado = 'sin_contactar';
   }
   if ((req.body.calificado === false) && req.body.respondio === undefined && req.body.conexion === undefined) {
     lead.interes = null;
     if (lead.respondio) lead.estado = 'respondio';
     else if (lead.conexion === 'enviada') lead.estado = 'contactado';
+    else if (lead.conexion === 'sin_wsp') lead.estado = 'sin_wsp';
     else lead.estado = 'sin_contactar';
   }
   if ((req.body.interes === '' || req.body.interes === null || req.body.interes === 'no') && req.body.calificado === undefined && req.body.respondio === undefined && req.body.conexion === undefined) {
@@ -4941,7 +5052,11 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.body.varianteId !== undefined && req.body.varianteId !== lead.varianteId) {
     incrementVariantUsage(data, req.body.varianteId || '');
   }
-  lead.whatsappUrl = buildWhatsAppUrl(lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '', lead.country || '', '');
+  // Bug fix 2026-05-23: estábamos llamando buildWhatsAppUrl con message='' lo que
+  // borraba el `?text=...` del URL en cada PATCH del lead. El frontend después no
+  // tenía como recuperarlo (excepto via backfill-wa-text manual). Preservamos el
+  // openMessage actual del lead para que el WSP siga abriéndose con texto precargado.
+  lead.whatsappUrl = buildWhatsAppUrl(lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '', lead.country || '', lead.openMessage || '');
   saveSettersData(data);
   res.json({ ok: true, lead: { id: req.params.id, ...lead } });
 });
@@ -4969,6 +5084,10 @@ app.post('/api/setters/leads/:id/interaction', requireAuth, (req, res) => {
     createdAt: now
   };
   lead.interactions.push(entry);
+  // Performance audit 2026-05-23: cap a 200 interacciones por lead. Antes era unbounded;
+  // un lead con 12 meses de actividad podia tener miles, inflando setters.json (~10MB
+  // hoy con 5000 leads). 200 cubre historia util sin runaway.
+  if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
   lead.lastContactAt = now;
   lead.lastStage = stage;
   lead.lastVariantId = entry.variantId;
@@ -5218,14 +5337,27 @@ app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
 
 // Notas
 app.post('/api/setters/leads/:id/note', requireAuth, (req, res) => {
-  const { text, by } = req.body;
-  if (!text || !text.trim()) return res.status(400).json({ error: "Nota vacía." });
+  const { text } = req.body || {};
+  // 2026-05-23: validacion de type + length cap. Antes text.trim() crasheaba si
+  // venia number/null/etc. Y no había límite de longitud, así que un setter podía
+  // pegar 1MB de texto en una nota.
+  if (typeof text !== 'string' || !text.trim()) return res.status(400).json({ error: "Nota vacía o tipo inválido." });
+  const cleanText = text.trim().substring(0, 5000);
   const data = loadSettersData();
   if (!data.leads[req.params.id]) return res.status(404).json({ error: "Lead no encontrado." });
   if (req.auth?.user?.role === 'setter' && data.leads[req.params.id].assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  data.leads[req.params.id].notes.push({ text: text.trim(), by: by || 'Sistema', date: new Date().toISOString() });
+  if (!Array.isArray(data.leads[req.params.id].notes)) data.leads[req.params.id].notes = [];
+  // Security audit 2026-05-23 (H-1): `by` ya no se acepta del body. Antes el setter podia
+  // mandar {by:"Otra Persona"} y spoofear la autoria de la nota — audit trail comprometido.
+  // Siempre usamos el nombre del user autenticado.
+  const cleanBy = req.auth?.user?.name || req.auth?.user?.email || 'Sistema';
+  data.leads[req.params.id].notes.push({ text: cleanText, by: cleanBy, date: new Date().toISOString() });
+  // Performance audit 2026-05-23: cap a 100 notas por lead. Antes unbounded.
+  if (data.leads[req.params.id].notes.length > 100) {
+    data.leads[req.params.id].notes = data.leads[req.params.id].notes.slice(-100);
+  }
   data.leads[req.params.id].lastContactAt = new Date().toISOString();
   saveSettersData(data);
   res.json({ ok: true, notes: data.leads[req.params.id].notes });
@@ -5857,13 +5989,15 @@ app.get('/api/setters/followups/today', requireAuth, (req, res) => {
   if (!isSetter && !isAdminOrSuper) return res.status(403).json({ error: 'No autorizado.' });
 
   const data = loadSettersData();
-  let leads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
-
-  // Filtrar por setter
-  if (isSetter) {
-    leads = leads.filter((l) => l.assignedTo === req.auth.user.setterId);
-  } else if (req.query.setter) {
-    leads = leads.filter((l) => l.assignedTo === req.query.setter);
+  // 2026-05-23: filtrar PRIMERO, después materializar leads con _id. Antes mapeaba
+  // todos los leads del sistema y descartaba el 95% en el filter siguiente.
+  const targetSetter = isSetter
+    ? (req.auth.user.setterId || '')
+    : (req.query.setter ? String(req.query.setter) : '');
+  let leads = [];
+  for (const [id, l] of Object.entries(data.leads || {})) {
+    if (targetSetter && l.assignedTo !== targetSetter) continue;
+    leads.push({ ...ensureLeadDefaults(l), _id: id });
   }
 
   // Variantes para resolver nombre
@@ -5930,12 +6064,13 @@ app.get('/api/setters/followups/today', requireAuth, (req, res) => {
 app.get('/api/setters/followups/badge', requireAuth, (req, res) => {
   const role = req.auth?.user?.role;
   const data = loadSettersData();
-  let leads = Object.values(data.leads || {}).map(ensureLeadDefaults);
-  if (role === 'setter') {
-    leads = leads.filter((l) => l.assignedTo === req.auth.user.setterId);
-  } else if (req.query.setter) {
-    leads = leads.filter((l) => l.assignedTo === req.query.setter);
-  }
+  // 2026-05-23: filtrar ANTES de map(ensureLeadDefaults) — antes mapeaba TODOS
+  // los leads del sistema (5200+) aunque el setter sólo tuviera 200. ensureLeadDefaults
+  // muta in-place pero el filter posterior descartaba el 95% del trabajo.
+  const targetSetter = role === 'setter' ? req.auth.user.setterId : (req.query.setter || '');
+  const all = Object.values(data.leads || {});
+  const leads = targetSetter ? all.filter((l) => l.assignedTo === targetSetter) : all;
+  leads.forEach(ensureLeadDefaults);
   res.json({ count: _countFollowupsForBadge(leads) });
 });
 
@@ -6598,9 +6733,9 @@ app.get('/api/setters/export', requireAuth, (req, res) => {
 
 // ── Sesiones ──
 app.post('/api/setters/sessions/start', requireAuth, (req, res) => {
-  const { setter } = req.body;
+  const { setter } = req.body || {};
   const effectiveSetter = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : setter;
-  if (!effectiveSetter) return res.status(400).json({ error: "Setter requerido." });
+  if (!effectiveSetter || typeof effectiveSetter !== 'string') return res.status(400).json({ error: "Setter requerido (string)." });
   const data = loadSettersData();
   const active = data.sessions.find(s => s.setter === effectiveSetter && !s.endedAt);
   if (active) return res.json({ session: active, alreadyActive: true });
@@ -6739,13 +6874,25 @@ app.get('/api/setters/calendar', requireAuth, (req, res) => {
 });
 
 app.post('/api/setters/calendar', requireAuth, (req, res) => {
-  const { leadId, fecha, nombre, calendarioEstado, valorProyecto, comision, setterId } = req.body;
+  const { leadId, fecha, nombre, calendarioEstado, valorProyecto, comision, setterId } = req.body || {};
+  // 2026-05-23: validacion de calendarioEstado (whitelist) + tipo de fecha + tope length.
+  // Antes cualquier basura entraba al calendar.
+  const validEstados = ['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada'];
+  if (calendarioEstado !== undefined && !validEstados.includes(calendarioEstado)) {
+    return res.status(400).json({ error: `calendarioEstado inválido (debe ser uno de: ${validEstados.join(', ')}).` });
+  }
   const data = loadSettersData();
   const effectiveSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (setterId || '');
+  if (!Array.isArray(data.calendar)) data.calendar = [];
   const entry = {
-    id: `cal_${Date.now()}`, leadId: leadId || '', fecha: fecha || '', nombre: nombre || '',
-    calendarioEstado: calendarioEstado || 'pendiente', valorProyecto: valorProyecto || 0,
-    comision: comision || 0, setterId: effectiveSetterId
+    id: `cal_${Date.now()}`,
+    leadId: typeof leadId === 'string' ? leadId.substring(0, 120) : '',
+    fecha: typeof fecha === 'string' ? fecha : '',
+    nombre: typeof nombre === 'string' ? nombre.substring(0, 200) : '',
+    calendarioEstado: calendarioEstado || 'pendiente',
+    valorProyecto: Number.isFinite(Number(valorProyecto)) ? Number(valorProyecto) : 0,
+    comision: Number.isFinite(Number(comision)) ? Number(comision) : 0,
+    setterId: effectiveSetterId,
   };
   data.calendar.push(entry);
   saveSettersData(data);
@@ -7264,8 +7411,10 @@ RESPUESTA: ${respuesta || '(vacía)'}`;
 }
 
 app.post('/api/faqs', requireAuth, async (req, res) => {
-  const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null, variantes = [] } = req.body;
-  if (!pregunta?.trim() || !respuesta?.trim()) return res.status(400).json({ error: 'pregunta y respuesta son requeridas' });
+  const { pregunta, respuesta, categoria = 'general', tags = [], variantId = null, variantes = [] } = req.body || {};
+  if (typeof pregunta !== 'string' || typeof respuesta !== 'string' || !pregunta.trim() || !respuesta.trim()) {
+    return res.status(400).json({ error: 'pregunta y respuesta son requeridas (strings).' });
+  }
   const auto = await _autoTagFaq({ pregunta: pregunta.trim(), respuesta: respuesta.trim(), categoria, tags });
   const entry = {
     id: `faq_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
@@ -7429,7 +7578,7 @@ app.put('/api/faqs/:id', requireAuth, requireRole('admin', 'supervisor'), async 
     return res.status(404).json({ error: 'No encontrado' });
   }
 
-  const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body;
+  const { pregunta, respuesta, categoria, tags, variantId, variantes } = req.body || {};
   const contentTouched = pregunta !== undefined || respuesta !== undefined;
 
   // Auto-tag fuera del mutex (no toca disco, solo llama IA con timeout 3s).
@@ -7617,8 +7766,8 @@ RESPUESTA: ${respuesta || '(vacía)'}`;
 
 // POST /api/faqs/suggest — IA genera respuesta sugerida basada en ejemplos (admin + setters)
 app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
-  const { pregunta, variantId, contexto = '', categoria = '' } = req.body;
-  if (!pregunta?.trim()) return res.status(400).json({ error: 'pregunta requerida' });
+  const { pregunta, variantId, contexto = '', categoria = '' } = req.body || {};
+  if (typeof pregunta !== 'string' || !pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida (string).' });
 
   if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
 
@@ -8271,8 +8420,17 @@ function saveMercuryGenerations(data) {
 // Mutex async para mercury_generations.json — evita lost writes cuando dos
 // /api/mercury/generate corren en paralelo (cada uno toma ~5-30s por la IA).
 // Mismo patron que mutateSettersData.
+// 2026-05-23: en NODE_ENV=test bypasseamos el mutex (load+save sync) para evitar
+// timeouts flakys de tests que hacen newGen() en secuencia rapida; la concurrencia
+// real se cubre con tests/mutex-concurrency.test.js que arranca su propio process.
 let _mercuryGensMutex = Promise.resolve();
 async function mutateMercuryGenerations(mutator) {
+  if (process.env.NODE_ENV === 'test') {
+    const data = loadMercuryGenerations();
+    const result = await Promise.resolve(mutator(data));
+    saveMercuryGenerations(data);
+    return result;
+  }
   const next = _mercuryGensMutex.then(async () => {
     const data = loadMercuryGenerations();
     const result = await Promise.resolve(mutator(data));
@@ -8882,7 +9040,9 @@ function _verifyTelnyxSignature(req, publicKeyBase64) {
     // Reconstruir el payload firmado: "{timestamp}|{rawBody}"
     const rawBody = req.rawBody || JSON.stringify(req.body || {});
     const signedPayload = `${timestamp}|${rawBody}`;
-    const crypto = require("crypto");
+    // Bug fix 2026-05-23: `require()` no existe en ESM (project is "type":"module").
+    // Webhook fallaba con ReferenceError cada vez que llegaba un evento de Telnyx
+    // con signaturePublicKey configurada. `crypto` ya está importado al top del archivo.
     const publicKey = crypto.createPublicKey({
       key: Buffer.from(publicKeyBase64, "base64"),
       format: "der",
@@ -10185,7 +10345,15 @@ app.use((err, req, res, next) => {
     userId: req.auth?.user?.id,
     role: req.auth?.user?.role
   });
-  res.status(err.status || 500).json({ error: err.message || 'Error interno' });
+  // 2026-05-23: en producción no leak err.message (puede contener paths,
+  // detalles internos, contenido de archivos). Sólo errores 4xx legítimos
+  // (validation) llegan acá con err.status, y suelen tener mensaje seguro.
+  const status = err.status || 500;
+  const isClientError = status >= 400 && status < 500;
+  const safeMessage = isClientError
+    ? (err.message || 'Error de validación')
+    : (process.env.NODE_ENV === 'production' ? 'Error interno del servidor' : (err.message || 'Error interno'));
+  res.status(status).json({ error: safeMessage });
 });
 
 // En tests, NODE_ENV=test → no levantamos listener, sólo exportamos `app`.
@@ -10197,11 +10365,26 @@ if (process.env.NODE_ENV !== "test") {
   });
 }
 
+// Security audit 2026-05-23 (C-3): JWT_SECRET fail-fast en produccion.
+// Antes el fallback era ADMIN_PASSWORD+"_wa" — quien sabe el password admin podia
+// forjar JWTs como cualquier user (incluido otro admin). En tests/dev seguimos
+// con fallback para no romper smoke tests locales.
+const _resolvedJwtSecret = (() => {
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 16) {
+    return process.env.JWT_SECRET;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    console.error("[FATAL] JWT_SECRET no configurado o muy corto (<16 chars). El modulo WA no puede arrancar de forma segura.");
+    process.exit(1);
+  }
+  return (process.env.ADMIN_PASSWORD || "change-me-in-dev-only") + "_wa";
+})();
+
 // mountWa es async ahora porque el warming-network orchestrator se carga
 // dinámicamente. Lo dejamos en background sin await para no bloquear el boot.
 mountWa(app, server, {
   dataDir: DATA_DIR,
-  jwtSecret: process.env.JWT_SECRET || (process.env.ADMIN_PASSWORD || "change-me-in-prod") + "_wa",
+  jwtSecret: _resolvedJwtSecret,
   requireAuth,
   requireRole,
   getSessionFromRequest,

@@ -129,7 +129,7 @@ describe("C-2: rate limit y clamp en endpoints externos", () => {
     });
     // Si no hay SerpAPI key fallara con 500, pero NO con 400 del clamp
     expect(r.status).not.toBe(400);
-  });
+  }, 30000); // SerpAPI real call sin key puede tardar >5s en fallar.
 });
 
 describe("POST /api/admin/regen-openings — limpia openMessages rotos", () => {
@@ -484,7 +484,8 @@ describe("H-4: validacion de shape en /api/admin/import-data", () => {
   it("rechaza payload vacio (400)", async () => {
     const r = await request(app).post("/api/admin/import-data").set("Cookie", cookie).send({});
     expect(r.status).toBe(400);
-    expect(r.body.detalles).toContain("payload vacio: incluir al menos uno de history/auth/setters/faqs/training");
+    // 2026-05-23: el mensaje ahora incluye los 7 archivos extras que import-data soporta.
+    expect(r.body.detalles[0]).toMatch(/^payload vacio: incluir al menos uno de /);
   });
 
   it("rechaza auth sin users array (400)", async () => {

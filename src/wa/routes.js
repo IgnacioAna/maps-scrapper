@@ -8,9 +8,9 @@ import {
   listEvents, eventsByHour,
   appendEvent,
   effectivePhases, currentPhaseFor, warmingDayOf,
-  startWarming, markBannedTemporarily, resetWarming, incrementCounter,
+  startWarming, markBannedTemporarily, resetWarming,
 } from "./data.js";
-import { sendToUser, getPresenceList, isUserOnline } from "./gateway.js";
+import { sendToUser, getPresenceList } from "./gateway.js";
 
 function readPositiveInt(value, def, max) {
   const n = parseInt(value, 10);
@@ -524,9 +524,27 @@ export function registerWaRoutes(app, deps) {
   app.post("/api/wa/events", requireAuth, (req, res) => {
     const { accountId, type, payload, status, phone } = req.body || {};
     if (!type) return res.status(400).json({ error: "type requerido" });
-    const ev = appendEvent({ accountId, userId: req.auth.user.id, type, payload });
-    if (status) setAccountStatus(accountId, status, phone);
-    res.json({ ok: true, eventId: ev.id });
+    // Audit 2026-05-23: ownership check antes de permitir update de status.
+    // Sin esto un setter podía pisar el status/phone de cualquier cuenta
+    // ajena vía este endpoint HTTP (espejo del fix en gateway.js socket).
+    if (accountId && status) {
+      const { user } = req.auth;
+      if (user.role !== "admin") {
+        const acc = getAccount(accountId);
+        const isOwner = acc?.assignment?.kind === "setter" && acc?.assignment?.refId === user.setterId;
+        if (!isOwner) {
+          return res.status(403).json({ error: "no autorizado a actualizar estado de esta cuenta" });
+        }
+      }
+    }
+    try {
+      const ev = appendEvent({ accountId, userId: req.auth.user.id, type, payload });
+      if (status) setAccountStatus(accountId, status, phone);
+      res.json({ ok: true, eventId: ev.id });
+    } catch (err) {
+      console.error("[wa-routes] POST /api/wa/events error:", err?.message || err);
+      res.status(500).json({ error: "error guardando evento" });
+    }
   });
 
   // ── WARMING NETWORK (AI-to-AI) ──────────────────────────────────────────
@@ -615,11 +633,14 @@ export function registerWaRoutes(app, deps) {
     });
   });
 
-  // Forzar tick manual del orchestrator (debug / testing)
+  // Forzar tick manual del orchestrator (debug / testing).
+  // Timeout 25s para no colgar la HTTP request si el LLM tarda mucho.
+  // El tick sigue corriendo en background — solo cortamos la respuesta.
   app.post("/api/wa/warming-network/tick", requireAuth, requireRole("admin"), async (_req, res) => {
     const orch = await import("./warming-network/orchestrator.js");
-    await orch.tick();
-    res.json({ ok: true });
+    const timeout = new Promise((resolve) => setTimeout(() => resolve({ timedOut: true }), 25000));
+    const result = await Promise.race([orch.tick().then(() => ({ ok: true })), timeout]);
+    res.json(result);
   });
 
   // Forzar procesamiento INMEDIATO de UN par específico, ignorando nextActionAt.
@@ -810,6 +831,19 @@ export function registerWaRoutes(app, deps) {
     if (!receiverAccountId || !fromPhone || !text) {
       return res.status(400).json({ error: "receiverAccountId, fromPhone, text requeridos" });
     }
+
+    // Audit 2026-05-23: ownership check del receiverAccountId. Sin esto un
+    // setter podía ensuciar el historial del warming network de cuentas
+    // ajenas (ej: forzar mensajes "inbound" falsos de un par que no es suyo).
+    const { user } = req.auth;
+    if (user.role !== "admin") {
+      const receiverAccount = getAccount(receiverAccountId);
+      const isOwner = receiverAccount?.assignment?.kind === "setter" && receiverAccount?.assignment?.refId === user.setterId;
+      if (!isOwner) {
+        return res.status(403).json({ error: "no autorizado a reportar inbound sobre esta cuenta" });
+      }
+    }
+
     const wnStore = await import("./warming-network/store.js");
     const orch = await import("./warming-network/orchestrator.js");
 

@@ -8,12 +8,55 @@ import { appendEvent, setAccountStatus, getAccount, listAccounts } from "./data.
 let io = null;
 const presence = new Map(); // userId → { sockets: Set<id>, lastSeen, role, name }
 
+// Audit 2026-05-23: cleanup periódico de entries de `presence` para users que
+// llevan >24h disconnected. Sin esto, el Map crece sin tope a lo largo del
+// uptime (cada user que se loggeó alguna vez queda residual incluso si nunca
+// más vuelve). El cleanup respeta entries con sockets activos.
+const PRESENCE_STALE_MS = 24 * 60 * 60 * 1000;
+let _presenceCleanupTimer = null;
+function startPresenceCleanup() {
+  if (_presenceCleanupTimer) return;
+  _presenceCleanupTimer = setInterval(() => {
+    try {
+      const now = Date.now();
+      let removed = 0;
+      for (const [userId, p] of presence.entries()) {
+        if (p.sockets.size === 0 && now - p.lastSeen > PRESENCE_STALE_MS) {
+          presence.delete(userId);
+          removed++;
+        }
+      }
+      if (removed > 0 && process.env.NODE_ENV !== "test") {
+        console.log(`[wa-gateway] presence cleanup: ${removed} stale entries removidos`);
+      }
+    } catch (err) {
+      console.error("[wa-gateway] presence cleanup error:", err?.message || err);
+    }
+  }, 60 * 60 * 1000); // cada 1h
+  if (typeof _presenceCleanupTimer.unref === "function") _presenceCleanupTimer.unref();
+}
+
 export function initGateway(httpServer, deps) {
   const { jwtSecret, getSessionFromRequest } = deps;
+  // Security audit 2026-05-23 (C-4): CORS antes era `origin: true` (reflejaba CUALQUIER
+  // Origin con credentials habilitadas). Sitios maliciosos podian conectar al socket
+  // como un admin loggeado y robar todos los eventos en vivo.
+  // Ahora: en prod usamos whitelist explicita via env var WA_CORS_ORIGINS (CSV);
+  // si no esta seteada, default a same-origin (origin: false, mismo host).
+  // En dev/test mantenemos `origin: true` para no romper smoke tests locales.
+  let corsOrigin;
+  if (process.env.NODE_ENV === "production") {
+    const csv = process.env.WA_CORS_ORIGINS || "";
+    const list = csv.split(",").map((s) => s.trim()).filter(Boolean);
+    corsOrigin = list.length > 0 ? list : false; // false = same-origin only
+  } else {
+    corsOrigin = true; // dev/test: permisivo
+  }
   io = new IOServer(httpServer, {
-    cors: { origin: true, credentials: true },
+    cors: { origin: corsOrigin, credentials: true },
     path: "/socket.io",
   });
+  if (process.env.NODE_ENV !== "test") startPresenceCleanup();
 
   io.use((socket, next) => {
     // Vía 1: JWT (desktop)
@@ -21,7 +64,13 @@ export function initGateway(httpServer, deps) {
     if (token) {
       try {
         const payload = jwt.verify(token, jwtSecret);
-        socket.data.user = { id: payload.sub, role: payload.role, name: payload.name || "", source: "desktop" };
+        socket.data.user = {
+          id: payload.sub,
+          role: payload.role,
+          name: payload.name || "",
+          setterId: payload.setterId || "",
+          source: "desktop",
+        };
         return next();
       } catch (e) {
         return next(new Error("bad token"));
@@ -31,11 +80,29 @@ export function initGateway(httpServer, deps) {
     const fakeReq = { headers: { cookie: socket.handshake.headers.cookie || "" } };
     const auth = getSessionFromRequest(fakeReq);
     if (auth?.user) {
-      socket.data.user = { id: auth.user.id, role: auth.user.role, name: auth.user.name, source: "browser" };
+      socket.data.user = {
+        id: auth.user.id,
+        role: auth.user.role,
+        name: auth.user.name,
+        setterId: auth.user.setterId || "",
+        source: "browser",
+      };
       return next();
     }
     next(new Error("no auth"));
   });
+
+  // Helper: ¿este user puede actuar sobre esta accountId?
+  // Admin: siempre sí (tiene acceso a todas las cuentas, incluso las de setters).
+  // Setter: solo si la cuenta está asignada a su setterId.
+  // Usado para sanitizar comandos socket que vienen de la desktop wa-multi.
+  function userCanActOnAccount(user, accountId) {
+    if (!user || !accountId) return false;
+    if (user.role === "admin") return true;
+    const acc = getAccount(accountId);
+    if (!acc) return false;
+    return acc.assignment?.kind === "setter" && acc.assignment?.refId === user.setterId;
+  }
 
   io.on("connection", (socket) => {
     const user = socket.data.user;
@@ -59,8 +126,13 @@ export function initGateway(httpServer, deps) {
     // warming network para que reactive sus pares en PAUSED_OFFLINE.
     if (wasOffline) {
       import("./warming-network/orchestrator.js").then((orch) => {
-        orch.onUserCameOnline(user.id);
-      }).catch(() => { /* warming-network no disponible, ignorar */ });
+        return orch.onUserCameOnline(user.id);
+      }).catch((err) => {
+        // En tests o si warming-network no está cargado, NODE_ENV=test silencia.
+        if (process.env.NODE_ENV !== "test") {
+          console.warn("[gateway] onUserCameOnline failed:", err?.message || err);
+        }
+      });
     }
 
     socket.on("heartbeat", () => {
@@ -71,18 +143,40 @@ export function initGateway(httpServer, deps) {
     // Eventos que reporta la desktop ──────────────────────────────────────
     socket.on("account:status", ({ accountId, status, phone } = {}) => {
       if (!accountId) return;
-      const updated = setAccountStatus(accountId, status, phone);
-      if (updated) {
-        io.to("admins").emit("admin:account-update", {
-          accountId,
-          status: updated.status,
-          phone: updated.phone,
-        });
+      // Ownership check: setter solo puede reportar status de sus cuentas;
+      // admin tiene acceso global (suele tener TODAS las cuentas, incluso
+      // las que escaneó por otros setters). Sin este check, un setter
+      // comprometido podría reportar BANNED sobre cuentas de otros setters
+      // o pisar el phone de una cuenta ajena. Bug encontrado en audit 2026-05-23.
+      if (!userCanActOnAccount(user, accountId)) {
+        console.warn(`[wa-gateway] account:status rechazado: user ${user.id} (${user.role}) sin permiso sobre ${accountId}`);
+        return;
+      }
+      try {
+        const updated = setAccountStatus(accountId, status, phone);
+        if (updated) {
+          io.to("admins").emit("admin:account-update", {
+            accountId,
+            status: updated.status,
+            phone: updated.phone,
+          });
+        }
+      } catch (err) {
+        console.error("[wa-gateway] account:status error:", err?.message || err);
       }
     });
 
     socket.on("account:event", async ({ accountId, type, payload } = {}) => {
       if (!type) return;
+      // Ownership check: setter no debería poder emitir eventos para cuentas
+      // que no son suyas (eso podría inflar stats o ensuciar el log del
+      // dashboard). Admin sí puede emitir cualquier evento (típicamente desde
+      // la wa-multi que tiene todas las cuentas). Si accountId vino vacío,
+      // dejamos pasar (algunos eventos son globales, no por cuenta).
+      if (accountId && !userCanActOnAccount(user, accountId)) {
+        console.warn(`[wa-gateway] account:event rechazado: user ${user.id} (${user.role}) sin permiso sobre ${accountId} type=${type}`);
+        return;
+      }
 
       // Filtro warming network: si llega 'ai-classified-inbound' y el remitente
       // está en el pool de warming, NO lo guardamos como lead inbound — lo
@@ -91,9 +185,10 @@ export function initGateway(httpServer, deps) {
         try {
           const wnStore = await import("./warming-network/store.js");
           const orch = await import("./warming-network/orchestrator.js");
-          // Buscar si el contactPhone matchea con alguna cuenta del pool
+          // Buscar si el contactPhone matchea con alguna cuenta del pool.
+          // Audit 2026-05-23: `listAccounts` ya está importado top-level — no
+          // hace falta dynamic import dentro del handler.
           const accountsOfPool = wnStore.listPool().map((m) => m.accountId);
-          const { listAccounts } = await import("./data.js");
           const senderAccount = listAccounts().find(
             (a) =>
               accountsOfPool.includes(a.id) &&
@@ -125,13 +220,17 @@ export function initGateway(httpServer, deps) {
         }
       }
 
-      const event = appendEvent({ accountId, userId: user.id, type, payload });
-      io.to("admins").emit("admin:event", {
-        accountId,
-        userId: user.id,
-        type: event.type,
-        at: new Date(event.createdAt).getTime(),
-      });
+      try {
+        const event = appendEvent({ accountId, userId: user.id, type, payload });
+        io.to("admins").emit("admin:event", {
+          accountId,
+          userId: user.id,
+          type: event.type,
+          at: new Date(event.createdAt).getTime(),
+        });
+      } catch (err) {
+        console.error("[wa-gateway] account:event appendEvent error:", err?.message || err);
+      }
     });
 
     socket.on("disconnect", () => {

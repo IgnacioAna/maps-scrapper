@@ -70,12 +70,11 @@ function buildUserPrompt(pair, senderPersona, receiverPersona) {
     return `${opener}\n\nGenera SOLO el mensaje de apertura (sin comillas, sin nada extra).`;
   }
 
-  // Hay historial: mostrar los últimos N mensajes
-  const senderLetter = pair.history.find((h) => h.from === "A")
-    ? pair.accountA === senderPersona.accountId
-      ? "A"
-      : "B"
-    : "A";
+  // Hay historial: mostrar los últimos N mensajes.
+  // senderLetter = la letra de "yo" según qué account es el sender en el par.
+  // (Antes había una lógica convoluta con .find(h.from === "A") que no
+  //  reflejaba realmente quién es el sender; corregido 2026-05-23.)
+  const senderLetter = pair.accountA === senderPersona.accountId ? "A" : "B";
 
   const transcript = history
     .map((m) => {

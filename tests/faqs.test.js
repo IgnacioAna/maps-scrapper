@@ -37,6 +37,16 @@ fs.writeFileSync(
 
 // Forzar banco de FAQs vacío para que seedVolumeFromRepo no traiga el seed real del repo.
 fs.writeFileSync(path.join(tmpData, "faqs.json"), JSON.stringify({ entries: [] }, null, 2));
+// Idem setters.json/history.json: sin esto el seed copia ~14MB del repo y el endpoint
+// /api/admin/export-data tarda >5s serializando el JSON gigante → timeout del test.
+fs.writeFileSync(
+  path.join(tmpData, "setters.json"),
+  JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2)
+);
+fs.writeFileSync(
+  path.join(tmpData, "history.json"),
+  JSON.stringify({ entries: {}, lastPages: {} }, null, 2)
+);
 
 const { app } = await import("../index.js");
 

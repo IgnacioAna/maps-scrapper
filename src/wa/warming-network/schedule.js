@@ -75,9 +75,9 @@ export function computeNextActionAt(senderPersona, pair, now = new Date(), opts 
   const minMin = speedConfig.minMin;
   const maxMin = speedConfig.maxMin;
 
-  // Sample con sesgo gaussiano hacia el medio
-  const u = Math.random();
-  // Box-Muller approx → un poco de cola pero centrado
+  // Sample con sesgo gaussiano hacia el medio (Box-Muller aproximado: promedio
+  // de 3 uniformes ~ campana centrada en 0.5). Genera un delay con tendencia
+  // al medio del rango [minMin, maxMin] pero con colas suaves.
   const gauss = (Math.random() + Math.random() + Math.random()) / 3;
   const delayMin = minMin + (maxMin - minMin) * gauss;
   let target = new Date(now.getTime() + delayMin * MIN_MS);
@@ -116,25 +116,8 @@ export function computeNextActionAt(senderPersona, pair, now = new Date(), opts 
   return target;
 }
 
-/**
- * Para el primerísimo mensaje del par (state === PENDING_FIRST), usamos un
- * delay corto para que el par arranque rápido. 30-90 segundos.
- *
- * Si forceImmediate=true, devuelve "ahora" (caso del botón Forzar tick).
- */
-export function computeFirstMessageAt(senderPersona, now = new Date(), { forceImmediate = false } = {}) {
-  if (forceImmediate) return new Date(now.getTime() + 1000); // 1s, inmediato
-  // 30-90 segundos para arrancar el primer chat. Suficiente variabilidad
-  // sin que parezca eterno. La idea es que el primer mensaje arranque
-  // rápido (igual que cuando agregás a alguien y le escribís enseguida)
-  // y los DELAYS HUMANOS REALES se aplican al replyTime.
-  const baseSec = 30 + Math.floor(Math.random() * 60);
-  let target = new Date(now.getTime() + baseSec * 1000);
-  let h = localHour(target, "America/Argentina/Buenos_Aires");
-  let safety = 0;
-  while (!isHumanHour(h) && safety++ < 24) {
-    target = new Date(target.getTime() + HOUR_MS);
-    h = localHour(target, "America/Argentina/Buenos_Aires");
-  }
-  return target;
-}
+// NOTE (audit 2026-05-23): `computeFirstMessageAt` se eliminó por dead code —
+// el primer mensaje (state PENDING_FIRST) lo agenda el store al crear el par
+// con nextActionAt=now, y el orchestrator usa computeNextActionAt para todos
+// los turnos. Si en el futuro se quiere un delay diferenciado para el primer
+// mensaje, recuperarlo del git history.

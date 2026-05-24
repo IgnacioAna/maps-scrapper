@@ -393212,7 +393212,9 @@
       "id": "s_1778365338120",
       "setter": "setter_paula",
       "startedAt": "2026-05-09T22:22:18.120Z",
-      "endedAt": null
+      "endedAt": "2026-05-09T22:22:18.120Z",
+      "autoClosedAt": "2026-05-23T12:38:00.000Z",
+      "autoClosedReason": "stale session (>7 days open, closed by data integrity audit)"
     },
     {
       "id": "s_1779127013076",

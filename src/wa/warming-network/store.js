@@ -86,9 +86,18 @@ function loadData() {
     const raw = fs.readFileSync(getFilePath(), "utf8");
     const parsed = JSON.parse(raw);
     // Backfill structures faltantes (si el archivo es de una versión vieja)
+    // Backfill defensivo de campos opcionales por par (si vienen de versión vieja)
+    const pairs = Array.isArray(parsed.pairs)
+      ? parsed.pairs.map((p) => ({
+          ...p,
+          history: Array.isArray(p.history) ? p.history : [],
+          messageCount: typeof p.messageCount === "number" ? p.messageCount : 0,
+          turn: p.turn || "A",
+        }))
+      : [];
     return {
       pool: Array.isArray(parsed.pool) ? parsed.pool : [],
-      pairs: Array.isArray(parsed.pairs) ? parsed.pairs : [],
+      pairs,
       sentMessages: Array.isArray(parsed.sentMessages) ? parsed.sentMessages : [],
       stats: parsed.stats || defaultData().stats,
       llmStats: parsed.llmStats || defaultData().llmStats,
@@ -339,15 +348,7 @@ export function recordLLMCall({ success, cost, error }) {
   saveData(data);
 }
 
-// Reset mensual de stats de costo (no toca los messages, solo el contador)
-export function maybeResetMonthlyStats() {
-  const data = loadData();
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  if (data.stats.lastResetMonth !== currentMonth) {
-    data.stats.totalLLMCostUsd = 0;
-    data.stats.lastResetMonth = currentMonth;
-    saveData(data);
-    return true;
-  }
-  return false;
-}
+// NOTE (audit 2026-05-23): `maybeResetMonthlyStats` se eliminó por dead code —
+// no había caller registrado y el reset mensual no estaba expuesto en ningún
+// endpoint ni se llamaba desde el orchestrator. Si en el futuro se decide hacer
+// reset automático de stats al cambiar de mes, recuperarlo del git history.

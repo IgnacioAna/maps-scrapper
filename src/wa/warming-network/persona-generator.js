@@ -212,13 +212,7 @@ export function personaPromptDescription(persona) {
   ].join(" ");
 }
 
-/**
- * Test helper: 2 cuentas distintas dan personas distintas.
- * @param {string} aId
- * @param {string} bId
- */
-export function personasAreDifferent(aId, bId) {
-  const a = personaFor(aId);
-  const b = personaFor(bId);
-  return a.name !== b.name || a.city !== b.city || a.style !== b.style;
-}
+// NOTE (audit 2026-05-23): `personasAreDifferent` se eliminó por dead code —
+// no se usaba en tests ni en runtime. La determinismo de personaFor está
+// garantizado por el seed FNV-1a; un test directo de "mismo accountId →
+// misma persona" basta. Recuperar del git history si hace falta.

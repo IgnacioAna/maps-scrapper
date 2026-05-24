@@ -376,8 +376,21 @@ async function openCreateAccountDialog() {
 async function openSendMessageModal(accountId) {
   const account = (_accounts || []).find(a => a.id === accountId);
   const accountLabel = account?.label || 'Cuenta';
-  const lastPhones = localStorage.getItem('wa-last-phones') || '';
-  const lastMsgs   = localStorage.getItem('wa-last-msgs')   || '';
+  // Audit Sprint 37: migrar `wa-last-*` → `scm_wa_last_*` (namespacing).
+  try {
+    const _lp = localStorage.getItem('wa-last-phones');
+    if (_lp !== null && localStorage.getItem('scm_wa_last_phones') === null) {
+      localStorage.setItem('scm_wa_last_phones', _lp);
+      localStorage.removeItem('wa-last-phones');
+    }
+    const _lm = localStorage.getItem('wa-last-msgs');
+    if (_lm !== null && localStorage.getItem('scm_wa_last_msgs') === null) {
+      localStorage.setItem('scm_wa_last_msgs', _lm);
+      localStorage.removeItem('wa-last-msgs');
+    }
+  } catch {}
+  const lastPhones = localStorage.getItem('scm_wa_last_phones') || '';
+  const lastMsgs   = localStorage.getItem('scm_wa_last_msgs')   || '';
 
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
@@ -468,8 +481,8 @@ async function openSendMessageModal(accountId) {
     }
     const rotationMode = overlay.querySelector('input[name="wa-rotation"]:checked').value;
 
-    localStorage.setItem('wa-last-phones', phonesTA.value);
-    localStorage.setItem('wa-last-msgs', msgsTA.value);
+    localStorage.setItem('scm_wa_last_phones', phonesTA.value);
+    localStorage.setItem('scm_wa_last_msgs', msgsTA.value);
 
     goBtn.disabled = true;
     status.style.color = 'var(--text-secondary)';

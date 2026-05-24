@@ -35,6 +35,18 @@ fs.writeFileSync(
     sessions: [],
   }, null, 2)
 );
+// Pre-popular setters.json y history.json vacios para que seedVolumeFromRepo NO copie
+// el dataset de 10MB del repo. Sin esto cada loadSettersData/saveSettersData procesa
+// miles de leads legacy → timeouts de 5s en el setup de "calls · disposition endpoint"
+// y dedup spurious sobre "Test Llamada" si colisiona con leads del seed.
+fs.writeFileSync(
+  path.join(tmpData, "setters.json"),
+  JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2)
+);
+fs.writeFileSync(
+  path.join(tmpData, "history.json"),
+  JSON.stringify({ entries: {}, lastPages: {} }, null, 2)
+);
 
 const { app } = await import("../index.js");
 
