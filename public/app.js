@@ -12942,6 +12942,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window._guideSwitchTab = function (tab) {
     if (tab !== 'setter' && tab !== 'admin') tab = 'setter';
+    // 2026-05-23: setter no puede ver el tab admin ni por error ni por consola.
+    const role = window.currentUser?.role || 'setter';
+    if (tab === 'admin' && role !== 'admin' && role !== 'supervisor') {
+      tab = 'setter';
+    }
     _guideCurrentTab = tab;
     document.querySelectorAll('.guide-tab').forEach((b) => {
       b.classList.toggle('active', b.getAttribute('data-tab') === tab);
