@@ -4437,20 +4437,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       const mapsQ = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
       const mapsUrl = lead.name ? `https://www.google.com/maps/search/?api=1&query=${mapsQ}` : '';
 
-      // Construir grid de info enriquecida (solo mostrar los que tienen data)
+      // Construir grid de info enriquecida (solo mostrar los que tienen data).
+      // Sin emojis — labels limpios estilo B2B prospecting CRM.
       const infoRows = [];
-      if (lead.doctor && !lead.doctor.includes('N/A')) infoRows.push({ icon: '👨‍⚕️', label: 'Doctor', value: escHtml(lead.doctor) });
-      if (lead.decisor) infoRows.push({ icon: '🎯', label: 'Decisor', value: escHtml(lead.decisor) });
-      if (lead.address) infoRows.push({ icon: '📍', label: 'Dirección', value: escHtml(lead.address) });
-      if (safeW) infoRows.push({ icon: '🌐', label: 'Web', value: `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(websiteDisplay)}</a>` });
-      if (validEmail) infoRows.push({ icon: '✉️', label: 'Email', value: `<a href="mailto:${escHtml(safeEmail)}" style="color:#7dd3fc; text-decoration:none;">${escHtml(safeEmail)}</a>` });
-      if (igUrl) infoRows.push({ icon: '📷', label: 'Instagram', value: `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="color:#f85149; text-decoration:none;">${escHtml(igRaw)}</a>` });
-      if (fbUrl) infoRows.push({ icon: '📘', label: 'Facebook', value: `<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6; text-decoration:none;">Perfil</a>` });
-      if (lead.aiRole && !lead.aiRole.includes('N/A')) infoRows.push({ icon: '🤖', label: 'Rol IA', value: escHtml(lead.aiRole) });
-      if (lead.aiWhatsApp && !lead.aiWhatsApp.includes('N/A')) infoRows.push({ icon: '💬', label: 'WSP IA', value: escHtml(lead.aiWhatsApp) });
-      if (lead.aiDescription || lead.aiResumen) infoRows.push({ icon: '📝', label: 'Resumen IA', value: escHtml(lead.aiDescription || lead.aiResumen).substring(0, 280) });
-      if (lead.linkedin) infoRows.push({ icon: '💼', label: 'LinkedIn', value: `<a href="${escHtml(safeUrl(lead.linkedin) || '#')}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">Perfil</a>` });
-      if (lead.importedAt) infoRows.push({ icon: '📅', label: 'Importado', value: new Date(lead.importedAt).toLocaleDateString('es-AR') });
+      if (lead.doctor && !lead.doctor.includes('N/A')) infoRows.push({ label: 'Doctor', value: escHtml(lead.doctor) });
+      if (lead.decisor) infoRows.push({ label: 'Decisor', value: escHtml(lead.decisor) });
+      if (lead.address) infoRows.push({ label: 'Dirección', value: escHtml(lead.address) });
+      if (safeW) infoRows.push({ label: 'Web', value: `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(websiteDisplay)}</a>` });
+      if (validEmail) infoRows.push({ label: 'Email', value: `<a href="mailto:${escHtml(safeEmail)}" style="color:#7dd3fc; text-decoration:none;">${escHtml(safeEmail)}</a>` });
+      if (igUrl) infoRows.push({ label: 'Instagram', value: `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(igRaw)}</a>` });
+      if (fbUrl) infoRows.push({ label: 'Facebook', value: `<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">Perfil</a>` });
+      if (lead.aiRole && !lead.aiRole.includes('N/A')) infoRows.push({ label: 'Rol (IA)', value: escHtml(lead.aiRole) });
+      if (lead.aiWhatsApp && !lead.aiWhatsApp.includes('N/A')) infoRows.push({ label: 'WSP (IA)', value: escHtml(lead.aiWhatsApp) });
+      if (lead.aiDescription || lead.aiResumen) infoRows.push({ label: 'Resumen (IA)', value: escHtml(lead.aiDescription || lead.aiResumen).substring(0, 280) });
+      if (lead.linkedin) infoRows.push({ label: 'LinkedIn', value: `<a href="${escHtml(safeUrl(lead.linkedin) || '#')}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">Perfil</a>` });
+      if (lead.importedAt) infoRows.push({ label: 'Importado', value: new Date(lead.importedAt).toLocaleDateString('es-AR') });
 
       const main = document.getElementById('pd-current-content');
       main.innerHTML = `
@@ -4483,76 +4484,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       </div>
 
-      <!-- Bloque 2: Pre-call note destacada (si existe) -->
-      ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:5px;">🎯 Pre-call · qué decir</div>
+      <!-- Bloque 2: Pre-call note destacada (si existe) — sin emoji, label limpio -->
+      ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.32); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:5px;">Pre-call · qué decir</div>
         <div style="color:#fff; font-size:13.5px; line-height:1.55; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
       </div>` : ''}
 
-      <!-- Bloque 3: Grid de info enriquecida (scraping + IA) -->
+      <!-- Bloque 3: Grid de info enriquecida (scraping + IA) — sin emojis, B2B clean -->
       ${infoRows.length > 0 ? `<div style="margin-top:18px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px;">📋 Ficha del lead · scraping + IA</div>
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px;">Ficha del lead · scraping + IA</div>
         <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:9px;">
-          ${infoRows.map(r => `<div style="display:grid; grid-template-columns:24px 80px 1fr; gap:8px; align-items:center; padding:8px 11px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
-            <span style="font-size:14px; opacity:0.7;">${r.icon}</span>
+          ${infoRows.map(r => `<div style="display:grid; grid-template-columns:90px 1fr; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:2px solid var(--accent); border-radius:7px; font-size:12.5px;">
             <span style="color:var(--text-tertiary); font-size:10.5px; text-transform:uppercase; letter-spacing:0.3px; font-weight:600;">${r.label}</span>
             <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; word-break:break-word;">${r.value}</span>
           </div>`).join('')}
         </div>
       </div>` : ''}
 
-      <!-- Bloque 4: Quick-links acción -->
-      <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
-        ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:7px; text-decoration:none; font-weight:500;">🗺 Ver en Maps</a>` : ''}
-        ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(125,211,252,0.1); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:7px; text-decoration:none; font-weight:500;">🌐 Abrir web</a>` : ''}
-        ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:7px; text-decoration:none; font-weight:500;">📷 Instagram</a>` : ''}
-        ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:var(--bg-app); border:1px solid var(--border-default); color:var(--text-secondary); border-radius:7px; text-decoration:none; font-weight:500;">✉ Email</a>` : ''}
-        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.3); color:#25D366; border-radius:7px; text-decoration:none; font-weight:500;">💬 WhatsApp</a>` : ''}
-      </div>
+      <!-- Bloque 4: Quick-links acción — sin emojis, look uniforme outline -->
+      ${(mapsUrl || safeW || igUrl || validEmail || lead.whatsappUrl) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap;">
+        ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Maps</a>` : ''}
+        ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
+        ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
+        ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
+        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">WhatsApp</a>` : ''}
+      </div>` : ''}
 
-      <!-- Bloque 5: Histórico (últimas 3 llamadas) + última nota -->
+      <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
       ${(lastCalls.length > 0 || lastNote) ? `<div style="margin-top:18px; display:grid; grid-template-columns:${lastCalls.length > 0 && lastNote ? '1fr 1fr' : '1fr'}; gap:14px;">
         ${lastCalls.length > 0 ? `<div>
-          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">📞 Últimas ${lastCalls.length} llamada${lastCalls.length>1?'s':''}</div>
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">Últimas ${lastCalls.length} llamada${lastCalls.length>1?'s':''}</div>
           <div style="display:flex; flex-direction:column; gap:5px;">
             ${lastCalls.map(entry => {
-              const icon = ({ answered_interested:'✅', answered_not_interested:'❌', no_answer:'📵', voicemail:'📭', wrong_number:'🔢', invalid_number:'🚫', callback_later:'🔄', scheduled_with_admin:'📅' })[entry.outcome] || '📞';
+              // Dot de color por outcome — más sobrio que emoji
+              const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
-              return `<div style="display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:7px 11px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">
-                <span style="font-size:14px;">${icon}</span>
-                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}</span>
+              return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">
+                <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
+                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}</span>
                 <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px;">${t}</span>
               </div>`;
             }).join('')}
           </div>
         </div>` : ''}
         ${lastNote ? `<div>
-          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">📝 Última nota (${notesCount})</div>
-          <div style="padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">Última nota · ${notesCount} total</div>
+          <div style="padding:10px 13px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
             <div style="color:var(--text-primary); white-space:pre-wrap;">${escHtml(String(lastNote.text || '').substring(0, 300))}</div>
-            <div style="font-size:10px; color:var(--text-tertiary); margin-top:5px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+            <div style="font-size:10px; color:var(--text-tertiary); margin-top:6px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
           </div>
         </div>` : ''}
       </div>` : ''}
 
-      <!-- Bloque 6: Disposition — grid de botones (no dropdown nativo feo) -->
+      <!-- Bloque 6: Disposition — grid sin emojis, barra de color como cue visual -->
       <div style="margin-top:18px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-          <span>⚡ Resultado de la llamada</span>
+          <span>Resultado de la llamada</span>
           <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-7</span>
         </div>
         <div class="pd-disposition-grid">
           ${[
-            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio', color:'success', icon:'✓' },
-            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'descarta + tags',    color:'danger',  icon:'✕' },
-            { v:'no_answer',               k:'3', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral', icon:'📵' },
-            { v:'voicemail',               k:'4', label:'Buzón',           sub:'voice mail',          color:'warning', icon:'📭' },
-            { v:'callback_later',          k:'5', label:'Volver a llamar', sub:'agenda callback',     color:'info',    icon:'🔄' },
-            { v:'wrong_number',            k:'6', label:'Equivocado',      sub:'no es este número',   color:'neutral', icon:'🔢' },
-            { v:'invalid_number',          k:'7', label:'No existe',       sub:'inválido/desactivado', color:'neutral', icon:'🚫' }
+            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio',  color:'success' },
+            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'descarta + tags',     color:'danger'  },
+            { v:'no_answer',               k:'3', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
+            { v:'voicemail',               k:'4', label:'Buzón',           sub:'voice mail',          color:'warning' },
+            { v:'callback_later',          k:'5', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
+            { v:'wrong_number',            k:'6', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
+            { v:'invalid_number',          k:'7', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
           ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
             <div class="pd-disp-key">${d.k}</div>
-            <div class="pd-disp-icon">${d.icon}</div>
             <div class="pd-disp-text">
               <div class="pd-disp-label">${d.label}</div>
               <div class="pd-disp-sub">${d.sub}</div>
