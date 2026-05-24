@@ -2191,10 +2191,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           window._populateSetterCountryFilter();
         }
 
-        // Poblar selector de setters (preservar selección)
+        // Poblar selector de setters (preservar selección).
+        // 2026-05-24: filtrar setters con flag `hidden:true` — ej Paula que es
+        // supervisora no debe aparecer como setter seleccionable, aunque tenga
+        // leads asignados a su setterId (eso lo maneja su propio login).
         const currentVal = setterSelect.value;
         setterSelect.innerHTML = '<option value="">Todos los setters</option>';
-        settersList.forEach(s => {
+        settersList.filter(s => !s.hidden).forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.id;
           opt.textContent = s.name;
