@@ -4535,19 +4535,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : ''}
       </div>` : ''}
 
-      <!-- Bloque 6: Disposition dropdown -->
+      <!-- Bloque 6: Disposition — grid de botones (no dropdown nativo feo) -->
       <div style="margin-top:18px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">⚡ Resultado de la llamada</div>
-        <select onchange="window._pdHandleDisposition('${escHtml(lead.id)}', this);" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
-          <option value="">— Elegí resultado (atajos 1-7) —</option>
-          <option value="answered_interested">✅ 1 · Interesado (agenda con Ignacio)</option>
-          <option value="answered_not_interested">❌ 2 · No interesado</option>
-          <option value="no_answer">📵 3 · No atendió</option>
-          <option value="voicemail">📭 4 · Buzón de voz</option>
-          <option value="callback_later">🔄 5 · Volver a llamar después</option>
-          <option value="wrong_number">🔢 6 · Número equivocado</option>
-          <option value="invalid_number">🚫 7 · No existe / inválido</option>
-        </select>
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <span>⚡ Resultado de la llamada</span>
+          <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-7</span>
+        </div>
+        <div class="pd-disposition-grid">
+          ${[
+            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio', color:'success', icon:'✓' },
+            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'descarta + tags',    color:'danger',  icon:'✕' },
+            { v:'no_answer',               k:'3', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral', icon:'📵' },
+            { v:'voicemail',               k:'4', label:'Buzón',           sub:'voice mail',          color:'warning', icon:'📭' },
+            { v:'callback_later',          k:'5', label:'Volver a llamar', sub:'agenda callback',     color:'info',    icon:'🔄' },
+            { v:'wrong_number',            k:'6', label:'Equivocado',      sub:'no es este número',   color:'neutral', icon:'🔢' },
+            { v:'invalid_number',          k:'7', label:'No existe',       sub:'inválido/desactivado', color:'neutral', icon:'🚫' }
+          ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
+            <div class="pd-disp-key">${d.k}</div>
+            <div class="pd-disp-icon">${d.icon}</div>
+            <div class="pd-disp-text">
+              <div class="pd-disp-label">${d.label}</div>
+              <div class="pd-disp-sub">${d.sub}</div>
+            </div>
+          </button>`).join('')}
+        </div>
       </div>`;
 
       // Cola siguiente (próximos 5) — Sprint 39: flag-icons + más info contextual
@@ -4571,6 +4582,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window._pdSkip = function() { _pdAdvance(); };
     window._pdAdvance = _pdAdvance;
+
+    // Sprint 39 — Handler para botones directos del power dialer.
+    // Crea un select virtual con el value seleccionado y delega a _pdHandleDisposition.
+    window._pdHandleDispositionDirect = function(leadId, outcome) {
+      if (!outcome) return;
+      const fake = { value: outcome, disabled: false };
+      window._pdHandleDisposition(leadId, fake);
+    };
 
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
     // dialer. Para outcomes que ABREN modal (callback_later, scheduled_with_admin,

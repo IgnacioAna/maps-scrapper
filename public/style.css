@@ -3779,3 +3779,108 @@ textarea:disabled {
 .calls-country-chip svg { color: var(--text-tertiary); }
 .calls-country-chip:hover svg { color: var(--accent); }
 
+/* ════════════════════════════════════════════════════════════════
+   SPRINT 39 — Power Dialer disposition buttons grid (B2B control panel)
+═════════════════════════════════════════════════════════════════ */
+
+.pd-disposition-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+}
+
+.pd-disp-btn {
+  display: grid;
+  grid-template-columns: 26px 22px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+.pd-disp-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.pd-disp-btn:active { transform: translateY(0); }
+
+.pd-disp-btn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: currentColor;
+  opacity: 0.6;
+}
+
+.pd-disp-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.pd-disp-icon { font-size: 16px; line-height: 1; }
+
+.pd-disp-text { min-width: 0; }
+.pd-disp-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+.pd-disp-sub {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Color variants */
+.pd-disp-success { color: #5BB974; }
+.pd-disp-success:hover { background: rgba(91,185,116,0.07); border-color: rgba(91,185,116,0.4); }
+.pd-disp-success:hover .pd-disp-label { color: #5BB974; }
+.pd-disp-success:hover .pd-disp-key { background: rgba(91,185,116,0.2); color: #5BB974; border-color: rgba(91,185,116,0.35); }
+
+.pd-disp-danger { color: #F47272; }
+.pd-disp-danger:hover { background: rgba(244,114,114,0.07); border-color: rgba(244,114,114,0.4); }
+.pd-disp-danger:hover .pd-disp-label { color: #F47272; }
+.pd-disp-danger:hover .pd-disp-key { background: rgba(244,114,114,0.2); color: #F47272; border-color: rgba(244,114,114,0.35); }
+
+.pd-disp-warning { color: #FFB341; }
+.pd-disp-warning:hover { background: rgba(255,179,65,0.07); border-color: rgba(255,179,65,0.4); }
+.pd-disp-warning:hover .pd-disp-label { color: #FFB341; }
+.pd-disp-warning:hover .pd-disp-key { background: rgba(255,179,65,0.2); color: #FFB341; border-color: rgba(255,179,65,0.35); }
+
+.pd-disp-info { color: #5BA3F2; }
+.pd-disp-info:hover { background: rgba(91,163,242,0.07); border-color: rgba(91,163,242,0.4); }
+.pd-disp-info:hover .pd-disp-label { color: #5BA3F2; }
+.pd-disp-info:hover .pd-disp-key { background: rgba(91,163,242,0.2); color: #5BA3F2; border-color: rgba(91,163,242,0.35); }
+
+.pd-disp-neutral { color: var(--text-secondary); }
+.pd-disp-neutral::before { opacity: 0.25; }
+.pd-disp-neutral:hover { background: rgba(255,255,255,0.03); border-color: var(--border-default); }
+.pd-disp-neutral:hover .pd-disp-label { color: var(--text-primary); }
+.pd-disp-neutral:hover .pd-disp-key { background: rgba(255,255,255,0.12); color: var(--text-primary); }
+
