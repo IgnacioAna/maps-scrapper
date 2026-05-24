@@ -99,9 +99,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const stopBtn = document.getElementById('wsp-timer-stop');
       if (!widget || !fab) return;
       let endAt = 0, intervalId = null;
-      const saved = parseInt(localStorage.getItem('wspTimerMinutes') || '3', 10);
+      // Audit Sprint 37: migrar `wspTimerMinutes` → `scm_wspTimerMinutes` (namespacing).
+      // Backward-compat: leemos el viejo si existe y migramos.
+      const _legacyWsp = localStorage.getItem('wspTimerMinutes');
+      if (_legacyWsp !== null && localStorage.getItem('scm_wspTimerMinutes') === null) {
+        localStorage.setItem('scm_wspTimerMinutes', _legacyWsp);
+        localStorage.removeItem('wspTimerMinutes');
+      }
+      const saved = parseInt(localStorage.getItem('scm_wspTimerMinutes') || '3', 10);
       minInput.value = saved;
-      minInput.addEventListener('change', () => localStorage.setItem('wspTimerMinutes', minInput.value));
+      minInput.addEventListener('change', () => localStorage.setItem('scm_wspTimerMinutes', minInput.value));
 
       function tick() {
         const rem = endAt - Date.now();
@@ -188,10 +195,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const label = item.textContent.trim().replace(/^[^\w¿áéíóú]+/i, '').trim();
         if (label && !item.dataset.label) item.dataset.label = label;
       });
-      if (localStorage.getItem('sidebarCollapsed') === '1') sidebarEl.classList.add('collapsed');
+      // Audit Sprint 37: migrar `sidebarCollapsed` → `scm_sidebarCollapsed` (namespacing).
+      const _legacySidebar = localStorage.getItem('sidebarCollapsed');
+      if (_legacySidebar !== null && localStorage.getItem('scm_sidebarCollapsed') === null) {
+        localStorage.setItem('scm_sidebarCollapsed', _legacySidebar);
+        localStorage.removeItem('sidebarCollapsed');
+      }
+      if (localStorage.getItem('scm_sidebarCollapsed') === '1') sidebarEl.classList.add('collapsed');
       menuToggleBtn.addEventListener('click', () => {
         sidebarEl.classList.toggle('collapsed');
-        localStorage.setItem('sidebarCollapsed', sidebarEl.classList.contains('collapsed') ? '1' : '0');
+        localStorage.setItem('scm_sidebarCollapsed', sidebarEl.classList.contains('collapsed') ? '1' : '0');
       });
     }
 
@@ -2241,9 +2254,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error('Error cargando módulo setters:', e); }
     }
 
+    // Audit Sprint 37: helper namespaced para "último lead trabajado". Migra
+    // claves viejas `lastLeadWorked_<uid>` → `scm_lastLeadWorked_<uid>`.
+    const _scmLastLeadKey = () => 'scm_lastLeadWorked_' + (currentUser?.id || 'guest');
+    const _scmLegacyLeadKey = () => 'lastLeadWorked_' + (currentUser?.id || 'guest');
+    function _migrateLastLeadKey() {
+      const k = _scmLastLeadKey(), lk = _scmLegacyLeadKey();
+      const legacy = localStorage.getItem(lk);
+      if (legacy !== null && localStorage.getItem(k) === null) {
+        try { localStorage.setItem(k, legacy); } catch {}
+        try { localStorage.removeItem(lk); } catch {}
+      }
+    }
     function _showResumeLastLead() {
       try {
-        const raw = localStorage.getItem('lastLeadWorked_' + (currentUser?.id || 'guest'));
+        _migrateLastLeadKey();
+        const raw = localStorage.getItem(_scmLastLeadKey());
         if (!raw) return;
         const info = JSON.parse(raw);
         const exists = setterLeads.find(l => l.id === info.id);
@@ -2269,7 +2295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         document.getElementById('resume-last-dismiss').onclick = () => {
           banner.style.display = 'none';
-          localStorage.removeItem('lastLeadWorked_' + (currentUser?.id || 'guest'));
+          localStorage.removeItem(_scmLastLeadKey());
         };
       } catch {}
     }
@@ -3071,8 +3097,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentModalLeadId = leadId;
       // Exponer el lead actual para handlers fuera de este closure (modal Agendar).
       window.__currentLead = lead;
-      // Guardar último lead trabajado (por usuario)
-      try { localStorage.setItem('lastLeadWorked_' + (currentUser?.id || 'guest'), JSON.stringify({ id: leadId, name: lead.name, at: Date.now() })); } catch {}
+      // Guardar último lead trabajado (por usuario). Key namespaced `scm_*`.
+      try { localStorage.setItem(_scmLastLeadKey(), JSON.stringify({ id: leadId, name: lead.name, at: Date.now() })); } catch {}
       const variant = getLeadVariant(lead);
 
       document.getElementById('modal-lead-name').textContent = lead.name;
@@ -4388,66 +4414,155 @@ document.addEventListener('DOMContentLoaded', async () => {
       const currentId = _pd.queue[_pd.currentIdx];
       const lead = _callsLeadsById.get(currentId);
       if (!lead) { _pdAdvance(); return; }
-      // Audit fix Sprint 36 (bug 5): si el lead se descartó/agendó/tiene
-      // callback futuro (puede pasar si el setter cambió algo en otra pestaña
-      // o el flow del power dialer dejó el cache desactualizado), skipear.
       if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
       if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
-      const flag = fmtCountry(lead.country) || '📞';
+
+      const flagHTML = lead.country ? countryFlagHTML(lead.country, 'lg') : '';
       const attempts = lead.callAttempts || 0;
-      const lastCall = lead.callLog && lead.callLog.length > 0 ? lead.callLog[lead.callLog.length - 1] : null;
+      const callLog = Array.isArray(lead.callLog) ? lead.callLog : [];
+      const lastCalls = callLog.slice(-3).reverse();
       const interesado = lead.estado === 'interesado';
+      const notesCount = Array.isArray(lead.notes) ? lead.notes.length : 0;
+      const lastNote = notesCount > 0 ? lead.notes[lead.notes.length - 1] : null;
+
+      // Sprint 39: helpers para link safe + display de URL
+      const safeW = safeUrl(lead.website || '');
+      const websiteDisplay = safeW ? safeW.replace(/^https?:\/\//, '').replace(/\/$/, '').substring(0, 50) : '';
+      const safeEmail = String(lead.email || '').trim();
+      const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail);
+      const igRaw = String(lead.instagram || '').trim();
+      const igUrl = igRaw ? (igRaw.startsWith('http') ? safeUrl(igRaw) : 'https://instagram.com/' + igRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '')) : '';
+      const fbRaw = String(lead.facebook || '').trim();
+      const fbUrl = fbRaw ? (fbRaw.startsWith('http') ? safeUrl(fbRaw) : 'https://facebook.com/' + fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '')) : '';
+      const mapsQ = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
+      const mapsUrl = lead.name ? `https://www.google.com/maps/search/?api=1&query=${mapsQ}` : '';
+
+      // Construir grid de info enriquecida (solo mostrar los que tienen data)
+      const infoRows = [];
+      if (lead.doctor && !lead.doctor.includes('N/A')) infoRows.push({ icon: '👨‍⚕️', label: 'Doctor', value: escHtml(lead.doctor) });
+      if (lead.decisor) infoRows.push({ icon: '🎯', label: 'Decisor', value: escHtml(lead.decisor) });
+      if (lead.address) infoRows.push({ icon: '📍', label: 'Dirección', value: escHtml(lead.address) });
+      if (safeW) infoRows.push({ icon: '🌐', label: 'Web', value: `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(websiteDisplay)}</a>` });
+      if (validEmail) infoRows.push({ icon: '✉️', label: 'Email', value: `<a href="mailto:${escHtml(safeEmail)}" style="color:#7dd3fc; text-decoration:none;">${escHtml(safeEmail)}</a>` });
+      if (igUrl) infoRows.push({ icon: '📷', label: 'Instagram', value: `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="color:#f85149; text-decoration:none;">${escHtml(igRaw)}</a>` });
+      if (fbUrl) infoRows.push({ icon: '📘', label: 'Facebook', value: `<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" style="color:#3b82f6; text-decoration:none;">Perfil</a>` });
+      if (lead.aiRole && !lead.aiRole.includes('N/A')) infoRows.push({ icon: '🤖', label: 'Rol IA', value: escHtml(lead.aiRole) });
+      if (lead.aiWhatsApp && !lead.aiWhatsApp.includes('N/A')) infoRows.push({ icon: '💬', label: 'WSP IA', value: escHtml(lead.aiWhatsApp) });
+      if (lead.aiDescription || lead.aiResumen) infoRows.push({ icon: '📝', label: 'Resumen IA', value: escHtml(lead.aiDescription || lead.aiResumen).substring(0, 280) });
+      if (lead.linkedin) infoRows.push({ icon: '💼', label: 'LinkedIn', value: `<a href="${escHtml(safeUrl(lead.linkedin) || '#')}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">Perfil</a>` });
+      if (lead.importedAt) infoRows.push({ icon: '📅', label: 'Importado', value: new Date(lead.importedAt).toLocaleDateString('es-AR') });
 
       const main = document.getElementById('pd-current-content');
-      main.innerHTML = `<div style="display:grid; grid-template-columns:auto 1fr auto; gap:24px; align-items:center;">
-        <div style="font-size:48px;">${flag}</div>
+      main.innerHTML = `
+      <!-- Bloque 1: Header del lead + acciones primarias -->
+      <div style="display:grid; grid-template-columns:auto 1fr auto; gap:22px; align-items:flex-start; padding-bottom:18px; border-bottom:1px solid var(--border-subtle);">
+        <div style="display:flex; align-items:center; justify-content:center; width:54px; height:54px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:14px;">${flagHTML || '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'}</div>
         <div style="min-width:0;">
-          <h2 style="margin:0 0 4px; font-size:28px; line-height:1.2;">${escHtml(lead.name)}</h2>
-          <div style="color:var(--text-secondary); font-size:14px;">
+          <h2 style="margin:0 0 4px; font-size:24px; font-weight:700; letter-spacing:-0.01em; line-height:1.2;">${escHtml(lead.name)}</h2>
+          <div style="color:var(--text-secondary); font-size:13px;">
             ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
-            ${lead.doctor && !lead.doctor.includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}
           </div>
-          <div style="margin-top:8px; font-family:ui-monospace,monospace; font-size:18px; color:var(--accent); font-weight:600;">${escHtml(lead.phone)}</div>
-          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-            ${attempts > 0 ? `<span style="font-size:11px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 10px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
-            ${interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600;">✅ INTERESADO</span>' : ''}
-            ${lead.rating ? `<span style="font-size:11px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 10px; border-radius:6px;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
+          <div style="margin-top:8px; font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(lead.phone)}</div>
+          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
+            ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
+            ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
+            ${lead.phoneStatus === 'voicemail' ? '<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.12); padding:3px 9px; border-radius:6px;">📭 buzón</span>' : ''}
           </div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:10px; min-width:180px;">
-          <button onclick="window._startTelnyxCall('${escHtml(lead.id)}')" style="padding:18px 24px; font-size:18px; font-weight:700; background:var(--success); color:#0F1115; border:none; border-radius:14px; cursor:pointer; box-shadow:0 6px 22px rgba(91,185,116,0.35);">📞 Llamar (C)</button>
-          <button onclick="window._pdSkip()" style="padding:11px 20px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:10px; cursor:pointer; font-size:13px;">⏭ Saltar (S)</button>
+        <div style="display:flex; flex-direction:column; gap:9px; min-width:200px;">
+          <button onclick="window._startTelnyxCall('${escHtml(lead.id)}')" style="padding:16px 22px; font-size:16px; font-weight:700; background:var(--success); color:#0F1115; border:none; border-radius:12px; cursor:pointer; box-shadow:0 6px 22px rgba(91,185,116,0.32); display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>Llamar</span>
+            <kbd style="font-family:ui-monospace,monospace; font-size:11px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px; margin-left:4px;">C</kbd>
+          </button>
+          <button onclick="window._pdSkip()" style="padding:9px 18px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:10px; cursor:pointer; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;">
+            <span>Saltar</span>
+            <kbd style="font-family:ui-monospace,monospace; font-size:10px; padding:1px 5px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:4px;">S</kbd>
+          </button>
         </div>
       </div>
-      ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:18px; background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:11px 14px; border-radius:9px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🎯 Pre-call</div>
-        <div style="color:#fff; font-size:13px; line-height:1.5; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
+
+      <!-- Bloque 2: Pre-call note destacada (si existe) -->
+      ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:5px;">🎯 Pre-call · qué decir</div>
+        <div style="color:#fff; font-size:13.5px; line-height:1.55; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
       </div>` : ''}
-      ${lastCall ? `<div style="margin-top:14px; font-size:12px; color:var(--text-tertiary);">Último intento: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR')}</div>` : ''}
-      <div style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:8px;">
-        <select onchange="window._pdHandleDisposition('${escHtml(lead.id)}', this);" style="grid-column:1/-1; padding:11px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
-          <option value="">— Resultado (1-7 atajos) —</option>
-          <option value="answered_interested">✅ 1 — Interesado</option>
-          <option value="answered_not_interested">❌ 2 — No interesado</option>
-          <option value="no_answer">📵 3 — No atendió</option>
-          <option value="voicemail">📭 4 — Buzón</option>
-          <option value="callback_later">🔄 5 — Volver a llamar</option>
-          <option value="wrong_number">🔢 6 — Equivocado</option>
-          <option value="invalid_number">🚫 7 — No existe</option>
+
+      <!-- Bloque 3: Grid de info enriquecida (scraping + IA) -->
+      ${infoRows.length > 0 ? `<div style="margin-top:18px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px;">📋 Ficha del lead · scraping + IA</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:9px;">
+          ${infoRows.map(r => `<div style="display:grid; grid-template-columns:24px 80px 1fr; gap:8px; align-items:center; padding:8px 11px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
+            <span style="font-size:14px; opacity:0.7;">${r.icon}</span>
+            <span style="color:var(--text-tertiary); font-size:10.5px; text-transform:uppercase; letter-spacing:0.3px; font-weight:600;">${r.label}</span>
+            <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; word-break:break-word;">${r.value}</span>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Bloque 4: Quick-links acción -->
+      <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+        ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:7px; text-decoration:none; font-weight:500;">🗺 Ver en Maps</a>` : ''}
+        ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(125,211,252,0.1); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:7px; text-decoration:none; font-weight:500;">🌐 Abrir web</a>` : ''}
+        ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(248,81,73,0.1); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:7px; text-decoration:none; font-weight:500;">📷 Instagram</a>` : ''}
+        ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:var(--bg-app); border:1px solid var(--border-default); color:var(--text-secondary); border-radius:7px; text-decoration:none; font-weight:500;">✉ Email</a>` : ''}
+        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:5px; font-size:11.5px; padding:6px 11px; background:rgba(37,211,102,0.1); border:1px solid rgba(37,211,102,0.3); color:#25D366; border-radius:7px; text-decoration:none; font-weight:500;">💬 WhatsApp</a>` : ''}
+      </div>
+
+      <!-- Bloque 5: Histórico (últimas 3 llamadas) + última nota -->
+      ${(lastCalls.length > 0 || lastNote) ? `<div style="margin-top:18px; display:grid; grid-template-columns:${lastCalls.length > 0 && lastNote ? '1fr 1fr' : '1fr'}; gap:14px;">
+        ${lastCalls.length > 0 ? `<div>
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">📞 Últimas ${lastCalls.length} llamada${lastCalls.length>1?'s':''}</div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            ${lastCalls.map(entry => {
+              const icon = ({ answered_interested:'✅', answered_not_interested:'❌', no_answer:'📵', voicemail:'📭', wrong_number:'🔢', invalid_number:'🚫', callback_later:'🔄', scheduled_with_admin:'📅' })[entry.outcome] || '📞';
+              const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+              return `<div style="display:grid; grid-template-columns:auto 1fr auto; gap:10px; align-items:center; padding:7px 11px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">
+                <span style="font-size:14px;">${icon}</span>
+                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}</span>
+                <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px;">${t}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+        ${lastNote ? `<div>
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">📝 Última nota (${notesCount})</div>
+          <div style="padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
+            <div style="color:var(--text-primary); white-space:pre-wrap;">${escHtml(String(lastNote.text || '').substring(0, 300))}</div>
+            <div style="font-size:10px; color:var(--text-tertiary); margin-top:5px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+          </div>
+        </div>` : ''}
+      </div>` : ''}
+
+      <!-- Bloque 6: Disposition dropdown -->
+      <div style="margin-top:18px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">⚡ Resultado de la llamada</div>
+        <select onchange="window._pdHandleDisposition('${escHtml(lead.id)}', this);" style="width:100%; padding:12px 16px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; cursor:pointer; font-family:inherit;">
+          <option value="">— Elegí resultado (atajos 1-7) —</option>
+          <option value="answered_interested">✅ 1 · Interesado (agenda con Ignacio)</option>
+          <option value="answered_not_interested">❌ 2 · No interesado</option>
+          <option value="no_answer">📵 3 · No atendió</option>
+          <option value="voicemail">📭 4 · Buzón de voz</option>
+          <option value="callback_later">🔄 5 · Volver a llamar después</option>
+          <option value="wrong_number">🔢 6 · Número equivocado</option>
+          <option value="invalid_number">🚫 7 · No existe / inválido</option>
         </select>
       </div>`;
 
-      // Cola siguiente (próximos 5)
+      // Cola siguiente (próximos 5) — Sprint 39: flag-icons + más info contextual
       const queue = document.getElementById('pd-queue');
       const upcoming = _pd.queue.slice(_pd.currentIdx + 1, _pd.currentIdx + 6);
       queue.innerHTML = upcoming.map((id, i) => {
         const l = _callsLeadsById.get(id);
         if (!l) return '';
-        const f = fmtCountry(l.country) || '📞';
-        return `<div style="display:grid; grid-template-columns:30px 26px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
-          <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${i + 2}.</span>
-          <span style="font-size:16px;">${f}</span>
-          <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)} ${l.city ? '<span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}</span>
+        const f = l.country ? countryFlagHTML(l.country) : '';
+        const att = l.callAttempts || 0;
+        return `<div style="display:grid; grid-template-columns:32px 22px 1fr auto auto; gap:10px; align-items:center; padding:9px 13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
+          <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-weight:500;">${i + 2}.</span>
+          <span style="display:flex; align-items:center;">${f}</span>
+          <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' <span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}${l.doctor && !l.doctor.includes('N/A') ? ' <span style="color:var(--text-tertiary); font-size:11px;">· ' + escHtml(l.doctor) + '</span>' : ''}</span>
+          ${att > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-app); padding:1px 6px; border-radius:5px;">${att} int</span>` : ''}
           <span style="color:var(--text-tertiary); font-family:ui-monospace,monospace; font-size:11px;">${escHtml(l.phone)}</span>
         </div>`;
       }).join('');
@@ -12782,5 +12897,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('[data-target="view-guide"]')?.addEventListener('click', () => {
     setTimeout(_guideInit, 50);
   });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Audit Sprint 37: Esc cierra cualquier modal estático abierto + click en
+  // overlay cierra. Cubre `.modal-overlay` y `.lead-modal` declarados en HTML
+  // que no traían su propio handler de Esc (FAQ, training, callback, schedule,
+  // calls-manual, report-preview, faq-import, lead-modal, variants-modal).
+  // Los modales con su propio handler (call-objection-modal, agendar-modal,
+  // ask-text-modal, ask-confirm-modal, cmdk, etc.) se respetan: si están
+  // hidden ya no se tocan; si están abiertos, el handler local se ejecuta
+  // antes y este global ya no encuentra el modal abierto. No re-cierra.
+  if (!window.__scmModalGlobalsWired) {
+    window.__scmModalGlobalsWired = true;
+    const _scmModalSelectors = '.modal-overlay:not(.hidden), .lead-modal:not(.hidden)';
+    // Helper que cierra y dispara los click handlers locales que limpian
+    // estado interno (lead-modal limpia currentModalLeadId).
+    const _scmCloseModal = (modal) => {
+      // Simular click en el botón close si existe (preserva limpieza local)
+      const closeBtn = modal.querySelector('.modal-close-btn, [data-close], [aria-label="Cerrar"]');
+      if (closeBtn) {
+        try { closeBtn.click(); return; } catch {}
+      }
+      modal.classList.add('hidden');
+    };
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const openModals = document.querySelectorAll(_scmModalSelectors);
+      if (openModals.length === 0) return;
+      // Cerrar solo el último abierto (z-index más alto, último en el DOM)
+      const last = openModals[openModals.length - 1];
+      _scmCloseModal(last);
+    });
+    // Click en overlay (fondo) cierra el modal. Solo cuando el target es el
+    // overlay mismo (no hijos).
+    document.addEventListener('click', (e) => {
+      const t = e.target;
+      if (!t || !t.classList) return;
+      if ((t.classList.contains('modal-overlay') || t.classList.contains('lead-modal')) && !t.classList.contains('hidden')) {
+        _scmCloseModal(t);
+      }
+    });
+  }
 
   });
