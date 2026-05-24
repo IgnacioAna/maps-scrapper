@@ -4460,6 +4460,79 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (lead.linkedin) infoRows.push({ label: 'LinkedIn', value: `<a href="${escHtml(safeUrl(lead.linkedin) || '#')}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">Perfil</a>` });
       if (lead.importedAt) infoRows.push({ label: 'Importado', value: new Date(lead.importedAt).toLocaleDateString('es-AR') });
 
+      // Power Dialer 2026-05-23: bloque de follow-up activo. Calcula step tildado,
+      // due date, status (programado/vence ahora/vencido) y permite marcar hecho
+      // sin salir del dialer. Mismo modelo que _renderModalFollowups del lead modal.
+      const _PD_FU_STEPS = {
+        '24hs': { label: '24 horas', deltaMs: 24 * 3600 * 1000 },
+        '48hs': { label: '48 horas', deltaMs: 48 * 3600 * 1000 },
+        '72hs': { label: '72 horas', deltaMs: 72 * 3600 * 1000 },
+        '7d':   { label: '7 días',   deltaMs: 7 * 24 * 3600 * 1000 },
+        '15d':  { label: '15 días',  deltaMs: 15 * 24 * 3600 * 1000 },
+      };
+      const _pdFu = lead.followUps || {};
+      const _pdFuActive = Object.keys(_PD_FU_STEPS).find(k => _pdFu[k] === true);
+      const _pdFuNote = lead.followUpNotes && _pdFuActive ? String(lead.followUpNotes[_pdFuActive] || '').trim() : '';
+      let _pdFuBlock = '';
+      if (_pdFuActive) {
+        const _pdFuStarted = lead.followUpStartedAt
+          ? new Date(lead.followUpStartedAt).getTime()
+          : (lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0);
+        if (_pdFuStarted) {
+          const _pdFuOverride = lead.followUpDueOverrides && lead.followUpDueOverrides[_pdFuActive];
+          const _pdFuDue = _pdFuOverride
+            ? new Date(_pdFuOverride).getTime()
+            : (_pdFuStarted + _PD_FU_STEPS[_pdFuActive].deltaMs);
+          const _now = Date.now();
+          const _d = new Date(_pdFuDue);
+          const _today0 = new Date(); _today0.setHours(0,0,0,0);
+          const _tomorrow0 = _today0.getTime() + 24 * 3600 * 1000;
+          const _yesterday0 = _today0.getTime() - 24 * 3600 * 1000;
+          const _dayStart = new Date(_d); _dayStart.setHours(0,0,0,0);
+          let _when;
+          if (_dayStart.getTime() === _today0.getTime()) _when = 'Hoy ' + _d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          else if (_dayStart.getTime() === _yesterday0) _when = 'Ayer ' + _d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          else if (_dayStart.getTime() === _tomorrow0) _when = 'Mañana ' + _d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          else _when = _d.toLocaleDateString('es-AR') + ' ' + _d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          let _statusLabel, _statusColor, _bgGradient, _borderColor;
+          if (_pdFuDue > _now + 12 * 3600 * 1000) {
+            _statusLabel = 'Programado'; _statusColor = 'var(--accent)';
+            _bgGradient = 'linear-gradient(135deg, rgba(157,133,242,0.10) 0%, rgba(157,133,242,0.03) 100%)';
+            _borderColor = 'rgba(157,133,242,0.32)';
+          } else if (_pdFuDue >= _now - 12 * 3600 * 1000) {
+            _statusLabel = 'Vence ahora'; _statusColor = '#5bb974';
+            _bgGradient = 'linear-gradient(135deg, rgba(91,185,116,0.12) 0%, rgba(91,185,116,0.03) 100%)';
+            _borderColor = 'rgba(91,185,116,0.38)';
+          } else if (_pdFuDue >= _now - 36 * 3600 * 1000) {
+            _statusLabel = 'Vencido ayer'; _statusColor = '#ff8a3d';
+            _bgGradient = 'linear-gradient(135deg, rgba(255,138,61,0.12) 0%, rgba(255,138,61,0.03) 100%)';
+            _borderColor = 'rgba(255,138,61,0.38)';
+          } else {
+            _statusLabel = 'Atrasado'; _statusColor = '#f85149';
+            _bgGradient = 'linear-gradient(135deg, rgba(248,81,73,0.12) 0%, rgba(248,81,73,0.03) 100%)';
+            _borderColor = 'rgba(248,81,73,0.38)';
+          }
+
+          _pdFuBlock = `<div style="margin-top:18px; background:${_bgGradient}; border:1px solid ${_borderColor}; border-left:3px solid ${_statusColor}; padding:14px 16px; border-radius:10px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+              <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+                <span style="font-size:18px;">📅</span>
+                <div style="min-width:0;">
+                  <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:${_statusColor};">Follow-up · ${_PD_FU_STEPS[_pdFuActive].label}</div>
+                  <div style="font-size:13.5px; color:var(--text-primary); margin-top:3px;">
+                    <strong style="color:${_statusColor};">${_statusLabel}</strong>
+                    <span style="color:var(--text-secondary); margin-left:6px;">· vence ${_when}</span>
+                  </div>
+                  ${_pdFuNote ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px; padding:6px 9px; background:rgba(255,255,255,0.04); border-radius:6px; line-height:1.4; white-space:pre-wrap;">${escHtml(_pdFuNote)}</div>` : ''}
+                </div>
+              </div>
+              <button type="button" onclick="window._pdMarkFollowupDone('${escHtml(lead.id)}', '${_pdFuActive}')" style="padding:8px 14px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">✓ Marcar hecho</button>
+            </div>
+          </div>`;
+        }
+      }
+
       const main = document.getElementById('pd-current-content');
       main.innerHTML = `
       <!-- Bloque 1: Header del lead + acciones primarias -->
@@ -4543,6 +4616,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : ''}
       </div>` : ''}
 
+      <!-- Bloque 5.5: Follow-up activo (si el lead tiene uno tildado) -->
+      ${_pdFuBlock}
+
       <!-- Bloque 6: Disposition — grid sin emojis, barra de color como cue visual -->
       <div style="margin-top:18px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -4589,6 +4665,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window._pdSkip = function() { _pdAdvance(); };
     window._pdAdvance = _pdAdvance;
+
+    // Power Dialer 2026-05-23: marca un follow-up como hecho desde el dialer.
+    // PATCH al lead destildando el step + actualiza cache local + re-renderea.
+    // NO avanza automaticamente — el setter puede querer llamar igual despues
+    // de marcar el follow-up como hecho.
+    window._pdMarkFollowupDone = async function(leadId, stepKey) {
+      const lead = _callsLeadsById.get(leadId);
+      if (!lead) return;
+      const prev = { ...(lead.followUps || {}) };
+      const next = { ...prev, [stepKey]: false };
+      try {
+        const r = await fetch(apiUrl(`/api/setters/leads/${encodeURIComponent(leadId)}`), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ followUps: next }),
+        });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        // Refrescar lead en cache local con la respuesta del server
+        if (data && data.lead) {
+          _callsLeadsById.set(leadId, data.lead);
+        } else {
+          lead.followUps = next;
+        }
+        window.showToast?.('Follow-up marcado como hecho ✓', { type: 'success' });
+        _pdRender();
+      } catch (err) {
+        window.showToast?.('No pude marcar el follow-up: ' + err.message, { type: 'error' });
+      }
+    };
 
     // Sprint 39 — Handler para botones directos del power dialer.
     // Crea un select virtual con el value seleccionado y delega a _pdHandleDisposition.
