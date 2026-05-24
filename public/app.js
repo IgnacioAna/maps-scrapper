@@ -4077,9 +4077,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function fmtCountry(country) {
-      const flags = { 'colombia':'🇨🇴', 'méxico':'🇲🇽', 'mexico':'🇲🇽', 'argentina':'🇦🇷', 'chile':'🇨🇱', 'perú':'🇵🇪', 'peru':'🇵🇪', 'bolivia':'🇧🇴', 'uruguay':'🇺🇾', 'paraguay':'🇵🇾', 'ecuador':'🇪🇨', 'venezuela':'🇻🇪', 'españa':'🇪🇸', 'espana':'🇪🇸' };
+      const flags = { 'colombia':'🇨🇴', 'méxico':'🇲🇽', 'mexico':'🇲🇽', 'argentina':'🇦🇷', 'chile':'🇨🇱', 'perú':'🇵🇪', 'peru':'🇵🇪', 'bolivia':'🇧🇴', 'uruguay':'🇺🇾', 'paraguay':'🇵🇾', 'ecuador':'🇪🇨', 'venezuela':'🇻🇪', 'españa':'🇪🇸', 'espana':'🇪🇸', 'costa rica':'🇨🇷', 'panamá':'🇵🇦', 'panama':'🇵🇦', 'estados unidos':'🇺🇸', 'usa':'🇺🇸', 'brasil':'🇧🇷', 'brazil':'🇧🇷', 'guatemala':'🇬🇹' };
       const k = String(country || '').toLowerCase().trim();
       return flags[k] || '';
+    }
+
+    // Sprint 38: flag-icons HTML helper. Windows no renderiza emojis de bandera
+    // (regional indicator codepoints). Usamos flag-icons CSS (SVG vía background)
+    // que se ve idéntico en todos los OS y queda como un CRM B2B real (Apollo,
+    // Close, HubSpot usan este approach).
+    function countryFlagHTML(country, size = 'sm') {
+      const isoMap = {
+        'colombia':'co', 'méxico':'mx', 'mexico':'mx', 'argentina':'ar',
+        'chile':'cl', 'perú':'pe', 'peru':'pe', 'bolivia':'bo', 'uruguay':'uy',
+        'paraguay':'py', 'ecuador':'ec', 'venezuela':'ve', 'españa':'es',
+        'espana':'es', 'costa rica':'cr', 'panamá':'pa', 'panama':'pa',
+        'estados unidos':'us', 'usa':'us', 'brasil':'br', 'brazil':'br',
+        'guatemala':'gt', 'honduras':'hn', 'nicaragua':'ni', 'el salvador':'sv',
+        'república dominicana':'do', 'republica dominicana':'do',
+      };
+      const iso = isoMap[String(country || '').toLowerCase().trim()];
+      if (!iso) return '<span style="display:inline-block; width:18px; height:13px; background:rgba(255,255,255,0.08); border-radius:2px;"></span>';
+      const dims = size === 'lg' ? 'width:24px; height:18px;' : 'width:18px; height:13px;';
+      return `<span class="fi fi-${iso}" style="display:inline-block; ${dims} border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.15); vertical-align:middle;" aria-hidden="true"></span>`;
     }
 
     async function loadCallsView() {
@@ -4591,14 +4611,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const sortedCountries = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
       const currentFilter = document.getElementById('calls-country-filter').value || '';
       const totalAll = Object.values(counts).reduce((s, n) => s + n, 0);
+      // Sprint 38: chip "Todos" sin emoji, con icono SVG mundo más sutil.
+      // Chips de países con flag-icons (SVG) en lugar de emoji Unicode (que
+      // no se renderiza en Windows). Look B2B prospecting CRM.
       const chips = [`<button class="calls-country-chip${!currentFilter ? ' is-active' : ''}" data-country="">
-        <span class="chip-flag">🌎</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.8;"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         <span>Todos</span>
         <span class="chip-count">${totalAll}</span>
       </button>`];
       for (const c of sortedCountries) {
         chips.push(`<button class="calls-country-chip${currentFilter === c ? ' is-active' : ''}" data-country="${escHtml(c)}">
-          <span class="chip-flag">${fmtCountry(c) || '🏳️'}</span>
+          ${countryFlagHTML(c)}
           <span>${escHtml(c)}</span>
           <span class="chip-count">${counts[c]}</span>
         </button>`);
@@ -5044,9 +5067,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const checkboxCol = isAdminUser ? `<input type="checkbox" class="call-row-checkbox" data-lead-id="${escHtml(l.id)}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); window._callsToggleSelect('${escHtml(l.id)}', this.checked);" style="accent-color:var(--accent); cursor:pointer; width:16px; height:16px;">` : '';
         const gridCols = isAdminUser ? '22px 30px 1fr auto auto auto' : '36px 1fr auto auto auto';
 
+        // Sprint 38: usar flag-icons (SVG) en lugar de emoji para look B2B consistente
+        const flagIcon = l.country ? countryFlagHTML(l.country, 'lg') : '<svg width="22" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.55;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
         const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}${isSelected ? ' is-selected' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}; ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: ${gridCols}; gap:14px; align-items:center;">
           ${checkboxCol}
-          <div style="font-size:20px; opacity:0.7;">${flag || '📞'}</div>
+          <div style="display:flex; align-items:center; justify-content:center;">${flagIcon}</div>
 
           <div style="min-width:0;">
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -12351,6 +12376,411 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.showToast?.('Error: ' + err.message, { type: 'error' });
       btn.textContent = 'Guardar routing'; btn.disabled = false;
     }
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // ── GUÍA DE USO (view-guide)
+  // ══════════════════════════════════════════════════════════════
+  // Contenido hardcoded. Para editar: tocar el array _guideContent abajo.
+  // El default tab depende del rol del usuario (setter → "setter", admin/supervisor → "admin").
+  const _guideContent = {
+    setter: [
+      {
+        id: 'primer-dia',
+        title: 'Tu primer día',
+        body: `<ol>
+          <li>Logueate con el email y password que te mandó el admin por invitación.</li>
+          <li>El sidebar de la izquierda tiene todo lo que necesitás. Si te confunde, usá el menú hamburguesa arriba para esconderlo.</li>
+          <li>Lo primero: andá a <strong>Centro de Entrenamiento</strong> y hacé los 8 módulos cortos (~46 min total). Cada uno tiene un quiz al final que tenés que aprobar (≥4/5).</li>
+          <li>Después volvé a <strong>Setteo</strong> — esa es tu vista principal.</li>
+        </ol>
+        <div class="guide-callout">Cuando aprobás un módulo del onboarding el pill cambia a "Quiz aprobado" y tu progreso queda guardado.</div>`,
+        goto: { target: 'view-training', label: 'Ir a Entrenamiento' }
+      },
+      {
+        id: 'setteo',
+        title: 'Trabajar leads en Setteo',
+        body: `<p>La vista <strong>Setteo</strong> tiene todos los leads que te asignaron. El flow de un lead es:</p>
+        <ol>
+          <li><strong>Sin contactar</strong> → abrís WSP con el botón verde.</li>
+          <li><strong>Conexión enviada</strong> → se marca solo al abrir el chat.</li>
+          <li><strong>Respondió</strong> → tildá la casilla cuando el lead te conteste.</li>
+          <li><strong>Calificado</strong> → tildá cuando confirmaste que es perfil real (clínica, dueño, etc).</li>
+          <li><strong>Interesado</strong> → tildá si dice sí a la propuesta.</li>
+          <li><strong>Agendado</strong> → se marca cuando agendás reunión en el calendario.</li>
+        </ol>
+        <div class="guide-callout"><strong>Cascada bidireccional:</strong> si marcás "Interesado SI", se autocompletan calificado/respondió/conexión. Si destildás conexión, se borra todo lo posterior.</div>
+        <p>Si el lead <strong>no tiene WhatsApp</strong>, marcá "Sin WSP" — sale de tu vista y va a "Llamadas".</p>
+        <p>Tenés filtros arriba (Sin contactar, En proceso, Respondieron, Calificados, Interesados, Agendados, etc.) y un buscador universal que filtra por nombre, teléfono, ciudad, doctor, etc.</p>`,
+        goto: { target: 'view-crm', label: 'Ir a Setteo' }
+      },
+      {
+        id: 'whatsapp',
+        title: 'Mandar WhatsApps',
+        body: `<p>Cuando le das al botón verde de WSP en un lead:</p>
+        <ol>
+          <li>Se abre WhatsApp Web/Desktop con el mensaje de apertura precargado (según la variante asignada al lead).</li>
+          <li>Mandalo. Volvé al CRM y la conexión se marca sola.</li>
+          <li>Cuando el lead responde, tildá <strong>"Respondió"</strong>.</li>
+          <li>Usá las pestañas dentro del modal del lead para ver historial, notas, follow-ups, etc.</li>
+        </ol>
+        <div class="guide-callout warn">El mensaje de apertura se define por <strong>variante</strong>. Si ves que tu lead no tiene mensaje precargado o sale roto, avisale al admin para revisar la variante.</div>`
+      },
+      {
+        id: 'llamadas',
+        title: 'Llamar con Telnyx (centralita en el browser)',
+        body: `<p>Para leads sin WSP o para hacer follow-up por voz, usás la <strong>centralita Telnyx</strong> integrada. No abre ningún programa externo — todo desde el browser.</p>
+        <ol>
+          <li>La primera vez el browser te pide permiso de micrófono. Dale "Permitir".</li>
+          <li>Click en <strong>📞 Llamar</strong> en cualquier lead.</li>
+          <li>Aparece un panel flotante con timer, mute y colgar. El sistema elige automáticamente el número saliente del país del lead (mejora tasa de atención).</li>
+          <li>Tenés un panel lateral de <strong>Guion</strong> con los scripts oficiales SCM v2: opener, pitch, manejo de objeciones, cierre.</li>
+          <li>Al colgar, aparece el modal de disposición. Marcá cómo fue (interesado, no interesado, no atendió, agendar más tarde, etc.).</li>
+        </ol>
+        <div class="guide-callout"><strong>Tono "3-S":</strong> Slow (hablá lento), Smile (sonreí — se nota), Strong (confiado). Está siempre arriba del panel.</div>
+        <div class="guide-callout warn">Si el botón aparece como <code>tel:</code> tradicional en vez del panel, significa que el admin no configuró Telnyx todavía. Avisale.</div>`
+      },
+      {
+        id: 'asistente',
+        title: 'Asistente IA (Mercury)',
+        body: `<p>Cuando un lead te tira algo difícil ("¿cuánto sale?", "ya tengo agencia", "no me interesa"), no improvises — usá el Asistente.</p>
+        <ol>
+          <li>Andá a <strong>Asistente IA</strong> en el sidebar.</li>
+          <li>Pegá el mensaje del lead.</li>
+          <li>Mercury te genera una respuesta sanitizada (sin <code>¿¡</code>, sin precios, sin tecnicismos) en 1-2 bloques.</li>
+          <li>Copialo. Marcalo como <strong>buena/mala/edité</strong> para que el sistema aprenda.</li>
+        </ol>
+        <div class="guide-callout">El admin revisa las respuestas malas y mejora el prompt o las promociona al banco. Tu feedback alimenta esto.</div>`,
+        goto: { target: 'view-assistant', label: 'Ir a Asistente' }
+      },
+      {
+        id: 'faqs',
+        title: 'Banco de Respuestas',
+        body: `<p>El <strong>Banco de Respuestas</strong> son respuestas pre-aprobadas a las preguntas/objeciones más comunes. Es más rápido que el Asistente porque ya están escritas.</p>
+        <ol>
+          <li>Buscás por keyword o categoría (precio, objeción, seguimiento, calificación).</li>
+          <li>Click en <strong>Copiar</strong> — se incrementa el contador de uso.</li>
+          <li>Si esa respuesta cerró bien con el lead, marcala como <strong>"Funcionó"</strong> — sube en el ranking.</li>
+        </ol>
+        <p>Cuando agregás una entrada nueva, la IA sugiere automáticamente categoría + tags. Aceptá o editá.</p>`,
+        goto: { target: 'view-faqs', label: 'Ir al Banco' }
+      },
+      {
+        id: 'programar',
+        title: 'Programar mensajes (follow-up automático)',
+        body: `<p>Si un lead te dice "hablame mañana 10am", no lo dejes en tu memoria — programalo:</p>
+        <ol>
+          <li>Abrí el lead → pestaña <strong>"Programar mensaje"</strong>.</li>
+          <li>Elegí preset (en 2h, mañana 10am, en 3 días) o fecha/hora custom.</li>
+          <li>Escribí el mensaje (o usá el del banco).</li>
+          <li>Guardalo. Aparece en <strong>"Follow-ups"</strong> en el sidebar.</li>
+        </ol>
+        <div class="guide-callout danger"><strong>Requiere wa-multi prendido:</strong> el mensaje se envía solo desde la app de escritorio cuando la cuenta WA está online. Si tu PC está apagada a esa hora, el sistema reintenta cada 5 min hasta 24h.</div>`
+      },
+      {
+        id: 'followups',
+        title: 'Follow-ups y "Mis programados"',
+        body: `<p>En el sidebar tenés <strong>Follow-ups</strong> con todo lo que tenés pendiente: tildados manuales + mensajes programados que aún no salieron.</p>
+        <ul>
+          <li><strong>Pendientes:</strong> esperando hora de envío.</li>
+          <li><strong>Enviados:</strong> ya despachados por wa-multi (con timestamp).</li>
+          <li><strong>Fallidos:</strong> wa-multi offline durante 24h o cuenta caída. Reagendá o mandalos manualmente.</li>
+          <li><strong>Cancelados:</strong> los que vos cancelaste.</li>
+        </ul>`,
+        goto: { target: 'view-scheduled', label: 'Ir a Follow-ups' }
+      },
+      {
+        id: 'rendimiento',
+        title: 'Mi rendimiento',
+        body: `<p>En <strong>Mi rendimiento</strong> ves tus 7 KPIs con delta vs período anterior:</p>
+        <ul>
+          <li><strong>% Conexión:</strong> mensajes enviados / leads totales.</li>
+          <li><strong>% Apertura:</strong> respondieron / conexiones.</li>
+          <li><strong>% Calificación:</strong> interesados / calificados.</li>
+          <li>+ evolución temporal con selector día / semana / mes.</li>
+        </ul>
+        <div class="guide-callout">Si una variante te convierte mucho menos que otra, avisale al admin — capaz hay que cambiar el copy.</div>`,
+        goto: { target: 'view-myperf', label: 'Ir a Mi rendimiento' }
+      },
+      {
+        id: 'tips',
+        title: 'Tips operativos que suelen ahorrar tiempo',
+        body: `<ul>
+          <li>El <strong>modo tabla completa</strong> es el default — ahí ves doctor, notas, follow-ups, etc. No lo cambies a "simple" salvo que sepas qué hacés.</li>
+          <li>Atajos: <code>Esc</code> cierra modales. <code>Ctrl+F</code> (browser) busca en la tabla actual.</li>
+          <li>Si el sidebar te molesta, el menú hamburguesa lo esconde dejando solo iconos.</li>
+          <li>Si tu cuenta WA se cae o desconecta, andá a <strong>Mis WhatsApps</strong> para ver estado y reconectar.</li>
+          <li>El widget <strong>Hoy</strong> arriba muestra tus mensajes/llamadas/agendados del día — útil para auto-checkearte.</li>
+        </ul>`
+      },
+    ],
+    admin: [
+      {
+        id: 'setup-railway',
+        title: 'Setup inicial (Railway env vars)',
+        body: `<p>Antes que nada, configurá estas env vars en Railway (Settings → Variables):</p>
+        <ul>
+          <li><code>ADMIN_PASSWORD</code> — tu password admin (<strong>NO</strong> "ADMIN_INITIAL_PASSWORD")</li>
+          <li><code>ADMIN_EMAIL</code> — email admin (default <code>ignacioana91@gmail.com</code>)</li>
+          <li><code>ADMIN_NAME</code> — tu nombre</li>
+          <li><code>API_KEY</code> — SerpAPI (Google Maps scraping)</li>
+          <li><code>MERCURY_API_KEY</code> — Inception Labs (IA primaria)</li>
+          <li><code>QWEN_API_KEY</code> — OpenRouter Qwen (IA fallback)</li>
+          <li><code>APIFY_TOKEN</code> — Apify (Instagram scraper)</li>
+          <li><code>RESEND_API_KEY</code> — Resend (envío de invitaciones)</li>
+          <li><code>JWT_SECRET</code> — secret para JWT del módulo WA</li>
+          <li><code>TELNYX_API_KEY</code> + <code>TELNYX_SIP_USERNAME</code> + <code>TELNYX_SIP_PASSWORD</code> + <code>TELNYX_SIP_CONNECTION_ID</code> + <code>TELNYX_SIGNATURE_PUBLIC_KEY</code> — centralita</li>
+          <li><code>OPENAI_API_KEY</code> — opcional, habilita transcripción Whisper de llamadas (~$0.006/min)</li>
+        </ul>
+        <div class="guide-callout warn">Cuando hay env var seteada de Telnyx, <strong>sobrescribe el JSON y bloquea edición desde el panel admin</strong>. El JSON solo queda para datos no-sensibles (numbers, routing).</div>`
+      },
+      {
+        id: 'pre-deploy',
+        title: 'Antes de cada deploy: pre-deploy obligatorio',
+        body: `<div class="guide-callout danger"><strong>Crítico:</strong> antes de <code>git push</code>, SIEMPRE <code>npm run pre-deploy</code>. Si no, perdés todos los leads scrapeados desde el último deploy.</div>
+        <p>El comando te pide URL de Railway + email + password admin, baja toda la data y la guarda en <code>data/</code>. Ahora baja también: faqs, training, mercury_config, mercury_generations, alert_config, telnyx_config, telnyx_events, call_scripts, scheduled_messages.</p>
+        <p><strong>Flow correcto:</strong></p>
+        <ol>
+          <li>Hacer cambios al código.</li>
+          <li><code>npm run pre-deploy</code>.</li>
+          <li>Commitear TODO (código + <code>data/</code>).</li>
+          <li><code>git push origin main</code> (Railway escucha <strong>main</strong>, NO master).</li>
+          <li>(Opcional sync) <code>git push origin main:master</code>.</li>
+          <li>Railway redeploya solo.</li>
+        </ol>`
+      },
+      {
+        id: 'usuarios',
+        title: 'Invitar usuarios (setters / supervisores)',
+        body: `<ol>
+          <li>Andá a <strong>Configuración → Usuarios</strong> (o equivalente según tu menú).</li>
+          <li>Generá invitación con email + rol (setter / supervisor / admin).</li>
+          <li>El sistema manda email vía Resend con link de activación.</li>
+          <li>El user setea password al hacer click y queda activo.</li>
+        </ol>
+        <p>Las invitaciones tienen TTL. Si vence, regenerala.</p>`
+      },
+      {
+        id: 'telnyx',
+        title: 'Configurar Telnyx (centralita)',
+        body: `<ol>
+          <li>Andá a <strong>Centralita Telnyx</strong> en el sidebar.</li>
+          <li>Cargá: API Key, SIP Connection ID, SIP Username/Password, Signature Public Key. (Mejor: como env vars en Railway.)</li>
+          <li>Agregá los números virtuales que compraste con <strong>+ Agregar número</strong> (formato E.164, ej <code>+34911234567</code>).</li>
+          <li>En <strong>Routing por país</strong> elegí qué número usar como caller ID por país destino. Mejora atención dramáticamente.</li>
+          <li>En el dashboard Telnyx, configurá webhook URL apuntando a <code>https://tu-app.railway.app/api/telnyx/webhook</code>.</li>
+        </ol>
+        <p>Tenés tab <strong>Guiones</strong> donde editás los scripts del cold call. Botón <strong>"♻ Recargar oficial v2"</strong> reemplaza todos con el seed oficial.</p>
+        <div class="guide-callout">Tabla de tarifas hardcoded en <code>TELNYX_RATES_USD_PER_MIN</code> (index.js). España móvil $0.034, México $0.094, Argentina $0.080, US $0.007. Actualizar manualmente si Telnyx cambia.</div>`,
+        goto: { target: 'view-telnyx-config', label: 'Ir a Telnyx' }
+      },
+      {
+        id: 'wa-accounts',
+        title: 'Cuentas WhatsApp + warmeo',
+        body: `<ol>
+          <li>Andá a <strong>Cuentas WA</strong>.</li>
+          <li>Agregá cuenta con nombre + número + setter asignado.</li>
+          <li>El estado arranca como <strong>"nueva"</strong> → setter conecta desde wa-multi.</li>
+          <li>Asignale una <strong>rutina de warmeo</strong> desde <strong>Rutinas Warming</strong> — define cuántos mensajes/día va escalando.</li>
+          <li>Si querés warmeo automático entre tus propias cuentas (cross-setter), inscribilas en <strong>Red de Warming</strong>.</li>
+          <li>Si una cuenta cae como baneada, marcala desde el panel para sacarla del pool.</li>
+        </ol>
+        <p>Boost mode: durante los primeros 3 días una cuenta nueva usa <code>replySpeed=rápido</code> para que la red arranque rápido.</p>`,
+        goto: { target: 'view-wa-accounts', label: 'Ir a Cuentas WA' }
+      },
+      {
+        id: 'mercury',
+        title: 'Mercury (asistente IA) — config y revisión',
+        body: `<p>Hay 2 views admin para Mercury:</p>
+        <ul>
+          <li><strong>Config Mercury:</strong> editás el system prompt y administrás las notas de feedback. Las últimas 10 notas se inyectan automáticamente en cada generación nueva.</li>
+          <li><strong>Revisión IA:</strong> ves cada generación con el setter que la pidió, el prospect message, el output y los ejemplos del banco usados. Acciones:
+            <ul>
+              <li><strong>Aprobar oro</strong> → promueve al banco con tag <code>aprobado-admin</code>.</li>
+              <li><strong>Rechazar.</strong></li>
+              <li><strong>Reescribir</strong> → promueve al banco con tag <code>reescrita-admin</code>.</li>
+              <li><strong>Sugerir mejora</strong> → agrega nota a <code>feedbackNotes</code> y aparece en próximas generaciones.</li>
+            </ul>
+          </li>
+        </ul>
+        <p>El banco Mercury seed inicial tiene 32 entradas: <code>node scripts/seed-mercury-bank.mjs --remote</code></p>`
+      },
+      {
+        id: 'banco',
+        title: 'Banco de Respuestas (FAQs)',
+        body: `<p>El banco es la base de verdad de respuestas pre-aprobadas. Setters lo usan + alimenta el retrieval del Asistente IA.</p>
+        <ul>
+          <li><strong>Seed inicial:</strong> <code>node scripts/seed-faqs.mjs</code> (18 FAQs del Módulo 7 onboarding).</li>
+          <li><strong>Import bulk:</strong> botón "+ Importar" acepta JSON, CSV o texto plano (formato <code>P:</code> / <code>R:</code> / <code>C:</code> / <code>T:</code>).</li>
+          <li><strong>Variantes:</strong> cada FAQ puede tener hasta 10 formas alternas de la misma pregunta (max 200 chars c/u). Mejora el retrieval.</li>
+          <li><strong>Edición/borrado:</strong> solo admin/supervisor (setters NO editan banco oficial).</li>
+        </ul>`,
+        goto: { target: 'view-faqs', label: 'Ir al Banco' }
+      },
+      {
+        id: 'equipo',
+        title: 'Equipo, alertas y umbrales',
+        body: `<p>La view <strong>Equipo</strong> es tabla comparativa de todos los setters, sortable por cualquier KPI, con alertas automáticas:</p>
+        <ul>
+          <li><strong>Drop %</strong> vs período anterior.</li>
+          <li><strong>Días sin actividad.</strong></li>
+          <li><strong>% apertura mínimo.</strong></li>
+          <li><strong>Total leads mínimo</strong> trabajados.</li>
+        </ul>
+        <p>Modal <strong>"Umbrales de alerta"</strong> (admin only) edita los valores. Highlight ±10% del promedio del equipo. Click en row → drilldown al view-myperf con setter pre-seleccionado.</p>`,
+        goto: { target: 'view-team', label: 'Ir a Equipo' }
+      },
+      {
+        id: 'entrenamiento',
+        title: 'Centro de Entrenamiento (onboarding + material)',
+        body: `<p>Dos secciones:</p>
+        <ol>
+          <li><strong>Onboarding oficial:</strong> 8 módulos HTML autocontenidos (en <code>public/onboarding/files/</code>). Cada uno tiene quiz autocargado de <code>quiz-data.json</code> (5 preguntas, ≥4/5 aprueba). Para <strong>actualizar contenido</strong>: reemplazar el archivo HTML entero (no edits programáticos).</li>
+          <li><strong>Material adicional:</strong> subís PDFs, docs, videos. Persiste en <code>training.json</code>. El texto descriptivo alimenta el contexto IA del Banco.</li>
+        </ol>
+        <p>Para agregar preguntas extras al quiz de un módulo, editá <code>bancoExtra</code> en <code>quiz-data.json</code>. El sistema mezcla preguntas+bancoExtra y muestra 5 al azar cada intento.</p>`,
+        goto: { target: 'view-training', label: 'Ir a Entrenamiento' }
+      },
+      {
+        id: 'scraping',
+        title: 'Scraping (Google Maps + Instagram)',
+        body: `<ol>
+          <li>Andá a <strong>Google Maps</strong>.</li>
+          <li>Elegí país + ciudades + keyword (default "dental clinic").</li>
+          <li>Backend usa SerpAPI con dedup estricta contra <code>history.json</code> — leads ya scrapeados NO se vuelven a scrapear.</li>
+          <li>Resultados con indicador <span style="color:#5bb974">verde</span> (nuevo) o gris (ya scrapeado).</li>
+          <li><strong>Enviar a Setters</strong> permite asignar a varios setters a la vez con cantidad por cada uno.</li>
+        </ol>
+        <p><strong>Import CSV directo a setter:</strong> dedup solo contra leads existentes en setters (NO contra history) — permite importar leads ya scrapeados pero sin asignar.</p>`,
+        goto: { target: 'view-maps', label: 'Ir a Google Maps' }
+      },
+      {
+        id: 'backup',
+        title: 'Backup, restore y migraciones',
+        body: `<p>Endpoints admin:</p>
+        <ul>
+          <li><code>GET /api/admin/export-data</code> — devuelve TODO (history, auth, setters, faqs, training, mercury, alerts, telnyx, scripts, scheduled).</li>
+          <li><code>POST /api/admin/import-data</code> — restore desde un export previo. Valida shape ANTES de tocar archivos.</li>
+        </ul>
+        <p><code>npm run pre-deploy</code> usa el endpoint de export. Backups locales en <code>data/backups/</code> (rotados, gitignored).</p>
+        <div class="guide-callout warn">El Volume de Railway está montado en <code>/data</code>. Si seedeás un container nuevo, <code>seedVolumeFromRepo()</code> copia los JSON del repo al volume <strong>solo si el volume está vacío</strong> (no pisa data viva).</div>`
+      },
+      {
+        id: 'troubleshoot',
+        title: 'Troubleshooting común',
+        body: `<ul>
+          <li><strong>"El fix no aparece después de deploy"</strong> → bumpeaste el cache-buster en <code>index.html</code>? Sin eso, browsers cachean app.js/style.css viejo.</li>
+          <li><strong>"Setter no puede entrar"</strong> → ¿la invitación venció? Regenerala desde Usuarios.</li>
+          <li><strong>"Llamadas Telnyx fallan"</strong> → verificá env vars Telnyx + signature public key + webhook URL apuntando a tu Railway domain.</li>
+          <li><strong>"WA accounts caídas"</strong> → setter abre wa-multi y reconecta. Si persiste, marcar como banned y reemplazar.</li>
+          <li><strong>"Mercury no responde"</strong> → ¿MERCURY_API_KEY válida? Hay fallback a Qwen. Si ambos fallan, fallback a top match del banco.</li>
+          <li><strong>"Tests fallan en npm test"</strong> → desde el último audit, <code>seedVolumeFromRepo()</code> hace skip en NODE_ENV=test. Si todavía falla, revisar que <code>tests/onboarding.test.js</code> pre-cree <code>setters.json</code>.</li>
+        </ul>`
+      },
+    ],
+  };
+
+  let _guideCurrentTab = null;
+
+  window._guideSwitchTab = function (tab) {
+    if (tab !== 'setter' && tab !== 'admin') tab = 'setter';
+    _guideCurrentTab = tab;
+    document.querySelectorAll('.guide-tab').forEach((b) => {
+      b.classList.toggle('active', b.getAttribute('data-tab') === tab);
+    });
+    _guideRender();
+  };
+
+  function _guideEscape(s) {
+    return String(s || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
+  function _guideHighlight(html, query) {
+    if (!query) return html;
+    // Highlight texto dentro del body sin romper tags. Regex sobre texto plano.
+    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const rx = new RegExp('(' + safeQuery + ')', 'gi');
+    // Split por tags HTML para no matchear dentro de atributos.
+    return html.replace(/(<[^>]+>)|([^<]+)/g, (_m, tag, text) => {
+      if (tag) return tag;
+      return text.replace(rx, '<mark class="guide-search-hit">$1</mark>');
+    });
+  }
+
+  function _guideRender() {
+    const container = document.getElementById('guide-content');
+    if (!container) return;
+    const sections = _guideContent[_guideCurrentTab] || [];
+    const queryRaw = (document.getElementById('guide-search')?.value || '').trim();
+    const query = queryRaw.toLowerCase();
+    const filtered = !query
+      ? sections
+      : sections.filter((s) => {
+          const blob = (s.title + ' ' + s.body).toLowerCase();
+          return blob.indexOf(query) >= 0;
+        });
+    if (!filtered.length) {
+      container.innerHTML = `<div class="guide-empty">No encontré nada con "${_guideEscape(queryRaw)}". Probá otra palabra.</div>`;
+      return;
+    }
+    container.innerHTML = filtered
+      .map((s, i) => {
+        const bodyHtml = _guideHighlight(s.body, query);
+        const titleHtml = _guideHighlight(_guideEscape(s.title), query);
+        const gotoBtn = s.goto
+          ? `<button class="guide-goto" data-target="${_guideEscape(s.goto.target)}">${_guideEscape(s.goto.label)} →</button>`
+          : '';
+        // Si hay query, expandido por default para que se vean los matches.
+        const openClass = query ? 'open' : '';
+        return `<div class="guide-section ${openClass}" data-id="${_guideEscape(s.id)}">
+          <div class="guide-section-header" onclick="this.parentElement.classList.toggle('open')">
+            <div class="guide-section-title">
+              <span class="guide-section-num">${i + 1}</span>
+              <span>${titleHtml}</span>
+            </div>
+            <span class="guide-chevron">›</span>
+          </div>
+          <div class="guide-section-body">
+            ${bodyHtml}
+            ${gotoBtn}
+          </div>
+        </div>`;
+      })
+      .join('');
+    // Wire goto buttons
+    container.querySelectorAll('.guide-goto').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const target = btn.getAttribute('data-target');
+        const link = document.querySelector(`[data-target="${target}"]`);
+        if (link) link.click();
+      });
+    });
+  }
+
+  function _guideInit() {
+    // Default tab según rol
+    try {
+      const role = window.currentUser?.role || 'setter';
+      const defaultTab = (role === 'admin' || role === 'supervisor') ? 'admin' : 'setter';
+      window._guideSwitchTab(defaultTab);
+    } catch (e) {
+      window._guideSwitchTab('setter');
+    }
+    // Buscador con debounce
+    const input = document.getElementById('guide-search');
+    if (input && !input._guideWired) {
+      let t = null;
+      input.addEventListener('input', () => {
+        clearTimeout(t);
+        t = setTimeout(_guideRender, 120);
+      });
+      input._guideWired = true;
+    }
+  }
+
+  document.querySelector('[data-target="view-guide"]')?.addEventListener('click', () => {
+    setTimeout(_guideInit, 50);
   });
 
   });

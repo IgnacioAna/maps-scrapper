@@ -11,10 +11,12 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260523k">
+  <link rel="stylesheet" href="/style.css?v=20260523m">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Sprint 38: flag-icons para banderas consistentes cross-OS (Windows no renderiza emoji 🇲🇽) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
   <script>
     // Anti-flash: si hay cookie de sesión, ocultá auth-screen y mostrá main-layout ANTES del
     // primer paint — evita el flicker del login al navegar entre páginas. La verificación real
@@ -132,6 +134,10 @@
           <a href="#" class="menu-item" data-target="view-training" data-label="Entrenamiento">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 4 3 6 3s6-1 6-3v-5"/></svg>
             <span>Entrenamiento</span>
+          </a>
+          <a href="#" class="menu-item" data-target="view-guide" data-label="Gu&iacute;a">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span>Gu&iacute;a de uso</span>
           </a>
 
         <!-- ═══ EQUIPO — gestión y monitoreo (admin/supervisor) ═══ -->
@@ -744,29 +750,49 @@
 
       <!-- VISTA 4: LLAMADAS (Sin WSP) -->
       <div id="view-calls" class="module-view hidden">
-        <div class="content-header">
-          <h2>Llamadas</h2>
+        <!-- Sprint 38: Header B2B prospecting CRM — title + acciones primarias arriba, filtros secundarios en row debajo -->
+        <div class="content-header calls-header-pro">
+          <div class="calls-header-left">
+            <h2>Llamadas</h2>
+            <span class="calls-header-subtitle">Cola de prospección por teléfono</span>
+          </div>
           <div class="header-actions">
-            <select id="calls-setter-select" class="setter-select" data-roles="admin"><option value="">Todos</option></select>
-            <select id="calls-country-filter" class="setter-select" style="min-width:160px;"><option value="">🌎 Todos los países</option></select>
-            <select id="calls-sort-select" class="setter-select" style="min-width:180px;" title="Cómo ordenar los leads">
-              <option value="never_called">🆕 Nunca llamados primero</option>
-              <option value="recent">⬇️ Más recientes</option>
-              <option value="oldest">⬆️ Más viejos</option>
-              <option value="country">🌎 Por país</option>
-              <option value="attempts_desc">📞 Más intentos primero</option>
-              <option value="attempts_asc">🔄 Menos intentos primero</option>
-              <option value="last_call">🕐 Última llamada (recientes)</option>
-            </select>
-            <input type="text" id="calls-search" placeholder="🔍 Nombre, teléfono o ciudad..." title="Buscá por nombre del lead, número, ciudad, dirección o doctor" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-input);color:var(--text-primary);font-size:13px;width:220px;">
-            <label data-roles="admin" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--text-secondary); cursor:pointer; padding:6px 10px; border-radius:8px; background:var(--bg-input); border:1px solid var(--border-default);" title="Sprint 28: Ver y reactivar leads descartados">
-              <input type="checkbox" id="calls-show-discarded" style="accent-color:var(--accent); margin:0;">
-              <span>🗑️ Descartados</span>
-            </label>
-            <button id="calls-power-dialer-btn" data-roles="admin,supervisor,setter" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%); color:#0F1115; border:none; cursor:pointer;" title="Modo continuous calling — full-screen sin distracciones">🚀 Power dialer</button>
-            <button id="calls-add-manual-btn" class="btn-primary" data-roles="admin" style="padding:8px 14px; border-radius:8px; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px;" title="Agregar un lead manualmente (testing o referidos)">＋ Lead manual</button>
+            <button id="calls-power-dialer-btn" data-roles="admin,supervisor,setter" class="calls-cta-primary" title="Modo continuous calling — full-screen sin distracciones">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Power dialer</span>
+            </button>
+            <button id="calls-add-manual-btn" data-roles="admin" class="calls-cta-secondary" title="Agregar un lead manualmente (testing o referidos)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Lead manual</span>
+            </button>
           </div>
         </div>
+        <!-- Sub-header: filtros -->
+        <section class="calls-filters-bar">
+          <div class="calls-filters-left">
+            <select id="calls-setter-select" class="calls-filter-select" data-roles="admin"><option value="">Todos los setters</option></select>
+            <select id="calls-country-filter" class="calls-filter-select" style="min-width:160px;"><option value="">Todos los países</option></select>
+            <select id="calls-sort-select" class="calls-filter-select" style="min-width:180px;" title="Orden de la lista">
+              <option value="never_called">Nunca llamados primero</option>
+              <option value="recent">Más recientes</option>
+              <option value="oldest">Más viejos</option>
+              <option value="country">Por país</option>
+              <option value="attempts_desc">Más intentos primero</option>
+              <option value="attempts_asc">Menos intentos primero</option>
+              <option value="last_call">Última llamada</option>
+            </select>
+            <div class="calls-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.5; pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="calls-search" placeholder="Nombre, teléfono o ciudad…" title="Buscá por nombre del lead, número, ciudad, dirección o doctor" class="calls-search-input">
+            </div>
+          </div>
+          <div class="calls-filters-right">
+            <label data-roles="admin" class="calls-toggle-discarded" title="Ver y reactivar leads descartados">
+              <input type="checkbox" id="calls-show-discarded">
+              <span>Descartados</span>
+            </label>
+          </div>
+        </section>
 
         <!-- Modal: agregar lead manual (admin) -->
         <div id="calls-manual-modal" class="modal-overlay hidden" style="z-index:1200;">
@@ -832,28 +858,28 @@
           </div>
         </section>
 
-        <!-- Stats bar -->
+        <!-- Sprint 38: Stats bar más sobria, B2B prospecting CRM look -->
         <section style="padding: 0 32px;">
-          <div id="calls-stats-bar" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px; margin-bottom:18px;">
-            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
-              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Llamadas hoy</div>
-              <div id="calls-stat-today" style="font-size:24px; font-weight:700; color:var(--text-primary); margin-top:4px;">—</div>
+          <div id="calls-stats-bar" class="calls-kpi-grid">
+            <div class="calls-kpi">
+              <div class="calls-kpi-label">Llamadas hoy</div>
+              <div id="calls-stat-today" class="calls-kpi-value">—</div>
             </div>
-            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
-              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">% Atendidas</div>
-              <div id="calls-stat-answered" style="font-size:24px; font-weight:700; color:var(--success); margin-top:4px;">—</div>
+            <div class="calls-kpi">
+              <div class="calls-kpi-label">Atendidas</div>
+              <div id="calls-stat-answered" class="calls-kpi-value" style="color:var(--success);">—</div>
             </div>
-            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
-              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Agendadas</div>
-              <div id="calls-stat-scheduled" style="font-size:24px; font-weight:700; color:var(--accent); margin-top:4px;">—</div>
+            <div class="calls-kpi">
+              <div class="calls-kpi-label">Agendadas</div>
+              <div id="calls-stat-scheduled" class="calls-kpi-value" style="color:var(--accent);">—</div>
             </div>
-            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
-              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Pendientes</div>
-              <div id="calls-stat-pending" style="font-size:24px; font-weight:700; color:var(--text-primary); margin-top:4px;">—</div>
+            <div class="calls-kpi">
+              <div class="calls-kpi-label">En cola</div>
+              <div id="calls-stat-pending" class="calls-kpi-value">—</div>
             </div>
-            <div class="stat-card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:14px 16px;">
-              <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">Números muertos</div>
-              <div id="calls-stat-dead" style="font-size:24px; font-weight:700; color:var(--danger); margin-top:4px;">—</div>
+            <div class="calls-kpi">
+              <div class="calls-kpi-label">Núm. muertos</div>
+              <div id="calls-stat-dead" class="calls-kpi-value" style="color:var(--danger);">—</div>
             </div>
           </div>
         </section>
@@ -1476,6 +1502,25 @@
             <button onclick="document.getElementById('training-modal').classList.add('hidden')" class="btn-table-action">Cancelar</button>
             <button onclick="window._trainingSave()" class="btn-primary pill-btn">Guardar</button>
           </div>
+        </div>
+      </div>
+
+      <!-- VISTA: GU&Iacute;A DE USO -->
+      <div id="view-guide" class="module-view hidden">
+        <div class="content-header">
+          <h2>Gu&iacute;a de uso</h2>
+          <div class="header-actions">
+            <input type="text" id="guide-search" autocomplete="off" placeholder="Buscar en la gu&iacute;a..." style="padding:8px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--surface-color);color:var(--text-primary);font-size:13px;width:280px;">
+          </div>
+        </div>
+        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">C&oacute;mo configurar, setear y usar el sistema. Por default ves la gu&iacute;a de tu rol; pod&eacute;s ver la otra haciendo click en la pesta&ntilde;a.</p>
+
+        <div style="padding:0 32px 32px;">
+          <div id="guide-tabs" style="display:flex; gap:8px; border-bottom:1px solid var(--border-color); margin-bottom:20px;">
+            <button class="guide-tab active" data-tab="setter" onclick="window._guideSwitchTab('setter')">&#128100; Para setters</button>
+            <button class="guide-tab" data-tab="admin" onclick="window._guideSwitchTab('admin')">&#128737;&#65039; Para admin</button>
+          </div>
+          <div id="guide-content"></div>
         </div>
       </div>
 
@@ -2851,7 +2896,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260523k"></script>
+  <script type="module" src="/app.js?v=20260523m"></script>
   <script type="module" src="/wa.js?v=20260522a"></script>
 </body>
 </html>
