@@ -522,3 +522,47 @@ Si en el futuro hay que tocar el módulo Telnyx, estos son los gotchas verificad
 32. **wa-multi desktop v0.5.4**: drawer "📖 Guía" en el header con 8 secciones (qué es, login, conectar cuenta, estados, programados, warmeo, tips, troubleshooting). Source extraído + repacked en `Desktop\wa-multi\versiones\wa-multi-portable-v0.5.4\`.
 33. **Scripts nuevos** (Audit 2026-05-23): `validate-data-integrity.mjs`, `backup-data.mjs`, `cleanup-stale-sessions.mjs`, `dedupe-leads.mjs`. Disponibles via `npm run validate:data` / `backup:data` / `cleanup:sessions` / `dedupe:leads`.
 34. **AGENTS.md ya no existe** (Audit 2026-05-23): era un duplicado outdated de CLAUDE.md. Si necesitás que otro agent lea convenciones, apuntalo a CLAUDE.md.
+
+## Sesión 2026-05-24 — Redistribución masiva + fixes UX
+
+35. **`/api/auth/online` con fallback a JSON persistido** (2026-05-24): antes el endpoint solo leía el Map in-memory `onlinePresence`. Tras cada redeploy de Railway ese Map arrancaba vacío y TODOS los users mostraban "Sin actividad registrada" en view-online — aunque `lastSeen`/`lastIp`/`lastUserAgent` estaban persistidos en `auth.json` (vía `flushOnlinePresence`). Ahora hace fallback a esos campos del JSON. `lastSeen` siempre se ve correctamente.
+
+36. **Redistribución masiva de leads** (2026-05-24, one-shot ya ejecutado): script `scripts/one-shot-redistribute-2026-05-24.mjs`. Hizo 3 cosas en una sola call atómica vía `/api/admin/import-data`:
+    - **Reset cero de cero** de 325 leads (298 de Yesxander + 4 del orfano `setter_evelio` + 23 de Ivi). Borró `interactions[]`, `notes[]`, `callLog[]`, `followUps{}`, `lastContactAt`, `callbackAt`, `varianteId`, `setterPhoneId`, `phoneStatus`, etc. Los reasignó con weights Paula 30% / Maxi 25% / Genaro 20% / Gabriela 15% / Alex 10%.
+    - **Recuperó 627 leads en limbo** (estado='sin_contactar' AND conexion='sin_wsp'): solo limpió `conexion=''` para que vuelvan al tab "Sin contactar" del setter actual.
+    - **Eliminó `setter_evelio` del array de setters** (era un orfano sin user vinculado).
+    - **Backup local** en `data/setters.json.bak-pre-redistribution-<ts>`. Si necesitás revertir, usá ese.
+
+37. **`hidden:true` en setter records** (2026-05-24): nuevo flag para esconder un setter del dropdown de filtro sin borrarlo del sistema. Útil para supervisores que tienen `setterId` y leads asignados pero no deben aparecer como opción de filtro. Frontend filtra con `settersList.filter(s => !s.hidden)` en `loadSetterModule` (`public/app.js:2197`). **Actualmente nadie tiene el flag activo** (Paula lo tenía pero fue revertido — el user quiere verla en la lista para chequear que no tiene leads).
+
+38. **TODOS los setters acceden a TODAS las variantes** (2026-05-24): antes el frontend filtraba variantes por `setterId` — cada setter solo veía las suyas o las globales (sin setterId). Confundía cuando se querían experimentos cruzados. `getVisibleVariables()` ahora devuelve `[...variantsList]` sin filtrar (`public/app.js:945`). El campo `setterId` en cada variante queda como info de ownership pero NO restringe acceso. `loadVariantsModal` también desfiltra (`public/app.js:3744`).
+
+39. **Hoy widget muestra nombre del setter impersonado** (2026-05-24): cuando admin usa "Ver como setter X", antes el widget Hoy decía "Hola Ignacio 👋" (nombre real del admin). Ahora detecta `realRole==='admin' && role==='setter'` y busca el nombre del setter en `settersList`. Setter logueado normalmente con su cuenta sigue viendo su nombre — el fix solo aplica al modo impersonation.
+
+40. **Follow-up activo visible en Power Dialer** (2026-05-24): bloque dedicado en `public/app.js:_pdRender` entre Histórico y Disposition. Muestra step activo (24hs/48hs/72hs/7d/15d), due date relativo (Hoy/Mañana/Vencido), color por urgencia, nota personal del setter si la tiene, y botón "✓ Marcar hecho" que destildea via PATCH sin salir del dialer (`window._pdMarkFollowupDone`). Solo aparece si el lead tiene step tildado — power dialer queda limpio si no.
+
+41. **MR1 cascade fix retroactivo** (2026-05-24): el cascade reverse cuando se destildea `respondio=false` ahora preserva `conexion='sin_wsp'` en vez de resetear `estado='sin_contactar'`. Antes destildar en un lead Sin WSP lo volvía a "Sin contactar" — bug operativo. Index.js líneas ~5028-5045.
+
+42. **CORS trailing slash tolerance** (2026-05-24): `WA_CORS_ORIGINS` en Railway puede tener `/` al final (típico si pegás URL del address bar) y el match funciona igual. Strip de slash en `src/wa/gateway.js`.
+
+43. **Env vars Railway al 2026-05-24**: 12 variables seteadas en producción: ADMIN_PASSWORD, API_KEY, APIFY_TOKEN, JWT_SECRET (64 chars random), MERCURY_API_KEY, QWEN_API_KEY, TELNYX_API_KEY, TELNYX_SIGNATURE_PUBLIC_KEY, TELNYX_SIP_CONNECTION_ID, TELNYX_SIP_PASSWORD, TELNYX_SIP_USERNAME, WA_CORS_ORIGINS=`https://scm-setting.up.railway.app/`. **Faltantes opcionales**: OPENAI_API_KEY (Whisper — ya cargado por user), RESEND_API_KEY (invitaciones por email — no urgente).
+
+44. **Whisper transcripción habilitada** (2026-05-24): `OPENAI_API_KEY` configurada por el user. Todas las llamadas Telnyx >5s se transcriben automáticamente. El audio se graba en browser via MediaRecorder y se sube al server. Funciona desde Power Dialer, view-Llamadas, modal del lead, atajo Ctrl+K — cualquier path que dispare `_startTelnyxCall`. Costo: $0.006/min Whisper.
+
+45. **DATA SHAPE — campo `estado` vs `conexion` puede divergir**: el TAB "Sin contactar" del frontend filtra por `!l.conexion` (más estricto), pero `/api/setters/stats` cuenta por `l.estado === 'sin_contactar'`. Antes del redistribute del 2026-05-24 había 844 leads en "limbo" (estado='sin_contactar' AND conexion='sin_wsp'). Ya recuperados los 627 no-Yesxander, y los 205 de Yesxander reseteados+redistribuidos. Si volvés a ver discrepancia entre stats backend vs panel frontend, chequeá esta inconsistencia primero.
+
+46. **`setter_evelio` ya NO existe** (2026-05-24): orfano histórico que se llamaba "Ignacio" en `name` pero no tenía user vinculado. Sus 4 leads se redistribuyeron. Si encontrás referencias a `setter_evelio` en código, son seguros de borrar.
+
+47. **Estado actual setters (2026-05-24 post-redistribute)**:
+    - **setter_paula** (Paula, role: supervisor): 2334 leads, 390 sin contactar — supervisora que también settea
+    - **setter_alexander_salgueiro**: 747 / 235
+    - **setter_maximiliano_escalera**: 759 / 201
+    - **setter_gabriela_palazzotti**: 754 / 199
+    - **setter_genaro_de_mori**: 652 / 112
+    - **setter_yesxander**: 0 leads (no se le asigna más, sigue en sistema)
+    - **setter_ivi_treise**: 0 leads (idem)
+    - Total leads 5246 (5242 antes del redistribute + 4 recuperados de evelio).
+
+48. **Cache-buster actual: `v=20260524c`** (`public/index.html`). Bumpear ante cualquier cambio a `app.js`, `style.css` o `wa.js`. La regla está documentada arriba pero se olvida fácil.
+
+49. **wa-multi desktop sigue en v0.5.4** (no se tocó en sesión 2026-05-24). Ubicación: `Desktop\wa-multi\versiones\wa-multi-portable-v0.5.4\`.
