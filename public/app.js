@@ -7729,7 +7729,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const leads = Array.isArray(setterLeads) ? setterLeads : [];
       if (leads.length === 0) { widget.style.display = 'none'; return; }
 
-      const name = currentUser?.name || 'Setter';
+      // 2026-05-24: si admin esta en modo "Ver como setter", mostrar el nombre
+      // del setter impersonado, no el nombre real del admin. Antes decia
+      // "Hola Ignacio" para todos los setters porque el admin queda con su nombre.
+      let name = currentUser?.name || 'Setter';
+      const isImpersonating = currentUser?.realRole === 'admin' && currentUser?.role === 'setter';
+      if (isImpersonating && currentUser?.setterId) {
+        const impersonatedSetter = (settersList || []).find(s => s.id === currentUser.setterId);
+        if (impersonatedSetter?.name) name = impersonatedSetter.name;
+      }
       const greetEl = document.getElementById('hoy-greet-text');
       if (greetEl) greetEl.textContent = `Hola ${name} 👋`;
 
