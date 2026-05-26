@@ -67,6 +67,11 @@
       "activeVariantId": "",
       "createdAt": "2026-04-29T23:25:36.830Z",
       "myPhones": []
+    },
+    {
+      "id": "setter_ignacio",
+      "name": "Ignacio",
+      "createdAt": "2026-05-26T14:58:53.527Z"
     }
   ],
   "variants": [
@@ -400609,7 +400614,7 @@
       "country": "",
       "city": "",
       "doctor": "",
-      "assignedTo": "setter_paula",
+      "assignedTo": "setter_ignacio",
       "conexion": "",
       "estado": "sin_contactar",
       "importedAt": "2026-05-22T23:07:05.450Z",
@@ -400656,7 +400661,7 @@
       "country": "",
       "city": "",
       "doctor": "",
-      "assignedTo": "setter_paula",
+      "assignedTo": "setter_ignacio",
       "conexion": "",
       "estado": "sin_contactar",
       "importedAt": "2026-05-22T23:07:56.920Z",
@@ -400703,7 +400708,7 @@
       "country": "",
       "city": "",
       "doctor": "",
-      "assignedTo": "setter_alexander_salgueiro",
+      "assignedTo": "setter_ignacio",
       "conexion": "",
       "estado": "sin_contactar",
       "importedAt": "2026-05-22T23:41:34.562Z",
