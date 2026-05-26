@@ -4759,6 +4759,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calls-power-dialer-btn')?.addEventListener('click', () => window._pdStart());
     document.getElementById('pd-exit-btn')?.addEventListener('click', () => window._pdExit());
 
+    // ── Manual dial: discar un numero arbitrario sin lead asociado ───────────
+    // Inyecta un "ghost lead" en _callsLeadsById y reusa _startTelnyxCall.
+    const _manualDialModal = document.getElementById('manual-dial-modal');
+    const _manualDialInput = document.getElementById('manual-dial-input');
+    function _openManualDial() {
+      if (!_manualDialModal) return;
+      _manualDialInput.value = '';
+      _manualDialModal.classList.remove('hidden');
+      setTimeout(() => _manualDialInput.focus(), 60);
+    }
+    function _closeManualDial() {
+      _manualDialModal?.classList.add('hidden');
+    }
+    document.getElementById('calls-manual-dial-btn')?.addEventListener('click', _openManualDial);
+    document.getElementById('manual-dial-close')?.addEventListener('click', _closeManualDial);
+    document.getElementById('manual-dial-cancel')?.addEventListener('click', _closeManualDial);
+    _manualDialModal?.addEventListener('click', (e) => { if (e.target === _manualDialModal) _closeManualDial(); });
+    _manualDialInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('manual-dial-go')?.click(); }
+      if (e.key === 'Escape') { e.preventDefault(); _closeManualDial(); }
+    });
+    document.getElementById('manual-dial-go')?.addEventListener('click', () => {
+      const raw = (_manualDialInput?.value || '').trim();
+      // Sanitizar: dejar solo + y digitos
+      const phone = raw.replace(/[^\d+]/g, '');
+      if (!phone) { window.showToast?.('Pone un numero', { type: 'warn' }); return; }
+      if (!/^\+?\d{8,15}$/.test(phone)) { window.showToast?.('Numero invalido. Formato E.164: +5492954555113', { type: 'error' }); return; }
+      const e164 = phone.startsWith('+') ? phone : ('+' + phone);
+      // Detectar pais por prefijo para que pickNumberForDestination elija bien caller ID
+      const countryByPrefix = { '+54': 'Argentina', '+56': 'Chile', '+57': 'Colombia', '+58': 'Venezuela', '+51': 'Peru', '+591': 'Bolivia', '+593': 'Ecuador', '+595': 'Paraguay', '+598': 'Uruguay', '+52': 'Mexico', '+34': 'Espana', '+1': 'USA', '+506': 'Costa Rica', '+507': 'Panama', '+503': 'El Salvador', '+502': 'Guatemala', '+504': 'Honduras', '+505': 'Nicaragua' };
+      let country = '';
+      for (const [pref, c] of Object.entries(countryByPrefix)) {
+        if (e164.startsWith(pref)) { country = c; break; }
+      }
+      const ghostId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+      const ghostLead = {
+        id: ghostId,
+        name: 'Llamada manual a ' + e164,
+        phone: e164,
+        country,
+        city: '',
+        assignedTo: currentUser?.setterId || '',
+        estado: 'sin_contactar',
+        conexion: '',
+        callLog: [],
+        interactions: [],
+        notes: [],
+        _isManualDial: true,
+      };
+      _callsLeadsById.set(ghostId, ghostLead);
+      _closeManualDial();
+      window._startTelnyxCall?.(ghostId);
+    });
+
     // Shortcuts globales para power dialer
     document.addEventListener('keydown', (e) => {
       if (!_pd.active) return;
