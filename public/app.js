@@ -10499,6 +10499,125 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('chist-outcome')?.addEventListener('change', _chistLoad);
   document.getElementById('myp-refresh')?.addEventListener('click', () => _mypLoad());
 
+  // ─── Cold Call Funnel (dentro de view-myperf) ──────────────────
+  // 2026-05-25: pedido del user (curso de cold calling).
+  // Carga /api/setters/cold-call-metrics y renderiza funnel + ratios.
+  let _ccmPeriod = 'week';
+  async function _ccmLoad() {
+    const cont = document.getElementById('ccm-content');
+    if (!cont) return;
+    // Setter scope: si admin/supervisor + dropdown setter elegido, usar ese.
+    // Si setter, backend filtra solo. Si admin sin setter → equipo completo.
+    const setterSel = document.getElementById('myp-setter')?.value || '';
+    const qs = new URLSearchParams({ period: _ccmPeriod });
+    if (setterSel) qs.set('setter', setterSel);
+    try {
+      const r = await fetch(apiUrl('/api/setters/cold-call-metrics?' + qs.toString()), { credentials: 'include' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      _ccmRender(d);
+    } catch (err) {
+      cont.innerHTML = `<p class="muted" style="text-align:center; padding:20px 0; font-size:13px; color:var(--danger);">Error cargando métricas: ${escHtml(err.message)}</p>`;
+    }
+  }
+
+  function _ccmRender(d) {
+    const cont = document.getElementById('ccm-content');
+    if (!cont) return;
+    const m = d.metrics || {};
+    const r = d.rates || {};
+    const fmtPct = (v) => (v == null ? '—' : v + '%');
+    const fmtDur = (s) => {
+      if (!s) return '—';
+      const min = Math.floor(s / 60);
+      const sec = s % 60;
+      return min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+    };
+    // Funnel visual: barras con ancho proporcional al máximo (dials).
+    const maxV = Math.max(m.dials || 1, 1);
+    const bar = (v, color) => {
+      const pct = Math.min(100, (v / maxV) * 100);
+      return `<div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; margin-top:6px;"><div style="height:100%; width:${pct}%; background:${color}; transition:width 0.3s;"></div></div>`;
+    };
+    const stage = (icon, label, value, sublabel, color) => `
+      <div style="padding:14px 16px; background:rgba(255,255,255,0.025); border:1px solid var(--border-soft); border-left:3px solid ${color}; border-radius:10px;">
+        <div style="display:flex; align-items:baseline; gap:10px;">
+          <span style="font-size:16px;">${icon}</span>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div>
+            <div style="font-size:24px; font-weight:700; color:var(--text-primary); line-height:1.1; margin-top:2px; font-variant-numeric:tabular-nums;">${value || 0}</div>
+            ${sublabel ? `<div style="font-size:10.5px; color:var(--text-tertiary); margin-top:3px;">${sublabel}</div>` : ''}
+          </div>
+        </div>
+        ${bar(value, color)}
+      </div>`;
+
+    const dealsLabel = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary); font-size:14px;">—</span>`;
+    cont.innerHTML = `
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:18px;">
+        ${stage('📞', 'Dials Made', m.dials, 'Llamadas marcadas', '#7E8494')}
+        ${stage('📲', 'Connects', m.connects, fmtPct(r.connectRate) + ' rate', '#79B8FF')}
+        ${stage('💬', 'Conversations', m.conversations, fmtPct(r.conversationRate) + ' de connects', '#9D85F2')}
+        ${stage('📅', 'Appointments', m.appointments, fmtPct(r.bookingRate) + ' de convs', '#5BB974')}
+        ${stage('💰', 'Deals Closed', dealsLabel, m.deals === 0 ? '(estado no implementado)' : fmtPct(r.closeRate) + ' rate', '#FFB341')}
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px; padding-top:14px; border-top:1px solid var(--border-soft);">
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.connectRate)}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Connect Rate</div>
+        </div>
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.conversationRate)}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Conversation Rate</div>
+        </div>
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.bookingRate)}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Booking Rate</div>
+        </div>
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:18px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;">${fmtPct(r.dialToAppointment)}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Dial → Appointment</div>
+        </div>
+        <div style="text-align:center; padding:8px;">
+          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtDur(d.avgConvDurationS)}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Avg Duration</div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.18); border-radius:8px; font-size:11.5px; color:var(--text-secondary); line-height:1.5;">
+        <strong style="color:var(--accent);">💡 Benchmarks:</strong> Connect 15-30% · Conversation 40-60% de connects · Booking 15-25% de convs · Dial→Appt 1-3% (60-150 dials/día = 1-4 appts).
+      </div>
+    `;
+  }
+
+  // Wire period buttons
+  document.querySelectorAll('.ccm-period-btn').forEach((b) => {
+    b.addEventListener('click', () => {
+      _ccmPeriod = b.getAttribute('data-period') || 'week';
+      document.querySelectorAll('.ccm-period-btn').forEach((x) => {
+        x.classList.remove('active');
+        x.style.background = 'var(--bg-app)';
+        x.style.borderColor = 'var(--border-color)';
+        x.style.color = 'var(--text-primary)';
+        x.style.fontWeight = '';
+      });
+      b.classList.add('active');
+      b.style.background = 'rgba(157,133,242,0.18)';
+      b.style.borderColor = 'var(--accent)';
+      b.style.color = 'var(--accent)';
+      b.style.fontWeight = '600';
+      _ccmLoad();
+    });
+  });
+
+  // Auto-load cuando entran a la view o cambia setter
+  document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
+    setTimeout(_ccmLoad, 200);
+  });
+  document.getElementById('myp-setter')?.addEventListener('change', () => _ccmLoad());
+  document.getElementById('myp-refresh')?.addEventListener('click', () => _ccmLoad());
+
   // ─── Vista 📅 Mis programados ──────────────────────────────────
   let _scheduledTab = 'pending';
   let _scheduledCache = [];

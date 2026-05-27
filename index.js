@@ -3684,6 +3684,82 @@ app.patch('/api/setters/team/:id/quota', requireAuth, requireRole('admin'), (req
 });
 
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
+// GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
+// Funnel de cold call basado en callLog: Dials → Connects → Conversations → Appointments.
+// 2026-05-25: implementado por pedido del user (curso de cold calling).
+// Cada métrica se calcula sobre callLog entries cuyo ts cae en el período.
+app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  const eff = getEffectiveAuth(req);
+  const requestedSetter = req.query.setter || '';
+  // Setter solo ve los suyos
+  let setterId = '';
+  if (role === 'setter') {
+    if (!eff.setterId) return res.status(403).json({ error: 'No autorizado.' });
+    setterId = eff.setterId;
+  } else if (role === 'admin' || role === 'supervisor') {
+    setterId = requestedSetter; // admin/supervisor puede pedir cualquiera; vacío = todos
+  } else {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  const period = String(req.query.period || 'week').toLowerCase();
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  let fromTs;
+  if (period === 'today') fromTs = startOfDay;
+  else if (period === 'week') fromTs = startOfDay - 7 * 86400000;
+  else if (period === 'month') fromTs = startOfDay - 30 * 86400000;
+  else if (period === 'all') fromTs = 0;
+  else fromTs = startOfDay - 7 * 86400000;
+
+  const CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']);
+  const APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
+  const CONV_MIN_DURATION_S = 30;
+
+  const data = loadSettersData();
+  let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
+  let totalDurationS = 0;
+
+  for (const id in data.leads) {
+    const lead = data.leads[id];
+    if (setterId && lead.assignedTo !== setterId) continue;
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    for (const entry of log) {
+      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      if (!ts || ts < fromTs) continue;
+      dials++;
+      const outcome = String(entry.outcome || '');
+      const duration = Number(entry.duration || 0); // segundos
+      if (CONNECT_OUTCOMES.has(outcome)) {
+        connects++;
+        totalDurationS += duration;
+        if (duration >= CONV_MIN_DURATION_S) conversations++;
+        if (APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
+      }
+    }
+    // Deals closed: por ahora no hay estado closed_won formal — placeholder
+    // Si en el futuro agregamos `lead.dealWon === true` o estado='ganado',
+    // contar acá los que se cerraron en el período.
+  }
+
+  const ratio = (n, d) => d > 0 ? +(n / d * 100).toFixed(1) : 0;
+  res.json({
+    period,
+    fromTs,
+    setterId: setterId || null,
+    metrics: { dials, connects, conversations, appointments, deals },
+    rates: {
+      connectRate: ratio(connects, dials),
+      conversationRate: ratio(conversations, connects),
+      bookingRate: ratio(appointments, conversations),
+      closeRate: ratio(deals, appointments),
+      dialToAppointment: ratio(appointments, dials), // top-of-funnel total
+    },
+    avgConvDurationS: connects > 0 ? Math.round(totalDurationS / connects) : 0,
+  });
+});
+
 app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
   const setterId = req.params.id;
   const role = req.auth?.user?.role;
