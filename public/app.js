@@ -10167,6 +10167,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   async function _mypLoad() {
+    // 2026-05-25: chain Cold Call Funnel load para que aparezca sin depender de click
+    if (typeof window._ccmLoadDeferred === 'function') {
+      try { window._ccmLoadDeferred(); } catch {}
+    }
     const period = document.getElementById('myp-period')?.value || 'week';
     const setterFilter = document.getElementById('myp-setter')?.value || '';
     const params = new URLSearchParams();
@@ -10503,6 +10507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2026-05-25: pedido del user (curso de cold calling).
   // Carga /api/setters/cold-call-metrics y renderiza funnel + ratios.
   let _ccmPeriod = 'week';
+  window._ccmLoadDeferred = () => _ccmLoad();
   async function _ccmLoad() {
     const cont = document.getElementById('ccm-content');
     if (!cont) return;
