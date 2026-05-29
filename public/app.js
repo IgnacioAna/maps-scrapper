@@ -12436,6 +12436,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  async function _tlxLoadRealCosts(opts = {}) {
+    const range = document.getElementById('tlx-realcost-range')?.value || 'last_7_days';
+    const cards = document.getElementById('tlx-realcost-cards');
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/real-costs?range=' + range + (opts.fresh ? '&fresh=1' : '')), { credentials: 'include' });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        if (cards) cards.innerHTML = `<div class="muted" style="font-size:12px; padding:8px; color:#f85149;">${escHtml(err.error || ('No pude traer el costo real (HTTP ' + r.status + ')'))}</div>`;
+        return;
+      }
+      const d = await r.json();
+      const t = d.totals || {};
+      const cur = d.currency || 'USD';
+      const money = (n) => `$${Number(n).toFixed(n < 1 ? 4 : 2)}`;
+      const card = (label, value, sub, color) => `
+        <div style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+          <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">${label}</div>
+          <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
+          <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">${sub}</div>
+        </div>`;
+      if (cards) {
+        cards.innerHTML =
+          card('Gasto real', money(t.costUSD || 0), `${cur} · ${d.cached ? 'cacheado' : 'al día'}`, '#ffc828') +
+          card('Llamadas conectadas', t.connectedCalls || 0, `de ${t.calls || 0} intentos`, '#5bb974') +
+          card('Costo prom./conectada', money(t.avgCostPerConnected || 0), `${(t.minutes || 0).toFixed(1)} min total`, 'var(--accent)');
+      }
+      const countryUl = document.getElementById('tlx-realcost-countries');
+      if (countryUl) {
+        const rows = (d.byCountry || []).slice(0, 12);
+        countryUl.innerHTML = rows.length ? rows.map(c => `
+          <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary);">${escHtml(c.country)}</span>
+            <span class="muted">${c.calls} · ${c.minutes.toFixed(1)}m · $${c.costUSD.toFixed(2)}</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">Sin datos.</li>';
+      }
+      const daysUl = document.getElementById('tlx-realcost-days');
+      if (daysUl) {
+        const rows = (d.byDay || []).slice(-14);
+        daysUl.innerHTML = rows.length ? rows.map(x => `
+          <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
+            <span style="color:var(--text-primary); font-variant-numeric:tabular-nums;">${escHtml(x.day)}</span>
+            <span class="muted">${x.calls} · $${x.costUSD.toFixed(2)}</span>
+          </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
+      }
+    } catch (e) {
+      console.warn('[tlx-realcost]', e.message);
+      if (cards) cards.innerHTML = `<div class="muted" style="font-size:12px; padding:8px; color:#f85149;">Error de red al pedir costo real.</div>`;
+    }
+  }
+
   async function _tlxLoadMetrics() {
     const range = document.getElementById('tlx-metrics-range')?.value || 'month';
     try {
@@ -12455,7 +12505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         cards.innerHTML =
           card('Llamadas', t.calls || 0, range, 'var(--accent)') +
           card('Minutos', t.minutes?.toFixed(1) || '0', `prom ${t.avgMinutesPerCall || 0}/llamada`, '#5bb974') +
-          card('Costo USD', '$' + (t.costUSD || 0).toFixed(2), `prom $${(t.avgCostPerCall || 0).toFixed(4)}/llamada`, '#ffc828');
+          card('Costo USD (estimado)', '$' + (t.costUSD || 0).toFixed(2), `tabla local · real arriba ↑`, '#ffc828');
       }
       // Por setter
       const setterUl = document.getElementById('tlx-metrics-setters');
@@ -12696,6 +12746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => {
       _tlxLoadConfig();
       _tlxLoadBalance();
+      _tlxLoadRealCosts();
       _tlxLoadMetrics();
       _tlxLoadEffectiveness();      // Sprint 9: KPIs cold calling
       _tlxLoadScriptsAdmin();
@@ -12716,6 +12767,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);
   document.getElementById('tlx-eff-range')?.addEventListener('change', _tlxLoadEffectiveness);
+  document.getElementById('tlx-realcost-range')?.addEventListener('change', () => _tlxLoadRealCosts());
 
   // Saldo: refresh manual (fuerza fresh, salta el cache de 60s)
   document.getElementById('tlx-balance-refresh')?.addEventListener('click', (e) => {

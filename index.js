@@ -9197,6 +9197,112 @@ app.get("/api/telnyx/cdr-probe", requireAuth, requireRole("admin"), async (req, 
   });
 });
 
+// Pagina TODOS los detail records de un record_type para un rango (hasta maxPages).
+async function _telnyxFetchAllDetailRecords(apiKey, recordType, dateRange, maxPages = 40) {
+  let all = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const r = await _telnyxFetchDetailRecords(apiKey, { recordType, dateRange, page, pageSize: 250 });
+    if (!r.ok) return { ok: false, error: r.error, status: r.status, records: all };
+    all = all.concat(r.records);
+    totalPages = r.totalPages || 1;
+    page++;
+  } while (page <= totalPages && page <= maxPages);
+  return { ok: true, records: all, totalPages };
+}
+
+// GET /api/telnyx/real-costs?range=today|yesterday|last_7_days|last_30_days
+// admin/supervisor. COSTO REAL (no estimado) desde los CDRs de Telnyx.
+// Cada llamada = 2 CDRs (webrtc + sip-trunking) con el mismo telnyx_session_id.
+// El costo real total de una llamada = suma del `cost` de ambas patas.
+// Devuelve total + byCountry + byDay + counts. Caché 5min (los CDRs no cambian
+// retroactivamente y la API es más pesada que /balance).
+let _telnyxRealCostCache = {}; // range → { ts, data }
+const TELNYX_REALCOST_TTL_MS = 5 * 60 * 1000;
+app.get("/api/telnyx/real-costs", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  }
+  const range = String(req.query.range || "last_7_days");
+  const force = req.query.fresh === "1";
+  const cached = _telnyxRealCostCache[range];
+  if (!force && cached && Date.now() - cached.ts < TELNYX_REALCOST_TTL_MS) {
+    return res.json({ ...cached.data, cached: true });
+  }
+
+  const [webrtc, sip] = await Promise.all([
+    _telnyxFetchAllDetailRecords(cfg.apiKey, "webrtc", range),
+    _telnyxFetchAllDetailRecords(cfg.apiKey, "sip-trunking", range),
+  ]);
+  if (!webrtc.ok && !sip.ok) {
+    return res.status(502).json({ error: "Telnyx detail_records falló.", detail: webrtc.error || sip.error });
+  }
+
+  // Agrupar por telnyx_session_id, sumando cost de ambas patas.
+  const sessions = {}; // sid → { cost, billedSec, dest, startedAt, countryIso, currency, connected }
+  const ingest = (records, isSip) => {
+    for (const r of records) {
+      const sid = r.telnyx_session_id || r.id || r.session_id;
+      if (!sid) continue;
+      if (!sessions[sid]) sessions[sid] = { cost: 0, billedSec: 0, dest: "", startedAt: "", countryIso: "", currency: "USD", connected: false };
+      const s = sessions[sid];
+      s.cost += parseFloat(r.cost) || 0;
+      s.currency = r.currency || s.currency;
+      if (!s.dest && (r.cld || r.dest_number)) s.dest = r.cld || r.dest_number;
+      if (!s.startedAt && r.started_at) s.startedAt = r.started_at;
+      const bsec = Number(r.billed_sec) || 0;
+      if (bsec > s.billedSec) s.billedSec = bsec;
+      if (Number(r.connected) === 1 || bsec > 0) s.connected = true;
+      if (isSip && r.country_iso) s.countryIso = r.country_iso;
+    }
+  };
+  ingest(webrtc.records || [], false);
+  ingest(sip.records || [], true);
+
+  let totalCost = 0, totalBilledSec = 0, totalCalls = 0, connectedCalls = 0;
+  const byCountry = {}; // iso → { country, calls, minutes, costUSD }
+  const byDay = {};     // YYYY-MM-DD → { day, calls, minutes, costUSD }
+  let currency = "USD";
+  for (const sid in sessions) {
+    const s = sessions[sid];
+    totalCalls++;
+    totalCost += s.cost;
+    totalBilledSec += s.billedSec;
+    currency = s.currency || currency;
+    if (s.connected) connectedCalls++;
+    const iso = s.countryIso || "??";
+    if (!byCountry[iso]) byCountry[iso] = { country: iso, calls: 0, minutes: 0, costUSD: 0 };
+    byCountry[iso].calls++;
+    byCountry[iso].minutes += s.billedSec / 60;
+    byCountry[iso].costUSD += s.cost;
+    const day = s.startedAt ? s.startedAt.substring(0, 10) : "????-??-??";
+    if (!byDay[day]) byDay[day] = { day, calls: 0, minutes: 0, costUSD: 0 };
+    byDay[day].calls++;
+    byDay[day].minutes += s.billedSec / 60;
+    byDay[day].costUSD += s.cost;
+  }
+  const round = (n) => Math.round(n * 1e6) / 1e6;
+  const data = {
+    range,
+    currency,
+    totals: {
+      costUSD: round(totalCost),
+      calls: totalCalls,
+      connectedCalls,
+      minutes: round(totalBilledSec / 60),
+      avgCostPerConnected: connectedCalls > 0 ? round(totalCost / connectedCalls) : 0,
+    },
+    byCountry: Object.values(byCountry).map(c => ({ ...c, minutes: round(c.minutes), costUSD: round(c.costUSD) })).sort((a, b) => b.costUSD - a.costUSD),
+    byDay: Object.values(byDay).map(d => ({ ...d, minutes: round(d.minutes), costUSD: round(d.costUSD) })).sort((a, b) => a.day.localeCompare(b.day)),
+    fetchedAt: new Date().toISOString(),
+    partial: !webrtc.ok || !sip.ok,
+  };
+  _telnyxRealCostCache[range] = { ts: Date.now(), data };
+  res.json({ ...data, cached: false });
+});
+
 // ── Telnyx webhook + events log ──
 // Telnyx envía eventos call.initiated, call.answered, call.hangup,
 // call.machine.detection.ended, etc. al webhook URL configurado en su
