@@ -563,6 +563,26 @@ Si en el futuro hay que tocar el módulo Telnyx, estos son los gotchas verificad
     - **setter_ivi_treise**: 0 leads (idem)
     - Total leads 5246 (5242 antes del redistribute + 4 recuperados de evelio).
 
-48. **Cache-buster actual: `v=20260524c`** (`public/index.html`). Bumpear ante cualquier cambio a `app.js`, `style.css` o `wa.js`. La regla está documentada arriba pero se olvida fácil.
+48. **Cache-buster actual: `v=20260525c`** (`public/index.html`, `app.js` + `style.css`; `wa.js` en `v=20260523a`). Bumpear ante cualquier cambio a `app.js`, `style.css` o `wa.js`. La regla está documentada arriba pero se olvida fácil.
 
 49. **wa-multi desktop sigue en v0.5.4** (no se tocó en sesión 2026-05-24). Ubicación: `Desktop\wa-multi\versiones\wa-multi-portable-v0.5.4\`.
+
+## Sesión 2026-05-25→29 — Cold Call Funnel + Power Dialer sobre Setteo + setter Ignacio
+
+50. **Setter "Ignacio" para el admin** (`cc48a5a`, 2026-05-25): el admin (Ignacio) ahora tiene su propio setter record `setter_ignacio` con pipeline propio, para poder settear/cold-callear como cualquier otro. Se le asignaron leads de México (97 vírgenes reseteados, ver `538ddbe`/`9ce2557`/`ac347ab` — la asignación de Quito se revirtió, solo quedó México). **No confundir con `setter_evelio`** (ese era el orfano viejo, ya borrado en la sesión anterior).
+
+51. **Borrado de 68 leads sin teléfono** (`01bf378`, 2026-05-25): one-shot que eliminó leads sin `phone`. Total bajó de 5246 → 5178. Los conteos de leads en la nota #47 (estado 2026-05-24) quedaron desactualizados por esto + la reasignación de México.
+
+52. **Cold Call Funnel** (`5c0d0f8`/`a2df7e1`, 2026-05-27): dashboard SDR en `view-myperf`.
+    - Backend: `GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all` ([index.js:3687](index.js:3687)). RBAC: setter solo ve lo suyo (vía `getEffectiveAuth`), admin/supervisor cualquier setter o todos (setter vacío). Métricas derivadas **del `callLog`** de cada lead (no de interactions): `dials` (todo entry con ts en período), `connects` (outcome ∈ {answered_interested, answered_not_interested, scheduled_with_admin, callback_later, hung_up}), `conversations` (connect con `duration >= 30s`), `appointments` (outcome=scheduled_with_admin). `deals` queda en 0 — **no hay estado closed_won todavía**; el endpoint tiene el placeholder listo para cuando se agregue `lead.dealWon`/estado='ganado'.
+    - Frontend: bloque "📞 Cold Call Funnel" en view-myperf, 5 cards con barras proporcionales + selector de período + 5 ratios (connect/conversation/booking/dial→appt/avg duration) + benchmark SDR. Loader `_mypLoadColdCall` corre desde la chain `_mypLoad` (no solo onclick — fix `a2df7e1`).
+
+53. **Power Dialer ahora disca leads de Setteo, no solo "Sin WSP"** (`60af36c`, 2026-05-29): `GET /api/setters/leads/sin-wsp?include=callable` ahora también devuelve leads con teléfono accionables (no descartado/agendado) aunque estén en flujo Setteo (`sin_contactar`). Resolvía que admin/setter no podía cold-callear sus leads mexicanos porque estaban en Setteo, no en Llamadas. Frontend: checkbox "Incluir leads de Setteo" en filtros de view-calls ([public/app.js:4144](public/app.js:4144), `params.set('include','callable')`).
+
+54. **Disposition "🚪 Me cortó" (outcome `hung_up`)** (`60af36c`): para cuando atienden y cuelgan de una. **Cuenta como CONNECT en el funnel** (atendió) pero NO como conversación. **NO descarta el lead** — queda re-llamable. Si se quisiera descartar, es 1 línea en backend. Está en el grid del Power Dialer (atajo `3`) + keyMap 1-8 + `callOutcomeLabel` ([public/app.js:4645](public/app.js:4645)).
+
+55. **Botón "📞 Discar número" ad-hoc** (`0ae41ca`, 2026-05-25): permite discar un número arbitrario sin lead asociado (testing, devolver llamada perdida) desde view-calls ([public/app.js:4770](public/app.js:4770)).
+
+56. **Nota pre-call (`lead.precallNote`)** (Sprint 24): textarea en cada card de Llamadas donde el setter prepara contexto/ángulo de apertura ANTES de discar. Distinto de `notes[]` (post-interacción). Se persiste vía `_callsSavePrecallNote` → backend ([index.js:5402](index.js:5402)).
+
+57. **Bulk-action endpoint de leads en Llamadas** ([index.js:5270](index.js:5270)): acciones válidas `mark_wrong`, `mark_invalid`, `discard`, `assign`, `move_to_setteo` para operar sobre múltiples leads del Power Dialer.

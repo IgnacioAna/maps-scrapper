@@ -1,0 +1,32 @@
+{
+  "apiKey": "",
+  "sipUsername": "",
+  "sipPassword": "",
+  "sipConnectionId": "",
+  "signaturePublicKey": "kgNKZXLz7oZvVwbh7s1g/3xkGRczCvV29UW0EQCAE98=",
+  "numbers": [
+    {
+      "id": "telnyx_num_1779489120861_gg4qsp",
+      "phone": "+17866870849",
+      "label": "Ignacio USA Cold Calling",
+      "country": "US",
+      "active": true,
+      "createdAt": "2026-05-22T22:32:00.861Z"
+    }
+  ],
+  "countryRouting": {
+    "default": "telnyx_num_1779489120861_gg4qsp",
+    "ES": "",
+    "MX": "",
+    "CO": "",
+    "AR": "",
+    "CL": "",
+    "PE": "",
+    "EC": "",
+    "UY": "",
+    "BO": "",
+    "US": ""
+  },
+  "updatedAt": "2026-05-22T22:32:41.204Z",
+  "updatedBy": "ignacio.scmdental@gmail.com"
+}

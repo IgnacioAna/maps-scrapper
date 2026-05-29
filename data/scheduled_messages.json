@@ -1,0 +1,21 @@
+{
+  "scheduledMessages": [
+    {
+      "id": "sched_1779497932353_d13gyr",
+      "leadId": "l_happysmileclnicadentallapazbol_59177750733",
+      "setterId": "setter_paula",
+      "setterPhoneId": null,
+      "scheduledFor": "2026-05-23T00:59:18.000Z",
+      "message": "Test programado desde audit",
+      "status": "cancelled",
+      "attempts": 0,
+      "createdAt": "2026-05-23T00:58:52.353Z",
+      "createdBy": "user_admin_ignacio",
+      "cancelOnReply": true,
+      "staggerOffsetMs": 199989,
+      "templateUsed": null,
+      "cancelReason": "lead respondio o cambio de estado a calificado",
+      "cancelledAt": "2026-05-23T01:03:20.964Z"
+    }
+  ]
+}

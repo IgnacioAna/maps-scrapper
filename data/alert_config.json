@@ -1,0 +1,9 @@
+{
+  "dropPctThreshold": 30,
+  "inactivityDays": 7,
+  "aperturaPctMin": 20,
+  "minTotalForAlert": 5,
+  "followupsTodayThreshold": 15,
+  "updatedAt": "2026-04-30T01:27:23.878Z",
+  "updatedBy": "Ignacio"
+}

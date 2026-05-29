@@ -1,0 +1,73 @@
+{
+  "scripts": [
+    {
+      "id": "opener_default",
+      "label": "Opener inicial",
+      "trigger": "first_call",
+      "text": "Hola Dr/a {name}, soy {setterName} del equipo SCM. Trabajo con clínicas dentales como la suya en temas de reactivación de pacientes que dejaron de venir y seguimiento de presupuestos no cerrados. Lo llamé puntualmente porque vimos su clínica en {city} y queríamos coordinar una llamada corta esta semana para presentarle cómo otras clínicas en su área están automatizando esto. ¿Cómo le viene el miércoles o jueves?",
+      "tags": [
+        "apertura",
+        "first-call"
+      ]
+    },
+    {
+      "id": "objection_ya_tengo_sistema",
+      "label": "Objeción: ya tengo sistema",
+      "trigger": "objection",
+      "text": "Justo por eso lo llamé. Trabajamos seguido con clínicas que ya tienen sistema y a veces hay gaps que cubrimos — sin necesidad de cambiar lo que ya usan. Si no hay fit perfecto, igual quedamos en contacto. ¿Tiene 20 min el jueves para verlo sin compromiso?",
+      "tags": [
+        "objecion",
+        "ya-tiene-sistema"
+      ]
+    },
+    {
+      "id": "objection_no_tengo_tiempo",
+      "label": "Objeción: no tengo tiempo",
+      "trigger": "objection",
+      "text": "Entiendo, son 15 minutos máximo. La idea es solo mostrarle 2 o 3 cosas concretas que pueden aplicar — usted decide después si profundizamos. ¿Le viene mejor un horario al final del día?",
+      "tags": [
+        "objecion",
+        "tiempo"
+      ]
+    },
+    {
+      "id": "objection_mandame_info",
+      "label": "Objeción: mandame info por mail",
+      "trigger": "objection",
+      "text": "Por supuesto, igual prefiero que primero charlemos 15 minutos para entender bien qué necesita su clínica, y después le mando solo lo que aplica. Si no, le mando un PDF genérico que probablemente no le sirva. ¿Le viene mejor mañana o el miércoles?",
+      "tags": [
+        "objecion",
+        "mail"
+      ]
+    },
+    {
+      "id": "callback",
+      "label": "Callback (segundo intento)",
+      "trigger": "callback",
+      "text": "Hola Dr/a {name}, soy {setterName} de SCM, le había llamado hace unos días sobre reactivación de pacientes para clínicas dentales. ¿Tiene unos minutos ahora o le viene mejor que coordinemos un horario fijo?",
+      "tags": [
+        "callback",
+        "segundo-intento"
+      ]
+    },
+    {
+      "id": "scheduling_pitch",
+      "label": "Cierre: agendar llamada con Ignacio",
+      "trigger": "scheduling",
+      "text": "Perfecto. Lo agendo entonces con Ignacio, que es quien lleva la parte comercial. Es una llamada de 30 minutos por Google Meet. ¿{date} a las {time} le viene bien? Le mando la invitación por mail apenas confirmemos.",
+      "tags": [
+        "cierre",
+        "agendamiento"
+      ]
+    },
+    {
+      "id": "voicemail",
+      "label": "Buzón de voz (mensaje corto)",
+      "trigger": "voicemail",
+      "text": "Hola Dr/a {name}, le habla {setterName} de SCM Dental. Le llamé porque trabajamos reactivando pacientes para clínicas dentales como la suya en {city}. Lo intento de nuevo más tarde. Si quiere puede agendarme directamente por WhatsApp al {setterPhone}. Gracias y buen día.",
+      "tags": [
+        "voicemail"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "events": [
+    {
+      "id": "tlx_evt_1779487780410_6m5o",
+      "type": "call.initiated",
+      "receivedAt": "2026-05-22T22:09:40.410Z",
+      "callControlId": "v3:OWPGo-4K5fEfdNPNW_yx274VEi44uGXyln5OwP7jkF6_TJU9gc3fbA",
+      "callLegId": "edac4458-562a-11f1-8b64-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+542954555113",
+      "durationSecs": null,
+      "hangupCause": null,
+      "hangupSource": null,
+      "direction": "outgoing",
+      "raw": {
+        "call_control_id": "v3:OWPGo-4K5fEfdNPNW_yx274VEi44uGXyln5OwP7jkF6_TJU9gc3fbA",
+        "call_leg_id": "edac4458-562a-11f1-8b64-b22c1014b0c2",
+        "call_session_id": "edac3ecc-562a-11f1-9d3f-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "connection_id": "2965708290790524006",
+        "custom_headers": [
+          {
+            "name": "X-RTC-CALLID",
+            "value": "02c1ea5d-873f-4d5c-b51e-7683c31b9f78"
+          },
+          {
+            "name": "X-RTC-SESSID",
+            "value": "dd552cf9-a085-422e-9a60-2a055e7b3f10"
+          },
+          {
+            "name": "X-rtc_leg_uuid",
+            "value": "9610cfeb-2099-4d41-90cd-9a394803dadd"
+          }
+        ],
+        "direction": "outgoing",
+        "from": "+17866870849",
+        "from_sip_uri": "+17866870849@sip.telnyx.com",
+        "state": "bridging",
+        "to": "+542954555113",
+        "to_sip_uri": "+542954555113@sip.telnyx.com"
+      }
+    },
+    {
+      "id": "tlx_evt_1779487780912_1j57",
+      "type": "call.hangup",
+      "receivedAt": "2026-05-22T22:09:40.912Z",
+      "callControlId": "v3:OWPGo-4K5fEfdNPNW_yx274VEi44uGXyln5OwP7jkF6_TJU9gc3fbA",
+      "callLegId": "edac4458-562a-11f1-8b64-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+542954555113",
+      "durationSecs": null,
+      "hangupCause": "not_found",
+      "hangupSource": "unknown",
+      "direction": null,
+      "raw": {
+        "call_control_id": "v3:OWPGo-4K5fEfdNPNW_yx274VEi44uGXyln5OwP7jkF6_TJU9gc3fbA",
+        "call_leg_id": "edac4458-562a-11f1-8b64-b22c1014b0c2",
+        "call_quality_stats": null,
+        "call_session_id": "edac3ecc-562a-11f1-9d3f-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "connection_id": "2965708290790524006",
+        "custom_headers": [
+          {
+            "name": "X-RTC-CALLID",
+            "value": "02c1ea5d-873f-4d5c-b51e-7683c31b9f78"
+          },
+          {
+            "name": "X-RTC-SESSID",
+            "value": "dd552cf9-a085-422e-9a60-2a055e7b3f10"
+          },
+          {
+            "name": "X-rtc_leg_uuid",
+            "value": "9610cfeb-2099-4d41-90cd-9a394803dadd"
+          }
+        ],
+        "end_time": "2026-05-22T22:09:40.805663Z",
+        "from": "+17866870849",
+        "hangup_cause": "not_found",
+        "hangup_source": "unknown",
+        "sip_hangup_cause": "404",
+        "start_time": "2026-05-22T22:09:40.105675Z",
+        "telnyx_error": null,
+        "to": "+542954555113"
+      }
+    },
+    {
+      "id": "tlx_evt_1779487858640_7pji",
+      "type": "call.initiated",
+      "receivedAt": "2026-05-22T22:10:58.640Z",
+      "callControlId": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+      "callLegId": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+5492954555113",
+      "durationSecs": null,
+      "hangupCause": null,
+      "hangupSource": null,
+      "direction": "outgoing",
+      "raw": {
+        "call_control_id": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+        "call_leg_id": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+        "call_session_id": "1c4b948a-562b-11f1-9c83-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "connection_id": "2965708290790524006",
+        "custom_headers": [
+          {
+            "name": "X-RTC-CALLID",
+            "value": "dee5a1b8-9275-410a-a4e1-aa633de87dc3"
+          },
+          {
+            "name": "X-RTC-SESSID",
+            "value": "dd552cf9-a085-422e-9a60-2a055e7b3f10"
+          },
+          {
+            "name": "X-rtc_leg_uuid",
+            "value": "c4f85613-ebf8-473d-b640-28bca683d6e1"
+          }
+        ],
+        "direction": "outgoing",
+        "from": "+17866870849",
+        "from_sip_uri": "+17866870849@sip.telnyx.com",
+        "state": "bridging",
+        "to": "+5492954555113",
+        "to_sip_uri": "+5492954555113@sip.telnyx.com"
+      }
+    },
+    {
+      "id": "tlx_evt_1779487860284_xc5l",
+      "type": "call.bridged",
+      "receivedAt": "2026-05-22T22:11:00.284Z",
+      "callControlId": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+      "callLegId": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+5492954555113",
+      "durationSecs": null,
+      "hangupCause": null,
+      "hangupSource": null,
+      "direction": null,
+      "raw": {
+        "call_control_id": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+        "call_leg_id": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+        "call_session_id": "1c4b948a-562b-11f1-9c83-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "connection_id": "2965708290790524006",
+        "from": "+17866870849",
+        "start_time": "2026-05-22T22:10:58.328973Z",
+        "to": "+5492954555113"
+      }
+    },
+    {
+      "id": "tlx_evt_1779487874109_8mgh",
+      "type": "call.answered",
+      "receivedAt": "2026-05-22T22:11:14.109Z",
+      "callControlId": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+      "callLegId": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+5492954555113",
+      "durationSecs": null,
+      "hangupCause": null,
+      "hangupSource": null,
+      "direction": null,
+      "raw": {
+        "call_control_id": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+        "call_leg_id": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+        "call_session_id": "1c4b948a-562b-11f1-9c83-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "codec": "PCMA",
+        "connection_id": "2965708290790524006",
+        "custom_headers": [
+          {
+            "name": "X-RTC-CALLID",
+            "value": "dee5a1b8-9275-410a-a4e1-aa633de87dc3"
+          },
+          {
+            "name": "X-RTC-SESSID",
+            "value": "dd552cf9-a085-422e-9a60-2a055e7b3f10"
+          },
+          {
+            "name": "X-rtc_leg_uuid",
+            "value": "c4f85613-ebf8-473d-b640-28bca683d6e1"
+          }
+        ],
+        "from": "+17866870849",
+        "sampling_rate": 8000,
+        "start_time": "2026-05-22T22:10:58.328973Z",
+        "to": "+5492954555113"
+      }
+    },
+    {
+      "id": "tlx_evt_1779487881960_57pa",
+      "type": "call.hangup",
+      "receivedAt": "2026-05-22T22:11:21.960Z",
+      "callControlId": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+      "callLegId": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+      "from": "+17866870849",
+      "to": "+5492954555113",
+      "durationSecs": null,
+      "hangupCause": "normal_clearing",
+      "hangupSource": "callee",
+      "direction": null,
+      "raw": {
+        "call_control_id": "v3:nHTU2oJwUjqZi5pGPGlz5_HmVFjFy1ypizYV-9tZsVxHCnTms8V7uw",
+        "call_leg_id": "1c4b9a52-562b-11f1-b006-b22c1014b0c2",
+        "call_quality_stats": {
+          "inbound": {
+            "jitter_max_variance": "10.81",
+            "jitter_packet_count": "1026",
+            "mos": "4.50",
+            "packet_count": "1036",
+            "skip_packet_count": "45"
+          },
+          "outbound": {
+            "packet_count": "1079",
+            "skip_packet_count": "0"
+          }
+        },
+        "call_session_id": "1c4b948a-562b-11f1-9c83-b22c1014b0c2",
+        "calling_party_type": "sip",
+        "client_state": null,
+        "connection_id": "2965708290790524006",
+        "custom_headers": [
+          {
+            "name": "X-RTC-CALLID",
+            "value": "dee5a1b8-9275-410a-a4e1-aa633de87dc3"
+          },
+          {
+            "name": "X-RTC-SESSID",
+            "value": "dd552cf9-a085-422e-9a60-2a055e7b3f10"
+          },
+          {
+            "name": "X-rtc_leg_uuid",
+            "value": "c4f85613-ebf8-473d-b640-28bca683d6e1"
+          }
+        ],
+        "end_time": "2026-05-22T22:11:21.848999Z",
+        "from": "+17866870849",
+        "hangup_cause": "normal_clearing",
+        "hangup_source": "callee",
+        "sip_hangup_cause": "200",
+        "start_time": "2026-05-22T22:10:58.328973Z",
+        "telnyx_error": null,
+        "to": "+5492954555113"
+      }
+    }
+  ]
+}
