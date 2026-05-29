@@ -4612,10 +4612,14 @@ document.addEventListener('DOMContentLoaded', async () => {
               // Dot de color por outcome — más sobrio que emoji
               const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+              // Costo: real (reconciliado de CDR) si existe, sino estimado.
+              let costStr = '';
+              if (typeof entry.realCost === 'number') costStr = `<span title="costo real facturado por Telnyx" style="color:#ffc828;">$${entry.realCost.toFixed(4)} real</span>`;
+              else if (typeof entry.cost === 'number' && entry.cost > 0) costStr = `<span title="costo estimado (tabla local)" style="color:var(--text-tertiary);">~$${entry.cost.toFixed(4)}</span>`;
               return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">
                 <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
                 <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}</span>
-                <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px;">${t}</span>
+                <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px; display:flex; gap:8px; align-items:center;">${costStr}${t}</span>
               </div>`;
             }).join('')}
           </div>
@@ -4636,8 +4640,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div style="margin-top:18px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
           <span>Resultado de la llamada</span>
-          <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-7</span>
+          <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-8</span>
         </div>
+        <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada (opcional) — ej: contestó la secre, pedir por Dr. X el martes" style="width:100%; box-sizing:border-box; padding:9px 12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio',  color:'success' },
@@ -5275,8 +5280,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       const hiddenStates = showDiscarded ? ['agendado'] : ['descartado','agendado'];
       leads = leads.filter(l => !hiddenStates.includes(l.estado));
 
+      // "Para seguir": cola de seguimiento = callbacks vencidos + leads cuyo
+      // último resultado fue "Me cortó"/"No atendió"/"Buzón" (re-llamables).
+      const FOLLOW_OUTCOMES = new Set(['hung_up', 'no_answer', 'voicemail']);
+      const _lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
+      const _isDueCallback = (l) => l.callbackAt && new Date(l.callbackAt).getTime() <= now;
+      if (sortMode === 'follow_up') {
+        leads = leads.filter(l => _isDueCallback(l) || FOLLOW_OUTCOMES.has(_lastOutcome(l)));
+      }
+
       // Sort configurable según el dropdown
       switch (sortMode) {
+        case 'follow_up':
+          leads.sort((a, b) => {
+            const ad = _isDueCallback(a), bd = _isDueCallback(b);
+            if (ad && !bd) return -1;
+            if (bd && !ad) return 1;
+            if (ad && bd) return new Date(a.callbackAt) - new Date(b.callbackAt); // más vencido primero
+            return _callsLastCallTs(b) - _callsLastCallTs(a); // cortados: más reciente primero
+          });
+          break;
         case 'recent':
           leads.sort((a, b) => new Date(b.importedAt || 0).getTime() - new Date(a.importedAt || 0).getTime());
           break;
@@ -6318,6 +6341,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           body.telnyxCallMeta = telnyxMeta;
           delete _pendingTelnyxCallMetadata[leadId];
         }
+        // Nota rápida del Power Dialer (input pd-call-note). Solo existe en el
+        // dialer; en la vista normal de Llamadas no está y queda vacío.
+        const pdNoteEl = document.getElementById('pd-call-note');
+        const pdNote = pdNoteEl?.value?.trim();
+        if (pdNote) { body.notes = pdNote.slice(0, 500); if (pdNoteEl) pdNoteEl.value = ''; }
         const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -12768,6 +12796,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);
   document.getElementById('tlx-eff-range')?.addEventListener('change', _tlxLoadEffectiveness);
   document.getElementById('tlx-realcost-range')?.addEventListener('change', () => _tlxLoadRealCosts());
+  // Reconciliar: pega el costo real a cada llamada del historial de cada lead
+  document.getElementById('tlx-realcost-reconcile')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const range = document.getElementById('tlx-realcost-range')?.value || 'last_30_days';
+    const msg = document.getElementById('tlx-realcost-reconcile-msg');
+    btn.disabled = true; const old = btn.textContent; btn.textContent = 'Reconciliando…';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/reconcile-costs?range=' + range), { method: 'POST', credentials: 'include' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      if (msg) {
+        msg.style.display = 'block';
+        msg.style.background = 'rgba(91,185,116,0.12)'; msg.style.color = '#5bb974';
+        msg.textContent = `✓ ${j.matched} llamada(s) actualizada(s) con costo real (de ${j.sessionsFound} sesiones, ${j.leadsTouched} leads). Ya aparece en el historial de cada lead.`;
+      }
+    } catch (err) {
+      if (msg) { msg.style.display = 'block'; msg.style.background = 'rgba(248,81,73,0.12)'; msg.style.color = '#f85149'; msg.textContent = 'Error: ' + err.message; }
+    } finally { btn.disabled = false; btn.textContent = old; }
+  });
 
   // Saldo: refresh manual (fuerza fresh, salta el cache de 60s)
   document.getElementById('tlx-balance-refresh')?.addEventListener('click', (e) => {

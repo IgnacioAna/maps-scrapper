@@ -9303,6 +9303,104 @@ app.get("/api/telnyx/real-costs", requireAuth, requireRole("admin", "supervisor"
   res.json({ ...data, cached: false });
 });
 
+// POST /api/telnyx/reconcile-costs?range=last_30_days — admin only.
+// Pega el COSTO REAL (de los CDRs) a cada entry del callLog de cada lead.
+// Matcheo: agrupa CDRs por telnyx_session_id (suma webrtc + sip-trunking),
+// y para cada session busca el callLog entry (channel='telnyx_webrtc') del lead
+// cuyo teléfono coincide con el destino y cuyo inicio (ts - duration) cae cerca
+// del started_at del CDR (ventana 4min). Escribe entry.realCost.
+// Idempotente: re-correrlo re-matchea y actualiza realCost.
+const _telnyxDigits = (p) => String(p || "").replace(/\D/g, "");
+function _telnyxPhoneMatch(a, b) {
+  const da = _telnyxDigits(a), db = _telnyxDigits(b);
+  if (!da || !db) return false;
+  if (da === db) return true;
+  // tolerar prefijos/formatos: comparar últimos 10 dígitos (número nacional)
+  const tail = (s) => s.slice(-10);
+  return da.length >= 10 && db.length >= 10 && tail(da) === tail(db);
+}
+app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  }
+  const range = String(req.query.range || "last_30_days");
+  const WINDOW_MS = 4 * 60 * 1000;
+
+  // 1) Bajar CDRs FUERA del lock (lento, red).
+  const [webrtc, sip] = await Promise.all([
+    _telnyxFetchAllDetailRecords(cfg.apiKey, "webrtc", range),
+    _telnyxFetchAllDetailRecords(cfg.apiKey, "sip-trunking", range),
+  ]);
+  if (!webrtc.ok && !sip.ok) {
+    return res.status(502).json({ error: "Telnyx detail_records falló.", detail: webrtc.error || sip.error });
+  }
+
+  // 2) Agrupar por session_id → { cost, dest, startedMs, currency }
+  const sessions = {};
+  const ingest = (records) => {
+    for (const r of records) {
+      const sid = r.telnyx_session_id || r.id || r.session_id;
+      if (!sid) continue;
+      if (!sessions[sid]) sessions[sid] = { cost: 0, dest: "", startedMs: 0, currency: "USD" };
+      const s = sessions[sid];
+      s.cost += parseFloat(r.cost) || 0;
+      s.currency = r.currency || s.currency;
+      if (!s.dest && (r.cld || r.dest_number)) s.dest = r.cld || r.dest_number;
+      if (!s.startedMs && r.started_at) s.startedMs = Date.parse(r.started_at) || 0;
+    }
+  };
+  ingest(webrtc.records || []);
+  ingest(sip.records || []);
+
+  // Indexar sessions por cola de dígitos del destino para matcheo rápido.
+  const sessionList = Object.entries(sessions).map(([sid, s]) => ({ sid, ...s, destDigits: _telnyxDigits(s.dest) }));
+
+  // 3) Writeback DENTRO del mutex (rápido, sin red).
+  const result = await mutateSettersData((data) => {
+    let matched = 0, entriesScanned = 0, leadsTouched = 0;
+    const usedSids = new Set();
+    for (const id in data.leads) {
+      const lead = data.leads[id];
+      if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
+      let touched = false;
+      for (const entry of lead.callLog) {
+        if (entry.channel !== "telnyx_webrtc") continue;
+        entriesScanned++;
+        const entryStartMs = (Date.parse(entry.ts) || 0) - (Number(entry.duration) || 0) * 1000;
+        if (!entryStartMs) continue;
+        // mejor session: mismo destino + startedMs más cercano dentro de la ventana
+        let best = null, bestDiff = Infinity;
+        for (const s of sessionList) {
+          if (usedSids.has(s.sid)) continue;
+          if (!_telnyxPhoneMatch(s.destDigits, lead.phone)) continue;
+          const diff = Math.abs(s.startedMs - entryStartMs);
+          if (diff < bestDiff) { bestDiff = diff; best = s; }
+        }
+        if (best && bestDiff <= WINDOW_MS) {
+          usedSids.add(best.sid);
+          entry.realCost = Math.round(best.cost * 1e6) / 1e6;
+          entry.realCostCurrency = best.currency;
+          entry.realCostSid = best.sid;
+          entry.realCostReconciledAt = new Date().toISOString();
+          matched++;
+          touched = true;
+        }
+      }
+      if (touched) leadsTouched++;
+    }
+    return { matched, entriesScanned, leadsTouched };
+  });
+
+  res.json({
+    ok: true,
+    range,
+    sessionsFound: sessionList.length,
+    ...result,
+    partial: !webrtc.ok || !sip.ok,
+  });
+});
+
 // ── Telnyx webhook + events log ──
 // Telnyx envía eventos call.initiated, call.answered, call.hangup,
 // call.machine.detection.ended, etc. al webhook URL configurado en su
@@ -10100,7 +10198,8 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
       if (!isFinite(ts) || ts < sinceTs) continue;
       const durSecs = entry.duration || 0;
       const minutes = durSecs / 60;
-      const cost = entry.cost || 0;
+      // Preferir el costo real (reconciliado de CDRs) sobre el estimado.
+      const cost = (typeof entry.realCost === 'number' ? entry.realCost : entry.cost) || 0;
       totalCalls++;
       totalMinutes += minutes;
       totalCostUSD += cost;
