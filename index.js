@@ -3713,7 +3713,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   else if (period === 'all') fromTs = 0;
   else fromTs = startOfDay - 7 * 86400000;
 
-  const CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']);
+  const CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
   const APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
   const CONV_MIN_DURATION_S = 30;
 

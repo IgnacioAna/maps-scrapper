@@ -4136,7 +4136,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadCallsView() {
       const setter = document.getElementById('calls-setter-select').value;
-      const url = '/api/setters/leads/sin-wsp' + (setter ? '?setter=' + encodeURIComponent(setter) : '');
+      // 2026-05-25: si el check "Incluir leads de Setteo" está activo, pedimos
+      // también los leads con teléfono accionables (no solo sin_wsp).
+      const includeSetteo = document.getElementById('calls-include-setteo')?.checked;
+      const params = new URLSearchParams();
+      if (setter) params.set('setter', setter);
+      if (includeSetteo) params.set('include', 'callable');
+      const qs = params.toString();
+      const url = '/api/setters/leads/sin-wsp' + (qs ? '?' + qs : '');
       try {
         // Poblar select de setters (solo admin lo ve)
         const infoResp = await fetch(apiUrl('/api/setters'));
@@ -4634,12 +4641,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio',  color:'success' },
-            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'descarta + tags',     color:'danger'  },
-            { v:'no_answer',               k:'3', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
-            { v:'voicemail',               k:'4', label:'Buzón',           sub:'voice mail',          color:'warning' },
-            { v:'callback_later',          k:'5', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
-            { v:'wrong_number',            k:'6', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
-            { v:'invalid_number',          k:'7', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
+            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
+            { v:'hung_up',                 k:'3', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
+            { v:'no_answer',               k:'4', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
+            { v:'voicemail',               k:'5', label:'Buzón',           sub:'voice mail',          color:'warning' },
+            { v:'callback_later',          k:'6', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
+            { v:'wrong_number',            k:'7', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
+            { v:'invalid_number',          k:'8', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
           ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
             <div class="pd-disp-key">${d.k}</div>
             <div class="pd-disp-text">
