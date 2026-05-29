@@ -8245,6 +8245,7 @@ function _defaultTelnyxConfig() {
     signaturePublicKey: "",
     numbers: [],
     countryRouting: { default: "" },
+    lowBalanceThreshold: 10,
     updatedAt: new Date().toISOString(),
     updatedBy: "system_seed",
   };
@@ -8285,6 +8286,7 @@ function loadTelnyxConfig() {
       if (typeof cfg.signaturePublicKey !== "string") cfg.signaturePublicKey = "";
       if (!Array.isArray(cfg.numbers)) cfg.numbers = [];
       if (!cfg.countryRouting || typeof cfg.countryRouting !== "object") cfg.countryRouting = { default: "" };
+      cfg.lowBalanceThreshold = Number.isFinite(Number(cfg.lowBalanceThreshold)) ? Number(cfg.lowBalanceThreshold) : 10;
     }
   } catch (e) { console.error("[telnyx] Error leyendo config:", e.message); }
   if (!cfg) {
@@ -8322,6 +8324,7 @@ function _publicTelnyxConfig(cfg) {
     envSourced: _telnyxEnvSourced(),
     numbers: cfg.numbers || [],
     countryRouting: cfg.countryRouting || { default: "" },
+    lowBalanceThreshold: Number.isFinite(Number(cfg.lowBalanceThreshold)) ? Number(cfg.lowBalanceThreshold) : 10,
     updatedAt: cfg.updatedAt,
     updatedBy: cfg.updatedBy,
   };
@@ -8878,7 +8881,7 @@ app.get("/api/telnyx/config", requireAuth, (req, res) => {
 // si querés cambiarlas, lo hacés en Railway y redeploy. Esto evita confusión
 // donde admin "guarda" en el JSON pero el env var sigue mandando.
 app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
-  const { apiKey, sipUsername, sipPassword, sipConnectionId, signaturePublicKey, countryRouting } = req.body || {};
+  const { apiKey, sipUsername, sipPassword, sipConnectionId, signaturePublicKey, countryRouting, lowBalanceThreshold } = req.body || {};
   const envSourced = _telnyxEnvSourced();
 
   // Detectar intento de update a campo env-managed
@@ -8913,6 +8916,12 @@ app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
   if (typeof cfg.signaturePublicKey !== "string") cfg.signaturePublicKey = "";
   if (!Array.isArray(cfg.numbers)) cfg.numbers = [];
   if (!cfg.countryRouting || typeof cfg.countryRouting !== "object") cfg.countryRouting = { default: "" };
+
+  // Umbral de alerta de saldo bajo (USD). No es secreto — vive en JSON.
+  if (lowBalanceThreshold !== undefined) {
+    const n = Number(lowBalanceThreshold);
+    if (Number.isFinite(n) && n >= 0) cfg.lowBalanceThreshold = n;
+  }
 
   if (typeof apiKey === "string" && !envSourced.apiKey) cfg.apiKey = apiKey.trim();
   if (typeof sipUsername === "string" && !envSourced.sipUsername) cfg.sipUsername = sipUsername.trim();
@@ -9079,6 +9088,112 @@ app.post("/api/telnyx/webrtc-credentials", requireAuth, async (req, res) => {
 
   return res.status(503).json({
     error: "Telnyx sin credenciales SIP. Admin debe cargar sipUsername+sipPassword O configurar sipConnectionId para ephemeral.",
+  });
+});
+
+// GET /api/telnyx/balance — admin/supervisor: saldo REAL de la cuenta Telnyx.
+// Llama GET https://api.telnyx.com/v2/balance con la API key server-side (nunca
+// toca el browser). Cachea 60s para no pegarle a Telnyx en cada refresh del panel.
+// Devuelve { balance, availableCredit, creditLimit, currency, lowBalanceThreshold, low }.
+// `low` = available_credit <= umbral configurado → el frontend muestra alerta.
+let _telnyxBalanceCache = { ts: 0, data: null };
+const TELNYX_BALANCE_TTL_MS = 60 * 1000;
+app.get("/api/telnyx/balance", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  }
+  const threshold = Number.isFinite(Number(cfg.lowBalanceThreshold)) ? Number(cfg.lowBalanceThreshold) : 10;
+
+  // Cache hit (salvo ?fresh=1 para forzar)
+  const force = req.query.fresh === "1";
+  if (!force && _telnyxBalanceCache.data && Date.now() - _telnyxBalanceCache.ts < TELNYX_BALANCE_TTL_MS) {
+    const d = _telnyxBalanceCache.data;
+    return res.json({ ...d, lowBalanceThreshold: threshold, low: d.availableCredit <= threshold, cached: true });
+  }
+
+  try {
+    const resp = await fetch("https://api.telnyx.com/v2/balance", {
+      headers: { "Authorization": `Bearer ${cfg.apiKey}`, "Accept": "application/json" },
+    });
+    if (!resp.ok) {
+      const errBody = await resp.text().catch(() => "");
+      console.warn(`[telnyx] balance API ${resp.status}:`, errBody.substring(0, 200));
+      return res.status(502).json({ error: `Telnyx respondió ${resp.status} al pedir saldo.`, detail: errBody.substring(0, 200) });
+    }
+    const json = await resp.json();
+    const d = json?.data || {};
+    const data = {
+      balance: Number(d.balance ?? 0),
+      availableCredit: Number(d.available_credit ?? d.balance ?? 0),
+      creditLimit: Number(d.credit_limit ?? 0),
+      currency: d.currency || "USD",
+      fetchedAt: new Date().toISOString(),
+    };
+    _telnyxBalanceCache = { ts: Date.now(), data };
+    res.json({ ...data, lowBalanceThreshold: threshold, low: data.availableCredit <= threshold, cached: false });
+  } catch (e) {
+    console.error("[telnyx] error pidiendo balance:", e.message);
+    res.status(502).json({ error: "No pude consultar el saldo de Telnyx.", detail: e.message });
+  }
+});
+
+// Helper: baja Detail Records (CDRs) de Telnyx para un record_type + rango.
+// GET https://api.telnyx.com/v2/detail_records?filter[record_type]=<type>&filter[date_range]=<range>
+// recordType: 'webrtc' | 'call-control' | 'sip-trunking' | etc.
+// dateRange: 'today' | 'yesterday' | 'last_7_days' | 'last_30_days' (presets de Telnyx).
+// Devuelve { ok, records:[], totalPages, status, error }. NO tira — siempre resuelve.
+async function _telnyxFetchDetailRecords(apiKey, { recordType, dateRange = "today", page = 1, pageSize = 50, extra = {} } = {}) {
+  if (!apiKey) return { ok: false, error: "sin api key", records: [] };
+  const params = new URLSearchParams();
+  params.set("filter[record_type]", recordType);
+  if (dateRange) params.set("filter[date_range]", dateRange);
+  params.set("page[number]", String(page));
+  params.set("page[size]", String(pageSize));
+  for (const [k, v] of Object.entries(extra)) params.set(k, v);
+  try {
+    const resp = await fetch(`https://api.telnyx.com/v2/detail_records?${params.toString()}`, {
+      headers: { "Authorization": `Bearer ${apiKey}`, "Accept": "application/json" },
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      return { ok: false, status: resp.status, error: body.substring(0, 300), records: [] };
+    }
+    const json = await resp.json();
+    return { ok: true, records: json?.data || [], totalPages: json?.meta?.total_pages ?? 1, meta: json?.meta || {} };
+  } catch (e) {
+    return { ok: false, error: e.message, records: [] };
+  }
+}
+
+// GET /api/telnyx/cdr-probe — admin only. Endpoint de DIAGNÓSTICO temporal.
+// Vuelca CDRs crudos de Telnyx para inspeccionar el shape real de las llamadas
+// de esta cuenta (qué record_types aparecen, qué campo linkea las patas
+// webrtc↔terminación, dónde está el costo real). A partir de esto se finaliza
+// la reconciliación de costo real. Params: ?type=webrtc&range=last_7_days&page=1
+app.get("/api/telnyx/cdr-probe", requireAuth, requireRole("admin"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  }
+  const type = String(req.query.type || "webrtc");
+  const range = String(req.query.range || "last_7_days");
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const result = await _telnyxFetchDetailRecords(cfg.apiKey, { recordType: type, dateRange: range, page, pageSize: 25 });
+  if (!result.ok) {
+    return res.status(502).json({ error: "Telnyx detail_records falló.", type, range, detail: result.error, status: result.status });
+  }
+  // Resumen compacto: claves presentes en el primer record + totales de costo.
+  const records = result.records;
+  const sampleKeys = records[0] ? Object.keys(records[0]) : [];
+  const totalCost = records.reduce((s, r) => s + (parseFloat(r.cost) || 0), 0);
+  res.json({
+    type, range, page,
+    totalPages: result.totalPages,
+    count: records.length,
+    sampleKeys,
+    totalCostThisPage: +totalCost.toFixed(6),
+    records,
   });
 });
 

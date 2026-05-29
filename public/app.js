@@ -12247,7 +12247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ═══════════════════════════════════════════════════════════════════════
   // Phase 6: Centralita Telnyx — vista admin (config + numbers + routing + metrics)
   // ═══════════════════════════════════════════════════════════════════════
-  let _tlxAdminCache = { numbers: [], countryRouting: {}, hasApiKey: false, hasSipCredentials: false, hasSignatureKey: false, sipConnectionId: '', envSourced: {} };
+  let _tlxAdminCache = { numbers: [], countryRouting: {}, hasApiKey: false, hasSipCredentials: false, hasSignatureKey: false, sipConnectionId: '', envSourced: {}, lowBalanceThreshold: 10 };
   let _tlxMetricsRefreshTimer = null;
 
   async function _tlxLoadConfig() {
@@ -12263,7 +12263,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         envSourced: d.envSourced || {},
         numbers: d.numbers || [],
         countryRouting: d.countryRouting || { default: '' },
+        lowBalanceThreshold: Number.isFinite(Number(d.lowBalanceThreshold)) ? Number(d.lowBalanceThreshold) : 10,
       };
+      const thrInput = document.getElementById('tlx-balance-threshold');
+      if (thrInput && document.activeElement !== thrInput) thrInput.value = _tlxAdminCache.lowBalanceThreshold;
       _tlxRenderAll();
     } catch (e) { console.warn('[tlx-admin] load:', e.message); }
   }
@@ -12390,6 +12393,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       </label>`;
     }).join('');
     document.getElementById('tlx-routing-countries-list').textContent = allCountries.filter(c => c !== 'default').join(', ');
+  }
+
+  async function _tlxLoadBalance(opts = {}) {
+    const cards = document.getElementById('tlx-balance-cards');
+    const alertEl = document.getElementById('tlx-balance-alert');
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/balance' + (opts.fresh ? '?fresh=1' : '')), { credentials: 'include' });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        if (cards) cards.innerHTML = `<div class="muted" style="font-size:12px; padding:8px; color:#f85149;">${escHtml(err.error || ('No pude traer el saldo (HTTP ' + r.status + ')'))}</div>`;
+        if (alertEl) alertEl.style.display = 'none';
+        return;
+      }
+      const d = await r.json();
+      const cur = d.currency || 'USD';
+      const fmt = (n) => `${cur === 'USD' ? '$' : ''}${Number(n).toFixed(2)}${cur !== 'USD' ? ' ' + cur : ''}`;
+      const card = (label, value, sub, color) => `
+        <div style="padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
+          <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">${label}</div>
+          <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
+          <div style="font-size:10px; color:var(--text-secondary); margin-top:4px;">${sub}</div>
+        </div>`;
+      const fetched = d.fetchedAt ? new Date(d.fetchedAt).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
+      if (cards) {
+        cards.innerHTML =
+          card('Crédito disponible', fmt(d.availableCredit), d.cached ? 'cacheado · ' + fetched : 'al ' + fetched, d.low ? '#f85149' : '#5bb974') +
+          card('Saldo', fmt(d.balance), 'balance', 'var(--text-primary)') +
+          card('Límite de crédito', fmt(d.creditLimit), 'credit limit', 'var(--text-secondary)');
+      }
+      if (alertEl) {
+        if (d.low) {
+          alertEl.style.display = 'block';
+          alertEl.innerHTML = `⚠️ <strong>Saldo bajo:</strong> te quedan ${fmt(d.availableCredit)} (umbral: ${fmt(d.lowBalanceThreshold)}). Recargá en Telnyx para no quedarte sin llamadas.`;
+        } else {
+          alertEl.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      console.warn('[tlx-balance]', e.message);
+      if (cards) cards.innerHTML = `<div class="muted" style="font-size:12px; padding:8px; color:#f85149;">Error de red al pedir saldo.</div>`;
+    }
   }
 
   async function _tlxLoadMetrics() {
@@ -12651,6 +12695,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('[data-target="view-telnyx-config"]')?.addEventListener('click', () => {
     setTimeout(() => {
       _tlxLoadConfig();
+      _tlxLoadBalance();
       _tlxLoadMetrics();
       _tlxLoadEffectiveness();      // Sprint 9: KPIs cold calling
       _tlxLoadScriptsAdmin();
@@ -12671,6 +12716,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);
   document.getElementById('tlx-eff-range')?.addEventListener('change', _tlxLoadEffectiveness);
+
+  // Saldo: refresh manual (fuerza fresh, salta el cache de 60s)
+  document.getElementById('tlx-balance-refresh')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
+    _tlxLoadBalance({ fresh: true }).finally(() => { btn.disabled = false; btn.textContent = old; });
+  });
+  // Guardar umbral de alerta de saldo bajo
+  document.getElementById('tlx-balance-threshold-save')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    const v = Number(document.getElementById('tlx-balance-threshold')?.value);
+    if (!Number.isFinite(v) || v < 0) { alert('Ingresá un número válido (0 o más).'); return; }
+    btn.disabled = true; const old = btn.textContent; btn.textContent = 'Guardando…';
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/config'), {
+        method: 'PUT', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lowBalanceThreshold: v }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      _tlxAdminCache.lowBalanceThreshold = v;
+      await _tlxLoadBalance({ fresh: true });   // re-evaluar alerta con el umbral nuevo
+      btn.textContent = '✓ Guardado';
+      setTimeout(() => { btn.textContent = old; }, 1500);
+    } catch (err) {
+      alert('Error guardando umbral: ' + err.message);
+      btn.textContent = old;
+    } finally { btn.disabled = false; }
+  });
 
   // Guardar credenciales
   document.getElementById('tlx-cfg-save')?.addEventListener('click', async (e) => {
