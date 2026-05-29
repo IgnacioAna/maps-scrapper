@@ -191589,16 +191589,16 @@
       "openMessage": "Hola, todo con mucho movimiento hoy por Quito",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-05-29T20:26:02.574Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593995986730?text=Hola%2C%20todo%20con%20mucho%20movimiento%20hoy%20por%20Quito",
       "lastStage": "",
@@ -191624,7 +191624,8 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "fechaContacto": "2026-05-29"
     },
     "l_esteticglamstudiodental_593963682193": {
       "num": 4104,
@@ -191648,16 +191649,16 @@
       "openMessage": "Buen día, como va el trabajo",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-05-29T20:27:43.853Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593963682193?text=Buen%20d%C3%ADa%2C%20como%20va%20el%20trabajo",
       "lastStage": "",
@@ -191683,7 +191684,8 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "fechaContacto": "2026-05-29"
     },
     "l_totaldental24horas_593993000006": {
       "num": 4105,
@@ -225928,7 +225930,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0022,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "24e87ba4-5b93-11f1-af51-8e49d6da0459",
+          "realCostReconciledAt": "2026-05-29T20:28:49.782Z"
         }
       ],
       "callAttempts": 1,
@@ -226096,7 +226102,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.009,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "89fa1c9e-5b95-11f1-bdbc-ca4e6ba1d0e3",
+          "realCostReconciledAt": "2026-05-29T20:28:49.782Z"
         },
         {
           "ts": "2026-05-29T19:43:16.997Z",
@@ -229841,7 +229851,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.019,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0.016,
+          "realCostCurrency": "USD",
+          "realCostSid": "59462794-5b92-11f1-814a-02420aef8da1",
+          "realCostReconciledAt": "2026-05-29T20:28:49.783Z"
         }
       ],
       "callAttempts": 1,
@@ -231422,7 +231436,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0092,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "06ab7b60-5b92-11f1-84eb-02420aef8a20",
+          "realCostReconciledAt": "2026-05-29T20:28:49.783Z"
         }
       ],
       "callAttempts": 1,
@@ -232445,7 +232463,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0057,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "844f6ef6-5b91-11f1-99ee-02420aef8d20",
+          "realCostReconciledAt": "2026-05-29T20:28:49.783Z"
         }
       ],
       "callAttempts": 1,
@@ -233773,7 +233795,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0065,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "e588fe22-5b8b-11f1-8639-02420aef8fa1",
+          "realCostReconciledAt": "2026-05-29T20:28:49.783Z"
         }
       ],
       "callAttempts": 1,
@@ -238002,7 +238028,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0027,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline"
+          "costTariffKey": "MX_landline",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "3f6b64ba-5b92-11f1-ae75-02420aef8e20",
+          "realCostReconciledAt": "2026-05-29T20:28:49.783Z"
         }
       ],
       "callAttempts": 1,

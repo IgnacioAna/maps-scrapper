@@ -9319,21 +9319,18 @@ function _telnyxPhoneMatch(a, b) {
   const tail = (s) => s.slice(-10);
   return da.length >= 10 && db.length >= 10 && tail(da) === tail(db);
 }
-app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async (req, res) => {
-  const cfg = loadTelnyxConfig();
-  if (!cfg.apiKey || !cfg.apiKey.trim()) {
-    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
-  }
-  const range = String(req.query.range || "last_30_days");
+// Core reusable: baja CDRs, agrupa por session y escribe realCost en el callLog.
+// Lo usan el endpoint manual y el timer automático. Devuelve métricas del run.
+async function _telnyxReconcileCosts(apiKey, range = "last_30_days") {
   const WINDOW_MS = 4 * 60 * 1000;
 
   // 1) Bajar CDRs FUERA del lock (lento, red).
   const [webrtc, sip] = await Promise.all([
-    _telnyxFetchAllDetailRecords(cfg.apiKey, "webrtc", range),
-    _telnyxFetchAllDetailRecords(cfg.apiKey, "sip-trunking", range),
+    _telnyxFetchAllDetailRecords(apiKey, "webrtc", range),
+    _telnyxFetchAllDetailRecords(apiKey, "sip-trunking", range),
   ]);
   if (!webrtc.ok && !sip.ok) {
-    return res.status(502).json({ error: "Telnyx detail_records falló.", detail: webrtc.error || sip.error });
+    return { ok: false, error: webrtc.error || sip.error };
   }
 
   // 2) Agrupar por session_id → { cost, dest, startedMs, currency }
@@ -9353,7 +9350,6 @@ app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async
   ingest(webrtc.records || []);
   ingest(sip.records || []);
 
-  // Indexar sessions por cola de dígitos del destino para matcheo rápido.
   const sessionList = Object.entries(sessions).map(([sid, s]) => ({ sid, ...s, destDigits: _telnyxDigits(s.dest) }));
 
   // 3) Writeback DENTRO del mutex (rápido, sin red).
@@ -9369,7 +9365,6 @@ app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async
         entriesScanned++;
         const entryStartMs = (Date.parse(entry.ts) || 0) - (Number(entry.duration) || 0) * 1000;
         if (!entryStartMs) continue;
-        // mejor session: mismo destino + startedMs más cercano dentro de la ventana
         let best = null, bestDiff = Infinity;
         for (const s of sessionList) {
           if (usedSids.has(s.sid)) continue;
@@ -9392,14 +9387,40 @@ app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async
     return { matched, entriesScanned, leadsTouched };
   });
 
-  res.json({
-    ok: true,
-    range,
-    sessionsFound: sessionList.length,
-    ...result,
-    partial: !webrtc.ok || !sip.ok,
-  });
+  return { ok: true, range, sessionsFound: sessionList.length, ...result, partial: !webrtc.ok || !sip.ok };
+}
+
+app.post("/api/telnyx/reconcile-costs", requireAuth, requireRole("admin"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  }
+  const range = String(req.query.range || "last_30_days");
+  const r = await _telnyxReconcileCosts(cfg.apiKey, range);
+  if (!r.ok) return res.status(502).json({ error: "Telnyx detail_records falló.", detail: r.error });
+  res.json(r);
 });
+
+// Auto-reconcile periódico: los CDRs de Telnyx se tarifan minutos/horas después
+// de la llamada, así que el reconcile manual no siempre encuentra el costo en el
+// acto. Este timer corre solo cada 6h (+ un pase ~2min post-boot) sobre los
+// últimos 7 días, pegando el costo real a las llamadas que ya se tarifaron.
+// Skip en tests y si Telnyx no está configurado.
+function _scheduleTelnyxAutoReconcile() {
+  if (process.env.NODE_ENV === "test") return;
+  const run = async () => {
+    try {
+      const cfg = loadTelnyxConfig();
+      if (!cfg.apiKey || !cfg.apiKey.trim()) return;
+      const r = await _telnyxReconcileCosts(cfg.apiKey, "last_7_days");
+      if (r.ok) console.log(`[telnyx-auto-reconcile] ${r.matched} match / ${r.entriesScanned} entries / ${r.sessionsFound} sesiones`);
+      else console.warn(`[telnyx-auto-reconcile] falló: ${r.error}`);
+    } catch (e) { console.warn("[telnyx-auto-reconcile] error:", e.message); }
+  };
+  setTimeout(run, 2 * 60 * 1000);            // pase inicial ~2min post-boot
+  setInterval(run, 6 * 60 * 60 * 1000);      // cada 6h
+}
+_scheduleTelnyxAutoReconcile();
 
 // ── Telnyx webhook + events log ──
 // Telnyx envía eventos call.initiated, call.answered, call.hangup,

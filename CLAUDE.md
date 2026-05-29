@@ -586,3 +586,25 @@ Si en el futuro hay que tocar el módulo Telnyx, estos son los gotchas verificad
 56. **Nota pre-call (`lead.precallNote`)** (Sprint 24): textarea en cada card de Llamadas donde el setter prepara contexto/ángulo de apertura ANTES de discar. Distinto de `notes[]` (post-interacción). Se persiste vía `_callsSavePrecallNote` → backend ([index.js:5402](index.js:5402)).
 
 57. **Bulk-action endpoint de leads en Llamadas** ([index.js:5270](index.js:5270)): acciones válidas `mark_wrong`, `mark_invalid`, `discard`, `assign`, `move_to_setteo` para operar sobre múltiples leads del Power Dialer.
+
+## Sesión 2026-05-29 (parte 2) — Telnyx: saldo real, costo real (CDRs), nota en dispositions, filtro "Para seguir"
+
+58. **Saldo real de Telnyx** (`74e2837`): `GET /api/telnyx/balance` (admin/supervisor) consulta `https://api.telnyx.com/v2/balance` server-side (API key NUNCA al browser), caché 60s (`?fresh=1` para forzar). Devuelve `{balance, availableCredit, creditLimit, currency, lowBalanceThreshold, low}`. `low = availableCredit <= umbral`. Card "💳 Saldo de la cuenta" en Centralita con banner de alerta + input de umbral. **`lowBalanceThreshold`** (default $10) es campo NO-secreto en `telnyx_config.json`, editable por PUT `/api/telnyx/config`.
+
+59. **Costo REAL por CDRs — el dato facturado, no el estimado** (`ee6d9e9`). Aprendizajes verificados contra la API real:
+    - Cada llamada WebRTC→PSTN genera **2 CDRs** que comparten `telnyx_session_id` (y `id`): uno `record_type=webrtc` (~$0.002/min, componente WebRTC) y uno `record_type=sip-trunking` (la **terminación al país destino**, el costo grande). `call-control` viene vacío (usamos credential-auth WebRTC, no Call Control API).
+    - **Costo real total de una llamada = suma del `cost` (string!) de ambas patas** agrupadas por `telnyx_session_id`.
+    - El `sip-trunking` trae `country_iso` ("MX") y `cld` (destino) → agregación por país sin estimar.
+    - Acceso a la API de Telnyx vía helper `_telnyxFetchDetailRecords(apiKey, {recordType, dateRange})` que pega a `https://api.telnyx.com/v2/detail_records?filter[record_type]=<type>&filter[date_range]=<range>`. `dateRange` usa presets de Telnyx: `today|yesterday|last_7_days|last_30_days` (NO acepta "all"). Paginado con `_telnyxFetchAllDetailRecords`.
+    - `GET /api/telnyx/real-costs?range=` (admin/supervisor): agrega total + byCountry + byDay + conectadas + prom/llamada. Caché 5min. Card "💵 Costo real" en Centralita.
+    - `GET /api/telnyx/cdr-probe?type=&range=` (admin): diagnóstico, vuelca CDRs crudos. Útil si Telnyx cambia el shape.
+
+60. **Reconciliación costo real → callLog** (`fd5fe63`): `POST /api/telnyx/reconcile-costs?range=` (admin) y función core `_telnyxReconcileCosts(apiKey, range)`. Matchea cada session con el callLog entry (`channel='telnyx_webrtc'`) por `dest_number == lead.phone` (helper `_telnyxPhoneMatch`: dígitos exactos o últimos 10) + `started_at ≈ entry.ts - duration` (ventana 4min). Escribe `entry.realCost`, `entry.realCostCurrency`, `entry.realCostSid`, `entry.realCostReconciledAt`. **Auto-reconcile**: timer `_scheduleTelnyxAutoReconcile()` corre last_7_days ~2min post-boot + cada 6h (skip en test/sin apiKey) — porque los CDRs se tarifan minutos/horas después de la llamada. Las **métricas por setter** (`/api/telnyx/metrics`) ahora prefieren `realCost` sobre el estimado. El estimado (`_estimateTelnyxCost`, tabla hardcoded) queda como fallback hasta que el CDR se reconcilia. Historial del Power Dialer muestra "$X real" vs "~$X estimado".
+
+61. **Nota rápida en dispositions del Power Dialer** (`fd5fe63`): input `#pd-call-note` arriba del grid de resultados. Al marcar cualquier outcome directo, `_handleCallDisposition` lo lee y lo manda como `body.notes` (el backend ya lo guardaba en `logEntry.notes`). Cubre Me cortó/No atendió/Buzón/Interesado que antes no tenían dónde anotar. Distinto del `telnyx-call-quick-note` (panel flotante durante la llamada → `logEntry.quickNote`) y del `precallNote` (pre-discado).
+
+62. **Filtro "Para seguir" en Llamadas** (`fd5fe63`): opción `follow_up` en `#calls-sort-select` (opt-in; default sigue `never_called`). En `renderCallsList` filtra a callbacks vencidos (`callbackAt <= now`) + leads cuyo último outcome ∈ {`hung_up`,`no_answer`,`voicemail`} y no descartados. Ordena callbacks-vencidos primero (más vencido arriba), luego cortados por última llamada. Es la cola de seguimiento del día separada de los vírgenes.
+
+63. **"Interesado" NO auto-agenda — es intencional** ([index.js:5779](index.js:5779)): `answered_interested` deja el lead en Llamadas con chip verde (`estado='interesado'`) esperando agendamiento manual. NO abre modal de agenda. El agendamiento real es la disposition aparte `scheduled_with_admin` (crea entry en `data.calendar`). No "arreglar" esto pensando que falta el modal.
+
+64. **Cache-buster actual: `v=20260529c`** (reemplaza la nota #48). app.js + style.css. wa.js sigue en `v=20260523a`.
