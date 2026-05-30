@@ -1703,6 +1703,47 @@ app.post('/api/admin/backfill-wa-text', requireAuth, requireRole('admin'), (req,
   res.json({ scanned, fixed, dryRun, sample });
 });
 
+// Backfill del campo lead.doctor extrayendo "Dr./Dra. Nombre" del lead.name.
+// El scraper IA solo puebla el doctor en ~21% de los casos; muchos otros leads
+// tienen el nombre del profesional en el propio name de la ficha (ej.
+// "Consultorio Odontológico Dra. Agustina Alvarez"). Este endpoint los extrae.
+// dryRun:true para previsualizar sin escribir. Idempotente: skipea leads que
+// ya tengan doctor poblado (no-N/A). Output formato "Dr/a. Nombre" para matchear
+// la convención del scraper original.
+function _extractDoctorFromName(name) {
+  if (!name || typeof name !== 'string') return '';
+  // Acepta: Dr./Dra./Dr/a./Doctor/Doctora seguido de 1 a 4 palabras capitalizadas,
+  // con conectores opcionales (de, del, de la, y).
+  const re = /(?:Dra?\.?\/?[a]?\.?|Doctora?)\s+([A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+(?:\s+(?:de\s+(?:la\s+|los\s+|las\s+)?|del\s+|y\s+)?[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+){0,3})/;
+  const m = name.match(re);
+  if (!m) return '';
+  return 'Dr/a. ' + m[1].trim();
+}
+app.post('/api/admin/backfill-doctor-from-name', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, updated: 0, sample: [] });
+  let scanned = 0, updated = 0, alreadyHad = 0;
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    const current = (lead.doctor || '').trim();
+    if (current && !current.toUpperCase().includes('N/A')) { alreadyHad++; continue; }
+    const extracted = _extractDoctorFromName(lead.name);
+    if (!extracted) continue;
+    if (sample.length < 15) sample.push({ id, name: lead.name, before: lead.doctor || '', after: extracted });
+    if (!dryRun) {
+      lead.doctor = extracted;
+      lead.doctorSource = 'regex_from_name';
+      lead.doctorBackfilledAt = new Date().toISOString();
+    }
+    updated++;
+  }
+  if (!dryRun && updated > 0) saveSettersData(data);
+  res.json({ scanned, updated, alreadyHad, dryRun, sample });
+});
+
 app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, res) => {
   const { setterId = '', dryRun = false, onlySuspicious = true } = req.body || {};
   const data = loadSettersData();
