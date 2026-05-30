@@ -4595,12 +4595,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>` : ''}
 
       <!-- Bloque 4: Quick-links acción — sin emojis, look uniforme outline -->
-      ${(mapsUrl || safeW || igUrl || validEmail || lead.whatsappUrl) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap;">
+      ${(mapsUrl || safeW || igUrl || validEmail || lead.whatsappUrl) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
         ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Maps</a>` : ''}
         ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
         ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">WhatsApp</a>` : ''}
+        <button type="button" onclick="window.openPlaceholderModal('${escHtml(lead.id)}')" class="pd-quick-link" style="cursor:pointer; background:transparent; font-family:inherit;" title="Mandar invitación tentativa de calendario por mail">📅 Hold</button>
+        ${lead.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; padding:3px 8px; border:1px solid rgba(91,185,116,0.25); border-radius:6px;">📧 hold enviado</span>` : ''}
       </div>` : ''}
 
       <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
@@ -4610,7 +4612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex; flex-direction:column; gap:5px;">
             ${lastCalls.map(entry => {
               // Dot de color por outcome — más sobrio que emoji
-              const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)' })[entry.outcome] || '#888';
+              const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)', hung_up:'#F47272', placeholder_sent:'#7DD3FC' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
               // Costo: real (reconciliado de CDR) si existe, sino estimado.
               let costStr = '';
@@ -5429,6 +5431,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${notesBadge}
               ${fupBadge}
               ${callbackBadge}
+              ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
+              <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -5497,7 +5501,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         wrong_number: '🔢 Equivocado',
         invalid_number: '🚫 No existe',
         callback_later: '🔄 Postpuesto',
-        scheduled_with_admin: '📅 Agendado'
+        scheduled_with_admin: '📅 Agendado',
+        hung_up: '🚪 Me cortó',
+        placeholder_sent: '📧 Hold enviado'
       };
       return map[o] || o;
     }
@@ -6374,6 +6380,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         selectEl.disabled = false;
       }
     };
+
+    // Placeholder de calendario: cuando el prospect dice "mandame info y vemos",
+    // en vez de mandar un mail que se ignora, mandamos un .ics tentativo.
+    // Le aparece como bloque en su agenda con Aceptar / Proponer otro horario.
+    function openPlaceholderModal(leadId) {
+      const lead = _callsLeadsById.get(leadId);
+      if (!lead) return;
+      const modal = document.getElementById('call-placeholder-modal');
+      const emailIn = document.getElementById('call-ph-email');
+      const fechaIn = document.getElementById('call-ph-fecha');
+      const durIn = document.getElementById('call-ph-duration');
+      const noteIn = document.getElementById('call-ph-note');
+      // Defaults
+      emailIn.value = (lead.email || '').trim();
+      const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(11, 0, 0, 0);
+      fechaIn.value = _toDatetimeLocal(m);
+      durIn.value = '30';
+      noteIn.value = '';
+
+      // Quickpicks reusando los del callback (mañana 10am, etc.)
+      const qp = document.getElementById('call-ph-quickpicks');
+      if (qp) {
+        const picks = _buildCallbackQuickPicks();
+        qp.innerHTML = picks.map((p) => `<button type="button" class="ph-quickpick" data-iso="${p.date.toISOString()}" style="padding:7px 11px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:7px; color:var(--text-primary); font-size:11px; cursor:pointer; font-family:inherit;">${p.label}</button>`).join('');
+        qp.querySelectorAll('.ph-quickpick').forEach(btn => {
+          btn.addEventListener('click', () => {
+            fechaIn.value = _toDatetimeLocal(new Date(btn.getAttribute('data-iso')));
+            qp.querySelectorAll('.ph-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.background = 'rgba(157,133,242,0.12)';
+          });
+        });
+      }
+      modal.classList.remove('hidden');
+
+      document.getElementById('call-ph-confirm').onclick = async () => {
+        const email = emailIn.value.trim();
+        const when = fechaIn.value;
+        const durationMins = parseInt(durIn.value, 10) || 30;
+        const customNote = noteIn.value.trim();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Email inválido del prospect.'); return; }
+        if (!when) { alert('Elegí fecha y hora.'); return; }
+        const btn = document.getElementById('call-ph-confirm');
+        btn.disabled = true; const old = btn.textContent; btn.textContent = 'Mandando…';
+        try {
+          const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/send-placeholder'), {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ when: new Date(when).toISOString(), durationMins, email, customNote: customNote || undefined }),
+          });
+          const j = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
+          modal.classList.add('hidden');
+          window.showToast?.(`✓ Hold enviado a ${email}`, { type: 'success', duration: 4000 });
+          await loadCallsView();
+        } catch (e) {
+          alert('Error: ' + e.message);
+          btn.disabled = false; btn.textContent = old;
+        }
+      };
+    }
+    window.openPlaceholderModal = openPlaceholderModal;
 
     function openCallbackModal(leadId) {
       const modal = document.getElementById('call-callback-modal');

@@ -5646,7 +5646,9 @@ const CALL_OUTCOMES = new Set([
   'wrong_number',            // 🔢 Número equivocado → descarta + flag
   'invalid_number',          // 🚫 No existe → descarta + flag
   'callback_later',          // 🔄 Volver a llamar (con fecha) → oculta hasta fecha
-  'scheduled_with_admin'     // 📅 Agendó llamada de ventas con admin → crea evento en calendar
+  'scheduled_with_admin',    // 📅 Agendó llamada de ventas con admin → crea evento en calendar
+  'hung_up',                 // 🚪 Atendió y colgó (bug-fix 2026-05-30: faltaba en whitelist)
+  'placeholder_sent'         // 📧 Hold de calendario enviado por mail (no cambia estado, queda en Llamadas)
 ]);
 
 app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
@@ -5879,6 +5881,151 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
 
   saveSettersData(data);
   res.json({ ok: true, lead, calendarEntry });
+});
+
+// ── Placeholder de calendario (cold call followup) ──
+// Cuando el prospect dice "mandame mail y coordinamos", en vez de mandar
+// un mail que se ignora, mandamos un EVENTO DE CALENDARIO tentativo (.ics).
+// El prospect lo recibe como una invitación con botón aceptar/rechazar,
+// con fecha+hora ya puesta. Si no le sirve, propone otra. Si lo ignora,
+// queda visible en su calendario como bloque tentativo (más difícil de
+// olvidar que un mail). Inspirado en Armand del podcast Sell Better.
+// Fuente: video "35 Minutes of Expert Cold Calling Tips" (sesión 2026-05-30).
+function _icsEscape(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+function _icsDateTime(d) {
+  // YYYYMMDDTHHmmssZ en UTC
+  return new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+function _buildPlaceholderICS({ uid, organizerEmail, organizerName, attendeeEmail, attendeeName, summary, description, startISO, endISO }) {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//SCM Dental//Placeholder//ES',
+    'METHOD:REQUEST',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:${uid}`,
+    `DTSTAMP:${_icsDateTime(new Date())}`,
+    `DTSTART:${_icsDateTime(startISO)}`,
+    `DTEND:${_icsDateTime(endISO)}`,
+    `SUMMARY:${_icsEscape(summary)}`,
+    `DESCRIPTION:${_icsEscape(description)}`,
+    `ORGANIZER;CN=${_icsEscape(organizerName)}:mailto:${organizerEmail}`,
+    `ATTENDEE;CN=${_icsEscape(attendeeName)};RSVP=TRUE;PARTSTAT=NEEDS-ACTION:mailto:${attendeeEmail}`,
+    'STATUS:TENTATIVE',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
+
+async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsContent, fromOverride }) {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
+  const fromEmail = fromOverride || process.env.INVITE_FROM_EMAIL || 'SCM Dental Setting App <onboarding@resend.dev>';
+  try {
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [toEmail],
+        subject,
+        html: htmlBody,
+        attachments: [{
+          filename: 'reunion-tentativa.ics',
+          content: Buffer.from(icsContent, 'utf8').toString('base64'),
+          // Resend respeta content_type para attachments y el cliente de mail
+          // detecta el .ics como invitación de calendario.
+          content_type: 'text/calendar; charset=utf-8; method=REQUEST',
+        }],
+      })
+    });
+    if (resp.ok) return { sent: true };
+    const err = await resp.json().catch(() => ({}));
+    return { sent: false, reason: err.message || `HTTP ${resp.status}` };
+  } catch (e) {
+    return { sent: false, reason: e.message };
+  }
+}
+
+// POST /api/setters/leads/:id/send-placeholder — body { when (ISO), durationMins?, email?, customNote? }
+// El user del SCM (vos) sos el organizer; el lead es el attendee.
+// 1) Genera .ics tentativo. 2) Lo manda al email del prospect con texto custom.
+// 3) Loguea en callLog con outcome placeholder_sent. 4) Setea lead.placeholderSentAt.
+app.post('/api/setters/leads/:id/send-placeholder', requireAuth, async (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+  const { when, durationMins, email, customNote } = req.body || {};
+  if (!when) return res.status(400).json({ error: 'when (fecha+hora ISO) requerido.' });
+  const startMs = Date.parse(when);
+  if (!Number.isFinite(startMs)) return res.status(400).json({ error: 'when inválido (debe ser ISO 8601).' });
+  const dur = Math.max(15, Math.min(parseInt(durationMins, 10) || 30, 240));
+  const endMs = startMs + dur * 60 * 1000;
+  const toEmail = String(email || lead.email || '').trim();
+  if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+    return res.status(400).json({ error: 'Falta o es inválido el email del prospect.' });
+  }
+
+  const u = req.auth?.user || {};
+  const organizerName = u.name || 'SCM Dental';
+  const organizerEmail = u.email || 'no-reply@scm-dental.com';
+  const toName = lead.doctor && !String(lead.doctor).toUpperCase().includes('N/A') ? lead.doctor : (lead.name || toEmail);
+
+  const summary = `Charla SCM Dental — ${organizerName} & ${toName}`;
+  const startISO = new Date(startMs).toISOString();
+  const endISO = new Date(endMs).toISOString();
+  const fechaTxt = new Date(startMs).toLocaleString('es-AR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
+  const defaultNote = `Te dejo este bloque tentativo para ${fechaTxt}. Si te queda, lo aceptás y listo. Si no, proponés otro horario o lo rechazás y coordinamos. No nos hacemos problema.`;
+  const description = String(customNote || defaultNote).slice(0, 1000);
+
+  const ics = _buildPlaceholderICS({
+    uid: `placeholder-${req.params.id}-${Date.now()}@scm-dental`,
+    organizerEmail, organizerName,
+    attendeeEmail: toEmail, attendeeName: toName,
+    summary, description, startISO, endISO,
+  });
+
+  const htmlBody = `
+    <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px; color:#1e1f20;">
+      <p>Hola ${_icsEscape(toName)},</p>
+      <p>${_icsEscape(description)}</p>
+      <p style="margin-top:18px;">Te adjunto la invitación. La mayoría de los clientes de mail (Gmail, Outlook) te muestran un botón <strong>Aceptar / Rechazar / Proponer otro horario</strong> directamente arriba del mensaje.</p>
+      <p style="color:#666; font-size:13px; margin-top:24px;">— ${_icsEscape(organizerName)}</p>
+    </div>`;
+
+  const result = await _sendPlaceholderEmail({
+    toEmail, toName,
+    subject: `Reunión tentativa — ${fechaTxt}`,
+    htmlBody, icsContent: ics,
+    fromOverride: process.env.PLACEHOLDER_FROM_EMAIL || undefined,
+  });
+
+  if (!result.sent) {
+    return res.status(502).json({ error: 'No se pudo enviar el mail.', detail: result.reason });
+  }
+
+  if (!Array.isArray(lead.callLog)) lead.callLog = [];
+  const nowIso = new Date().toISOString();
+  lead.callLog.push({
+    ts: nowIso,
+    outcome: 'placeholder_sent',
+    by: u.id || '',
+    notes: `Hold enviado a ${toEmail} para ${fechaTxt}.${customNote ? ' Nota custom: ' + String(customNote).slice(0, 200) : ''}`,
+    channel: 'email',
+    placeholderWhen: startISO,
+  });
+  if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
+  lead.placeholderSentAt = nowIso;
+  lead.lastContactAt = nowIso;
+  saveSettersData(data);
+  res.json({ ok: true, lead, sentTo: toEmail, when: startISO });
 });
 
 // ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──
