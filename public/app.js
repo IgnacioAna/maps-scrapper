@@ -4645,7 +4645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada (opcional) — ej: contestó la secre, pedir por Dr. X el martes" style="width:100%; box-sizing:border-box; padding:9px 12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
         <div class="pd-disposition-grid">
           ${[
-            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'agenda con Ignacio',  color:'success' },
+            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'abre agenda ahora',   color:'success' },
             { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
             { v:'hung_up',                 k:'3', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
             { v:'no_answer',               k:'4', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
@@ -4732,7 +4732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._pdHandleDisposition = async function(leadId, selectEl) {
       const outcome = selectEl?.value;
       if (!outcome) return;
-      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
+      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested','answered_interested'].includes(outcome);
       await window._handleCallDisposition(leadId, selectEl);
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
@@ -6325,6 +6325,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
+        // 2026-05-30: cuando un solo usuario hace de setter+admin, "Interesado"
+        // ya implica "agendar ahora". Abrimos el modal de agenda directo. Si
+        // cancela, igual queda logueado como answered_interested (fallback).
+        if (outcome === 'answered_interested') {
+          openScheduleModal(leadId, { fallbackOnCancel: 'answered_interested' });
+          selectEl.value = '';
+          selectEl.disabled = false;
+          return;
+        }
         // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
         // El popover deja saltear (skip) si el setter no quiere taggear.
         if (outcome === 'answered_not_interested') {
@@ -6553,7 +6562,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return picks;
     }
 
-    function openScheduleModal(leadId) {
+    function openScheduleModal(leadId, opts = {}) {
+      // opts.fallbackOnCancel: si vino acá vía "Interesado" y el user cierra/cancela
+      // sin agendar, igual queremos logear el "Interesado" para no perder el signal.
+      const fallbackOnCancel = opts.fallbackOnCancel || null;
       const lead = _callsLeadsById.get(leadId);
       const modal = document.getElementById('call-schedule-modal');
       document.getElementById('call-sched-nombre').value = lead?.name || '';
@@ -6563,6 +6575,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('call-sched-fecha').value = _toDatetimeLocal(m);
       document.getElementById('call-sched-notas').value = '';
       modal.classList.remove('hidden');
+
+      let confirmed = false;
+      let observer = null;
+
       document.getElementById('call-sched-confirm').onclick = async () => {
         const nombre = document.getElementById('call-sched-nombre').value.trim();
         const fecha = document.getElementById('call-sched-fecha').value;
@@ -6579,10 +6595,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          confirmed = true;
+          observer?.disconnect();
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) { alert('Error: ' + e.message); }
       };
+
+      // Si el modal se abrió desde "Interesado", monitoreamos el cierre sin
+      // confirmar para postear el answered_interested como fallback (no perder
+      // el signal "atendió + interesado" si el setter no llegó a agendar).
+      if (fallbackOnCancel) {
+        observer = new MutationObserver(async () => {
+          if (modal.classList.contains('hidden') && !confirmed) {
+            observer.disconnect();
+            try {
+              await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ outcome: fallbackOnCancel })
+              });
+              await loadCallsView();
+            } catch (e) { console.warn('[schedule-fallback]', e.message); }
+          }
+        });
+        observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+      }
     }
 
     const callsMenuItem = document.querySelector('[data-target="view-calls"]');
