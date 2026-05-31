@@ -21,3 +21,5 @@ test_qwen.js
 # Archivo personal con notas/credenciales scratch — nunca subirlo
 Scapper.txt
 .claude/
+# Carpeta de assets del desktop WAMULTI — no pertenece a este repo
+wa-multi/

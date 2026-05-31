@@ -4556,7 +4556,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="color:var(--text-secondary); font-size:13px;">
             ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
           </div>
-          <div style="margin-top:8px; font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(lead.phone)}</div>
+          <div style="margin-top:8px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+            <span style="font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(lead.phone)}</span>
+            <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">·</span>
+          </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
             ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
@@ -4683,6 +4686,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
 
       document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas`;
+
+      // Badge de tarifa real Telnyx por prefijo. Async para no bloquear el render.
+      // Cache por número así no re-fetcheamos en cada re-render del PD.
+      const badge = document.getElementById('pd-rate-badge');
+      if (badge && lead.phone) {
+        _pdFetchRate(lead.phone).then(r => {
+          // Solo actualizar si el badge sigue apuntando a este mismo número
+          // (puede haber cambiado el lead activo si el setter avanzó rapido)
+          if (!badge.isConnected || badge.dataset.phone !== lead.phone) return;
+          if (r && r.found) {
+            const moneda = '$' + r.ratePerMin.toFixed(4);
+            const tipo = r.isMobile ? 'móvil' : 'fijo';
+            badge.style.color = r.ratePerMin > 0.10 ? '#F47272' : (r.ratePerMin > 0.05 ? '#FFB341' : '#5BB974');
+            badge.innerHTML = `<span title="Tarifa real Telnyx (prefijo ${r.matchedPrefix})">${moneda}/min · ${r.country} ${tipo}</span>`;
+          } else {
+            badge.style.color = 'var(--text-tertiary)';
+            badge.textContent = '· tarifa s/d';
+          }
+        }).catch(() => {});
+      }
+    }
+    // Cache de tarifas por número durante la sesión del PD
+    const _pdRateCache = new Map();
+    async function _pdFetchRate(phone) {
+      if (_pdRateCache.has(phone)) return _pdRateCache.get(phone);
+      try {
+        const r = await fetch(apiUrl('/api/telnyx/rate?phone=' + encodeURIComponent(phone)), { credentials: 'include' });
+        if (!r.ok) { _pdRateCache.set(phone, null); return null; }
+        const j = await r.json();
+        _pdRateCache.set(phone, j);
+        return j;
+      } catch { return null; }
     }
     window._pdSkip = function() { _pdAdvance(); };
     window._pdAdvance = _pdAdvance;

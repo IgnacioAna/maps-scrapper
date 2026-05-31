@@ -5761,13 +5761,27 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   }
 
   function _estimateTelnyxCost(destinationPhone, durationSecs) {
+    if (!durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
+    // Preferir el lookup real contra la rate sheet de Telnyx
+    const realRate = _telnyxRateForNumber(destinationPhone);
+    if (realRate) {
+      const minutes = durationSecs / 60;
+      return {
+        cost: +(realRate.ratePerMin * minutes).toFixed(4),
+        country: realRate.country,
+        tariffKey: `${realRate.country}_${realRate.isMobile ? 'mobile' : 'landline'}_${realRate.matchedPrefix}`,
+        source: 'rate_sheet',
+        matchedPrefix: realRate.matchedPrefix,
+      };
+    }
+    // Fallback a la tabla hardcoded si no hay rate sheet o no matchea
     const digits = String(destinationPhone || '').replace(/\D/g, '');
-    if (!digits || !durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
+    if (!digits) return { cost: 0, country: 'unknown', tariffKey: 'default' };
     const { country, isMobile } = _detectCountryAndType(digits);
     const tariffKey = country === 'US' ? 'US_any' : `${country}_${isMobile ? 'mobile' : 'landline'}`;
     const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN[`${country}_mobile`] || TELNYX_RATES_USD_PER_MIN['default'];
     const minutes = durationSecs / 60;
-    return { cost: +(rate * minutes).toFixed(4), country, tariffKey };
+    return { cost: +(rate * minutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
   }
 
   const now = new Date().toISOString();
@@ -8424,6 +8438,57 @@ function saveMercuryConfig(cfg) {
 const TELNYX_CONFIG_FILE = path.join(DATA_DIR, "telnyx_config.json");
 const TELNYX_EVENTS_FILE = path.join(DATA_DIR, "telnyx_events.json");
 
+// ── Telnyx rate sheet lookup (tarifas reales por prefijo) ──
+// El archivo data/telnyx_rates.json viene del CSV global que Telnyx manda por
+// mail. Se importa con `node scripts/import-telnyx-rates.mjs <csv>`. Tiene
+// ~83k destinos default (filtramos los que tienen Origination Prefixes
+// específicos como 'local'). Se carga 1 vez en memoria; el lookup es O(L)
+// donde L = largo del número (~15 máx) usando longest-prefix-match.
+//
+// Reemplaza la tabla hardcodeada TELNYX_RATES_USD_PER_MIN como fuente
+// preferida. La tabla queda como fallback si el archivo no está disponible
+// o no hay match para el prefijo.
+const TELNYX_RATES_FILE = path.join(process.cwd(), "data", "telnyx_rates.json");
+let _telnyxRatesCache = null; // { map: Map<prefix, {p,r,m,c,n}>, count, importedAt }
+function _loadTelnyxRates() {
+  if (_telnyxRatesCache) return _telnyxRatesCache;
+  try {
+    if (!fs.existsSync(TELNYX_RATES_FILE)) return null;
+    const data = JSON.parse(fs.readFileSync(TELNYX_RATES_FILE, "utf8"));
+    const map = new Map();
+    for (const r of data.rates || []) map.set(r.p, r);
+    _telnyxRatesCache = { map, count: data.count || map.size, importedAt: data.importedAt };
+    console.log(`📞 Telnyx rate sheet cargado: ${_telnyxRatesCache.count} prefijos (${data.importedAt || 'sin fecha'})`);
+    return _telnyxRatesCache;
+  } catch (e) {
+    console.warn("[telnyx-rates] error cargando:", e.message);
+    return null;
+  }
+}
+
+// Longest-prefix-match contra la rate sheet. Devuelve {ratePerMin, country,
+// countryName, isMobile, matchedPrefix} o null si no hay match (o el archivo
+// no está disponible).
+function _telnyxRateForNumber(phone) {
+  const loaded = _loadTelnyxRates();
+  if (!loaded) return null;
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (!digits) return null;
+  for (let len = Math.min(digits.length, 15); len >= 1; len--) {
+    const m = loaded.map.get(digits.slice(0, len));
+    if (m) return {
+      ratePerMin: m.r,
+      country: m.c,
+      countryName: m.n,
+      isMobile: m.m === 1,
+      matchedPrefix: m.p,
+    };
+  }
+  return null;
+}
+// Pre-cargar al boot para que el primer estimate sea instantáneo
+_loadTelnyxRates();
+
 function _defaultTelnyxConfig() {
   return {
     apiKey: "",
@@ -9286,6 +9351,33 @@ app.post("/api/telnyx/webrtc-credentials", requireAuth, async (req, res) => {
 // `low` = available_credit <= umbral configurado → el frontend muestra alerta.
 let _telnyxBalanceCache = { ts: 0, data: null };
 const TELNYX_BALANCE_TTL_MS = 60 * 1000;
+// GET /api/telnyx/rate?phone=+5491145678901 — tarifa real Telnyx para ese
+// destino, longest-prefix-match contra data/telnyx_rates.json. Cualquier user
+// autenticado puede pedirlo (setter lo usa para ver costo antes de discar).
+app.get("/api/telnyx/rate", requireAuth, (req, res) => {
+  const phone = String(req.query.phone || "");
+  if (!phone) return res.status(400).json({ error: "phone (E.164) requerido." });
+  const r = _telnyxRateForNumber(phone);
+  const loaded = _loadTelnyxRates();
+  if (!r) {
+    return res.json({
+      found: false,
+      hasRateSheet: !!loaded,
+      sheetCount: loaded?.count || 0,
+    });
+  }
+  res.json({
+    found: true,
+    phone,
+    ratePerMin: r.ratePerMin,
+    country: r.country,
+    countryName: r.countryName,
+    isMobile: r.isMobile,
+    matchedPrefix: r.matchedPrefix,
+    currency: "USD",
+  });
+});
+
 app.get("/api/telnyx/balance", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
   const cfg = loadTelnyxConfig();
   if (!cfg.apiKey || !cfg.apiKey.trim()) {
