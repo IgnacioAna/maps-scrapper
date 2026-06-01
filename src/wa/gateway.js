@@ -239,6 +239,31 @@ export function initGateway(httpServer, deps) {
       }
     });
 
+    // v0.5.8 WAMULTI: el desktop avisa que el user envió un WhatsApp a un lead
+    // (chat abierto vía protocolo wamulti://send). Registramos el contacto en
+    // el lead con la cuenta/número desde el que se escribió.
+    socket.on("lead:contacted", async ({ leadId, accountId, fromPhone, toPhone, sentAt } = {}) => {
+      if (!leadId) return;
+      // Ownership: el user debe poder actuar sobre esa cuenta WA.
+      if (accountId && !userCanActOnAccount(user, accountId)) {
+        console.warn(`[wa-gateway] lead:contacted rechazado: user ${user.id} sin permiso sobre ${accountId}`);
+        return;
+      }
+      try {
+        if (typeof deps.markLeadContacted === "function") {
+          const r = await deps.markLeadContacted({ leadId, accountId, fromPhone, toPhone, sentAt });
+          if (r && r.ok) {
+            console.log(`[wa-gateway] lead:contacted OK leadId=${leadId} from=${fromPhone}`);
+            io.to("admins").emit("admin:lead-contacted", { leadId, accountId, fromPhone, sentAt });
+          } else {
+            console.warn(`[wa-gateway] lead:contacted no aplicó: ${r?.reason}`);
+          }
+        }
+      } catch (err) {
+        console.error("[wa-gateway] lead:contacted error:", err?.message || err);
+      }
+    });
+
     socket.on("disconnect", () => {
       const cur = presence.get(user.id);
       if (!cur) return;

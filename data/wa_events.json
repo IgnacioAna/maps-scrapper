@@ -1,6 +1,38 @@
 {
   "events": [
     {
+      "id": "ev_1780324785991_6knv68",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-01T14:39:45.991Z"
+    },
+    {
+      "id": "ev_1780324785882_h2dmep",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-01T14:39:45.882Z"
+    },
+    {
+      "id": "ev_1780324785048_h5yvsz",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-01T14:39:45.048Z"
+    },
+    {
+      "id": "ev_1780324784811_rvdzit",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-01T14:39:44.811Z"
+    },
+    {
       "id": "ev_1780322036106_omt9r1",
       "type": "ai-classified-inbound",
       "accountId": "wa_1777129407605_6dmfeo",
@@ -8579,40 +8611,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-04-26T03:00:27.146Z"
-    },
-    {
-      "id": "ev_1777172370689_1os6q6",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T02:59:30.689Z"
-    },
-    {
-      "id": "ev_1777172367495_nuxudn",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T02:59:27.495Z"
-    },
-    {
-      "id": "ev_1777172367339_r4779h",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-26T02:59:27.339Z"
-    },
-    {
-      "id": "ev_1777172359236_d1udx4",
-      "type": "window-closed",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T02:59:19.236Z"
     }
   ]
 }

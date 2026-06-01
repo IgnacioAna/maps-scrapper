@@ -10934,6 +10934,34 @@ function userIdFromSetterIdHelper(setterId) {
   return null;
 }
 
+// v0.5.8 WAMULTI: registra que un lead fue contactado por WhatsApp desde una
+// cuenta específica. Lo llama el gateway WA cuando WAMULTI emite lead:contacted
+// (el user envió el mensaje a mano en el chat abierto vía protocolo wamulti://).
+// Escribe contactedFrom* + un interaction. Usa el mutex de setters.
+async function markLeadContactedHelper({ leadId, accountId, fromPhone, toPhone, sentAt }) {
+  if (!leadId) return { ok: false, reason: "sin leadId" };
+  return mutateSettersData((data) => {
+    const lead = data.leads ? data.leads[leadId] : null;
+    if (!lead) return { ok: false, reason: "lead no encontrado" };
+    const ts = sentAt || new Date().toISOString();
+    lead.contactedFromAccountId = accountId || lead.contactedFromAccountId || "";
+    lead.contactedFromPhone = fromPhone || lead.contactedFromPhone || "";
+    lead.contactedAt = ts;
+    lead.lastContactAt = ts;
+    if (!Array.isArray(lead.interactions)) lead.interactions = [];
+    lead.interactions.push({
+      action: "wa_sent",
+      via: "wamulti",
+      accountId: accountId || "",
+      fromPhone: fromPhone || "",
+      toPhone: toPhone || "",
+      createdAt: ts,
+    });
+    if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
+    return { ok: true, leadId };
+  });
+}
+
 // Healthcheck: estado del sistema en tiempo real (admin only)
 const SERVER_BOOT_TS = Date.now();
 app.get('/api/admin/health', requireAuth, requireRole('admin'), (_req, res) => {
@@ -11096,6 +11124,7 @@ mountWa(app, server, {
   getSessionFromRequest,
   verifyCredentials: verifyCredentialsHelper,
   userIdFromSetterId: userIdFromSetterIdHelper,
+  markLeadContacted: markLeadContactedHelper,
   // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
   // network lo reusa en vez de pedir API keys nuevas.
   aiClient: warmingAi,

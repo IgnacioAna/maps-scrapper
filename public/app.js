@@ -1007,6 +1007,91 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     };
 
+    // ── WAMULTI v0.5.8: abrir chat en WAMULTI (con elección de cuenta) ──
+    // Solo habilitado para Ignacio (admin o setter_ignacio) en fase de testing.
+    window._waMultiEnabled = () => {
+      const u = currentUser || {};
+      return u.realRole === 'admin' || u.realSetterId === 'setter_ignacio' || u.setterId === 'setter_ignacio';
+    };
+    // Cache de cuentas WA del user (para el popover). Se refresca al abrir.
+    let _waAccountsCache = null;
+    async function _waLoadAccounts() {
+      try {
+        const r = await fetch(apiUrl('/api/wa/accounts'), { credentials: 'include' });
+        if (!r.ok) return [];
+        const accs = await r.json();
+        // Solo conectadas/disponibles para escribir
+        _waAccountsCache = (accs || []).filter(a => a.status === 'CONNECTED' || a.status === 'QR_PENDING' || !a.status);
+        return _waAccountsCache;
+      } catch { return []; }
+    }
+    function _waClosePopover() {
+      document.getElementById('_wamulti-popover')?.remove();
+      document.removeEventListener('click', _waPopoverOutside, true);
+    }
+    function _waPopoverOutside(e) {
+      const pop = document.getElementById('_wamulti-popover');
+      if (pop && !pop.contains(e.target)) _waClosePopover();
+    }
+    // Handler principal del botón. Devuelve true si dejó pasar el comportamiento
+    // normal (wa.me), false si interceptó para WAMULTI.
+    window._waMultiClick = async (el, ev, leadId) => {
+      if (!window._waMultiEnabled()) return true; // no-Ignacio → wa.me normal
+      ev.preventDefault();
+      ev.stopPropagation();
+      // Extraer phone + text del href wa.me
+      const url = el.href || el.getAttribute('data-wa-url') || '';
+      const mp = url.match(/wa\.me\/(\d+)/);
+      const phone = mp ? mp[1] : (el.getAttribute('data-phone') || '').replace(/\D/g, '');
+      let text = '';
+      const mt = url.match(/[?&]text=([^&]+)/);
+      if (mt) { try { text = decodeURIComponent(mt[1]); } catch { text = mt[1]; } }
+      if (!phone) { window.showToast?.('No pude leer el número del lead.', { type:'error' }); return false; }
+      _waClosePopover();
+      const accounts = await _waLoadAccounts();
+      if (accounts.length === 0) {
+        window.showToast?.('No hay cuentas WAMULTI conectadas. Abrí WAMULTI primero.', { type:'warning', duration:4000 });
+        return false;
+      }
+      // Render popover al lado del botón
+      const pop = document.createElement('div');
+      pop.id = '_wamulti-popover';
+      const rect = el.getBoundingClientRect();
+      pop.style.cssText = `position:fixed; z-index:10000; top:${Math.min(rect.bottom+6, window.innerHeight-200)}px; left:${Math.min(rect.left, window.innerWidth-260)}px; background:var(--bg-surface,#16181d); border:1px solid var(--border-color,#2a2d35); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,0.5); padding:8px; min-width:240px;`;
+      const flagOf = (c) => ({ ES:'🇪🇸',MX:'🇲🇽',AR:'🇦🇷',CO:'🇨🇴',CL:'🇨🇱',PE:'🇵🇪',UY:'🇺🇾',BO:'🇧🇴',US:'🇺🇸',EC:'🇪🇨' })[c] || '📱';
+      pop.innerHTML = `<div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); padding:4px 8px 8px;">¿Desde qué WhatsApp?</div>` +
+        accounts.map(a => `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='rgba(157,133,242,0.10)'" onmouseout="this.style.background='transparent'">
+          <span style="font-size:16px;">📱</span>
+          <span style="flex:1; min-width:0;"><div style="font-weight:600;">${escHtml(a.label || 'Cuenta')}</div><div style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">${escHtml(a.phone || '')}</div></span>
+        </button>`).join('');
+      document.body.appendChild(pop);
+      pop.querySelectorAll('button[data-acc]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const accountId = btn.getAttribute('data-acc');
+          const proto = `wamulti://send?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&accountId=${encodeURIComponent(accountId)}&leadId=${encodeURIComponent(leadId||'')}`;
+          window.location.href = proto;
+          _waClosePopover();
+          window.showToast?.('Abriendo en WAMULTI… revisá y enviá. Se registra al enviar.', { type:'info', duration:4000 });
+        });
+      });
+      setTimeout(() => document.addEventListener('click', _waPopoverOutside, true), 50);
+      return false;
+    };
+
+    // Wrapper SÍNCRONO para el onclick del botón (el preventDefault debe ser
+    // síncrono). Si es Ignacio → intercepta para WAMULTI. Si no → wa.me normal.
+    window._waBtnClick = (el, ev, leadId) => {
+      if (window._waMultiEnabled()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        window._waMultiClick(el, ev, leadId);
+        return false;
+      }
+      // no-Ignacio: copiar número + dejar que el link abra wa.me normal
+      window._waClickCopy(el, ev);
+      return true;
+    };
+
     const buildSetterWaUrl = (lead, stage = 'apertura') => {
       // Si el lead tiene su propia URL de WhatsApp importada (del CSV), usarla directamente en apertura
       if (stage === 'apertura' && lead?.whatsappUrl && lead.whatsappUrl.includes('wa.me/')) {
@@ -2495,7 +2580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const city = lead.city || lead.country || '';
       const cityHtml = city ? `<div style="font-size:11px; color:var(--text-secondary); margin-top:3px;">${escHtml(city)}</div>` : '';
       const phoneHtml = phone
-        ? `<a href="${escHtml(waUrl)}" target="_blank" class="text-link" style="color:var(--success); white-space:nowrap;" onclick="window._waClickCopy(this, event);">${escHtml(phone)}</a>`
+        ? `<a href="${escHtml(waUrl)}" target="_blank" class="text-link" style="color:var(--success); white-space:nowrap;" onclick="return window._waBtnClick(this, event, '${escHtml(lead.id)}');">${escHtml(phone)}</a>`
         : '<span class="text-muted">—</span>';
       // Seguimientos: 5 checkboxes compactos para 24h/48h/72h/7d/15d
       // Mismo flow que la tabla completa (window._toggleFU). Si esta tildado,
@@ -2525,7 +2610,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<td><span style="font-size:12px; color:' + nextColor + '; font-weight:500;">' + nextStep + '</span></td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' + fuHtml + '</td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' +
-          (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="window._waClickCopy(this, event);">💬</a>' : '') +
+          (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp (WAMULTI si sos Ignacio)" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');">💬</a>' : '') +
           '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(157,133,242,0.10); color:#9d85f2; margin:0 2px; display:inline-block;">📋</a>' +
           '<a href="#" title="Programar seguimiento custom" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
         '</td>' +
@@ -2778,7 +2863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
           '<td style="font-size:11px; color:var(--text-secondary);">' + escHtml(displayDate) + '</td>' +
           '<td style="font-weight:500;">' + (fuChipHtml ? fuChipHtml + ' ' : '') + escHtml(lead.name).substring(0, 28) + myWaChip + '<div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">' + escHtml((lead.country || '') + (lead.city ? ' / ' + lead.city : '')) + '</div>' + fuNoteHtml + '</td>' +
-          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link al portapapeles">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
+          '<td style="font-size:11px;">' + (phone ? '<a href="' + escHtml(buildSetterWaUrl(lead, "apertura")) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');" title="Abrir WhatsApp (WAMULTI si sos Ignacio)">' + escHtml(phone).substring(0, 18) + '</a>' : '<span class="text-muted">—</span>') + '</td>' +
           '<td style="text-align:center;">' + (lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="icon-link" onclick="event.stopPropagation()" title="Abrir sitio web"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></a>' : '') + '</td>' +
           '<td>' + conSelect + '</td>' +
           '<td style="text-align:center;">' + respSelect + '</td>' +
@@ -3120,7 +3205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('modal-city').textContent = [lead.country, lead.city].filter(Boolean).join(' / ') || lead.address || '—';
       const bestPhone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || '';
       const openUrl = buildSetterWaUrl(lead, 'apertura');
-      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="window._waClickCopy(this, event);" title="Abrir WhatsApp + copiar link">' + escHtml(bestPhone) + ' 💬</a>' : '—';
+      document.getElementById('modal-phone').innerHTML = bestPhone ? '<a href="' + escHtml(openUrl) + '" target="_blank" class="text-link" style="color:var(--success);" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');" title="Abrir WhatsApp (WAMULTI si sos Ignacio)">' + escHtml(bestPhone) + ' 💬</a>' : '—';
       document.getElementById('modal-web').innerHTML = lead.website ? '<a href="' + escHtml(lead.website) + '" target="_blank" class="text-link">' + escHtml(lead.website) + '</a>' : '—';
       document.getElementById('modal-email').textContent = lead.email || '—';
       document.getElementById('modal-owner').textContent = lead.doctor || '—';
@@ -4613,7 +4698,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
-        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">WhatsApp</a>` : ''}
+        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link" onclick="return window._waBtnClick(this, event, '${escHtml(lead.id)}');">WhatsApp</a>` : ''}
         <button type="button" onclick="window.openPlaceholderModal('${escHtml(lead.id)}')" class="pd-quick-link" style="cursor:pointer; background:transparent; font-family:inherit;" title="Mandar invitación tentativa de calendario por mail">📅 Hold</button>
         ${lead.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; padding:3px 8px; border:1px solid rgba(91,185,116,0.25); border-radius:6px;">📧 hold enviado</span>` : ''}
       </div>` : ''}
@@ -5477,6 +5562,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${fupBadge}
               ${callbackBadge}
               ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
+              ${l.contactedAt ? `<span style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px;" title="WhatsApp enviado${l.contactedFromPhone ? ' desde ' + escHtml(l.contactedFromPhone) : ''} · ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 WA enviado</span>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
