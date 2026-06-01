@@ -1020,8 +1020,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const r = await fetch(apiUrl('/api/wa/accounts'), { credentials: 'include' });
         if (!r.ok) return [];
         const accs = await r.json();
-        // Solo conectadas/disponibles para escribir
-        _waAccountsCache = (accs || []).filter(a => a.status === 'CONNECTED' || a.status === 'QR_PENDING' || !a.status);
+        // Mostrar TODAS las cuentas del user. El status del JSON puede estar
+        // stale (WAMULTI cerrado lo deja en DISCONNECTED aunque al abrirlo
+        // reconecte). WAMULTI decide si puede abrir el chat o no. Marcamos
+        // el status para que el popover lo muestre como hint visual.
+        _waAccountsCache = accs || [];
         return _waAccountsCache;
       } catch { return []; }
     }
@@ -1060,10 +1063,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       pop.style.cssText = `position:fixed; z-index:10000; top:${Math.min(rect.bottom+6, window.innerHeight-200)}px; left:${Math.min(rect.left, window.innerWidth-260)}px; background:var(--bg-surface,#16181d); border:1px solid var(--border-color,#2a2d35); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,0.5); padding:8px; min-width:240px;`;
       const flagOf = (c) => ({ ES:'🇪🇸',MX:'🇲🇽',AR:'🇦🇷',CO:'🇨🇴',CL:'🇨🇱',PE:'🇵🇪',UY:'🇺🇾',BO:'🇧🇴',US:'🇺🇸',EC:'🇪🇨' })[c] || '📱';
       pop.innerHTML = `<div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); padding:4px 8px 8px;">¿Desde qué WhatsApp?</div>` +
-        accounts.map(a => `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='rgba(157,133,242,0.10)'" onmouseout="this.style.background='transparent'">
-          <span style="font-size:16px;">📱</span>
+        accounts.map(a => {
+          const conn = a.status === 'CONNECTED';
+          const dot = conn ? '🟢' : (a.status === 'QR_PENDING' ? '🟡' : '⚪');
+          return `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='rgba(157,133,242,0.10)'" onmouseout="this.style.background='transparent'">
+          <span style="font-size:14px;">${dot}</span>
           <span style="flex:1; min-width:0;"><div style="font-weight:600;">${escHtml(a.label || 'Cuenta')}</div><div style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">${escHtml(a.phone || '')}</div></span>
-        </button>`).join('');
+        </button>`;
+        }).join('');
       document.body.appendChild(pop);
       pop.querySelectorAll('button[data-acc]').forEach(btn => {
         btn.addEventListener('click', () => {
