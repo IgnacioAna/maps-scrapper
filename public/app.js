@@ -976,9 +976,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (ev) ev.stopPropagation();
         const url = el.href || el.getAttribute('data-wa-url') || '';
-        if (url && navigator.clipboard) {
-          navigator.clipboard.writeText(url).then(() => {
-            // Toast mínimo
+        // Extraer SOLO el número del wa.me URL (lo que el user pega en WAMULTI).
+        // Formato: https://wa.me/<digits>?text=... → queremos +<digits>.
+        let phone = '';
+        const m = url.match(/wa\.me\/(\d+)/);
+        if (m) phone = '+' + m[1];
+        else {
+          // fallback: si el botón trae data-phone explícito, usarlo
+          const dp = el.getAttribute('data-phone');
+          if (dp) phone = dp.startsWith('+') ? dp : '+' + String(dp).replace(/\D/g, '');
+        }
+        const toCopy = phone || url;
+        if (toCopy && navigator.clipboard) {
+          navigator.clipboard.writeText(toCopy).then(() => {
             let t = document.getElementById('_wa-toast');
             if (!t) {
               t = document.createElement('div');
@@ -986,10 +996,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--success);color:#fff;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.3);opacity:0;transition:opacity .2s;';
               document.body.appendChild(t);
             }
-            t.textContent = '✓ Link copiado — podés pegarlo en otro navegador';
+            t.textContent = phone ? `✓ ${phone} copiado — pegalo en el buscador de WAMULTI` : '✓ Link copiado';
             t.style.opacity = '1';
             clearTimeout(window._waToastTimer);
-            window._waToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+            window._waToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2400);
           }).catch(() => {});
         }
       } catch (e) { console.error(e); }
