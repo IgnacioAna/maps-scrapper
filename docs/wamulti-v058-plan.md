@@ -64,3 +64,21 @@
 - **Selectores DOM de WhatsApp Web** (observer de envío): frágil, requiere test real. Plan B listo.
 - **Protocolo en Windows**: el registro del custom protocol con app portable (no instalada) puede necesitar que el .exe se registre manualmente la primera vez. Verificar.
 - **Repack del asar**: siempre backup antes. v0.5.7 queda como fallback.
+
+## Addendum 2026-06-01 — Paste-as-human NATIVO en WAMULTI
+
+Problema reportado: al pegar en WAMULTI un texto copiado con el botón "pegar
+como humano" del panel SCM, aparecía el marcador literal `__SCM_TYPE__:` porque
+WAMULTI (Electron) no tiene cargada la extensión Chrome `scm-paste-as-human`.
+
+Solución: porté la lógica de la extensión al preload de WAMULTI
+(out/preload/whatsapp.js, IIFE initPasteAsHuman). Ahora WAMULTI intercepta el
+evento paste en capture phase, detecta el marcador `__SCM_TYPE__:`, lo saca y
+tipea humano carácter por carácter (delays variables + thinking pauses + typos
+ocasionales, preset velocidad media). Si no hay marcador → paste normal.
+
+Resultado: el user ya NO necesita la extensión Chrome. Copia con "pegar como
+humano" desde el SCM y pega directo en WAMULTI — funciona nativo. Aplica tanto
+al flujo de respuestas (Asistente/Banco) como a cualquier texto con marcador.
+
+Repackeado en el mismo build v0.5.8.
