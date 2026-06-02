@@ -1,6 +1,2268 @@
 {
   "events": [
     {
+      "id": "ev_1780424697891_asegdq",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dental Jordan",
+        "contactName": "Dental Jordan",
+        "contactPhone": null,
+        "message": "Foto",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T18:24:57.891Z"
+    },
+    {
+      "id": "ev_1780424697884_cn4l0h",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T18:24:57.884Z"
+    },
+    {
+      "id": "ev_1780424697872_4vjbd0",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 2,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5492214543250",
+            "lastMessage": "todo bien?",
+            "unreadCount": 1
+          },
+          {
+            "name": "Dental Jordan",
+            "phone": null,
+            "lastMessage": "Foto",
+            "unreadCount": 6
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T18:24:57.872Z"
+    },
+    {
+      "id": "ev_1780420508679_t4rnm9",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T17:15:08.679Z"
+    },
+    {
+      "id": "ev_1780420508531_71as7f",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492213185932",
+        "text": "todo bien?",
+        "result": {
+          "ok": true,
+          "method": "background-dom-click"
+        },
+        "warmingPairId": "pair_1778461415480_lo8p3a",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-02T17:15:08.531Z"
+    },
+    {
+      "id": "ev_1780420504163_ywuqk9",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218131601911",
+        "contactName": "",
+        "contactPhone": "+5218131601911",
+        "message": "Buen día.",
+        "classification": {
+          "intent": "saludo",
+          "confidence": 0.95,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "saludo simple"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T17:15:04.163Z"
+    },
+    {
+      "id": "ev_1780420504157_1nh8ml",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T17:15:04.157Z"
+    },
+    {
+      "id": "ev_1780420504145_3iba5e",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5492213185932",
+            "lastMessage": "",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5218131601911",
+            "lastMessage": "Buen día.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T17:15:04.145Z"
+    },
+    {
+      "id": "ev_1780420504116_hsnkza",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T17:15:04.116Z"
+    },
+    {
+      "id": "ev_1780420489217_ydnplp",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T17:14:49.217Z"
+    },
+    {
+      "id": "ev_1780420488480_4gk2ma",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=5492213185932&text=todo%20bien%3F"
+      },
+      "createdAt": "2026-06-02T17:14:48.480Z"
+    },
+    {
+      "id": "ev_1780420487469_ibwu8h",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T17:14:47.469Z"
+    },
+    {
+      "id": "ev_1780420086898_bseuji",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dental Jordan",
+        "contactName": "Dental Jordan",
+        "contactPhone": null,
+        "message": "Cualquier cosa referente a Citas puede enviar un mensaje al 8116988777",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T17:08:06.898Z"
+    },
+    {
+      "id": "ev_1780420086893_60xb4p",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T17:08:06.893Z"
+    },
+    {
+      "id": "ev_1780420086883_o8lqic",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Dental Jordan",
+            "phone": null,
+            "lastMessage": "Cualquier cosa referente a Citas puede enviar un mensaje al 8116988777",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T17:08:06.883Z"
+    },
+    {
+      "id": "ev_1780419130221_qwt9zl",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T16:52:10.221Z"
+    },
+    {
+      "id": "ev_1780419129258_x94j5w",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492214543250",
+        "text": "We need to produce a response from Tamara (Tami). The conversation is a bit confusing. The last user message: \"Es tu turno de responder. Generá SOLO el próximo mensaje (sin comillas, sin \"Gonzalo:\", sin nada extra). Sé natural, breve, y mantené el flow del chat.\"\n\nWe need to respond as Tamara, short 1-2 sentences, ~60 characters average, formal-medio style, neutral, no opening punctuation, no \"che\", moderate emojis.\n\nWe need to incorporate her personality: 37, Argentine, professor, likes theater, dining out, soccer. The prior message from Gonzalo seems incomplete: \"Hola Tami! ¿Cómo and? Hoy me despert",
+        "result": {
+          "ok": true,
+          "method": "background-dom-click"
+        },
+        "warmingPairId": "pair_1778461415480_lo8p3a",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-02T16:52:09.258Z"
+    },
+    {
+      "id": "ev_1780419123969_fnf3vo",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:52:03.969Z"
+    },
+    {
+      "id": "ev_1780419109302_ysnfkz",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:51:49.302Z"
+    },
+    {
+      "id": "ev_1780419108856_1coxb0",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=5492214543250&text=We%20need%20to%20produce%20a%20response%20from%20Tamara%20(Tami).%20The%20conversation%20is%20a%20bit%20confusing.%20The%20last%20user%20message%3A%20%22Es%20tu%20turno%20de%20responder.%20Gener%C3%A1%20SOLO%20el%20pr%C3%B3ximo%20mensaje%20(sin%20comillas%2C%20sin%20%22Gonzalo%3A%22%2C%20sin%20nada%20extra).%20S%C3%A9%20natural%2C%20breve%2C%20y%20manten%C3%A9%20el%20flow%20del%20chat.%22%0A%0AWe%20need%20to%20respond%20as%20Tamara%2C%20short%201-2%20sentences%2C%20~60%20characters%20average%2C%20formal-medio%20style%2C%20neutral%2C%20no%20opening%20punctuation%2C%20no%20%22che%22%2C%20moderate%20emojis.%0A%0AWe%20need%20to%20incorporate%20her%20personality%3A%2037%2C%20Argentine%2C%20professor%2C%20likes%20theater%2C%20dining%20out%2C%20soccer.%20The%20prior%20message%20from%20Gonzalo%20seems%20incomplete%3A%20%22Hola%20Tami!%20%C2%BFC%C3%B3mo%20and%3F%20Hoy%20me%20despert"
+      },
+      "createdAt": "2026-06-02T16:51:48.856Z"
+    },
+    {
+      "id": "ev_1780419106842_9bwgcp",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:51:46.842Z"
+    },
+    {
+      "id": "ev_1780417723106_9ysujp",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218131601911",
+        "contactName": "",
+        "contactPhone": "+5218131601911",
+        "message": "Buen día.",
+        "classification": {
+          "intent": "saludo",
+          "confidence": 0.95,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "saludo simple"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T16:28:43.106Z"
+    },
+    {
+      "id": "ev_1780417723099_1zl4c9",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:28:43.099Z"
+    },
+    {
+      "id": "ev_1780417723090_64sm1q",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218131601911",
+            "lastMessage": "Buen día.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T16:28:43.090Z"
+    },
+    {
+      "id": "ev_1780417056094_nb43me",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:17:36.094Z"
+    },
+    {
+      "id": "ev_1780417053066_0uex00",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T16:17:33.066Z"
+    },
+    {
+      "id": "ev_1780417053037_xsy2bd",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T16:17:33.037Z"
+    },
+    {
+      "id": "ev_1780415703210_93cyn6",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+59899150953",
+        "contactName": "",
+        "contactPhone": "+59899150953",
+        "message": "Buen día;",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:55:03.210Z"
+    },
+    {
+      "id": "ev_1780415703204_wxejhs",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:55:03.204Z"
+    },
+    {
+      "id": "ev_1780415703192_0hcx9w",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+59899150953",
+            "lastMessage": "Buen día;",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:55:03.192Z"
+    },
+    {
+      "id": "ev_1780414051951_6l6ywk",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218120402320",
+        "contactName": "",
+        "contactPhone": "+5218120402320",
+        "message": "Se eliminó este mensaje.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:27:31.951Z"
+    },
+    {
+      "id": "ev_1780414051946_uovbwa",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:27:31.946Z"
+    },
+    {
+      "id": "ev_1780414051940_fs0mxj",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218120402320",
+            "lastMessage": "Se eliminó este mensaje.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:27:31.940Z"
+    },
+    {
+      "id": "ev_1780414051934_s702a9",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:27:31.934Z"
+    },
+    {
+      "id": "ev_1780414048965_i1voog",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:27:28.965Z"
+    },
+    {
+      "id": "ev_1780414048879_f74lne",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:27:28.879Z"
+    },
+    {
+      "id": "ev_1780414027985_anhfj3",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:27:07.985Z"
+    },
+    {
+      "id": "ev_1780414027920_cs3dog",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:27:07.920Z"
+    },
+    {
+      "id": "ev_1780413991919_ylp2bx",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218120402320",
+        "contactName": "",
+        "contactPhone": "+5218120402320",
+        "message": "Se eliminó este mensaje.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:26:31.919Z"
+    },
+    {
+      "id": "ev_1780413991910_2butx7",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:31.910Z"
+    },
+    {
+      "id": "ev_1780413991903_nw9smz",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218120402320",
+            "lastMessage": "Se eliminó este mensaje.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:26:31.903Z"
+    },
+    {
+      "id": "ev_1780413991896_0qvwd5",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:31.896Z"
+    },
+    {
+      "id": "ev_1780413988800_ezupax",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:28.800Z"
+    },
+    {
+      "id": "ev_1780413988692_8kci3d",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:26:28.692Z"
+    },
+    {
+      "id": "ev_1780413973395_qb5pgx",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:13.395Z"
+    },
+    {
+      "id": "ev_1780413973114_clmlv8",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:13.114Z"
+    },
+    {
+      "id": "ev_1780413972166_1gqxfb",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:12.166Z"
+    },
+    {
+      "id": "ev_1780413972089_qlw4ek",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:26:12.089Z"
+    },
+    {
+      "id": "ev_1780413906663_61xc9u",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:25:06.663Z"
+    },
+    {
+      "id": "ev_1780413894335_pbhm4n",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:54.335Z"
+    },
+    {
+      "id": "ev_1780413892956_02azy7",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:24:52.956Z"
+    },
+    {
+      "id": "ev_1780413892859_bl7vs2",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218120402320",
+        "contactName": "",
+        "contactPhone": "+5218120402320",
+        "message": "Se eliminó este mensaje.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:24:52.859Z"
+    },
+    {
+      "id": "ev_1780413892854_peb6fu",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:52.854Z"
+    },
+    {
+      "id": "ev_1780413892847_htzp75",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218120402320",
+            "lastMessage": "Se eliminó este mensaje.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:24:52.847Z"
+    },
+    {
+      "id": "ev_1780413892840_4bbv6u",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:52.840Z"
+    },
+    {
+      "id": "ev_1780413889563_j52p41",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:49.563Z"
+    },
+    {
+      "id": "ev_1780413889412_4vv1u3",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:24:49.412Z"
+    },
+    {
+      "id": "ev_1780413876710_yqb3pl",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:36.710Z"
+    },
+    {
+      "id": "ev_1780413876648_178k0m",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:36.648Z"
+    },
+    {
+      "id": "ev_1780413875921_i8duk9",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:35.921Z"
+    },
+    {
+      "id": "ev_1780413875672_lqmmjw",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:24:35.672Z"
+    },
+    {
+      "id": "ev_1780413774372_kr6wof",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:22:54.372Z"
+    },
+    {
+      "id": "ev_1780413770488_ryq4ea",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218120402320",
+        "contactName": "",
+        "contactPhone": "+5218120402320",
+        "message": "Se eliminó este mensaje.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:22:50.488Z"
+    },
+    {
+      "id": "ev_1780413770482_89fdsp",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:50.482Z"
+    },
+    {
+      "id": "ev_1780413770474_sr2tfe",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218120402320",
+            "lastMessage": "Se eliminó este mensaje.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:22:50.474Z"
+    },
+    {
+      "id": "ev_1780413770452_rszewd",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:50.452Z"
+    },
+    {
+      "id": "ev_1780413762545_36upmu",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:42.546Z"
+    },
+    {
+      "id": "ev_1780413759566_habuo4",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:39.566Z"
+    },
+    {
+      "id": "ev_1780413759478_od5uxq",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:22:39.478Z"
+    },
+    {
+      "id": "ev_1780413756048_6mr95j",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:36.048Z"
+    },
+    {
+      "id": "ev_1780413755912_bodg56",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:22:35.912Z"
+    },
+    {
+      "id": "ev_1780413740417_qc7asi",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:20.417Z"
+    },
+    {
+      "id": "ev_1780413740280_p8y9fg",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:20.280Z"
+    },
+    {
+      "id": "ev_1780413739348_wyq6jv",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:19.348Z"
+    },
+    {
+      "id": "ev_1780413738944_noznmb",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:22:18.944Z"
+    },
+    {
+      "id": "ev_1780412984469_5kzza5",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 4
+      },
+      "createdAt": "2026-06-02T15:09:44.469Z"
+    },
+    {
+      "id": "ev_1780412980089_exr10p",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dra. Agustina Álvarez",
+        "contactName": "Dra. Agustina Álvarez",
+        "contactPhone": null,
+        "message": "Saludos",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:09:40.089Z"
+    },
+    {
+      "id": "ev_1780412980084_69g2zl",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:09:40.084Z"
+    },
+    {
+      "id": "ev_1780412980066_ll6pv9",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Dra. Agustina Álvarez",
+            "phone": null,
+            "lastMessage": "Saludos",
+            "unreadCount": 2
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:09:40.066Z"
+    },
+    {
+      "id": "ev_1780412945756_jap1lz",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 2
+      },
+      "createdAt": "2026-06-02T15:09:05.756Z"
+    },
+    {
+      "id": "ev_1780412868481_88d95l",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+598 99 588 042",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:07:48.481Z"
+    },
+    {
+      "id": "ev_1780412861219_gmqp5m",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+598 99 588 042",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:07:41.219Z"
+    },
+    {
+      "id": "ev_1780412832476_yq6d8w",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+598 99 588 042",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:07:12.476Z"
+    },
+    {
+      "id": "ev_1780412776883_affrfv",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+598 99 588 042",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:06:16.883Z"
+    },
+    {
+      "id": "ev_1780412766482_me5rz7",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T15:06:06.482Z"
+    },
+    {
+      "id": "ev_1780412763484_l62d2b",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Loyaldent",
+        "contactName": "Loyaldent",
+        "contactPhone": null,
+        "message": "Hola buen día",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:06:03.484Z"
+    },
+    {
+      "id": "ev_1780412763480_z9pv9n",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dra. Agustina Álvarez",
+        "contactName": "Dra. Agustina Álvarez",
+        "contactPhone": null,
+        "message": "Hola como estas? en que podemos ayudarte?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:06:03.480Z"
+    },
+    {
+      "id": "ev_1780412763476_sn44u2",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:06:03.476Z"
+    },
+    {
+      "id": "ev_1780412763467_crsygi",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Dra. Agustina Álvarez",
+            "phone": null,
+            "lastMessage": "Hola como estas? en que podemos ayudarte?",
+            "unreadCount": 1
+          },
+          {
+            "name": "Loyaldent",
+            "phone": null,
+            "lastMessage": "Hola buen día",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:06:03.467Z"
+    },
+    {
+      "id": "ev_1780412763460_owqj9z",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:06:03.460Z"
+    },
+    {
+      "id": "ev_1780412760521_bxyvkz",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:06:00.521Z"
+    },
+    {
+      "id": "ev_1780412760464_kbmy1j",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:06:00.464Z"
+    },
+    {
+      "id": "ev_1780412757285_nsylid",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:05:57.285Z"
+    },
+    {
+      "id": "ev_1780412757015_sd62kc",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T15:05:57.015Z"
+    },
+    {
+      "id": "ev_1780412701516_pqpfc8",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:05:01.516Z"
+    },
+    {
+      "id": "ev_1780412701394_723iw5",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:05:01.394Z"
+    },
+    {
+      "id": "ev_1780412700461_82888n",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:05:00.461Z"
+    },
+    {
+      "id": "ev_1780412700340_bedv1g",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:05:00.340Z"
+    },
+    {
+      "id": "ev_1780412516226_fjs248",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Loyaldent",
+        "contactName": "Loyaldent",
+        "contactPhone": null,
+        "message": "Hola buen día",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:01:56.226Z"
+    },
+    {
+      "id": "ev_1780412516221_wj0p4d",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dra. Agustina Álvarez",
+        "contactName": "Dra. Agustina Álvarez",
+        "contactPhone": null,
+        "message": "Hola como estas? en que podemos ayudarte?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:01:56.221Z"
+    },
+    {
+      "id": "ev_1780412516216_u1e1pw",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:01:56.216Z"
+    },
+    {
+      "id": "ev_1780412516185_82z61j",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Dra. Agustina Álvarez",
+            "phone": null,
+            "lastMessage": "Hola como estas? en que podemos ayudarte?",
+            "unreadCount": 1
+          },
+          {
+            "name": "Loyaldent",
+            "phone": null,
+            "lastMessage": "Hola buen día",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:01:56.185Z"
+    },
+    {
+      "id": "ev_1780412497224_ylvwbd",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dra. Agustina Álvarez",
+        "contactName": "Dra. Agustina Álvarez",
+        "contactPhone": null,
+        "message": "voy en 5",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:01:37.224Z"
+    },
+    {
+      "id": "ev_1780412497219_dbq6ft",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Loyaldent",
+        "contactName": "Loyaldent",
+        "contactPhone": null,
+        "message": "Hola buen día",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T15:01:37.219Z"
+    },
+    {
+      "id": "ev_1780412497214_fshgmw",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T15:01:37.214Z"
+    },
+    {
+      "id": "ev_1780412497189_54j0q9",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 2,
+        "chats": [
+          {
+            "name": "Loyaldent",
+            "phone": null,
+            "lastMessage": "Hola buen día",
+            "unreadCount": 1
+          },
+          {
+            "name": "Dra. Agustina Álvarez",
+            "phone": null,
+            "lastMessage": "voy en 5",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T15:01:37.189Z"
+    },
+    {
+      "id": "ev_1780412105193_143eu0",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Loyaldent",
+        "contactName": "Loyaldent",
+        "contactPhone": null,
+        "message": "Hola buen día",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:55:05.193Z"
+    },
+    {
+      "id": "ev_1780412105189_v2bvsd",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:55:05.189Z"
+    },
+    {
+      "id": "ev_1780412105178_z7kaye",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Loyaldent",
+            "phone": null,
+            "lastMessage": "Hola buen día",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T14:55:05.178Z"
+    },
+    {
+      "id": "ev_1780412059796_beujm1",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+598 99 150 953",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T14:54:19.796Z"
+    },
+    {
+      "id": "ev_1780412047994_6r1ozx",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218120402320",
+        "contactName": "",
+        "contactPhone": "+5218120402320",
+        "message": "Se eliminó este mensaje.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:54:07.994Z"
+    },
+    {
+      "id": "ev_1780412047990_70qzc0",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:54:07.990Z"
+    },
+    {
+      "id": "ev_1780412047986_n5tb0m",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218120402320",
+            "lastMessage": "Se eliminó este mensaje.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T14:54:07.986Z"
+    },
+    {
+      "id": "ev_1780412047978_zwn0jp",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:54:07.978Z"
+    },
+    {
+      "id": "ev_1780412045024_bk9hkw",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:54:05.024Z"
+    },
+    {
+      "id": "ev_1780412044778_vpuz6w",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59899150953&text=Hola%2C%20todo%20viento%20en%20popa"
+      },
+      "createdAt": "2026-06-02T14:54:04.778Z"
+    },
+    {
+      "id": "ev_1780412044142_5ji6bg",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:54:04.142Z"
+    },
+    {
+      "id": "ev_1780412033310_9lctuw",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Costa Dent",
+        "contactName": "Costa Dent",
+        "contactPhone": null,
+        "message": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:53:53.310Z"
+    },
+    {
+      "id": "ev_1780412033304_3f25z5",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:53.304Z"
+    },
+    {
+      "id": "ev_1780412033296_er7218",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Costa Dent",
+            "phone": null,
+            "lastMessage": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T14:53:53.296Z"
+    },
+    {
+      "id": "ev_1780412033287_1gc5ma",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:53.287Z"
+    },
+    {
+      "id": "ev_1780412030391_qbg0ko",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:50.391Z"
+    },
+    {
+      "id": "ev_1780412030144_4vi8ms",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59899588042&text=Buenas%2C%20como%20andamos"
+      },
+      "createdAt": "2026-06-02T14:53:50.144Z"
+    },
+    {
+      "id": "ev_1780412029677_sq9hay",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:49.677Z"
+    },
+    {
+      "id": "ev_1780412006507_m53rkz",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+59899588042",
+        "contactName": "",
+        "contactPhone": "+59899588042",
+        "message": "Gracias por comunicarte con el consultorio de la Dra María Del Luján Albornoz. Contestaremos tu mensaje en horarios de consulta, los cuales se encuentran en la descripción de WhatsApp",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:53:26.507Z"
+    },
+    {
+      "id": "ev_1780412006503_5ig0xh",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Costa Dent",
+        "contactName": "Costa Dent",
+        "contactPhone": null,
+        "message": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:53:26.503Z"
+    },
+    {
+      "id": "ev_1780412006499_koxi0r",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:26.499Z"
+    },
+    {
+      "id": "ev_1780412006495_znjcu0",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 2,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+59899588042",
+            "lastMessage": "Gracias por comunicarte con el consultorio de la Dra María Del Luján Albornoz. Contestaremos tu mensaje en horarios de consulta, los cuales se encuentran en la descripción de WhatsApp",
+            "unreadCount": 1
+          },
+          {
+            "name": "Costa Dent",
+            "phone": null,
+            "lastMessage": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T14:53:26.495Z"
+    },
+    {
+      "id": "ev_1780411996125_rbs84y",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Costa Dent",
+        "contactName": "Costa Dent",
+        "contactPhone": null,
+        "message": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T14:53:16.125Z"
+    },
+    {
+      "id": "ev_1780411996122_hzbbhn",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:16.122Z"
+    },
+    {
+      "id": "ev_1780411996113_72k3lr",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Costa Dent",
+            "phone": null,
+            "lastMessage": "¡Hola! Todo muy bien por acá, ¿y vos cómo estás?  Te damos la bienvenida. Estamos a las órdenes para ayudarte con lo que necesites para tu salud bucal, desde prótesis flexibles y brackets de ortodoncia hasta limpieza dental. ¿En qué te puedo ayudar hoy o qué servicio estás buscando?",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T14:53:16.113Z"
+    },
+    {
+      "id": "ev_1780411995217_8dd40q",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:15.217Z"
+    },
+    {
+      "id": "ev_1780411992258_iua4g5",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:12.258Z"
+    },
+    {
+      "id": "ev_1780411991989_4je6d2",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59899588042&text=Buenas%2C%20como%20andamos"
+      },
+      "createdAt": "2026-06-02T14:53:11.989Z"
+    },
+    {
+      "id": "ev_1780411991546_gv2v9j",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:11.546Z"
+    },
+    {
+      "id": "ev_1780411985037_yr98vh",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T14:53:05.037Z"
+    },
+    {
+      "id": "ev_1780411980728_wb153t",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:53:00.728Z"
+    },
+    {
+      "id": "ev_1780411977854_fuam58",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:57.854Z"
+    },
+    {
+      "id": "ev_1780411977804_sybaf3",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59896938752&text=Hola%2C%20como%20van"
+      },
+      "createdAt": "2026-06-02T14:52:57.804Z"
+    },
+    {
+      "id": "ev_1780411977212_3m2vf7",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:57.212Z"
+    },
+    {
+      "id": "ev_1780411969534_wli6uc",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T14:52:49.534Z"
+    },
+    {
+      "id": "ev_1780411963885_lj5ebi",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:43.885Z"
+    },
+    {
+      "id": "ev_1780411961032_0rgqul",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:41.032Z"
+    },
+    {
+      "id": "ev_1780411961015_tkkhya",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59891313886&text=Buenas%2C%20como%20la%20llevan"
+      },
+      "createdAt": "2026-06-02T14:52:41.015Z"
+    },
+    {
+      "id": "ev_1780411960518_bqva76",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:40.518Z"
+    },
+    {
+      "id": "ev_1780411952682_picei4",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T14:52:32.682Z"
+    },
+    {
+      "id": "ev_1780411948967_ifosdp",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:28.967Z"
+    },
+    {
+      "id": "ev_1780411946133_lyy5v5",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:26.133Z"
+    },
+    {
+      "id": "ev_1780411946100_4n2u13",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=59895544172&text=Hola%2C%20como%20arrancaron%20la%20semana"
+      },
+      "createdAt": "2026-06-02T14:52:26.100Z"
+    },
+    {
+      "id": "ev_1780411945581_6dkje4",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:25.581Z"
+    },
+    {
+      "id": "ev_1780411933213_0ml6fn",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:13.213Z"
+    },
+    {
+      "id": "ev_1780411930222_7ct4b3",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:10.222Z"
+    },
+    {
+      "id": "ev_1780411930011_57tgxo",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=528127646378&text=Hola%2C%20una%20consulta"
+      },
+      "createdAt": "2026-06-02T14:52:10.011Z"
+    },
+    {
+      "id": "ev_1780411929532_7sqh1w",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:52:09.532Z"
+    },
+    {
+      "id": "ev_1780411912595_wtmjie",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Dental Jordan",
+        "delta": 1
+      },
+      "createdAt": "2026-06-02T14:51:52.595Z"
+    },
+    {
+      "id": "ev_1780411891846_nvnvch",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:51:31.846Z"
+    },
+    {
+      "id": "ev_1780411888930_7wweey",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:51:28.930Z"
+    },
+    {
+      "id": "ev_1780411888592_blg4mp",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=528127646378&text=Hola%2C%20una%20consulta"
+      },
+      "createdAt": "2026-06-02T14:51:28.592Z"
+    },
+    {
+      "id": "ev_1780411888104_p1om6j",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T14:51:28.104Z"
+    },
+    {
+      "id": "ev_1780407362189_suelt3",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Clienta Dra Sofía Campanella",
+        "contactName": "Clienta Dra Sofía Campanella",
+        "contactPhone": null,
+        "message": "Ok",
+        "classification": {
+          "intent": "interesado_quiere_info",
+          "confidence": 0.6,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "afirmacion ambigua → humano (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T13:36:02.189Z"
+    },
+    {
+      "id": "ev_1780407362184_o7lk5e",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:36:02.184Z"
+    },
+    {
+      "id": "ev_1780407362180_u2z6mr",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Clienta Dra Sofía Campanella",
+            "phone": null,
+            "lastMessage": "Ok",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T13:36:02.180Z"
+    },
+    {
+      "id": "ev_1780407038342_yl239l",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 5
+      },
+      "createdAt": "2026-06-02T13:30:38.342Z"
+    },
+    {
+      "id": "ev_1780407006865_6xsor4",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:30:06.865Z"
+    },
+    {
+      "id": "ev_1780407002583_dpckui",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218122593900",
+        "contactName": "",
+        "contactPhone": "+5218122593900",
+        "message": "Hola  gracias por escribir a LifeD Clínica Dental.\n\nEn este momento no estamos disponibles, pero en breve te responderemos.\n\nSi gustas, puedes dejarnos tu nombre y horario disponible para agendar tu valoración",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T13:30:02.583Z"
+    },
+    {
+      "id": "ev_1780407002579_a2uj4a",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218123815923",
+        "contactName": "",
+        "contactPhone": "+5218123815923",
+        "message": "Les interesa ver cómo se aplicaría en su clínica?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T13:30:02.579Z"
+    },
+    {
+      "id": "ev_1780407002574_mlkg5c",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Dr. Alejandro Dussauge / La bracketeria",
+        "contactName": "Dr. Alejandro Dussauge / La bracketeria",
+        "contactPhone": null,
+        "message": "Esperando el mensaje. Revisa tu teléfono.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T13:30:02.574Z"
+    },
+    {
+      "id": "ev_1780407002570_aqfg9h",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:30:02.570Z"
+    },
+    {
+      "id": "ev_1780407002563_9wdbib",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 2,
+        "total": 3,
+        "chats": [
+          {
+            "name": "Dr. Alejandro Dussauge / La bracketeria",
+            "phone": null,
+            "lastMessage": "Esperando el mensaje. Revisa tu teléfono.",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5218123815923",
+            "lastMessage": "Les interesa ver cómo se aplicaría en su clínica?",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5218122593900",
+            "lastMessage": "Hola  gracias por escribir a LifeD Clínica Dental.\n\nEn este momento no estamos disponibles, pero en breve te responderemos.\n\nSi gustas, puedes dejarnos tu nombre y horario disponible para agendar tu valoración",
+            "unreadCount": 2
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T13:30:02.563Z"
+    },
+    {
+      "id": "ev_1780407000903_07l7ry",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5218122593900",
+        "contactName": "",
+        "contactPhone": "+5218122593900",
+        "message": "Hola  gracias por escribir a LifeD Clínica Dental.\n\nEn este momento no estamos disponibles, pero en breve te responderemos.\n\nSi gustas, puedes dejarnos tu nombre y horario disponible para agendar tu valoración",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-02T13:30:00.903Z"
+    },
+    {
+      "id": "ev_1780407000896_ord1nk",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:30:00.896Z"
+    },
+    {
+      "id": "ev_1780407000882_uwikkm",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5218122593900",
+            "lastMessage": "Hola  gracias por escribir a LifeD Clínica Dental.\n\nEn este momento no estamos disponibles, pero en breve te responderemos.\n\nSi gustas, puedes dejarnos tu nombre y horario disponible para agendar tu valoración",
+            "unreadCount": 2
+          }
+        ]
+      },
+      "createdAt": "2026-06-02T13:30:00.882Z"
+    },
+    {
+      "id": "ev_1780407000874_ybpu9b",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:30:00.874Z"
+    },
+    {
+      "id": "ev_1780406997623_svehxy",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:29:57.623Z"
+    },
+    {
+      "id": "ev_1780406997605_wg03fa",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T13:29:57.605Z"
+    },
+    {
+      "id": "ev_1780406994130_8h1ejg",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-02T13:29:54.130Z"
+    },
+    {
+      "id": "ev_1780406993853_9xvzj4",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-02T13:29:53.853Z"
+    },
+    {
       "id": "ev_1780324785991_6knv68",
       "type": "window-closed",
       "accountId": "wa_1777831276977_qxby1z",
@@ -6058,2559 +8320,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-05-03T18:03:43.504Z"
-    },
-    {
-      "id": "ev_1777831412895_9wgagh",
-      "type": "qr-visible",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:32.895Z"
-    },
-    {
-      "id": "ev_1777831412074_1ma9bd",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:32.074Z"
-    },
-    {
-      "id": "ev_1777831411884_c7so29",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-05-03T18:03:31.884Z"
-    },
-    {
-      "id": "ev_1777831411363_rrqygh",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:31.363Z"
-    },
-    {
-      "id": "ev_1777831399260_f6x4ub",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:19.260Z"
-    },
-    {
-      "id": "ev_1777831399107_u07j0p",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-05-03T18:03:19.107Z"
-    },
-    {
-      "id": "ev_1777831398108_b6z8hr",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:18.108Z"
-    },
-    {
-      "id": "ev_1777831389135_nfu6rz",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:03:09.135Z"
-    },
-    {
-      "id": "ev_1777831389069_ttwo2e",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-05-03T18:03:09.069Z"
-    },
-    {
-      "id": "ev_1777831377113_vi7pqg",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+5492954872601",
-        "contactName": "",
-        "contactPhone": "+5492954872601",
-        "message": "0:55",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.113Z"
-    },
-    {
-      "id": "ev_1777831377111_paufn6",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Asunto desconocido",
-        "contactName": "Asunto desconocido",
-        "contactPhone": null,
-        "message": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.111Z"
-    },
-    {
-      "id": "ev_1777831377109_a6g7cd",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Asunto desconocido",
-        "contactName": "Asunto desconocido",
-        "contactPhone": null,
-        "message": "+54 9 11 7606-3632",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.109Z"
-    },
-    {
-      "id": "ev_1777831377107_u3yrfp",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Franco Carbone",
-        "contactName": "Franco Carbone",
-        "contactPhone": null,
-        "message": "0:24",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.107Z"
-    },
-    {
-      "id": "ev_1777831377106_wsymed",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Juli Hassan",
-        "contactName": "Juli Hassan",
-        "contactPhone": null,
-        "message": "Qué tal la pasaste amigo?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.106Z"
-    },
-    {
-      "id": "ev_1777831377103_vsb4kk",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Comunidad GHL hispano",
-        "contactName": "Comunidad GHL hispano",
-        "contactPhone": null,
-        "message": "Funnels de conversion*",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.103Z"
-    },
-    {
-      "id": "ev_1777831377101_syxtdt",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Asunto desconocido",
-        "contactName": "Asunto desconocido",
-        "contactPhone": null,
-        "message": "Ok lobo, muchas gracias",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.101Z"
-    },
-    {
-      "id": "ev_1777831377099_omtdo3",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Asunto desconocido",
-        "contactName": "Asunto desconocido",
-        "contactPhone": null,
-        "message": "Compro 2000 diez abajo",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-05-03T18:02:57.099Z"
-    },
-    {
-      "id": "ev_1777831377096_2qwqyi",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:02:57.096Z"
-    },
-    {
-      "id": "ev_1777831377064_baqe4a",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 9,
-        "total": 9,
-        "chats": [
-          {
-            "name": "Asunto desconocido",
-            "phone": null,
-            "lastMessage": "Compro 2000 diez abajo",
-            "unreadCount": 20
-          },
-          {
-            "name": "Asunto desconocido",
-            "phone": null,
-            "lastMessage": "Ok lobo, muchas gracias",
-            "unreadCount": 173
-          },
-          {
-            "name": "Comunidad GHL hispano",
-            "phone": null,
-            "lastMessage": "Funnels de conversion*",
-            "unreadCount": 2
-          },
-          {
-            "name": "Juli Hassan",
-            "phone": null,
-            "lastMessage": "Qué tal la pasaste amigo?",
-            "unreadCount": 1
-          },
-          {
-            "name": "Franco Carbone",
-            "phone": null,
-            "lastMessage": "0:24",
-            "unreadCount": 3
-          },
-          {
-            "name": "",
-            "phone": "+5492954872601",
-            "lastMessage": "0:55",
-            "unreadCount": 6
-          },
-          {
-            "name": "Asunto desconocido",
-            "phone": null,
-            "lastMessage": "+54 9 11 7606-3632",
-            "unreadCount": 2
-          },
-          {
-            "name": "Asunto desconocido",
-            "phone": null,
-            "lastMessage": "Hola, buenas tardes! Añadí a un amigo que comienza en el E-commerce! Gracias Grupo",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-05-03T18:02:57.064Z"
-    },
-    {
-      "id": "ev_1777831377057_nbvbcp",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:02:57.057Z"
-    },
-    {
-      "id": "ev_1777831368264_3w1rxp",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:02:48.264Z"
-    },
-    {
-      "id": "ev_1777831342795_sj2k4r",
-      "type": "qr-visible",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:02:22.796Z"
-    },
-    {
-      "id": "ev_1777831341288_sxhm8y",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-05-03T18:02:21.288Z"
-    },
-    {
-      "id": "ev_1777831341278_6fbmyo",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-05-03T18:02:21.278Z"
-    },
-    {
-      "id": "ev_1777670986724_8f5lig",
-      "type": "warming-default-started",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "warmingDay": 1,
-        "phaseName": "Fase 1 — Arranque"
-      },
-      "createdAt": "2026-05-01T21:29:46.724Z"
-    },
-    {
-      "id": "ev_1777234954885_gw1xnq",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Claro por eso el soporte es lo que hace que una empresa destaque y lleguen mas clientes por el boca a boca",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:22:34.885Z"
-    },
-    {
-      "id": "ev_1777234954884_1w4z8a",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:22:34.884Z"
-    },
-    {
-      "id": "ev_1777234954876_7hoorq",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Claro por eso el soporte es lo que hace que una empresa destaque y lleguen mas clientes por el boca a boca",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:22:34.876Z"
-    },
-    {
-      "id": "ev_1777234922431_4ce82g",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Ademas si tu nombre representa vinculo, fidelizacion no podes tener mal soporte jaja",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:22:02.431Z"
-    },
-    {
-      "id": "ev_1777234922429_zbnafy",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:22:02.429Z"
-    },
-    {
-      "id": "ev_1777234922427_o4g4lw",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Ademas si tu nombre representa vinculo, fidelizacion no podes tener mal soporte jaja",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:22:02.427Z"
-    },
-    {
-      "id": "ev_1777234907858_e5rsu9",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Sii, y on los típicos santiaguinos que caen mal por como hablan jajaja",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:21:47.858Z"
-    },
-    {
-      "id": "ev_1777234907856_2nx6ct",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:21:47.856Z"
-    },
-    {
-      "id": "ev_1777234907852_0idkft",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Sii, y on los típicos santiaguinos que caen mal por como hablan jajaja",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:21:47.852Z"
-    },
-    {
-      "id": "ev_1777234816096_nraci8",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Y en mi opinión eso es justo lo que no hay que hacer",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:20:16.096Z"
-    },
-    {
-      "id": "ev_1777234816094_a5gmej",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:20:16.094Z"
-    },
-    {
-      "id": "ev_1777234816085_f4rvm1",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Y en mi opinión eso es justo lo que no hay que hacer",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:20:16.085Z"
-    },
-    {
-      "id": "ev_1777234813636_vawr1w",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:20:13.636Z"
-    },
-    {
-      "id": "ev_1777234813634_si5p2b",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": []
-      },
-      "createdAt": "2026-04-26T20:20:13.634Z"
-    },
-    {
-      "id": "ev_1777234598885_084wz2",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Estuve revisando las redes de vambeai  el otro dia para ver que estrategias están usando porque están creciendo mucho",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:16:38.885Z"
-    },
-    {
-      "id": "ev_1777234598883_pfbcrw",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:16:38.883Z"
-    },
-    {
-      "id": "ev_1777234598876_tl1pms",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Estuve revisando las redes de vambeai  el otro dia para ver que estrategias están usando porque están creciendo mucho",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:16:38.876Z"
-    },
-    {
-      "id": "ev_1777234185891_b5pg76",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "ahh entiendo",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:09:45.891Z"
-    },
-    {
-      "id": "ev_1777234185888_i9p4fw",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:09:45.888Z"
-    },
-    {
-      "id": "ev_1777234185876_vgctxi",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "ahh entiendo",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:09:45.876Z"
-    },
-    {
-      "id": "ev_1777233727885_1fm6z8",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Y la idea es que so quieren marketing despues para captar clientes nuevos no se vayan con otra agencia",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T20:02:07.885Z"
-    },
-    {
-      "id": "ev_1777233727883_ht5k55",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T20:02:07.883Z"
-    },
-    {
-      "id": "ev_1777233727875_tfxzpe",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Y la idea es que so quieren marketing despues para captar clientes nuevos no se vayan con otra agencia",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T20:02:07.875Z"
-    },
-    {
-      "id": "ev_1777233580808_29tgez",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Entonces el producto estrella y diferencial es la reactivacion",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:59:40.808Z"
-    },
-    {
-      "id": "ev_1777233580806_0zy3n4",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:59:40.806Z"
-    },
-    {
-      "id": "ev_1777233580803_21erji",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Entonces el producto estrella y diferencial es la reactivacion",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:59:40.803Z"
-    },
-    {
-      "id": "ev_1777233557884_ghzivw",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "La reactivacion es el gancho para que ellos vean como trabajamos y nosotros ver si ellos son buenos clientes, lo demás va a empezar a salir solo",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:59:17.884Z"
-    },
-    {
-      "id": "ev_1777233557882_bz272y",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:59:17.882Z"
-    },
-    {
-      "id": "ev_1777233557866_9bkmhv",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "La reactivacion es el gancho para que ellos vean como trabajamos y nosotros ver si ellos son buenos clientes, lo demás va a empezar a salir solo",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:59:17.866Z"
-    },
-    {
-      "id": "ev_1777233399634_jqakia",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Claro que si",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:56:39.634Z"
-    },
-    {
-      "id": "ev_1777233399632_5q2i2w",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:56:39.632Z"
-    },
-    {
-      "id": "ev_1777233399630_we5n7c",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Claro que si",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:56:39.630Z"
-    },
-    {
-      "id": "ev_1777233328653_mb8m8j",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Y ahi ya es otro valor",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:55:28.653Z"
-    },
-    {
-      "id": "ev_1777233328652_j182fg",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:55:28.652Z"
-    },
-    {
-      "id": "ev_1777233328644_i392ne",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Y ahi ya es otro valor",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:55:28.644Z"
-    },
-    {
-      "id": "ev_1777233322925_2cdvki",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Pero por lo que escucho esta gente igual necesita captar nuevos entonces eso va a salir solo después , ya con los resultados de la reactivación",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:55:22.925Z"
-    },
-    {
-      "id": "ev_1777233322923_x4e23h",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:55:22.923Z"
-    },
-    {
-      "id": "ev_1777233322916_vr88gi",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Pero por lo que escucho esta gente igual necesita captar nuevos entonces eso va a salir solo después , ya con los resultados de la reactivación",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:55:22.916Z"
-    },
-    {
-      "id": "ev_1777233288908_ov14yo",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Nono, si te decía que es el discurso para la persona, no vender todo de una, lo mas importante y primero es la reactivacion",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:54:48.908Z"
-    },
-    {
-      "id": "ev_1777233288906_j9m91z",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:54:48.906Z"
-    },
-    {
-      "id": "ev_1777233288897_e04hu9",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Nono, si te decía que es el discurso para la persona, no vender todo de una, lo mas importante y primero es la reactivacion",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:54:48.897Z"
-    },
-    {
-      "id": "ev_1777233192929_7cms0b",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Igual ellos pagan algo por eso, la idea es ahora buscar muchos muchos clientes asi tenemos una cartera grande, que van a pagar poco pero pagan, termina siendo una SaaS el negocio y para los que quieran le vendes el upsell pero si hoy vendo tambien publicidad la operativa se complica mucho para captar nuevos clientes",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:53:12.929Z"
-    },
-    {
-      "id": "ev_1777233192927_x7vtag",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:53:12.927Z"
-    },
-    {
-      "id": "ev_1777233192920_5ngwqw",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Igual ellos pagan algo por eso, la idea es ahora buscar muchos muchos clientes asi tenemos una cartera grande, que van a pagar poco pero pagan, termina siendo una SaaS el negocio y para los que quieran le vendes el upsell pero si hoy vendo tambien publicidad la operativa se complica mucho para captar nuevos clientes",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:53:12.920Z"
-    },
-    {
-      "id": "ev_1777233124483_xjnnc8",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Si yo se los enseño porque les toca aprender para seguir operandolo van a pasar dos cosas: se van a frustrar por complejidad y van a verle el valor que tiene porque lo van a entender, ahi vender un upsell se hace más fácil",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:52:04.483Z"
-    },
-    {
-      "id": "ev_1777233124481_dijf6h",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:52:04.481Z"
-    },
-    {
-      "id": "ev_1777233124474_tdw213",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Si yo se los enseño porque les toca aprender para seguir operandolo van a pasar dos cosas: se van a frustrar por complejidad y van a verle el valor que tiene porque lo van a entender, ahi vender un upsell se hace más fácil",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:52:04.474Z"
-    },
-    {
-      "id": "ev_1777232908437_9l0yno",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Yo creo que el dominio tendría que ser .com",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:48:28.437Z"
-    },
-    {
-      "id": "ev_1777232908435_zowhoy",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:48:28.435Z"
-    },
-    {
-      "id": "ev_1777232908425_58bdi1",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Yo creo que el dominio tendría que ser .com",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:48:28.425Z"
-    },
-    {
-      "id": "ev_1777232853882_ah2a6z",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Asi se fomenta la reactivacion como el plus porque no tienen que pagar marketing aparte",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:47:33.882Z"
-    },
-    {
-      "id": "ev_1777232853881_9ovqbb",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:47:33.881Z"
-    },
-    {
-      "id": "ev_1777232853874_5pvap8",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Asi se fomenta la reactivacion como el plus porque no tienen que pagar marketing aparte",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:47:33.874Z"
-    },
-    {
-      "id": "ev_1777232818880_tzp82l",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Como decir con nosotros ustedes parten con lo que ya tienen y una vez tengamos resultados satisfactorios para ustedes recien vemos si es necesaria la captacion de pacientes nuevos",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:46:58.880Z"
-    },
-    {
-      "id": "ev_1777232818879_41apqn",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:46:58.879Z"
-    },
-    {
-      "id": "ev_1777232818872_zvtxb9",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Como decir con nosotros ustedes parten con lo que ya tienen y una vez tengamos resultados satisfactorios para ustedes recien vemos si es necesaria la captacion de pacientes nuevos",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:46:58.872Z"
-    },
-    {
-      "id": "ev_1777232783175_5c103a",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Reactivacion, seguimiento, manutención  y pertenencia y luego captacion nuevos clientes",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:46:23.175Z"
-    },
-    {
-      "id": "ev_1777232783173_tlqwxf",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:46:23.173Z"
-    },
-    {
-      "id": "ev_1777232783168_1bgiqj",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Reactivacion, seguimiento, manutención  y pertenencia y luego captacion nuevos clientes",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:46:23.168Z"
-    },
-    {
-      "id": "ev_1777232751726_mvf2lv",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Incluso ahora escuchando estoy pensando que hasta se podrían crear distintas propuestas con diferentes valores, por ejemplo, decir que trabajamos en 3 etapas. Sería",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:45:51.726Z"
-    },
-    {
-      "id": "ev_1777232751725_gw90h8",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:45:51.725Z"
-    },
-    {
-      "id": "ev_1777232751716_6eyhm6",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Incluso ahora escuchando estoy pensando que hasta se podrían crear distintas propuestas con diferentes valores, por ejemplo, decir que trabajamos en 3 etapas. Sería",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:45:51.716Z"
-    },
-    {
-      "id": "ev_1777232472592_qkwd3m",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Es transmitir bien el mensaje para motivar y comentar cual es el vehículo para llegar ahí",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:41:12.592Z"
-    },
-    {
-      "id": "ev_1777232472591_j3goe8",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:41:12.591Z"
-    },
-    {
-      "id": "ev_1777232472584_wab6rl",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Es transmitir bien el mensaje para motivar y comentar cual es el vehículo para llegar ahí",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:41:12.584Z"
-    },
-    {
-      "id": "ev_1777232421586_xoledc",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Claro, es el resultado lo que la gente quiere escuchar",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:40:21.586Z"
-    },
-    {
-      "id": "ev_1777232421585_voz3dl",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:40:21.585Z"
-    },
-    {
-      "id": "ev_1777232421583_dosijj",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Claro, es el resultado lo que la gente quiere escuchar",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:40:21.584Z"
-    },
-    {
-      "id": "ev_1777232376873_ev34hl",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Ellos sienten que la clínica esta preocupada de ellos y a la vez los educa",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:39:36.873Z"
-    },
-    {
-      "id": "ev_1777232376872_3nykbq",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:39:36.872Z"
-    },
-    {
-      "id": "ev_1777232376870_rhqwf7",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Ellos sienten que la clínica esta preocupada de ellos y a la vez los educa",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:39:36.870Z"
-    },
-    {
-      "id": "ev_1777232339869_ytjnlc",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Y además estar nutirendolos  con educación y prevención en salud",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:38:59.869Z"
-    },
-    {
-      "id": "ev_1777232339867_bptf86",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:38:59.867Z"
-    },
-    {
-      "id": "ev_1777232339860_lpnkiv",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Y además estar nutirendolos  con educación y prevención en salud",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:38:59.860Z"
-    },
-    {
-      "id": "ev_1777232287598_xrmwcd",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Para lograr el hábito hay que crear pertenencia y eso se logra con mostrarse atentos a ellos, es decir, estar preguntándoles como están entre tratamientos",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:38:07.598Z"
-    },
-    {
-      "id": "ev_1777232287597_mykxjk",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:38:07.597Z"
-    },
-    {
-      "id": "ev_1777232287588_96f94o",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Para lograr el hábito hay que crear pertenencia y eso se logra con mostrarse atentos a ellos, es decir, estar preguntándoles como están entre tratamientos",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:38:07.588Z"
-    },
-    {
-      "id": "ev_1777231571874_ec7fcy",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:26:11.874Z"
-    },
-    {
-      "id": "ev_1777231571873_las9wd",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:26:11.873Z"
-    },
-    {
-      "id": "ev_1777231397740_z8kyx6",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Estoy escuchando las grabaciones, se me están ocurriendo más cosas",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:23:17.740Z"
-    },
-    {
-      "id": "ev_1777231397739_8egysl",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:23:17.739Z"
-    },
-    {
-      "id": "ev_1777231397729_8vgoji",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Estoy escuchando las grabaciones, se me están ocurriendo más cosas",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:23:17.730Z"
-    },
-    {
-      "id": "ev_1777230395882_bz3chg",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Paula Kroff",
-        "contactName": "Paula Kroff",
-        "contactPhone": null,
-        "message": "Súper!!",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T19:06:35.882Z"
-    },
-    {
-      "id": "ev_1777230395881_pu3x49",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T19:06:35.881Z"
-    },
-    {
-      "id": "ev_1777230395874_cp41pj",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "Paula Kroff",
-            "phone": null,
-            "lastMessage": "Súper!!",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T19:06:35.874Z"
-    },
-    {
-      "id": "ev_1777228511734_6omy6z",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+59893996913",
-        "contactName": "",
-        "contactPhone": "+59893996913",
-        "message": "Te agradezco mucho, ya contamos con ese servicio",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-04-26T18:35:11.734Z"
-    },
-    {
-      "id": "ev_1777228511733_uiw023",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T18:35:11.733Z"
-    },
-    {
-      "id": "ev_1777228511731_sgffiz",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+59893996913",
-            "lastMessage": "Te agradezco mucho, ya contamos con ese servicio",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-04-26T18:35:11.731Z"
-    },
-    {
-      "id": "ev_1777228510076_yg9fyp",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T18:35:10.076Z"
-    },
-    {
-      "id": "ev_1777228504132_af1ngm",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T18:35:04.132Z"
-    },
-    {
-      "id": "ev_1777228504074_k3s9aw",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-26T18:35:04.074Z"
-    },
-    {
-      "id": "ev_1777173644643_rt1r0a",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:20:44.643Z"
-    },
-    {
-      "id": "ev_1777173644641_f3c3vt",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2
-      },
-      "createdAt": "2026-04-26T03:20:44.641Z"
-    },
-    {
-      "id": "ev_1777173572192_2zx9yt",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954630667",
-        "text": "todo bien?",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 12,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:19:32.192Z"
-    },
-    {
-      "id": "ev_1777173568004_4imtmd",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:28.004Z"
-    },
-    {
-      "id": "ev_1777173565075_7yzo1x",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:25.075Z"
-    },
-    {
-      "id": "ev_1777173565014_dnt313",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954630667&text=todo%20bien%3F"
-      },
-      "createdAt": "2026-04-26T03:19:25.014Z"
-    },
-    {
-      "id": "ev_1777173564186_lgrpep",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:24.186Z"
-    },
-    {
-      "id": "ev_1777173561112_ayq8t1",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954475175",
-        "text": "hola que tlal",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 11,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:19:21.112Z"
-    },
-    {
-      "id": "ev_1777173557412_xvd7k7",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:17.412Z"
-    },
-    {
-      "id": "ev_1777173554405_n6rs69",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:14.405Z"
-    },
-    {
-      "id": "ev_1777173554386_or2zxm",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954475175&text=hola%20que%20tlal"
-      },
-      "createdAt": "2026-04-26T03:19:14.386Z"
-    },
-    {
-      "id": "ev_1777173553942_rvscg2",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:13.942Z"
-    },
-    {
-      "id": "ev_1777173550220_h13ei9",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954555113",
-        "text": "qeu haces",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 10,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:19:10.220Z"
-    },
-    {
-      "id": "ev_1777173546177_c9fju6",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:06.177Z"
-    },
-    {
-      "id": "ev_1777173542394_jnwaby",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:02.394Z"
-    },
-    {
-      "id": "ev_1777173542346_6t64ei",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954555113&text=qeu%20haces"
-      },
-      "createdAt": "2026-04-26T03:19:02.346Z"
-    },
-    {
-      "id": "ev_1777173541768_d7vstu",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:19:01.768Z"
-    },
-    {
-      "id": "ev_1777173426744_adeeqm",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:17:06.744Z"
-    },
-    {
-      "id": "ev_1777173426736_091x4b",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2
-      },
-      "createdAt": "2026-04-26T03:17:06.736Z"
-    },
-    {
-      "id": "ev_1777173342908_xi05ro",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954630667",
-        "text": "que se cuenta",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 9,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:15:42.908Z"
-    },
-    {
-      "id": "ev_1777173338900_i6stnb",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:38.900Z"
-    },
-    {
-      "id": "ev_1777173335915_z3mt1z",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:35.915Z"
-    },
-    {
-      "id": "ev_1777173335778_xzway8",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954630667&text=que%20se%20cuenta"
-      },
-      "createdAt": "2026-04-26T03:15:35.778Z"
-    },
-    {
-      "id": "ev_1777173335418_v0km2s",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:35.418Z"
-    },
-    {
-      "id": "ev_1777173333370_lcrrbq",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954475175",
-        "text": "todo bien?",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 8,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:15:33.370Z"
-    },
-    {
-      "id": "ev_1777173329002_jjagdq",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:29.002Z"
-    },
-    {
-      "id": "ev_1777173326128_wnqh2g",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:26.128Z"
-    },
-    {
-      "id": "ev_1777173326066_og02n9",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954475175&text=todo%20bien%3F"
-      },
-      "createdAt": "2026-04-26T03:15:26.066Z"
-    },
-    {
-      "id": "ev_1777173325452_32iurf",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:25.452Z"
-    },
-    {
-      "id": "ev_1777173324436_52ffx4",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954555113",
-        "text": "que se cuenta",
-        "result": {
-          "ok": true,
-          "method": "loadURL-os-click-send"
-        },
-        "dailyCount": 7,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:15:24.436Z"
-    },
-    {
-      "id": "ev_1777173320444_83owjt",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:20.444Z"
-    },
-    {
-      "id": "ev_1777173317560_caoinq",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:17.560Z"
-    },
-    {
-      "id": "ev_1777173317478_k4t564",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954555113&text=que%20se%20cuenta"
-      },
-      "createdAt": "2026-04-26T03:15:17.478Z"
-    },
-    {
-      "id": "ev_1777173317090_8q8f6y",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:17.090Z"
-    },
-    {
-      "id": "ev_1777173314074_sjxb3y",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:14.074Z"
-    },
-    {
-      "id": "ev_1777173305075_mwha3o",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:15:05.075Z"
-    },
-    {
-      "id": "ev_1777173304995_q4ecdq",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-26T03:15:04.995Z"
-    },
-    {
-      "id": "ev_1777172944202_pj0d4a",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954630667",
-        "text": "que se cuenta",
-        "result": {
-          "ok": true,
-          "method": "spa-search-and-send"
-        },
-        "dailyCount": 6,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:09:04.202Z"
-    },
-    {
-      "id": "ev_1777172933453_tqnyvk",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954475175",
-        "text": "como estas?",
-        "result": {
-          "ok": true,
-          "method": "spa-search-and-send"
-        },
-        "dailyCount": 5,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:08:53.453Z"
-    },
-    {
-      "id": "ev_1777172922991_j0z866",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954555113",
-        "text": "hola que tlal",
-        "result": {
-          "ok": true,
-          "method": "fallback-loadURL-click"
-        },
-        "dailyCount": 4,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:08:42.991Z"
-    },
-    {
-      "id": "ev_1777172921100_2erb74",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:08:41.100Z"
-    },
-    {
-      "id": "ev_1777172918138_1zpuzp",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:08:38.138Z"
-    },
-    {
-      "id": "ev_1777172918090_z5058a",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954555113&text=hola%20que%20tlal"
-      },
-      "createdAt": "2026-04-26T03:08:38.090Z"
-    },
-    {
-      "id": "ev_1777172917465_8il786",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:08:37.465Z"
-    },
-    {
-      "id": "ev_1777172864928_gjx711",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:44.928Z"
-    },
-    {
-      "id": "ev_1777172861790_60eq56",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:41.790Z"
-    },
-    {
-      "id": "ev_1777172861736_lxtivq",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-26T03:07:41.736Z"
-    },
-    {
-      "id": "ev_1777172850218_ndd0gu",
-      "type": "window-closed",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:30.218Z"
-    },
-    {
-      "id": "ev_1777172850184_vee7r1",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:30.184Z"
-    },
-    {
-      "id": "ev_1777172839674_ci8cdt",
-      "type": "qr-visible",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:19.674Z"
-    },
-    {
-      "id": "ev_1777172822562_m0lynu",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:07:02.562Z"
-    },
-    {
-      "id": "ev_1777172818862_kk6vww",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-04-26T03:06:58.862Z"
-    },
-    {
-      "id": "ev_1777172810125_ekqlgl",
-      "type": "window-closed",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:06:50.125Z"
-    },
-    {
-      "id": "ev_1777172810004_786kqp",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:06:50.004Z"
-    },
-    {
-      "id": "ev_1777172453855_akos2k",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954630667",
-        "text": "como estas?",
-        "result": {
-          "ok": true,
-          "method": "spa-search-and-send"
-        },
-        "dailyCount": 3,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:00:53.855Z"
-    },
-    {
-      "id": "ev_1777172443453_y1w0wi",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954475175",
-        "text": "hola que tlal",
-        "result": {
-          "ok": true,
-          "method": "spa-search-and-send"
-        },
-        "dailyCount": 2,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:00:43.453Z"
-    },
-    {
-      "id": "ev_1777172431849_p2sv0r",
-      "type": "message-send-attempted",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "5492954555113",
-        "text": "como estas?",
-        "result": {
-          "ok": true,
-          "method": "fallback-loadURL-click"
-        },
-        "dailyCount": 1,
-        "dailyCap": 80
-      },
-      "createdAt": "2026-04-26T03:00:31.849Z"
-    },
-    {
-      "id": "ev_1777172430688_oej8dr",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:00:30.688Z"
-    },
-    {
-      "id": "ev_1777172427912_rw9uk0",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:00:27.912Z"
-    },
-    {
-      "id": "ev_1777172427807_fno4yv",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=5492954555113&text=como%20estas%3F"
-      },
-      "createdAt": "2026-04-26T03:00:27.807Z"
-    },
-    {
-      "id": "ev_1777172427146_b3ngkd",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-04-26T03:00:27.146Z"
     }
   ]
 }

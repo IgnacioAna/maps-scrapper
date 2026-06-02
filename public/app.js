@@ -8782,9 +8782,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const refreshBtns = document.querySelectorAll('button[onclick*="loadOnlineUsers"]');
     refreshBtns.forEach(b => { b.disabled = true; b.dataset._origText = b.textContent; b.textContent = '⏳ Actualizando...'; });
     try {
-      const resp = await fetch(apiUrl('/api/auth/online'));
+      const resp = await fetch(apiUrl('/api/auth/online'), { credentials: 'include' });
       if (!resp.ok) {
-        list.innerHTML = '<p style="color:var(--danger);">Error: ' + resp.status + '</p>';
+        if (resp.status === 401) {
+          list.innerHTML = '<p style="color:var(--warning);">⚠ Tu sesión expiró. Recargá la página (F5) o volvé a entrar.</p>';
+          // Cortar el auto-refresh para no spamear 401s
+          if (onlineRefreshTimer) { clearInterval(onlineRefreshTimer); onlineRefreshTimer = null; }
+        } else {
+          list.innerHTML = '<p style="color:var(--danger);">Error: ' + resp.status + '</p>';
+        }
         return;
       }
       const data = await resp.json();
