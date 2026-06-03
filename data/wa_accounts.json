@@ -25,7 +25,7 @@
     {
       "id": "wa_1777831276977_qxby1z",
       "label": "Test Ignacio 2",
-      "phone": "+5492213185932",
+      "phone": "+5492216125935",
       "status": "CONNECTED",
       "assignment": {
         "kind": "setter",
@@ -43,6 +43,28 @@
       "deliveryFails": 0,
       "lastBannedAt": null,
       "createdAt": "2026-05-03T18:01:16.977Z"
+    },
+    {
+      "id": "wa_1780449217500_93p5b4",
+      "label": "Ignacio 3",
+      "phone": "+5492213185932",
+      "status": "CONNECTED",
+      "assignment": {
+        "kind": "setter",
+        "refId": "setter_ignacio"
+      },
+      "routineId": "routine_1777670986721_op3uo7",
+      "notes": "",
+      "routineStartedAt": "2026-06-03T01:29:17.012Z",
+      "pauseUntil": null,
+      "staggerOffsetMs": 5961614,
+      "dailyKey": "2026-06-03",
+      "msgsSentToday": 0,
+      "responsesToday": 0,
+      "pendingCount": 0,
+      "deliveryFails": 0,
+      "lastBannedAt": null,
+      "createdAt": "2026-06-03T01:13:37.500Z"
     }
   ]
 }

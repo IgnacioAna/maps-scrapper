@@ -1032,6 +1032,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('_wamulti-popover')?.remove();
       document.removeEventListener('click', _waPopoverOutside, true);
     }
+    // Busca un lead por ID en cualquiera de los caches activos (setteo, llamadas).
+    function _waFindLead(leadId) {
+      if (!leadId) return null;
+      try { if (typeof _callsLeadsById !== 'undefined' && _callsLeadsById.has?.(leadId)) return _callsLeadsById.get(leadId); } catch {}
+      try { if (typeof setterLeads !== 'undefined') { const l = setterLeads.find(x => x.id === leadId); if (l) return l; } } catch {}
+      try { if (typeof callsLeadsCache !== 'undefined') { const l = callsLeadsCache.find(x => x.id === leadId); if (l) return l; } } catch {}
+      return null;
+    }
     function _waPopoverOutside(e) {
       const pop = document.getElementById('_wamulti-popover');
       if (pop && !pop.contains(e.target)) _waClosePopover();
@@ -1051,6 +1059,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mt) { try { text = decodeURIComponent(mt[1]); } catch { text = mt[1]; } }
       if (!phone) { window.showToast?.('No pude leer el número del lead.', { type:'error' }); return false; }
       _waClosePopover();
+      // ── ATAJO: si el lead YA fue contactado, abrir DIRECTO la conversación
+      // en la cuenta que lo contactó (sin popover, sin mensaje precargado).
+      // Pensado para cargar el CRM al final del día: click → ves cómo quedó.
+      const leadObj = _waFindLead(leadId);
+      if (leadObj && leadObj.contactedFromAccountId) {
+        const proto = `wamulti://send?phone=${encodeURIComponent(phone)}&text=&accountId=${encodeURIComponent(leadObj.contactedFromAccountId)}&leadId=${encodeURIComponent(leadId || '')}`;
+        window.location.href = proto;
+        const fromLabel = leadObj.contactedFromPhone || 'la cuenta que lo contactó';
+        window.showToast?.(`Abriendo la conversación en ${fromLabel}…`, { type:'info', duration:3500 });
+        return false;
+      }
       const accounts = await _waLoadAccounts();
       if (accounts.length === 0) {
         window.showToast?.('No hay cuentas WAMULTI conectadas. Abrí WAMULTI primero.', { type:'warning', duration:4000 });
@@ -5569,7 +5588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${fupBadge}
               ${callbackBadge}
               ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
-              ${l.contactedAt ? `<span style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px;" title="WhatsApp enviado${l.contactedFromPhone ? ' desde ' + escHtml(l.contactedFromPhone) : ''} · ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 WA enviado</span>` : ''}
+              ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 ver chat</a>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">

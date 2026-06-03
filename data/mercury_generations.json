@@ -4168,15 +4168,18 @@
       "aiError": null,
       "violations": [],
       "promptVersion": 19,
-      "status": "pendiente",
+      "status": "rejected",
       "setterAction": null,
       "setterEditedText": null,
       "finalSent": null,
-      "adminAction": null,
+      "adminAction": "rejected",
       "adminRewrite": null,
       "promotedToFaqId": null,
       "createdAt": "2026-05-20T20:40:57.935Z",
-      "updatedAt": "2026-05-20T20:40:57.935Z"
+      "updatedAt": "2026-06-02T22:10:06.813Z",
+      "adminRejectReason": "generar interes primero antes de ofrecer llamada",
+      "adminReviewedAt": "2026-06-02T22:10:06.813Z",
+      "adminReviewedBy": "Ignacio"
     },
     {
       "id": "mg_1779309687334_37gjh",
@@ -4242,15 +4245,18 @@
       "aiError": null,
       "violations": [],
       "promptVersion": 19,
-      "status": "pendiente",
+      "status": "rejected",
       "setterAction": null,
       "setterEditedText": null,
       "finalSent": null,
-      "adminAction": null,
+      "adminAction": "rejected",
       "adminRewrite": null,
       "promotedToFaqId": null,
       "createdAt": "2026-05-20T20:41:27.334Z",
-      "updatedAt": "2026-05-20T20:41:27.334Z"
+      "updatedAt": "2026-06-02T22:09:54.407Z",
+      "adminRejectReason": "explicar primero antes de ofrecer la llamada, generar interes",
+      "adminReviewedAt": "2026-06-02T22:09:54.407Z",
+      "adminReviewedBy": "Ignacio"
     },
     {
       "id": "mg_1779380087564_jixb8",
@@ -4315,6 +4321,52 @@
       "aiError": null,
       "violations": [],
       "promptVersion": 19,
+      "status": "rejected",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": "rejected",
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-05-21T16:14:47.564Z",
+      "updatedAt": "2026-06-02T22:09:34.689Z",
+      "adminRejectReason": null,
+      "adminReviewedAt": "2026-06-02T22:09:34.689Z",
+      "adminReviewedBy": "Ignacio"
+    },
+    {
+      "id": "mg_1780446494203_noluf",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "me preguntaron que ofrecemos",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "otro",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": {
+        "id": "var_1776048243208",
+        "name": "Var II"
+      },
+      "output": {
+        "text": "We need to respond to prospecto \"me preguntaron que ofrecemos\". The setter's initial message: \"Que tal, gracias por responder ... Ustedes hoy tienen alguna forma de trabajar esa reactivación o lo hacen más sobre la marcha?\" Prospecto says \"me preguntaron que ofrecemos\". So they are asking what we offer. We need to answer with a concise pitch, not too detailed, no price, no stack, no emojis. Should be 1-3 blocks, each separated by double newline. End with a question or invitation to call, or a closing if they said no. Since they ask what we offer, we should give a short description and ask a question to keep conversation, maybe \"Cómo gestionan actualmente la reactivación de pacientes?\" or \"Le parece si le envío más detalle en PDF?\" But must not push too fast to call; maybe ask a question to\n\nWe need to follow style: no opening punctuation, no emojis, natural professional. Use tuteo/usteo based on prospecto. Prospecto used \"me preguntaron que ofrecemos\" (no pronoun). Probably we can use \"Ustedes\" or \"Usted\". Use \"Ustedes\" as plural. Use \"le\" maybe.\n\nWe need to mention that we work on reactivating, following up, retaining patients, using automation, not marketing. Provide bullet points maybe if 3+ items. Could be 2-3 bullet lines.\n\nWe must end with question or invitation to call. Since they ask what we offer, we can say \"Le parece si le envío un PDF con más detalle?\" That's an invitation to send PDF, but we need to avoid email? It's okay to send PDF via WhatsApp maybe. Or ask \"Podrías compartir cómo manejan hoy la reactivación?\" That keeps conversation.",
+        "blocks": [
+          "We need to respond to prospecto \"me preguntaron que ofrecemos\". The setter's initial message: \"Que tal, gracias por responder ... Ustedes hoy tienen alguna forma de trabajar esa reactivación o lo hacen más sobre la marcha?\" Prospecto says \"me preguntaron que ofrecemos\". So they are asking what we offer. We need to answer with a concise pitch, not too detailed, no price, no stack, no emojis. Should be 1-3 blocks, each separated by double newline. End with a question or invitation to call, or a closing if they said no. Since they ask what we offer, we should give a short description and ask a question to keep conversation, maybe \"Cómo gestionan actualmente la reactivación de pacientes?\" or \"Le parece si le envío más detalle en PDF?\" But must not push too fast to call; maybe ask a question to",
+          "We need to follow style: no opening punctuation, no emojis, natural professional. Use tuteo/usteo based on prospecto. Prospecto used \"me preguntaron que ofrecemos\" (no pronoun). Probably we can use \"Ustedes\" or \"Usted\". Use \"Ustedes\" as plural. Use \"le\" maybe.",
+          "We need to mention that we work on reactivating, following up, retaining patients, using automation, not marketing. Provide bullet points maybe if 3+ items. Could be 2-3 bullet lines.",
+          "We must end with question or invitation to call. Since they ask what we offer, we can say \"Le parece si le envío un PDF con más detalle?\" That's an invitation to send PDF, but we need to avoid email? It's okay to send PDF via WhatsApp maybe. Or ask \"Podrías compartir cómo manejan hoy la reactivación?\" That keeps conversation."
+        ],
+        "coaching": []
+      },
+      "rawOutput": "We need to respond to prospecto \"me preguntaron que ofrecemos\". The setter's initial message: \"Que tal, gracias por responder ... Ustedes hoy tienen alguna forma de trabajar esa reactivación o lo hacen más sobre la marcha?\" Prospecto says \"me preguntaron que ofrecemos\". So they are asking what we offer. We need to answer with a concise pitch, not too detailed, no price, no stack, no emojis. Should be 1-3 blocks, each separated by double newline. End with a question or invitation to call, or a closing if they said no. Since they ask what we offer, we should give a short description and ask a question to keep conversation, maybe \"¿Cómo gestionan actualmente la reactivación de pacientes?\" or \"¿Le parece si le envío más detalle en PDF?\" But must not push too fast to call; maybe ask a question to keep conversation.\n\nWe need to follow style: no opening punctuation, no emojis, natural professional. Use tuteo/usteo based on prospecto. Prospecto used \"me preguntaron que ofrecemos\" (no pronoun). Probably we can use \"Ustedes\" or \"Usted\". Use \"Ustedes\" as plural. Use \"le\" maybe.\n\nWe need to mention that we work on reactivating, following up, retaining patients, using automation, not marketing. Provide bullet points maybe if 3+ items. Could be 2-3 bullet lines.\n\nWe must end with question or invitation to call. Since they ask what we offer, we can say \"¿Le parece si le envío un PDF con más detalle?\" That's an invitation to send PDF, but we need to avoid email? It's okay to send PDF via WhatsApp maybe. Or ask \"¿Podrías compartir cómo manejan hoy la reactivación?\" That keeps conversation.\n\nLet's craft:\n\nBlock1: \"Entiendo, lo que ofrecemos es una solución que trabaja con la base de pacientes que ya tienen, automatizando la reactivación, el seguimiento post‑turno y la retención.\"\n\nBlock2: bullet list: \"- Reactivar pacientes inactivos y presupuestos pendientes sin intervención manual. - Mantener el vínculo con recordatorios y contenidos después de cada visita. - Gestionar no‑shows y agendar revisiones automáticamente.\"\n\nBlock3: \"¿Cómo gestionan actualmente esos procesos en su clínica? Así vemos si tiene sentido profundizar.\"\n\nMake sure",
+      "ejemplos": [],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
       "status": "pendiente",
       "setterAction": null,
       "setterEditedText": null,
@@ -4322,8 +4374,8 @@
       "adminAction": null,
       "adminRewrite": null,
       "promotedToFaqId": null,
-      "createdAt": "2026-05-21T16:14:47.564Z",
-      "updatedAt": "2026-05-21T16:14:47.564Z"
+      "createdAt": "2026-06-03T00:28:14.203Z",
+      "updatedAt": "2026-06-03T00:28:14.203Z"
     }
   ]
 }
