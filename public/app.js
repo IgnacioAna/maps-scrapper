@@ -4557,14 +4557,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return { dials, interesados, agendados };
     }
+    // Objetivo diario de llamadas, persistido por usuario en localStorage.
+    function _pdGoalKey() { return 'pd_daily_goal_' + (currentUser?.id || 'anon'); }
+    function _pdGetGoal() { const v = parseInt(localStorage.getItem(_pdGoalKey()), 10); return (v && v > 0) ? v : 10; }
+    window._pdEditGoal = function() {
+      const cur = _pdGetGoal();
+      const ans = prompt('¿Cuál es tu objetivo de llamadas para hoy?', cur);
+      if (ans === null) return; // canceló
+      const n = parseInt(ans, 10);
+      if (!n || n <= 0) { alert('Poné un número mayor a 0.'); return; }
+      localStorage.setItem(_pdGoalKey(), String(n));
+      _pdRenderToday();
+    };
     function _pdRenderToday() {
       const el = document.getElementById('pd-today');
       if (!el) return;
       const s = _pdTodayStats();
-      let txt = `📞 Hoy: ${s.dials}`;
-      if (s.interesados) txt += ` · ⭐ ${s.interesados} int`;
-      if (s.agendados) txt += ` · 📅 ${s.agendados} agend`;
-      el.textContent = txt;
+      const goal = _pdGetGoal();
+      const done = s.dials >= goal;
+      const pct = Math.min(100, Math.round((s.dials / goal) * 100));
+      const labelEl = document.getElementById('pd-today-label');
+      const barEl = document.getElementById('pd-today-bar');
+      if (labelEl) labelEl.textContent = `🎯 ${s.dials} / ${goal}${done ? ' ✓' : ''}`;
+      if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = done ? '#5BB974' : 'var(--accent)'; }
+      // El chip se pone verde al cumplir la meta.
+      el.style.borderColor = done ? 'rgba(91,185,116,0.6)' : 'rgba(157,133,242,0.35)';
+      el.style.background = done ? 'rgba(91,185,116,0.14)' : 'rgba(157,133,242,0.12)';
+      el.title = `Objetivo de hoy: ${goal} llamadas (click para cambiar) · Llevás ${s.dials}`
+        + (s.interesados ? ` · ${s.interesados} interesados` : '')
+        + (s.agendados ? ` · ${s.agendados} agendados` : '');
     }
     window._pdRenderToday = _pdRenderToday;
 

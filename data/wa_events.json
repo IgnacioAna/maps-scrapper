@@ -1,6 +1,170 @@
 {
   "events": [
     {
+      "id": "ev_1780518912228_lytw39",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:35:12.228Z"
+    },
+    {
+      "id": "ev_1780518911740_3f9mpv",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:35:11.740Z"
+    },
+    {
+      "id": "ev_1780518911021_1lz3jl",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:35:11.021Z"
+    },
+    {
+      "id": "ev_1780518906894_qz9gqy",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:35:06.894Z"
+    },
+    {
+      "id": "ev_1780518906504_pizdh8",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:35:06.504Z"
+    },
+    {
+      "id": "ev_1780518889896_640dwb",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:49.896Z"
+    },
+    {
+      "id": "ev_1780518889179_hr9bwh",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:49.179Z"
+    },
+    {
+      "id": "ev_1780518888452_ubnre8",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:48.452Z"
+    },
+    {
+      "id": "ev_1780518885143_stut5k",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:45.143Z"
+    },
+    {
+      "id": "ev_1780518879325_gm6jhi",
+      "type": "window-closed",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:39.325Z"
+    },
+    {
+      "id": "ev_1780518879227_szr7gn",
+      "type": "window-closed",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:39.227Z"
+    },
+    {
+      "id": "ev_1780518878817_702zph",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:38.817Z"
+    },
+    {
+      "id": "ev_1780518878777_4fkq0d",
+      "type": "logged-out",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:38.777Z"
+    },
+    {
+      "id": "ev_1780518878766_1bnvi0",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:34:38.766Z"
+    },
+    {
+      "id": "ev_1780518830260_tp98f4",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Clienta Dra Sofía Campanella",
+        "contactName": "Clienta Dra Sofía Campanella",
+        "contactPhone": null,
+        "message": "Ah ok",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-03T20:33:50.260Z"
+    },
+    {
+      "id": "ev_1780518830243_zy9fcc",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:33:50.243Z"
+    },
+    {
+      "id": "ev_1780518830233_e9m43b",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Clienta Dra Sofía Campanella",
+            "phone": null,
+            "lastMessage": "Ah ok",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-03T20:33:50.233Z"
+    },
+    {
       "id": "ev_1780518425942_3adnoj",
       "type": "outgoing-sent",
       "accountId": "wa_1777831276977_qxby1z",
@@ -6284,183 +6448,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-06-03T15:44:51.305Z"
-    },
-    {
-      "id": "ev_1780501485455_zzkt0l",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 323 4519176",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:44:45.455Z"
-    },
-    {
-      "id": "ev_1780501479599_ry2eoc",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:39.599Z"
-    },
-    {
-      "id": "ev_1780501476513_2jhy3h",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:36.513Z"
-    },
-    {
-      "id": "ev_1780501476442_oy7l1w",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=573234519176&text=Hola%2C%20a%20tope%20o%20con%20respiro%20esta%20semana"
-      },
-      "createdAt": "2026-06-03T15:44:36.442Z"
-    },
-    {
-      "id": "ev_1780501475696_ds583n",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:35.696Z"
-    },
-    {
-      "id": "ev_1780501443851_9fw4cw",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 314 7404115",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:44:03.851Z"
-    },
-    {
-      "id": "ev_1780501436122_hm4tw1",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 314 7404115",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:43:56.122Z"
-    },
-    {
-      "id": "ev_1780501424113_lpe1fw",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 314 7404115",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:43:44.113Z"
-    },
-    {
-      "id": "ev_1780501402696_6fj1dk",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 314 7404115",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:43:22.696Z"
-    },
-    {
-      "id": "ev_1780501394122_z088b7",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "alegraveneerscali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:43:14.122Z"
-    },
-    {
-      "id": "ev_1780501387922_f73qmm",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "alegraveneerscali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:43:07.922Z"
-    },
-    {
-      "id": "ev_1780501370112_f50qc5",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "alegraveneerscali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:42:50.112Z"
-    },
-    {
-      "id": "ev_1780501338718_je20qm",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "alegraveneerscali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:42:18.718Z"
-    },
-    {
-      "id": "ev_1780501316802_pnqa9j",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Natalia Avila - Odontología Estética",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:56.802Z"
-    },
-    {
-      "id": "ev_1780501310280_w69ipi",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Natalia Avila - Odontología Estética",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:50.280Z"
-    },
-    {
-      "id": "ev_1780501299991_b7p8a3",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Natalia Avila - Odontología Estética",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:39.991Z"
-    },
-    {
-      "id": "ev_1780501286276_md4vpp",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Natalia Avila - Odontología Estética",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:26.276Z"
     }
   ]
 }

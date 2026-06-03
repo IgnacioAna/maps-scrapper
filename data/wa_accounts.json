@@ -4,7 +4,7 @@
       "id": "wa_1777129407605_6dmfeo",
       "label": "Test Ignacio",
       "phone": "+5492214543250",
-      "status": "CONNECTED",
+      "status": "DISCONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
@@ -26,7 +26,7 @@
       "id": "wa_1777831276977_qxby1z",
       "label": "Test Ignacio 2",
       "phone": "+5492216125935",
-      "status": "CONNECTED",
+      "status": "DISCONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
@@ -48,7 +48,7 @@
       "id": "wa_1780449217500_93p5b4",
       "label": "Ignacio 3",
       "phone": "+5492213185932",
-      "status": "CONNECTED",
+      "status": "DISCONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
