@@ -20639,16 +20639,16 @@
       "openMessage": "Buen día, como están llevando la semana",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:00:36.025Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20656,7 +20656,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59894216699",
+      "whatsappUrl": "https://wa.me/59894216699?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1n%20llevando%20la%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20691,7 +20691,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20717,16 +20717,16 @@
       "openMessage": "Buenas, mucho movimiento por ahí",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:02:37.470Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20734,7 +20734,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59895960837",
+      "whatsappUrl": "https://wa.me/59895960837?text=Buenas%2C%20mucho%20movimiento%20por%20ah%C3%AD",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20769,7 +20769,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20795,16 +20795,16 @@
       "openMessage": "Hola, todo viento en popa",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:13:15.099Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20812,7 +20812,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899600281",
+      "whatsappUrl": "https://wa.me/59899600281?text=Hola%2C%20todo%20viento%20en%20popa",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20847,7 +20847,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -226893,14 +226893,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:16:32.457Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -226913,8 +226913,24 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-03T20:16:32.457Z",
+          "outcome": "answered_not_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "objectionTags": [
+            "ya_tiene_sistema"
+          ],
+          "duration": 198,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0198,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -227317,7 +227333,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "24e87ba4-5b93-11f1-af51-8e49d6da0459",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.706Z"
         }
       ],
       "callAttempts": 1,
@@ -227489,7 +227505,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "89fa1c9e-5b95-11f1-bdbc-ca4e6ba1d0e3",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.706Z"
         },
         {
           "ts": "2026-05-29T19:43:16.997Z",
@@ -228572,11 +228588,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:10:13.544Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -228588,9 +228604,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-03T20:10:13.544Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 31,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0031,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -228755,7 +228784,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0082,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline_5233"
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0.016,
+          "realCostCurrency": "USD",
+          "realCostSid": "f0d3858a-5f83-11f1-bdb6-8a4b3521bb94",
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -229392,7 +229425,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "5ef7001e-5dcc-11f1-b192-02420aef3420",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -230340,7 +230373,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "b3795aec-5dcc-11f1-9043-02420aef3f20",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -230745,7 +230778,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "36fe2240-5dcc-11f1-9da1-02420aef3ba1",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -231306,7 +231339,7 @@
           "realCost": 0.016,
           "realCostCurrency": "USD",
           "realCostSid": "59462794-5b92-11f1-814a-02420aef8da1",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -232899,7 +232932,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "06ab7b60-5b92-11f1-84eb-02420aef8a20",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -233946,7 +233979,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "844f6ef6-5b91-11f1-99ee-02420aef8d20",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -235292,7 +235325,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "e588fe22-5b8b-11f1-8639-02420aef8fa1",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -235358,7 +235391,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:08:38.143Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -235371,9 +235404,24 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-06-03T20:08:38.009Z",
+          "outcome": "callback_later",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        },
+        {
+          "ts": "2026-06-03T20:08:38.143Z",
+          "outcome": "callback_later",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 2,
+      "callbackAt": "2026-06-04T22:00:00.000Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -239533,7 +239581,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "3f6b64ba-5b92-11f1-ae75-02420aef8e20",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,
@@ -244791,7 +244839,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "719d8c42-5dcc-11f1-888f-02420aef31a1",
-          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
+          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
         }
       ],
       "callAttempts": 1,

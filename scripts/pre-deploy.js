@@ -132,6 +132,20 @@ async function main() {
   // generaciones, alertas, config Telnyx, eventos, scripts y mensajes programados.
   // Nota: el server hace try/catch por loader, asi que un loader que falla devuelve
   // null. Por eso saveFile() chequea null y skippea en vez de escribir "null" a disco.
+  // Seguridad: NUNCA persistir los secrets de Telnyx al repo. Viven en env vars
+  // de Railway (TELNYX_API_KEY, TELNYX_SIP_*, etc.). El export-data los devuelve
+  // en crudo, y GitHub Push Protection rechaza el push si detecta la API key.
+  // Limpiamos los 5 campos sensibles a "" antes de guardar (numbers/routing/etc
+  // quedan intactos). Ver memoria predeploy-telnyx-secret-leak.
+  if (data.telnyxConfig && typeof data.telnyxConfig === "object") {
+    const SENSITIVE = ["apiKey", "sipUsername", "sipPassword", "sipConnectionId", "signaturePublicKey"];
+    let cleaned = 0;
+    for (const f of SENSITIVE) {
+      if (data.telnyxConfig[f]) { data.telnyxConfig[f] = ""; cleaned++; }
+    }
+    if (cleaned) console.log(`  lock telnyx_config.json: ${cleaned} secret(s) limpiados (viven en env vars de Railway)`);
+  }
+
   const extras = [
     ['mercuryConfig', 'mercury_config.json'],
     ['mercuryGenerations', 'mercury_generations.json'],
