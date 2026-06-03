@@ -1,6 +1,39 @@
 {
   "events": [
     {
+      "id": "ev_1780518425942_3adnoj",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "MAXILAR IMPLANT",
+        "delta": 1
+      },
+      "createdAt": "2026-06-03T20:27:05.943Z"
+    },
+    {
+      "id": "ev_1780518390091_cjx53k",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "+54 9 2216 12-5935",
+        "delta": 2
+      },
+      "createdAt": "2026-06-03T20:26:30.091Z"
+    },
+    {
+      "id": "ev_1780518353935_bcm72w",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-03T20:25:53.935Z"
+    },
+    {
       "id": "ev_1780518318911_afov2v",
       "type": "outgoing-sent",
       "accountId": "wa_1780449217500_93p5b4",
@@ -6428,39 +6461,6 @@
         "delta": 1
       },
       "createdAt": "2026-06-03T15:41:26.276Z"
-    },
-    {
-      "id": "ev_1780501278444_7hy7wm",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Cuenta de empresa",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:18.444Z"
-    },
-    {
-      "id": "ev_1780501275781_wxjbqk",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 310 4308517",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:15.781Z"
-    },
-    {
-      "id": "ev_1780501264754_ut2ek8",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 310 4308517",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:41:04.754Z"
     }
   ]
 }

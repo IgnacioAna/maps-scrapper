@@ -4320,6 +4320,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderCallsStats();
         // Sprint 33: render barra de quota diaria si hay setter elegido
         _callsRenderQuota();
+        // Contador "Hoy" del Power Dialer: refrescar con el callLog recién traído
+        // (tras una disposition con modal, el avance optimista ocurre antes de que
+        // loadCallsView traiga la nueva entry; acá se corrige el conteo).
+        if (_pd?.active) _pdRenderToday();
       } catch (e) { console.error(e); }
     }
 
@@ -4534,6 +4538,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
+    // Contador del día: deriva de callLog real (no de un contador suelto que se
+    // pierde al recargar). Cuenta cada entry de hoy en la cola visible. "Hoy" =
+    // desde las 00:00 hora local. interesados/agendados = outcomes valiosos.
+    function _pdTodayStats() {
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      const startMs = start.getTime();
+      let dials = 0, interesados = 0, agendados = 0;
+      for (const l of callsLeadsCache) {
+        if (!Array.isArray(l.callLog)) continue;
+        for (const e of l.callLog) {
+          const t = new Date(e.ts).getTime();
+          if (isNaN(t) || t < startMs) continue;
+          dials++;
+          if (e.outcome === 'answered_interested') interesados++;
+          else if (e.outcome === 'scheduled_with_admin') agendados++;
+        }
+      }
+      return { dials, interesados, agendados };
+    }
+    function _pdRenderToday() {
+      const el = document.getElementById('pd-today');
+      if (!el) return;
+      const s = _pdTodayStats();
+      let txt = `📞 Hoy: ${s.dials}`;
+      if (s.interesados) txt += ` · ⭐ ${s.interesados} int`;
+      if (s.agendados) txt += ` · 📅 ${s.agendados} agend`;
+      el.textContent = txt;
+    }
+    window._pdRenderToday = _pdRenderToday;
+
     function _pdAdvance() {
       _pd.currentIdx++;
       _pd.processed++;
@@ -4552,6 +4586,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdRender();
     }
     function _pdRender() {
+      _pdRenderToday();
       const currentId = _pd.queue[_pd.currentIdx];
       const lead = _callsLeadsById.get(currentId);
       if (!lead) { _pdAdvance(); return; }
