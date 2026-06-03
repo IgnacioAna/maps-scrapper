@@ -6673,7 +6673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal = document.createElement('div');
         modal.id = 'call-objection-modal';
         modal.className = 'modal-overlay hidden';
-        modal.style.zIndex = '1200';
+        modal.style.zIndex = '10000';
         modal.innerHTML = `<div class="modal-card" style="max-width:480px; width:95vw;">
           <div class="modal-header">
             <h3>❌ ¿Por qué dijo que no?</h3>

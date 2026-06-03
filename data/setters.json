@@ -19773,16 +19773,16 @@
       "openMessage": "Hola, como sigue la jornada",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:33:32.925Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19790,7 +19790,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899537647",
+      "whatsappUrl": "https://wa.me/59899537647?text=Hola%2C%20como%20sigue%20la%20jornada",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19825,7 +19825,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -19851,16 +19851,16 @@
       "openMessage": "Buen día, como está todo por ahí",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:36:53.052Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19868,7 +19868,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59894600202",
+      "whatsappUrl": "https://wa.me/59894600202?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1%20todo%20por%20ah%C3%AD",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19903,7 +19903,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -19931,16 +19931,16 @@
       "openMessage": "Hola, muchos pacientes hoy",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:43:46.012Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19948,7 +19948,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898479542",
+      "whatsappUrl": "https://wa.me/59898479542?text=Hola%2C%20muchos%20pacientes%20hoy",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19983,7 +19983,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20009,16 +20009,16 @@
       "openMessage": "Buen día, como están llevando la semana",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:46:06.222Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20026,7 +20026,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59894652796",
+      "whatsappUrl": "https://wa.me/59894652796?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1n%20llevando%20la%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20061,7 +20061,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20087,16 +20087,16 @@
       "openMessage": "Hola, todo viento en popa",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:27:00.605Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20104,7 +20104,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59894491844",
+      "whatsappUrl": "https://wa.me/59894491844?text=Hola%2C%20todo%20viento%20en%20popa",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20139,7 +20139,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20165,16 +20165,16 @@
       "openMessage": "Buen día, arrancaron con todo",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:38:21.826Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20182,7 +20182,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899593440",
+      "whatsappUrl": "https://wa.me/59899593440?text=Buen%20d%C3%ADa%2C%20arrancaron%20con%20todo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20217,7 +20217,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -20245,12 +20245,12 @@
       "openMessage": "Hola, como sigue la jornada",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
@@ -20262,7 +20262,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59895558058",
+      "whatsappUrl": "https://wa.me/59895558058?text=Hola%2C%20como%20sigue%20la%20jornada",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20325,16 +20325,16 @@
       "openMessage": "Hola, muchos pacientes hoy",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:44:59.269Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20342,7 +20342,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59897216073",
+      "whatsappUrl": "https://wa.me/59897216073?text=Hola%2C%20muchos%20pacientes%20hoy",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20377,7 +20377,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20403,16 +20403,16 @@
       "openMessage": "Buen día, como los está tratando el mes",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:48:21.512Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20420,7 +20420,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59891606912",
+      "whatsappUrl": "https://wa.me/59891606912?text=Buen%20d%C3%ADa%2C%20como%20los%20est%C3%A1%20tratando%20el%20mes",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20455,7 +20455,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20481,16 +20481,16 @@
       "openMessage": "Hola, espero estén teniendo un buen día",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:52:23.834Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20498,7 +20498,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898448815",
+      "whatsappUrl": "https://wa.me/59898448815?text=Hola%2C%20espero%20est%C3%A9n%20teniendo%20un%20buen%20d%C3%ADa",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20533,7 +20533,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -20559,16 +20559,16 @@
       "openMessage": "Buen día, como les está yendo",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:53:09.783Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20576,7 +20576,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898397413",
+      "whatsappUrl": "https://wa.me/59898397413?text=Buen%20d%C3%ADa%2C%20como%20les%20est%C3%A1%20yendo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20611,7 +20611,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -227317,7 +227317,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "24e87ba4-5b93-11f1-af51-8e49d6da0459",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -227489,7 +227489,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "89fa1c9e-5b95-11f1-bdbc-ca4e6ba1d0e3",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         },
         {
           "ts": "2026-05-29T19:43:16.997Z",
@@ -228731,7 +228731,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:40:54.397Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -228744,8 +228744,21 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-03T19:40:54.397Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 82,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0082,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -229379,7 +229392,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "5ef7001e-5dcc-11f1-b192-02420aef3420",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -230327,7 +230340,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "b3795aec-5dcc-11f1-9043-02420aef3f20",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -230732,7 +230745,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "36fe2240-5dcc-11f1-9da1-02420aef3ba1",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -231293,7 +231306,7 @@
           "realCost": 0.016,
           "realCostCurrency": "USD",
           "realCostSid": "59462794-5b92-11f1-814a-02420aef8da1",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -232886,7 +232899,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "06ab7b60-5b92-11f1-84eb-02420aef8a20",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -233182,11 +233195,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:24:10.928Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -233198,9 +233211,17 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-03T19:24:10.928Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -233417,11 +233438,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:24:15.973Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -233433,9 +233454,17 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-03T19:24:15.973Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -233917,7 +233946,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "844f6ef6-5b91-11f1-99ee-02420aef8d20",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -235263,7 +235292,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "e588fe22-5b8b-11f1-8639-02420aef8fa1",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -239504,7 +239533,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "3f6b64ba-5b92-11f1-ae75-02420aef8e20",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
@@ -241990,11 +242019,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T19:24:13.806Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -242006,9 +242035,17 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-03T19:24:13.806Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -244754,7 +244791,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "719d8c42-5dcc-11f1-888f-02420aef31a1",
-          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
+          "realCostReconciledAt": "2026-06-03T16:34:21.552Z"
         }
       ],
       "callAttempts": 1,
