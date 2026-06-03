@@ -19063,16 +19063,16 @@
       "openMessage": "Buenas, como andamos",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:46:46.108Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19080,7 +19080,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899525906",
+      "whatsappUrl": "https://wa.me/59899525906?text=Buenas%2C%20como%20andamos",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19115,7 +19115,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -19143,16 +19143,16 @@
       "openMessage": "Buen día, como está todo por ahí",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:47:08.283Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19160,7 +19160,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59895712864",
+      "whatsappUrl": "https://wa.me/59895712864?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1%20todo%20por%20ah%C3%AD",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19195,7 +19195,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -19221,16 +19221,16 @@
       "openMessage": "Buen día, como los está tratando el mes",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:56:43.136Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19238,7 +19238,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59892810497",
+      "whatsappUrl": "https://wa.me/59892810497?text=Buen%20d%C3%ADa%2C%20como%20los%20est%C3%A1%20tratando%20el%20mes",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19273,7 +19273,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -19299,16 +19299,16 @@
       "openMessage": "Hola, a full hoy con todo",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:01:35.855Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19316,7 +19316,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898199954",
+      "whatsappUrl": "https://wa.me/59898199954?text=Hola%2C%20a%20full%20hoy%20con%20todo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19351,7 +19351,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -19377,16 +19377,16 @@
       "openMessage": "Hola, jornada movida hoy",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:02:08.222Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19394,7 +19394,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898889174",
+      "whatsappUrl": "https://wa.me/59898889174?text=Hola%2C%20jornada%20movida%20hoy",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19429,7 +19429,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -19457,16 +19457,16 @@
       "openMessage": "Buen día, arrancaron con todo",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:06:02.684Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19474,7 +19474,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899000826",
+      "whatsappUrl": "https://wa.me/59899000826?text=Buen%20d%C3%ADa%2C%20arrancaron%20con%20todo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19509,7 +19509,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -19535,16 +19535,16 @@
       "openMessage": "Hola, jornada movida hoy",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:20:41.965Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19552,7 +19552,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59898867059",
+      "whatsappUrl": "https://wa.me/59898867059?text=Hola%2C%20jornada%20movida%20hoy",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19587,7 +19587,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -19615,16 +19615,16 @@
       "openMessage": "Hola, mucho trabajo últimamente",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:29:30.428Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19632,7 +19632,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59892051016",
+      "whatsappUrl": "https://wa.me/59892051016?text=Hola%2C%20mucho%20trabajo%20%C3%BAltimamente",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19667,7 +19667,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -19695,16 +19695,16 @@
       "openMessage": "Hola, como va el día",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:30:18.347Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -19712,7 +19712,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899254471",
+      "whatsappUrl": "https://wa.me/59899254471?text=Hola%2C%20como%20va%20el%20d%C3%ADa",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -19747,7 +19747,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -192001,12 +192001,12 @@
       "openMessage": "Buenas, día movidito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [
         {
@@ -192019,7 +192019,7 @@
         }
       ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "2026-06-03T14:44:15.693Z",
+      "lastContactAt": "2026-06-03T14:56:58.002Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593998739398?text=Buenas%2C%20d%C3%ADa%20movidito",
       "lastStage": "",
@@ -192048,7 +192048,8 @@
       "precallNote": "",
       "contactedFromAccountId": "wa_1777129407605_6dmfeo",
       "contactedFromPhone": "+5492214543250",
-      "contactedAt": "2026-06-03T14:44:15.693Z"
+      "contactedAt": "2026-06-03T14:44:15.693Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_dentistsofficeservicioodontolg_593991548481": {
       "num": 4102,
@@ -195653,16 +195654,25 @@
       "openMessage": "Hola, como va el día",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "593989170974",
+          "createdAt": "2026-06-03T14:57:17.146Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T14:57:22.036Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593989170974?text=Hola%2C%20como%20va%20el%20d%C3%ADa",
       "lastStage": "",
@@ -195688,7 +195698,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T14:57:17.146Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_denticastudiodental_593983844299": {
       "num": 4163,
@@ -196012,16 +196026,16 @@
       "openMessage": "Buenas, todo con mucho ritmo hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T14:57:48.017Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593995525888?text=Buenas%2C%20todo%20con%20mucho%20ritmo%20hoy%20por%20Quito",
       "lastStage": "",
@@ -196047,7 +196061,8 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "fechaContacto": "2026-06-03"
     },
     "l_centroespecializadoodontolgico_59322584238": {
       "num": 4169,
@@ -196071,12 +196086,12 @@
       "openMessage": "Hola, como vienen con los turnos",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -196189,16 +196204,16 @@
       "openMessage": "Buen día, cómo andan de trabajo",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T14:58:18.005Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593962722678?text=Buen%20d%C3%ADa%2C%20c%C3%B3mo%20andan%20de%20trabajo",
       "lastStage": "",
@@ -196226,7 +196241,8 @@
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
-      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z"
+      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_consultorioodontologico_593998352468": {
       "num": 4172,
@@ -196310,16 +196326,25 @@
       "openMessage": "Buen día, como les está yendo",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "593985340390",
+          "createdAt": "2026-06-03T14:58:37.936Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T14:58:41.369Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593985340390?text=Buen%20d%C3%ADa%2C%20como%20les%20est%C3%A1%20yendo",
       "lastStage": "",
@@ -196345,7 +196370,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T14:58:37.936Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_consultorioodontolgicodradomen_593994160852": {
       "num": 4174,
@@ -196611,12 +196640,12 @@
       "openMessage": "Buen día, como van con el mes",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -196670,12 +196699,12 @@
       "openMessage": "Buenos días, día muy cargado el de hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -196788,12 +196817,12 @@
       "openMessage": "Hola, muchos pacientes hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -197509,16 +197538,25 @@
       "openMessage": "Buenas, todo bien en la oficina",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "593996010970",
+          "createdAt": "2026-06-03T14:59:31.049Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T14:59:39.132Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593996010970?text=Buenas%2C%20todo%20bien%20en%20la%20oficina",
       "lastStage": "",
@@ -197544,7 +197582,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T14:59:31.049Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_consultoriodentaldrcarlosmarn_59322649248": {
       "num": 4194,
@@ -197568,12 +197610,12 @@
       "openMessage": "Buen día, cómo están esta semana?",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -197806,16 +197848,25 @@
       "openMessage": "Buenas, como viene la mano",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "593995619496",
+          "createdAt": "2026-06-03T15:00:01.199Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:00:06.600Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593995619496?text=Buenas%2C%20como%20viene%20la%20mano",
       "lastStage": "",
@@ -197841,7 +197892,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:00:01.199Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_eldentistaec_593993565828": {
       "num": 4200,
@@ -197925,16 +197980,25 @@
       "openMessage": "Buenas, como anda todo",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "593992506459",
+          "createdAt": "2026-06-03T15:00:42.219Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:00:46.830Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593992506459?text=Buenas%2C%20como%20anda%20todo",
       "lastStage": "",
@@ -197960,7 +198024,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:00:42.219Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_movadentalcenter_593958988940": {
       "num": 4202,
@@ -198221,12 +198289,12 @@
       "openMessage": "Qué tal, mucho trabajo en la clínica hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -198280,16 +198348,25 @@
       "openMessage": "Buen día, como les está yendo",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "593987000367",
+          "createdAt": "2026-06-03T15:04:01.725Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:04:01.725Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593987000367?text=Buen%20d%C3%ADa%2C%20como%20les%20est%C3%A1%20yendo",
       "lastStage": "",
@@ -198317,7 +198394,11 @@
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
-      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z"
+      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z",
+      "fechaContacto": "2026-06-03",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:04:01.725Z"
     },
     "l_consultoriodentalmv_593962398735": {
       "num": 4208,
@@ -198639,16 +198720,25 @@
       "openMessage": "Buenos días, día muy cargado el de hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "593993683757",
+          "createdAt": "2026-06-03T15:01:30.971Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:01:35.463Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593993683757?text=Buenos%20d%C3%ADas%2C%20d%C3%ADa%20muy%20cargado%20el%20de%20hoy%20por%20Quito",
       "lastStage": "",
@@ -198674,7 +198764,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:01:30.971Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_consultoriodentalmoraymaborja_593986321714": {
       "num": 4214,
@@ -198698,16 +198792,25 @@
       "openMessage": "Buen día, todo muy activo hoy por Quito",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "593986321714",
+          "createdAt": "2026-06-03T15:07:04.933Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:07:08.901Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593986321714?text=Buen%20d%C3%ADa%2C%20todo%20muy%20activo%20hoy%20por%20Quito",
       "lastStage": "",
@@ -198733,7 +198836,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:07:04.933Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_coronabucalconsultoriodental_593989614686": {
       "num": 4215,
@@ -198816,12 +198923,12 @@
       "openMessage": "Buen día, como está todo por ahí",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -198994,16 +199101,25 @@
       "openMessage": "Buen día, como los está tratando el mes",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "593960568360",
+          "createdAt": "2026-06-03T15:07:39.244Z"
+        }
+      ],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:07:43.446Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593960568360?text=Buen%20d%C3%ADa%2C%20como%20los%20est%C3%A1%20tratando%20el%20mes",
       "lastStage": "",
@@ -199029,7 +199145,11 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:07:39.244Z",
+      "fechaContacto": "2026-06-03"
     },
     "l_dentalimplantsecuador_59325133322": {
       "num": 4220,
@@ -199408,12 +199528,12 @@
       "openMessage": "Buen día, arrancaron con todo",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -199825,16 +199945,16 @@
       "openMessage": "Buenas, como la llevan",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
-      "lastContactAt": "",
+      "lastContactAt": "2026-06-03T15:08:20.392Z",
       "followUps": {},
       "whatsappUrl": "https://wa.me/593995800589?text=Buenas%2C%20como%20la%20llevan",
       "lastStage": "",
@@ -199860,7 +199980,8 @@
       "followUpStartedAt": null,
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "fechaContacto": "2026-06-03"
     },
     "l_dracristinaoliveiradentistaqui_593987982077": {
       "num": 4234,
@@ -199946,12 +200067,12 @@
       "openMessage": "Hola, todo viento en popa",
       "assignedTo": "setter_ignacio",
       "varianteId": null,
-      "conexion": "",
+      "conexion": "sin_wsp",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "sin_wsp",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-26T04:41:02.415Z",
@@ -202035,16 +202156,25 @@
       "openMessage": "Buenos días, con mucha demanda esta semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573188029391",
+          "createdAt": "2026-06-03T15:08:49.205Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:08:53.834Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202052,7 +202182,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573188029391",
+      "whatsappUrl": "https://wa.me/573188029391?text=Buenos%20d%C3%ADas%2C%20con%20mucha%20demanda%20esta%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202086,10 +202216,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:08:49.205Z"
     },
     "l_dralejandromartnezdiseodesonri_573104308517": {
       "num": 4271,
@@ -202113,16 +202246,25 @@
       "openMessage": "Buenas, cómo andan de trabajo hoy por Cali?",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573104308517",
+          "createdAt": "2026-06-03T15:09:08.337Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:09:17.348Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202130,7 +202272,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573104308517",
+      "whatsappUrl": "https://wa.me/573104308517?text=Buenas%2C%20c%C3%B3mo%20andan%20de%20trabajo%20hoy%20por%20Cali%3F",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202164,10 +202306,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:09:08.337Z"
     },
     "l_sotobecerradentistryofhighspec_573188270618": {
       "num": 4272,
@@ -202191,16 +202336,16 @@
       "openMessage": "Hola, como lo llevan",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:09:39.486Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202208,7 +202353,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573188270618",
+      "whatsappUrl": "https://wa.me/573188270618?text=Hola%2C%20como%20lo%20llevan",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -202242,7 +202387,7 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
       "precallNote": ""
@@ -202269,16 +202414,25 @@
       "openMessage": "Qué tal, mucho por resolver hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573104149078",
+          "createdAt": "2026-06-03T15:10:18.989Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:10:23.217Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202286,7 +202440,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573104149078",
+      "whatsappUrl": "https://wa.me/573104149078?text=Qu%C3%A9%20tal%2C%20mucho%20por%20resolver%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202320,10 +202474,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:10:18.989Z"
     },
     "l_nizedentalfacialclnicafacialyo_573172903037": {
       "num": 4274,
@@ -202347,16 +202504,25 @@
       "openMessage": "Hola, cómo va la semana para la clínica",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573172903037",
+          "createdAt": "2026-06-03T15:11:19.852Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:11:19.852Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202364,7 +202530,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573172903037",
+      "whatsappUrl": "https://wa.me/573172903037?text=Hola%2C%20c%C3%B3mo%20va%20la%20semana%20para%20la%20cl%C3%ADnica",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202398,10 +202564,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:11:19.852Z"
     },
     "l_centroodontologicovallesonrisa_573155141557": {
       "num": 4275,
@@ -202425,16 +202594,33 @@
       "openMessage": "Buenas, cómo va todo el equipo hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573155141557",
+          "createdAt": "2026-06-03T15:10:54.121Z"
+        },
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573155141557",
+          "createdAt": "2026-06-03T15:22:23.450Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:22:27.752Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202442,7 +202628,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573155141557",
+      "whatsappUrl": "https://wa.me/573155141557?text=Buenas%2C%20c%C3%B3mo%20va%20todo%20el%20equipo%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -202476,10 +202662,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:22:23.450Z"
     },
     "l_drasandragarcarejuvenecimiento_573175861535": {
       "num": 4276,
@@ -202503,16 +202692,25 @@
       "openMessage": "Buenas, como viene la mano",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573175861535",
+          "createdAt": "2026-06-03T15:22:39.969Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:22:43.032Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202520,7 +202718,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573175861535",
+      "whatsappUrl": "https://wa.me/573175861535?text=Buenas%2C%20como%20viene%20la%20mano",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202554,10 +202752,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:22:39.969Z"
     },
     "l_occidentalclnicaodontolgica_573009176717": {
       "num": 4277,
@@ -202581,16 +202782,25 @@
       "openMessage": "Buenas, como la llevan",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573009176717",
+          "createdAt": "2026-06-03T15:22:55.982Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:22:59.913Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202598,7 +202808,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573009176717",
+      "whatsappUrl": "https://wa.me/573009176717?text=Buenas%2C%20como%20la%20llevan",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202632,10 +202842,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:22:55.982Z"
     },
     "l_actualidadoral_573166194255": {
       "num": 4278,
@@ -202659,16 +202872,25 @@
       "openMessage": "Hola, jornada movida hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573166194255",
+          "createdAt": "2026-06-03T15:23:37.470Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:23:41.704Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202676,7 +202898,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573166194255",
+      "whatsappUrl": "https://wa.me/573166194255?text=Hola%2C%20jornada%20movida%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202710,10 +202932,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:23:37.470Z"
     },
     "l_destinationdentalbydrjuanferna_573113372245": {
       "num": 4279,
@@ -202737,16 +202962,25 @@
       "openMessage": "Hola, mucho trabajo hoy por Cali en la clínica",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573113372245",
+          "createdAt": "2026-06-03T15:23:56.111Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:24:11.273Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202754,7 +202988,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573113372245",
+      "whatsappUrl": "https://wa.me/573113372245?text=Hola%2C%20mucho%20trabajo%20hoy%20por%20Cali%20en%20la%20cl%C3%ADnica",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -202788,10 +203022,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:23:56.111Z"
     },
     "l_doctorasarazapataestticadental_573022645042": {
       "num": 4280,
@@ -202815,16 +203052,25 @@
       "openMessage": "Buen día, espero que estén bien",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573022645042",
+          "createdAt": "2026-06-03T15:24:21.443Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:24:26.421Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202832,7 +203078,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573022645042",
+      "whatsappUrl": "https://wa.me/573022645042?text=Buen%20d%C3%ADa%2C%20espero%20que%20est%C3%A9n%20bien",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -202866,10 +203112,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:24:21.443Z"
     },
     "l_odontologacalisurdanielrivera_573163228540": {
       "num": 4281,
@@ -202893,16 +203142,25 @@
       "openMessage": "Hola, todo con mucho movimiento hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573163228540",
+          "createdAt": "2026-06-03T15:24:38.878Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:24:41.653Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202910,7 +203168,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573163228540",
+      "whatsappUrl": "https://wa.me/573163228540?text=Hola%2C%20todo%20con%20mucho%20movimiento%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -202944,10 +203202,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:24:38.878Z"
     },
     "l_diseodesonrisablanqueamientode_573117052473": {
       "num": 4282,
@@ -202971,16 +203232,25 @@
       "openMessage": "Buenas, la semana muy movida",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573117052473",
+          "createdAt": "2026-06-03T15:24:52.193Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:24:56.336Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -202988,7 +203258,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573117052473",
+      "whatsappUrl": "https://wa.me/573117052473?text=Buenas%2C%20la%20semana%20muy%20movida",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203022,10 +203292,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:24:52.193Z"
     },
     "l_clinicadeperiodonciaeimplantol_573147404115": {
       "num": 4283,
@@ -203049,16 +203322,25 @@
       "openMessage": "Hola, jornada muy larga la de hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573147404115",
+          "createdAt": "2026-06-03T15:25:11.851Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:25:15.957Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203066,7 +203348,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573147404115",
+      "whatsappUrl": "https://wa.me/573147404115?text=Hola%2C%20jornada%20muy%20larga%20la%20de%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -203100,10 +203382,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:25:11.851Z"
     },
     "l_dentalcentercalibyjenifferpani_573102907074": {
       "num": 4284,
@@ -203127,16 +203412,25 @@
       "openMessage": "Hola, muy activa la semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573102907074",
+          "createdAt": "2026-06-03T15:35:26.176Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:35:30.417Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203144,7 +203438,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573102907074",
+      "whatsappUrl": "https://wa.me/573102907074?text=Hola%2C%20muy%20activa%20la%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203178,10 +203472,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:35:26.176Z"
     },
     "l_dranataliavilaodontologiaestti_573127918682": {
       "num": 4285,
@@ -203205,16 +203502,25 @@
       "openMessage": "Hola, con mucha demanda hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573127918682",
+          "createdAt": "2026-06-03T15:35:51.061Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:35:58.385Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203222,7 +203528,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573127918682",
+      "whatsappUrl": "https://wa.me/573127918682?text=Hola%2C%20con%20mucha%20demanda%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203256,10 +203562,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:35:51.061Z"
     },
     "l_alegraclinicadesonrisas_573016604032": {
       "num": 4286,
@@ -203283,16 +203592,25 @@
       "openMessage": "Buenas, cómo va el día a día por la clínica",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573016604032",
+          "createdAt": "2026-06-03T15:36:10.694Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:36:15.302Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203300,7 +203618,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573016604032",
+      "whatsappUrl": "https://wa.me/573016604032?text=Buenas%2C%20c%C3%B3mo%20va%20el%20d%C3%ADa%20a%20d%C3%ADa%20por%20la%20cl%C3%ADnica",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203334,10 +203652,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:36:10.694Z"
     },
     "l_clinicadentaltascnodontologaei_573137936508": {
       "num": 4287,
@@ -203361,16 +203682,25 @@
       "openMessage": "Buenos días, con mucha demanda esta semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573137936508",
+          "createdAt": "2026-06-03T15:36:25.500Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:36:31.126Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203378,7 +203708,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573137936508",
+      "whatsappUrl": "https://wa.me/573137936508?text=Buenos%20d%C3%ADas%2C%20con%20mucha%20demanda%20esta%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203412,10 +203742,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:36:25.500Z"
     },
     "l_drasharonortizdiseodesonrisaca_573186965559": {
       "num": 4288,
@@ -203439,16 +203772,25 @@
       "openMessage": "Buen día, cómo andan de trabajo",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573186965559",
+          "createdAt": "2026-06-03T15:36:43.760Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:36:48.075Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203456,7 +203798,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573186965559",
+      "whatsappUrl": "https://wa.me/573186965559?text=Buen%20d%C3%ADa%2C%20c%C3%B3mo%20andan%20de%20trabajo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203490,10 +203832,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:36:43.760Z"
     },
     "l_somaodontologadiseodesonrisaen_573167514656": {
       "num": 4289,
@@ -203517,16 +203862,25 @@
       "openMessage": "Buenos días, la jornada muy activa",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573167514656",
+          "createdAt": "2026-06-03T15:36:58.424Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:37:03.094Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203534,7 +203888,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573167514656",
+      "whatsappUrl": "https://wa.me/573167514656?text=Buenos%20d%C3%ADas%2C%20la%20jornada%20muy%20activa",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203568,10 +203922,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:36:58.424Z"
     },
     "l_odontlogosdelvalle_573188767622": {
       "num": 4290,
@@ -203595,16 +203952,25 @@
       "openMessage": "Hola, todo tranquilo por ahí",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573188767622",
+          "createdAt": "2026-06-03T15:37:17.464Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:37:21.433Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203612,7 +203978,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573188767622",
+      "whatsappUrl": "https://wa.me/573188767622?text=Hola%2C%20todo%20tranquilo%20por%20ah%C3%AD",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203646,10 +204012,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:37:17.464Z"
     },
     "l_clnicabocas_573006635724": {
       "num": 4291,
@@ -203673,16 +204042,25 @@
       "openMessage": "Qué tal, mucho trabajo en la clínica hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573006635724",
+          "createdAt": "2026-06-03T15:40:44.299Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:40:44.299Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203690,7 +204068,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573006635724",
+      "whatsappUrl": "https://wa.me/573006635724?text=Qu%C3%A9%20tal%2C%20mucho%20trabajo%20en%20la%20cl%C3%ADnica%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203724,10 +204102,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:40:44.299Z"
     },
     "l_dentalinnovation_573244896757": {
       "num": 4292,
@@ -203751,16 +204132,25 @@
       "openMessage": "Hola, muy activa la semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573244896757",
+          "createdAt": "2026-06-03T15:37:48.987Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:37:52.811Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203768,7 +204158,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573244896757",
+      "whatsappUrl": "https://wa.me/573244896757?text=Hola%2C%20muy%20activa%20la%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203802,10 +204192,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:37:48.987Z"
     },
     "l_dentixciudadjardncali_573234519176": {
       "num": 4293,
@@ -203829,16 +204222,25 @@
       "openMessage": "Hola, a tope o con respiro esta semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573234519176",
+          "createdAt": "2026-06-03T15:44:44.318Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:44:47.517Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203846,7 +204248,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573234519176",
+      "whatsappUrl": "https://wa.me/573234519176?text=Hola%2C%20a%20tope%20o%20con%20respiro%20esta%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -203880,10 +204282,13 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:44:44.318Z"
     },
     "l_drsebastianpanessodentalstudio_573156886999": {
       "num": 4294,
@@ -203907,16 +204312,25 @@
       "openMessage": "Buen día, espero que estén bien",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573156886999",
+          "createdAt": "2026-06-03T15:44:56.809Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:45:02.301Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -203924,7 +204338,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573156886999",
+      "whatsappUrl": "https://wa.me/573156886999?text=Buen%20d%C3%ADa%2C%20espero%20que%20est%C3%A9n%20bien",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -203958,12 +204372,15 @@
         "15d": false
       },
       "followUpStartedAt": null,
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "setterPhoneId": "",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
-      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z"
+      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:44:56.809Z"
     },
     "l_dentalcourtcaliclnicaodontolgi_573206800637": {
       "num": 4295,
@@ -203987,16 +204404,25 @@
       "openMessage": "Buenos días, día muy cargado el de hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573206800637",
+          "createdAt": "2026-06-03T15:45:15.118Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:45:17.954Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204004,7 +204430,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573206800637",
+      "whatsappUrl": "https://wa.me/573206800637?text=Buenos%20d%C3%ADas%2C%20d%C3%ADa%20muy%20cargado%20el%20de%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204039,9 +204465,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:45:15.118Z"
     },
     "l_odontovida_573177784686": {
       "num": 4296,
@@ -204065,16 +204494,25 @@
       "openMessage": "Buen día, todo en movimiento hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573177784686",
+          "createdAt": "2026-06-03T15:45:30.358Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:45:35.050Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204082,7 +204520,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573177784686",
+      "whatsappUrl": "https://wa.me/573177784686?text=Buen%20d%C3%ADa%2C%20todo%20en%20movimiento%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -204117,9 +204555,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:45:30.358Z"
     },
     "l_dratatianaendo_573105377570": {
       "num": 4297,
@@ -204143,16 +204584,25 @@
       "openMessage": "Hola, mucho trabajo hoy por Cali en la clínica",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573105377570",
+          "createdAt": "2026-06-03T15:45:50.121Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:46:02.670Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204160,7 +204610,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573105377570",
+      "whatsappUrl": "https://wa.me/573105377570?text=Hola%2C%20mucho%20trabajo%20hoy%20por%20Cali%20en%20la%20cl%C3%ADnica",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204195,9 +204645,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:45:50.121Z"
     },
     "l_dentoclubclnicaodontolgic_573187166607": {
       "num": 4298,
@@ -204221,16 +204674,25 @@
       "openMessage": "Hola, como sigue la jornada",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573187166607",
+          "createdAt": "2026-06-03T15:46:18.223Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:46:22.409Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204238,7 +204700,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573187166607",
+      "whatsappUrl": "https://wa.me/573187166607?text=Hola%2C%20como%20sigue%20la%20jornada",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -204273,9 +204735,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:46:18.223Z"
     },
     "l_drjhoanfelipelencorreaodontlog_3186944802": {
       "num": 4299,
@@ -204299,16 +204764,25 @@
       "openMessage": "Buen día, todo en movimiento hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573186944802",
+          "createdAt": "2026-06-03T15:46:36.676Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:46:42.695Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204316,7 +204790,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573186944802",
+      "whatsappUrl": "https://wa.me/3186944802?text=Buen%20d%C3%ADa%2C%20todo%20en%20movimiento%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204351,9 +204825,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:46:36.676Z"
     },
     "l_clinicaodontologicaunicoc_5723125248": {
       "num": 4300,
@@ -204454,16 +204931,25 @@
       "openMessage": "Buenas, cómo andan de trabajo hoy por Cali?",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573113421439",
+          "createdAt": "2026-06-03T15:46:54.231Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:46:58.362Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204471,7 +204957,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573113421439",
+      "whatsappUrl": "https://wa.me/573113421439?text=Buenas%2C%20c%C3%B3mo%20andan%20de%20trabajo%20hoy%20por%20Cali%3F",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204506,9 +204992,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:46:54.231Z"
     },
     "l_clnicadentitechplazanorte_573116409113": {
       "num": 4302,
@@ -204532,16 +205021,25 @@
       "openMessage": "Buen día, como están las cosas",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573116409113",
+          "createdAt": "2026-06-03T15:51:19.868Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:51:19.868Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204549,7 +205047,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573116409113",
+      "whatsappUrl": "https://wa.me/573116409113?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1n%20las%20cosas",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204584,9 +205082,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:51:19.868Z"
     },
     "l_clnicaodontologicaguillermocha_573167100113": {
       "num": 4303,
@@ -204610,16 +205111,16 @@
       "openMessage": "Hola, la semana muy ocupada",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:54:24.717Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204627,7 +205128,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573167100113",
+      "whatsappUrl": "https://wa.me/573167100113?text=Hola%2C%20la%20semana%20muy%20ocupada",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204662,7 +205163,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -204765,16 +205266,25 @@
       "openMessage": "Hola, todo súper por allá",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573128410729",
+          "createdAt": "2026-06-03T15:54:35.524Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:54:40.077Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204782,7 +205292,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573128410729",
+      "whatsappUrl": "https://wa.me/573128410729?text=Hola%2C%20todo%20s%C3%BAper%20por%20all%C3%A1",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204817,9 +205327,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:54:35.524Z"
     },
     "l_centroodontologicosantamaria_573182386177": {
       "num": 4306,
@@ -204843,16 +205356,25 @@
       "openMessage": "Hola, como sigue la jornada",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573182386177",
+          "createdAt": "2026-06-03T15:54:56.835Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:55:01.399Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -204860,7 +205382,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573182386177",
+      "whatsappUrl": "https://wa.me/573182386177?text=Hola%2C%20como%20sigue%20la%20jornada",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -204895,9 +205417,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:54:56.835Z"
     },
     "l_clinicamatizz_573176466158": {
       "num": 4307,
@@ -204998,16 +205523,25 @@
       "openMessage": "Buen día, cómo andan de trabajo",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573053328436",
+          "createdAt": "2026-06-03T15:55:12.315Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:55:16.201Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205015,7 +205549,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573053328436",
+      "whatsappUrl": "https://wa.me/573053328436?text=Buen%20d%C3%ADa%2C%20c%C3%B3mo%20andan%20de%20trabajo",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -205050,9 +205584,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:55:12.315Z"
     },
     "l_clinicaodontologicadentalwhite_576023866240": {
       "num": 4309,
@@ -205153,16 +205690,16 @@
       "openMessage": "Buenas, muy ajetreada la jornada hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:55:34.741Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205170,7 +205707,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573176476087",
+      "whatsappUrl": "https://wa.me/573176476087?text=Buenas%2C%20muy%20ajetreada%20la%20jornada%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -205205,7 +205742,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
@@ -205233,16 +205770,25 @@
       "openMessage": "Buenos días, día muy cargado el de hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573235946248",
+          "createdAt": "2026-06-03T15:55:53.855Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:55:57.066Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205250,7 +205796,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573235946248",
+      "whatsappUrl": "https://wa.me/573235946248?text=Buenos%20d%C3%ADas%2C%20d%C3%ADa%20muy%20cargado%20el%20de%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -205285,9 +205831,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:55:53.855Z"
     },
     "l_odontlogoscaliblanqueamientoor_573224141781": {
       "num": 4312,
@@ -205311,16 +205860,25 @@
       "openMessage": "Hola, como van con los pacientes",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573224141781",
+          "createdAt": "2026-06-03T15:56:12.147Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:56:14.734Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205328,7 +205886,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573224141781",
+      "whatsappUrl": "https://wa.me/573224141781?text=Hola%2C%20como%20van%20con%20los%20pacientes",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -205363,9 +205921,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T15:56:12.147Z"
     },
     "l_dramagdadiazperiodoncistaimpla_573114244429": {
       "num": 4313,
@@ -205389,16 +205950,25 @@
       "openMessage": "Hola, cómo va todo esta semana?",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573114244429",
+          "createdAt": "2026-06-03T15:56:24.930Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:56:28.967Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205406,7 +205976,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573114244429",
+      "whatsappUrl": "https://wa.me/573114244429?text=Hola%2C%20c%C3%B3mo%20va%20todo%20esta%20semana%3F",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -205441,9 +206011,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T15:56:24.930Z"
     },
     "l_clnicasodontolgicasdientesdesa_575581826": {
       "num": 4314,
@@ -205544,16 +206117,25 @@
       "openMessage": "Hola, muchos pacientes hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573016630320",
+          "createdAt": "2026-06-03T15:56:42.654Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T15:56:49.607Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205561,7 +206143,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573016630320",
+      "whatsappUrl": "https://wa.me/573016630320?text=Hola%2C%20muchos%20pacientes%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -205596,9 +206178,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T15:56:42.654Z"
     },
     "l_clinicaorthodentx_574050420": {
       "num": 4316,
@@ -205699,16 +206284,25 @@
       "openMessage": "Hola, a tope o con respiro esta semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573508073885",
+          "createdAt": "2026-06-03T16:11:07.626Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:11:11.047Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205716,7 +206310,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573508073885",
+      "whatsappUrl": "https://wa.me/573508073885?text=Hola%2C%20a%20tope%20o%20con%20respiro%20esta%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -205751,9 +206345,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T16:11:07.626Z"
     },
     "l_foreversmile_573108947419": {
       "num": 4318,
@@ -205777,16 +206374,25 @@
       "openMessage": "Hola, todo con mucho movimiento hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573108947419",
+          "createdAt": "2026-06-03T16:11:22.838Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:11:26.219Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205794,7 +206400,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573108947419",
+      "whatsappUrl": "https://wa.me/573108947419?text=Hola%2C%20todo%20con%20mucho%20movimiento%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -205829,9 +206435,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T16:11:22.838Z"
     },
     "l_dradanielamazoodontologiainteg_573205657865": {
       "num": 4319,
@@ -205855,16 +206464,25 @@
       "openMessage": "Hola, todo súper por allá",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573205657865",
+          "createdAt": "2026-06-03T16:11:37.398Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:11:43.398Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205872,7 +206490,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573205657865",
+      "whatsappUrl": "https://wa.me/573205657865?text=Hola%2C%20todo%20s%C3%BAper%20por%20all%C3%A1",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
@@ -205907,11 +206525,14 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": "",
       "doctorSource": "regex_from_name",
-      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z"
+      "doctorBackfilledAt": "2026-05-30T17:45:46.702Z",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T16:11:37.398Z"
     },
     "l_clnicaodontolgicaok_573003190214": {
       "num": 4320,
@@ -205935,16 +206556,25 @@
       "openMessage": "Buenos días, con mucha demanda esta semana",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573003190214",
+          "createdAt": "2026-06-03T16:11:54.996Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:11:58.288Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205952,7 +206582,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573003190214",
+      "whatsappUrl": "https://wa.me/573003190214?text=Buenos%20d%C3%ADas%2C%20con%20mucha%20demanda%20esta%20semana",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -205987,9 +206617,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T16:11:54.996Z"
     },
     "l_centroodontologicoodontocare_573103898994": {
       "num": 4321,
@@ -206013,16 +206646,25 @@
       "openMessage": "Hola, bastante ocupados hoy por Cali",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573103898994",
+          "createdAt": "2026-06-03T16:12:10.315Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:12:13.262Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206030,7 +206672,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573103898994",
+      "whatsappUrl": "https://wa.me/573103898994?text=Hola%2C%20bastante%20ocupados%20hoy%20por%20Cali",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -206065,9 +206707,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T16:12:10.315Z"
     },
     "l_maxilarte_573138507906": {
       "num": 4322,
@@ -206168,16 +206813,25 @@
       "openMessage": "Buen día, como están las cosas",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573017048723",
+          "createdAt": "2026-06-03T16:12:24.138Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:12:27.481Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206185,7 +206839,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573017048723",
+      "whatsappUrl": "https://wa.me/573017048723?text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1n%20las%20cosas",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -206220,9 +206874,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T16:12:24.138Z"
     },
     "l_247dentalnowdrlindermandaz_573166934839": {
       "num": 4324,
@@ -206246,16 +206903,25 @@
       "openMessage": "Buenas, día movidito",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777129407605_6dmfeo",
+          "fromPhone": "+5492214543250",
+          "toPhone": "573166934839",
+          "createdAt": "2026-06-03T16:12:38.187Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:12:41.807Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206263,7 +206929,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573166934839",
+      "whatsappUrl": "https://wa.me/573166934839?text=Buenas%2C%20d%C3%ADa%20movidito",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -206298,9 +206964,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777129407605_6dmfeo",
+      "contactedFromPhone": "+5492214543250",
+      "contactedAt": "2026-06-03T16:12:38.187Z"
     },
     "l_luminousdentalaesthetics_573235249068": {
       "num": 4325,
@@ -206324,16 +206993,25 @@
       "openMessage": "Buenas, cómo andan de trabajo hoy por Cali?",
       "assignedTo": "setter_ignacio",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1777831276977_qxby1z",
+          "fromPhone": "+5492213185932",
+          "toPhone": "573235249068",
+          "createdAt": "2026-06-03T16:12:54.045Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:12:57.102Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206341,7 +207019,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/573235249068",
+      "whatsappUrl": "https://wa.me/573235249068?text=Buenas%2C%20c%C3%B3mo%20andan%20de%20trabajo%20hoy%20por%20Cali%3F",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -206376,9 +207054,12 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1777831276977_qxby1z",
+      "contactedFromPhone": "+5492213185932",
+      "contactedAt": "2026-06-03T16:12:54.045Z"
     },
     "l_dralejandrohoyosthenaturalsmil_573042128620": {
       "num": 4326,
@@ -206409,9 +207090,18 @@
       "interes": null,
       "estado": "sin_contactar",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "wa_sent",
+          "via": "wamulti",
+          "accountId": "wa_1780449217500_93p5b4",
+          "fromPhone": "",
+          "toPhone": "573042128620",
+          "createdAt": "2026-06-03T16:13:08.749Z"
+        }
+      ],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T16:13:08.749Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206456,7 +207146,10 @@
       "setterPhoneId": "",
       "fechaContacto": null,
       "importedManually": false,
-      "precallNote": ""
+      "precallNote": "",
+      "contactedFromAccountId": "wa_1780449217500_93p5b4",
+      "contactedFromPhone": "",
+      "contactedAt": "2026-06-03T16:13:08.749Z"
     },
     "l_centrocalismiledentalclinic_576024851650": {
       "num": 4327,
@@ -226624,7 +227317,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "24e87ba4-5b93-11f1-af51-8e49d6da0459",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -226796,7 +227489,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "89fa1c9e-5b95-11f1-bdbc-ca4e6ba1d0e3",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         },
         {
           "ts": "2026-05-29T19:43:16.997Z",
@@ -228686,7 +229379,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "5ef7001e-5dcc-11f1-b192-02420aef3420",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -229634,7 +230327,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "b3795aec-5dcc-11f1-9043-02420aef3f20",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -230039,7 +230732,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "36fe2240-5dcc-11f1-9da1-02420aef3ba1",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -230600,7 +231293,7 @@
           "realCost": 0.016,
           "realCostCurrency": "USD",
           "realCostSid": "59462794-5b92-11f1-814a-02420aef8da1",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -232193,7 +232886,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "06ab7b60-5b92-11f1-84eb-02420aef8a20",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -233224,7 +233917,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "844f6ef6-5b91-11f1-99ee-02420aef8d20",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -234570,7 +235263,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "e588fe22-5b8b-11f1-8639-02420aef8fa1",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -238811,7 +239504,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "3f6b64ba-5b92-11f1-ae75-02420aef8e20",
-          "realCostReconciledAt": "2026-06-03T12:39:25.613Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,
@@ -244061,7 +244754,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "719d8c42-5dcc-11f1-888f-02420aef31a1",
-          "realCostReconciledAt": "2026-06-03T12:39:25.614Z"
+          "realCostReconciledAt": "2026-06-03T14:48:39.124Z"
         }
       ],
       "callAttempts": 1,

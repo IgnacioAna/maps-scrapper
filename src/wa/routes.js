@@ -244,6 +244,30 @@ export function registerWaRoutes(app, deps) {
     res.json({ ok: true });
   });
 
+  // v0.5.8 SPIKE: disparar envío de archivo de prueba a un chat (admin).
+  // Body: { accountId, targetPhone, fileUrl, fileName, fileType, caption }
+  app.post("/api/wa/test-send-file", requireAuth, requireRole("admin"), (req, res) => {
+    const { accountId, targetPhone, fileUrl, fileName, fileType, caption } = req.body || {};
+    if (!accountId || !targetPhone || !fileUrl) return res.status(400).json({ error: "accountId, targetPhone, fileUrl requeridos" });
+    const account = getAccount(accountId);
+    if (!account) return res.status(404).json({ error: "cuenta no encontrada" });
+    const userId = ownerUserIdOfAccount(account);
+    if (!userId) return res.status(400).json({ error: "cuenta sin asignar a setter" });
+    // Limpiar resultados previos para esta corrida
+    globalThis.__waFileResults = [];
+    sendToUser(userId, "wamulti:test-send-file", {
+      accountId, targetPhone: String(targetPhone), fileUrl: String(fileUrl),
+      fileName: fileName ? String(fileName) : "", fileType: fileType ? String(fileType) : "document",
+      caption: caption ? String(caption) : "",
+    });
+    res.json({ ok: true, dispatched: true });
+  });
+
+  // v0.5.8 SPIKE: leer el diagnóstico del último envío de archivo (admin).
+  app.get("/api/wa/test-file-results", requireAuth, requireRole("admin"), (_req, res) => {
+    res.json({ results: globalThis.__waFileResults || [] });
+  });
+
   // Construye config completo para el desktop. Calcula fase actual de la cuenta
   // basado en el día de warming (tiempo desde routineStartedAt). Aplica caps.
   function buildRoutineConfig(routine, account) {

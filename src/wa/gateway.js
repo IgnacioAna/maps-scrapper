@@ -239,6 +239,18 @@ export function initGateway(httpServer, deps) {
       }
     });
 
+    // v0.5.8 SPIKE: diagnóstico del envío de archivos. WAMULTI reporta cada
+    // paso acá. Guardamos los últimos 50 en memoria global para que un endpoint
+    // admin los lea (sin que el user copie logs de DevTools).
+    socket.on("wamulti:file-result", (payload = {}) => {
+      try {
+        if (!Array.isArray(globalThis.__waFileResults)) globalThis.__waFileResults = [];
+        globalThis.__waFileResults.push({ ...payload, userId: user.id, receivedAt: new Date().toISOString() });
+        if (globalThis.__waFileResults.length > 50) globalThis.__waFileResults = globalThis.__waFileResults.slice(-50);
+        console.log(`[wa-gateway] file-result step=${payload.step} ok=${payload.ok ?? '—'}`);
+      } catch (e) { console.warn("[wa-gateway] file-result error:", e?.message); }
+    });
+
     // v0.5.8 WAMULTI: el desktop avisa que el user envió un WhatsApp a un lead
     // (chat abierto vía protocolo wamulti://send). Registramos el contacto en
     // el lead con la cuenta/número desde el que se escribió.
