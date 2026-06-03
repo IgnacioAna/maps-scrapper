@@ -4544,18 +4544,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _pdTodayStats() {
       const start = new Date(); start.setHours(0, 0, 0, 0);
       const startMs = start.getTime();
-      let dials = 0, interesados = 0, agendados = 0;
+      // conversations = atendieron y hablaste (no cuenta no_answer/voicemail/
+      // número malo ni "me cortó"). Es la métrica de calidad junto al volumen.
+      const CONVO = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin']);
+      let dials = 0, conversations = 0, interesados = 0, agendados = 0;
       for (const l of callsLeadsCache) {
         if (!Array.isArray(l.callLog)) continue;
         for (const e of l.callLog) {
           const t = new Date(e.ts).getTime();
           if (isNaN(t) || t < startMs) continue;
           dials++;
+          if (CONVO.has(e.outcome)) conversations++;
           if (e.outcome === 'answered_interested') interesados++;
           else if (e.outcome === 'scheduled_with_admin') agendados++;
         }
       }
-      return { dials, interesados, agendados };
+      return { dials, conversations, interesados, agendados };
     }
     // Objetivo diario de llamadas, persistido por usuario en localStorage.
     function _pdGoalKey() { return 'pd_daily_goal_' + (currentUser?.id || 'anon'); }
@@ -4580,6 +4584,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const barEl = document.getElementById('pd-today-bar');
       if (labelEl) labelEl.textContent = `🎯 ${s.dials} / ${goal}${done ? ' ✓' : ''}`;
       if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = done ? '#5BB974' : 'var(--accent)'; }
+      const convosEl = document.getElementById('pd-today-convos');
+      if (convosEl) convosEl.textContent = `💬 ${s.conversations}`;
       // El chip se pone verde al cumplir la meta.
       el.style.borderColor = done ? 'rgba(91,185,116,0.6)' : 'rgba(157,133,242,0.35)';
       el.style.background = done ? 'rgba(91,185,116,0.14)' : 'rgba(157,133,242,0.12)';

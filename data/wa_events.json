@@ -1,6 +1,90 @@
 {
   "events": [
     {
+      "id": "ev_1780519274782_w0sqx8",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:41:14.782Z"
+    },
+    {
+      "id": "ev_1780519248560_6c26rr",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:40:48.560Z"
+    },
+    {
+      "id": "ev_1780519233005_yty40i",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:40:33.005Z"
+    },
+    {
+      "id": "ev_1780519231992_tdhomu",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:40:31.992Z"
+    },
+    {
+      "id": "ev_1780519002125_lhy0xt",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492213185932",
+        "text": "Todo bien",
+        "result": {
+          "ok": false,
+          "reason": "loadURL fallo",
+          "error": "Error: ERR_ABORTED (-3) loading 'https://web.whatsapp.com/send?phone=5492213185932&text=Todo%20bien'"
+        },
+        "warmingPairId": "pair_1780498164927_bd9fd8",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-03T20:36:42.125Z"
+    },
+    {
+      "id": "ev_1780519002114_gcgo7d",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:36:42.114Z"
+    },
+    {
+      "id": "ev_1780519001407_8dsev2",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492214543250",
+        "text": "todo bien?",
+        "result": {
+          "ok": false,
+          "reason": "loadURL fallo",
+          "error": "Error: ERR_ABORTED (-3) loading 'https://web.whatsapp.com/send?phone=5492214543250&text=todo%20bien%3F'"
+        },
+        "warmingPairId": "pair_1778461415480_lo8p3a",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-03T20:36:41.407Z"
+    },
+    {
+      "id": "ev_1780519001396_h00dy3",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:36:41.396Z"
+    },
+    {
       "id": "ev_1780518912228_lytw39",
       "type": "logged-out",
       "accountId": "wa_1777831276977_qxby1z",
@@ -6377,77 +6461,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-06-03T15:45:10.381Z"
-    },
-    {
-      "id": "ev_1780501507303_q1jo44",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:45:07.303Z"
-    },
-    {
-      "id": "ev_1780501507242_f3yjnd",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=573206800637&text=Buenos%20d%C3%ADas%2C%20d%C3%ADa%20muy%20cargado%20el%20de%20hoy%20por%20Cali"
-      },
-      "createdAt": "2026-06-03T15:45:07.242Z"
-    },
-    {
-      "id": "ev_1780501506585_pb16j8",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:45:06.585Z"
-    },
-    {
-      "id": "ev_1780501497953_hbsk1u",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Cuenta de empresa",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:44:57.953Z"
-    },
-    {
-      "id": "ev_1780501494985_jjhbck",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:54.985Z"
-    },
-    {
-      "id": "ev_1780501492015_v0cfhl",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:52.015Z"
-    },
-    {
-      "id": "ev_1780501491962_36kur5",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=573156886999&text=Buen%20d%C3%ADa%2C%20espero%20que%20est%C3%A9n%20bien"
-      },
-      "createdAt": "2026-06-03T15:44:51.962Z"
-    },
-    {
-      "id": "ev_1780501491305_pa5ei0",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:44:51.305Z"
     }
   ]
 }
