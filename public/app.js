@@ -6634,16 +6634,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('call-cb-confirm').onclick = async () => {
         const fecha = fechaInput.value;
         if (!fecha) { alert('Elegí una fecha'); return; }
+        const confirmBtn = document.getElementById('call-cb-confirm');
+        confirmBtn.disabled = true; const _oldTxt = confirmBtn.textContent; confirmBtn.textContent = 'Guardando…';
         try {
+          const callbackIso = new Date(fecha).toISOString();
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ outcome: 'callback_later', callbackAt: new Date(fecha).toISOString() })
+            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          // Update optimista del cache ANTES de cerrar el modal. El poller del
+          // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
+          // avanza; sin esto hay un race con loadCallsView() (reconstruye el índice
+          // async) y el dialer queda trabado en el mismo lead.
+          const _ci = callsLeadsCache.findIndex(l => l.id === leadId);
+          if (_ci >= 0) callsLeadsCache[_ci].callbackAt = callbackIso;
+          const _cached = _callsLeadsById.get(leadId);
+          if (_cached) _cached.callbackAt = callbackIso;
           modal.classList.add('hidden');
           await loadCallsView();
-        } catch (e) { alert('Error: ' + e.message); }
+        } catch (e) {
+          alert('Error: ' + e.message);
+          confirmBtn.disabled = false; confirmBtn.textContent = _oldTxt;
+        }
       };
     }
 
@@ -6751,6 +6765,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          // Update optimista: 'No interesado' descarta el lead en el backend; el
+          // poller del Power Dialer mira lead.estado para avanzar al siguiente.
+          const _oi = callsLeadsCache.findIndex(l => l.id === leadId);
+          if (_oi >= 0) callsLeadsCache[_oi].estado = 'descartado';
+          const _oc = _callsLeadsById.get(leadId);
+          if (_oc) _oc.estado = 'descartado';
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) {
@@ -6822,6 +6842,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           confirmed = true;
           observer?.disconnect();
+          // Update optimista: el poller del Power Dialer mira lead.estado para avanzar.
+          const _si = callsLeadsCache.findIndex(l => l.id === leadId);
+          if (_si >= 0) callsLeadsCache[_si].estado = 'agendado';
+          const _sc = _callsLeadsById.get(leadId);
+          if (_sc) _sc.estado = 'agendado';
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) { alert('Error: ' + e.message); }

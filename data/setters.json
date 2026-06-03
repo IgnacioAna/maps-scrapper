@@ -20875,16 +20875,16 @@
       "openMessage": "Buenas, como la llevan",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:19:04.080Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20892,7 +20892,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899054057",
+      "whatsappUrl": "https://wa.me/59899054057?text=Buenas%2C%20como%20la%20llevan",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -20927,7 +20927,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -21030,16 +21030,16 @@
       "openMessage": "Buenas, día movidito",
       "assignedTo": "setter_maximiliano_escalera",
       "varianteId": "",
-      "conexion": "",
+      "conexion": "enviada",
       "apertura": "",
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_contactar",
+      "estado": "contactado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:23:40.094Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -21047,7 +21047,7 @@
         "7d": false,
         "15d": false
       },
-      "whatsappUrl": "https://wa.me/59899945298",
+      "whatsappUrl": "https://wa.me/59899945298?text=Buenas%2C%20d%C3%ADa%20movidito",
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
@@ -21082,7 +21082,7 @@
       },
       "followUpStartedAt": null,
       "setterPhoneId": "",
-      "fechaContacto": null,
+      "fechaContacto": "2026-06-03",
       "importedManually": false,
       "precallNote": ""
     },
@@ -226816,14 +226816,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-03T20:22:39.165Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -226836,8 +226836,24 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-03T20:22:39.165Z",
+          "outcome": "answered_not_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "objectionTags": [
+            "otra"
+          ],
+          "duration": 40,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.004,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -226927,7 +226943,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0198,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline_5233"
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0.032,
+          "realCostCurrency": "USD",
+          "realCostSid": "615c90ea-5f88-11f1-925e-f2bff8d00cdd",
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -227333,7 +227353,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "24e87ba4-5b93-11f1-af51-8e49d6da0459",
-          "realCostReconciledAt": "2026-06-03T20:04:06.706Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -227505,7 +227525,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "89fa1c9e-5b95-11f1-bdbc-ca4e6ba1d0e3",
-          "realCostReconciledAt": "2026-06-03T20:04:06.706Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         },
         {
           "ts": "2026-05-29T19:43:16.997Z",
@@ -228616,7 +228636,11 @@
           "channel": "telnyx_webrtc",
           "cost": 0.0031,
           "costCountry": "MX",
-          "costTariffKey": "MX_landline_5233"
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "253d6aee-5f88-11f1-b22e-4e640e9a65b9",
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -228788,7 +228812,7 @@
           "realCost": 0.016,
           "realCostCurrency": "USD",
           "realCostSid": "f0d3858a-5f83-11f1-bdb6-8a4b3521bb94",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -229425,7 +229449,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "5ef7001e-5dcc-11f1-b192-02420aef3420",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -230373,7 +230397,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "b3795aec-5dcc-11f1-9043-02420aef3f20",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -230778,7 +230802,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "36fe2240-5dcc-11f1-9da1-02420aef3ba1",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.917Z"
         }
       ],
       "callAttempts": 1,
@@ -231339,7 +231363,7 @@
           "realCost": 0.016,
           "realCostCurrency": "USD",
           "realCostSid": "59462794-5b92-11f1-814a-02420aef8da1",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,
@@ -232932,7 +232956,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "06ab7b60-5b92-11f1-84eb-02420aef8a20",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,
@@ -233979,7 +234003,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "844f6ef6-5b91-11f1-99ee-02420aef8d20",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,
@@ -235325,7 +235349,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "e588fe22-5b8b-11f1-8639-02420aef8fa1",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,
@@ -239581,7 +239605,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "3f6b64ba-5b92-11f1-ae75-02420aef8e20",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,
@@ -244839,7 +244863,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "719d8c42-5dcc-11f1-888f-02420aef31a1",
-          "realCostReconciledAt": "2026-06-03T20:04:06.707Z"
+          "realCostReconciledAt": "2026-06-03T20:20:58.918Z"
         }
       ],
       "callAttempts": 1,

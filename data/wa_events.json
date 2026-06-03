@@ -1,6 +1,221 @@
 {
   "events": [
     {
+      "id": "ev_1780518318911_afov2v",
+      "type": "outgoing-sent",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-03T20:25:18.911Z"
+    },
+    {
+      "id": "ev_1780518318207_vwcvqf",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492216125935",
+        "text": "todo bien?",
+        "result": {
+          "ok": true,
+          "method": "background-dom-click"
+        },
+        "warmingPairId": "pair_1780498164927_bd9fd8",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-03T20:25:18.207Z"
+    },
+    {
+      "id": "ev_1780518315002_76rhs0",
+      "type": "response-received",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:25:15.002Z"
+    },
+    {
+      "id": "ev_1780518314992_ewmpte",
+      "type": "inbound-message",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Mi Num",
+            "phone": null,
+            "lastMessage": "",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-03T20:25:14.992Z"
+    },
+    {
+      "id": "ev_1780518314979_yqsprp",
+      "type": "connected",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:25:14.980Z"
+    },
+    {
+      "id": "ev_1780518302108_ky2w18",
+      "type": "loading",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:25:02.108Z"
+    },
+    {
+      "id": "ev_1780518300550_bws8dg",
+      "type": "dom-ready",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=5492216125935&text=todo%20bien%3F"
+      },
+      "createdAt": "2026-06-03T20:25:00.550Z"
+    },
+    {
+      "id": "ev_1780518299636_4atx06",
+      "type": "logged-out",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:24:59.636Z"
+    },
+    {
+      "id": "ev_1780518083621_x1932i",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "MAXILAR IMPLANT",
+        "contactName": "MAXILAR IMPLANT",
+        "contactPhone": null,
+        "message": "0:21",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-03T20:21:23.621Z"
+    },
+    {
+      "id": "ev_1780518083613_otwm3v",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:21:23.613Z"
+    },
+    {
+      "id": "ev_1780518083574_v7qz76",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 3,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5492214543250",
+            "lastMessage": "todo bien?",
+            "unreadCount": 1
+          },
+          {
+            "name": "MAXILAR IMPLANT",
+            "phone": null,
+            "lastMessage": "0:21",
+            "unreadCount": 1
+          },
+          {
+            "name": "",
+            "phone": "+5492213185932",
+            "lastMessage": "",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-03T20:21:23.574Z"
+    },
+    {
+      "id": "ev_1780518082264_4r464m",
+      "type": "outgoing-sent",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "chatKey": "Cuenta de empresa",
+        "delta": 1
+      },
+      "createdAt": "2026-06-03T20:21:22.264Z"
+    },
+    {
+      "id": "ev_1780518081920_33uolh",
+      "type": "warming-send-attempted",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+5492216125935",
+        "text": "todo bien?",
+        "result": {
+          "ok": true,
+          "method": "background-dom-click"
+        },
+        "warmingPairId": "pair_1778461415480_lo8p3a",
+        "isWarming": true
+      },
+      "createdAt": "2026-06-03T20:21:21.920Z"
+    },
+    {
+      "id": "ev_1780518077593_7850sm",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:21:17.593Z"
+    },
+    {
+      "id": "ev_1780518061597_cp8yub",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:21:01.597Z"
+    },
+    {
+      "id": "ev_1780518060595_v1svfi",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=5492216125935&text=todo%20bien%3F"
+      },
+      "createdAt": "2026-06-03T20:21:00.595Z"
+    },
+    {
+      "id": "ev_1780518059882_tipv77",
+      "type": "logged-out",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-03T20:20:59.882Z"
+    },
+    {
       "id": "ev_1780517526148_k9144j",
       "type": "ai-classified-inbound",
       "accountId": "wa_1777129407605_6dmfeo",
@@ -6246,251 +6461,6 @@
         "delta": 1
       },
       "createdAt": "2026-06-03T15:41:04.754Z"
-    },
-    {
-      "id": "ev_1780501245435_7tk1gx",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 310 4308517",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:40:45.435Z"
-    },
-    {
-      "id": "ev_1780501195762_w82m01",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 313 7936508",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:55.762Z"
-    },
-    {
-      "id": "ev_1780501191593_dd6k13",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 313 7936508",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:51.593Z"
-    },
-    {
-      "id": "ev_1780501184964_s8mj7b",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+57 313 7936508",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:44.964Z"
-    },
-    {
-      "id": "ev_1780501163896_sh0du4",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "haz clic aquí para ver la información de contacto",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:23.896Z"
-    },
-    {
-      "id": "ev_1780501160696_vbtbuu",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+573104308517",
-        "contactName": "",
-        "contactPhone": "+573104308517",
-        "message": "Thanks for contacting us, we are Alejandro Martinez Esthetic Dental Clinic in the city of Cali Colombia; What's your inquiry?  We will answer as soon as possible\n\nGracias por comunicarte con la clínica del Dr Alejandro Martinez  de la ciudad de Cali, ¿como podemos ayudarte?, intentaremos responderte lo antes posible  ESTE ES UN MENSAJE AUTOMÁTICO",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-03T15:39:20.696Z"
-    },
-    {
-      "id": "ev_1780501160683_o3kijz",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:39:20.683Z"
-    },
-    {
-      "id": "ev_1780501160673_14uvct",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+573104308517",
-            "lastMessage": "Thanks for contacting us, we are Alejandro Martinez Esthetic Dental Clinic in the city of Cali Colombia; What's your inquiry?  We will answer as soon as possible\n\nGracias por comunicarte con la clínica del Dr Alejandro Martinez  de la ciudad de Cali, ¿como podemos ayudarte?, intentaremos responderte lo antes posible  ESTE ES UN MENSAJE AUTOMÁTICO",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-03T15:39:20.673Z"
-    },
-    {
-      "id": "ev_1780501149594_nkf3mb",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Dental Center Cali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:09.594Z"
-    },
-    {
-      "id": "ev_1780501142576_inwgpi",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Dental Center Cali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:39:02.576Z"
-    },
-    {
-      "id": "ev_1780501125369_fbv8a6",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Dental Center Cali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:38:45.369Z"
-    },
-    {
-      "id": "ev_1780501104031_74uq5q",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Dental Center Cali",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:38:24.031Z"
-    },
-    {
-      "id": "ev_1780501070124_d4ne54",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Cuenta de empresa",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T15:37:50.124Z"
-    },
-    {
-      "id": "ev_1780501066835_w3ju6b",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+573147404115",
-        "contactName": "",
-        "contactPhone": "+573147404115",
-        "message": "hola",
-        "classification": {
-          "intent": "saludo",
-          "confidence": 0.95,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "saludo simple"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-03T15:37:46.835Z"
-    },
-    {
-      "id": "ev_1780501066828_xxyggq",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "alegraveneerscali",
-        "contactName": "alegraveneerscali",
-        "contactPhone": null,
-        "message": "Buenos días. Muy bien gracias",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-03T15:37:46.828Z"
-    },
-    {
-      "id": "ev_1780501066819_als0qk",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T15:37:46.819Z"
-    },
-    {
-      "id": "ev_1780501066810_r146p0",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "alegraveneerscali",
-            "phone": null,
-            "lastMessage": "Buenos días. Muy bien gracias",
-            "unreadCount": 1
-          },
-          {
-            "name": "",
-            "phone": "+573147404115",
-            "lastMessage": "hola",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-03T15:37:46.810Z"
     }
   ]
 }
