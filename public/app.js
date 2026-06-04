@@ -3033,14 +3033,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           setterLeads.splice(idx, 1);
         }
       }
-      _updateStatsLocal();
-      renderSetterLeads();
-      // Toast de confirmación: feedback visible cuando se guarda. Antes los
-      // setters pensaban que "no quedó marcado" porque al cambiar conexion
-      // de un lead, este desaparecía del filtro actual (ej: estaba en
-      // "Sin contactar", lo marcan enviada → ya no matchea ese filtro). El
-      // toast confirma que sí se guardó y opcionalmente dice a qué bucket
-      // se movió.
+      // Robustez (2026-06-03): el PATCH YA se guardó OK antes de llamar acá.
+      // Si el re-render visual falla, NO debe propagarse como "no se pudo
+      // guardar" (eso confundía: el dato sí quedó). Envolvemos en try/catch.
+      try {
+        _updateStatsLocal();
+        renderSetterLeads();
+      } catch (renderErr) {
+        console.error('[syncLeadAndRefresh] error al re-renderizar (el dato YA se guardó):', renderErr);
+      }
+      // Toast de confirmación: feedback visible cuando se guarda.
       if (opts.confirmMessage && window.showToast) {
         window.showToast(opts.confirmMessage, { type: 'success', duration: 2200 });
       }
