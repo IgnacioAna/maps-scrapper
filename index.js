@@ -5072,6 +5072,24 @@ app.delete('/api/setters/leads-bulk', requireAuth, requireRole('admin'), (req, r
   res.json({ removed, remaining: Object.keys(data.leads).length, backup: backup?.path || null });
 });
 
+// v0.5.8: estado de contacto WhatsApp de un lead (para el atajo del botón WA:
+// si ya fue contactado, abrir directo la conversación en su cuenta sin popover).
+// Liviano: devuelve solo los campos de contacto. El sufijo /contact-status
+// evita choque con otras rutas /api/setters/leads/:id/*.
+app.get('/api/setters/leads/:id/contact-status', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado." });
+  }
+  res.json({
+    contactedFromAccountId: lead.contactedFromAccountId || null,
+    contactedFromPhone: lead.contactedFromPhone || null,
+    contactedAt: lead.contactedAt || null,
+  });
+});
+
 // Actualizar lead (campos múltiples)
 app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   const data = loadSettersData();

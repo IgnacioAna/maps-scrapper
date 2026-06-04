@@ -1063,11 +1063,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       // en la cuenta que lo contactó (sin popover, sin mensaje precargado).
       // Pensado para cargar el CRM al final del día: click → ves cómo quedó.
       const leadObj = _waFindLead(leadId);
-      if (leadObj && leadObj.contactedFromAccountId) {
-        const proto = `wamulti://send?phone=${encodeURIComponent(phone)}&text=&accountId=${encodeURIComponent(leadObj.contactedFromAccountId)}&leadId=${encodeURIComponent(leadId || '')}`;
+      let contactedAcc = leadObj && leadObj.contactedFromAccountId ? leadObj.contactedFromAccountId : null;
+      let contactedPhone = leadObj && leadObj.contactedFromPhone ? leadObj.contactedFromPhone : null;
+      // Si el cache NO dice que fue contactado, consultar el backend (el cache
+      // del frontend no se entera del envío hasta recargar la vista — por eso
+      // algunos leads ya contactados abrían el popover de nuevo). Verificación
+      // fresca antes de decidir.
+      if (!contactedAcc && leadId) {
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/contact-status'), { credentials: 'include' });
+          if (r.ok) {
+            const cs = await r.json();
+            if (cs && cs.contactedFromAccountId) {
+              contactedAcc = cs.contactedFromAccountId;
+              contactedPhone = cs.contactedFromPhone;
+              // actualizar el cache local para próximos clicks
+              if (leadObj) { leadObj.contactedFromAccountId = contactedAcc; leadObj.contactedFromPhone = contactedPhone; leadObj.contactedAt = cs.contactedAt; }
+            }
+          }
+        } catch {}
+      }
+      if (contactedAcc) {
+        const proto = `wamulti://send?phone=${encodeURIComponent(phone)}&text=&accountId=${encodeURIComponent(contactedAcc)}&leadId=${encodeURIComponent(leadId || '')}`;
         window.location.href = proto;
-        const fromLabel = leadObj.contactedFromPhone || 'la cuenta que lo contactó';
-        window.showToast?.(`Abriendo la conversación en ${fromLabel}…`, { type:'info', duration:3500 });
+        window.showToast?.(`Abriendo la conversación en ${contactedPhone || 'la cuenta que lo contactó'}…`, { type:'info', duration:3500 });
         return false;
       }
       const accounts = await _waLoadAccounts();
