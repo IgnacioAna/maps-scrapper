@@ -235,7 +235,7 @@ function renderAccountsAdmin() {
     const checked = _selectedAccountIds.has(a.id) ? "checked" : "";
     return `<tr data-id="${escHtml(a.id)}">
       <td><input type="checkbox" class="wa-acc-check" data-id="${escHtml(a.id)}" ${checked}></td>
-      <td>${escHtml(a.label)}</td>
+      <td><span>${escHtml(a.label)}</span> <button class="btn-table-action wa-acc-rename" data-id="${escHtml(a.id)}" data-label="${escHtml(a.label)}" title="Editar el nombre" style="font-size:11px; opacity:0.7;">✏️</button></td>
       <td>${escHtml(a.phone || "—")}</td>
       <td>${statusBadge(a.status)}</td>
       <td style="font-size:12px;">${phaseCell}</td>
@@ -284,6 +284,21 @@ function renderAccountsAdmin() {
 
   // listeners
   $("#wa-acc-new")?.addEventListener("click", openCreateAccountDialog);
+  // Renombrar cuenta (editar label)
+  $$("#view-wa-accounts .wa-acc-rename").forEach((btn) => btn.addEventListener("click", async (e) => {
+    e.stopPropagation();
+    const id = e.currentTarget.dataset.id;
+    const cur = e.currentTarget.dataset.label || "";
+    const nuevo = prompt("Nuevo nombre para la cuenta:", cur);
+    if (nuevo === null) return;
+    const trimmed = nuevo.trim();
+    if (!trimmed || trimmed === cur) return;
+    try {
+      await api("/api/wa/accounts/" + id, { method: "PATCH", body: JSON.stringify({ label: trimmed }) });
+      await loadInitialData();
+      renderAccountsAdmin();
+    } catch (err) { alert("Error: " + err.message); }
+  }));
   $$("#view-wa-accounts .wa-acc-check").forEach((cb) => cb.addEventListener("change", (e) => {
     const id = e.target.dataset.id;
     if (e.target.checked) _selectedAccountIds.add(id); else _selectedAccountIds.delete(id);

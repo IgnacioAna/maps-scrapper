@@ -4,12 +4,12 @@
       "id": "wa_1777129407605_6dmfeo",
       "label": "Test Ignacio",
       "phone": "+5492214543250",
-      "status": "DISCONNECTED",
+      "status": "CONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
       },
-      "routineId": "routine_1777670986721_op3uo7",
+      "routineId": null,
       "notes": "",
       "routineStartedAt": "2026-05-01T21:29:46.722Z",
       "pauseUntil": null,
@@ -26,12 +26,12 @@
       "id": "wa_1777831276977_qxby1z",
       "label": "Test Ignacio 2",
       "phone": "+5492216125935",
-      "status": "DISCONNECTED",
+      "status": "CONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
       },
-      "routineId": "routine_1777670986721_op3uo7",
+      "routineId": null,
       "notes": "",
       "routineStartedAt": "2026-05-03T18:09:39.090Z",
       "pauseUntil": null,
@@ -48,12 +48,12 @@
       "id": "wa_1780449217500_93p5b4",
       "label": "Ignacio 3",
       "phone": "+5492213185932",
-      "status": "DISCONNECTED",
+      "status": "CONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
       },
-      "routineId": "routine_1777670986721_op3uo7",
+      "routineId": null,
       "notes": "",
       "routineStartedAt": "2026-06-03T01:29:17.012Z",
       "pauseUntil": null,

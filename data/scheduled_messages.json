@@ -32,6 +32,51 @@
       "staggerOffsetMs": 165956,
       "templateUsed": null,
       "sentAt": "2026-06-03T00:21:26.102Z"
+    },
+    {
+      "id": "sched_1780524003014_058ggp",
+      "leadId": "l_cabreraycarvajalconsultoriosde_593992506459",
+      "setterId": "setter_ignacio",
+      "setterPhoneId": null,
+      "scheduledFor": "2026-06-04T16:00:00.000Z",
+      "message": "Hola, buenas tardes, le comparto un dossier con dos casos de estudio de clientes activos y sus resultados, para que puedan entender un poco mas como trabajamos su base de pacientes",
+      "status": "pending",
+      "attempts": 0,
+      "createdAt": "2026-06-03T22:00:03.014Z",
+      "createdBy": "user_admin_ignacio",
+      "cancelOnReply": true,
+      "staggerOffsetMs": 77762,
+      "templateUsed": null
+    },
+    {
+      "id": "sched_1780524230121_9pq46g",
+      "leadId": "l_consultoriodentalmoraymaborja_593986321714",
+      "setterId": "setter_ignacio",
+      "setterPhoneId": null,
+      "scheduledFor": "2026-06-04T15:00:00.000Z",
+      "message": "Hola, buenas tardes, le comparto un dossier con dos casos de estudio de clientes activos y sus resultados, la idea es que puedan entender un poco mas como es que trabajamos su base de pacientes",
+      "status": "pending",
+      "attempts": 0,
+      "createdAt": "2026-06-03T22:03:50.121Z",
+      "createdBy": "user_admin_ignacio",
+      "cancelOnReply": true,
+      "staggerOffsetMs": 254337,
+      "templateUsed": null
+    },
+    {
+      "id": "sched_1780524957021_lebt28",
+      "leadId": "l_dentalcourtcaliclnicaodontolgi_573206800637",
+      "setterId": "setter_ignacio",
+      "setterPhoneId": null,
+      "scheduledFor": "2026-06-04T16:00:00.000Z",
+      "message": "Buenos días Paula, espero que estes bien. Habra posibilidad de comunicarme con el doc?",
+      "status": "pending",
+      "attempts": 0,
+      "createdAt": "2026-06-03T22:15:57.021Z",
+      "createdBy": "user_admin_ignacio",
+      "cancelOnReply": true,
+      "staggerOffsetMs": 42170,
+      "templateUsed": null
     }
   ]
 }
