@@ -2,7 +2,7 @@
   "accounts": [
     {
       "id": "wa_1777129407605_6dmfeo",
-      "label": "Test Ignacio",
+      "label": "Ignacio",
       "phone": "+5492214543250",
       "status": "CONNECTED",
       "assignment": {
@@ -24,7 +24,7 @@
     },
     {
       "id": "wa_1777831276977_qxby1z",
-      "label": "Test Ignacio 2",
+      "label": "Delfina",
       "phone": "+5492216125935",
       "status": "CONNECTED",
       "assignment": {
@@ -46,7 +46,7 @@
     },
     {
       "id": "wa_1780449217500_93p5b4",
-      "label": "Ignacio 3",
+      "label": "Sofia",
       "phone": "+5492213185932",
       "status": "CONNECTED",
       "assignment": {

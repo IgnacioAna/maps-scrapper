@@ -5084,7 +5084,11 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   // Antes un setter podia mandar {assignedTo:"otro"} y transferir su lead (lead
   // huerfano si el id no existe → invisible para todos). Solo admin puede reasignar
   // ahora; para bulk usar /api/setters/reassign-bulk.
-  const allowed = ['conexion', 'apertura', 'respondio', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'varianteId', 'setterPhoneId'];
+  // respondioNo (2026-06-03): flag separado para "le escribí y NO respondió",
+  // distinto de "—" (sin evaluar). Se mantiene `respondio` como boolean puro
+  // (true=respondió) para no romper los 15+ checks truthy que existen. El "NO"
+  // del dropdown setea respondioNo=true + respondio=false.
+  const allowed = ['conexion', 'apertura', 'respondio', 'respondioNo', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'varianteId', 'setterPhoneId'];
   if (req.auth?.user?.role === 'admin' && typeof req.body.assignedTo === 'string') {
     lead.assignedTo = req.body.assignedTo;
   }
@@ -5106,6 +5110,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   }
   if (req.body.respondio === true) {
     const wasAlreadyResponded = lead.respondio === true;
+    lead.respondioNo = false; // si respondió, ya no es "no respondió"
     if (!lead.conexion) lead.conexion = 'enviada';
     lead.estado = 'respondio';
     lead.lastContactAt = new Date().toISOString();

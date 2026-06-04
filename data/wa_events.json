@@ -1,6 +1,84 @@
 {
   "events": [
     {
+      "id": "ev_1780582332576_utds6k",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5493584372037",
+        "contactName": "",
+        "contactPhone": "+5493584372037",
+        "message": "Buenas tardes!! Seguimiento al loom \nPudiste verlo?",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-04T14:12:12.576Z"
+    },
+    {
+      "id": "ev_1780582332565_9y0r5e",
+      "type": "response-received",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-04T14:12:12.565Z"
+    },
+    {
+      "id": "ev_1780582332537_aa0gm2",
+      "type": "inbound-message",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5493584372037",
+            "lastMessage": "Buenas tardes!! Seguimiento al loom \nPudiste verlo?",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-04T14:12:12.537Z"
+    },
+    {
+      "id": "ev_1780582331207_2z005l",
+      "type": "connected",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-04T14:12:11.207Z"
+    },
+    {
+      "id": "ev_1780582316975_lpa6nr",
+      "type": "loading",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-04T14:11:56.975Z"
+    },
+    {
+      "id": "ev_1780582316921_b7ropo",
+      "type": "dom-ready",
+      "accountId": "wa_1777129407605_6dmfeo",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-04T14:11:56.922Z"
+    },
+    {
       "id": "ev_1780529890220_574yww",
       "type": "window-closed",
       "accountId": "wa_1777129407605_6dmfeo",
@@ -4814,80 +4892,6 @@
         "delta": 6
       },
       "createdAt": "2026-06-03T19:25:12.540Z"
-    },
-    {
-      "id": "ev_1780514707342_yb8un8",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "+54 9 2214 54-3250",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T19:25:07.342Z"
-    },
-    {
-      "id": "ev_1780514685160_mswx6z",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T19:24:45.160Z"
-    },
-    {
-      "id": "ev_1780514685143_2ap1qt",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+5492216125935",
-            "lastMessage": "Todo bien, gracias. ¿Y vos?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-03T19:24:45.143Z"
-    },
-    {
-      "id": "ev_1780514683704_i5t4ug",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "chatKey": "Cuenta de empresa",
-        "delta": 1
-      },
-      "createdAt": "2026-06-03T19:24:43.704Z"
-    },
-    {
-      "id": "ev_1780514683583_rsajc0",
-      "type": "warming-send-attempted",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "phone": "+5492214543250",
-        "text": "Todo bien, gracias. ¿Y vos? 😊",
-        "result": {
-          "ok": true,
-          "method": "background-dom-click"
-        },
-        "warmingPairId": "pair_1778461415480_lo8p3a",
-        "isWarming": true
-      },
-      "createdAt": "2026-06-03T19:24:43.583Z"
-    },
-    {
-      "id": "ev_1780514679126_ido39q",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-03T19:24:39.126Z"
     }
   ]
 }

@@ -2827,9 +2827,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Respondió: select inline
         const respSelect = '<select class="inline-select" data-id="' + lead.id + '" onchange="window._updateResp(this)" onclick="event.stopPropagation()">' +
-          '<option value=""' + (lead.respondio === false || lead.respondio === null ? ' selected' : '') + '>—</option>' +
+          '<option value=""' + (lead.respondio !== true && lead.respondioNo !== true ? ' selected' : '') + '>—</option>' +
           '<option value="si"' + (lead.respondio === true ? ' selected' : '') + '>SI</option>' +
-          '<option value="no"' + (lead.respondio === 'no' ? ' selected' : '') + '>NO</option>' +
+          '<option value="no"' + (lead.respondioNo === true ? ' selected' : '') + '>NO</option>' +
           '</select>';
 
         // Calificado: select inline (—=sin evaluar, SI=calificó, NO=no calificó)
@@ -3113,8 +3113,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       const id = el.dataset.id;
       const val = el.value;
       try {
-        const lead = await _patchLead(id, { respondio: val === 'si' });
-        const msg = val === 'si' ? '✓ Marcado: respondió' : '✓ Marcado: no respondió';
+        // SI → respondio:true. NO → respondioNo:true (respondio:false). — → ambos false.
+        const body = val === 'si'
+          ? { respondio: true, respondioNo: false }
+          : (val === 'no'
+              ? { respondio: false, respondioNo: true }
+              : { respondio: false, respondioNo: false });
+        const lead = await _patchLead(id, body);
+        const msg = val === 'si' ? '✓ Marcado: respondió' : (val === 'no' ? '✓ Marcado: no respondió' : '✓ Respuesta limpia');
         _syncLeadAndRefresh(id, lead, { confirmMessage: msg });
       } catch (e) {
         console.error('[updateResp]', e);
