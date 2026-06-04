@@ -726,18 +726,30 @@ function renderMyWhatsapps() {
       <td>${a.routineId ? findRoutineName(a.routineId) : "—"}</td>
     </tr>`).join("");
   view.innerHTML = `
-    <div class="content-header"><h2>Mis WhatsApps</h2></div>
+    <div class="content-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h2>Mis WhatsApps</h2>
+      <button class="btn-primary pill-btn" id="mywhats-new">+ Agregar WhatsApp</button>
+    </div>
     <div style="padding:0 32px 32px;">
       <p style="color:var(--text-secondary,var(--text-tertiary));margin-bottom:16px;">
-        Para operar tus cuentas, abrí la app desktop wa-multi en tu PC.
-        Los comandos del admin van a llegar automáticamente.
+        Creá acá cada número de WhatsApp que vas a usar. Después abrí <strong>wa-multi</strong>
+        en tu PC, logueate con tu usuario, y vas a ver tus cuentas para escanear el QR.
       </p>
       <table class="leads-table" style="width:100%;">
         <thead><tr><th>Cuenta</th><th>Teléfono</th><th>Estado</th><th>Rutina</th></tr></thead>
-        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary,var(--text-tertiary));">No tenés cuentas asignadas todavía</td></tr>`}</tbody>
+        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-secondary,var(--text-tertiary));">No tenés cuentas todavía. Creá una con "+ Agregar WhatsApp".</td></tr>`}</tbody>
       </table>
     </div>
   `;
+  $("#mywhats-new")?.addEventListener("click", async () => {
+    const label = prompt("Nombre para tu WhatsApp (ej: 'Mi número 1', 'Personal'):");
+    if (!label || !label.trim()) return;
+    try {
+      await api("/api/wa/accounts", { method: "POST", body: JSON.stringify({ label: label.trim() }) });
+      await loadInitialData();
+      renderMyWhatsapps();
+    } catch (err) { alert("Error: " + err.message); }
+  });
 }
 
 // ── BOOT ──────────────────────────────────────────────────────────────────

@@ -146,8 +146,25 @@ export function registerWaRoutes(app, deps) {
     return res.json(all.filter((a) => a.assignment?.kind === "setter" && a.assignment?.refId === user.setterId));
   });
 
-  app.post("/api/wa/accounts", requireAuth, requireRole("admin"), (req, res) => {
-    const account = createAccount(req.body || {});
+  app.post("/api/wa/accounts", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    // 2026-06-03: setters ahora pueden crear SUS propias cuentas (auto-asignadas
+    // a ellos). Antes solo admin. Un setter no puede asignar a otro setter:
+    // forzamos el assignment a su propio setterId. Admin mantiene control total.
+    if (user.role !== "admin" && user.role !== "setter" && user.role !== "supervisor") {
+      return res.status(403).json({ error: "No autorizado." });
+    }
+    const input = { ...(req.body || {}) };
+    if (user.role !== "admin") {
+      if (!user.setterId) return res.status(400).json({ error: "Tu usuario no tiene setterId." });
+      input.assignment = { kind: "setter", refId: user.setterId };
+    }
+    const account = createAccount(input);
+    // Si createAccount no aplicó el assignment (depende de su impl), forzarlo.
+    if (user.role !== "admin" && account && (!account.assignment || account.assignment.refId !== user.setterId)) {
+      const updated = setAssignment(account.id, { kind: "setter", refId: user.setterId });
+      return res.json(updated || account);
+    }
     res.json(account);
   });
 

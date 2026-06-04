@@ -55,13 +55,15 @@
       "setterPhoneId": null,
       "scheduledFor": "2026-06-04T15:00:00.000Z",
       "message": "Hola, buenas tardes, le comparto un dossier con dos casos de estudio de clientes activos y sus resultados, la idea es que puedan entender un poco mas como es que trabajamos su base de pacientes",
-      "status": "pending",
+      "status": "cancelled",
       "attempts": 0,
       "createdAt": "2026-06-03T22:03:50.121Z",
       "createdBy": "user_admin_ignacio",
       "cancelOnReply": true,
       "staggerOffsetMs": 254337,
-      "templateUsed": null
+      "templateUsed": null,
+      "cancelReason": "lead respondio o cambio de estado a interesado",
+      "cancelledAt": "2026-06-04T15:04:24.776Z"
     },
     {
       "id": "sched_1780524957021_lebt28",
