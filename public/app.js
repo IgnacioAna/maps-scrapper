@@ -2776,6 +2776,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
+      // Orden 2026-06-04: "último trabajado primero". Los leads que tocaste
+      // recién (lastContactAt más reciente) arriba → seguís tu hilo de trabajo.
+      // Los nunca contactados (lastContactAt null) van al final, ordenados por
+      // más nuevos scrapeados primero (importedAt DESC). Tiebreak estable por id.
+      filtered.sort((a, b) => {
+        const ta = a.lastContactAt ? new Date(a.lastContactAt).getTime() : 0;
+        const tb = b.lastContactAt ? new Date(b.lastContactAt).getTime() : 0;
+        if (tb !== ta) return tb - ta;
+        const ia = a.importedAt ? new Date(a.importedAt).getTime() : 0;
+        const ib = b.importedAt ? new Date(b.importedAt).getTime() : 0;
+        if (ib !== ia) return ib - ia;
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      });
+
       if (filtered.length === 0) {
         const cols = _tableMode === 'simple' ? 8 : 19;
         setterLeadsBody.innerHTML = '<tr><td colspan="' + cols + '" class="empty-state"><div class="empty-state-content"><p>No hay leads en esta vista.</p></div></td></tr>';

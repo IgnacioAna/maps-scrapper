@@ -4601,6 +4601,81 @@
       "promotedToFaqId": null,
       "createdAt": "2026-06-04T19:28:27.456Z",
       "updatedAt": "2026-06-04T19:28:27.456Z"
+    },
+    {
+      "id": "mg_1780601519982_ao3p9",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "ya tenemos la organización de las agendas, muchas gracias",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "objecion",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": null,
+      "output": {
+        "text": "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o mantener el vínculo entre visitas, podemos ayudar sin cambiar su organización actual.\n\nLes parece si coordinamos una breve llamada para mostrarles cómo funciona con una clínica similar a la suya?\n\nQuedo atento a su disponibilidad.",
+        "blocks": [
+          "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o mantener el vínculo entre visitas, podemos ayudar sin cambiar su organización actual.",
+          "Les parece si coordinamos una breve llamada para mostrarles cómo funciona con una clínica similar a la suya?",
+          "Quedo atento a su disponibilidad."
+        ],
+        "coaching": []
+      },
+      "rawOutput": "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o mantener el vínculo entre visitas, podemos ayudar sin cambiar su organización actual.\n\n¿Les parece si coordinamos una breve llamada para mostrarles cómo funciona con una clínica similar a la suya? \n\nQuedo atento a su disponibilidad.",
+      "ejemplos": [
+        {
+          "id": "faq_1777511676933_3v222",
+          "pregunta": "Ya contamos con personal a cargo de esa funcion, gracias",
+          "respuesta": "Entiendo. Y si en algun momento desean reactivar a esos pacientes que no volvieron, ya tenes mi contacto. Que tengas un lindo dia.",
+          "categoria": "objecion",
+          "score": 0.267
+        },
+        {
+          "id": "faq_1777170035228_tpk9t",
+          "pregunta": "¿Esto realmente funciona? / ¿Tienen casos?",
+          "respuesta": "Sí. Tenemos clientes activos hoy y el sistema está generando agendas reales todas las semanas.\n\nLos números los ve Ignacio en la llamada porque depende del caso de cada clínica. Te ofrezco mañana 10am o jueves 4pm?",
+          "categoria": "general",
+          "score": 0.19
+        },
+        {
+          "id": "faq_1777511676933_lbudl",
+          "pregunta": "Lo sentimos, este es el call center, eso es lo que nosotros hacemos",
+          "respuesta": "Igualmente no va por reemplazar esa labor, al contrario. Muchas veces sirve para ordenarla mejor y sacar un poco de carga de encima en la parte mas repetitiva, para que el equipo pueda enfocarse mas en atender bien y no en estar persiguiendo todo manualmente.\n\nSi le parece a tu supervisor lo vemos en una llamada de 30 minutos y les muestro bien a que me refiero.",
+          "categoria": "objecion",
+          "score": 0.143
+        },
+        {
+          "id": "faq_1777511676933_t6tfn",
+          "pregunta": "Sobre la marcha / lo hacemos sobre la marcha",
+          "respuesta": "Uy, te entiendo. Pero lo hacen manual?",
+          "categoria": "calificacion",
+          "score": 0.129
+        },
+        {
+          "id": "faq_1777567686185_n8h0i",
+          "pregunta": "No gracias / no insistan / dejen de escribir",
+          "respuesta": "Entendido. Que te vaya bien.",
+          "categoria": "objecion",
+          "score": 0.129
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-04T19:31:59.982Z",
+      "updatedAt": "2026-06-04T19:31:59.982Z"
     }
   ]
 }
