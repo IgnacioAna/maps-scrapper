@@ -40,13 +40,15 @@
       "setterPhoneId": null,
       "scheduledFor": "2026-06-04T16:00:00.000Z",
       "message": "Hola, buenas tardes, le comparto un dossier con dos casos de estudio de clientes activos y sus resultados, para que puedan entender un poco mas como trabajamos su base de pacientes",
-      "status": "pending",
+      "status": "cancelled",
       "attempts": 0,
       "createdAt": "2026-06-03T22:00:03.014Z",
       "createdBy": "user_admin_ignacio",
       "cancelOnReply": true,
       "staggerOffsetMs": 77762,
-      "templateUsed": null
+      "templateUsed": null,
+      "cancelReason": "lead respondio o cambio de estado a interesado",
+      "cancelledAt": "2026-06-04T16:01:30.049Z"
     },
     {
       "id": "sched_1780524230121_9pq46g",
@@ -72,13 +74,15 @@
       "setterPhoneId": null,
       "scheduledFor": "2026-06-04T16:00:00.000Z",
       "message": "Buenos días Paula, espero que estes bien. Habra posibilidad de comunicarme con el doc?",
-      "status": "pending",
+      "status": "cancelled",
       "attempts": 0,
       "createdAt": "2026-06-03T22:15:57.021Z",
       "createdBy": "user_admin_ignacio",
       "cancelOnReply": true,
       "staggerOffsetMs": 42170,
-      "templateUsed": null
+      "templateUsed": null,
+      "cancelReason": "lead respondio o cambio de estado a interesado",
+      "cancelledAt": "2026-06-04T16:01:30.049Z"
     }
   ]
 }

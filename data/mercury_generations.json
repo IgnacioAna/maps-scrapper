@@ -4376,6 +4376,231 @@
       "promotedToFaqId": null,
       "createdAt": "2026-06-03T00:28:14.203Z",
       "updatedAt": "2026-06-03T00:28:14.203Z"
+    },
+    {
+      "id": "mg_1780587090882_wmjn2",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "[12:26 p.m., 4/6/2026] SCM Dental | Sofia Pretz: Buen día, como está todo por ahí\n[12:26 p.m., 4/6/2026] +57 320 2706369: Gracias por comunicarte con la CLÍNICA DENTAL SABLE, agradecemos nos tengas un poco de paciencia serás atendido en pocos minutos,\nPor ahora cuéntanos ¿Cómo podemos ayudarte?\n[12:27 p.m., 4/6/2026] +57 320 2706369: buenos dias\n[12:28 p.m., 4/6/2026] SCM Dental | Sofia Pretz: Que tal, gracias por responder. Mi nombre es Sofia\n[12:28 p.m., 4/6/2026] SCM Dental | Sofia Pretz: Les escribo porque estamos ayudando a clínicas dentales a recuperar pacientes que dejaron de venir y a ordenar el seguimiento para que no dependa todo de estar atrás manualmente\n[12:28 p.m., 4/6/2026] SCM Dental | Sofia Pretz: PLa mayoría tiene buen servicio, pero no un sistema para reactivar, fidelizar y sostener el vínculo sin que todo recaiga en los dueños o en recepción\n[12:28 p.m., 4/6/2026] SCM Dental | Sofia Pretz: Ustedes hoy tienen alguna forma de trabajar esa reactivación o lo hacen más sobre la marcha?\n[12:30 p.m., 4/6/2026] +57 320 2706369: ya tenemos la organización de las agendas , muchas gracias",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "objecion",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": null,
+      "output": {
+        "text": "We need to generate response to prospect. Prospect says they already have organization of agendas. We need to qualify, keep conversation, maybe ask about reactivation process, and invite call. Use style: no opening punctuation, blocks separated by double newline. 1-3 blocks, 60-150 words. End with question or invitation.\n\nWe need to respect tone: professional natural, no emojis, no opening question marks. Use maybe \"Entiendo\" then ask about current reactivation method. Then propose call.\n\nWe need to avoid mentioning price, stack, etc. Also no \"\" or \"\". Use \"\" only at end? The rule says no opening punctuation, but closing punctuation allowed. So we can use \"\" only at end? Actually they said \"SIN SIGNOS DE APERTURA. Nunca uses  ni . Solo los de cierre.\" So we can use closing question mark \"?\" but not opening \"\". So we must write \"Como manejan la reactivación?\" with \"?\" at end.\n\nWe need to follow V R R pattern: validate, reframe, redirect. So something like:",
+        "blocks": [
+          "We need to generate response to prospect. Prospect says they already have organization of agendas. We need to qualify, keep conversation, maybe ask about reactivation process, and invite call. Use style: no opening punctuation, blocks separated by double newline. 1-3 blocks, 60-150 words. End with question or invitation.",
+          "We need to respect tone: professional natural, no emojis, no opening question marks. Use maybe \"Entiendo\" then ask about current reactivation method. Then propose call.",
+          "We need to avoid mentioning price, stack, etc. Also no \"\" or \"\". Use \"\" only at end? The rule says no opening punctuation, but closing punctuation allowed. So we can use \"\" only at end? Actually they said \"SIN SIGNOS DE APERTURA. Nunca uses  ni . Solo los de cierre.\" So we can use closing question mark \"?\" but not opening \"\". So we must write \"Como manejan la reactivación?\" with \"?\" at end.",
+          "We need to follow V R R pattern: validate, reframe, redirect. So something like:"
+        ],
+        "coaching": []
+      },
+      "rawOutput": "We need to generate response to prospect. Prospect says they already have organization of agendas. We need to qualify, keep conversation, maybe ask about reactivation process, and invite call. Use style: no opening punctuation, blocks separated by double newline. 1-3 blocks, 60-150 words. End with question or invitation.\n\nWe need to respect tone: professional natural, no emojis, no opening question marks. Use maybe \"Entiendo\" then ask about current reactivation method. Then propose call.\n\nWe need to avoid mentioning price, stack, etc. Also no \"¿\" or \"¡\". Use \"¿\" only at end? The rule says no opening punctuation, but closing punctuation allowed. So we can use \"¿\" only at end? Actually they said \"SIN SIGNOS DE APERTURA. Nunca uses ¿ ni ¡. Solo los de cierre.\" So we can use closing question mark \"?\" but not opening \"¿\". So we must write \"Como manejan la reactivación?\" with \"?\" at end.\n\nWe need to follow V R R pattern: validate, reframe, redirect. So something like:\n\n\"Entiendo, ya organizan la agenda. Sin embargo, la reactivación de pacientes inactivos suele quedar fuera del día a día. ¿Qué proceso siguen para contactar a quienes no han vuelto o a presupuestos pendientes?\"\n\nThen maybe second block: \"Nosotros trabajamos una lógica automática que se conecta a su base y envía mensajes sin que el equipo tenga que hacerlo manualmente. Así se recuperan oportunidades que de otro modo se pierden.\"\n\nThen third block: \"Si te parece, podríamos agendar una breve llamada para ver cómo se adapta a su flujo y si le aporta valor. ¿Te viene bien mañana por la mañana o prefieres otro día?\"\n\nCheck length: maybe ~120 words. Ensure no opening punctuation. Ensure blocks separated by double newline.\n\nLet's craft.\n\nFirst block: \"Entiendo, ya organizan la agenda. La reactivación de pacientes que dejaron de venir suele quedar fuera del día a día. ¿Qué proceso siguen para contactar a esos pacientes o a presupuestos pendientes?\"\n\nSecond block: \"Nosotros trabajamos una lógica automática que se conecta a su base y envía mensajes de forma ordenada, sin que el equipo tenga que hacerlo manualmente. Así se recuperan citas y se mantiene el vínculo con el paciente.\"\n\nThird block: \"Si te parece, coordinemos una",
+      "ejemplos": [
+        {
+          "id": "faq_1777511676933_pf5ps",
+          "pregunta": "Con la historia clinica digital tengo herramientas para ese tipo de casos. Como trabajan ustedes?",
+          "respuesta": "Nosotros trabajamos ese tema sobre todo desde la reactivacion y el seguimiento de la base de pacientes de forma automatica.\n\nPor ejemplo, armamos secuencias para contactar de forma mas ordenada a pacientes inactivos que dejaron de ir, presupuestos pendientes, controles que quedaron sin agendar o consultas que no avanzaron, para que eso no dependa de que alguien lo haga manualmente caso por caso.\n\nLa idea es que haya una logica de seguimiento mas constante, que ayude a mover esos pacientes y recuperar oportunidades que muchas veces quedan en la base sin trabajarse del todo, manteniendo frecuente al paciente a la clinica y por consecuencia fidelizarlo a largo plazo.\n\nNo apuntamos tanto a la parte clinica, sino mas a la parte de seguimiento y reactivacion comercial.\n\nSi le parece, lo mas facil es hacer una llamada corta y le muestro bien como lo trabajamos, asi ves si tiene sentido o si con lo que ya tienen estan cubiertos.",
+          "categoria": "calificacion",
+          "score": 0.278
+        },
+        {
+          "id": "faq_1777511676933_oglsw",
+          "pregunta": "Y como manejas eso?",
+          "respuesta": "Lo hacemos sobre la base de pacientes de la clinica. Armamos una logica de seguimiento y reactivacion automatica para contactar pacientes inactivos de forma ordenada, sin que dependa de hacerlo manualmente.\n\nSi te parece, hacemos una llamada corta y te muestro concretamente como lo trabajamos, asi evaluas si les puede sumar.",
+          "categoria": "general",
+          "score": 0.269
+        },
+        {
+          "id": "faq_1777511676933_p5rdl",
+          "pregunta": "Trabajamos con Dentalink (u otro software dental)",
+          "respuesta": "Te comento porque justo uno de nuestros clientes tambien trabaja con Dentalink. En estos casos no se reemplaza lo que ustedes ya usan, sino que se suma en paralelo para ayudar en la parte de reactivacion de pacientes antiguos, seguimiento y fidelizacion de pacientes, sin depender de que el equipo tenga que estar encima de todo manualmente. Es un sistema que funciona en automatico.\n\nSi le parece, coordinemos una llamada breve y le muestro como funcionaria aplicado a ustedes.",
+          "categoria": "objecion",
+          "score": 0.268
+        },
+        {
+          "id": "faq_1777511676933_b33zn",
+          "pregunta": "Existe una persona en recepcion que hace el seguimiento pero no es sostenido",
+          "respuesta": "Nosotros trabajamos justamente sobre eso: que el seguimiento no dependa solo del dia a dia de recepcion, sino que se sostenga con mas orden y constancia en el tiempo, todo de forma automatica.\n\nSe hace sobre pacientes que no volvieron, consultas o presupuestos que quedaron sin avanzar, no-shows y seguimiento post turno, para que esa continuidad no se corte con el tiempo y la clinica no pierda esas oportunidades por falta de constancia. Ademas de fidelizar al paciente al largo plazo.\n\nHoy donde sienten mas esa fuga?",
+          "categoria": "calificacion",
+          "score": 0.259
+        },
+        {
+          "id": "faq_1777511676933_qlv41",
+          "pregunta": "No tenemos ningun sistema, cual es el suyo?",
+          "respuesta": "Armamos un sistema a medida para la clinica, usando su base de datos, para reactivar pacientes y ordenar el seguimiento de una forma mas automatica.\n\nLa idea es recuperar consultas que hoy se pierden por falta de seguimiento, sin que todo dependa del trabajo manual del equipo. Una vez implementado este sistema queda propio de ustedes.\n\nSi queres, te cuento rapido como funciona en una llamada y vemos si tendria sentido para ustedes.",
+          "categoria": "general",
+          "score": 0.247
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-04T15:31:30.882Z",
+      "updatedAt": "2026-06-04T15:31:30.882Z"
+    },
+    {
+      "id": "mg_1780601274192_ph9dn",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "ya tenemos la organización de las agendas, muchas gracias",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "objecion",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": null,
+      "output": {
+        "text": "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o reforzar el seguimiento automático, pueden contar con nosotros. Que tengas un buen día.",
+        "blocks": [
+          "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o reforzar el seguimiento automático, pueden contar con nosotros. Que tengas un buen día."
+        ],
+        "coaching": []
+      },
+      "rawOutput": "Entiendo. Si en algún momento necesitan reactivar a pacientes que no volvieron o reforzar el seguimiento automático, pueden contar con nosotros. Que tengas un buen día.",
+      "ejemplos": [
+        {
+          "id": "faq_1777511676933_3v222",
+          "pregunta": "Ya contamos con personal a cargo de esa funcion, gracias",
+          "respuesta": "Entiendo. Y si en algun momento desean reactivar a esos pacientes que no volvieron, ya tenes mi contacto. Que tengas un lindo dia.",
+          "categoria": "objecion",
+          "score": 0.267
+        },
+        {
+          "id": "faq_1777170035228_tpk9t",
+          "pregunta": "¿Esto realmente funciona? / ¿Tienen casos?",
+          "respuesta": "Sí. Tenemos clientes activos hoy y el sistema está generando agendas reales todas las semanas.\n\nLos números los ve Ignacio en la llamada porque depende del caso de cada clínica. Te ofrezco mañana 10am o jueves 4pm?",
+          "categoria": "general",
+          "score": 0.19
+        },
+        {
+          "id": "faq_1777511676933_lbudl",
+          "pregunta": "Lo sentimos, este es el call center, eso es lo que nosotros hacemos",
+          "respuesta": "Igualmente no va por reemplazar esa labor, al contrario. Muchas veces sirve para ordenarla mejor y sacar un poco de carga de encima en la parte mas repetitiva, para que el equipo pueda enfocarse mas en atender bien y no en estar persiguiendo todo manualmente.\n\nSi le parece a tu supervisor lo vemos en una llamada de 30 minutos y les muestro bien a que me refiero.",
+          "categoria": "objecion",
+          "score": 0.143
+        },
+        {
+          "id": "faq_1777511676933_t6tfn",
+          "pregunta": "Sobre la marcha / lo hacemos sobre la marcha",
+          "respuesta": "Uy, te entiendo. Pero lo hacen manual?",
+          "categoria": "calificacion",
+          "score": 0.129
+        },
+        {
+          "id": "faq_1777567686185_n8h0i",
+          "pregunta": "No gracias / no insistan / dejen de escribir",
+          "respuesta": "Entendido. Que te vaya bien.",
+          "categoria": "objecion",
+          "score": 0.129
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-04T19:27:54.192Z",
+      "updatedAt": "2026-06-04T19:27:54.192Z"
+    },
+    {
+      "id": "mg_1780601307456_2iqjt",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "ya tenemos la organización de las agendas, muchas gracias",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "objecion",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": null,
+      "output": {
+        "text": "We need to produce a response to prospect: \"ya tenemos la organización de las agendas, muchas gracias\". According to guidelines: respond with validation, perhaps ask a question to keep conversation, not push immediate call. Use natural professional tone, no opening punctuation, no emojis, 1-3 blocks. Must end with question, invitation to call, or elegant closing. Since they say they already have agenda organization, we can validate, maybe ask if they have issues with reactivating patients, or if they have base of patients not returning. Keep short.\n\nWe need to not mention price, stack, etc. Should not push call too early, but can ask a question to keep conversation.\n\nMaybe two blocks: first block: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" Second block: \"Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\"\n\nEnds with question. No opening punctuation. Ensure no  or . Use proper capitalization. No emojis. Word count between 60-150. Let's count: Block1: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" That's ~12 words. Block2: \"Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\" That's ~30 words. Total ~42 words, maybe a bit low but okay. Could add a bit more: add \"Si les parece, podríamos conversar brevemente para entender mejor su flujo.\" That adds more. Let's craft final.",
+        "blocks": [
+          "We need to produce a response to prospect: \"ya tenemos la organización de las agendas, muchas gracias\". According to guidelines: respond with validation, perhaps ask a question to keep conversation, not push immediate call. Use natural professional tone, no opening punctuation, no emojis, 1-3 blocks. Must end with question, invitation to call, or elegant closing. Since they say they already have agenda organization, we can validate, maybe ask if they have issues with reactivating patients, or if they have base of patients not returning. Keep short.",
+          "We need to not mention price, stack, etc. Should not push call too early, but can ask a question to keep conversation.",
+          "Maybe two blocks: first block: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" Second block: \"Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\"",
+          "Ends with question. No opening punctuation. Ensure no  or . Use proper capitalization. No emojis. Word count between 60-150. Let's count: Block1: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" That's ~12 words. Block2: \"Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\" That's ~30 words. Total ~42 words, maybe a bit low but okay. Could add a bit more: add \"Si les parece, podríamos conversar brevemente para entender mejor su flujo.\" That adds more. Let's craft final."
+        ],
+        "coaching": []
+      },
+      "rawOutput": "We need to produce a response to prospect: \"ya tenemos la organización de las agendas, muchas gracias\". According to guidelines: respond with validation, perhaps ask a question to keep conversation, not push immediate call. Use natural professional tone, no opening punctuation, no emojis, 1-3 blocks. Must end with question, invitation to call, or elegant closing. Since they say they already have agenda organization, we can validate, maybe ask if they have issues with reactivating patients, or if they have base of patients not returning. Keep short.\n\nWe need to not mention price, stack, etc. Should not push call too early, but can ask a question to keep conversation.\n\nMaybe two blocks: first block: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" Second block: \"¿Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\"\n\nEnds with question. No opening punctuation. Ensure no ¿ or ¡. Use proper capitalization. No emojis. Word count between 60-150. Let's count: Block1: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\" That's ~12 words. Block2: \"¿Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Podríamos ver si hay alguna oportunidad de complementar su proceso.\" That's ~30 words. Total ~42 words, maybe a bit low but okay. Could add a bit more: add \"Si les parece, podríamos conversar brevemente para entender mejor su flujo.\" That adds more. Let's craft final.\n\nWe need to avoid opening punctuation, but we can have question marks inside. That's fine.\n\nLet's produce two blocks.\n\nBlock1: \"Entiendo, y qué bueno que ya tengan la agenda organizada.\"\n\nBlock2: \"¿Cómo gestionan actualmente la reactivación de pacientes que no han vuelto o los presupuestos pendientes? Si les parece, podríamos conversar brevemente para entender mejor su flujo y ver si hay alguna forma de complementar lo que ya hacen.\"\n\nEnds with question? The last sentence is a statement; we need a question at end. Could add \"?\". Let's make: \"¿Les parece si conversamos brevemente para entender mejor su flujo y ver si hay alguna forma de complementar lo que ya hacen?\" That ends with question.\n\nThus final: two blocks.\n\nCheck length: block1",
+      "ejemplos": [
+        {
+          "id": "faq_1777511676933_3v222",
+          "pregunta": "Ya contamos con personal a cargo de esa funcion, gracias",
+          "respuesta": "Entiendo. Y si en algun momento desean reactivar a esos pacientes que no volvieron, ya tenes mi contacto. Que tengas un lindo dia.",
+          "categoria": "objecion",
+          "score": 0.267
+        },
+        {
+          "id": "faq_1777170035228_tpk9t",
+          "pregunta": "¿Esto realmente funciona? / ¿Tienen casos?",
+          "respuesta": "Sí. Tenemos clientes activos hoy y el sistema está generando agendas reales todas las semanas.\n\nLos números los ve Ignacio en la llamada porque depende del caso de cada clínica. Te ofrezco mañana 10am o jueves 4pm?",
+          "categoria": "general",
+          "score": 0.19
+        },
+        {
+          "id": "faq_1777511676933_lbudl",
+          "pregunta": "Lo sentimos, este es el call center, eso es lo que nosotros hacemos",
+          "respuesta": "Igualmente no va por reemplazar esa labor, al contrario. Muchas veces sirve para ordenarla mejor y sacar un poco de carga de encima en la parte mas repetitiva, para que el equipo pueda enfocarse mas en atender bien y no en estar persiguiendo todo manualmente.\n\nSi le parece a tu supervisor lo vemos en una llamada de 30 minutos y les muestro bien a que me refiero.",
+          "categoria": "objecion",
+          "score": 0.143
+        },
+        {
+          "id": "faq_1777511676933_t6tfn",
+          "pregunta": "Sobre la marcha / lo hacemos sobre la marcha",
+          "respuesta": "Uy, te entiendo. Pero lo hacen manual?",
+          "categoria": "calificacion",
+          "score": 0.129
+        },
+        {
+          "id": "faq_1777567686185_n8h0i",
+          "pregunta": "No gracias / no insistan / dejen de escribir",
+          "respuesta": "Entendido. Que te vaya bien.",
+          "categoria": "objecion",
+          "score": 0.129
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-04T19:28:27.456Z",
+      "updatedAt": "2026-06-04T19:28:27.456Z"
     }
   ]
 }

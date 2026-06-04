@@ -8257,6 +8257,37 @@ function detectMercuryViolations(text) {
 // Parsea la salida de Mercury en dos secciones: respuesta al lead + sugerencias
 // para el setter. Si no encuentra headers (output legacy o IA que no respetó el
 // formato), todo va a respuesta y coaching queda vacío.
+// 2026-06-03: mercury-2 empezó a exponer su chain-of-thought en inglés
+// ("We need to produce a response...") en vez de devolver solo la respuesta.
+// Detectamos ese reasoning y extraemos la respuesta final en español.
+function _looksLikeReasoning(text) {
+  if (!text) return false;
+  const t = String(text).toLowerCase();
+  const markers = ['we need to', "let's", 'maybe two blocks', 'first block', 'second block',
+    'word count', 'according to guidelines', 'block 1', 'block1', "let's craft", 'ends with question',
+    'we should', 'we can', 'i need to', 'the prospect', 'must end with'];
+  let hits = 0;
+  for (const m of markers) if (t.includes(m)) hits++;
+  return hits >= 2;
+}
+// Extracción determinística: las frases en español que el modelo dejó entre
+// comillas dentro de su razonamiento son la respuesta real. Filtramos el
+// mensaje del prospecto y el inglés.
+function _extractFromReasoning(rawOutput, prospectMessage) {
+  const quotes = [...String(rawOutput).matchAll(/"([^"]{12,})"/g)].map((m) => m[1].trim());
+  const prospect = String(prospectMessage || '').toLowerCase().trim();
+  const seen = new Set();
+  const candidates = quotes.filter((q) => {
+    const ql = q.toLowerCase();
+    if (seen.has(ql)) return false;
+    seen.add(ql);
+    if (prospect && (ql === prospect || prospect.includes(ql) || ql.includes(prospect))) return false;
+    if (/^(we |let|the |maybe|first |second|block|according|i need|we should|we can|must |word )/i.test(q)) return false;
+    return true;
+  });
+  return candidates.length > 0 ? candidates.join('\n\n') : null;
+}
+
 function parseMercuryOutput(raw) {
   if (!raw) return { responseBlocks: [], coaching: [], responseText: '' };
   const text = String(raw);
@@ -8888,7 +8919,13 @@ ${ejemplosTexto}
 ${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}MENSAJE DEL PROSPECTO A RESPONDER:
 ${message}
 
-${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`;
+${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}
+
+CRÍTICO — FORMATO DE TU RESPUESTA:
+- Respondé ÚNICAMENTE con el mensaje final en ESPAÑOL, listo para pegar en WhatsApp.
+- NO escribas tu razonamiento, ni análisis, ni explicaciones, ni conteo de palabras.
+- NO uses inglés. NO uses frases tipo "We need to", "Let's", "Maybe", "Block 1".
+- Tu output es SOLO el texto que el setter copia y pega. Nada antes, nada después.`;
 
   let rawOutput = "";
   let usedFallback = false;
@@ -8929,6 +8966,31 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista par
     return res.status(503).json({
       error: "No hay IA disponible y el banco no tiene match suficiente. Revisa el banco o configurá MERCURY_API_KEY/QWEN_API_KEY.",
     });
+  }
+
+  // 2026-06-03: si el modelo devolvió su razonamiento en vez de la respuesta,
+  // limpiarlo. 1) extracción por regex (frases en español entre comillas).
+  // 2) si falla, segunda pasada al modelo pidiendo solo el texto final.
+  if (!usedFallback && _looksLikeReasoning(rawOutput)) {
+    console.warn("[mercury/generate] output con reasoning detectado, limpiando…");
+    const extracted = _extractFromReasoning(rawOutput, message);
+    if (extracted) {
+      rawOutput = extracted;
+    } else if (mercuryKey || qwenKey) {
+      try {
+        const clean = await ai.chat.completions.create({
+          model: AI_MODEL,
+          messages: [
+            { role: "system", content: "Te paso un texto que mezcla razonamiento en inglés con una respuesta en español para WhatsApp. Devolvé SOLO el mensaje final en español, listo para pegar, sin comillas, sin explicación, sin inglés. Bloques separados por doble salto." },
+            { role: "user", content: rawOutput },
+          ],
+          temperature: 0.1,
+          max_tokens: 400,
+        });
+        const cleaned = clean.choices?.[0]?.message?.content?.trim();
+        if (cleaned && !_looksLikeReasoning(cleaned)) rawOutput = cleaned;
+      } catch (e) { console.warn("[mercury/generate] segunda pasada falló:", e.message); }
+    }
   }
 
   const parsed = parseMercuryOutput(rawOutput);
