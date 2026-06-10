@@ -81,7 +81,8 @@ del flow de scripts en vivo (Phase 7 candidate), parallel dialer, call recording
 | 5 | Bloque E — Llamadas IA | Pending (futuro lejano — depende de Phase 6) |
 | 6 | **Telnyx Calls Foundation** | ✅ **DONE (2026-05-22)** |
 | 7 | **Motor de Campañas Drip WhatsApp** | Pending — añadida 2026-06-10, próximo `/gsd-plan-phase 7` |
-| 8+ | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
+| 8 | **Anti-detección wa-multi: Proxy + Fingerprint** | Pending — añadida 2026-06-10, próximo `/gsd-plan-phase 8` |
+| 9+ | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
 
 ---
 
@@ -154,6 +155,15 @@ Extensión Chrome MV3 "Pegar como humano" — distribuible
 ## Accumulated Context
 
 ### Roadmap Evolution
+
+- 2026-06-10 — Phase 8 added: Anti-detección wa-multi (Proxy +
+  Fingerprint por cuenta). Modelo "perfil antidetect" tipo Dolphin Anty.
+  Proxy por cuenta vía `session.setProxy` nativo de Electron (HTTP/SOCKS5;
+  V2Ray excluido). Fingerprint determinista por seed (canvas/webgl/audio/
+  navigator/dom) + coherencia geo↔proxy (timezone/locale/UA matchean país
+  del proxy). Referencia: WAWarmer 1.1.2 extraído en tmp/app_source/
+  (gitignored) — proxy+fingerprint ya probados contra WhatsApp Web.
+  Infraestructura anti-baneo para correr Phase 7 a volumen.
 
 - 2026-06-10 — Phase 7 added: Motor de Campañas Drip WhatsApp. Replica
   el workflow de campañas de GHL dentro del SCM: drip pacing

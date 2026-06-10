@@ -257,6 +257,59 @@ con progreso + controles pausar/reanudar/cancelar)
 
 ---
 
+## Phase 8 — Anti-detección wa-multi: Proxy + Fingerprint por cuenta
+
+**Goal:** Que cada cuenta de WhatsApp en wa-multi parezca un dispositivo
+real distinto y consistente, saliendo por su propio proxy — modelo
+"perfil antidetect" tipo Dolphin Anty. Es la infraestructura anti-baneo
+sobre la que Phase 7 (campañas a volumen) se apoya.
+
+**Status:** Pending — añadida 2026-06-10. Próximo paso: `/gsd-plan-phase 8`.
+
+**Depends on:** ninguna bloqueante. Construye sobre el modelo de
+partición persistente por cuenta que wa-multi YA usa
+(`persist:acc-{id}` en out/main/index.js). Phase 7 debería respetar
+esta fase (no mandar volumen por cuentas sin proxy asignado).
+
+**Referencia clave:** `tmp/app_source/` (gitignored) contiene WAWarmer
+1.1.2 extraído — herramienta comercial de warmeo WA con proxy +
+fingerprint ya probados contra WhatsApp Web. NO copiar tal cual; tomar
+el modelo:
+- Proxy: `session.fromPartition(p).setProxy({proxyRules:"http=h:p;https=h:p;socks5=h:p"})` + reload del webview. NATIVO de Electron, no requiere libs. (WAWarmer embebe V2Ray para vmess/vless/ss — EXCLUIDO, los proxies residenciales que se compran son HTTP/SOCKS5 normales.)
+- Fingerprint: seed numérico por cuenta → PRNG determinista (LCG) que perturba canvas/webgl/audio/navigator/dom de forma CONSISTENTE (mismo seed = mismo "dispositivo" siempre). Inyectado como preload scripts con plantillas `{{*_seed}}`. Template completo en `tmp/app_source/dist/electron/static/fingerprint-template/`.
+
+**Decisiones de diseño:**
+- Config por cuenta en `wa_accounts.json`:
+  `proxy:{type,host,port,user,pass}`, `fingerprintSeed`,
+  `geo:{timezone,locale,country}`. Editable desde la card de la cuenta
+  en el panel admin.
+- **Coherencia geo↔proxy es el criterio central**: timezone + locale +
+  UA deben matchear el país del proxy. IP mexicana → America/Mexico_City
+  + es-MX. El mismatch delata MÁS que no tener proxy.
+- Proxy con auth user:pass: requiere handler `app.on('login')` en el
+  main (gotcha de Electron — `setProxy` solo no pasa credenciales).
+- Secrets de proxy (user:pass) NO viajan al frontend en claro innecesa-
+  riamente; seguir el patrón env>JSON donde aplique. Evaluar en el plan.
+- Test de proxy: botón "Probar" que abre la partición y verifica IP
+  saliente (ej. fetch a un echo-IP) antes de asignar la cuenta.
+
+**Success criteria:**
+1. Admin asigna un proxy (HTTP o SOCKS5, con o sin auth) a una cuenta
+   desde el panel y la cuenta sale por esa IP (verificable)
+2. Cada cuenta tiene un fingerprintSeed estable; reabrir la cuenta da
+   el MISMO fingerprint (canvas/webgl/audio/navigator coherentes)
+3. Timezone + locale + UA de la sesión matchean el país configurado
+4. Proxy caído → la cuenta no abre con la IP real (fail-safe, avisa al
+   user en vez de filtrar la IP local)
+5. Cuentas sin proxy siguen funcionando (proxy es opt-in por cuenta)
+6. Phase 7 respeta el flag: campaña no encola volumen por cuenta sin
+   proxy si el admin activó esa política
+
+**UI hint:** yes (sección Proxy + Fingerprint en la card de cada cuenta
+WA + botón "Probar proxy")
+
+---
+
 ## Phase 5 — Bloque E: Llamadas con IA (futuro lejano)
 
 **Goal:** Llamar a leads que respondieron pero no avanzaron por chat,
