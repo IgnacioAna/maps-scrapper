@@ -4452,6 +4452,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           _callsCurrentPage = 1;
           _callsExpanded.add(id);
+          _callsForceShow.add(id); // mostrarlo aunque su callback sea futuro (mañana)
           renderCallsList();
           // Scroll al row del lead
           setTimeout(() => {
@@ -4460,6 +4461,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               row.scrollIntoView({ behavior: 'smooth', block: 'center' });
               row.style.outline = '2px solid var(--accent)';
               setTimeout(() => { row.style.outline = ''; }, 1400);
+            } else {
+              window.showToast?.('No pude mostrar el lead en la lista. Probá quitar filtros.', { type: 'warning', duration: 3500 });
             }
           }, 100);
         });
@@ -4470,6 +4473,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _callsCurrentPage = 1;
     // Sprint 21: estado de expansión por lead (set de IDs abiertos)
     const _callsExpanded = new Set();
+    // 2026-06-04: leads que se fuerzan a mostrar aunque su callback sea futuro
+    // (cuando clickeás un callback de mañana en la agenda → abrirlo igual).
+    const _callsForceShow = new Set();
     // Sprint 31: selección bulk (set de IDs seleccionados)
     const _callsSelected = new Set();
     function _callsRenderBulkBar() {
@@ -5529,10 +5535,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         (l.website || '').toLowerCase().includes(search)
       ));
 
-      // Ocultar leads con callbackAt en el futuro (excepto si el filtro lo pide)
+      // Ocultar leads con callbackAt en el futuro (excepto los que el user
+      // forzó a mostrar clickeando su callback en la agenda).
       const showCallbackPending = false;
       if (!showCallbackPending) {
-        leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
+        leads = leads.filter(l => _callsForceShow.has(l.id) || !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
       }
 
       // Ocultar agendados (ya pasaron). Sprint 28: si toggle "Ver descartados"
@@ -5587,6 +5594,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)
             || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
           break;
+      }
+
+      // 2026-06-04: los leads forzados a mostrar (callback de mañana clickeado
+      // en la agenda) van PRIMERO, así caen en la página 1 y el scroll los
+      // encuentra. Sin esto, podían quedar en otra página → "no pasa nada".
+      if (_callsForceShow.size > 0) {
+        leads.sort((a, b) => (_callsForceShow.has(b.id) ? 1 : 0) - (_callsForceShow.has(a.id) ? 1 : 0));
       }
 
       // Paginación

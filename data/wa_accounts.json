@@ -4,7 +4,7 @@
       "id": "wa_1777129407605_6dmfeo",
       "label": "Ignacio",
       "phone": "+5492214543250",
-      "status": "CONNECTED",
+      "status": "DISCONNECTED",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
@@ -26,7 +26,7 @@
       "id": "wa_1777831276977_qxby1z",
       "label": "Delfina",
       "phone": "+5492216125935",
-      "status": "CONNECTED",
+      "status": "QR_PENDING",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"

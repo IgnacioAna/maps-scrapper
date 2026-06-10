@@ -64066,6 +64066,146 @@
       "scrapedAt": "2026-05-21T00:12:52.512Z",
       "query": "clinica dental\nodontologo\nestetica dental\nconsultorio odontologico\ndentista",
       "location": "Sevilla, España"
+    },
+    "lux medspa brickell_805 s miami ave 9th floor, miami, fl 33130": {
+      "name": "LUX MedSpa Brickell",
+      "address": "805 S Miami Ave 9th Floor, Miami, FL 33130",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "deluxe med spa beauty_downtown 1st, 30 sw 1st st #1001, miami, fl 33130": {
+      "name": "Deluxe Med Spa Beauty",
+      "address": "Downtown 1st, 30 SW 1st St #1001, Miami, FL 33130",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "dolce medical spa - miami_2929 sw 3rd ave suite 610, miami, fl 33129": {
+      "name": "Dolce Medical Spa - Miami",
+      "address": "2929 SW 3rd Ave suite 610, Miami, FL 33129",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "monaco medspa_2930 ne 2nd ct, miami, fl 33137": {
+      "name": "Monaco MedSpa",
+      "address": "2930 NE 2nd Ct, Miami, FL 33137",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "alicia med spa_1100 biscayne blvd, miami, fl 33132": {
+      "name": "Alicia Med Spa",
+      "address": "1100 Biscayne Blvd, Miami, FL 33132",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "no filter medical spa_829 sw 1st ave, miami, fl 33130": {
+      "name": "No Filter Medical Spa",
+      "address": "829 SW 1st Ave, Miami, FL 33130",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "aviva medical spa_4100 ne 2nd ave #301, miami, fl 33137": {
+      "name": "Aviva Medical Spa",
+      "address": "4100 NE 2nd Ave #301, Miami, FL 33137",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "miami surgical medspa_815 nw 57th ave #207, miami, fl 33126": {
+      "name": "Miami Surgical MedSpa",
+      "address": "815 NW 57th Ave #207, Miami, FL 33126",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "miami skin spa aesthetics & wellness_1501 s miami ave unit 201, miami, fl 33129": {
+      "name": "Miami Skin Spa Aesthetics & Wellness",
+      "address": "1501 S Miami Ave UNIT 201, Miami, FL 33129",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "med aesthetics miami_2020 ponce de leon suite 106, coral gables, miami, fl 33134": {
+      "name": "Med Aesthetics Miami",
+      "address": "2020 Ponce de Leon Suite 106, Coral Gables, Miami, FL 33134",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "solea brickell spa_701 s miami ave suite 311a, miami, fl 33131": {
+      "name": "Solea Brickell Spa",
+      "address": "701 S Miami Ave Suite 311A, Miami, FL 33131",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "caruna med spa & laser center_1800 sw 1st ave suite 103, miami, fl 33129": {
+      "name": "Caruna Med Spa & Laser Center",
+      "address": "1800 SW 1st Ave Suite 103, Miami, FL 33129",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "rejuvaline medspa at flamingo_1508 bay rd, miami beach, fl 33139": {
+      "name": "Rejuvaline Medspa at Flamingo",
+      "address": "1508 Bay Rd, Miami Beach, FL 33139",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "brickell cosmetic center-aesthetics & dermatology_2730 sw 3rd ave ste 100, miami, fl 33129": {
+      "name": "Brickell Cosmetic Center-Aesthetics & Dermatology",
+      "address": "2730 SW 3rd Ave Ste 100, Miami, FL 33129",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "bella vida aesthetics & wellness_151 se 1st st ph 05, miami, fl 33131": {
+      "name": "Bella Vida Aesthetics & Wellness",
+      "address": "151 SE 1st St Ph 05, Miami, FL 33131",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "gables med spa_5545 sw 8th st #209, miami, fl 33134": {
+      "name": "Gables Med Spa",
+      "address": "5545 SW 8th St #209, Miami, FL 33134",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "a&e med spa llc_8358 sw 8th st, miami, fl 33144": {
+      "name": "A&E MED SPA LLC",
+      "address": "8358 SW 8th St, Miami, FL 33144",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "miami elegance medspa_1701 nw 112th ave ste 107, miami, fl 33172": {
+      "name": "Miami Elegance Medspa",
+      "address": "1701 NW 112th Ave ste 107, Miami, FL 33172",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "4beauty medspa_2310 s dixie hwy 2nd floor, miami, fl 33133": {
+      "name": "4Beauty Medspa",
+      "address": "2310 S Dixie Hwy 2nd Floor, Miami, FL 33133",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
+    },
+    "medical professionals vk - primary care - endolaser miami center_8150 sw 8th st #209-210, miami, fl 33144": {
+      "name": "Medical Professionals VK - Primary Care - Endolaser Miami Center",
+      "address": "8150 SW 8th St #209-210, Miami, FL 33144",
+      "scrapedAt": "2026-06-08T17:29:00.026Z",
+      "query": "med spa",
+      "location": "Miami, Estados Unidos"
     }
   },
   "searches": [
@@ -64645,6 +64785,15 @@
       "timestamp": "2026-05-21T00:12:52.512Z",
       "newFound": 281,
       "duplicatesSkipped": 0
+    },
+    {
+      "query": "med spa",
+      "locations": [
+        "Miami, Estados Unidos"
+      ],
+      "timestamp": "2026-06-08T17:29:00.026Z",
+      "newFound": 20,
+      "duplicatesSkipped": 0
     }
   ],
   "lastPages": {
@@ -64790,6 +64939,7 @@
     "odontologo_sevilla, españa": 10,
     "estetica dental_sevilla, españa": 10,
     "consultorio odontologico_sevilla, españa": 10,
-    "dentista_sevilla, españa": 10
+    "dentista_sevilla, españa": 10,
+    "med spa_miami, estados unidos": 1
   }
 }

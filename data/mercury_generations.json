@@ -4676,6 +4676,131 @@
       "promotedToFaqId": null,
       "createdAt": "2026-06-04T19:31:59.982Z",
       "updatedAt": "2026-06-04T19:31:59.982Z"
+    },
+    {
+      "id": "mg_1780688433921_tn4ta",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "[3:34 p.m., 5/6/2026] SCM Dental | Sofia Pretz: Qué tal, la clínica muy movida hoy ?\n[3:34 p.m., 5/6/2026] +51 914 628 067: Hola! Soy el Dr. Pablo Franco 👋🏻. Encantado de saludarte, ¿Cómo podemos ayudarte? 🦷☺️\n[3:35 p.m., 5/6/2026] SCM Dental | Sofia Pretz: Que tal, gracias por responder. Mi nombre es Sofia\n[3:36 p.m., 5/6/2026] SCM Dental | Sofia Pretz: Les escribía porque estamos ayudando a clínicas dentales a recuperar pacientes que dejaron de venir no se si sabian pero 6 de cada 10 pacientes nuevos nunca regresan después de la primera visita y la mayoría de las clínicas no tiene ningún sistema para evitarlo\n[3:36 p.m., 5/6/2026] SCM Dental | Sofia Pretz: Con nuestro último cliente una clínica dental en Montevideo, en las primeras 3 semanas generamos más de 100 turnos solo con una pequeña parte de esa base dormida\n[3:36 p.m., 5/6/2026] SCM Dental | Sofia Pretz: Esto es algo que están trabajando hoy?\n[4:39 p.m., 5/6/2026] +51 914 628 067: Hola cómo haría eso?",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "objecion",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": null,
+      "output": {
+        "text": "Entiendo, hoy nos enfocamos en reactivar y fidelizar a los pacientes que ya están en la base de la clínica, evitando que se pierdan oportunidades después de la primera visita.\n\nCómo gestionan actualmente los pacientes que no vuelven o los presupuestos pendientes? Tienen algún proceso de seguimiento automático o lo hacen manualmente?\n\nSi te parece, podemos agendar una llamada corta de 20‑30 minutos para mostrarte cómo funciona en la práctica y ver si tiene sentido para tu clínica. Te va bien mañana a 10 am o prefieres otro horario?",
+        "blocks": [
+          "Entiendo, hoy nos enfocamos en reactivar y fidelizar a los pacientes que ya están en la base de la clínica, evitando que se pierdan oportunidades después de la primera visita.",
+          "Cómo gestionan actualmente los pacientes que no vuelven o los presupuestos pendientes? Tienen algún proceso de seguimiento automático o lo hacen manualmente?",
+          "Si te parece, podemos agendar una llamada corta de 20‑30 minutos para mostrarte cómo funciona en la práctica y ver si tiene sentido para tu clínica. Te va bien mañana a 10 am o prefieres otro horario?"
+        ],
+        "coaching": []
+      },
+      "rawOutput": "Entiendo, hoy nos enfocamos en reactivar y fidelizar a los pacientes que ya están en la base de la clínica, evitando que se pierdan oportunidades después de la primera visita.\n\n¿Cómo gestionan actualmente los pacientes que no vuelven o los presupuestos pendientes? ¿Tienen algún proceso de seguimiento automático o lo hacen manualmente?\n\nSi te parece, podemos agendar una llamada corta de 20‑30 minutos para mostrarte cómo funciona en la práctica y ver si tiene sentido para tu clínica. ¿Te va bien mañana a 10 am o prefieres otro horario?",
+      "ejemplos": [
+        {
+          "id": "faq_1777170035422_oukno",
+          "pregunta": "No tengo base de pacientes / es una clínica nueva",
+          "respuesta": "Se entiende. En ese caso el sistema arranca desde otro lado: confirmaciones, no-shows y captación de los nuevos que van entrando.\n\nTe muestro cómo se vería para un caso así en una llamada corta?",
+          "categoria": "objecion",
+          "score": 0.314
+        },
+        {
+          "id": "faq_1777511676933_ofl4k",
+          "pregunta": "Redes sociales para reactivar y captar pacientes",
+          "respuesta": "Nosotros no manejamos redes sociales. Trabajamos mas la parte de reactivacion, seguimiento y fidelizacion de pacientes que ya fueron a clinica, le damos vida a su base de datos.\n\nEn algunos casos eso tambien termina ayudando a la captacion de forma indirecta, porque mejora la fidelizacion y los referidos, pero nuestro foco principal no es manejar redes sino ordenar esa parte comercial y de seguimiento de la clinica.\n\nUstedes hoy estan buscando trabajar mejor la base que ya tienen?",
+          "categoria": "calificacion",
+          "score": 0.249
+        },
+        {
+          "id": "faq_1777170035057_5vy35",
+          "pregunta": "¿De qué se trata? / ¿Cómo funciona?",
+          "respuesta": "Te lo explico mejor en una llamada corta de 30 minutos, así te muestro cómo lo estamos haciendo con otras clínicas.\n\nTe queda mejor mañana 10am o jueves 4pm?",
+          "categoria": "general",
+          "score": 0.224
+        },
+        {
+          "id": "faq_1777511676933_jnmud",
+          "pregunta": "No tenemos esa forma, nos faltan pacientes. De que pais nos escriben?",
+          "respuesta": "Te entiendo. Justamente cuando una clinica siente que le faltan pacientes, muchas veces el foco se va solo a buscar nuevos, pero siempre hay una oportunidad grande en trabajar mejor la base que ya existe: pacientes que consultaron y no avanzaron, pacientes que no volvieron, seguimientos que se cortaron o no asistidos que no se retomaron.\n\nLo que hacemos nosotros apunta a complementar esa parte, para ayudar a generar un flujo mas constante, mejorar la fidelizacion y tambien fortalecer los referidos, sin depender unicamente de salir a captar desde cero todo el tiempo, ya que eso es mas dificil que trabajar alguien que ya los conoce.\n\nHoy ustedes tienen identificado cuantos pacientes tienen en su base?",
+          "categoria": "objecion",
+          "score": 0.223
+        },
+        {
+          "id": "faq_1777511676933_pf5ps",
+          "pregunta": "Con la historia clinica digital tengo herramientas para ese tipo de casos. Como trabajan ustedes?",
+          "respuesta": "Nosotros trabajamos ese tema sobre todo desde la reactivacion y el seguimiento de la base de pacientes de forma automatica.\n\nPor ejemplo, armamos secuencias para contactar de forma mas ordenada a pacientes inactivos que dejaron de ir, presupuestos pendientes, controles que quedaron sin agendar o consultas que no avanzaron, para que eso no dependa de que alguien lo haga manualmente caso por caso.\n\nLa idea es que haya una logica de seguimiento mas constante, que ayude a mover esos pacientes y recuperar oportunidades que muchas veces quedan en la base sin trabajarse del todo, manteniendo frecuente al paciente a la clinica y por consecuencia fidelizarlo a largo plazo.\n\nNo apuntamos tanto a la parte clinica, sino mas a la parte de seguimiento y reactivacion comercial.\n\nSi le parece, lo mas facil es hacer una llamada corta y le muestro bien como lo trabajamos, asi ves si tiene sentido o si con lo que ya tienen estan cubiertos.",
+          "categoria": "calificacion",
+          "score": 0.222
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-05T19:40:33.921Z",
+      "updatedAt": "2026-06-05T19:40:33.921Z"
+    },
+    {
+      "id": "mg_1780941947224_i38op",
+      "setterId": "",
+      "setterName": "Ignacio",
+      "userId": "user_admin_ignacio",
+      "leadId": null,
+      "prospectMessage": "que proponen",
+      "context": null,
+      "conversationHistory": null,
+      "tone": null,
+      "intent": "otro",
+      "promptVariant": "A",
+      "categoriaHint": null,
+      "variantUsed": {
+        "id": "var_1776048458648",
+        "name": "Var III"
+      },
+      "output": {
+        "text": "Nuestro sistema se enfoca en activar la base de datos que ya tienen, automatizando la reactivación, el seguimiento post‑turno y la retención de pacientes.\n\n- Reactivar pacientes inactivos y presupuestos pendientes\n- Enviar recordatorios y contenidos personalizados después de cada visita\n- Gestionar no‑shows y programar revisiones automáticamente\n\nTe parece si coordinamos una breve llamada esta semana para ver",
+        "blocks": [
+          "Nuestro sistema se enfoca en activar la base de datos que ya tienen, automatizando la reactivación, el seguimiento post‑turno y la retención de pacientes.",
+          "- Reactivar pacientes inactivos y presupuestos pendientes\n- Enviar recordatorios y contenidos personalizados después de cada visita\n- Gestionar no‑shows y programar revisiones automáticamente",
+          "Te parece si coordinamos una breve llamada esta semana para ver"
+        ],
+        "coaching": []
+      },
+      "rawOutput": "Nuestro sistema se enfoca en activar la base de datos que ya tienen, automatizando la reactivación, el seguimiento post‑turno y la retención de pacientes.\n\n- Reactivar pacientes inactivos y presupuestos pendientes  \n- Enviar recordatorios y contenidos personalizados después de cada visita  \n- Gestionar no‑shows y programar revisiones automáticamente  \n\n¿Te parece si coordinamos una breve llamada esta semana para ver",
+      "ejemplos": [
+        {
+          "id": "faq_1777511676933_smlup",
+          "pregunta": "Que nos proponen?",
+          "respuesta": "Les proponemos un sistema para trabajar esa parte de forma mas ordenada y constante de manera automatica, que consta en:\n\n- Reactivar pacientes que no volvieron\n- Dar seguimiento a consultas o presupuestos que quedaron en el aire\n- Sostener el vinculo post turno para revisiones y controles\n\nTodo sin que lo tenga que hacer el equipo, asi se pueden enfocar en las tareas mas importantes.\n\nEn una llamada podemos verlo con mas profundidad y ver como aplicaria en su caso.",
+          "categoria": "general",
+          "score": 0.224
+        }
+      ],
+      "usedFallback": false,
+      "aiError": null,
+      "violations": [],
+      "promptVersion": 19,
+      "status": "pendiente",
+      "setterAction": null,
+      "setterEditedText": null,
+      "finalSent": null,
+      "adminAction": null,
+      "adminRewrite": null,
+      "promotedToFaqId": null,
+      "createdAt": "2026-06-08T18:05:47.224Z",
+      "updatedAt": "2026-06-08T18:05:47.224Z"
     }
   ]
 }
