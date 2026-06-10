@@ -66,5 +66,8 @@
       "lastBannedAt": null,
       "createdAt": "2026-06-03T01:13:37.500Z"
     }
-  ]
+  ],
+  "policy": {
+    "requireProxyForCampaigns": false
+  }
 }
