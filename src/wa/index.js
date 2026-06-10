@@ -3,9 +3,11 @@
 import { initWaData, getAccount } from "./data.js";
 import { initGateway, sendToUser } from "./gateway.js";
 import { registerWaRoutes } from "./routes.js";
+import { initCampaignsData } from "./campaigns.js";
 
 export async function mountWa(app, httpServer, deps) {
   initWaData(deps.dataDir);
+  initCampaignsData(deps.dataDir); // Phase 7 — motor de campañas drip
   if (httpServer) initGateway(httpServer, deps);
   registerWaRoutes(app, deps);
   // Exponer helpers del gateway globalmente para que el scheduler de
