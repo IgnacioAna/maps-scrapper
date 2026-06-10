@@ -9,6 +9,7 @@ import {
   appendEvent,
   effectivePhases, currentPhaseFor, warmingDayOf,
   startWarming, markBannedTemporarily, resetWarming,
+  setAccountProxy, geoForCountry, getWaPolicy, setWaPolicy,
 } from "./data.js";
 import { sendToUser, getPresenceList } from "./gateway.js";
 
@@ -84,6 +85,52 @@ function clampInt(v, min, max, def) {
   return Math.max(min, Math.min(max, n));
 }
 
+// Phase 8 — serializa una cuenta para el cliente: NUNCA expone proxy.pass en
+// claro. Devuelve `hasPass:true` para que la UI sepa que hay uno guardado
+// (placeholder "***") sin filtrarlo. El user sí se muestra.
+function publicAccount(account) {
+  if (!account) return account;
+  if (!account.proxy) return account;
+  const { pass, ...proxyRest } = account.proxy;
+  return {
+    ...account,
+    proxy: { ...proxyRest, hasPass: !!pass },
+  };
+}
+
+// Phase 8 — ¿este user puede tocar el proxy de esta cuenta? Admin siempre;
+// setter solo si la cuenta está asignada a su setterId. Mismo criterio que
+// userCanActOnAccount del gateway.
+function canActOnAccount(user, account) {
+  if (!user || !account) return false;
+  if (user.role === "admin") return true;
+  return account.assignment?.kind === "setter" && account.assignment?.refId === user.setterId;
+}
+
+// Phase 8 — valida+sanitiza el objeto proxy del body. Devuelve [error, proxy|null].
+// proxy === null (explícito) limpia el proxy. type ∈ {http, socks5}.
+function sanitizeProxy(input, existing) {
+  if (input === null) return [null, null]; // limpiar
+  if (input === undefined) return [null, undefined]; // no tocar
+  if (typeof input !== "object") return ["proxy debe ser objeto o null"];
+  const type = String(input.type || "").toLowerCase();
+  if (!["http", "socks5"].includes(type)) return ["proxy.type debe ser http o socks5"];
+  const host = String(input.host || "").trim();
+  if (!host) return ["proxy.host es requerido"];
+  const port = parseInt(input.port, 10);
+  if (!Number.isFinite(port) || port < 1 || port > 65535) return ["proxy.port inválido (1-65535)"];
+  const user = input.user !== undefined ? String(input.user) : (existing?.user || "");
+  // pass: si no viene (undefined) o viene vacío Y ya había uno, preservar el
+  // anterior (mismo patrón que Telnyx config: campos omitidos no se borran).
+  let pass;
+  if (input.pass === undefined || input.pass === "") {
+    pass = existing?.pass || "";
+  } else {
+    pass = String(input.pass);
+  }
+  return [null, { type, host, port, user, pass }];
+}
+
 export function registerWaRoutes(app, deps) {
   const { requireAuth: cookieRequireAuth, requireRole: cookieRequireRole, jwtSecret } = deps;
 
@@ -141,9 +188,67 @@ export function registerWaRoutes(app, deps) {
   app.get("/api/wa/accounts", requireAuth, (req, res) => {
     const { user } = req.auth;
     const all = listAccounts();
-    if (user.role === "admin") return res.json(all);
+    // Phase 8: publicAccount() tapa proxy.pass en todas las respuestas.
+    if (user.role === "admin") return res.json(all.map(publicAccount));
     // setter: solo cuentas asignadas a él
-    return res.json(all.filter((a) => a.assignment?.kind === "setter" && a.assignment?.refId === user.setterId));
+    return res.json(
+      all
+        .filter((a) => a.assignment?.kind === "setter" && a.assignment?.refId === user.setterId)
+        .map(publicAccount),
+    );
+  });
+
+  // Phase 8 — Política global del módulo WA. GET para todos los autenticados
+  // (Phase 7 la consume), PUT admin-only.
+  app.get("/api/wa/policy", requireAuth, (_req, res) => {
+    res.json(getWaPolicy());
+  });
+  app.put("/api/wa/policy", requireAuth, requireRole("admin"), (req, res) => {
+    const patch = {};
+    if (typeof req.body?.requireProxyForCampaigns === "boolean") {
+      patch.requireProxyForCampaigns = req.body.requireProxyForCampaigns;
+    }
+    res.json(setWaPolicy(patch));
+  });
+
+  // Phase 8 — set/clear proxy + geo de una cuenta. Admin o setter dueño.
+  // Body: { proxy: {type,host,port,user?,pass?}|null, geo?: {country,timezone?,locale?} }
+  // - proxy:null limpia proxy y geo (vuelve a sin-proxy).
+  // - pass omitido o "" preserva el pass anterior (no se borra sin querer).
+  // - si geo trae country sin timezone/locale, se derivan de GEO_DEFAULTS.
+  app.patch("/api/wa/accounts/:id/proxy", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const account = getAccount(req.params.id);
+    if (!account) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnAccount(user, account)) return res.status(403).json({ error: "No autorizado." });
+
+    const [perr, proxy] = sanitizeProxy(req.body?.proxy, account.proxy);
+    if (perr) return res.status(400).json({ error: perr });
+
+    // geo: solo relevante si queda con proxy. Si proxy se limpia, geo va null.
+    let geo;
+    if (proxy === null) {
+      geo = null;
+    } else if (req.body?.geo !== undefined) {
+      const g = req.body.geo;
+      if (g === null) {
+        geo = null;
+      } else if (typeof g === "object") {
+        const country = String(g.country || "").toUpperCase();
+        const defaults = geoForCountry(country) || {};
+        geo = {
+          country: country || null,
+          timezone: g.timezone || defaults.timezone || null,
+          locale: g.locale || defaults.locale || null,
+        };
+      } else {
+        return res.status(400).json({ error: "geo debe ser objeto o null" });
+      }
+    }
+
+    const updated = setAccountProxy(req.params.id, { proxy, geo });
+    if (!updated) return res.status(404).json({ error: "no encontrado" });
+    res.json(publicAccount(updated));
   });
 
   app.post("/api/wa/accounts", requireAuth, (req, res) => {
@@ -553,8 +658,14 @@ export function registerWaRoutes(app, deps) {
 
   // Backup: devuelve los 3 archivos JSON del módulo WA para pre-deploy
   app.get("/api/wa/admin/export", requireAuth, requireRole("admin"), (_req, res) => {
+    // NOTA: este export es el backup admin que baja pre-deploy. Incluye los
+    // secrets de proxy (proxy.pass) EN CLARO a propósito — sin ellos un restore
+    // dejaría los proxies sin credenciales. Es admin-only. NO confundir con
+    // GET /api/wa/accounts (público al setter, que sí tapa el pass).
+    // Phase 8: incluir `policy` (sibling de accounts en wa_accounts.json) para
+    // que el flag requireProxyForCampaigns sobreviva un redeploy.
     res.json({
-      accounts: { accounts: listAccounts() },
+      accounts: { accounts: listAccounts(), policy: getWaPolicy() },
       routines: { routines: listRoutines() },
       events: { events: listEvents({ limit: 500 }) },
       exportedAt: new Date().toISOString(),

@@ -224,9 +224,13 @@ describe("WA module · JWT auth defensivo", () => {
     expect(r.status).toBe(200);
   });
 
-  it("Bearer token con setter intentando crear account → 403", async () => {
+  // Desde 217372f (2026-06-03) un setter puede crear su PROPIA cuenta vía Bearer
+  // (queda auto-asignada a su setterId — no puede asignarla a otro). El test viejo
+  // asertaba 403 (conducta anterior) y quedó obsoleto.
+  it("Bearer token con setter crea SU propia cuenta → 200 auto-asignada", async () => {
     const r = await request(app).post("/api/wa/accounts").set("Authorization", `Bearer ${setterAToken}`).send({ label: "x" });
-    expect(r.status).toBe(403);
+    expect(r.status).toBe(200);
+    expect(r.body.assignment?.kind).toBe("setter");
   });
 });
 

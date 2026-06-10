@@ -97,9 +97,13 @@ describe("rbac", () => {
     expect(Array.isArray(r.body)).toBe(true);
   });
 
-  it("setter NO puede crear accounts", async () => {
-    const r = await api("POST", "/api/wa/accounts", { label: "should fail" }, setterToken);
-    expect(r.status).toBe(403);
+  // Desde commit 217372f (2026-06-03) los setters SÍ pueden crear sus propias
+  // cuentas, auto-asignadas a su setterId. El test viejo asertaba 403 (conducta
+  // anterior) y quedó obsoleto. Ahora verifica la conducta vigente.
+  it("setter puede crear SU propia cuenta (auto-asignada)", async () => {
+    const r = await api("POST", "/api/wa/accounts", { label: "cuenta del setter" }, setterToken);
+    expect(r.status).toBe(200);
+    expect(r.body.assignment).toEqual({ kind: "setter", refId: "setter_test" });
   });
 
   it("setter NO puede ver routines", async () => {

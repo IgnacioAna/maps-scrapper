@@ -73,11 +73,57 @@ export function createAccount(input) {
     pendingCount: 0, // cuantos mensajes están en estado pendiente
     deliveryFails: 0, // contador rolling de fallas
     lastBannedAt: null, // ISO del último ban
+    // Phase 8 — Anti-detección. Todos opt-in (null = comportamiento actual).
+    // proxy: { type:"http"|"socks5", host, port, user?, pass? } | null
+    proxy: null,
+    // geo: { country, timezone, locale } | null — se aplica SOLO si hay proxy.
+    // El navegador reporta estos valores para ser coherente con el país del proxy.
+    geo: null,
+    // Resultado del último "Probar proxy": { at, ok, ip, country } | null
+    proxyLastTest: null,
     createdAt: new Date().toISOString(),
   };
   data.accounts.push(account);
   saveJson(FILES.accounts, data);
   return account;
+}
+
+// Phase 8 — Mapa país ISO-2 → {timezone, locale} por defecto. Países donde
+// opera SCM. Si el admin no especifica timezone/locale, se derivan del país.
+export const GEO_DEFAULTS = {
+  MX: { timezone: "America/Mexico_City", locale: "es-MX" },
+  AR: { timezone: "America/Argentina/Buenos_Aires", locale: "es-AR" },
+  ES: { timezone: "Europe/Madrid", locale: "es-ES" },
+  US: { timezone: "America/New_York", locale: "en-US" },
+  CO: { timezone: "America/Bogota", locale: "es-CO" },
+  CL: { timezone: "America/Santiago", locale: "es-CL" },
+  PE: { timezone: "America/Lima", locale: "es-PE" },
+  UY: { timezone: "America/Montevideo", locale: "es-UY" },
+  EC: { timezone: "America/Guayaquil", locale: "es-EC" },
+  BO: { timezone: "America/La_Paz", locale: "es-BO" },
+  PY: { timezone: "America/Asuncion", locale: "es-PY" },
+};
+
+export function geoForCountry(country) {
+  const c = String(country || "").toUpperCase();
+  return GEO_DEFAULTS[c] || null;
+}
+
+// Phase 8 — set proxy/geo/proxyLastTest de una cuenta. proxy=null limpia
+// proxy Y geo (volver a sin-proxy). Devuelve la cuenta actualizada o null.
+export function setAccountProxy(accountId, { proxy, geo, proxyLastTest } = {}) {
+  const patch = {};
+  if (proxy === null) {
+    patch.proxy = null;
+    patch.geo = null;
+  } else if (proxy !== undefined) {
+    patch.proxy = proxy;
+    if (geo !== undefined) patch.geo = geo;
+  } else if (geo !== undefined) {
+    patch.geo = geo;
+  }
+  if (proxyLastTest !== undefined) patch.proxyLastTest = proxyLastTest;
+  return updateAccount(accountId, patch);
 }
 
 export function warmingDayOf(account, now = Date.now()) {
@@ -150,6 +196,27 @@ export function attachRoutine(accountId, routineId) {
 export function setAssignment(accountId, assignment) {
   // assignment: { kind: "setter"|"client", refId: string } | null
   return updateAccount(accountId, { assignment });
+}
+
+// ── POLICY (Phase 8) ─────────────────────────────────────────────────────────
+// Política global del módulo WA. Vive en el mismo wa_accounts.json (sibling
+// de `accounts`) para viajar solo en export-data/pre-deploy. Phase 7 (campañas)
+// consume `requireProxyForCampaigns` para negarse a encolar volumen en cuentas
+// sin proxy.
+const WA_POLICY_DEFAULTS = {
+  requireProxyForCampaigns: false,
+};
+
+export function getWaPolicy() {
+  const data = loadJson(FILES.accounts, { accounts: [] });
+  return { ...WA_POLICY_DEFAULTS, ...(data.policy || {}) };
+}
+
+export function setWaPolicy(patch) {
+  const data = loadJson(FILES.accounts, { accounts: [] });
+  data.policy = { ...WA_POLICY_DEFAULTS, ...(data.policy || {}), ...(patch || {}) };
+  saveJson(FILES.accounts, data);
+  return data.policy;
 }
 
 // ── ROUTINES ────────────────────────────────────────────────────────────────
