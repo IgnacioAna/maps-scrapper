@@ -80,7 +80,8 @@ del flow de scripts en vivo (Phase 7 candidate), parallel dialer, call recording
 | 4 | Bloque D — IA mejorada | Pending (futuro) |
 | 5 | Bloque E — Llamadas IA | Pending (futuro lejano — depende de Phase 6) |
 | 6 | **Telnyx Calls Foundation** | ✅ **DONE (2026-05-22)** |
-| 7 | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
+| 7 | **Motor de Campañas Drip WhatsApp** | Pending — añadida 2026-06-10, próximo `/gsd-plan-phase 7` |
+| 8+ | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
 
 ---
 
@@ -153,6 +154,17 @@ Extensión Chrome MV3 "Pegar como humano" — distribuible
 ## Accumulated Context
 
 ### Roadmap Evolution
+
+- 2026-06-10 — Phase 7 added: Motor de Campañas Drip WhatsApp. Replica
+  el workflow de campañas de GHL dentro del SCM: drip pacing
+  configurable (batch/intervalo), split de variantes con pesos,
+  bloques con delays humanos, bumps automáticos con cancelación al
+  recibir respuesta, caps por cuenta según warming. Reusa el scheduler
+  de scheduled_messages + wa-multi sendMessageInWindow. El handoff a
+  Mercury IA (conversación + agendamiento) queda para Phase 4
+  (Bloque D), que se redefine como "Mercury Autopilot" sobre esta base.
+  Decisión del user: empezar por drip+mensajes; tools de Mercury
+  (agendar, programar follow-ups) diferidas a Phase 4.
 
 - 2026-05-21 — Phase 6 added: Telnyx Calls Foundation. Sprint dedicado
   de 2 días (16 hs) antes del corte del plan de Claude. Construye el

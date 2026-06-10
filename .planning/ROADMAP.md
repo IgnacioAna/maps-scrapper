@@ -196,6 +196,67 @@ del Bloque A ya en producción.
 
 ---
 
+## Phase 7 — Motor de Campañas Drip WhatsApp
+
+**Goal:** Replicar en SCM el workflow de campañas de Go High Level:
+outbound masivo por WhatsApp configurable por campaña, con drip pacing,
+mensajes en bloques con delays humanos, bumps automáticos si no hay
+respuesta, y cancelación al recibir reply. Es la base sobre la que la
+fase siguiente monta el handoff a Mercury IA (Phase 4 / Bloque D).
+
+**Status:** Pending — añadida 2026-06-10. Próximo paso: `/gsd-plan-phase 7`.
+
+**Depends on:** ninguna bloqueante. Reusa infra ya en producción:
+scheduler de `scheduled_messages` (tick 60s + stagger anti-ban +
+`followup:send-message` → wa-multi `sendMessageInWindow`), variantes
+con bloques, `wa_accounts.json` (fase de warming), gateway socket.io
+(`ai-classified-inbound` para detección de respuesta). El handoff a
+Mercury queda EXCLUIDO de esta fase (es Phase 4).
+
+**Configuración por campaña (nada hardcodeado — espíritu GHL):**
+- Cuenta(s) WhatsApp de salida (una o varias con distribución)
+- Selección de leads: filtro país / setter / estado / cantidad
+- Split de variantes con pesos (reusa variantes con bloques)
+- Ritmo drip: `batchSize` cada `intervalMinutes` (ej. "1 cada 5 min",
+  "3 cada 10")
+- Ventana horaria + días de la semana
+- Delays random entre bloques del mensaje (rango min–max)
+- Steps de bump: lista `{tras X horas sin respuesta, texto}` (ej.
+  24h / 48h / 72h)
+- Caps diarios por cuenta + respeto de la fase de warming
+- Controles en vivo: pausar / reanudar / cancelar
+
+**Máquina de estados por lead:**
+```
+encolado → opener enviado (bloques con delays) → esperando respuesta
+   ├─ respondió → mensaje de calificación → respondió → marcado para
+   │   el setter (acá termina esta fase; Phase 4 enchufa Mercury)
+   ├─ sin respuesta → bump 1 → bump 2 → … → fin sin respuesta
+   └─ intent descalificado → descartado, frena todo
+```
+
+**Data:** `wa_campaigns.json` nuevo (campañas + estado por lead).
+Incluirlo en `/api/admin/export-data` y `pre-deploy` (regla #21 de
+CLAUDE.md — sin esto un redeploy pierde las campañas).
+
+**Success criteria:**
+1. Admin crea una campaña desde el panel eligiendo cuenta, leads,
+   variantes, drip, ventana, bumps — y la lanza
+2. Los mensajes salen al ritmo configurado, en bloques separados con
+   delays random, solo dentro de la ventana horaria
+3. Si el lead responde, los bumps pendientes se cancelan
+   automáticamente y avanza al mensaje de calificación
+4. Si no responde, los bumps salen a las horas configuradas
+5. Pausar la campaña frena los envíos en <60s; reanudar los retoma
+6. Caps por cuenta respetados (una cuenta en warming no excede su fase)
+7. Vista de campaña muestra progreso y stats por variante
+8. `wa_campaigns.json` sobrevive un redeploy (export + pre-deploy)
+
+**UI hint:** yes (vista nueva "Campañas" en el panel: builder + lista
+con progreso + controles pausar/reanudar/cancelar)
+
+---
+
 ## Phase 5 — Bloque E: Llamadas con IA (futuro lejano)
 
 **Goal:** Llamar a leads que respondieron pero no avanzaron por chat,
