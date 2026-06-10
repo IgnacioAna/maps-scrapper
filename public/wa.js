@@ -252,6 +252,7 @@ function renderAccountsAdmin() {
         <button class="btn-table-action" data-act="msg" data-id="${escHtml(a.id)}">Mensaje</button>
         ${a.routineStartedAt
           ? `<button class="btn-table-action" data-act="stop" data-id="${escHtml(a.id)}" style="color:var(--warning);" title="Detener warming">⏸</button>` : ''}
+        <button class="btn-table-action" data-act="proxy" data-id="${escHtml(a.id)}" title="${a.proxy ? `Proxy ${escHtml(a.proxy.type)} ${escHtml(a.proxy.host)}${a.geo?.country ? ' · '+escHtml(a.geo.country) : ''}` : 'Sin proxy — configurar'}" style="color:${a.proxy ? 'var(--success)' : 'var(--text-tertiary)'};">${a.proxy ? '🛡️' : '🛡'}</button>
         <button class="btn-table-action" data-act="reset" data-id="${escHtml(a.id)}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
         <button class="btn-table-action" data-act="del" data-id="${escHtml(a.id)}" style="color:var(--danger);">🗑</button>
       </td>
@@ -367,6 +368,9 @@ function renderAccountsAdmin() {
       } else if (act === "msg") {
         await openSendMessageModal(id);
         return; // el modal maneja el refresh
+      } else if (act === "proxy") {
+        await openProxyModal(id);
+        return; // el modal maneja el refresh
       }
       // refresh suave
       const a = _accounts.find((x) => x.id === id);
@@ -383,6 +387,162 @@ async function openCreateAccountDialog() {
     await loadInitialData();
     renderAccountsAdmin();
   } catch (err) { alert("Error: " + err.message); }
+}
+
+// Phase 8 — Mapa país → {timezone, locale} por defecto. Debe matchear
+// GEO_DEFAULTS de src/wa/data.js (el backend re-deriva igual; esto es para
+// autocompletar la UI). Si agregás un país acá, agregalo allá también.
+const WA_GEO_DEFAULTS = {
+  MX: { timezone: "America/Mexico_City", locale: "es-MX" },
+  AR: { timezone: "America/Argentina/Buenos_Aires", locale: "es-AR" },
+  ES: { timezone: "Europe/Madrid", locale: "es-ES" },
+  US: { timezone: "America/New_York", locale: "en-US" },
+  CO: { timezone: "America/Bogota", locale: "es-CO" },
+  CL: { timezone: "America/Santiago", locale: "es-CL" },
+  PE: { timezone: "America/Lima", locale: "es-PE" },
+  UY: { timezone: "America/Montevideo", locale: "es-UY" },
+  EC: { timezone: "America/Guayaquil", locale: "es-EC" },
+  BO: { timezone: "America/La_Paz", locale: "es-BO" },
+  PY: { timezone: "America/Asuncion", locale: "es-PY" },
+};
+
+// Phase 8 — Modal de configuración de proxy + coherencia geo por cuenta.
+// El proxy es opt-in: con 1 número no hace falta, con 3-4+ por la misma IP
+// salta la alarma de WhatsApp. La geo (timezone/idioma) hace que el navegador
+// sea coherente con el país del proxy (IP mexicana → reloj mexicano).
+async function openProxyModal(accountId) {
+  const account = (_accounts || []).find(a => a.id === accountId);
+  if (!account) { alert("Cuenta no encontrada"); return; }
+  const px = account.proxy || {};
+  const geo = account.geo || {};
+  const lastTest = account.proxyLastTest;
+  const countryOpts = ['<option value="">— País —</option>']
+    .concat(Object.keys(WA_GEO_DEFAULTS).map(c =>
+      `<option value="${c}" ${geo.country === c ? "selected" : ""}>${c}</option>`)).join("");
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:520px;">
+      <div class="modal-header">
+        <h3>🛡️ Proxy + Fingerprint · ${escHtml(account.label)}</h3>
+        <button class="modal-close-btn" data-close>×</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12px; color:var(--text-secondary); margin:0 0 14px;">
+          El proxy es <strong>opcional</strong>. Conviene cuando tenés varias cuentas
+          (3-4+) para que no salgan todas por la misma IP. El país define la zona
+          horaria y el idioma del navegador, para que sean coherentes con la IP.
+        </p>
+
+        <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;"><strong>Tipo de proxy</strong></label>
+        <select id="px-type" style="width:100%; padding:8px 10px; margin-bottom:12px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary);">
+          <option value="" ${!px.type ? "selected" : ""}>Sin proxy (usa tu IP)</option>
+          <option value="http" ${px.type === "http" ? "selected" : ""}>HTTP</option>
+          <option value="socks5" ${px.type === "socks5" ? "selected" : ""}>SOCKS5</option>
+        </select>
+
+        <div id="px-fields" style="${px.type ? "" : "display:none;"}">
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:10px; margin-bottom:12px;">
+            <div>
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Host / IP</label>
+              <input id="px-host" type="text" value="${escHtml(px.host || "")}" placeholder="1.2.3.4 o proxy.proveedor.com"
+                style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-family:monospace; font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Puerto</label>
+              <input id="px-port" type="number" value="${px.port || ""}" placeholder="8080"
+                style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-family:monospace; font-size:13px;">
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+            <div>
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Usuario (opcional)</label>
+              <input id="px-user" type="text" value="${escHtml(px.user || "")}" placeholder="usuario"
+                style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:13px;">
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;">Contraseña ${px.hasPass ? "(guardada)" : "(opcional)"}</label>
+              <input id="px-pass" type="password" value="" placeholder="${px.hasPass ? "•••••• (dejar vacío = no cambiar)" : "contraseña"}"
+                style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:13px;">
+            </div>
+          </div>
+
+          <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;"><strong>País del proxy</strong> (define zona horaria + idioma)</label>
+          <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:6px;">
+            <select id="px-country" style="padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary);">${countryOpts}</select>
+            <input id="px-tz" type="text" value="${escHtml(geo.timezone || "")}" placeholder="America/Mexico_City"
+              style="padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-family:monospace; font-size:12px;">
+          </div>
+          <input id="px-locale" type="text" value="${escHtml(geo.locale || "")}" placeholder="es-MX"
+            style="width:100%; padding:8px 10px; margin-bottom:12px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-family:monospace; font-size:12px;">
+
+          <div style="font-size:11px; color:var(--text-secondary); padding:8px 10px; background:var(--bg-tertiary); border-radius:6px; line-height:1.5;">
+            🔌 <strong>Probar:</strong> el proxy se valida al <strong>abrir la cuenta</strong> en wa-multi —
+            si funciona vas a ver la conexión normal; si está caído, la cuenta NO abre y avisa
+            (no se filtra tu IP real).
+            ${lastTest ? `<br><span style="color:${lastTest.ok ? 'var(--success)' : 'var(--danger)'};">Último test: ${lastTest.ok ? `✓ IP ${escHtml(lastTest.ip || '')} ${escHtml(lastTest.country || '')}` : `✗ ${escHtml(lastTest.error || 'falló')}`}</span>` : ''}
+          </div>
+        </div>
+
+        <div id="px-status" style="font-size:12px; color:var(--text-secondary); min-height:18px; margin-top:10px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button id="px-save" class="btn btn-primary">Guardar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const typeSel = overlay.querySelector('#px-type');
+  const fields  = overlay.querySelector('#px-fields');
+  const countrySel = overlay.querySelector('#px-country');
+  const tzInput = overlay.querySelector('#px-tz');
+  const localeInput = overlay.querySelector('#px-locale');
+  const statusEl = overlay.querySelector('#px-status');
+
+  typeSel.addEventListener('change', () => {
+    fields.style.display = typeSel.value ? "" : "none";
+  });
+  // Autocompletar tz/locale al elegir país (solo si están vacíos o el user no los editó manualmente)
+  countrySel.addEventListener('change', () => {
+    const d = WA_GEO_DEFAULTS[countrySel.value];
+    if (d) { tzInput.value = d.timezone; localeInput.value = d.locale; }
+  });
+
+  const close = () => overlay.remove();
+  overlay.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', close));
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  overlay.querySelector('#px-save').addEventListener('click', async () => {
+    statusEl.textContent = "Guardando…";
+    const type = typeSel.value;
+    let body;
+    if (!type) {
+      body = { proxy: null }; // limpiar
+    } else {
+      const host = overlay.querySelector('#px-host').value.trim();
+      const port = parseInt(overlay.querySelector('#px-port').value, 10);
+      if (!host || !Number.isFinite(port)) { statusEl.textContent = "Host y puerto son obligatorios."; return; }
+      const proxy = { type, host, port, user: overlay.querySelector('#px-user').value.trim() };
+      const pass = overlay.querySelector('#px-pass').value;
+      if (pass) proxy.pass = pass; // vacío = no cambiar (el backend preserva)
+      body = {
+        proxy,
+        geo: {
+          country: countrySel.value,
+          timezone: tzInput.value.trim(),
+          locale: localeInput.value.trim(),
+        },
+      };
+    }
+    try {
+      await api(`/api/wa/accounts/${accountId}/proxy`, { method: "PATCH", body: JSON.stringify(body) });
+      await loadInitialData();
+      renderAccountsAdmin();
+      close();
+    } catch (err) { statusEl.textContent = "Error: " + err.message; }
+  });
 }
 
 // Modal de envio estilo "campaña": lista de numeros + lista de mensajes que

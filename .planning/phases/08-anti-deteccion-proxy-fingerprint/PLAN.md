@@ -289,23 +289,16 @@ agregar una sección colapsable "🛡️ Proxy + Fingerprint" con:
 - acceptance: la card muestra la sección; guardar persiste y re-render
   muestra los valores (pass como ***).
 
-**T4.2** Botón "Probar proxy": endpoint backend
-`POST /api/wa/accounts/:id/proxy-test` (admin/dueño) que hace un
-`fetch`/`https.request` server-side a través del proxy de la cuenta (o del
-proxy enviado en el body para probar antes de guardar) hacia
-`https://api.ipify.org?format=json` + un lookup de país (o usar
-`https://ipapi.co/${ip}/country/`). Timeout 8s. Devuelve `{ok, ip, country}`
-y persiste en `proxyLastTest`. NOTA: este test corre desde el SERVER
-(Railway), no desde el desktop — sirve para validar que el proxy es
-alcanzable y por dónde sale. (El test "real" desde la IP del setter es la
-apertura de la cuenta en Wave 2; este es un check rápido de configuración.)
-  - Alternativa si se quiere el test desde la máquina del setter: comando
-    socket `proxy:test` al desktop que abra una sesión efímera y haga el
-    fetch. Más fiel pero más complejo. MVP: server-side.
-- read_first: index.js (patrón de los proxies de Telnyx balance que ya
-  hacen fetch server-side con timeout), `src/wa/routes.js`
-- acceptance: POST con proxy válido → `{ok:true, ip, country}`; proxy
-  inválido → `{ok:false, error}` en <10s; resultado persistido.
+**T4.2 — MOVIDA A WAVE 2 (decisión 2026-06-10).** El test del proxy NO se
+hace server-side. Razones: (1) Node 20 no expone un proxy-agent (sin
+`undici.ProxyAgent` accesible, sin socks-proxy-agent) y no quiero sumar
+una dependencia nueva; (2) testear desde Railway es ENGAÑOSO — probaría el
+proxy desde la IP de Railway, no desde la compu del setter donde realmente
+se usa (muchos proxies residenciales están whitelisteados por IP). El test
+fiel lo hace Electron desde la sesión real al abrir la cuenta. Por eso el
+"Probar proxy" vive en el desktop (Wave 2, T2.3 fail-safe ya hace el echo-IP
+real). En Wave 4 el botón explica esto; cuando Wave 2 esté distribuida,
+muestra el resultado real vía evento socket.
 
 **T4.3** Bumpear cache-buster: en `public/index.html` subir wa.js de
 `v=20260523a` a `v=20260610a` (o la fecha del día). Verificar que
