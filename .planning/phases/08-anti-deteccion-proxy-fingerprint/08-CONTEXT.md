@@ -39,13 +39,44 @@ contra WhatsApp Web. No reinventar — copiar el modelo.
 - `fingerprint-manager.js` expone `debugFingerprint()` para validar que
   todos los hooks se inyectaron.
 
-## Estado actual de wa-multi (base correcta ya existe)
+## Estado actual de wa-multi — CORRECCIÓN IMPORTANTE (2026-06-10)
+
+**El fingerprint YA EXISTE y funciona.** Se construyó en la fase
+Warming-Lunes. Vive en `out/preload/whatsapp.js:96-171`
+(`applyFingerprintPatches`), se aplica por cuenta vía
+`--wa-account-id=` con un seed determinista (mismo seed = mismo
+"dispositivo" siempre, modelo Dolphin). Ya falsea:
+- WebGL vendor/renderer (GPU: RTX 3060 / Radeon RX 580 por cuenta)
+- Canvas (ruido en toDataURL + getImageData)
+- Audio (ruido en AnalyserNode.getFloatFrequencyData)
+- navigator: cores de CPU, deviceMemory, versión de Chrome
+- Log de verificación: `[scm-fp] fingerprint patched accountId=...`
+
+→ Esta fase NO reconstruye el fingerprint. Lo COMPLETA donde le falta
+para ser coherente con un proxy.
+
+Base de sesión correcta también ya existe:
 - `out/main/index.js:399` — `session.fromPartition('persist:acc-{id}')`
-  por cuenta (partición persistente). ✅ base correcta.
-- `:401` y `:415` — `setUserAgent(CHROME_UA)` fijo (mismo UA para todas
-  las cuentas). ⚠️ a randomizar por seed.
-- preload actual: `../preload/whatsapp.js`. El fingerprint se inyectaría
-  ANTES o como parte del preload de la partición.
+  por cuenta (partición persistente). ✅
+- `:401`/`:415` — `setUserAgent(CHROME_UA)` FIJO e igual para todas las
+  cuentas. ⚠️ a variar por seed (gap menor).
+
+## Gaps reales de esta fase (lo único nuevo a construir)
+1. **Proxy por cuenta (opt-in)** — NO existe nada de proxy hoy. Es el
+   item principal. Opt-in: cuentas sin proxy siguen como están.
+2. **Timezone + locale coherentes** — hoy wa-multi usa la TZ/idioma
+   reales de la máquina. Solo se vuelve problema CUANDO hay proxy
+   (IP de país X + reloj de país Y = contradicción detectable). Spoof
+   de `Intl.DateTimeFormat`/`Date.getTimezoneOffset` + navigator.language
+   SOLO cuando la cuenta tiene proxy con país.
+3. **User-Agent por seed** — completar el patch existente para que el UA
+   también varíe por cuenta (hoy es el mismo CHROME_UA para todas).
+
+Razón del user para opt-in (textual 2026-06-10): "lo del proxy no es
+100% necesario... por ahí tenés un número solo, pero si tenés varios o
+más de 3-4, ahí salta la alarma". El fingerprint cambia el dispositivo
+pero NO la IP — varias cuentas por la misma IP residencial es la señal
+de baneo que el proxy resuelve.
 
 ## Diseño propuesto
 

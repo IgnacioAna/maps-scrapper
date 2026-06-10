@@ -259,10 +259,17 @@ con progreso + controles pausar/reanudar/cancelar)
 
 ## Phase 8 — Anti-detección wa-multi: Proxy + Fingerprint por cuenta
 
-**Goal:** Que cada cuenta de WhatsApp en wa-multi parezca un dispositivo
-real distinto y consistente, saliendo por su propio proxy — modelo
-"perfil antidetect" tipo Dolphin Anty. Es la infraestructura anti-baneo
-sobre la que Phase 7 (campañas a volumen) se apoya.
+**Goal:** Agregar PROXY opt-in por cuenta de WhatsApp en wa-multi y
+completar el fingerprint existente para que sea coherente con ese proxy
+(timezone/idioma/UA). Infraestructura anti-baneo sobre la que Phase 7
+(campañas a volumen) se apoya.
+
+**NOTA (2026-06-10): el fingerprint base YA EXISTE** — se construyó en
+Warming-Lunes (`out/preload/whatsapp.js`, falsea WebGL/Canvas/Audio/
+cores/RAM/Chrome por seed determinista). Esta fase NO lo reconstruye.
+Lo que falta y construye esta fase: (1) proxy por cuenta opt-in, (2)
+timezone+locale coherentes SOLO cuando hay proxy, (3) UA variable por
+seed. Ver 08-CONTEXT.md para el detalle del gap real.
 
 **Status:** Pending — añadida 2026-06-10. Próximo paso: `/gsd-plan-phase 8`.
 
