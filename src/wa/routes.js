@@ -251,6 +251,19 @@ export function registerWaRoutes(app, deps) {
     res.json(publicAccount(updated));
   });
 
+  // Phase 8 — el desktop wa-multi pide las credenciales COMPLETAS del proxy
+  // (incluido proxy.pass) justo antes de abrir la cuenta, para aplicar setProxy
+  // con auth. NO va en GET /accounts (que tapa el pass para el panel browser):
+  // este endpoint expone el secret solo on-demand, al dueño de la cuenta, que
+  // es la máquina que legítimamente lo necesita para conectarse.
+  app.get("/api/wa/accounts/:id/proxy-credentials", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const account = getAccount(req.params.id);
+    if (!account) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnAccount(user, account)) return res.status(403).json({ error: "No autorizado." });
+    res.json({ proxy: account.proxy || null, geo: account.geo || null });
+  });
+
   app.post("/api/wa/accounts", requireAuth, (req, res) => {
     const { user } = req.auth;
     // 2026-06-03: setters ahora pueden crear SUS propias cuentas (auto-asignadas

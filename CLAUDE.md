@@ -607,4 +607,18 @@ Si en el futuro hay que tocar el módulo Telnyx, estos son los gotchas verificad
 
 63. **"Interesado" NO auto-agenda — es intencional** ([index.js:5779](index.js:5779)): `answered_interested` deja el lead en Llamadas con chip verde (`estado='interesado'`) esperando agendamiento manual. NO abre modal de agenda. El agendamiento real es la disposition aparte `scheduled_with_admin` (crea entry en `data.calendar`). No "arreglar" esto pensando que falta el modal.
 
-64. **Cache-buster actual: `v=20260529c`** (reemplaza la nota #48). app.js + style.css. wa.js sigue en `v=20260523a`.
+64. **Cache-buster actual: `v=20260529c`** (reemplaza la nota #48). app.js + style.css. wa.js en `v=20260610a` (Phase 8).
+
+## Phase 8 — Anti-detección wa-multi: Proxy + Fingerprint (2026-06-10)
+
+Proxy opt-in por cuenta + coherencia geo, montado sobre el fingerprint que YA existía (canvas/webgl/audio/cores/RAM/Chrome por seed, en el preload desde warming-lunes). Plan completo en `.planning/phases/08-anti-deteccion-proxy-fingerprint/`.
+
+65. **Proxy por cuenta (opt-in)**: campos `proxy:{type,host,port,user,pass}|null` + `geo:{country,timezone,locale}|null` + `proxyLastTest` en cada cuenta de `wa_accounts.json`. `null` = sin proxy (comportamiento histórico). Solo HTTP/SOCKS5 — V2Ray/vmess excluido a propósito. Helpers en `src/wa/data.js`: `GEO_DEFAULTS` (país→tz/locale), `geoForCountry()`, `setAccountProxy()`.
+
+66. **Endpoints proxy** (`src/wa/routes.js`): `PATCH /api/wa/accounts/:id/proxy` (admin o setter dueño; valida type/port; deriva geo del país; preserva pass si se omite). `GET /api/wa/accounts/:id/proxy-credentials` (devuelve pass COMPLETO on-demand, solo al dueño — lo usa el desktop al abrir). `GET/PUT /api/wa/policy` (`requireProxyForCampaigns`, lo consumirá Phase 7).
+
+67. **No-leak del pass**: `GET /api/wa/accounts` pasa por `publicAccount()` que tapa `proxy.pass` → solo `hasPass:true`. El panel NUNCA ve el pass. El desktop sí, vía el endpoint dedicado. EXCEPCIÓN: `/api/wa/admin/export` (backup admin que baja pre-deploy) sí lo incluye en claro — necesario para restaurar. ⚠️ Cuando se carguen proxies reales con pass, sumar `proxy.pass` al stripper de `scripts/pre-deploy.js` (mismo patrón que Telnyx) o se commitearía en claro.
+
+68. **Desktop (wa-multi, `out/main/index.js` + `out/preload/whatsapp.js`)**: al abrir una cuenta, `openAccountWindow` pide las creds completas, aplica `ses.setProxy({proxyRules})` (NATIVO Electron), auth user:pass vía `app.on('login')` (mapeado por `webContents.id`), y un **fail-safe anti-leak**: carga un echo-IP a través del proxy ANTES de WhatsApp — si el proxy está caído, la cuenta NO abre con la IP real. El preload spoofea timezone/locale/UA (`applyGeoPatches`) SOLO si hay geo. UA ahora varía por cuenta (`uaForAccount`, antes era fijo). El UA del proceso y el de `navigator` se pasan iguales vía `--wa-ua`. **NO hay fuente `.ts`: `out/` ES el source — NO correr `npm run build`/`dist:win` (clobberea). Repack = packager/asar sobre `out/` directo.**
+
+69. **Cache-buster wa.js**: `v=20260610a` (Phase 8 tocó wa.js). Reemplaza el `v=20260523a` de notas viejas.

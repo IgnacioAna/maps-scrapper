@@ -148,6 +148,23 @@ describe("proxy CRUD", () => {
   });
 });
 
+describe("proxy-credentials (para el desktop)", () => {
+  it("dueño obtiene el pass COMPLETO on-demand", async () => {
+    await api("PATCH", `/api/wa/accounts/${accountId}/proxy`, {
+      proxy: { type: "http", host: "8.8.8.8", port: 8080, user: "u2", pass: "cred-secreta" },
+    }, setterATok);
+    const r = await api("GET", `/api/wa/accounts/${accountId}/proxy-credentials`, null, setterATok);
+    expect(r.status).toBe(200);
+    expect(r.body.proxy.pass).toBe("cred-secreta"); // acá SÍ viene el pass
+    expect(r.body.proxy.host).toBe("8.8.8.8");
+  });
+
+  it("setter ajeno NO obtiene credenciales → 403", async () => {
+    const r = await api("GET", `/api/wa/accounts/${accountId}/proxy-credentials`, null, setterBTok);
+    expect(r.status).toBe(403);
+  });
+});
+
 describe("policy", () => {
   it("GET policy default requireProxyForCampaigns=false", async () => {
     const r = await api("GET", "/api/wa/policy", null, setterATok);
