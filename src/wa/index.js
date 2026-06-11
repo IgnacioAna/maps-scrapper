@@ -1,9 +1,10 @@
 // Punto de entrada del módulo WA. Se importa desde index.js de GoogleSrapper.
 // mountWa(app, server, deps) hace todo: data + gateway + routes + warming-network.
-import { initWaData, getAccount } from "./data.js";
+import { initWaData, getAccount, listAccounts } from "./data.js";
 import { initGateway, sendToUser } from "./gateway.js";
 import { registerWaRoutes } from "./routes.js";
 import { initCampaignsData } from "./campaigns.js";
+import { startCampaignEngine } from "./campaign-engine.js";
 
 export async function mountWa(app, httpServer, deps) {
   initWaData(deps.dataDir);
@@ -17,6 +18,24 @@ export async function mountWa(app, httpServer, deps) {
     if (gw.exposeGlobals) gw.exposeGlobals();
   } catch (e) { /* no romper boot si falla */ }
   if (process.env.NODE_ENV !== "test") console.log("✅ Módulo WhatsApp Multi-Account montado en /api/wa");
+
+  // Phase 7 — motor de campañas drip. Skip en test (los tests llaman al tick
+  // a mano con `now` inyectado). Emite via gateway al setter dueño.
+  if (process.env.NODE_ENV !== "test") {
+    try {
+      const { isUserOnline } = await import("./gateway.js");
+      startCampaignEngine({
+        getSettersData: deps.getSettersData,
+        listAccounts,
+        sendToUser,
+        userIdFromSetterId: deps.userIdFromSetterId,
+        isUserOnline,
+      });
+      console.log("✅ Motor de campañas drip activo");
+    } catch (err) {
+      console.error("⚠️  Motor de campañas no se pudo iniciar:", err);
+    }
+  }
 
   // ── Warming network (AI-to-AI) ──
   // Solo arrancamos en producción / dev real. En tests no.
