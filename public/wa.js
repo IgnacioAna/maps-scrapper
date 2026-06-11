@@ -485,6 +485,13 @@ async function openProxyModal(accountId) {
           </div>
         </div>
 
+        <div style="margin-top:14px;">
+          <label style="display:block; font-size:12px; color:var(--text-secondary); margin-bottom:4px;"><strong>⏱️ Ritmo de envío</strong> — mínimo entre mensajes de esta cuenta (minutos)</label>
+          <input id="px-gap" type="number" min="1" max="1440" value="${account.minSendGapMinutes != null ? escHtml(String(account.minSendGapMinutes)) : ''}" placeholder="auto por warming (cuenta nueva = ~8 min)"
+            style="width:100%; padding:8px 10px; background:var(--bg-tertiary); border:1px solid var(--border); border-radius:6px; color:var(--text-primary); font-size:13px;">
+          <div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Vacío = automático según la fase de warming (cuenta nueva manda más lento). Aplica en campañas, con o sin proxy. Cuanto más nueva la cuenta, más alto conviene (ej. 10-15 min).</div>
+        </div>
+
         <div id="px-status" style="font-size:12px; color:var(--text-secondary); min-height:18px; margin-top:10px;"></div>
       </div>
       <div class="modal-footer">
@@ -536,6 +543,9 @@ async function openProxyModal(accountId) {
         },
       };
     }
+    // Ritmo de envío (aplica con o sin proxy). Vacío = auto (null).
+    const gapRaw = overlay.querySelector('#px-gap').value.trim();
+    body.minSendGapMinutes = gapRaw === "" ? null : Math.max(1, parseInt(gapRaw, 10) || 1);
     try {
       await api(`/api/wa/accounts/${accountId}/proxy`, { method: "PATCH", body: JSON.stringify(body) });
       await loadInitialData();

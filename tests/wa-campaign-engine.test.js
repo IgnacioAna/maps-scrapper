@@ -39,6 +39,25 @@ describe("warmingCapByDay", () => {
   it("sin warming → 80", () => expect(eng.warmingCapByDay({})).toBe(80));
 });
 
+describe("sendGapMs (ritmo por cuenta)", () => {
+  const mk = (daysAgo) => ({ routineStartedAt: new Date(Date.now() - daysAgo * 86400000).toISOString() });
+  it("override explícito manda (minSendGapMinutes)", () => {
+    expect(eng.sendGapMs({ minSendGapMinutes: 15 })).toBe(15 * 60000);
+  });
+  it("override por debajo del piso → 1 min", () => {
+    expect(eng.sendGapMs({ minSendGapMinutes: 0 })).toBe(60000);
+  });
+  it("sin warming → trato como nueva (8 min)", () => {
+    expect(eng.sendGapMs({})).toBe(8 * 60000);
+  });
+  it("curva por día de warming: nueva lenta, madura rápida", () => {
+    expect(eng.sendGapMs(mk(0))).toBe(8 * 60000);   // día 1
+    expect(eng.sendGapMs(mk(4))).toBe(5 * 60000);   // día 5
+    expect(eng.sendGapMs(mk(8))).toBe(3 * 60000);   // día 9
+    expect(eng.sendGapMs(mk(20))).toBe(90 * 1000);  // madura
+  });
+});
+
 describe("variantBlockTexts", () => {
   it("interpola {{nombre}} y filtra vacíos", () => {
     const v = { blocks: [{ text: "Hola {{nombre}}" }, { text: "" }, { text: "Sos de la clínica?" }] };
@@ -51,7 +70,9 @@ describe("tick end-to-end (now inyectado)", () => {
   const sent = [];
   const variant = { id: "v1", blocks: [{ text: "Bloque1 {{nombre}}" }, { text: "Bloque2" }] };
   const lead = { id: "L1", name: "Ana", phone: "5215550000", country: "MX", estado: "sin_contactar" };
-  const account = { id: "wa1", status: "CONNECTED" };
+  // minSendGapMinutes 1 = el piso mínimo (60s). En prod el gap real lo da el
+  // warming (mucho mayor para cuentas nuevas). Acá usamos el piso para testear.
+  const account = { id: "wa1", status: "CONNECTED", minSendGapMinutes: 1 };
   // ventana 24h todos los días para no bloquear por horario
   const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
 
@@ -63,13 +84,13 @@ describe("tick end-to-end (now inyectado)", () => {
     sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
   });
 
-  beforeEach(() => { sent.length = 0; });
+  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
 
   it("flujo completo: drip → 2 bloques con delay → bump → no_reply", async () => {
     const [, c] = camp.createCampaign({
       name: "E2E", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
       drip: { batchSize: 1, intervalMinutes: 5 },
-      window: win, blockDelay: { minMs: 3000, maxMs: 3000 },
+      window: win, blockDelay: { minMs: 60000, maxMs: 60000 }, // 1 min entre bloques
       bumps: [{ afterHours: 24, text: "Bump {{nombre}}" }],
     }, "setter_a");
     campId = c.id;
@@ -87,14 +108,14 @@ describe("tick end-to-end (now inyectado)", () => {
     expect(ls.state).toBe("opener_sending");
     expect(ls.blockIdx).toBe(1);
 
-    // Tick 2: nextActionAt aún no venció (delay 3s) → no manda nada.
+    // Tick 2: nextActionAt aún no venció (delay 1 min) → no manda nada.
     sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 1000));
+    await eng.campaignEngineTick(makeDeps(T0 + 30000));
     expect(sent.length).toBe(0);
 
-    // Tick 3: pasaron los 3s → manda bloque 2 → opener completo → awaiting_reply.
+    // Tick 3: pasó 1 min (delay + gap de cuenta) → bloque 2 → awaiting_reply.
     sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 4000));
+    await eng.campaignEngineTick(makeDeps(T0 + 70000));
     expect(sent.length).toBe(1);
     expect(sent[0].payload.text).toBe("Bloque2");
     ls = camp.getLeadState(campId, "L1");
@@ -102,12 +123,12 @@ describe("tick end-to-end (now inyectado)", () => {
 
     // Tick 4: antes de las 24h del bump → nada.
     sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 4000 + 3600000)); // +1h
+    await eng.campaignEngineTick(makeDeps(T0 + 70000 + 3600000)); // +1h
     expect(sent.length).toBe(0);
 
     // Tick 5: pasadas 24h → manda el bump → no quedan bumps → no_reply.
     sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 4000 + 25 * 3600000));
+    await eng.campaignEngineTick(makeDeps(T0 + 70000 + 25 * 3600000));
     expect(sent.length).toBe(1);
     expect(sent[0].payload.text).toBe("Bump Ana");
     ls = camp.getLeadState(campId, "L1");
@@ -154,7 +175,7 @@ describe("routing del envío (bug setterId vacío)", () => {
   const variant = { id: "v1", blocks: [{ text: "Hola" }] };
   const lead = { id: "L1", name: "Ana", phone: "5215550000", country: "MX" };
   const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
-  beforeEach(() => { sent.length = 0; });
+  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
 
   it("campaña con setterId='' (creada por admin) rutea al DUEÑO de la cuenta", async () => {
     const [, c] = camp.createCampaign({
@@ -204,7 +225,7 @@ describe("anti-ráfaga: backlog no estalla (máx 1 envío por cuenta por tick)",
   const variant = { id: "v1", blocks: [{ text: "Hola" }] };
   const leads = { A: { id: "A", phone: "5215550001" }, B: { id: "B", phone: "5215550002" }, C: { id: "C", phone: "5215550003" } };
   const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
-  beforeEach(() => { sent.length = 0; });
+  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
 
   it("3 leads acumulados en opener_sending → solo 1 sale por tick", async () => {
     const [, c] = camp.createCampaign({
@@ -247,7 +268,7 @@ describe("handleCampaignInbound (detección de respuesta — Wave 4)", () => {
     sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
     markLeadReplied: async (id) => { repliedLeadId = id; },
   };
-  beforeEach(() => { sent.length = 0; repliedLeadId = null; });
+  beforeEach(() => { sent.length = 0; repliedLeadId = null; eng.__resetThrottleForTests(); });
 
   it("respuesta en awaiting_reply con qualifyMessage → manda calificación + qualifying", async () => {
     const [, c] = camp.createCampaign({

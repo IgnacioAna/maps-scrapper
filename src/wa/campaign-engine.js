@@ -63,6 +63,30 @@ export function warmingCapByDay(account, now = Date.now()) {
 
 const todayKey = (now = new Date()) => now.toISOString().slice(0, 10);
 
+// Gap mínimo entre DOS mensajes consecutivos de la MISMA cuenta (anti-ráfaga).
+// Si la cuenta tiene `minSendGapMinutes` configurado, se usa eso. Si no, se
+// deriva del día de warming: cuenta nueva = gap grande (más seguro).
+export function sendGapMs(account) {
+  if (account && account.minSendGapMinutes != null) {
+    return Math.max(1, Number(account.minSendGapMinutes)) * 60000;
+  }
+  // Default por fase de warming (sin config explícita).
+  if (!account || !account.routineStartedAt) return 8 * 60000; // sin warming → trato como nueva: 8 min
+  const day = Math.max(1, Math.floor((Date.now() - new Date(account.routineStartedAt).getTime()) / 86400000) + 1);
+  if (day <= 2) return 8 * 60000;   // días 1-2: 1 cada 8 min
+  if (day <= 5) return 5 * 60000;   // días 3-5: 1 cada 5 min
+  if (day <= 10) return 3 * 60000;  // días 6-10: 1 cada 3 min
+  if (day <= 14) return 2 * 60000;  // días 11-14: 1 cada 2 min
+  return 90 * 1000;                 // madura: 1 cada 90s
+}
+
+// lastSendAt por cuenta, GLOBAL entre campañas (in-memory; se resetea al
+// reiniciar el server, pero el cap diario + drip siguen protegiendo).
+const _accountLastSend = /* @__PURE__ */ new Map();
+
+// Solo para tests: limpiar el throttle entre casos (el Map es module-level).
+export function __resetThrottleForTests() { _accountLastSend.clear(); }
+
 // Bloques de una variante en orden, como textos. Interpola {{nombre}}/{{name}}.
 export function variantBlockTexts(variant, lead = {}) {
   const blocks = Array.isArray(variant?.blocks) ? variant.blocks : [];
@@ -101,17 +125,18 @@ export async function campaignEngineTick(deps) {
       }
       const sentToday = (accId) => camp._dailySends.byAccount[accId] || 0;
       const capOf = (accId) => effectiveDailyCap(camp, accountsById[accId], null);
-      // ANTI-RÁFAGA: máximo 1 envío por cuenta POR TICK (tick = 60s). Sin esto,
-      // un backlog (leads acumulados mientras wa-multi estaba offline, o tras un
-      // pause/resume) se mandaría TODO junto en un tick → ráfaga → ban. Con este
-      // tope, un backlog se drena de a 1 por minuto por cuenta, suave.
-      const sentThisTick = {};
+      // ANTI-RÁFAGA: gap mínimo entre dos mensajes de la misma cuenta (derivado
+      // del warming o configurable por cuenta). Sin esto, un backlog (leads
+      // acumulados con wa-multi offline o tras pause/resume) se mandaría TODO
+      // junto → ráfaga → ban. Con el gap, el backlog se drena suave (ej. cuenta
+      // nueva: 1 cada 8 min). El gap es GLOBAL por cuenta (entre campañas).
       const accountReady = (accId) => {
         const a = accountsById[accId];
         // Si la cuenta existe y NO está conectada, no enviar (requeue). Si no la
         // conocemos (desktop reporta aparte), dejamos pasar.
         if (a && a.status && a.status !== "CONNECTED") return false;
-        if ((sentThisTick[accId] || 0) >= 1) return false; // ya mandó en este tick
+        const last = _accountLastSend.get(accId) || 0;
+        if (now - last < sendGapMs(a)) return false; // todavía no pasó el gap
         return sentToday(accId) < capOf(accId);
       };
 
@@ -153,7 +178,7 @@ export async function campaignEngineTick(deps) {
           campaignId: camp.id, blockKind: kind, ...extra,
         });
         camp._dailySends.byAccount[accId] = sentToday(accId) + 1;
-        sentThisTick[accId] = (sentThisTick[accId] || 0) + 1; // tope anti-ráfaga
+        _accountLastSend.set(accId, now); // registrar para el gap anti-ráfaga
         return true;
       };
 

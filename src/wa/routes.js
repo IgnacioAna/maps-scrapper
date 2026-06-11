@@ -251,7 +251,16 @@ export function registerWaRoutes(app, deps) {
       }
     }
 
-    const updated = setAccountProxy(req.params.id, { proxy, geo });
+    setAccountProxy(req.params.id, { proxy, geo });
+    // Phase 7 — ritmo de envío por cuenta (anti-ban). null = auto por warming.
+    let updated;
+    if (req.body?.minSendGapMinutes !== undefined) {
+      const g = req.body.minSendGapMinutes;
+      const val = g === null || g === "" ? null : Math.max(1, Math.min(1440, parseInt(g, 10) || 1));
+      updated = updateAccount(req.params.id, { minSendGapMinutes: val });
+    } else {
+      updated = getAccount(req.params.id);
+    }
     if (!updated) return res.status(404).json({ error: "no encontrado" });
     res.json(publicAccount(updated));
   });
