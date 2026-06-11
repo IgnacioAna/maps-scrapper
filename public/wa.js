@@ -545,6 +545,208 @@ async function openProxyModal(accountId) {
   });
 }
 
+// ── CAMPAÑAS DRIP (Phase 7) ─────────────────────────────────────────────────
+let _campaignVariants = []; // cache de variantes para el builder
+
+const CAMP_STATUS_CHIP = {
+  draft: ["Borrador", "var(--text-tertiary)"],
+  running: ["▶ Activa", "var(--success)"],
+  paused: ["⏸ Pausada", "var(--warning)"],
+  done: ["✓ Finalizada", "var(--accent)"],
+  cancelled: ["Cancelada", "var(--danger)"],
+};
+const CAMP_STATE_LABEL = {
+  queued: "En cola", opener_sending: "Enviando", awaiting_reply: "Esperando",
+  qualifying: "Calificando", replied_for_setter: "Respondió", no_reply: "Sin respuesta",
+  disqualified: "Descartado",
+};
+
+async function renderCampaigns() {
+  const view = $("#view-wa-campaigns");
+  if (!view) return;
+  view.innerHTML = `<div class="content-header"><h2>Campañas</h2>
+    <button class="btn-primary pill-btn" id="camp-new">+ Nueva campaña</button></div>
+    <div id="camp-list" style="padding:0 32px 32px;">Cargando…</div>`;
+  $("#camp-new")?.addEventListener("click", openCampaignBuilder);
+
+  let campaigns = [];
+  try { campaigns = await api("/api/wa/campaigns"); } catch (err) {
+    $("#camp-list").innerHTML = `<div style="color:var(--danger);">Error: ${escHtml(err.message)}</div>`;
+    return;
+  }
+  const list = $("#camp-list");
+  if (!campaigns.length) {
+    list.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-secondary);">Sin campañas todavía. Creá una con "+ Nueva campaña".</div>`;
+    return;
+  }
+  list.innerHTML = campaigns.map((c) => {
+    const [label, color] = CAMP_STATUS_CHIP[c.status] || [c.status, "var(--text-tertiary)"];
+    const sum = c.leadSummary || {};
+    const total = Object.values(sum).reduce((a, b) => a + b, 0);
+    const segs = Object.entries(sum).map(([st, n]) =>
+      `<span style="font-size:11px;color:var(--text-secondary);">${escHtml(CAMP_STATE_LABEL[st] || st)}: <strong>${n}</strong></span>`).join(" · ");
+    const accNames = (c.accountIds || []).map((id) => escHtml((_accounts.find((a) => a.id === id)?.label) || id)).join(", ");
+    const actions = [];
+    if (c.status === "draft") actions.push(`<button class="btn-table-action" data-camp-act="launch" data-id="${c.id}" style="background:var(--success);color:white;padding:4px 12px;border-radius:6px;font-weight:600;">🚀 Lanzar</button>`);
+    if (c.status === "running") actions.push(`<button class="btn-table-action" data-camp-act="pause" data-id="${c.id}" style="color:var(--warning);">⏸ Pausar</button>`);
+    if (c.status === "paused") actions.push(`<button class="btn-table-action" data-camp-act="resume" data-id="${c.id}" style="color:var(--success);">▶ Reanudar</button>`);
+    if (["running", "paused", "draft"].includes(c.status)) actions.push(`<button class="btn-table-action" data-camp-act="cancel" data-id="${c.id}" style="color:var(--danger);">Cancelar</button>`);
+    actions.push(`<button class="btn-table-action" data-camp-act="del" data-id="${c.id}" style="color:var(--danger);">🗑</button>`);
+    return `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <strong style="font-size:15px;">${escHtml(c.name)}</strong>
+        <span class="chip" style="color:${color};border-color:${color};">${escHtml(label)}</span>
+        <span style="margin-left:auto;font-size:12px;color:var(--text-secondary);">${escHtml(accNames)} · ${total} leads</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-bottom:10px;">${segs || '<span style="font-size:11px;color:var(--text-tertiary);">sin leads aún</span>'}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">${actions.join("")}</div>
+    </div>`;
+  }).join("");
+
+  list.querySelectorAll("button[data-camp-act]").forEach((b) => b.addEventListener("click", async (e) => {
+    const id = e.currentTarget.dataset.id;
+    const act = e.currentTarget.dataset.campAct;
+    try {
+      if (act === "del") {
+        if (!confirm("¿Borrar la campaña? (no se puede deshacer)")) return;
+        await api(`/api/wa/campaigns/${id}`, { method: "DELETE" });
+      } else if (act === "launch") {
+        if (!confirm("¿Lanzar la campaña? Empezará a mandar mensajes según el ritmo configurado.")) return;
+        const r = await api(`/api/wa/campaigns/${id}/launch`, { method: "POST" });
+        alert(`Campaña lanzada: ${r.launched} leads en cola.`);
+      } else {
+        await api(`/api/wa/campaigns/${id}/${act}`, { method: "POST" });
+      }
+      renderCampaigns();
+    } catch (err) { alert("Error: " + (err.message || err)); }
+  }));
+}
+
+async function openCampaignBuilder() {
+  // cargar variantes frescas
+  try { const d = await api("/api/setters"); _campaignVariants = d.variants || []; _setters = d.setters || _setters; } catch {}
+  const accs = _accounts.filter((a) => a.status !== "BANNED");
+  const dayNames = [["1", "Lun"], ["2", "Mar"], ["3", "Mié"], ["4", "Jue"], ["5", "Vie"], ["6", "Sáb"], ["0", "Dom"]];
+  const tzs = ["America/Mexico_City", "America/Argentina/Buenos_Aires", "America/Bogota", "America/Santiago", "America/Lima", "Europe/Madrid"];
+
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:680px;max-height:90vh;overflow-y:auto;">
+      <div class="modal-header"><h3>Nueva campaña drip</h3><button class="modal-close-btn" data-close>×</button></div>
+      <div class="modal-body" style="display:grid;gap:14px;">
+        <div><label class="camp-lbl">Nombre</label>
+          <input id="cb-name" class="camp-inp" placeholder="Ej: México lote 1"></div>
+
+        <div><label class="camp-lbl">Cuenta(s) WhatsApp de salida</label>
+          <div id="cb-accounts" style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${accs.length ? accs.map((a) => `<label class="camp-pick"><input type="checkbox" value="${a.id}"> ${escHtml(a.label)}</label>`).join("") : '<span style="color:var(--warning);font-size:12px;">No hay cuentas conectadas.</span>'}
+          </div></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div><label class="camp-lbl">País (leads)</label><input id="cb-country" class="camp-inp" placeholder="México o MX (vacío=todos)"></div>
+          <div><label class="camp-lbl">Estado</label><input id="cb-estado" class="camp-inp" placeholder="sin_contactar"></div>
+          <div><label class="camp-lbl">Cantidad</label><input id="cb-limit" class="camp-inp" type="number" value="50"></div>
+        </div>
+
+        <div><label class="camp-lbl">Variantes (split) — tildá y poné peso</label>
+          <div id="cb-variants" style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;">
+            ${_campaignVariants.length ? _campaignVariants.map((v) => `<label class="camp-pick" style="justify-content:space-between;">
+              <span><input type="checkbox" value="${v.id}"> ${escHtml(v.name)} <span style="color:var(--text-tertiary);font-size:11px;">(${(v.blocks || []).length} bloques)</span></span>
+              <input type="number" class="cb-vweight camp-inp" data-vid="${v.id}" value="1" min="1" style="width:60px;" title="peso"></label>`).join("") : '<span style="color:var(--warning);font-size:12px;">No hay variantes. Creá una en Setteo.</span>'}
+          </div></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label class="camp-lbl">Drip: cantidad por tanda</label><input id="cb-batch" class="camp-inp" type="number" value="1" min="1"></div>
+          <div><label class="camp-lbl">…cada (minutos)</label><input id="cb-interval" class="camp-inp" type="number" value="5" min="1"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:10px;">
+          <div><label class="camp-lbl">Desde (hora)</label><input id="cb-hstart" class="camp-inp" type="number" value="10" min="0" max="23"></div>
+          <div><label class="camp-lbl">Hasta (hora)</label><input id="cb-hend" class="camp-inp" type="number" value="19" min="0" max="23"></div>
+          <div><label class="camp-lbl">Zona horaria</label><select id="cb-tz" class="camp-inp">${tzs.map((t) => `<option value="${t}">${t.split("/")[1].replace("_", " ")}</option>`).join("")}</select></div>
+        </div>
+        <div><label class="camp-lbl">Días</label><div id="cb-days" style="display:flex;gap:8px;flex-wrap:wrap;">
+          ${dayNames.map(([v, n]) => `<label class="camp-pick"><input type="checkbox" value="${v}" ${["1", "2", "3", "4", "5"].includes(v) ? "checked" : ""}> ${n}</label>`).join("")}</div></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><label class="camp-lbl">Delay entre bloques: min (min)</label><input id="cb-dmin" class="camp-inp" type="number" value="1" min="0" step="0.5"></div>
+          <div><label class="camp-lbl">…max (min)</label><input id="cb-dmax" class="camp-inp" type="number" value="3" min="0" step="0.5"></div>
+        </div>
+
+        <div><label class="camp-lbl">Bumps (seguimientos si no responde)</label>
+          <div id="cb-bumps" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <button id="cb-addbump" class="btn-table-action" style="margin-top:6px;color:var(--accent);">+ Agregar bump</button></div>
+
+        <div><label class="camp-lbl">Mensaje de calificación (al responder)</label>
+          <textarea id="cb-qualify" class="camp-inp" rows="2" placeholder="Opcional. Ej: Perfecto {{nombre}}, ¿de qué clínica me hablás?"></textarea></div>
+
+        <div id="cb-status" style="font-size:12px;color:var(--text-secondary);min-height:16px;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close>Cancelar</button>
+        <button id="cb-save" class="btn btn-primary">Crear (borrador)</button>
+      </div>
+    </div>
+    <style>
+      .camp-lbl{display:block;font-size:12px;color:var(--text-secondary);margin-bottom:4px;}
+      .camp-inp{width:100%;padding:8px 10px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:13px;}
+      .camp-pick{display:flex;align-items:center;gap:6px;font-size:12px;background:var(--bg-tertiary);padding:6px 10px;border-radius:6px;cursor:pointer;}
+    </style>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", close));
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  const bumpsBox = overlay.querySelector("#cb-bumps");
+  const addBump = (afterHours = 24, text = "") => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:grid;grid-template-columns:90px 1fr 30px;gap:6px;align-items:center;";
+    row.innerHTML = `<input class="cb-bh camp-inp" type="number" value="${afterHours}" min="1" title="horas"><input class="cb-bt camp-inp" placeholder="Texto del bump" value="${escHtml(text)}"><button class="btn-table-action cb-brm" style="color:var(--danger);">×</button>`;
+    row.querySelector(".cb-brm").addEventListener("click", () => row.remove());
+    bumpsBox.appendChild(row);
+  };
+  overlay.querySelector("#cb-addbump").addEventListener("click", () => addBump());
+  addBump(24, ""); // un bump por defecto
+
+  overlay.querySelector("#cb-save").addEventListener("click", async () => {
+    const statusEl = overlay.querySelector("#cb-status");
+    const accountIds = [...overlay.querySelectorAll("#cb-accounts input:checked")].map((i) => i.value);
+    const variantSplit = [...overlay.querySelectorAll("#cb-variants input[type=checkbox]:checked")].map((i) => ({
+      variantId: i.value,
+      weight: parseInt(overlay.querySelector(`.cb-vweight[data-vid="${i.value}"]`)?.value, 10) || 1,
+    }));
+    const days = [...overlay.querySelectorAll("#cb-days input:checked")].map((i) => parseInt(i.value, 10));
+    const bumps = [...bumpsBox.children].map((r) => ({
+      afterHours: parseInt(r.querySelector(".cb-bh").value, 10) || 24,
+      text: r.querySelector(".cb-bt").value.trim(),
+    })).filter((b) => b.text);
+    if (!overlay.querySelector("#cb-name").value.trim()) return (statusEl.textContent = "Falta el nombre.");
+    if (!accountIds.length) return (statusEl.textContent = "Elegí al menos una cuenta.");
+    if (!variantSplit.length) return (statusEl.textContent = "Elegí al menos una variante.");
+    const body = {
+      name: overlay.querySelector("#cb-name").value.trim(),
+      accountIds, variantSplit,
+      drip: { batchSize: parseInt(overlay.querySelector("#cb-batch").value, 10) || 1, intervalMinutes: parseInt(overlay.querySelector("#cb-interval").value, 10) || 5 },
+      window: { hourStart: parseInt(overlay.querySelector("#cb-hstart").value, 10), hourEnd: parseInt(overlay.querySelector("#cb-hend").value, 10), days: days.length ? days : [1, 2, 3, 4, 5], timezone: overlay.querySelector("#cb-tz").value },
+      blockDelay: { minMs: Math.round((parseFloat(overlay.querySelector("#cb-dmin").value) || 1) * 60000), maxMs: Math.round((parseFloat(overlay.querySelector("#cb-dmax").value) || 3) * 60000) },
+      bumps,
+      qualifyMessage: overlay.querySelector("#cb-qualify").value.trim(),
+      leadFilter: {
+        country: overlay.querySelector("#cb-country").value.trim(),
+        estado: overlay.querySelector("#cb-estado").value.trim(),
+        limit: parseInt(overlay.querySelector("#cb-limit").value, 10) || 50,
+      },
+    };
+    statusEl.textContent = "Creando…";
+    try {
+      await api("/api/wa/campaigns", { method: "POST", body: JSON.stringify(body) });
+      close();
+      renderCampaigns();
+    } catch (err) { statusEl.textContent = "Error: " + (err.message || err); }
+  });
+}
+
 // Modal de envio estilo "campaña": lista de numeros + lista de mensajes que
 // se rotan entre los numeros (1 mensaje por destinatario). Inspirado en como
 // funciona el bot de Instagram (Prime Outbound).
@@ -935,6 +1137,7 @@ document.addEventListener("click", (e) => {
   setTimeout(() => {
     if (target === "view-wa-dashboard") renderDashboard();
     else if (target === "view-wa-accounts") renderAccountsAdmin();
+    else if (target === "view-wa-campaigns") renderCampaigns();
     else if (target === "view-wa-routines") renderRoutines();
     else if (target === "view-wa-mywhats") renderMyWhatsapps();
   }, 50);

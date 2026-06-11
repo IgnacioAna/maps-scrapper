@@ -226,6 +226,29 @@ describe("selectLeadsFromMap", () => {
     expect(r).not.toContain("L4");
     expect(r).not.toContain("L5");
   });
+
+  it("países por nombre español (como guardan los leads reales)", () => {
+    const real = {
+      A: { phone: "521", country: "México", estado: "sin_contactar" },
+      B: { phone: "549", country: "Uruguay", estado: "sin_contactar" },
+    };
+    expect(camp.selectLeadsFromMap(real, { country: "MX" })).toEqual(["A"]);      // ISO matchea nombre
+    expect(camp.selectLeadsFromMap(real, { country: "méxico" })).toEqual(["A"]);  // nombre con acento
+    expect(camp.selectLeadsFromMap(real, { country: "mexico" })).toEqual(["A"]);  // nombre sin acento
+    expect(camp.selectLeadsFromMap(real, { country: "uruguay" })).toEqual(["B"]);
+  });
+});
+
+describe("countryMatches", () => {
+  it("ISO ↔ nombre, con/sin acento", () => {
+    expect(camp.countryMatches("México", "MX")).toBe(true);
+    expect(camp.countryMatches("México", "mexico")).toBe(true);
+    expect(camp.countryMatches("Uruguay", "UY")).toBe(true);
+    expect(camp.countryMatches("España", "ES")).toBe(true);
+    expect(camp.countryMatches("Argentina", "MX")).toBe(false);
+    expect(camp.countryMatches("", "MX")).toBe(false);
+    expect(camp.countryMatches("México", "")).toBe(true); // sin filtro → todos
+  });
 });
 
 describe("randomBlockDelay", () => {

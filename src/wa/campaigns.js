@@ -263,6 +263,34 @@ export function buildVariantAssignments(variantSplit, count) {
   return out;
 }
 
+// normaliza para comparar países: minúsculas + sin acentos.
+function _norm(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+// Los leads guardan el país como NOMBRE en español ("México", "Uruguay"…), pero
+// el admin puede filtrar por ISO ("MX") o por nombre. Mapa ISO → nombre normalizado.
+const COUNTRY_ALIAS = {
+  MX: "mexico", AR: "argentina", ES: "espana", US: "estados unidos", CO: "colombia",
+  CL: "chile", PE: "peru", UY: "uruguay", EC: "ecuador", BO: "bolivia", PY: "paraguay",
+  CR: "costa rica",
+};
+
+// ¿el país del lead matchea el filtro? Acepta ISO o nombre, sin acentos.
+export function countryMatches(leadCountry, filterCountry) {
+  if (!filterCountry) return true;
+  const lead = _norm(leadCountry);
+  const want = _norm(filterCountry);
+  if (!lead) return false;
+  if (lead === want) return true;
+  // filtro es ISO (ej "mx") → comparar contra el nombre mapeado
+  const alias = COUNTRY_ALIAS[String(filterCountry).toUpperCase()];
+  if (alias && lead === alias) return true;
+  // filtro es nombre y lead guarda ISO (raro pero por las dudas)
+  const leadAlias = COUNTRY_ALIAS[String(leadCountry).toUpperCase()];
+  if (leadAlias && leadAlias === want) return true;
+  return false;
+}
+
 // Selección de leads para una campaña. PURA: recibe el map de leads
 // (settersData.leads es un MAP keyed por id, NO array) y un filtro, devuelve
 // array de leadIds. Excluye sin-teléfono, descartados y agendados.
@@ -270,14 +298,13 @@ export function buildVariantAssignments(variantSplit, count) {
 export function selectLeadsFromMap(leadsMap, filter = {}) {
   const { country, setterId, estado, limit } = filter;
   const out = [];
-  const wantCountry = country ? String(country).toLowerCase() : null;
   for (const [id, lead] of Object.entries(leadsMap || {})) {
     if (!lead) continue;
     const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp;
     if (!phone) continue; // sin teléfono no sirve
     if (lead.estado === "descartado" || lead.estado === "agendado") continue;
     if (lead.descartado === true) continue;
-    if (wantCountry && String(lead.country || lead.pais || "").toLowerCase() !== wantCountry) continue;
+    if (country && !countryMatches(lead.country || lead.pais, country)) continue;
     if (setterId && lead.assignedTo !== setterId) continue;
     if (estado && lead.estado !== estado) continue;
     out.push(id);

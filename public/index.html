@@ -184,6 +184,10 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span>Cuentas WA</span>
           </a>
+          <a href="#" class="menu-item" data-target="view-wa-campaigns" data-label="Campañas" data-roles="admin">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+            <span>Campañas</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-wa-routines" data-label="Rutinas Warming" data-roles="admin">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <span>Rutinas Warming</span>
@@ -2802,6 +2806,7 @@
       <!-- VISTAS WA — renderizadas dinámicamente por wa.js -->
       <div id="view-wa-dashboard" class="module-view hidden" data-roles="admin"></div>
       <div id="view-wa-accounts" class="module-view hidden" data-roles="admin"></div>
+      <div id="view-wa-campaigns" class="module-view hidden" data-roles="admin"></div>
       <div id="view-wa-routines" class="module-view hidden" data-roles="admin"></div>
       <div id="view-wa-warming-network" class="module-view hidden" data-roles="admin"></div>
       <div id="view-wa-mywhats" class="module-view hidden" data-roles="setter"></div>
@@ -3052,6 +3057,6 @@
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
   <script type="module" src="/app.js?v=20260604b"></script>
-  <script type="module" src="/wa.js?v=20260610a"></script>
+  <script type="module" src="/wa.js?v=20260610b"></script>
 </body>
 </html>
