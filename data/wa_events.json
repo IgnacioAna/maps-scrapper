@@ -1,6 +1,14 @@
 {
   "events": [
     {
+      "id": "ev_1781205861559_yls9fn",
+      "type": "window-closed",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:24:21.559Z"
+    },
+    {
       "id": "ev_1781204656184_iyucov",
       "type": "qr-visible",
       "accountId": "wa_1781190363457_24tm38",
@@ -6200,31 +6208,6 @@
         "withinHours": true
       },
       "createdAt": "2026-06-05T17:58:49.410Z"
-    },
-    {
-      "id": "ev_1780682329394_c6pjps",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "romero",
-        "contactName": "romero",
-        "contactPhone": null,
-        "message": "¡Hola! Bienvenid@ al consultorio Romero. \n\n Recuerde agendar una cita para brinarle la mejor atencion \n En breve responderemos tu mensaje ....",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:58:49.394Z"
     }
   ]
 }
