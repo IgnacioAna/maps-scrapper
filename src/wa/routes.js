@@ -11,6 +11,11 @@ import {
   startWarming, markBannedTemporarily, resetWarming,
   setAccountProxy, geoForCountry, getWaPolicy, setWaPolicy,
 } from "./data.js";
+import {
+  listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign,
+  sanitizeCampaign, bulkInitLeadStates, buildVariantAssignments,
+  selectLeadsFromMap, leadStateSummary,
+} from "./campaigns.js";
 import { sendToUser, getPresenceList } from "./gateway.js";
 
 function readPositiveInt(value, def, max) {
@@ -263,6 +268,130 @@ export function registerWaRoutes(app, deps) {
     if (!canActOnAccount(user, account)) return res.status(403).json({ error: "No autorizado." });
     res.json({ proxy: account.proxy || null, geo: account.geo || null });
   });
+
+  // ── CAMPAÑAS DRIP (Phase 7) ──────────────────────────────────────────────
+  // RBAC: admin ve/maneja todas; setter solo las suyas (campaign.setterId).
+  function canActOnCampaign(user, campaign) {
+    if (!user || !campaign) return false;
+    if (user.role === "admin") return true;
+    return campaign.setterId && campaign.setterId === user.setterId;
+  }
+
+  app.get("/api/wa/campaigns", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    let list = listCampaigns();
+    if (user.role !== "admin") list = list.filter((c) => c.setterId === user.setterId);
+    // adjuntar resumen de estados para la lista
+    res.json(list.map((c) => ({ ...c, leadSummary: leadStateSummary(c.id) })));
+  });
+
+  app.get("/api/wa/campaigns/:id", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const c = getCampaign(req.params.id);
+    if (!c) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+    res.json({ ...c, leadSummary: leadStateSummary(c.id) });
+  });
+
+  app.post("/api/wa/campaigns", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    if (!["admin", "supervisor", "setter"].includes(user.role)) {
+      return res.status(403).json({ error: "No autorizado." });
+    }
+    // setter: la campaña queda a su nombre; admin puede pasar setterId explícito.
+    const setterId = user.role === "admin" ? (req.body?.setterId || "") : user.setterId;
+    const [err, campaign] = createCampaign(req.body || {}, setterId);
+    if (err) return res.status(400).json({ error: err });
+    res.json(campaign);
+  });
+
+  app.patch("/api/wa/campaigns/:id", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const c = getCampaign(req.params.id);
+    if (!c) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+    if (!["draft", "paused"].includes(c.status)) {
+      return res.status(409).json({ error: "Solo se puede editar una campaña en borrador o pausada." });
+    }
+    const [verr, clean] = sanitizeCampaign(req.body || {}, { forUpdate: true });
+    if (verr) return res.status(400).json({ error: verr });
+    res.json(updateCampaign(req.params.id, clean));
+  });
+
+  app.delete("/api/wa/campaigns/:id", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const c = getCampaign(req.params.id);
+    if (!c) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+    deleteCampaign(req.params.id);
+    res.json({ ok: true });
+  });
+
+  // Lanzar: snapshotea leads (filtro fresco) + asigna variantes + cuentas
+  // (round-robin) + crea leadStates en queued + pasa a running.
+  app.post("/api/wa/campaigns/:id/launch", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const c = getCampaign(req.params.id);
+    if (!c) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+    if (c.status !== "draft") return res.status(409).json({ error: "Solo se lanza una campaña en borrador." });
+
+    // Policy de Phase 8: si requireProxyForCampaigns, toda cuenta de salida debe
+    // tener proxy. Evita mandar volumen por la IP cruda.
+    if (getWaPolicy().requireProxyForCampaigns) {
+      const sinProxy = c.accountIds.filter((aid) => {
+        const acc = getAccount(aid);
+        return !acc || !acc.proxy;
+      });
+      if (sinProxy.length > 0) {
+        return res.status(409).json({
+          error: `La política exige proxy para campañas. Cuentas sin proxy: ${sinProxy.join(", ")}. Asignales un proxy o desactivá la política.`,
+        });
+      }
+    }
+
+    // Resolver leads frescos del filtro guardado.
+    let leadsMap = {};
+    try { leadsMap = deps.getSettersData ? (deps.getSettersData().leads || {}) : {}; } catch { leadsMap = {}; }
+    const leadIds = selectLeadsFromMap(leadsMap, c.leadFilter || {});
+    if (leadIds.length === 0) {
+      return res.status(400).json({ error: "El filtro no matcheó ningún lead con teléfono." });
+    }
+
+    // Asignar variante (split ponderado) + cuenta (round-robin).
+    const variantIds = buildVariantAssignments(c.variantSplit, leadIds.length);
+    const entries = leadIds.map((leadId, i) => ({
+      leadId,
+      variantId: variantIds[i] || c.variantSplit[0]?.variantId || "",
+      accountId: c.accountIds[i % c.accountIds.length],
+    }));
+    bulkInitLeadStates(c.id, entries);
+    const updated = updateCampaign(c.id, {
+      status: "running",
+      startedAt: new Date().toISOString(),
+      lastDripAt: null,
+      stats: { ...(c.stats || {}), queued: entries.length },
+    });
+    res.json({ ...updated, launched: entries.length, leadSummary: leadStateSummary(c.id) });
+  });
+
+  // Transiciones de estado simples.
+  for (const [action, next, from] of [
+    ["pause", "paused", ["running"]],
+    ["resume", "running", ["paused"]],
+    ["cancel", "cancelled", ["draft", "running", "paused"]],
+  ]) {
+    app.post(`/api/wa/campaigns/:id/${action}`, requireAuth, (req, res) => {
+      const { user } = req.auth;
+      const c = getCampaign(req.params.id);
+      if (!c) return res.status(404).json({ error: "no encontrado" });
+      if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+      if (!from.includes(c.status)) {
+        return res.status(409).json({ error: `No se puede ${action} una campaña en estado ${c.status}.` });
+      }
+      res.json(updateCampaign(req.params.id, { status: next }));
+    });
+  }
 
   app.post("/api/wa/accounts", requireAuth, (req, res) => {
     const { user } = req.auth;

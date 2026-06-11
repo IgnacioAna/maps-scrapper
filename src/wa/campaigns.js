@@ -126,6 +126,18 @@ export function sanitizeCampaign(input, { forUpdate = false } = {}) {
     out.qualifyMessage = String(input.qualifyMessage || "").trim().slice(0, 2000);
   }
 
+  // Filtro de leads: se resuelve al LANZAR (selectLeadsFromMap), no al crear,
+  // para tomar los leads frescos. Se guarda en la campaña.
+  if (input.leadFilter !== undefined || !forUpdate) {
+    const f = input.leadFilter || {};
+    out.leadFilter = {
+      country: f.country ? String(f.country).trim() : "",
+      setterId: f.setterId ? String(f.setterId).trim() : "",
+      estado: f.estado ? String(f.estado).trim() : "",
+      limit: clampInt(f.limit, 1, 5000, 100),
+    };
+  }
+
   if (input.dailyCapPerAccount !== undefined) {
     out.dailyCapPerAccount = input.dailyCapPerAccount == null ? null : clampInt(input.dailyCapPerAccount, 1, 2000, null);
   } else if (!forUpdate) {

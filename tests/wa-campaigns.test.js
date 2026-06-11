@@ -5,14 +5,60 @@ import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
+import crypto from "node:crypto";
+import request from "supertest";
 
 const tmpData = path.join(os.tmpdir(), `wa-camp-test-${Date.now()}`);
 fs.mkdirSync(tmpData, { recursive: true });
 
-const camp = await import("../src/wa/campaigns.js");
+// Pre-popular auth + setters (con leads + variantes) ANTES de importar la app.
+process.env.NODE_ENV = "test";
+process.env.DATA_DIR = tmpData;
+process.env.ADMIN_EMAIL = "admintest@local.test";
+process.env.ADMIN_PASSWORD = "testpass1234";
+process.env.ADMIN_NAME = "AdminTest";
+process.env.JWT_SECRET = "test-secret-please-change";
+function pwd(plain) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const hash = crypto.scryptSync(plain, salt, 64).toString("hex");
+  return { salt, hash };
+}
+fs.writeFileSync(path.join(tmpData, "auth.json"), JSON.stringify({
+  users: [
+    { id: "user_admin_test", email: "admintest@local.test", name: "AdminTest", role: "admin", status: "active", setterId: "", password: pwd("testpass1234"), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    { id: "user_setter_a", email: "settera@local.test", name: "Setter A", role: "setter", status: "active", setterId: "setter_a", password: pwd("passa"), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  ], invites: [], sessions: [],
+}, null, 2));
+fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({
+  setters: [{ id: "setter_a", name: "Setter A" }],
+  variants: [{ id: "var_a", name: "V1", blocks: [{ label: "Apertura", text: "Hola {{nombre}}" }] }],
+  leads: {
+    L1: { id: "L1", phone: "5215551111", country: "MX", estado: "sin_contactar", assignedTo: "setter_a" },
+    L2: { id: "L2", phone: "5215552222", country: "MX", estado: "sin_contactar", assignedTo: "setter_a" },
+    L3: { id: "L3", phone: "5491133333", country: "AR", estado: "sin_contactar", assignedTo: "setter_a" },
+  },
+  calendar: [], sessions: [],
+}, null, 2));
 
-beforeAll(() => {
+const camp = await import("../src/wa/campaigns.js");
+const { app } = await import("../index.js");
+
+let adminTok = "", setterTok = "";
+async function login(email, password) {
+  const r = await request(app).post("/api/auth/desktop-login").send({ email, password });
+  return r.body.token;
+}
+async function api(method, p, body, tok) {
+  const r = request(app)[method.toLowerCase()](p);
+  if (tok) r.set("Authorization", `Bearer ${tok}`);
+  if (body) r.send(body);
+  return r;
+}
+
+beforeAll(async () => {
   camp.initCampaignsData(tmpData);
+  adminTok = await login("admintest@local.test", "testpass1234");
+  setterTok = await login("settera@local.test", "passa");
 });
 afterAll(() => {
   try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {}
@@ -189,5 +235,72 @@ describe("randomBlockDelay", () => {
       expect(d).toBeGreaterThanOrEqual(60000);
       expect(d).toBeLessThanOrEqual(180000);
     }
+  });
+});
+
+describe("endpoints REST (Wave 2)", () => {
+  let campId;
+  const draft = {
+    name: "MX lote",
+    accountIds: ["wa_x"],
+    variantSplit: [{ variantId: "var_a", weight: 1 }],
+    drip: { batchSize: 1, intervalMinutes: 5 },
+    leadFilter: { country: "MX", limit: 100 },
+  };
+
+  it("setter crea campaña (queda a su nombre)", async () => {
+    const r = await api("POST", "/api/wa/campaigns", draft, setterTok);
+    expect(r.status).toBe(200);
+    expect(r.body.status).toBe("draft");
+    expect(r.body.setterId).toBe("setter_a");
+    campId = r.body.id;
+  });
+
+  it("crear sin variantes → 400", async () => {
+    const r = await api("POST", "/api/wa/campaigns", { ...draft, variantSplit: [] }, setterTok);
+    expect(r.status).toBe(400);
+  });
+
+  it("lanzar snapshotea leads MX (2) y pasa a running", async () => {
+    const r = await api("POST", `/api/wa/campaigns/${campId}/launch`, {}, setterTok);
+    expect(r.status).toBe(200);
+    expect(r.body.status).toBe("running");
+    expect(r.body.launched).toBe(2); // L1, L2 (MX); L3 es AR
+    expect(r.body.leadSummary.queued).toBe(2);
+  });
+
+  it("no se puede editar una campaña running → 409", async () => {
+    const r = await api("PATCH", `/api/wa/campaigns/${campId}`, { name: "nuevo" }, setterTok);
+    expect(r.status).toBe(409);
+  });
+
+  it("pausar y reanudar", async () => {
+    let r = await api("POST", `/api/wa/campaigns/${campId}/pause`, {}, setterTok);
+    expect(r.status).toBe(200);
+    expect(r.body.status).toBe("paused");
+    r = await api("POST", `/api/wa/campaigns/${campId}/resume`, {}, setterTok);
+    expect(r.body.status).toBe("running");
+  });
+
+  it("relanzar una campaña ya running → 409", async () => {
+    const r = await api("POST", `/api/wa/campaigns/${campId}/launch`, {}, setterTok);
+    expect(r.status).toBe(409);
+  });
+
+  it("admin ve la campaña del setter; otro contexto respeta RBAC", async () => {
+    const r = await api("GET", "/api/wa/campaigns", null, adminTok);
+    expect(r.status).toBe(200);
+    expect(r.body.some((c) => c.id === campId)).toBe(true);
+  });
+
+  it("lanzar con filtro que no matchea → 400", async () => {
+    const cr = await api("POST", "/api/wa/campaigns", { ...draft, leadFilter: { country: "ZZ", limit: 10 } }, setterTok);
+    const r = await api("POST", `/api/wa/campaigns/${cr.body.id}/launch`, {}, setterTok);
+    expect(r.status).toBe(400);
+  });
+
+  it("cancelar", async () => {
+    const r = await api("POST", `/api/wa/campaigns/${campId}/cancel`, {}, setterTok);
+    expect(r.body.status).toBe("cancelled");
   });
 });

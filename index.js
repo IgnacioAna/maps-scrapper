@@ -11210,6 +11210,8 @@ mountWa(app, server, {
   verifyCredentials: verifyCredentialsHelper,
   userIdFromSetterId: userIdFromSetterIdHelper,
   markLeadContacted: markLeadContactedHelper,
+  // Phase 7 — el motor de campañas necesita leer leads + variantes (viven acá).
+  getSettersData: () => loadSettersData(),
   // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
   // network lo reusa en vez de pedir API keys nuevas.
   aiClient: warmingAi,
