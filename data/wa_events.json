@@ -1,6 +1,529 @@
 {
   "events": [
     {
+      "id": "ev_1781204656184_iyucov",
+      "type": "qr-visible",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:16.184Z"
+    },
+    {
+      "id": "ev_1781204655658_objq83",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:15.658Z"
+    },
+    {
+      "id": "ev_1781204655640_wdhelb",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/?post_logout=1"
+      },
+      "createdAt": "2026-06-11T19:04:15.640Z"
+    },
+    {
+      "id": "ev_1781204655072_9tkelh",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:15.072Z"
+    },
+    {
+      "id": "ev_1781204654894_hz3rv6",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:14.894Z"
+    },
+    {
+      "id": "ev_1781204653207_v8j4y0",
+      "type": "message-send-attempted",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+523324724041",
+        "text": "Que tal, gracias por responder",
+        "result": {
+          "ok": true,
+          "method": "loadURL-os-click-send"
+        },
+        "dailyCount": 5,
+        "dailyCap": 80,
+        "scheduledMsgId": "camp_camp_1781191371084_27oiaj_l_clnicadentalsantasofaguadalaja_523324724041_opener_block",
+        "leadId": "l_clnicadentalsantasofaguadalaja_523324724041",
+        "isFollowup": true
+      },
+      "createdAt": "2026-06-11T19:04:13.207Z"
+    },
+    {
+      "id": "ev_1781204651983_hurxut",
+      "type": "outgoing-sent",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-06-11T19:04:11.983Z"
+    },
+    {
+      "id": "ev_1781204647666_ay8vyq",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5213310681975",
+        "contactName": "",
+        "contactPhone": "+5213310681975",
+        "message": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-11T19:04:07.666Z"
+    },
+    {
+      "id": "ev_1781204647647_9yxhve",
+      "type": "response-received",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:07.647Z"
+    },
+    {
+      "id": "ev_1781204647626_dnnaqp",
+      "type": "inbound-message",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5213310681975",
+            "lastMessage": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-11T19:04:07.626Z"
+    },
+    {
+      "id": "ev_1781204647613_7rszj7",
+      "type": "connected",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:07.613Z"
+    },
+    {
+      "id": "ev_1781204642285_85gpfd",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:02.285Z"
+    },
+    {
+      "id": "ev_1781204642189_mvi9lb",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=523324724041&text=Que%20tal%2C%20gracias%20por%20responder"
+      },
+      "createdAt": "2026-06-11T19:04:02.189Z"
+    },
+    {
+      "id": "ev_1781204641513_tu6t0j",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:04:01.513Z"
+    },
+    {
+      "id": "ev_1781204640771_aoebjx",
+      "type": "message-send-attempted",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+523311800138",
+        "text": "Que tal, gracias por responder.",
+        "result": {
+          "ok": true,
+          "method": "loadURL-os-click-send"
+        },
+        "dailyCount": 4,
+        "dailyCap": 80,
+        "scheduledMsgId": "camp_camp_1781191371084_27oiaj_l_clnicadentalronilo3625_523311800138_opener_block",
+        "leadId": "l_clnicadentalronilo3625_523311800138",
+        "isFollowup": true
+      },
+      "createdAt": "2026-06-11T19:04:00.771Z"
+    },
+    {
+      "id": "ev_1781204639535_nx6oq8",
+      "type": "outgoing-sent",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-06-11T19:03:59.535Z"
+    },
+    {
+      "id": "ev_1781204634969_podsth",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5213310681975",
+        "contactName": "",
+        "contactPhone": "+5213310681975",
+        "message": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-11T19:03:54.969Z"
+    },
+    {
+      "id": "ev_1781204634952_lbtx3z",
+      "type": "response-received",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:54.953Z"
+    },
+    {
+      "id": "ev_1781204634937_87qbob",
+      "type": "inbound-message",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5213310681975",
+            "lastMessage": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-11T19:03:54.937Z"
+    },
+    {
+      "id": "ev_1781204634922_fggny9",
+      "type": "connected",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:54.922Z"
+    },
+    {
+      "id": "ev_1781204629419_o6w2zl",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:49.419Z"
+    },
+    {
+      "id": "ev_1781204629397_0ncgoq",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=523311800138&text=Que%20tal%2C%20gracias%20por%20responder."
+      },
+      "createdAt": "2026-06-11T19:03:49.397Z"
+    },
+    {
+      "id": "ev_1781204628561_98zjze",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:48.561Z"
+    },
+    {
+      "id": "ev_1781204627803_jlp0xc",
+      "type": "message-send-attempted",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+523311784981",
+        "text": "Que tal, gracias por responder",
+        "result": {
+          "ok": true,
+          "method": "loadURL-os-click-send"
+        },
+        "dailyCount": 3,
+        "dailyCap": 80,
+        "scheduledMsgId": "camp_camp_1781191371084_27oiaj_l_clnicadentalenchapalitadeoclin_523311784981_opener_block",
+        "leadId": "l_clnicadentalenchapalitadeoclin_523311784981",
+        "isFollowup": true
+      },
+      "createdAt": "2026-06-11T19:03:47.803Z"
+    },
+    {
+      "id": "ev_1781204626523_xyytx0",
+      "type": "outgoing-sent",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-06-11T19:03:46.523Z"
+    },
+    {
+      "id": "ev_1781204621987_k8swve",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "+5213310681975",
+        "contactName": "",
+        "contactPhone": "+5213310681975",
+        "message": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-06-11T19:03:41.987Z"
+    },
+    {
+      "id": "ev_1781204621930_52kk2x",
+      "type": "response-received",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:41.930Z"
+    },
+    {
+      "id": "ev_1781204621914_eioncb",
+      "type": "inbound-message",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "",
+            "phone": "+5213310681975",
+            "lastMessage": "Gracias por comunicarte con Polyglodent \n Aviso:\n\n Todas las citas se confirman con anticipo $300MXN\n El anticipo se descuenta el día de la consulta\n Cancelaciones con menos de 24 hrs no son reembolsables\n Inasistencias = pérdida del anticipo\n\nSe realiza por transferencia y una vez recibido, tu cita queda 100%confirmada \n\n¿Cuál es tu nombre? \n¿Prefieres agendar por la mañana o por la tarde ? \n\nGracias por respetar nuestro tiempo \n\nEnglish \nFrançais \nРусский",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-06-11T19:03:41.914Z"
+    },
+    {
+      "id": "ev_1781204621895_as3sw1",
+      "type": "connected",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:41.896Z"
+    },
+    {
+      "id": "ev_1781204616629_pb0spy",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:36.629Z"
+    },
+    {
+      "id": "ev_1781204616568_2p4rbh",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=523311784981&text=Que%20tal%2C%20gracias%20por%20responder"
+      },
+      "createdAt": "2026-06-11T19:03:36.568Z"
+    },
+    {
+      "id": "ev_1781204615990_w2xvig",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:35.990Z"
+    },
+    {
+      "id": "ev_1781204615239_a32pov",
+      "type": "message-send-attempted",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+523310681975",
+        "text": "Que tal, gracias por responder",
+        "result": {
+          "ok": true,
+          "method": "loadURL-os-click-send"
+        },
+        "dailyCount": 2,
+        "dailyCap": 80,
+        "scheduledMsgId": "camp_camp_1781191371084_27oiaj_l_clnicadentalpolyglodent_523310681975_opener_block",
+        "leadId": "l_clnicadentalpolyglodent_523310681975",
+        "isFollowup": true
+      },
+      "createdAt": "2026-06-11T19:03:35.239Z"
+    },
+    {
+      "id": "ev_1781204614116_4msvdk",
+      "type": "outgoing-sent",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-06-11T19:03:34.116Z"
+    },
+    {
+      "id": "ev_1781204609967_q9frsk",
+      "type": "connected",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:29.967Z"
+    },
+    {
+      "id": "ev_1781204604868_b9zqbv",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:24.868Z"
+    },
+    {
+      "id": "ev_1781204604841_y98wff",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=523310681975&text=Que%20tal%2C%20gracias%20por%20responder"
+      },
+      "createdAt": "2026-06-11T19:03:24.841Z"
+    },
+    {
+      "id": "ev_1781204602993_rv4bks",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:22.993Z"
+    },
+    {
+      "id": "ev_1781204602161_y1oiks",
+      "type": "message-send-attempted",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "phone": "+523313837441",
+        "text": "Que tal, gracias por responder.",
+        "result": {
+          "ok": true,
+          "method": "loadURL-os-click-send"
+        },
+        "dailyCount": 1,
+        "dailyCap": 80,
+        "scheduledMsgId": "camp_camp_1781191371084_27oiaj_l_diseodesonrisa_523313837441_opener_block",
+        "leadId": "l_diseodesonrisa_523313837441",
+        "isFollowup": true
+      },
+      "createdAt": "2026-06-11T19:03:22.162Z"
+    },
+    {
+      "id": "ev_1781204600899_9oh4yz",
+      "type": "outgoing-sent",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-06-11T19:03:20.899Z"
+    },
+    {
+      "id": "ev_1781204596742_e2jr4w",
+      "type": "connected",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:16.742Z"
+    },
+    {
+      "id": "ev_1781204591163_ulesm9",
+      "type": "loading",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:11.163Z"
+    },
+    {
+      "id": "ev_1781204591123_rh8qls",
+      "type": "dom-ready",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/send?phone=523313837441&text=Que%20tal%2C%20gracias%20por%20responder."
+      },
+      "createdAt": "2026-06-11T19:03:11.123Z"
+    },
+    {
+      "id": "ev_1781204590290_d2nibq",
+      "type": "logged-out",
+      "accountId": "wa_1781190363457_24tm38",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T19:03:10.290Z"
+    },
+    {
       "id": "ev_1781191284307_2p4xui",
       "type": "ai-classified-inbound",
       "accountId": "wa_1781190363457_24tm38",
@@ -5702,594 +6225,6 @@
         "withinHours": true
       },
       "createdAt": "2026-06-05T17:58:49.394Z"
-    },
-    {
-      "id": "ev_1780682329383_i5w7ly",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:49.383Z"
-    },
-    {
-      "id": "ev_1780682329370_vqcpo7",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "romero",
-            "phone": null,
-            "lastMessage": "¡Hola! Bienvenid@ al consultorio Romero. \n\n Recuerde agendar una cita para brinarle la mejor atencion \n En breve responderemos tu mensaje ....",
-            "unreadCount": 1
-          },
-          {
-            "name": "",
-            "phone": "+51933956449",
-            "lastMessage": "Hola  Gracias por escribir a Odonto Solutions. Para coordinar mejor tu atención, ¿puedes indicarnos:\n Nombre completo\n Tipo de servicio que buscas\nTe respondemos enseguida",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:58:49.370Z"
-    },
-    {
-      "id": "ev_1780682329356_l8mleb",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:49.356Z"
-    },
-    {
-      "id": "ev_1780682326524_81z8gl",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:46.524Z"
-    },
-    {
-      "id": "ev_1780682326494_7rat26",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51947770598&text=Buenas%2C%20todo%20bien%20en%20la%20oficina"
-      },
-      "createdAt": "2026-06-05T17:58:46.494Z"
-    },
-    {
-      "id": "ev_1780682326039_z9on5w",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:46.039Z"
-    },
-    {
-      "id": "ev_1780682308962_727txj",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:58:28.962Z"
-    },
-    {
-      "id": "ev_1780682303852_xjvfcv",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Clinica ReVal",
-        "contactName": "Clinica ReVal",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:58:23.852Z"
-    },
-    {
-      "id": "ev_1780682303842_ftfmvx",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:23.842Z"
-    },
-    {
-      "id": "ev_1780682303827_hs4e8b",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Clinica ReVal",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:58:23.827Z"
-    },
-    {
-      "id": "ev_1780682303814_ny0ph5",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:23.814Z"
-    },
-    {
-      "id": "ev_1780682300823_fqk8r0",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:20.823Z"
-    },
-    {
-      "id": "ev_1780682300808_yig2qg",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51925240282&text=Hola%2C%20a%20tope%20o%20con%20respiro%20esta%20semana"
-      },
-      "createdAt": "2026-06-05T17:58:20.808Z"
-    },
-    {
-      "id": "ev_1780682300032_ew78vy",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:20.032Z"
-    },
-    {
-      "id": "ev_1780682291977_k5hztw",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:58:11.977Z"
-    },
-    {
-      "id": "ev_1780682289196_fp9tya",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "clinicanewdent aqp",
-        "contactName": "clinicanewdent aqp",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con New Dent. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:58:09.196Z"
-    },
-    {
-      "id": "ev_1780682289183_ct6ugd",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:09.183Z"
-    },
-    {
-      "id": "ev_1780682289169_c81jlw",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "clinicanewdent aqp",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con New Dent. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:58:09.169Z"
-    },
-    {
-      "id": "ev_1780682289157_kwei3y",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:09.157Z"
-    },
-    {
-      "id": "ev_1780682286353_6jwwyu",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:06.353Z"
-    },
-    {
-      "id": "ev_1780682286341_7vpoyj",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51903579500&text=Hola%20equipo%2C%20buen%20d%C3%ADa"
-      },
-      "createdAt": "2026-06-05T17:58:06.341Z"
-    },
-    {
-      "id": "ev_1780682285741_po77ls",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:58:05.741Z"
-    },
-    {
-      "id": "ev_1780682277016_p50y3m",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:57:57.016Z"
-    },
-    {
-      "id": "ev_1780682274603_e4a2p2",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51933956449",
-        "contactName": "",
-        "contactPhone": "+51933956449",
-        "message": "Hola  Gracias por escribir a Odonto Solutions. Para coordinar mejor tu atención, ¿puedes indicarnos:\n Nombre completo\n Tipo de servicio que buscas\nTe respondemos enseguida",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:54.603Z"
-    },
-    {
-      "id": "ev_1780682274591_63pl6w",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "romero",
-        "contactName": "romero",
-        "contactPhone": null,
-        "message": "¡Hola! Bienvenid@ al consultorio Romero. \n\n Recuerde agendar una cita para brinarle la mejor atencion \n En breve responderemos tu mensaje ....",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:54.591Z"
-    },
-    {
-      "id": "ev_1780682274579_wwsrgo",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:54.579Z"
-    },
-    {
-      "id": "ev_1780682274566_xcqtb8",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "romero",
-            "phone": null,
-            "lastMessage": "¡Hola! Bienvenid@ al consultorio Romero. \n\n Recuerde agendar una cita para brinarle la mejor atencion \n En breve responderemos tu mensaje ....",
-            "unreadCount": 1
-          },
-          {
-            "name": "",
-            "phone": "+51933956449",
-            "lastMessage": "Hola  Gracias por escribir a Odonto Solutions. Para coordinar mejor tu atención, ¿puedes indicarnos:\n Nombre completo\n Tipo de servicio que buscas\nTe respondemos enseguida",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:57:54.566Z"
-    },
-    {
-      "id": "ev_1780682274552_1s79gs",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:54.552Z"
-    },
-    {
-      "id": "ev_1780682271617_d885m0",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:51.617Z"
-    },
-    {
-      "id": "ev_1780682271591_a8uc6d",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51904791223&text=Hola%2C%20c%C3%B3mo%20va%20todo%20esta%20semana%3F"
-      },
-      "createdAt": "2026-06-05T17:57:51.591Z"
-    },
-    {
-      "id": "ev_1780682268266_f6gfa8",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:48.266Z"
-    },
-    {
-      "id": "ev_1780682259643_0vie9o",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:57:39.643Z"
-    },
-    {
-      "id": "ev_1780682250813_zggrkl",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Clinica ReVal",
-        "contactName": "Clinica ReVal",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:30.813Z"
-    },
-    {
-      "id": "ev_1780682250802_xu24tb",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:30.802Z"
-    },
-    {
-      "id": "ev_1780682250786_o8n5cu",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Clinica ReVal",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:57:30.786Z"
-    },
-    {
-      "id": "ev_1780682250767_x0lok0",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:30.767Z"
-    },
-    {
-      "id": "ev_1780682248030_pjou2d",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:28.030Z"
-    },
-    {
-      "id": "ev_1780682248016_wzepkq",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51966312506&text=Hola%2C%20a%20tope%20o%20con%20respiro%20esta%20semana"
-      },
-      "createdAt": "2026-06-05T17:57:28.016Z"
-    },
-    {
-      "id": "ev_1780682245535_z7oodx",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:25.536Z"
-    },
-    {
-      "id": "ev_1780682237312_llytgt",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "clinicanewdent aqp",
-        "contactName": "clinicanewdent aqp",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con New Dent. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:17.312Z"
-    },
-    {
-      "id": "ev_1780682237300_qhyp34",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:57:17.300Z"
-    },
-    {
-      "id": "ev_1780682237288_c5f92t",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "clinicanewdent aqp",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con New Dent. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:57:17.288Z"
-    },
-    {
-      "id": "ev_1780682236233_o2h0wr",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51933956449",
-        "contactName": "",
-        "contactPhone": "+51933956449",
-        "message": "Hola  Gracias por escribir a Odonto Solutions. Para coordinar mejor tu atención, ¿puedes indicarnos:\n Nombre completo\n Tipo de servicio que buscas\nTe respondemos enseguida",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:16.233Z"
-    },
-    {
-      "id": "ev_1780682236218_l4tnzl",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "romero",
-        "contactName": "romero",
-        "contactPhone": null,
-        "message": "¡Hola! Bienvenid@ al consultorio Romero. \n\n Recuerde agendar una cita para brinarle la mejor atencion \n En breve responderemos tu mensaje ....",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:57:16.218Z"
     }
   ]
 }

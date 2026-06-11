@@ -47,8 +47,8 @@
     {
       "id": "wa_1781190363457_24tm38",
       "label": "Ignacio 2",
-      "phone": null,
-      "status": "CONNECTED",
+      "phone": "+5492213508505",
+      "status": "QR_PENDING",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
