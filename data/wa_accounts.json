@@ -1,28 +1,6 @@
 {
   "accounts": [
     {
-      "id": "wa_1777129407605_6dmfeo",
-      "label": "Ignacio",
-      "phone": "+5492214543250",
-      "status": "DISCONNECTED",
-      "assignment": {
-        "kind": "setter",
-        "refId": "setter_ignacio"
-      },
-      "routineId": null,
-      "notes": "",
-      "routineStartedAt": "2026-05-01T21:29:46.722Z",
-      "pauseUntil": null,
-      "staggerOffsetMs": 5252134,
-      "dailyKey": "2026-05-01",
-      "msgsSentToday": 0,
-      "responsesToday": 0,
-      "pendingCount": 0,
-      "deliveryFails": 0,
-      "lastBannedAt": null,
-      "createdAt": "2026-04-25T15:03:27.605Z"
-    },
-    {
       "id": "wa_1777831276977_qxby1z",
       "label": "Delfina",
       "phone": "+5492216125935",
@@ -65,6 +43,31 @@
       "deliveryFails": 0,
       "lastBannedAt": null,
       "createdAt": "2026-06-03T01:13:37.500Z"
+    },
+    {
+      "id": "wa_1781190363457_24tm38",
+      "label": "Ignacio 2",
+      "phone": null,
+      "status": "CONNECTED",
+      "assignment": {
+        "kind": "setter",
+        "refId": "setter_ignacio"
+      },
+      "routineId": null,
+      "notes": "",
+      "routineStartedAt": null,
+      "pauseUntil": null,
+      "staggerOffsetMs": 0,
+      "dailyKey": null,
+      "msgsSentToday": 0,
+      "responsesToday": 0,
+      "pendingCount": 0,
+      "deliveryFails": 0,
+      "lastBannedAt": null,
+      "proxy": null,
+      "geo": null,
+      "proxyLastTest": null,
+      "createdAt": "2026-06-11T15:06:03.457Z"
     }
   ],
   "policy": {
