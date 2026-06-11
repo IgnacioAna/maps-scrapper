@@ -252,7 +252,7 @@ function renderAccountsAdmin() {
         <button class="btn-table-action" data-act="msg" data-id="${escHtml(a.id)}">Mensaje</button>
         ${a.routineStartedAt
           ? `<button class="btn-table-action" data-act="stop" data-id="${escHtml(a.id)}" style="color:var(--warning);" title="Detener warming">⏸</button>` : ''}
-        <button class="btn-table-action" data-act="proxy" data-id="${escHtml(a.id)}" title="${a.proxy ? `Proxy ${escHtml(a.proxy.type)} ${escHtml(a.proxy.host)}${a.geo?.country ? ' · '+escHtml(a.geo.country) : ''}` : 'Sin proxy — configurar'}" style="color:${a.proxy ? 'var(--success)' : 'var(--text-tertiary)'};">${a.proxy ? '🛡️' : '🛡'}</button>
+        <button class="btn-table-action" data-act="proxy" data-id="${escHtml(a.id)}" title="${a.proxy ? `Proxy ${escHtml(a.proxy.type)} ${escHtml(a.proxy.host)}${a.geo?.country ? ' · '+escHtml(a.geo.country) : ''}` : 'Configurar proxy para esta cuenta'}" style="border:1px solid ${a.proxy ? 'var(--success)' : 'var(--border)'}; color:${a.proxy ? 'var(--success)' : 'var(--text-secondary)'}; padding:4px 10px; border-radius:6px; font-weight:600;">🛡️ ${a.proxy ? 'Proxy ✓' : 'Proxy'}</button>
         <button class="btn-table-action" data-act="reset" data-id="${escHtml(a.id)}" title="Reiniciar warming desde día 1" style="color:var(--accent);">↺</button>
         <button class="btn-table-action" data-act="del" data-id="${escHtml(a.id)}" style="color:var(--danger);">🗑</button>
       </td>
