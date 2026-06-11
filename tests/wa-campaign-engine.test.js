@@ -149,6 +149,56 @@ describe("tick end-to-end (now inyectado)", () => {
   });
 });
 
+describe("routing del envío (bug setterId vacío)", () => {
+  const sent = [];
+  const variant = { id: "v1", blocks: [{ text: "Hola" }] };
+  const lead = { id: "L1", name: "Ana", phone: "5215550000", country: "MX" };
+  const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
+  beforeEach(() => { sent.length = 0; });
+
+  it("campaña con setterId='' (creada por admin) rutea al DUEÑO de la cuenta", async () => {
+    const [, c] = camp.createCampaign({
+      name: "AdminCamp", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
+    }, ""); // ← setterId vacío, como cuando lo crea el admin
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
+    const deps = {
+      now: () => Date.UTC(2026, 5, 11, 12, 0, 0),
+      getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
+      // cuenta asignada a setter_dueño
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED", assignment: { kind: "setter", refId: "setter_dueño" } }],
+      userIdFromSetterId: (sid) => (sid === "setter_dueño" ? "user_dueño" : null),
+      isUserOnline: () => true,
+      sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
+    };
+    await eng.campaignEngineTick(deps);
+    expect(sent.length).toBe(1);
+    expect(sent[0].uid).toBe("user_dueño"); // ← antes era null y no mandaba nada
+  });
+
+  it("dueño offline → fallback a admin online", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Fallback", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
+    }, "");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
+    const deps = {
+      now: () => Date.UTC(2026, 5, 11, 12, 0, 0),
+      getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED", assignment: { kind: "setter", refId: "setter_off" } }],
+      userIdFromSetterId: (sid) => (sid === "setter_off" ? "user_off" : null),
+      isUserOnline: (uid) => uid === "user_admin", // el dueño NO está online
+      getPresenceList: () => [{ userId: "user_admin", online: true, role: "admin" }],
+      sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
+    };
+    await eng.campaignEngineTick(deps);
+    expect(sent.length).toBe(1);
+    expect(sent[0].uid).toBe("user_admin"); // fallback al admin online
+  });
+});
+
 describe("phoneMatches", () => {
   it("igual exacto", () => expect(eng.phoneMatches("5215550000", "5215550000")).toBe(true));
   it("últimos 8 dígitos (distinto prefijo país)", () => expect(eng.phoneMatches("5255001234", "055001234")).toBe(true));

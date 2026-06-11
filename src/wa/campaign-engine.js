@@ -109,15 +109,39 @@ export async function campaignEngineTick(deps) {
         return sentToday(accId) < capOf(accId);
       };
 
-      const setterUserId = deps.userIdFromSetterId ? deps.userIdFromSetterId(camp.setterId) : camp.setterId;
+      // Resolver A QUIÉN se le manda el comando para una cuenta. El comando va al
+      // wa-multi que tiene esa cuenta conectada. Prioridad (igual que warming):
+      //  1) el setter dueño de la cuenta, si está online;
+      //  2) un admin online (tiene wa-multi con TODAS las cuentas);
+      //  3) fallback al setterId de la campaña.
+      // NO usar camp.setterId como clave principal — una campaña creada por admin
+      // tiene setterId vacío y el envío fallaba silenciosamente.
+      const resolveRecipient = (account) => {
+        const ownerSetter = account?.assignment?.refId;
+        if (ownerSetter && deps.userIdFromSetterId) {
+          const uid = deps.userIdFromSetterId(ownerSetter);
+          if (uid && (!deps.isUserOnline || deps.isUserOnline(uid))) return uid;
+        }
+        if (deps.getPresenceList) {
+          const admin = deps.getPresenceList().find((p) => p.online && p.role === "admin");
+          if (admin) return admin.userId;
+        }
+        if (camp.setterId && deps.userIdFromSetterId) {
+          const uid = deps.userIdFromSetterId(camp.setterId);
+          if (uid) return uid;
+        }
+        return null;
+      };
 
       const send = (accId, leadId, lead, text, kind, extra = {}) => {
-        if (!deps.sendToUser || !setterUserId) return false;
+        if (!deps.sendToUser) return false;
+        const recipient = resolveRecipient(accountsById[accId]);
+        if (!recipient) return false; // nadie online con esa cuenta → requeue
         const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "";
         if (!phone) return false;
         // MVP: reusar followup:send-message (handler que YA existe en wa-multi
         // v0.5.8) → no requiere repack del desktop.
-        deps.sendToUser(setterUserId, "followup:send-message", {
+        deps.sendToUser(recipient, "followup:send-message", {
           scheduledMsgId: `camp_${camp.id}_${leadId}_${kind}`,
           accountId: accId, targetPhone: phone, text, leadId,
           campaignId: camp.id, blockKind: kind, ...extra,

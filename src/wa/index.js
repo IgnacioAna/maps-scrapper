@@ -23,13 +23,14 @@ export async function mountWa(app, httpServer, deps) {
   // a mano con `now` inyectado). Emite via gateway al setter dueño.
   if (process.env.NODE_ENV !== "test") {
     try {
-      const { isUserOnline } = await import("./gateway.js");
+      const { isUserOnline, getPresenceList } = await import("./gateway.js");
       startCampaignEngine({
         getSettersData: deps.getSettersData,
         listAccounts,
         sendToUser,
         userIdFromSetterId: deps.userIdFromSetterId,
         isUserOnline,
+        getPresenceList,
       });
       console.log("✅ Motor de campañas drip activo");
     } catch (err) {
