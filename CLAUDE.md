@@ -622,3 +622,24 @@ Proxy opt-in por cuenta + coherencia geo, montado sobre el fingerprint que YA ex
 68. **Desktop (wa-multi, `out/main/index.js` + `out/preload/whatsapp.js`)**: al abrir una cuenta, `openAccountWindow` pide las creds completas, aplica `ses.setProxy({proxyRules})` (NATIVO Electron), auth user:pass vía `app.on('login')` (mapeado por `webContents.id`), y un **fail-safe anti-leak**: carga un echo-IP a través del proxy ANTES de WhatsApp — si el proxy está caído, la cuenta NO abre con la IP real. El preload spoofea timezone/locale/UA (`applyGeoPatches`) SOLO si hay geo. UA ahora varía por cuenta (`uaForAccount`, antes era fijo). El UA del proceso y el de `navigator` se pasan iguales vía `--wa-ua`. **NO hay fuente `.ts`: `out/` ES el source — NO correr `npm run build`/`dist:win` (clobberea). Repack = packager/asar sobre `out/` directo.**
 
 69. **Cache-buster wa.js**: `v=20260610a` (Phase 8 tocó wa.js). Reemplaza el `v=20260523a` de notas viejas.
+
+## Phase 7 — Motor de Campañas Drip WhatsApp (2026-06-10)
+
+Campañas de outbound tipo Go High Level dentro del SCM. Drip configurable, split
+de variantes, bloques con delays, bumps automáticos con cancelación al responder.
+El handoff a Mercury IA (conversar + agendar) es Phase 4, NO esta fase. Plan en
+`.planning/phases/07-campanas-drip-wa/`. Doc: `docs/campanas-drip.md`.
+
+70. **Data layer** (`src/wa/campaigns.js`): `wa_campaigns.json` = `{campaigns[], leadStates{}}`. leadStates separado de la campaña (keyed por campaignId→leadId) para no inflar el listado. `mutateCampaigns` (mutex async). Helpers puros testeables: `sanitizeCampaign`, `buildVariantAssignments` (split ponderado), `selectLeadsFromMap` (filtra el MAP de leads por país/setter/estado, excluye sin-tel/descartado/agendado), `randomBlockDelay`.
+
+71. **Endpoints** (`src/wa/routes.js`): CRUD `/api/wa/campaigns` (admin + setter dueño vía `canActOnCampaign`). `POST /:id/launch` snapshotea leads del filtro fresco + asigna variante (split) + cuenta (round-robin) + crea leadStates queued + valida `requireProxyForCampaigns` de Phase 8 (409 si cuenta sin proxy). `pause/resume/cancel`. PATCH solo en draft/paused.
+
+72. **El motor** (`src/wa/campaign-engine.js`): `campaignEngineTick(deps)` corre cada 60s (setInterval, skip en test — los tests lo llaman con `now` inyectado), SEPARADO del `scheduledMessagesTick` de followups. Drip libera batchSize/intervalMinutes; opener en bloques con delay random; bumps a las afterHours; respeta ventana horaria (`isWithinWindow` por timezone+día) + cap por cuenta (`warmingCapByDay`: 12/30/80/200/400) + cuenta no CONNECTED = requeue. **Emite `followup:send-message`** (handler que YA existe en wa-multi v0.5.8 → NO requiere repack; `campaign:send-message` quedó como mejora futura no implementada). Arranca en `mountWa` (src/wa/index.js).
+
+73. **Detección de respuesta** (`handleCampaignInbound` en campaign-engine.js, llamado desde gateway.js en el hook `ai-classified-inbound` tras el filtro warming): matchea phone→lead→campaña running (`phoneMatches` últimos 8 díg), avanza estado (awaiting_reply→qualifying o replied_for_setter; intent descalificado→disqualified), cancela bumps. `deps.markLeadReplied` (index.js) marca `respondio=true` + cascade para que aparezca en el pipeline del setter.
+
+74. **Estados del lead**: queued → opener_sending → awaiting_reply → (qualifying →) replied_for_setter | no_reply | disqualified. Campaña pasa a `done` sola cuando no quedan leads activos.
+
+75. **Persistencia**: `wa_campaigns.json` en `/api/wa/admin/export` + `pre-deploy` + `seedVolumeFromRepo` + `BACKUP_FILES`. Sin esto un redeploy las borra (regla #21).
+
+76. **PENDIENTE Phase 7**: Wave 6 (UI builder en el panel) — sin construir aún. Las campañas se crean/lanzan por API; falta la vista `view-wa-campaigns` con el builder. Backend 100% funcional y testeado (99 tests WA+campañas verdes).

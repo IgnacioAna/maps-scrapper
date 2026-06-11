@@ -80,7 +80,7 @@ del flow de scripts en vivo (Phase 7 candidate), parallel dialer, call recording
 | 4 | Bloque D — IA mejorada | Pending (futuro) |
 | 5 | Bloque E — Llamadas IA | Pending (futuro lejano — depende de Phase 6) |
 | 6 | **Telnyx Calls Foundation** | ✅ **DONE (2026-05-22)** |
-| 7 | **Motor de Campañas Drip WhatsApp** | Planned 2026-06-10 — PLAN.md (7 waves) listo; ejecutando Wave 1 |
+| 7 | **Motor de Campañas Drip WhatsApp** | Backend DONE 2026-06-10 — Waves 1-4+7 (data, API, motor, detección respuesta, persistencia) testeadas (99 tests); falta SOLO Wave 6 (UI builder) |
 | 8 | **Anti-detección wa-multi: Proxy + Fingerprint** | Casi done 2026-06-10 — Waves 1,4 + backend de 2,3 DEPLOYADAS y verificadas LIVE; desktop de 2,3 editado en disco (gitignored), falta SOLO el repack v0.5.9; Wave 5 docs hechas |
 | 9+ | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
 
