@@ -1,6 +1,66 @@
 {
   "events": [
     {
+      "id": "ev_1781189140677_i3mon3",
+      "type": "window-closed",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T14:45:40.677Z"
+    },
+    {
+      "id": "ev_1781189139343_9krkq4",
+      "type": "qr-visible",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T14:45:39.343Z"
+    },
+    {
+      "id": "ev_1781189138365_ep0aec",
+      "type": "loading",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T14:45:38.365Z"
+    },
+    {
+      "id": "ev_1781189138343_yqwhow",
+      "type": "dom-ready",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-11T14:45:38.343Z"
+    },
+    {
+      "id": "ev_1781189137646_7m47w3",
+      "type": "logged-out",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T14:45:37.646Z"
+    },
+    {
+      "id": "ev_1781189133134_t1s2h5",
+      "type": "loading",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-11T14:45:33.134Z"
+    },
+    {
+      "id": "ev_1781189133069_xv5byn",
+      "type": "dom-ready",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-11T14:45:33.069Z"
+    },
+    {
       "id": "ev_1780944586557_l6fzt9",
       "type": "window-closed",
       "accountId": "wa_1780449217500_93p5b4",
@@ -6225,95 +6285,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-06-05T17:56:48.252Z"
-    },
-    {
-      "id": "ev_1780682201224_29exho",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Clinica ReVal",
-        "contactName": "Clinica ReVal",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:56:41.224Z"
-    },
-    {
-      "id": "ev_1780682201212_yz81kx",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:56:41.212Z"
-    },
-    {
-      "id": "ev_1780682201184_l2s1up",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Clinica ReVal",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T17:56:41.184Z"
-    },
-    {
-      "id": "ev_1780682197409_uymt35",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:56:37.409Z"
-    },
-    {
-      "id": "ev_1780682189088_ual619",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:56:29.088Z"
-    },
-    {
-      "id": "ev_1780682186188_y13kbq",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T17:56:26.188Z"
-    },
-    {
-      "id": "ev_1780682186177_bqqtap",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51982131830&text=Buenos%20d%C3%ADas%2C%20bastante%20cargados%20hoy%20por%20Arequipa"
-      },
-      "createdAt": "2026-06-05T17:56:26.177Z"
     }
   ]
 }

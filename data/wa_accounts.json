@@ -48,7 +48,7 @@
       "id": "wa_1780449217500_93p5b4",
       "label": "Sofia",
       "phone": "+5492213185932",
-      "status": "CONNECTED",
+      "status": "QR_PENDING",
       "assignment": {
         "kind": "setter",
         "refId": "setter_ignacio"
