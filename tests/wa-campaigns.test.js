@@ -303,4 +303,12 @@ describe("endpoints REST (Wave 2)", () => {
     const r = await api("POST", `/api/wa/campaigns/${campId}/cancel`, {}, setterTok);
     expect(r.body.status).toBe("cancelled");
   });
+
+  it("el export del módulo WA incluye campaigns (sobrevive redeploy)", async () => {
+    const r = await api("GET", "/api/wa/admin/export", null, adminTok);
+    expect(r.status).toBe(200);
+    expect(r.body.campaigns).toBeTruthy();
+    expect(Array.isArray(r.body.campaigns.campaigns)).toBe(true);
+    expect(r.body.campaigns.leadStates).toBeTruthy();
+  });
 });

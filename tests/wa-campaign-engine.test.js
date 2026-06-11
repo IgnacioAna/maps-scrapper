@@ -148,3 +148,65 @@ describe("tick end-to-end (now inyectado)", () => {
     expect(sent.length).toBe(0); // dripeó pero no mandó por cuenta no lista
   });
 });
+
+describe("phoneMatches", () => {
+  it("igual exacto", () => expect(eng.phoneMatches("5215550000", "5215550000")).toBe(true));
+  it("últimos 8 dígitos (distinto prefijo país)", () => expect(eng.phoneMatches("5255001234", "055001234")).toBe(true));
+  it("distintos", () => expect(eng.phoneMatches("5215550000", "5491199999")).toBe(false));
+  it("vacío → false", () => expect(eng.phoneMatches("", "123")).toBe(false));
+});
+
+describe("handleCampaignInbound (detección de respuesta — Wave 4)", () => {
+  const sent = [];
+  const lead = { id: "LR", name: "Bob", phone: "5215559999", country: "MX" };
+  let repliedLeadId = null;
+  const baseDeps = {
+    getSettersData: () => ({ leads: { LR: lead }, variants: [] }),
+    userIdFromSetterId: () => "user1",
+    sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
+    markLeadReplied: async (id) => { repliedLeadId = id; },
+  };
+  beforeEach(() => { sent.length = 0; repliedLeadId = null; });
+
+  it("respuesta en awaiting_reply con qualifyMessage → manda calificación + qualifying", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Q", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      qualifyMessage: "Sos {{nombre}}, de qué clínica?",
+    }, "setter_a");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
+    camp.setLeadState(c.id, "LR", { state: "awaiting_reply", bumpIdx: 0, nextActionAt: new Date(Date.now() + 86400000).toISOString() });
+
+    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "interesado_quiere_info" });
+    expect(r.state).toBe("qualifying");
+    expect(sent.length).toBe(1);
+    expect(sent[0].payload.text).toBe("Sos Bob, de qué clínica?");
+    expect(camp.getLeadState(c.id, "LR").state).toBe("qualifying");
+    expect(camp.getLeadState(c.id, "LR").nextActionAt).toBe(null); // bump cancelado
+    expect(repliedLeadId).toBe("LR");
+  });
+
+  it("respuesta a la calificación (qualifying) → replied_for_setter", async () => {
+    const [, c] = camp.createCampaign({ name: "Q2", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }] }, "setter_a");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
+    camp.setLeadState(c.id, "LR", { state: "qualifying" });
+    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "interesado_quiere_agendar" });
+    expect(r.state).toBe("replied_for_setter");
+  });
+
+  it("intent descalificado → disqualified, sin marcar respondió", async () => {
+    const [, c] = camp.createCampaign({ name: "D", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }] }, "setter_a");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
+    camp.setLeadState(c.id, "LR", { state: "awaiting_reply" });
+    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "descalificado" });
+    expect(r.state).toBe("disqualified");
+    expect(repliedLeadId).toBe(null); // descalificado NO marca respondió
+  });
+
+  it("teléfono que no matchea ningún lead → null", async () => {
+    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "0000000", intent: "saludo" });
+    expect(r).toBe(null);
+  });
+});

@@ -226,6 +226,81 @@ export async function campaignEngineTick(deps) {
   });
 }
 
+// ── Detección de respuesta (Wave 4) ─────────────────────────────────────────
+// Se llama desde el gateway cuando llega un inbound clasificado. Matchea el
+// teléfono con un lead en alguna campaña running y avanza su estado:
+//  - intent descalificado → disqualified (frena todo)
+//  - en opener/awaiting → si hay qualifyMessage, lo manda y pasa a `qualifying`;
+//    sino directo a replied_for_setter
+//  - en qualifying (ya respondió la calificación) → replied_for_setter
+// Cancela bumps implícitamente (sale de awaiting_reply). Marca el lead respondió.
+// Helper puro de match de teléfono: compara los últimos 8 dígitos.
+export function phoneMatches(a, b) {
+  const da = String(a || "").replace(/\D/g, "");
+  const db = String(b || "").replace(/\D/g, "");
+  if (!da || !db) return false;
+  if (da === db) return true;
+  return da.slice(-8) === db.slice(-8);
+}
+
+export async function handleCampaignInbound(deps, { contactPhone, intent } = {}) {
+  if (!contactPhone) return null;
+  let settersData = { leads: {} };
+  try { settersData = deps.getSettersData ? deps.getSettersData() : settersData; } catch {}
+  // teléfono → leadId
+  let leadId = null, lead = null;
+  for (const [id, l] of Object.entries(settersData.leads || {})) {
+    const ph = l?.phone || l?.webWhatsApp || l?.aiWhatsApp;
+    if (ph && phoneMatches(ph, contactPhone)) { leadId = id; lead = l; break; }
+  }
+  if (!leadId) return null;
+
+  let result = null;
+  await mutateCampaigns(async (data) => {
+    for (const camp of (data.campaigns || [])) {
+      if (camp.status !== "running") continue;
+      const ls = data.leadStates[camp.id]?.[leadId];
+      if (!ls) continue;
+      const disq = intent === "descalificado" || intent === "descartado";
+      if (disq) {
+        ls.state = "disqualified";
+        ls.nextActionAt = null;
+        result = { campaignId: camp.id, leadId, state: "disqualified" };
+      } else if (ls.state === "opener_sending" || ls.state === "awaiting_reply") {
+        ls.repliedAt = new Date().toISOString();
+        if (camp.qualifyMessage && deps.sendToUser) {
+          const userId = deps.userIdFromSetterId ? deps.userIdFromSetterId(camp.setterId) : camp.setterId;
+          const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "";
+          if (userId && phone) {
+            const text = camp.qualifyMessage.replace(/\{\{nombre\}\}/g, lead.name || "").replace(/\{\{name\}\}/g, lead.name || "");
+            deps.sendToUser(userId, "followup:send-message", {
+              scheduledMsgId: `camp_${camp.id}_${leadId}_qualify`,
+              accountId: ls.accountId, targetPhone: phone, text, leadId, campaignId: camp.id, blockKind: "qualify",
+            });
+          }
+          ls.state = "qualifying";
+          ls.nextActionAt = null;
+        } else {
+          ls.state = "replied_for_setter";
+          ls.nextActionAt = null;
+        }
+        result = { campaignId: camp.id, leadId, state: ls.state };
+      } else if (ls.state === "qualifying") {
+        ls.state = "replied_for_setter";
+        ls.nextActionAt = null;
+        result = { campaignId: camp.id, leadId, state: "replied_for_setter" };
+      }
+      if (result) break; // un lead está en una sola campaña activa a la vez
+    }
+  });
+
+  // Marcar el lead en el pipeline del setter (aparece como "respondió").
+  if (result && result.state !== "disqualified" && typeof deps.markLeadReplied === "function") {
+    try { await deps.markLeadReplied(leadId); } catch {}
+  }
+  return result;
+}
+
 let _timer = null;
 export function startCampaignEngine(deps) {
   if (_timer) return;

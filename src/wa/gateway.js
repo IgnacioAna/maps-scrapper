@@ -224,6 +224,24 @@ export function initGateway(httpServer, deps) {
           console.error("[warming-net] error filtrando inbound:", err);
           // Continúa al flow normal
         }
+
+        // Phase 7 — detección de respuesta de campaña. Si el teléfono pertenece
+        // a un lead en una campaña running, avanzar su estado (cancela bumps,
+        // manda calificación o lo marca para el setter). No bloquea el flow.
+        try {
+          const { handleCampaignInbound } = await import("./campaign-engine.js");
+          await handleCampaignInbound(
+            {
+              getSettersData: deps.getSettersData,
+              userIdFromSetterId: deps.userIdFromSetterId,
+              markLeadReplied: deps.markLeadReplied,
+              sendToUser,
+            },
+            { contactPhone: payload.contactPhone, intent: payload?.classification?.intent },
+          );
+        } catch (err) {
+          console.error("[campaign-engine] inbound hook error:", err?.message || err);
+        }
       }
 
       try {

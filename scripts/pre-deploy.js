@@ -167,6 +167,7 @@ async function main() {
       if (waData.accounts) saveFile("wa_accounts.json", waData.accounts, `${(waData.accounts.accounts || []).length} cuentas`);
       if (waData.routines) saveFile("wa_routines.json", waData.routines, `${(waData.routines.routines || []).length} rutinas`);
       if (waData.events) saveFile("wa_events.json", waData.events, `${(waData.events.events || []).length} eventos`);
+      if (waData.campaigns) saveFile("wa_campaigns.json", waData.campaigns, `${(waData.campaigns.campaigns || []).length} campañas`);
     } else if (waResp.status !== 404) {
       console.warn(`  WARN módulo WA respondió ${waResp.status}, skipping wa_*.json`);
       results.skipped.push(`wa_*.json (HTTP ${waResp.status})`);

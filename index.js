@@ -2459,7 +2459,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -2512,7 +2512,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json'];
 
 function makeBackup(reason = 'auto') {
   try {
@@ -11212,6 +11212,19 @@ mountWa(app, server, {
   markLeadContacted: markLeadContactedHelper,
   // Phase 7 — el motor de campañas necesita leer leads + variantes (viven acá).
   getSettersData: () => loadSettersData(),
+  // Phase 7 — marca un lead como "respondió" cuando una campaña detecta inbound,
+  // para que aparezca en el pipeline del setter. Cascade hacia atrás: respondió
+  // implica conexión enviada (no pisa estados más avanzados).
+  markLeadReplied: async (leadId) => mutateSettersData((data) => {
+    const lead = data.leads?.[leadId];
+    if (!lead) return false;
+    lead.respondio = true;
+    if (!lead.conexion || lead.conexion === 'sin_wsp') lead.conexion = 'enviada';
+    const orden = ['sin_contactar', 'conexion_enviada', 'respondio'];
+    if (orden.indexOf(lead.estado) < orden.indexOf('respondio')) lead.estado = 'respondio';
+    lead.lastContactAt = lead.lastContactAt || new Date().toISOString();
+    return true;
+  }),
   // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
   // network lo reusa en vez de pedir API keys nuevas.
   aiClient: warmingAi,

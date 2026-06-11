@@ -14,7 +14,7 @@ import {
 import {
   listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign,
   sanitizeCampaign, bulkInitLeadStates, buildVariantAssignments,
-  selectLeadsFromMap, leadStateSummary,
+  selectLeadsFromMap, leadStateSummary, exportCampaignsData,
 } from "./campaigns.js";
 import { sendToUser, getPresenceList } from "./gateway.js";
 
@@ -810,6 +810,8 @@ export function registerWaRoutes(app, deps) {
       accounts: { accounts: listAccounts(), policy: getWaPolicy() },
       routines: { routines: listRoutines() },
       events: { events: listEvents({ limit: 500 }) },
+      // Phase 7: campañas drip — sin esto un redeploy las pierde (regla #21).
+      campaigns: exportCampaignsData(),
       exportedAt: new Date().toISOString(),
     });
   });
