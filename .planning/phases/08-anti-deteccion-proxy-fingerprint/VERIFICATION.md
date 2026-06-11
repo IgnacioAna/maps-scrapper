@@ -5,23 +5,17 @@
 > testear con runtime acá — Electron se verifica a mano contra WhatsApp Web.
 > Este checklist se corre DESPUÉS del repack (ver "Repack pendiente" abajo).
 
-## Pre-requisito: Repack pendiente (T5.4)
+## Repack: ✅ HECHO (2026-06-11)
 
-⚠️ **Las ediciones del desktop están en `wa-multi/src-v058-work/out/` pero
-NO empaquetadas en un `.exe` todavía.** No hay fuente `.ts` (solo el compilado
-`out/`), así que NO correr `npm run build` / `npm run dist:win` (electron-vite
-buildearía desde un `src/` inexistente y borraría las ediciones de `out/`).
+Build listo en `wa-multi/versiones/wa-multi-portable-v0.5.9/wa-multi-win32-x64/wa-multi.exe`.
+Método usado (Opción B — patch del app.asar): se copió el portable v0.5.8 →
+v0.5.9, se extrajo el `app.asar` con `@electron/asar`, se reemplazaron
+`out/main/index.js` (62KB, 7 matches proxy) y `out/preload/whatsapp.js` (28KB,
+geo), se bumpeó `package.json` a 0.5.9, y se repackeó el asar. Verificado: el
+asar nuevo contiene el código de Phase 8. NO se corrió `npm run build` (habría
+clobbereado `out/`).
 
-Repack correcto (empaquetar el `out/` ya editado):
-1. Opción A — packager directo sobre out/:
-   `cd wa-multi/src-v058-work && npx @electron/packager . wa-multi --platform=win32 --arch=x64 --out=../versiones/wa-multi-portable-v0.5.9 --overwrite`
-2. Opción B — patch del app.asar de un portable existente: copiar
-   `out/main/index.js` y `out/preload/whatsapp.js` dentro del asar de
-   `versiones/wa-multi-portable-v0.5.8/.../resources/app.asar` y repackear el asar.
-3. Subir versión en `package.json` a 0.5.9 + actualizar `wa-multi/README.txt`.
-
-Recomendado hacerlo en sesión dedicada donde se pueda abrir el .exe y correr
-este checklist inmediatamente.
+→ Próximo: el user abre el .exe y corre el checklist de abajo con un proxy real.
 
 ---
 
