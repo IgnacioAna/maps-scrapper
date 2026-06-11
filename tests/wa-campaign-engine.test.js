@@ -199,6 +199,37 @@ describe("routing del envío (bug setterId vacío)", () => {
   });
 });
 
+describe("anti-ráfaga: backlog no estalla (máx 1 envío por cuenta por tick)", () => {
+  const sent = [];
+  const variant = { id: "v1", blocks: [{ text: "Hola" }] };
+  const leads = { A: { id: "A", phone: "5215550001" }, B: { id: "B", phone: "5215550002" }, C: { id: "C", phone: "5215550003" } };
+  const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
+  beforeEach(() => { sent.length = 0; });
+
+  it("3 leads acumulados en opener_sending → solo 1 sale por tick", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Backlog", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
+    }, "setter_a");
+    camp.updateCampaign(c.id, { status: "running" });
+    // simular backlog: los 3 ya están en opener_sending con nextActionAt vencido
+    camp.bulkInitLeadStates(c.id, Object.keys(leads).map((id) => ({ leadId: id, variantId: "v1", accountId: "wa1" })));
+    const past = new Date(Date.now() - 60000).toISOString();
+    for (const id of Object.keys(leads)) camp.setLeadState(c.id, id, { state: "opener_sending", nextActionAt: past });
+
+    const deps = {
+      now: () => Date.now(),
+      getSettersData: () => ({ leads, variants: [variant] }),
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED" }],
+      userIdFromSetterId: () => "user1",
+      isUserOnline: () => true,
+      sendToUser: (uid, evt, payload) => sent.push(payload.leadId),
+    };
+    await eng.campaignEngineTick(deps);
+    expect(sent.length).toBe(1); // ← antes estallaban los 3 juntos
+  });
+});
+
 describe("phoneMatches", () => {
   it("igual exacto", () => expect(eng.phoneMatches("5215550000", "5215550000")).toBe(true));
   it("últimos 8 dígitos (distinto prefijo país)", () => expect(eng.phoneMatches("5255001234", "055001234")).toBe(true));

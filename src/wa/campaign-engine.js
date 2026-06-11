@@ -101,11 +101,17 @@ export async function campaignEngineTick(deps) {
       }
       const sentToday = (accId) => camp._dailySends.byAccount[accId] || 0;
       const capOf = (accId) => effectiveDailyCap(camp, accountsById[accId], null);
+      // ANTI-RÁFAGA: máximo 1 envío por cuenta POR TICK (tick = 60s). Sin esto,
+      // un backlog (leads acumulados mientras wa-multi estaba offline, o tras un
+      // pause/resume) se mandaría TODO junto en un tick → ráfaga → ban. Con este
+      // tope, un backlog se drena de a 1 por minuto por cuenta, suave.
+      const sentThisTick = {};
       const accountReady = (accId) => {
         const a = accountsById[accId];
         // Si la cuenta existe y NO está conectada, no enviar (requeue). Si no la
         // conocemos (desktop reporta aparte), dejamos pasar.
         if (a && a.status && a.status !== "CONNECTED") return false;
+        if ((sentThisTick[accId] || 0) >= 1) return false; // ya mandó en este tick
         return sentToday(accId) < capOf(accId);
       };
 
@@ -147,6 +153,7 @@ export async function campaignEngineTick(deps) {
           campaignId: camp.id, blockKind: kind, ...extra,
         });
         camp._dailySends.byAccount[accId] = sentToday(accId) + 1;
+        sentThisTick[accId] = (sentThisTick[accId] || 0) + 1; // tope anti-ráfaga
         return true;
       };
 
