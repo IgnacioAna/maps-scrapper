@@ -14,7 +14,7 @@ import {
 import {
   listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign,
   sanitizeCampaign, bulkInitLeadStates, buildVariantAssignments,
-  selectLeadsFromMap, leadStateSummary, exportCampaignsData,
+  selectLeadsFromMap, leadStateSummary, exportCampaignsData, buildAccountAssignments,
 } from "./campaigns.js";
 import { sendToUser, getPresenceList } from "./gateway.js";
 
@@ -367,12 +367,14 @@ export function registerWaRoutes(app, deps) {
       return res.status(400).json({ error: "El filtro no matcheó ningún lead con teléfono." });
     }
 
-    // Asignar variante (split ponderado) + cuenta (round-robin).
+    // Asignar variante (split ponderado) + cuenta (distribución configurable
+    // por peso, o round-robin si no se configuró).
     const variantIds = buildVariantAssignments(c.variantSplit, leadIds.length);
+    const accountIdsForLeads = buildAccountAssignments(c.accountIds, c.accountDistribution, leadIds.length);
     const entries = leadIds.map((leadId, i) => ({
       leadId,
       variantId: variantIds[i] || c.variantSplit[0]?.variantId || "",
-      accountId: c.accountIds[i % c.accountIds.length],
+      accountId: accountIdsForLeads[i] || c.accountIds[i % c.accountIds.length],
     }));
     bulkInitLeadStates(c.id, entries);
     const updated = updateCampaign(c.id, {

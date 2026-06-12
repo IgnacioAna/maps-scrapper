@@ -226,8 +226,8 @@ export function initGateway(httpServer, deps) {
         }
 
         // Phase 7 — detección de respuesta de campaña. Si el teléfono pertenece
-        // a un lead en una campaña running, avanzar su estado (cancela bumps,
-        // manda calificación o lo marca para el setter). No bloquea el flow.
+        // a un lead en una campaña running, avanza su estado: opener→pitch,
+        // pitch→Mercury, mercury→Mercury responde. No bloquea el flow.
         try {
           const { handleCampaignInbound } = await import("./campaign-engine.js");
           await handleCampaignInbound(
@@ -235,9 +235,13 @@ export function initGateway(httpServer, deps) {
               getSettersData: deps.getSettersData,
               userIdFromSetterId: deps.userIdFromSetterId,
               markLeadReplied: deps.markLeadReplied,
+              generateMercuryReply: deps.generateMercuryReply,
               sendToUser,
+              listAccounts,
+              isUserOnline,
+              getPresenceList,
             },
-            { contactPhone: payload.contactPhone, intent: payload?.classification?.intent },
+            { contactPhone: payload.contactPhone, intent: payload?.classification?.intent, message: payload?.message },
           );
         } catch (err) {
           console.error("[campaign-engine] inbound hook error:", err?.message || err);

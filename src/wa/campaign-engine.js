@@ -97,6 +97,34 @@ export function variantBlockTexts(variant, lead = {}) {
     .map((t) => t.replace(/\{\{nombre\}\}/g, name).replace(/\{\{name\}\}/g, name));
 }
 
+// Resuelve a QUÉ usuario (wa-multi) se le manda el comando para una cuenta:
+// dueño online → admin online → setterId de la campaña. Compartido entre el
+// tick y el inbound hook.
+function resolveRecipient(deps, account, campSetterId) {
+  const ownerSetter = account?.assignment?.refId;
+  if (ownerSetter && deps.userIdFromSetterId) {
+    const uid = deps.userIdFromSetterId(ownerSetter);
+    if (uid && (!deps.isUserOnline || deps.isUserOnline(uid))) return uid;
+  }
+  if (deps.getPresenceList) {
+    const admin = deps.getPresenceList().find((p) => p.online && p.role === "admin");
+    if (admin) return admin.userId;
+  }
+  if (campSetterId && deps.userIdFromSetterId) {
+    const uid = deps.userIdFromSetterId(campSetterId);
+    if (uid) return uid;
+  }
+  return null;
+}
+
+// Elige una variación de opener al azar e interpola {{nombre}}. null si no hay.
+export function pickOpener(campaign, lead = {}) {
+  const arr = Array.isArray(campaign?.openers) ? campaign.openers.filter(Boolean) : [];
+  if (arr.length === 0) return null;
+  const t = String(arr[Math.floor(Math.random() * arr.length)] || "");
+  return t.replace(/\{\{nombre\}\}/g, lead.name || "").replace(/\{\{name\}\}/g, lead.name || "").trim();
+}
+
 // ── El tick ─────────────────────────────────────────────────────────────────
 // deps: { getSettersData, listAccounts, sendToUser, userIdFromSetterId, now }
 export async function campaignEngineTick(deps) {
@@ -140,33 +168,9 @@ export async function campaignEngineTick(deps) {
         return sentToday(accId) < capOf(accId);
       };
 
-      // Resolver A QUIÉN se le manda el comando para una cuenta. El comando va al
-      // wa-multi que tiene esa cuenta conectada. Prioridad (igual que warming):
-      //  1) el setter dueño de la cuenta, si está online;
-      //  2) un admin online (tiene wa-multi con TODAS las cuentas);
-      //  3) fallback al setterId de la campaña.
-      // NO usar camp.setterId como clave principal — una campaña creada por admin
-      // tiene setterId vacío y el envío fallaba silenciosamente.
-      const resolveRecipient = (account) => {
-        const ownerSetter = account?.assignment?.refId;
-        if (ownerSetter && deps.userIdFromSetterId) {
-          const uid = deps.userIdFromSetterId(ownerSetter);
-          if (uid && (!deps.isUserOnline || deps.isUserOnline(uid))) return uid;
-        }
-        if (deps.getPresenceList) {
-          const admin = deps.getPresenceList().find((p) => p.online && p.role === "admin");
-          if (admin) return admin.userId;
-        }
-        if (camp.setterId && deps.userIdFromSetterId) {
-          const uid = deps.userIdFromSetterId(camp.setterId);
-          if (uid) return uid;
-        }
-        return null;
-      };
-
       const send = (accId, leadId, lead, text, kind, extra = {}) => {
         if (!deps.sendToUser) return false;
-        const recipient = resolveRecipient(accountsById[accId]);
+        const recipient = resolveRecipient(deps, accountsById[accId], camp.setterId);
         if (!recipient) return false; // nadie online con esa cuenta → requeue
         const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "";
         if (!phone) return false;
@@ -198,68 +202,49 @@ export async function campaignEngineTick(deps) {
         if (released > 0) camp.lastDripAt = new Date(now).toISOString();
       }
 
-      // 2) Avance por lead (bloques + bumps) cuando nextActionAt venció.
+      // 2) Avance por lead TIME-DRIVEN. Solo dos estados disparan envíos por
+      // tiempo: opener_sending (manda el opener) y pitch_sending (manda los
+      // bloques de la variante con delay). Los estados de ESPERA
+      // (awaiting_opener_reply / awaiting_pitch_reply / mercury_active) NO
+      // hacen nada acá — los avanza el inbound hook cuando el lead responde.
+      // A los que NO responden el opener NO se les manda nada (sin bumps).
       for (const [leadId, ls] of Object.entries(states)) {
         const lead = settersData.leads?.[leadId];
         if (!lead) continue;
-
-        // Defensa cancelOnReply: si el lead respondió, sacarlo de la cola de envíos.
-        if (camp.cancelOnReply !== false && lead.respondio === true &&
-            (ls.state === "opener_sending" || ls.state === "awaiting_reply")) {
-          ls.state = "replied_for_setter";
-          ls.repliedAt = ls.repliedAt || new Date(now).toISOString();
-          continue;
-        }
-
+        if (ls.state !== "opener_sending" && ls.state !== "pitch_sending") continue;
         if (!ls.nextActionAt || new Date(ls.nextActionAt).getTime() > now) continue;
         const accId = ls.accountId;
-        if (!accountReady(accId)) continue; // cuenta no lista / cap → reintentar próximo tick
-
-        const variant = variantsById[ls.variantId];
+        if (!accountReady(accId)) continue; // cuenta no lista / cap / gap → próximo tick
 
         if (ls.state === "opener_sending") {
+          // Mandar UN mensaje de apertura (variación al azar) y esperar respuesta.
+          const text = pickOpener(camp, lead);
+          if (!text) { ls.state = "no_reply"; ls.nextActionAt = null; continue; } // sin opener configurado
+          if (send(accId, leadId, lead, text, "opener")) {
+            ls.lastSentAt = new Date(now).toISOString();
+            (ls.history ||= []).push({ at: ls.lastSentAt, kind: "opener" });
+            ls.state = "awaiting_opener_reply";
+            ls.nextActionAt = null; // esperamos la respuesta del lead (sin bumps)
+          }
+        } else if (ls.state === "pitch_sending") {
+          // Mandar los bloques de la variante uno por uno con delay.
+          const variant = variantsById[ls.variantId];
           const blocks = variantBlockTexts(variant, lead);
           if (ls.blockIdx < blocks.length) {
-            if (send(accId, leadId, lead, blocks[ls.blockIdx], "opener_block")) {
+            if (send(accId, leadId, lead, blocks[ls.blockIdx], "pitch_block")) {
               ls.lastSentAt = new Date(now).toISOString();
-              (ls.history ||= []).push({ at: ls.lastSentAt, kind: "block", idx: ls.blockIdx });
+              (ls.history ||= []).push({ at: ls.lastSentAt, kind: "pitch_block", idx: ls.blockIdx });
               ls.blockIdx++;
               if (ls.blockIdx < blocks.length) {
                 ls.nextActionAt = new Date(now + randomBlockDelay(camp.blockDelay)).toISOString();
               } else {
-                // Opener completo → esperar respuesta / primer bump.
-                if ((camp.bumps || []).length > 0) {
-                  ls.state = "awaiting_reply";
-                  ls.nextActionAt = new Date(now + camp.bumps[0].afterHours * 3600000).toISOString();
-                } else {
-                  ls.state = "awaiting_reply";
-                  ls.nextActionAt = null; // sin bumps: solo espera respuesta
-                }
-              }
-            }
-          } else {
-            // variante sin bloques → directo a espera
-            ls.state = "awaiting_reply";
-            ls.nextActionAt = (camp.bumps || []).length ? new Date(now + camp.bumps[0].afterHours * 3600000).toISOString() : null;
-          }
-        } else if (ls.state === "awaiting_reply") {
-          // Tocó un bump.
-          const bumps = camp.bumps || [];
-          if (ls.bumpIdx < bumps.length) {
-            const text = bumps[ls.bumpIdx].text.replace(/\{\{nombre\}\}/g, lead.name || "").replace(/\{\{name\}\}/g, lead.name || "");
-            if (send(accId, leadId, lead, text, "bump")) {
-              ls.lastSentAt = new Date(now).toISOString();
-              (ls.history ||= []).push({ at: ls.lastSentAt, kind: "bump", idx: ls.bumpIdx });
-              ls.bumpIdx++;
-              if (ls.bumpIdx < bumps.length) {
-                ls.nextActionAt = new Date(now + bumps[ls.bumpIdx].afterHours * 3600000).toISOString();
-              } else {
-                ls.state = "no_reply";
+                // Terminó el pitch → esperar la respuesta del lead (ahí entra Mercury).
+                ls.state = "awaiting_pitch_reply";
                 ls.nextActionAt = null;
               }
             }
           } else {
-            ls.state = "no_reply";
+            ls.state = "awaiting_pitch_reply";
             ls.nextActionAt = null;
           }
         }
@@ -270,26 +255,23 @@ export async function campaignEngineTick(deps) {
       for (const ls of Object.values(states)) summary[ls.state] = (summary[ls.state] || 0) + 1;
       camp.stats = {
         queued: summary.queued || 0,
-        sent: (summary.opener_sending || 0) + (summary.awaiting_reply || 0),
-        replied: summary.replied_for_setter || 0,
-        qualified: summary.qualifying || 0,
+        sent: (summary.opener_sending || 0) + (summary.awaiting_opener_reply || 0) + (summary.pitch_sending || 0) + (summary.awaiting_pitch_reply || 0),
+        replied: (summary.replied_for_setter || 0) + (summary.mercury_active || 0),
+        mercury: summary.mercury_active || 0,
         noReply: summary.no_reply || 0,
         disqualified: summary.disqualified || 0,
       };
-      const active = (summary.queued || 0) + (summary.opener_sending || 0) + (summary.awaiting_reply || 0) + (summary.qualifying || 0);
-      if (active === 0) camp.status = "done";
+      // Activos = todo lo que todavía puede avanzar. awaiting_opener_reply NO
+      // cuenta como activo a efectos de "cerrar" (puede quedar esperando para
+      // siempre), pero tampoco cerramos la campaña mientras haya esperas o
+      // conversaciones Mercury en curso. Cerramos solo si TODO es terminal.
+      const terminal = (summary.no_reply || 0) + (summary.disqualified || 0) + (summary.replied_for_setter || 0);
+      if (terminal === Object.keys(states).length && Object.keys(states).length > 0) camp.status = "done";
     }
   });
 }
 
-// ── Detección de respuesta (Wave 4) ─────────────────────────────────────────
-// Se llama desde el gateway cuando llega un inbound clasificado. Matchea el
-// teléfono con un lead en alguna campaña running y avanza su estado:
-//  - intent descalificado → disqualified (frena todo)
-//  - en opener/awaiting → si hay qualifyMessage, lo manda y pasa a `qualifying`;
-//    sino directo a replied_for_setter
-//  - en qualifying (ya respondió la calificación) → replied_for_setter
-// Cancela bumps implícitamente (sale de awaiting_reply). Marca el lead respondió.
+// ── Detección de respuesta ───────────────────────────────────────────────────
 // Helper puro de match de teléfono: compara los últimos 8 dígitos.
 export function phoneMatches(a, b) {
   const da = String(a || "").replace(/\D/g, "");
@@ -299,11 +281,20 @@ export function phoneMatches(a, b) {
   return da.slice(-8) === db.slice(-8);
 }
 
-export async function handleCampaignInbound(deps, { contactPhone, intent } = {}) {
+// Se llama desde el gateway cuando llega un inbound clasificado. Avanza la
+// máquina de estados del lead según DÓNDE está en el flujo:
+//  - intent descalificado (en cualquier punto) → disqualified, frena todo.
+//  - awaiting_opener_reply (respondió el opener) → pitch_sending: el engine
+//    empieza a mandar la variante en bloques con delays.
+//  - awaiting_pitch_reply (respondió tras recibir todo el pitch) →
+//    si useMercury → mercury_active y Mercury responde ahora; si no →
+//    replied_for_setter (lo toma un humano).
+//  - mercury_active (sigue conversando) → Mercury genera y manda otra respuesta;
+//    si Mercury marca handoff (caliente/agendar) → replied_for_setter.
+export async function handleCampaignInbound(deps, { contactPhone, intent, message } = {}) {
   if (!contactPhone) return null;
   let settersData = { leads: {} };
   try { settersData = deps.getSettersData ? deps.getSettersData() : settersData; } catch {}
-  // teléfono → leadId
   let leadId = null, lead = null;
   for (const [id, l] of Object.entries(settersData.leads || {})) {
     const ph = l?.phone || l?.webWhatsApp || l?.aiWhatsApp;
@@ -311,49 +302,83 @@ export async function handleCampaignInbound(deps, { contactPhone, intent } = {})
   }
   if (!leadId) return null;
 
+  const accounts = (deps.listAccounts ? deps.listAccounts() : []) || [];
+  const accountsById = Object.fromEntries(accounts.map((a) => [a.id, a]));
+  const disq = intent === "descalificado" || intent === "descartado";
+
+  // Acciones a ejecutar FUERA del mutex (envíos / Mercury) para no bloquear.
+  let pending = null; // { kind:'mercury'|'none', campId, ls(ref no — usamos result) }
   let result = null;
+
   await mutateCampaigns(async (data) => {
     for (const camp of (data.campaigns || [])) {
       if (camp.status !== "running") continue;
       const ls = data.leadStates[camp.id]?.[leadId];
       if (!ls) continue;
-      const disq = intent === "descalificado" || intent === "descartado";
+
       if (disq) {
-        ls.state = "disqualified";
-        ls.nextActionAt = null;
+        ls.state = "disqualified"; ls.nextActionAt = null;
         result = { campaignId: camp.id, leadId, state: "disqualified" };
-      } else if (ls.state === "opener_sending" || ls.state === "awaiting_reply") {
+      } else if (ls.state === "opener_sending" || ls.state === "awaiting_opener_reply") {
+        // Respondió el opener → arrancar el pitch (la variante en bloques).
+        ls.state = "pitch_sending";
+        ls.blockIdx = 0;
         ls.repliedAt = new Date().toISOString();
-        if (camp.qualifyMessage && deps.sendToUser) {
-          const userId = deps.userIdFromSetterId ? deps.userIdFromSetterId(camp.setterId) : camp.setterId;
-          const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "";
-          if (userId && phone) {
-            const text = camp.qualifyMessage.replace(/\{\{nombre\}\}/g, lead.name || "").replace(/\{\{name\}\}/g, lead.name || "");
-            deps.sendToUser(userId, "followup:send-message", {
-              scheduledMsgId: `camp_${camp.id}_${leadId}_qualify`,
-              accountId: ls.accountId, targetPhone: phone, text, leadId, campaignId: camp.id, blockKind: "qualify",
-            });
-          }
-          ls.state = "qualifying";
-          ls.nextActionAt = null;
+        ls.nextActionAt = new Date().toISOString(); // el engine manda el 1er bloque ya
+        result = { campaignId: camp.id, leadId, state: "pitch_sending" };
+      } else if (ls.state === "awaiting_pitch_reply") {
+        // Respondió tras todo el pitch → Mercury o humano.
+        ls.repliedAt = new Date().toISOString();
+        if (camp.useMercury !== false) {
+          ls.state = "mercury_active";
+          pending = { kind: "mercury", campId: camp.id, accountId: ls.accountId };
         } else {
-          ls.state = "replied_for_setter";
-          ls.nextActionAt = null;
+          ls.state = "replied_for_setter"; ls.nextActionAt = null;
         }
         result = { campaignId: camp.id, leadId, state: ls.state };
-      } else if (ls.state === "qualifying") {
-        ls.state = "replied_for_setter";
-        ls.nextActionAt = null;
-        result = { campaignId: camp.id, leadId, state: "replied_for_setter" };
+      } else if (ls.state === "mercury_active") {
+        // Sigue la conversación con Mercury.
+        pending = { kind: "mercury", campId: camp.id, accountId: ls.accountId };
+        result = { campaignId: camp.id, leadId, state: "mercury_active" };
       }
-      if (result) break; // un lead está en una sola campaña activa a la vez
+      if (result) { result._setterId = camp.setterId; break; }
     }
   });
 
-  // Marcar el lead en el pipeline del setter (aparece como "respondió").
+  // Marcar el lead como respondió en el pipeline del setter (salvo descalificado).
   if (result && result.state !== "disqualified" && typeof deps.markLeadReplied === "function") {
     try { await deps.markLeadReplied(leadId); } catch {}
   }
+
+  // Mercury responde (fuera del mutex). Genera y manda; si marca handoff, cierra.
+  if (pending && pending.kind === "mercury" && typeof deps.generateMercuryReply === "function") {
+    try {
+      const gen = await deps.generateMercuryReply({ leadId, lead, message: message || "", campaignId: pending.campId });
+      if (gen && gen.text) {
+        const recipient = resolveRecipient(deps, accountsById[pending.accountId], result._setterId);
+        const phone = lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "";
+        if (recipient && phone && deps.sendToUser) {
+          deps.sendToUser(recipient, "followup:send-message", {
+            scheduledMsgId: `camp_${pending.campId}_${leadId}_mercury_${Date.now()}`,
+            accountId: pending.accountId, targetPhone: phone, text: gen.text, leadId,
+            campaignId: pending.campId, blockKind: "mercury",
+          });
+        }
+      }
+      // Handoff: Mercury detectó interés de agendar / caliente → al humano.
+      if (gen && gen.handoff) {
+        await mutateCampaigns((data) => {
+          const ls = data.leadStates[pending.campId]?.[leadId];
+          if (ls) { ls.state = "replied_for_setter"; ls.nextActionAt = null; }
+        });
+        result.state = "replied_for_setter";
+      }
+    } catch (e) {
+      // Si Mercury falla, el lead queda en mercury_active (reintenta al próximo inbound).
+      if (process.env.NODE_ENV !== "test") console.warn("[campaign] Mercury reply falló:", e?.message || e);
+    }
+  }
+
   return result;
 }
 

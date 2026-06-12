@@ -11199,6 +11199,75 @@ const _resolvedJwtSecret = (() => {
   return (process.env.ADMIN_PASSWORD || "change-me-in-dev-only") + "_wa";
 })();
 
+// Phase 7 — Mercury responde en campañas. Versión lean del /api/mercury/generate
+// pensada para el motor de campañas: retrieval del banco + system prompt + IA +
+// sanitizer, devuelve { text, handoff }. handoff=true si el lead quiere agendar
+// (ahí pasa al humano). Loguea a mercury_generations (source:'campaign') para
+// que aparezca en la Revisión IA. Sin IA configurada → null (lead sigue esperando).
+async function campaignMercuryReply({ leadId, lead, message }) {
+  const msg = String(message || "").trim().slice(0, 2000);
+  if (!msg) return null;
+  if (!mercuryKey && !qwenKey) return null;
+  const cfg = loadMercuryConfig();
+  let raw = "";
+  let scored = [];
+  try {
+    const faqs = loadFaqs();
+    const qTokens = _faqTokens(msg);
+    scored = (faqs.entries || [])
+      .filter((e) => e.respuesta && e.pregunta)
+      .map((e) => ({ entry: e, score: _faqScore(e, qTokens, {}) }))
+      .filter((x) => x.score >= 0.10)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+  } catch {}
+  const ejemplos = scored.length
+    ? scored.map((x, i) => `Ejemplo ${i + 1}:\nPregunta: ${x.entry.pregunta}\nRespuesta: ${x.entry.respuesta}`).join("\n\n")
+    : "(Sin ejemplos suficientes en el banco. Aplicá las reglas de estilo.)";
+  const notes = (cfg.feedbackNotes || []).slice(-10).map((n) => `- ${n.text}`).join("\n");
+  const nombre = lead?.name || "";
+  const userPrompt = `${notes ? "NOTAS DE FEEDBACK DEL ADMIN:\n" + notes + "\n\n" : ""}EJEMPLOS DEL BANCO DE RESPUESTAS (tono y estructura, no copiar literal salvo match exacto):\n${ejemplos}\n\nEl prospecto se llama: ${nombre || "(desconocido)"}.\nMENSAJE DEL PROSPECTO A RESPONDER:\n${msg}\n\nGenerá la respuesta lista para pegar en WhatsApp. Sin signos de apertura ¿¡, sin precios, sin stack técnico, sin emojis. 1 a 2 bloques. Objetivo: avanzar la conversación hacia agendar una reunión.\n\nCRÍTICO: respondé ÚNICAMENTE el mensaje final en español, listo para pegar. Nada de razonamiento, análisis ni inglés.`;
+  try {
+    const completion = await ai.chat.completions.create({
+      model: AI_MODEL,
+      messages: [
+        { role: "system", content: cfg.systemPrompt || _defaultMercurySystemPrompt() },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.4,
+      max_tokens: 500,
+    });
+    raw = completion.choices?.[0]?.message?.content?.trim() || "";
+  } catch (e) {
+    console.warn("[campaign-mercury] IA falló:", e.message || e);
+    return null;
+  }
+  if (!raw && scored.length > 0) raw = scored[0].entry.respuesta;
+  if (!raw) return null;
+  if (_looksLikeReasoning(raw)) {
+    const ex = _extractFromReasoning(raw, msg);
+    if (ex) raw = ex;
+  }
+  const parsed = parseMercuryOutput(raw);
+  const text = parsed.responseText;
+  if (!text) return null;
+  const intent = detectMercuryIntent(msg);
+  const handoff = intent === "interesado_quiere_agendar";
+  // Log para Revisión IA (best-effort).
+  try {
+    await mutateMercuryGenerations((data) => {
+      data.generations = Array.isArray(data.generations) ? data.generations : [];
+      data.generations.push({
+        id: `mg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        source: "campaign", leadId: leadId || null, prospectMessage: msg,
+        responseText: text, intent, handoff, createdAt: new Date().toISOString(),
+      });
+      if (data.generations.length > 5000) data.generations = data.generations.slice(-5000);
+    });
+  } catch {}
+  return { text, handoff };
+}
+
 // mountWa es async ahora porque el warming-network orchestrator se carga
 // dinámicamente. Lo dejamos en background sin await para no bloquear el boot.
 mountWa(app, server, {
@@ -11225,6 +11294,8 @@ mountWa(app, server, {
     lead.lastContactAt = lead.lastContactAt || new Date().toISOString();
     return true;
   }),
+  // Phase 7 — Mercury responde en campañas (cuando el lead contesta tras el pitch).
+  generateMercuryReply: campaignMercuryReply,
   // Cliente AI compartido (Mercury primario, Qwen fallback) — el warming
   // network lo reusa en vez de pedir API keys nuevas.
   aiClient: warmingAi,

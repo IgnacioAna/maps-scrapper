@@ -566,8 +566,9 @@ const CAMP_STATUS_CHIP = {
   cancelled: ["Cancelada", "var(--danger)"],
 };
 const CAMP_STATE_LABEL = {
-  queued: "En cola", opener_sending: "Enviando", awaiting_reply: "Esperando",
-  qualifying: "Calificando", replied_for_setter: "Respondió", no_reply: "Sin respuesta",
+  queued: "En cola", opener_sending: "Enviando opener", awaiting_opener_reply: "Esperando resp.",
+  pitch_sending: "Enviando pitch", awaiting_pitch_reply: "Esperando resp.",
+  mercury_active: "🤖 Mercury", replied_for_setter: "Para el setter", no_reply: "Sin respuesta",
   disqualified: "Descartado",
 };
 
@@ -659,7 +660,11 @@ async function openCampaignBuilder() {
           <div><label class="camp-lbl">Cantidad</label><input id="cb-limit" class="camp-inp" type="number" value="50"></div>
         </div>
 
-        <div><label class="camp-lbl">Variantes (split) — tildá y poné peso</label>
+        <div><label class="camp-lbl">1) Mensaje(s) de apertura (opener) — uno por línea, se elige uno al azar</label>
+          <textarea id="cb-openers" class="camp-inp" rows="3" placeholder="Hola {{nombre}}, ¿cómo andás?&#10;Buenas {{nombre}}, ¿cómo va todo?&#10;Hola, ¿hablo con la clínica?"></textarea>
+          <div style="font-size:11px;color:var(--text-tertiary);margin-top:3px;">Primer contacto corto. Se manda y se ESPERA respuesta. Si no responde, no se manda nada más.</div></div>
+
+        <div><label class="camp-lbl">2) Variante / pitch (split) — se manda SOLO si responde el opener, bloque por bloque</label>
           <div id="cb-variants" style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;">
             ${_campaignVariants.length ? _campaignVariants.map((v) => `<label class="camp-pick" style="justify-content:space-between;">
               <span><input type="checkbox" value="${v.id}"> ${escHtml(v.name)} <span style="color:var(--text-tertiary);font-size:11px;">(${(v.blocks || []).length} bloques)</span></span>
@@ -684,12 +689,12 @@ async function openCampaignBuilder() {
           <div><label class="camp-lbl">…max (min)</label><input id="cb-dmax" class="camp-inp" type="number" value="3" min="0" step="0.5"></div>
         </div>
 
-        <div><label class="camp-lbl">Bumps (seguimientos si no responde)</label>
-          <div id="cb-bumps" style="display:flex;flex-direction:column;gap:6px;"></div>
-          <button id="cb-addbump" class="btn-table-action" style="margin-top:6px;color:var(--accent);">+ Agregar bump</button></div>
-
-        <div><label class="camp-lbl">Mensaje de calificación (al responder)</label>
-          <textarea id="cb-qualify" class="camp-inp" rows="2" placeholder="Opcional. Ej: Perfecto {{nombre}}, ¿de qué clínica me hablás?"></textarea></div>
+        <div style="padding:10px;background:var(--bg-tertiary);border-radius:6px;">
+          <label class="camp-pick" style="background:none;padding:0;">
+            <input type="checkbox" id="cb-mercury" checked>
+            <span><strong>3) Mercury IA conversa al final</strong> — cuando el lead responde después de recibir todo el pitch, Mercury responde solo y trata de agendar. Si destildás, el lead queda marcado para que lo tome un humano.</span>
+          </label>
+        </div>
 
         <div id="cb-status" style="font-size:12px;color:var(--text-secondary);min-height:16px;"></div>
       </div>
@@ -708,17 +713,6 @@ async function openCampaignBuilder() {
   overlay.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", close));
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
-  const bumpsBox = overlay.querySelector("#cb-bumps");
-  const addBump = (afterHours = 24, text = "") => {
-    const row = document.createElement("div");
-    row.style.cssText = "display:grid;grid-template-columns:90px 1fr 30px;gap:6px;align-items:center;";
-    row.innerHTML = `<input class="cb-bh camp-inp" type="number" value="${afterHours}" min="1" title="horas"><input class="cb-bt camp-inp" placeholder="Texto del bump" value="${escHtml(text)}"><button class="btn-table-action cb-brm" style="color:var(--danger);">×</button>`;
-    row.querySelector(".cb-brm").addEventListener("click", () => row.remove());
-    bumpsBox.appendChild(row);
-  };
-  overlay.querySelector("#cb-addbump").addEventListener("click", () => addBump());
-  addBump(24, ""); // un bump por defecto
-
   overlay.querySelector("#cb-save").addEventListener("click", async () => {
     const statusEl = overlay.querySelector("#cb-status");
     const accountIds = [...overlay.querySelectorAll("#cb-accounts input:checked")].map((i) => i.value);
@@ -727,21 +721,18 @@ async function openCampaignBuilder() {
       weight: parseInt(overlay.querySelector(`.cb-vweight[data-vid="${i.value}"]`)?.value, 10) || 1,
     }));
     const days = [...overlay.querySelectorAll("#cb-days input:checked")].map((i) => parseInt(i.value, 10));
-    const bumps = [...bumpsBox.children].map((r) => ({
-      afterHours: parseInt(r.querySelector(".cb-bh").value, 10) || 24,
-      text: r.querySelector(".cb-bt").value.trim(),
-    })).filter((b) => b.text);
+    const openers = overlay.querySelector("#cb-openers").value.split("\n").map((s) => s.trim()).filter(Boolean);
     if (!overlay.querySelector("#cb-name").value.trim()) return (statusEl.textContent = "Falta el nombre.");
     if (!accountIds.length) return (statusEl.textContent = "Elegí al menos una cuenta.");
-    if (!variantSplit.length) return (statusEl.textContent = "Elegí al menos una variante.");
+    if (!openers.length) return (statusEl.textContent = "Escribí al menos un mensaje de apertura (opener).");
+    if (!variantSplit.length) return (statusEl.textContent = "Elegí al menos una variante (pitch).");
     const body = {
       name: overlay.querySelector("#cb-name").value.trim(),
-      accountIds, variantSplit,
+      accountIds, variantSplit, openers,
+      useMercury: overlay.querySelector("#cb-mercury").checked,
       drip: { batchSize: parseInt(overlay.querySelector("#cb-batch").value, 10) || 1, intervalMinutes: parseInt(overlay.querySelector("#cb-interval").value, 10) || 5 },
       window: { hourStart: parseInt(overlay.querySelector("#cb-hstart").value, 10), hourEnd: parseInt(overlay.querySelector("#cb-hend").value, 10), days: days.length ? days : [1, 2, 3, 4, 5], timezone: overlay.querySelector("#cb-tz").value },
       blockDelay: { minMs: Math.round((parseFloat(overlay.querySelector("#cb-dmin").value) || 1) * 60000), maxMs: Math.round((parseFloat(overlay.querySelector("#cb-dmax").value) || 3) * 60000) },
-      bumps,
-      qualifyMessage: overlay.querySelector("#cb-qualify").value.trim(),
       leadFilter: {
         country: overlay.querySelector("#cb-country").value.trim(),
         estado: overlay.querySelector("#cb-estado").value.trim(),

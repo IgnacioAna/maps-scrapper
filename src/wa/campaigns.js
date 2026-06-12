@@ -92,6 +92,17 @@ export function sanitizeCampaign(input, { forUpdate = false } = {}) {
     };
   }
 
+  // Reparto de leads entre números: [{accountId, weight}]. Si está vacío, se
+  // reparte parejo (round-robin). weight = peso relativo (ej. 50/30/20 → 5/3/2).
+  if (input.accountDistribution !== undefined) {
+    const arr = Array.isArray(input.accountDistribution) ? input.accountDistribution : [];
+    out.accountDistribution = arr
+      .map((a) => ({ accountId: String(a.accountId || "").trim(), weight: clampInt(a.weight, 1, 1000, 1) }))
+      .filter((a) => a.accountId);
+  } else if (!forUpdate) {
+    out.accountDistribution = [];
+  }
+
   if (input.window !== undefined || !forUpdate) {
     const w = input.window || {};
     const days = Array.isArray(w.days) ? w.days.map((x) => clampInt(x, 0, 6, 0)).filter((x, i, a) => a.indexOf(x) === i) : [1, 2, 3, 4, 5];
@@ -125,6 +136,25 @@ export function sanitizeCampaign(input, { forUpdate = false } = {}) {
   if (input.qualifyMessage !== undefined || !forUpdate) {
     out.qualifyMessage = String(input.qualifyMessage || "").trim().slice(0, 2000);
   }
+
+  // Phase 7 v2 — FLUJO: opener (mensaje corto de primer contacto) → esperar
+  // respuesta → SOLO si responde, mandar la variante (pitch en bloques con
+  // delays) → esperar → cuando responde, entra Mercury. A los que NO responden
+  // el opener NO se les manda nada.
+  // openers: variaciones del mensaje de apertura (se elige una al azar por lead,
+  // para variar y no spamear el mismo texto). Soporta {{nombre}}.
+  // openers opcional a nivel datos (el builder de UI lo exige). Si una campaña
+  // queda sin openers, el motor manda el lead a no_reply (no spamea).
+  if (input.openers !== undefined || !forUpdate) {
+    const arr = Array.isArray(input.openers) ? input.openers : (input.openers ? [input.openers] : []);
+    const clean = arr.map((s) => String(s || "").trim()).filter(Boolean).slice(0, 10).map((s) => s.slice(0, 1000));
+    out.openers = clean;
+  }
+
+  // useMercury: si true, cuando el lead responde DESPUÉS de recibir todos los
+  // bloques de la variante, Mercury toma la conversación (genera y responde).
+  if (input.useMercury !== undefined) out.useMercury = input.useMercury !== false;
+  else if (!forUpdate) out.useMercury = true;
 
   // Filtro de leads: se resuelve al LANZAR (selectLeadsFromMap), no al crear,
   // para tomar los leads frescos. Se guarda en la campaña.
@@ -260,6 +290,23 @@ export function buildVariantAssignments(variantSplit, count) {
   if (expanded.length === 0) return [];
   const out = [];
   for (let i = 0; i < count; i++) out.push(expanded[i % expanded.length]);
+  return out;
+}
+
+// Reparte `count` leads entre cuentas. Si hay accountDistribution con pesos,
+// reparte ponderado; si no, parejo (round-robin) sobre accountIds.
+export function buildAccountAssignments(accountIds, accountDistribution, count) {
+  let pool = [];
+  if (Array.isArray(accountDistribution) && accountDistribution.length > 0) {
+    for (const a of accountDistribution) {
+      for (let i = 0; i < (a.weight || 1); i++) pool.push(a.accountId);
+    }
+  } else {
+    pool = [...(accountIds || [])];
+  }
+  if (pool.length === 0) return [];
+  const out = [];
+  for (let i = 0; i < count; i++) out.push(pool[i % pool.length]);
   return out;
 }
 

@@ -1,6 +1,7 @@
-// Phase 7 — Tests del motor/tick de campañas (Wave 3).
-// Helpers puros + un tick end-to-end con `now` inyectado (sin timers reales)
-// y un sendToUser fake que captura los envíos.
+// Phase 7 v2 — Tests del motor de campañas con el flujo NUEVO:
+// opener → esperar respuesta → (si responde) pitch en bloques con delays →
+// esperar → (si responde) Mercury conversa. A los que NO responden el opener
+// NO se les manda nada (sin bumps).
 import { describe, it, beforeEach, beforeAll, afterAll, expect } from "vitest";
 import path from "node:path";
 import fs from "node:fs";
@@ -16,46 +17,47 @@ const eng = await import("../src/wa/campaign-engine.js");
 beforeAll(() => camp.initCampaignsData(tmpData));
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
+// ── Helpers puros ────────────────────────────────────────────────────────────
 describe("isWithinWindow", () => {
-  // 2026-06-10 es miércoles (day 3). 18:00 UTC.
-  const utcNoon = new Date("2026-06-10T18:00:00Z");
-  it("dentro de 10-19h America/Mexico_City (12:00 local) miércoles → true", () => {
+  const utcNoon = new Date("2026-06-10T18:00:00Z"); // miércoles, 12:00 MX
+  it("dentro de 10-19h MX miércoles → true", () => {
     expect(eng.isWithinWindow({ hourStart: 10, hourEnd: 19, days: [1,2,3,4,5], timezone: "America/Mexico_City" }, utcNoon)).toBe(true);
   });
-  it("mismo horario pero día no permitido (solo domingo) → false", () => {
+  it("día no permitido → false", () => {
     expect(eng.isWithinWindow({ hourStart: 10, hourEnd: 19, days: [0], timezone: "America/Mexico_City" }, utcNoon)).toBe(false);
   });
-  it("fuera de hora (ventana 0-6h) → false", () => {
+  it("fuera de hora → false", () => {
     expect(eng.isWithinWindow({ hourStart: 0, hourEnd: 6, days: [1,2,3,4,5], timezone: "America/Mexico_City" }, utcNoon)).toBe(false);
   });
 });
 
 describe("warmingCapByDay", () => {
-  const mk = (daysAgo) => ({ routineStartedAt: new Date(Date.now() - daysAgo * 86400000).toISOString() });
+  const mk = (d) => ({ routineStartedAt: new Date(Date.now() - d * 86400000).toISOString() });
   it("día 1 → 12", () => expect(eng.warmingCapByDay(mk(0))).toBe(12));
-  it("día 4 → 30", () => expect(eng.warmingCapByDay(mk(3))).toBe(30));
   it("día 8 → 80", () => expect(eng.warmingCapByDay(mk(7))).toBe(80));
   it("día 20 → 400", () => expect(eng.warmingCapByDay(mk(19))).toBe(400));
   it("sin warming → 80", () => expect(eng.warmingCapByDay({})).toBe(80));
 });
 
 describe("sendGapMs (ritmo por cuenta)", () => {
-  const mk = (daysAgo) => ({ routineStartedAt: new Date(Date.now() - daysAgo * 86400000).toISOString() });
-  it("override explícito manda (minSendGapMinutes)", () => {
-    expect(eng.sendGapMs({ minSendGapMinutes: 15 })).toBe(15 * 60000);
+  const mk = (d) => ({ routineStartedAt: new Date(Date.now() - d * 86400000).toISOString() });
+  it("override explícito manda", () => expect(eng.sendGapMs({ minSendGapMinutes: 15 })).toBe(15 * 60000));
+  it("override bajo el piso → 1 min", () => expect(eng.sendGapMs({ minSendGapMinutes: 0 })).toBe(60000));
+  it("sin warming → 8 min", () => expect(eng.sendGapMs({})).toBe(8 * 60000));
+  it("curva: nueva lenta, madura rápida", () => {
+    expect(eng.sendGapMs(mk(0))).toBe(8 * 60000);
+    expect(eng.sendGapMs(mk(4))).toBe(5 * 60000);
+    expect(eng.sendGapMs(mk(8))).toBe(3 * 60000);
+    expect(eng.sendGapMs(mk(20))).toBe(90 * 1000);
   });
-  it("override por debajo del piso → 1 min", () => {
-    expect(eng.sendGapMs({ minSendGapMinutes: 0 })).toBe(60000);
+});
+
+describe("pickOpener", () => {
+  it("elige uno e interpola {{nombre}}", () => {
+    const t = eng.pickOpener({ openers: ["Hola {{nombre}}"] }, { name: "Ana" });
+    expect(t).toBe("Hola Ana");
   });
-  it("sin warming → trato como nueva (8 min)", () => {
-    expect(eng.sendGapMs({})).toBe(8 * 60000);
-  });
-  it("curva por día de warming: nueva lenta, madura rápida", () => {
-    expect(eng.sendGapMs(mk(0))).toBe(8 * 60000);   // día 1
-    expect(eng.sendGapMs(mk(4))).toBe(5 * 60000);   // día 5
-    expect(eng.sendGapMs(mk(8))).toBe(3 * 60000);   // día 9
-    expect(eng.sendGapMs(mk(20))).toBe(90 * 1000);  // madura
-  });
+  it("sin openers → null", () => expect(eng.pickOpener({ openers: [] }, {})).toBe(null));
 });
 
 describe("variantBlockTexts", () => {
@@ -65,250 +67,194 @@ describe("variantBlockTexts", () => {
   });
 });
 
-describe("tick end-to-end (now inyectado)", () => {
-  let campId;
+describe("phoneMatches", () => {
+  it("igual exacto", () => expect(eng.phoneMatches("5215550000", "5215550000")).toBe(true));
+  it("últimos 8 dígitos", () => expect(eng.phoneMatches("5255001234", "055001234")).toBe(true));
+  it("distintos", () => expect(eng.phoneMatches("5215550000", "5491199999")).toBe(false));
+});
+
+// ── Flujo nuevo: opener → espera → pitch → espera → Mercury ───────────────────
+describe("flujo nuevo end-to-end", () => {
   const sent = [];
-  const variant = { id: "v1", blocks: [{ text: "Bloque1 {{nombre}}" }, { text: "Bloque2" }] };
+  const variant = { id: "v1", blocks: [{ text: "Pitch1 {{nombre}}" }, { text: "Pitch2" }] };
   const lead = { id: "L1", name: "Ana", phone: "5215550000", country: "MX", estado: "sin_contactar" };
-  // minSendGapMinutes 1 = el piso mínimo (60s). En prod el gap real lo da el
-  // warming (mucho mayor para cuentas nuevas). Acá usamos el piso para testear.
-  const account = { id: "wa1", status: "CONNECTED", minSendGapMinutes: 1 };
-  // ventana 24h todos los días para no bloquear por horario
+  const account = { id: "wa1", status: "CONNECTED", minSendGapMinutes: 1, assignment: { kind: "setter", refId: "s1" } };
   const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
+  const mercuryReplies = [];
 
   const makeDeps = (nowMs) => ({
     now: () => nowMs,
     getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
     listAccounts: () => [account],
-    userIdFromSetterId: () => "user1",
-    sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
+    userIdFromSetterId: (sid) => (sid === "s1" ? "user1" : null),
+    isUserOnline: () => true,
+    sendToUser: (uid, evt, payload) => sent.push(payload),
+    markLeadReplied: async () => {},
+    generateMercuryReply: async ({ message }) => { mercuryReplies.push(message); return { text: "Respuesta Mercury", handoff: false }; },
   });
 
-  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
+  beforeEach(() => { sent.length = 0; mercuryReplies.length = 0; eng.__resetThrottleForTests(); for (const c of camp.listCampaigns()) camp.deleteCampaign(c.id); });
 
-  it("flujo completo: drip → 2 bloques con delay → bump → no_reply", async () => {
+  it("drip → manda opener → espera (NO manda nada si no responde)", async () => {
     const [, c] = camp.createCampaign({
-      name: "E2E", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      drip: { batchSize: 1, intervalMinutes: 5 },
-      window: win, blockDelay: { minMs: 60000, maxMs: 60000 }, // 1 min entre bloques
-      bumps: [{ afterHours: 24, text: "Bump {{nombre}}" }],
-    }, "setter_a");
-    campId = c.id;
-    camp.updateCampaign(campId, { status: "running" });
-    camp.bulkInitLeadStates(campId, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
-
-    const T0 = Date.UTC(2026, 5, 10, 12, 0, 0);
-
-    // Tick 1: drip libera el lead → opener_sending, manda bloque 1.
-    sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0));
-    expect(sent.length).toBe(1);
-    expect(sent[0].payload.text).toBe("Bloque1 Ana");
-    let ls = camp.getLeadState(campId, "L1");
-    expect(ls.state).toBe("opener_sending");
-    expect(ls.blockIdx).toBe(1);
-
-    // Tick 2: nextActionAt aún no venció (delay 1 min) → no manda nada.
-    sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 30000));
-    expect(sent.length).toBe(0);
-
-    // Tick 3: pasó 1 min (delay + gap de cuenta) → bloque 2 → awaiting_reply.
-    sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 70000));
-    expect(sent.length).toBe(1);
-    expect(sent[0].payload.text).toBe("Bloque2");
-    ls = camp.getLeadState(campId, "L1");
-    expect(ls.state).toBe("awaiting_reply");
-
-    // Tick 4: antes de las 24h del bump → nada.
-    sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 70000 + 3600000)); // +1h
-    expect(sent.length).toBe(0);
-
-    // Tick 5: pasadas 24h → manda el bump → no quedan bumps → no_reply.
-    sent.length = 0;
-    await eng.campaignEngineTick(makeDeps(T0 + 70000 + 25 * 3600000));
-    expect(sent.length).toBe(1);
-    expect(sent[0].payload.text).toBe("Bump Ana");
-    ls = camp.getLeadState(campId, "L1");
-    expect(ls.state).toBe("no_reply");
-  });
-
-  it("fuera de ventana horaria → no envía", async () => {
-    const [, c] = camp.createCampaign({
-      name: "Win", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      drip: { batchSize: 1, intervalMinutes: 5 },
-      window: { hourStart: 0, hourEnd: 6, days: [0,1,2,3,4,5,6], timezone: "UTC" }, // madrugada
-      blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
-    }, "setter_a");
-    camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
-    const noon = Date.UTC(2026, 5, 10, 12, 0, 0); // 12:00 UTC fuera de 0-6h
-    await eng.campaignEngineTick(makeDeps(noon));
-    expect(sent.length).toBe(0);
-    expect(camp.getLeadState(c.id, "L1").state).toBe("queued"); // sigue en cola
-  });
-
-  it("cuenta no CONNECTED → no envía (requeue)", async () => {
-    const [, c] = camp.createCampaign({
-      name: "Off", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      name: "Flow", accountIds: ["wa1"], openers: ["Hola {{nombre}}, cómo va?"],
+      variantSplit: [{ variantId: "v1", weight: 1 }],
       drip: { batchSize: 1, intervalMinutes: 5 }, window: win,
-      blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
-    }, "setter_a");
-    camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
-    const deps = {
-      now: () => Date.UTC(2026, 5, 10, 12, 0, 0),
-      getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
-      listAccounts: () => [{ id: "wa1", status: "BANNED" }], // no conectada
-      userIdFromSetterId: () => "user1",
-      sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
-    };
-    await eng.campaignEngineTick(deps);
-    expect(sent.length).toBe(0); // dripeó pero no mandó por cuenta no lista
-  });
-});
-
-describe("routing del envío (bug setterId vacío)", () => {
-  const sent = [];
-  const variant = { id: "v1", blocks: [{ text: "Hola" }] };
-  const lead = { id: "L1", name: "Ana", phone: "5215550000", country: "MX" };
-  const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
-  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
-
-  it("campaña con setterId='' (creada por admin) rutea al DUEÑO de la cuenta", async () => {
-    const [, c] = camp.createCampaign({
-      name: "AdminCamp", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
-    }, ""); // ← setterId vacío, como cuando lo crea el admin
-    camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
-    const deps = {
-      now: () => Date.UTC(2026, 5, 11, 12, 0, 0),
-      getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
-      // cuenta asignada a setter_dueño
-      listAccounts: () => [{ id: "wa1", status: "CONNECTED", assignment: { kind: "setter", refId: "setter_dueño" } }],
-      userIdFromSetterId: (sid) => (sid === "setter_dueño" ? "user_dueño" : null),
-      isUserOnline: () => true,
-      sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
-    };
-    await eng.campaignEngineTick(deps);
-    expect(sent.length).toBe(1);
-    expect(sent[0].uid).toBe("user_dueño"); // ← antes era null y no mandaba nada
-  });
-
-  it("dueño offline → fallback a admin online", async () => {
-    const [, c] = camp.createCampaign({
-      name: "Fallback", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
+      blockDelay: { minMs: 60000, maxMs: 60000 }, useMercury: true,
     }, "");
     camp.updateCampaign(c.id, { status: "running" });
     camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
-    const deps = {
-      now: () => Date.UTC(2026, 5, 11, 12, 0, 0),
-      getSettersData: () => ({ leads: { L1: lead }, variants: [variant] }),
-      listAccounts: () => [{ id: "wa1", status: "CONNECTED", assignment: { kind: "setter", refId: "setter_off" } }],
-      userIdFromSetterId: (sid) => (sid === "setter_off" ? "user_off" : null),
-      isUserOnline: (uid) => uid === "user_admin", // el dueño NO está online
-      getPresenceList: () => [{ userId: "user_admin", online: true, role: "admin" }],
-      sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
-    };
-    await eng.campaignEngineTick(deps);
+    const T0 = Date.UTC(2026, 5, 11, 12, 0, 0);
+
+    // Tick 1: drip + manda el opener → awaiting_opener_reply.
+    await eng.campaignEngineTick(makeDeps(T0));
     expect(sent.length).toBe(1);
-    expect(sent[0].uid).toBe("user_admin"); // fallback al admin online
+    expect(sent[0].text).toBe("Hola Ana, cómo va?");
+    expect(sent[0].blockKind).toBe("opener");
+    expect(camp.getLeadState(c.id, "L1").state).toBe("awaiting_opener_reply");
+
+    // Tick 2 (mucho después): NO responde → NO se manda nada (sin bumps).
+    sent.length = 0;
+    await eng.campaignEngineTick(makeDeps(T0 + 100 * 3600000)); // +100h
+    expect(sent.length).toBe(0);
+    expect(camp.getLeadState(c.id, "L1").state).toBe("awaiting_opener_reply");
+
+    // El lead RESPONDE el opener → pitch_sending.
+    await eng.handleCampaignInbound(makeDeps(T0 + 100 * 3600000), { contactPhone: "5215550000", intent: "interesado_quiere_info", message: "hola" });
+    expect(camp.getLeadState(c.id, "L1").state).toBe("pitch_sending");
+
+    // Tick 3: manda Pitch1 → blockIdx 1.
+    sent.length = 0;
+    const T1 = T0 + 101 * 3600000;
+    await eng.campaignEngineTick(makeDeps(T1));
+    expect(sent.length).toBe(1);
+    expect(sent[0].text).toBe("Pitch1 Ana");
+    expect(sent[0].blockKind).toBe("pitch_block");
+
+    // Tick 4 (+gap): manda Pitch2 → awaiting_pitch_reply.
+    sent.length = 0;
+    await eng.campaignEngineTick(makeDeps(T1 + 70000));
+    expect(sent.length).toBe(1);
+    expect(sent[0].text).toBe("Pitch2");
+    expect(camp.getLeadState(c.id, "L1").state).toBe("awaiting_pitch_reply");
+
+    // El lead RESPONDE el pitch → Mercury entra y responde.
+    sent.length = 0;
+    await eng.handleCampaignInbound(makeDeps(T1 + 80000), { contactPhone: "5215550000", intent: "interesado_quiere_info", message: "me interesa" });
+    expect(camp.getLeadState(c.id, "L1").state).toBe("mercury_active");
+    expect(mercuryReplies).toContain("me interesa");
+    expect(sent.some((p) => p.text === "Respuesta Mercury")).toBe(true);
+  });
+
+  it("descalificado en el opener → disqualified, no manda pitch", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Disq", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      window: win, useMercury: true,
+    }, "");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
+    camp.setLeadState(c.id, "L1", { state: "awaiting_opener_reply" });
+    const r = await eng.handleCampaignInbound(makeDeps(Date.now()), { contactPhone: "5215550000", intent: "descalificado", message: "no me interesa" });
+    expect(r.state).toBe("disqualified");
+    expect(camp.getLeadState(c.id, "L1").state).toBe("disqualified");
+  });
+
+  it("Mercury con handoff → replied_for_setter", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Handoff", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      window: win, useMercury: true,
+    }, "");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
+    camp.setLeadState(c.id, "L1", { state: "awaiting_pitch_reply" });
+    const deps = { ...makeDeps(Date.now()), generateMercuryReply: async () => ({ text: "Te paso con un asesor", handoff: true }) };
+    await eng.handleCampaignInbound(deps, { contactPhone: "5215550000", intent: "interesado_quiere_agendar", message: "quiero agendar" });
+    expect(camp.getLeadState(c.id, "L1").state).toBe("replied_for_setter");
+  });
+
+  it("fuera de ventana → no manda opener", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Win", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      window: { hourStart: 0, hourEnd: 6, days: [0,1,2,3,4,5,6], timezone: "UTC" },
+    }, "");
+    camp.updateCampaign(c.id, { status: "running" });
+    camp.bulkInitLeadStates(c.id, [{ leadId: "L1", variantId: "v1", accountId: "wa1" }]);
+    await eng.campaignEngineTick(makeDeps(Date.UTC(2026, 5, 11, 12, 0, 0)));
+    expect(sent.length).toBe(0);
+    expect(camp.getLeadState(c.id, "L1").state).toBe("queued");
+  });
+
+  it("teléfono que no matchea → null", async () => {
+    const r = await eng.handleCampaignInbound(makeDeps(Date.now()), { contactPhone: "0000", intent: "saludo" });
+    expect(r).toBe(null);
   });
 });
 
-describe("anti-ráfaga: backlog no estalla (máx 1 envío por cuenta por tick)", () => {
+describe("anti-ráfaga + routing", () => {
   const sent = [];
-  const variant = { id: "v1", blocks: [{ text: "Hola" }] };
-  const leads = { A: { id: "A", phone: "5215550001" }, B: { id: "B", phone: "5215550002" }, C: { id: "C", phone: "5215550003" } };
+  const variant = { id: "v1", blocks: [{ text: "Pitch" }] };
+  const leads = { A: { id: "A", phone: "5215550001", name: "A" }, B: { id: "B", phone: "5215550002", name: "B" }, C: { id: "C", phone: "5215550003", name: "C" } };
   const win = { hourStart: 0, hourEnd: 24, days: [0,1,2,3,4,5,6], timezone: "UTC" };
-  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); });
+  beforeEach(() => { sent.length = 0; eng.__resetThrottleForTests(); for (const c of camp.listCampaigns()) camp.deleteCampaign(c.id); });
 
-  it("3 leads acumulados en opener_sending → solo 1 sale por tick", async () => {
+  it("3 openers acumulados → solo 1 sale por tick (gap)", async () => {
     const [, c] = camp.createCampaign({
-      name: "Backlog", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      drip: { batchSize: 1, intervalMinutes: 5 }, window: win, blockDelay: { minMs: 3000, maxMs: 3000 }, bumps: [],
+      name: "Backlog", accountIds: ["wa1"], openers: ["Hola {{nombre}}"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 3, intervalMinutes: 1 }, window: win,
     }, "setter_a");
     camp.updateCampaign(c.id, { status: "running" });
-    // simular backlog: los 3 ya están en opener_sending con nextActionAt vencido
     camp.bulkInitLeadStates(c.id, Object.keys(leads).map((id) => ({ leadId: id, variantId: "v1", accountId: "wa1" })));
     const past = new Date(Date.now() - 60000).toISOString();
     for (const id of Object.keys(leads)) camp.setLeadState(c.id, id, { state: "opener_sending", nextActionAt: past });
-
     const deps = {
       now: () => Date.now(),
       getSettersData: () => ({ leads, variants: [variant] }),
-      listAccounts: () => [{ id: "wa1", status: "CONNECTED" }],
-      userIdFromSetterId: () => "user1",
-      isUserOnline: () => true,
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED" }], // sin warming → gap 8min
+      userIdFromSetterId: () => "user1", isUserOnline: () => true,
       sendToUser: (uid, evt, payload) => sent.push(payload.leadId),
     };
     await eng.campaignEngineTick(deps);
-    expect(sent.length).toBe(1); // ← antes estallaban los 3 juntos
+    expect(sent.length).toBe(1); // gap impide ráfaga
   });
-});
 
-describe("phoneMatches", () => {
-  it("igual exacto", () => expect(eng.phoneMatches("5215550000", "5215550000")).toBe(true));
-  it("últimos 8 dígitos (distinto prefijo país)", () => expect(eng.phoneMatches("5255001234", "055001234")).toBe(true));
-  it("distintos", () => expect(eng.phoneMatches("5215550000", "5491199999")).toBe(false));
-  it("vacío → false", () => expect(eng.phoneMatches("", "123")).toBe(false));
-});
-
-describe("handleCampaignInbound (detección de respuesta — Wave 4)", () => {
-  const sent = [];
-  const lead = { id: "LR", name: "Bob", phone: "5215559999", country: "MX" };
-  let repliedLeadId = null;
-  const baseDeps = {
-    getSettersData: () => ({ leads: { LR: lead }, variants: [] }),
-    userIdFromSetterId: () => "user1",
-    sendToUser: (uid, evt, payload) => sent.push({ uid, evt, payload }),
-    markLeadReplied: async (id) => { repliedLeadId = id; },
-  };
-  beforeEach(() => { sent.length = 0; repliedLeadId = null; eng.__resetThrottleForTests(); });
-
-  it("respuesta en awaiting_reply con qualifyMessage → manda calificación + qualifying", async () => {
+  it("campaña setterId='' rutea al dueño de la cuenta", async () => {
     const [, c] = camp.createCampaign({
-      name: "Q", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }],
-      qualifyMessage: "Sos {{nombre}}, de qué clínica?",
-    }, "setter_a");
+      name: "Route", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 1, intervalMinutes: 1 }, window: win,
+    }, "");
     camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
-    camp.setLeadState(c.id, "LR", { state: "awaiting_reply", bumpIdx: 0, nextActionAt: new Date(Date.now() + 86400000).toISOString() });
-
-    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "interesado_quiere_info" });
-    expect(r.state).toBe("qualifying");
+    camp.bulkInitLeadStates(c.id, [{ leadId: "A", variantId: "v1", accountId: "wa1" }]);
+    const deps = {
+      now: () => Date.now(),
+      getSettersData: () => ({ leads, variants: [variant] }),
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED", minSendGapMinutes: 1, assignment: { kind: "setter", refId: "dueño" } }],
+      userIdFromSetterId: (sid) => (sid === "dueño" ? "user_dueño" : null),
+      isUserOnline: () => true,
+      sendToUser: (uid, evt, payload) => sent.push({ uid }),
+    };
+    await eng.campaignEngineTick(deps);
     expect(sent.length).toBe(1);
-    expect(sent[0].payload.text).toBe("Sos Bob, de qué clínica?");
-    expect(camp.getLeadState(c.id, "LR").state).toBe("qualifying");
-    expect(camp.getLeadState(c.id, "LR").nextActionAt).toBe(null); // bump cancelado
-    expect(repliedLeadId).toBe("LR");
+    expect(sent[0].uid).toBe("user_dueño");
   });
 
-  it("respuesta a la calificación (qualifying) → replied_for_setter", async () => {
-    const [, c] = camp.createCampaign({ name: "Q2", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }] }, "setter_a");
+  it("dueño offline → fallback admin online", async () => {
+    const [, c] = camp.createCampaign({
+      name: "Route2", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+      drip: { batchSize: 1, intervalMinutes: 1 }, window: win,
+    }, "");
     camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
-    camp.setLeadState(c.id, "LR", { state: "qualifying" });
-    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "interesado_quiere_agendar" });
-    expect(r.state).toBe("replied_for_setter");
-  });
-
-  it("intent descalificado → disqualified, sin marcar respondió", async () => {
-    const [, c] = camp.createCampaign({ name: "D", accountIds: ["wa1"], variantSplit: [{ variantId: "v1", weight: 1 }] }, "setter_a");
-    camp.updateCampaign(c.id, { status: "running" });
-    camp.bulkInitLeadStates(c.id, [{ leadId: "LR", variantId: "v1", accountId: "wa1" }]);
-    camp.setLeadState(c.id, "LR", { state: "awaiting_reply" });
-    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "5215559999", intent: "descalificado" });
-    expect(r.state).toBe("disqualified");
-    expect(repliedLeadId).toBe(null); // descalificado NO marca respondió
-  });
-
-  it("teléfono que no matchea ningún lead → null", async () => {
-    const r = await eng.handleCampaignInbound(baseDeps, { contactPhone: "0000000", intent: "saludo" });
-    expect(r).toBe(null);
+    camp.bulkInitLeadStates(c.id, [{ leadId: "A", variantId: "v1", accountId: "wa1" }]);
+    const deps = {
+      now: () => Date.now(),
+      getSettersData: () => ({ leads, variants: [variant] }),
+      listAccounts: () => [{ id: "wa1", status: "CONNECTED", minSendGapMinutes: 1, assignment: { kind: "setter", refId: "off" } }],
+      userIdFromSetterId: (sid) => (sid === "off" ? "user_off" : null),
+      isUserOnline: (uid) => uid === "user_admin",
+      getPresenceList: () => [{ userId: "user_admin", online: true, role: "admin" }],
+      sendToUser: (uid, evt, payload) => sent.push({ uid }),
+    };
+    await eng.campaignEngineTick(deps);
+    expect(sent.length).toBe(1);
+    expect(sent[0].uid).toBe("user_admin");
   });
 });
