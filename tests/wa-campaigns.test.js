@@ -327,6 +327,18 @@ describe("endpoints REST (Wave 2)", () => {
     expect(r.body.status).toBe("cancelled");
   });
 
+  it("GET /:id/leads lista los leads con nombre/teléfono/estado", async () => {
+    // crear + lanzar una campaña fresca para tener leadStates
+    const cr = await api("POST", "/api/wa/campaigns", { ...draft, name: "ConLeads" }, setterTok);
+    await api("POST", `/api/wa/campaigns/${cr.body.id}/launch`, {}, setterTok);
+    const r = await api("GET", `/api/wa/campaigns/${cr.body.id}/leads`, null, setterTok);
+    expect(r.status).toBe(200);
+    expect(r.body.total).toBeGreaterThan(0);
+    expect(r.body.leads[0]).toHaveProperty("name");
+    expect(r.body.leads[0]).toHaveProperty("phone");
+    expect(r.body.leads[0]).toHaveProperty("state");
+  });
+
   it("el export del módulo WA incluye campaigns (sobrevive redeploy)", async () => {
     const r = await api("GET", "/api/wa/admin/export", null, adminTok);
     expect(r.status).toBe(200);

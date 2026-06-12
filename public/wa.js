@@ -598,6 +598,7 @@ async function renderCampaigns() {
       `<span style="font-size:11px;color:var(--text-secondary);">${escHtml(CAMP_STATE_LABEL[st] || st)}: <strong>${n}</strong></span>`).join(" · ");
     const accNames = (c.accountIds || []).map((id) => escHtml((_accounts.find((a) => a.id === id)?.label) || id)).join(", ");
     const actions = [];
+    if (total > 0) actions.push(`<button class="btn-table-action" data-camp-act="leads" data-id="${c.id}" style="color:var(--accent);">👁️ Ver leads</button>`);
     if (c.status === "draft") actions.push(`<button class="btn-table-action" data-camp-act="launch" data-id="${c.id}" style="background:var(--success);color:white;padding:4px 12px;border-radius:6px;font-weight:600;">🚀 Lanzar</button>`);
     if (c.status === "running") actions.push(`<button class="btn-table-action" data-camp-act="pause" data-id="${c.id}" style="color:var(--warning);">⏸ Pausar</button>`);
     if (c.status === "paused") actions.push(`<button class="btn-table-action" data-camp-act="resume" data-id="${c.id}" style="color:var(--success);">▶ Reanudar</button>`);
@@ -618,7 +619,10 @@ async function renderCampaigns() {
     const id = e.currentTarget.dataset.id;
     const act = e.currentTarget.dataset.campAct;
     try {
-      if (act === "del") {
+      if (act === "leads") {
+        await openCampaignLeadsModal(id);
+        return; // el modal no requiere re-render
+      } else if (act === "del") {
         if (!confirm("¿Borrar la campaña? (no se puede deshacer)")) return;
         await api(`/api/wa/campaigns/${id}`, { method: "DELETE" });
       } else if (act === "launch") {
@@ -631,6 +635,40 @@ async function renderCampaigns() {
       renderCampaigns();
     } catch (err) { alert("Error: " + (err.message || err)); }
   }));
+}
+
+// Modal: lista de leads de una campaña (a quién se le manda + en qué estado).
+async function openCampaignLeadsModal(campaignId) {
+  let data;
+  try { data = await api(`/api/wa/campaigns/${campaignId}/leads`); }
+  catch (err) { alert("Error: " + (err.message || err)); return; }
+  const leads = data.leads || [];
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  const rows = leads.map((l) => `<tr>
+    <td style="padding:6px 8px;">${escHtml(l.name)}</td>
+    <td style="padding:6px 8px;font-family:monospace;font-size:12px;">${escHtml(l.phone)}</td>
+    <td style="padding:6px 8px;font-size:11px;">${escHtml(l.country || "")}</td>
+    <td style="padding:6px 8px;"><span style="font-size:11px;color:var(--text-secondary);">${escHtml(CAMP_STATE_LABEL[l.state] || l.state)}</span></td>
+  </tr>`).join("");
+  overlay.innerHTML = `
+    <div class="modal-card" style="max-width:640px;max-height:88vh;display:flex;flex-direction:column;">
+      <div class="modal-header"><h3>Leads de la campaña (${leads.length})</h3><button class="modal-close-btn" data-close>×</button></div>
+      <div class="modal-body" style="overflow-y:auto;">
+        ${leads.length ? `<table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="text-align:left;border-bottom:1px solid var(--border);">
+            <th style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">Nombre</th>
+            <th style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">Teléfono</th>
+            <th style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">País</th>
+            <th style="padding:6px 8px;font-size:12px;color:var(--text-secondary);">Estado</th>
+          </tr></thead><tbody>${rows}</tbody></table>` : '<div style="text-align:center;color:var(--text-secondary);padding:20px;">Sin leads.</div>'}
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" data-close>Cerrar</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", close));
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 }
 
 async function openCampaignBuilder() {

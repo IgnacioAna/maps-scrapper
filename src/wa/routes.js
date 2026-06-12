@@ -15,6 +15,7 @@ import {
   listCampaigns, getCampaign, createCampaign, updateCampaign, deleteCampaign,
   sanitizeCampaign, bulkInitLeadStates, buildVariantAssignments,
   selectLeadsFromMap, leadStateSummary, exportCampaignsData, buildAccountAssignments,
+  listLeadStates,
 } from "./campaigns.js";
 import { sendToUser, getPresenceList } from "./gateway.js";
 
@@ -300,6 +301,32 @@ export function registerWaRoutes(app, deps) {
     if (!c) return res.status(404).json({ error: "no encontrado" });
     if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
     res.json({ ...c, leadSummary: leadStateSummary(c.id) });
+  });
+
+  // Phase 7 — lista de leads de una campaña con nombre/teléfono/estado, para
+  // que el admin vea EXACTAMENTE a quién se le está mandando. Resuelve cada
+  // leadId contra los leads de setters.
+  app.get("/api/wa/campaigns/:id/leads", requireAuth, (req, res) => {
+    const { user } = req.auth;
+    const c = getCampaign(req.params.id);
+    if (!c) return res.status(404).json({ error: "no encontrado" });
+    if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
+    let leadsMap = {};
+    try { leadsMap = deps.getSettersData ? (deps.getSettersData().leads || {}) : {}; } catch {}
+    const states = listLeadStates(c.id);
+    const out = Object.entries(states).map(([leadId, ls]) => {
+      const lead = leadsMap[leadId] || {};
+      return {
+        leadId,
+        name: lead.name || lead.nombre || "—",
+        phone: lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "—",
+        country: lead.country || lead.pais || "",
+        state: ls.state,
+        lastSentAt: ls.lastSentAt || null,
+        repliedAt: ls.repliedAt || null,
+      };
+    });
+    res.json({ leads: out, total: out.length });
   });
 
   app.post("/api/wa/campaigns", requireAuth, (req, res) => {
