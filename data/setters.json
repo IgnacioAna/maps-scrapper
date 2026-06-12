@@ -37990,7 +37990,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "fd3daf78-6431-11f1-ad34-02420a0dea20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.734Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.920Z"
         }
       ],
       "callAttempts": 1,
@@ -39271,7 +39271,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "5b71166e-642f-11f1-89d1-02420a0de920",
-          "realCostReconciledAt": "2026-06-11T19:12:35.734Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.920Z"
         }
       ],
       "callAttempts": 1,
@@ -42123,7 +42123,7 @@
           "realCost": 0.1757,
           "realCostCurrency": "USD",
           "realCostSid": "778070b6-642f-11f1-b2b7-02420a0deb20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.734Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.920Z"
         }
       ],
       "callAttempts": 1,
@@ -141077,14 +141077,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:12:15.495Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -141097,8 +141097,164 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:12:15.495Z",
+          "outcome": "answered_not_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 147,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0059,
+          "costCountry": "PE",
+          "costTariffKey": "PE_landline_5115",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 10.6,
+                "text": "Hola, buenas tardes. Mi nombre es Ignacio, yo estoy llamando de SSM Dental. Lo estaba"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 17,
+                "text": "Buenas tardes, Centro de Andalucía en Dubai."
+              },
+              {
+                "speaker": "setter",
+                "start": 10.6,
+                "end": 15.1,
+                "text": "llamando porque estaba viendo su perfil de Google y tenía una duda sobre cómo estaban"
+              },
+              {
+                "speaker": "setter",
+                "start": 15.1,
+                "end": 20.2,
+                "text": "reactivando pacientes que dejaron de venir hace tiempo, pero la realidad es que no estoy"
+              },
+              {
+                "speaker": "lead",
+                "start": 17,
+                "end": 38.2,
+                "text": "No comprendo cuál es la consulta que desea hacer."
+              },
+              {
+                "speaker": "setter",
+                "start": 20.2,
+                "end": 35.1,
+                "text": "seguro con quién lo debería hablar. ¿Vos me podrías orientar? Yo estaba mirando la"
+              },
+              {
+                "speaker": "setter",
+                "start": 35.1,
+                "end": 41.6,
+                "text": "página de Google y me tenía la duda de cómo estarían reactivando pacientes que hace mucho"
+              },
+              {
+                "speaker": "lead",
+                "start": 38.2,
+                "end": 64.5,
+                "text": "Ah, solamente hacemos cadenas de llamadas, nada más, con la experiencia."
+              },
+              {
+                "speaker": "setter",
+                "start": 41.6,
+                "end": 52.2,
+                "text": "tiempo que no vuelven, pero no sabría con quién lo debería hablar a eso. ¿Ustedes hacen cadena"
+              },
+              {
+                "speaker": "setter",
+                "start": 52.2,
+                "end": 62.6,
+                "text": "de llamadas? Bien, y te hago una consulta, los pacientes que por ejemplo no cierran los"
+              },
+              {
+                "speaker": "setter",
+                "start": 62.6,
+                "end": 68.5,
+                "text": "tratamientos o hacen una consulta y queda ahí, ¿esos pacientes le están haciendo seguimiento"
+              },
+              {
+                "speaker": "setter",
+                "start": 68.5,
+                "end": 82.3,
+                "text": "o lo hacen de forma manual? Si este trabajo lo hacen más manual o si trabajan con algún"
+              },
+              {
+                "speaker": "setter",
+                "start": 82.3,
+                "end": 92.1,
+                "text": "tipo de sistema para poder contactar a esos pacientes, ¿lo hacen manual o no lo están"
+              },
+              {
+                "speaker": "setter",
+                "start": 92.1,
+                "end": 102.5,
+                "text": "haciendo? Bien, porque si no quiero sacarle mucho tiempo seguramente que está ocupada,"
+              },
+              {
+                "speaker": "lead",
+                "start": 95.5,
+                "end": 96.5,
+                "text": "No, Manuel."
+              },
+              {
+                "speaker": "lead",
+                "start": 96.5,
+                "end": 115.5,
+                "text": "Ahorita estoy… estoy ahorita por ingresar al paciente ya."
+              },
+              {
+                "speaker": "setter",
+                "start": 102.5,
+                "end": 110,
+                "text": "si tiene al menos 30 segundos le puedo contar de qué va la llamada, si le parece relevante"
+              },
+              {
+                "speaker": "setter",
+                "start": 110,
+                "end": 114.9,
+                "text": "podemos ir conversando y si no me puede cortar, no hay problema. ¿Le interesa que le pueda contar?"
+              },
+              {
+                "speaker": "setter",
+                "start": 114.9,
+                "end": 122.4,
+                "text": "Son 30 segundos realmente."
+              },
+              {
+                "speaker": "lead",
+                "start": 116.5,
+                "end": 117.5,
+                "text": "No, disculpe."
+              },
+              {
+                "speaker": "lead",
+                "start": 117.5,
+                "end": 118.5,
+                "text": "Muchas gracias."
+              },
+              {
+                "speaker": "setter",
+                "start": 126.8,
+                "end": 129.3,
+                "text": "Está bien, no hay problema, gracias por el tiempo."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:12:15.774Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.0132,
+          "realCostCurrency": "USD",
+          "realCostSid": "d16ffce4-65d9-11f1-8621-7a024d2b2c31",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -142956,7 +143112,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:09:16.752Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -142969,8 +143125,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:09:16.752Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 44,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0018,
+          "costCountry": "PE",
+          "costTariffKey": "PE_landline_5113",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "b3969e44-65d9-11f1-b5d2-d26d51778b88",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -144673,16 +144846,16 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
-      "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "respondio": true,
+      "calificado": true,
+      "interes": "si",
+      "estado": "interesado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:13:53.129Z",
       "followUps": {
-        "24hs": false,
+        "24hs": true,
         "48hs": false,
         "72hs": false,
         "7d": false,
@@ -144693,9 +144866,127 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:13:49.944Z",
+          "outcome": "callback_later",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 10,
+                "text": "Hola, buenas tardes, ¿qué tal? Mi nombre es Ignacio, estoy llamando de SSM Dental,"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 26.1,
+                "text": "Sí, lo que pasa es que ahorita tendría que hablarlo con el doctor, pero el doctor está"
+              },
+              {
+                "speaker": "setter",
+                "start": 10,
+                "end": 14,
+                "text": "lo llamaba porque estaba justo en su perfil de Google y tenía una duda sobre cómo están"
+              },
+              {
+                "speaker": "setter",
+                "start": 14,
+                "end": 18.5,
+                "text": "reactivando pacientes que hace tiempo que no vuelven, pero la realidad es que no estoy"
+              },
+              {
+                "speaker": "setter",
+                "start": 18.5,
+                "end": 29.8,
+                "text": "seguro con quién lo debería hablar. ¿Vos me podrías orientar? ¿Y en qué hora? Bueno,"
+              },
+              {
+                "speaker": "lead",
+                "start": 26.1,
+                "end": 27.1,
+                "text": "ocupado."
+              },
+              {
+                "speaker": "lead",
+                "start": 27.1,
+                "end": 28.1,
+                "text": "Disculpe."
+              },
+              {
+                "speaker": "lead",
+                "start": 28.2,
+                "end": 29.2,
+                "text": "En una hora."
+              },
+              {
+                "speaker": "lead",
+                "start": 29.2,
+                "end": 30.2,
+                "text": "Jesús Santos."
+              },
+              {
+                "speaker": "setter",
+                "start": 29.8,
+                "end": 39.6,
+                "text": "¿cómo es el nombre del doctor? ¿Cómo? ¿Santos? Perfecto, lo llamo en una hora entonces."
+              },
+              {
+                "speaker": "lead",
+                "start": 30.2,
+                "end": 31.2,
+                "text": "Santos."
+              },
+              {
+                "speaker": "lead",
+                "start": 31.2,
+                "end": 32.2,
+                "text": "Listo, hasta luego."
+              },
+              {
+                "speaker": "lead",
+                "start": 32.2,
+                "end": 33.2,
+                "text": "Hasta luego."
+              },
+              {
+                "speaker": "lead",
+                "start": 33.2,
+                "end": 34.2,
+                "text": "Hasta luego."
+              },
+              {
+                "speaker": "lead",
+                "start": 34.2,
+                "end": 34.7,
+                "text": "Hasta luego."
+              },
+              {
+                "speaker": "setter",
+                "start": 39.6,
+                "end": 42.3,
+                "text": "Te agradezco, hasta luego."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:13:49.991Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          }
+        },
+        {
+          "ts": "2026-06-11T21:13:53.129Z",
+          "outcome": "answered_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 2,
+      "callbackAt": "2026-06-11T22:13:00.000Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -144721,7 +145012,7 @@
         "7d": false,
         "15d": false
       },
-      "followUpStartedAt": null,
+      "followUpStartedAt": "2026-06-11T22:25:52.334Z",
       "setterPhoneId": "",
       "importedManually": false,
       "precallNote": ""
@@ -145114,7 +145405,7 @@
           "realCost": 0.0044,
           "realCostCurrency": "USD",
           "realCostSid": "4e9085f2-6433-11f1-8c91-02420a0deb20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -148008,7 +148299,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "4a9416e8-6439-11f1-be5f-02420aef3420",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -149743,7 +150034,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "cc26ebf0-6433-11f1-a09a-02420a0d1b20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -150473,7 +150764,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "9440bd98-6432-11f1-90e8-02420a0d1b20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -151225,7 +151516,7 @@
           "realCost": 0.0044,
           "realCostCurrency": "USD",
           "realCostSid": "ef972b7c-6433-11f1-a9c6-02420a0dec20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -151994,7 +152285,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:14:23.518Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -152007,8 +152298,44 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:14:23.518Z",
+          "outcome": "hung_up",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 19,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0008,
+          "costCountry": "PE",
+          "costTariffKey": "PE_landline_5115",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 9,
+                "text": "Hola, ¿qué tal? Buenas tardes. Mi nombre es Ignacio, soy de SSM Dental."
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 6,
+                "text": "Buenas tardes."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:14:24.016Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.0044,
+          "realCostCurrency": "USD",
+          "realCostSid": "76462798-65da-11f1-8c0c-ba315718c99c",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -153235,11 +153562,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:16:15.628Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -153251,9 +153578,26 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:16:15.628Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 22,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0009,
+          "costCountry": "PE",
+          "costTariffKey": "PE_landline_5114",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "b9553da8-65da-11f1-864d-7a024d2b2c31",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -153787,7 +154131,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-20T18:04:01.856Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:16:48.090Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -153799,9 +154143,45 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:16:48.090Z",
+          "outcome": "voicemail",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 27,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0038,
+          "costCountry": "PE",
+          "costTariffKey": "PE_mobile_519",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 1.2,
+                "text": "Muchas gracias."
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 2,
+                "text": "Te has comunicado con el buzón de..."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:16:48.773Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.0104,
+          "realCostCurrency": "USD",
+          "realCostSid": "cac2cbbe-65da-11f1-9f71-7a024d2b2c31",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -157559,7 +157939,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "87552b76-6439-11f1-9f25-02420aef3320",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -165736,7 +166116,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "57dec9ce-6439-11f1-8bfe-02420aef3620",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -165909,7 +166289,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "33fa8d5a-6433-11f1-82c0-02420a0dec20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -167638,7 +168018,7 @@
           "realCost": 0.0104,
           "realCostCurrency": "USD",
           "realCostSid": "0d10d900-6434-11f1-995d-02420a0dea20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -167948,7 +168328,7 @@
           "realCost": 0.0044,
           "realCostCurrency": "USD",
           "realCostSid": "8d8c2aa4-6433-11f1-accd-02420a0dea20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -172173,7 +172553,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "8066b4ba-6439-11f1-85ee-02420aef3520",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -173048,7 +173428,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "76481ece-6439-11f1-a74c-02420aef3720",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -173298,7 +173678,7 @@
           "realCost": 0.0104,
           "realCostCurrency": "USD",
           "realCostSid": "ae758bde-6433-11f1-8710-02420a0de920",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -205786,11 +206166,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:03:46.085Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -205802,9 +206182,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:03:46.085Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0003,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57231"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -206382,7 +206775,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:01:35.241Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206394,9 +206787,45 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:01:35.241Z",
+          "outcome": "voicemail",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 11,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0019,
+          "costCountry": "CO",
+          "costTariffKey": "CO_mobile_57317",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 6.8,
+                "text": "Muchísimas gracias."
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 3,
+                "text": "Después del tono, grave su mensaje."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:01:35.435Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.0126,
+          "realCostCurrency": "USD",
+          "realCostSid": "b380d132-65d8-11f1-910e-7a024d2b2c31",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -206542,14 +206971,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
-      "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "respondio": true,
+      "calificado": true,
+      "interes": "si",
+      "estado": "interesado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:03:32.512Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206562,8 +206991,129 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:03:28.600Z",
+          "outcome": "answered_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 10.1,
+                "text": "Buenas tardes, ¿qué tal? Mi nombre es Ignacio de SSM Dental. Lo estaba llamando porque estaba"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 4.5,
+                "text": "Angelen."
+              },
+              {
+                "speaker": "lead",
+                "start": 4.8,
+                "end": 9.9,
+                "text": "Si puede preguntarle, buenas"
+              },
+              {
+                "speaker": "setter",
+                "start": 10.1,
+                "end": 14.9,
+                "text": "justo mirando su perfil de Google y tenía una duda sobre cómo están reactivando pacientes"
+              },
+              {
+                "speaker": "lead",
+                "start": 10.8,
+                "end": 13.8,
+                "text": "tardes?"
+              },
+              {
+                "speaker": "setter",
+                "start": 14.9,
+                "end": 19.1,
+                "text": "que dejaron de venir, pero la realidad es que no estoy seguro con quién lo debería"
+              },
+              {
+                "speaker": "lead",
+                "start": 16.8,
+                "end": 19.8,
+                "text": "Muy bien, gracias."
+              },
+              {
+                "speaker": "setter",
+                "start": 19.1,
+                "end": 42.4,
+                "text": "hablar. ¿Me podrías orientar un poco? Claro. ¿En qué horario es mejor encontrarla? ¿En"
+              },
+              {
+                "speaker": "lead",
+                "start": 30,
+                "end": 34.1,
+                "text": "Está abriendo la clínica, pero está programando todo para entre 20 días que ya reingresa."
+              },
+              {
+                "speaker": "lead",
+                "start": 40.5,
+                "end": 42,
+                "text": "En las tardes."
+              },
+              {
+                "speaker": "setter",
+                "start": 42.4,
+                "end": 57.2,
+                "text": "la tarde? ¿Después de las 5pm? ¿Y qué hora es allá? ¿No son las 4 de la tarde ya?"
+              },
+              {
+                "speaker": "lead",
+                "start": 46.5,
+                "end": 50,
+                "text": "No, no, después de las dos a las cinco ya ella ya se va."
+              },
+              {
+                "speaker": "lead",
+                "start": 54.3,
+                "end": 55.6,
+                "text": "Como ella."
+              },
+              {
+                "speaker": "lead",
+                "start": 55.6,
+                "end": 59.6,
+                "text": "Sí, vuelvo y te digo, la doctora está incapacitada."
+              },
+              {
+                "speaker": "setter",
+                "start": 57.2,
+                "end": 66.2,
+                "text": "Ah, está bien. Bueno, vuelvo a llamar a otro horario. Te agradezco."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:03:28.924Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          }
+        },
+        {
+          "ts": "2026-06-11T21:03:32.512Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 85,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0113,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "realCost": 0.02,
+          "realCostCurrency": "USD",
+          "realCostSid": "be0093c2-65d8-11f1-b18d-962b77f0e68c",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 2,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -206972,11 +207522,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:07:01.223Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -206988,9 +207538,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:07:01.223Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0001,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -207147,11 +207710,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:03:59.890Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -207163,9 +207726,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:03:59.890Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0001,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -209521,11 +210097,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:01:08.355Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -209537,9 +210113,93 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:01:08.355Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 63,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0084,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 12.6,
+                "text": "¿Hola?"
+              },
+              {
+                "speaker": "lead",
+                "start": 30,
+                "end": 32,
+                "text": "¿Aló?"
+              },
+              {
+                "speaker": "lead",
+                "start": 35,
+                "end": 37,
+                "text": "¿Aló?"
+              },
+              {
+                "speaker": "lead",
+                "start": 40,
+                "end": 42,
+                "text": "¿Aló?"
+              },
+              {
+                "speaker": "setter",
+                "start": 42.6,
+                "end": 45.6,
+                "text": "¿Hola?"
+              },
+              {
+                "speaker": "lead",
+                "start": 43,
+                "end": 44,
+                "text": "¿Aló?"
+              },
+              {
+                "speaker": "lead",
+                "start": 45,
+                "end": 46,
+                "text": "¿Aló?"
+              },
+              {
+                "speaker": "lead",
+                "start": 48,
+                "end": 49,
+                "text": "¿Quién está llamando?"
+              },
+              {
+                "speaker": "lead",
+                "start": 52,
+                "end": 53,
+                "text": "No puedo escucharte."
+              },
+              {
+                "speaker": "lead",
+                "start": 55,
+                "end": 56,
+                "text": "No puedo escucharte."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:01:08.735Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.01,
+          "realCostCurrency": "USD",
+          "realCostSid": "79b17bfa-65d8-11f1-82f1-7a7841d72856",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -209895,7 +210555,7 @@
           "realCost": 0.01,
           "realCostCurrency": "USD",
           "realCostSid": "9e10b6be-6434-11f1-bd2e-02420aef8c20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
         }
       ],
       "callAttempts": 1,
@@ -210400,7 +211060,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:50:43.786Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -210413,8 +211073,86 @@
       "lastVariantId": "",
       "wspProbability": "high",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:50:43.786Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 53,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0071,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 6,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 6,
+                "end": 12,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 12,
+                "end": 18,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 18,
+                "end": 24,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 24,
+                "end": 30,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "setter",
+                "start": 30,
+                "end": 42.5,
+                "text": "Un saludo."
+              },
+              {
+                "speaker": "lead",
+                "start": 30,
+                "end": 36,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 36,
+                "end": 42,
+                "text": "No hay nada."
+              },
+              {
+                "speaker": "lead",
+                "start": 42,
+                "end": 48,
+                "text": "No hay nada."
+              }
+            ],
+            "transcribedAt": "2026-06-11T20:50:46.294Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.01,
+          "realCostCurrency": "USD",
+          "realCostSid": "16d3ce26-65d7-11f1-91b1-02420aef8fa1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -210932,7 +211670,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:06:01.407Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -210944,9 +211682,39 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:06:01.407Z",
+          "outcome": "voicemail",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 15,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0063,
+          "costCountry": "CO",
+          "costTariffKey": "CO_mobile_57312",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 6,
+                "text": "Este es el servicio de contestador para 312742."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:06:02.904Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.027,
+          "realCostCurrency": "USD",
+          "realCostSid": "507e617a-65d9-11f1-9ca8-968e682dbb56",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -212849,7 +213617,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:05:42.634Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -212862,8 +213630,62 @@
       "lastVariantId": "",
       "wspProbability": "high",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:05:42.634Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 99,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0132,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 30,
+                "end": 33,
+                "text": "Subtítulos realizados por la comunidad de Amara.org"
+              },
+              {
+                "speaker": "setter",
+                "start": 60,
+                "end": 63,
+                "text": "Subtítulos realizados por la comunidad de Amara.org"
+              },
+              {
+                "speaker": "setter",
+                "start": 90,
+                "end": 93,
+                "text": "Subtítulos realizados por la comunidad de Amara.org"
+              },
+              {
+                "speaker": "lead",
+                "start": 90,
+                "end": 92,
+                "text": "¡Gracias por ver este video!"
+              },
+              {
+                "speaker": "lead",
+                "start": 92,
+                "end": 94,
+                "text": "¡Suscríbete y dale a like!"
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:05:56.498Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.02,
+          "realCostCurrency": "USD",
+          "realCostSid": "134f67ae-65d9-11f1-b42b-9ec75de98f39",
+          "realCostReconciledAt": "2026-06-12T13:54:36.921Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -213973,11 +214795,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:07:24.351Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -213989,9 +214811,51 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "high",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:07:24.351Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 16,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0021,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 4,
+                "text": "Bienvenido a Colmédica Medicina Preparada."
+              },
+              {
+                "speaker": "lead",
+                "start": 4,
+                "end": 7,
+                "text": "Ingrese el número de identificación del usuario."
+              },
+              {
+                "speaker": "lead",
+                "start": 7,
+                "end": 9,
+                "text": "Seguido de la tecla número."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:07:24.705Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.01,
+          "realCostCurrency": "USD",
+          "realCostSid": "7f428c70-65d9-11f1-b9b4-d26d51778b88",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -214990,11 +215854,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:06:50.110Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -215006,9 +215870,39 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:06:50.110Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 12,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0016,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 8.8,
+                "text": "Bienvenido a la Universidad Santiago de Cali, para el área de inscripciones e investigación."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:06:50.628Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.01,
+          "realCostCurrency": "USD",
+          "realCostSid": "6f3a90f2-65d9-11f1-b479-962b77f0e68c",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -215465,11 +216359,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:06:16.957Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -215481,9 +216375,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:06:16.957Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0001,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -216506,11 +217413,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:07:46.109Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -216522,9 +217429,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:07:46.109Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0001,
+          "costCountry": "CO",
+          "costTariffKey": "CO_mobile_573"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -216974,11 +217894,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:06:34.164Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -216990,9 +217910,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:06:34.164Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0001,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -218072,7 +219005,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:54:24.512Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -218085,8 +219018,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:54:24.512Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 60,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.008,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "9420f0b6-65d7-11f1-9808-02420aef89a1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -219082,11 +220032,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:08:14.062Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -219098,9 +220048,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:08:14.062Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0003,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57232"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -219704,11 +220667,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:07:38.237Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -219720,9 +220683,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:07:38.237Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0003,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -220795,11 +221771,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-28T18:33:00.570Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:08:09.288Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -220811,9 +221787,22 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:08:09.288Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 1,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0003,
+          "costCountry": "CO",
+          "costTariffKey": "CO_landline_57233"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -227896,7 +228885,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:38:05.451Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -227909,8 +228898,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:38:05.451Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 60,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.006,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "4b941938-65d5-11f1-9361-02420aef8d20",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -228711,9 +229717,9 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:46:01.217Z",
       "followUps": {
-        "24hs": false,
+        "24hs": true,
         "48hs": false,
         "72hs": false,
         "7d": false,
@@ -228724,9 +229730,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:46:01.217Z",
+          "outcome": "callback_later",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-06-11T22:00:00.000Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -228752,7 +229766,7 @@
         "7d": false,
         "15d": false
       },
-      "followUpStartedAt": null,
+      "followUpStartedAt": "2026-06-11T22:25:58.637Z",
       "setterPhoneId": "",
       "importedManually": false,
       "precallNote": ""
@@ -229481,7 +230495,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "1f0cd484-6438-11f1-a2ae-02420aef34a1",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -230593,7 +231607,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:43:07.447Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -230606,8 +231620,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:43:07.447Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 57,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0057,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "d2c22d0a-65d5-11f1-90d6-02420aef8d20",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -231859,11 +232890,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:43:13.790Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -231875,9 +232906,17 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:43:13.790Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -231940,7 +232979,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:42:15.098Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -231953,8 +232992,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:42:15.098Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 52,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0052,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "4a5b2148-65de-11f1-9554-ba315718c99c",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -232529,7 +233585,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "601f65fe-6438-11f1-82b8-02420aef3720",
-          "realCostReconciledAt": "2026-06-11T19:12:35.735Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -232921,11 +233977,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:34:28.836Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -232937,9 +233993,17 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:34:28.836Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -236047,7 +237111,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:49:26.319Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -236060,8 +237124,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:49:26.319Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 60,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.006,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "e10d495c-65d6-11f1-85f5-02420aef89a1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -236990,7 +238071,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:20:13.965Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -237003,8 +238084,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:20:13.965Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 60,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.006,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "3121e714-65db-11f1-8927-962b77f0e68c",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -237558,14 +238656,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:40:42.863Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -237578,8 +238676,143 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:40:42.863Z",
+          "outcome": "answered_not_interested",
+          "by": "user_admin_ignacio",
+          "notes": "no es clinica",
+          "objectionTags": [
+            "otra"
+          ],
+          "duration": 126,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0126,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 9.7,
+                "text": "Hola, buenas tardes, mi nombre es Ignacio, le hago una consulta, yo estaba mirando su"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 24,
+                "text": "Bueno, hola, buenas tardes. A ver, ¿qué es lo que necesitas? Es que no te escuche."
+              },
+              {
+                "speaker": "setter",
+                "start": 9.7,
+                "end": 14.3,
+                "text": "perfil de Google y tenía una duda sobre cómo están reactivando pacientes que dejaron de"
+              },
+              {
+                "speaker": "setter",
+                "start": 14.3,
+                "end": 25.7,
+                "text": "venir, pero no sé si estoy seguro con quién tendría que hablarlo, ¿vos me podrías orientar?"
+              },
+              {
+                "speaker": "lead",
+                "start": 24,
+                "end": 47.7,
+                "text": "Ajá. ¿Pero tú vendes productos dentales o no? ¿Vendes productos dentales?"
+              },
+              {
+                "speaker": "setter",
+                "start": 25.7,
+                "end": 30.7,
+                "text": "Mi nombre es Ignacio, estoy llamando de SSM Dental y justo estaba mirando su perfil de"
+              },
+              {
+                "speaker": "setter",
+                "start": 30.7,
+                "end": 35.6,
+                "text": "Google y tenía una duda sobre cómo estarían trabajando los pacientes para reactivarlos"
+              },
+              {
+                "speaker": "setter",
+                "start": 35.6,
+                "end": 40,
+                "text": "que hace mucho tiempo que no vuelven, pero no sé si estoy seguro con quién debería"
+              },
+              {
+                "speaker": "setter",
+                "start": 40,
+                "end": 51.8,
+                "text": "hablarlo, ¿vos me podrías orientar? ¿Cómo? No, no, trabajo en lo que es traer a los pacientes"
+              },
+              {
+                "speaker": "lead",
+                "start": 47.7,
+                "end": 61,
+                "text": "Ah, no, es que no sé si está mal, pero es que aquí es un depósito dental. ¿Vendemos"
+              },
+              {
+                "speaker": "setter",
+                "start": 51.8,
+                "end": 68.7,
+                "text": "a la silla, más que trabajar sobre su base de datos, y trabajan con bases de datos, tienen"
+              },
+              {
+                "speaker": "lead",
+                "start": 61,
+                "end": 64.8,
+                "text": "material dental? Ajá. No, no tenemos aquí consultorio."
+              },
+              {
+                "speaker": "lead",
+                "start": 64.8,
+                "end": 87.6,
+                "text": "Ok, sale. ¿Pues odontólogos? ¿Ese es nuestro cliente o técnicos dentales? Ajá. No, no,"
+              },
+              {
+                "speaker": "setter",
+                "start": 68.7,
+                "end": 79,
+                "text": "clientes con los que normalmente trabajan, por ejemplo, odontólogos, y tiene alguna"
+              },
+              {
+                "speaker": "setter",
+                "start": 79.1,
+                "end": 85,
+                "text": "base de datos de esos con los que han trabajado que hace tiempo que no vuelven a trabajar?"
+              },
+              {
+                "speaker": "lead",
+                "start": 87.6,
+                "end": 90.7,
+                "text": "realmente sí son muy fieles y todos vienen a mostrador en físico."
+              },
+              {
+                "speaker": "lead",
+                "start": 90.7,
+                "end": 99.2,
+                "text": "Ajá. ¿Sale? Ok, gracias. Que estés bien, bye."
+              },
+              {
+                "speaker": "setter",
+                "start": 91.1,
+                "end": 95.4,
+                "text": "Está bien, está bien, bueno, le agradezco su tiempo, hasta luego."
+              }
+            ],
+            "transcribedAt": "2026-06-11T20:40:43.086Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.016,
+          "realCostCurrency": "USD",
+          "realCostSid": "76c2aea8-65d5-11f1-b0be-02420aef8b20",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -237642,7 +238875,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:32:47.011Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -237655,8 +238888,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:32:47.011Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 21,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0021,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "a9d02896-65dc-11f1-a84d-a21450c80fe4",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -238821,7 +240071,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:32:37.063Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -238833,9 +240083,45 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:32:37.063Z",
+          "outcome": "voicemail",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 31,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0031,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 1.5,
+                "text": "Un saludo."
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 3,
+                "text": "Hola, su llamada no puede ser atendida."
+              }
+            ],
+            "transcribedAt": "2026-06-11T20:32:37.477Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "97b335d4-65d4-11f1-9eb0-02420aef8e20",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -238926,7 +240212,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "cc680a8a-6439-11f1-b873-02420aef3b20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -239269,7 +240555,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "6f5b2d10-6441-11f1-8230-02420aef3920",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -239382,7 +240668,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "21f549fa-6439-11f1-9fdb-02420aef3e20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -239554,7 +240840,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "b07d0c90-6438-11f1-bcfb-02420aef31a1",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -239751,7 +241037,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "9535b6b6-6439-11f1-9717-02420aef3b20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z",
           "mercuryAnalysis": {
             "score": 2,
             "scoreReason": "No se utilizó el opener estructurado, no se presentó valor ni credibilidad y la llamada terminó antes de cualquier pitch o solicitud de reunión.",
@@ -239897,7 +241183,7 @@
           "realCost": 0.008,
           "realCostCurrency": "USD",
           "realCostSid": "de422034-6438-11f1-a2ee-02420aef3820",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -239991,7 +241277,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "aa81ca38-6438-11f1-92e5-02420aef3420",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -240163,7 +241449,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "b72ebd62-6439-11f1-9e30-02420aef3d20",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -240303,11 +241589,11 @@
       "respondio": false,
       "calificado": false,
       "interes": null,
-      "estado": "sin_wsp",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:36:32.317Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -240319,9 +241605,26 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "invalid",
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:36:32.317Z",
+          "outcome": "invalid_number",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 17,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0017,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "fdfd124c-65d4-11f1-8925-02420aef89a1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -241117,7 +242420,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "f6ed7070-6438-11f1-b9c2-02420aef35a1",
-          "realCostReconciledAt": "2026-06-11T19:12:35.736Z"
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
         }
       ],
       "callAttempts": 1,
@@ -241339,7 +242642,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:33:49.272Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -241352,8 +242655,25 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:33:49.272Z",
+          "outcome": "no_answer",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 60,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.006,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "realCost": 0,
+          "realCostCurrency": "USD",
+          "realCostSid": "b4db2040-65d4-11f1-9f8f-02420aef8da1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -243856,14 +245176,21 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
-      "calificado": false,
-      "interes": null,
-      "estado": "sin_wsp",
+      "respondio": true,
+      "calificado": true,
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
-      "interactions": [],
+      "interactions": [
+        {
+          "action": "bulk_discard",
+          "by": "user_admin_ignacio",
+          "byName": "Ignacio",
+          "createdAt": "2026-06-11T21:29:11.618Z"
+        }
+      ],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:24:55.152Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -243876,8 +245203,324 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:24:55.111Z",
+          "outcome": "answered_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual"
+        },
+        {
+          "ts": "2026-06-11T21:24:55.152Z",
+          "outcome": "answered_interested",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "channel": "manual",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 9.1,
+                "text": "¿Qué tal? Buenas tardes, mi nombre es Ignacio, lo estoy llamando de SSM Dental, lo estaba"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 26.2,
+                "text": "¿Pero tú a qué te dedicas, o por qué me haces...?"
+              },
+              {
+                "speaker": "setter",
+                "start": 9.1,
+                "end": 14,
+                "text": "llamando porque vi en su perfil de Google y tenía una duda sobre cómo estarían reactivando"
+              },
+              {
+                "speaker": "setter",
+                "start": 14,
+                "end": 18.7,
+                "text": "pacientes que hace tiempo que no vuelven, pero la realidad es que no estoy muy seguro"
+              },
+              {
+                "speaker": "setter",
+                "start": 18.7,
+                "end": 28,
+                "text": "con quién lo debería hablar, lo estoy llamando porque justamente estamos trabajando con clínicas"
+              },
+              {
+                "speaker": "lead",
+                "start": 26.2,
+                "end": 46.9,
+                "text": "Sí, es por medio de una aplicación en Talink."
+              },
+              {
+                "speaker": "setter",
+                "start": 28,
+                "end": 34.4,
+                "text": "y consultorios dentales ayudándolos a recuperar pacientes que hace tiempo que no vuelven."
+              },
+              {
+                "speaker": "setter",
+                "start": 34.4,
+                "end": 37.9,
+                "text": "Ustedes hoy están trabajando los pacientes que, por ejemplo, hacen más de seis meses"
+              },
+              {
+                "speaker": "setter",
+                "start": 37.9,
+                "end": 52.5,
+                "text": "que no vuelven, lo están contactando. Dentalink es más clínico, ¿no? No están de marketing,"
+              },
+              {
+                "speaker": "lead",
+                "start": 46.9,
+                "end": 63.9,
+                "text": "Sí, en marketing hay un departamento de marketing, también hay."
+              },
+              {
+                "speaker": "setter",
+                "start": 52.5,
+                "end": 63.9,
+                "text": "¿no? La realidad es que, como le voy a hacer claro, es una llamada en frío y estoy seguramente"
+              },
+              {
+                "speaker": "setter",
+                "start": 63.9,
+                "end": 69.5,
+                "text": "que está ocupado con algunas cosas, si tiene 30 segundos le cuento de qué va la llamada,"
+              },
+              {
+                "speaker": "setter",
+                "start": 69.5,
+                "end": 73.3,
+                "text": "si le parece relevante podemos ir charlando y si no, me puede apartar, no hay problema."
+              },
+              {
+                "speaker": "setter",
+                "start": 73.3,
+                "end": 82.2,
+                "text": "¿Te parece? Bueno, perfecto. Como le comentaba, yo estoy llamando de SSM Dental, somos una"
+              },
+              {
+                "speaker": "setter",
+                "start": 82.2,
+                "end": 89,
+                "text": "agencia de reactivación y retención de pacientes sin publicidad paga. Como parte del trabajo que"
+              },
+              {
+                "speaker": "setter",
+                "start": 89,
+                "end": 93.9,
+                "text": "hacemos, acabamos de completar un análisis interno sobre la industria dental que muestra"
+              },
+              {
+                "speaker": "setter",
+                "start": 93.9,
+                "end": 98.6,
+                "text": "bastante diferencia entre cómo clínicas y consultorios en su zona están recuperando y"
+              },
+              {
+                "speaker": "setter",
+                "start": 98.6,
+                "end": 104.6,
+                "text": "fidelizando a estos pacientes de forma automática. Lo que normalmente hacemos es presentar una forma"
+              },
+              {
+                "speaker": "setter",
+                "start": 104.6,
+                "end": 109.3,
+                "text": "formal, es coordinar una reunión de 20 minutos donde compartimos un poco de información para"
+              },
+              {
+                "speaker": "setter",
+                "start": 109.3,
+                "end": 116,
+                "text": "ustedes y su sector. La realidad es mostrarles diferentes fugas que suele haber de los pacientes,"
+              },
+              {
+                "speaker": "setter",
+                "start": 116,
+                "end": 122,
+                "text": "pacientes que hace tiempo que no vuelven, pacientes que fueron al diagnóstico y no"
+              },
+              {
+                "speaker": "setter",
+                "start": 122,
+                "end": 126.5,
+                "text": "cerraron el tratamiento y no se les hizo seguimiento, terminan quedando en la nada,"
+              },
+              {
+                "speaker": "setter",
+                "start": 126.5,
+                "end": 133.8,
+                "text": "pacientes que no se presentan al turno y al no hacerse seguimiento después el paciente no termina"
+              },
+              {
+                "speaker": "setter",
+                "start": 133.8,
+                "end": 140,
+                "text": "volviendo más que nada por vergüenza, por dejar plantado. Y trabajamos todo esto de forma automática,"
+              },
+              {
+                "speaker": "setter",
+                "start": 140,
+                "end": 145.3,
+                "text": "contactándolos de forma sistemática para que el equipo no lo tenga que hacer, instalamos un"
+              },
+              {
+                "speaker": "setter",
+                "start": 145.3,
+                "end": 153.8,
+                "text": "sistema. No sé si esto le hace un poco de sentido, como le digo, normalmente lo vemos en una llamada"
+              },
+              {
+                "speaker": "lead",
+                "start": 153.9,
+                "end": 177.8,
+                "text": "¿Y cuál es tu teléfono donde nos comunicamos contigo?"
+              },
+              {
+                "speaker": "setter",
+                "start": 154.8,
+                "end": 160.1,
+                "text": "donde profundizamos sobre el tema, incluso si deciden no avanzar con nosotros más allá de esa"
+              },
+              {
+                "speaker": "setter",
+                "start": 160.1,
+                "end": 165,
+                "text": "primera reunión, al menos se llevaría información que podría resultarle útil para su equipo."
+              },
+              {
+                "speaker": "setter",
+                "start": 165,
+                "end": 168.3,
+                "text": "¿Cree que podríamos coordinar ese espacio?"
+              },
+              {
+                "speaker": "setter",
+                "start": 174.9,
+                "end": 177.1,
+                "text": "Yo lo puedo volver a llamar, no hay problema."
+              },
+              {
+                "speaker": "lead",
+                "start": 177.8,
+                "end": 178.8,
+                "text": "Pásame tu teléfono."
+              },
+              {
+                "speaker": "lead",
+                "start": 178.8,
+                "end": 189.1,
+                "text": "Más 54, ¿de dónde me estás hablando?"
+              },
+              {
+                "speaker": "setter",
+                "start": 181.1,
+                "end": 182.9,
+                "text": "¿Más 54 9?"
+              },
+              {
+                "speaker": "setter",
+                "start": 187.1,
+                "end": 188.5,
+                "text": "Yo de Argentina."
+              },
+              {
+                "speaker": "lead",
+                "start": 189.1,
+                "end": 206.1,
+                "text": "A ver, más 549, 2250, 8505, 8505, 8505, 8505, 8505, 8505, 8505, 8505, 8505, 8505, 8505, 8505,"
+              },
+              {
+                "speaker": "setter",
+                "start": 191.1,
+                "end": 194.6,
+                "text": "2 2"
+              },
+              {
+                "speaker": "setter",
+                "start": 197.2,
+                "end": 198.7,
+                "text": "13 50"
+              },
+              {
+                "speaker": "setter",
+                "start": 201.8,
+                "end": 204,
+                "text": "85 05"
+              },
+              {
+                "speaker": "lead",
+                "start": 206.1,
+                "end": 221,
+                "text": "8505, tu nombre es, Ignacio qué, yo soy Felipe, déjame platicarlo y me pongo en contacto"
+              },
+              {
+                "speaker": "setter",
+                "start": 208.7,
+                "end": 209.8,
+                "text": "Es Ignacio."
+              },
+              {
+                "speaker": "setter",
+                "start": 212.2,
+                "end": 213,
+                "text": "¿Y el suyo?"
+              },
+              {
+                "speaker": "setter",
+                "start": 216.2,
+                "end": 217.4,
+                "text": "Felipe, un gusto."
+              },
+              {
+                "speaker": "setter",
+                "start": 218.2,
+                "end": 218.9,
+                "text": "Bueno,"
+              },
+              {
+                "speaker": "lead",
+                "start": 221,
+                "end": 222,
+                "text": "contigo."
+              },
+              {
+                "speaker": "setter",
+                "start": 221.9,
+                "end": 224,
+                "text": "me podés mandar un whatsapp, no hay problema."
+              },
+              {
+                "speaker": "lead",
+                "start": 222,
+                "end": 223,
+                "text": "Sí."
+              },
+              {
+                "speaker": "lead",
+                "start": 223,
+                "end": 228.4,
+                "text": "Ándale pues, hey, hasta luego, adiós."
+              },
+              {
+                "speaker": "setter",
+                "start": 225.5,
+                "end": 226.2,
+                "text": "Adiós."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:24:55.275Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          }
+        }
+      ],
+      "callAttempts": 2,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -244095,7 +245738,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:41:16.446Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -244107,9 +245750,45 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:41:16.446Z",
+          "outcome": "voicemail",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 39,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0039,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 1,
+                "text": "Muchas gracias."
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 2,
+                "text": "¡Son de vos! ¡Son de vos!"
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:41:16.691Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "2ecaf6ce-65de-11f1-aafe-f6890d575709",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -244963,7 +246642,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T20:48:08.789Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -244976,8 +246655,128 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T20:48:08.789Z",
+          "outcome": "hung_up",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 112,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0112,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 7.1,
+                "text": "Hola, buenas tardes. Mi nombre es Ignacio. ¿Se encontraría el doctor Carlos?"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 7,
+                "text": "La clínica, entonces, ¿en qué podemos ayudarte?"
+              },
+              {
+                "speaker": "lead",
+                "start": 7,
+                "end": 11,
+                "text": "en mis búpedas."
+              },
+              {
+                "speaker": "setter",
+                "start": 30,
+                "end": 52.2,
+                "text": "Ah, está bien. ¿En qué horario lo podrían contar? ¿O qué horario es más cómodo?"
+              },
+              {
+                "speaker": "lead",
+                "start": 38,
+                "end": 43,
+                "text": "El doctor Juan Carlos no se encuentra en ese momento, está ante hora de comida."
+              },
+              {
+                "speaker": "lead",
+                "start": 50,
+                "end": 52,
+                "text": "¿Para qué lo buscaba?"
+              },
+              {
+                "speaker": "setter",
+                "start": 52.2,
+                "end": 58,
+                "text": "Le quería comentar sobre una propuesta que estamos ofreciendo, puede ser de su interés,"
+              },
+              {
+                "speaker": "setter",
+                "start": 58,
+                "end": 68.6,
+                "text": "para reactivar pacientes que hace tiempo dejaron de ir. Mi nombre es Ignacio, estoy llamando"
+              },
+              {
+                "speaker": "lead",
+                "start": 63,
+                "end": 66,
+                "text": "¿Me puede regalar su nombre completo, por favor?"
+              },
+              {
+                "speaker": "lead",
+                "start": 67,
+                "end": 68,
+                "text": "Sí."
+              },
+              {
+                "speaker": "setter",
+                "start": 68.6,
+                "end": 83.3,
+                "text": "DSCM Dental. DSCM Dental, nosotros trabajamos reactivando pacientes para clínicos o consultorios"
+              },
+              {
+                "speaker": "lead",
+                "start": 75,
+                "end": 77,
+                "text": "¿De dónde perdón?"
+              },
+              {
+                "speaker": "setter",
+                "start": 83.3,
+                "end": 89.4,
+                "text": "dentales. Los ayudamos a atraer pacientes que dejaron de ir y también a pacientes que"
+              },
+              {
+                "speaker": "setter",
+                "start": 89.4,
+                "end": 95.2,
+                "text": "por falta de seguimiento se terminan perdiendo. La idea es comentarle un poco al doctor sobre"
+              },
+              {
+                "speaker": "setter",
+                "start": 95.2,
+                "end": 101.6,
+                "text": "lo que trabajamos, puede llegar a ser de su interés."
+              },
+              {
+                "speaker": "lead",
+                "start": 97,
+                "end": 100,
+                "text": "Sí, gracias, yo lo comento."
+              }
+            ],
+            "transcribedAt": "2026-06-11T20:48:08.836Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.016,
+          "realCostCurrency": "USD",
+          "realCostSid": "9172aafe-65d6-11f1-99be-02420aef8ba1",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -245430,7 +247229,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-29T16:16:14.703Z",
-      "lastContactAt": null,
+      "lastContactAt": "2026-06-11T21:17:48.424Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -245443,8 +247242,56 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-06-11T21:17:48.424Z",
+          "outcome": "hung_up",
+          "by": "user_admin_ignacio",
+          "notes": "",
+          "duration": 31,
+          "fromNumber": "+17866870849",
+          "channel": "telnyx_webrtc",
+          "cost": 0.0031,
+          "costCountry": "MX",
+          "costTariffKey": "MX_landline_5233",
+          "transcript": {
+            "segments": [
+              {
+                "speaker": "setter",
+                "start": 0,
+                "end": 14.8,
+                "text": "Hola, buenas tardes. Mi nombre es Ignacios, estoy llamando de SSM Dental. La llamaba porque"
+              },
+              {
+                "speaker": "lead",
+                "start": 0,
+                "end": 19.1,
+                "text": "Frente a la roja, un buen caso."
+              },
+              {
+                "speaker": "setter",
+                "start": 14.8,
+                "end": 18.5,
+                "text": "estoy abriendo su perfil y tenía una duda sobre cómo estaban reactivando pacientes"
+              },
+              {
+                "speaker": "setter",
+                "start": 18.5,
+                "end": 20.2,
+                "text": "que dejaron de venir, pero no sé."
+              }
+            ],
+            "transcribedAt": "2026-06-11T21:17:48.810Z",
+            "whisperModel": "whisper-1",
+            "language": "es"
+          },
+          "realCost": 0.008,
+          "realCostCurrency": "USD",
+          "realCostSid": "e4cfe924-65da-11f1-99ad-a21450c80fe4",
+          "realCostReconciledAt": "2026-06-12T13:54:36.922Z"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
