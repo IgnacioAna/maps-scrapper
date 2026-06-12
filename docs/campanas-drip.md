@@ -6,14 +6,20 @@
 ## Qué es
 
 Una campaña manda mensajes a una lista de leads, sola, al ritmo que vos
-configures — igual que los drips de GHL. El flujo de cada lead:
+configures — igual que los drips de GHL. **Flujo (v2, 2026-06-12):**
 
 ```
-encolado → opener (en bloques, con delays) → espera respuesta
-   ├─ responde → (calificación) → queda marcado para el setter
-   ├─ no responde → bump 1 → bump 2 → … → fin
-   └─ dice "no me interesa" → descartado
+encolado → OPENER (mensaje corto de apertura) → espera respuesta
+   ├─ NO responde → no se manda NADA más (sin bumps)
+   ├─ dice "no me interesa" → descartado
+   └─ responde → PITCH (la variante, bloque por bloque con delays) →
+        espera respuesta → responde → 🤖 MERCURY conversa y trata de agendar
+           └─ Mercury detecta que quiere agendar → pasa al setter humano
 ```
+
+Clave: **el opener es un primer contacto corto y separado**. La variante (el
+pitch completo) se manda SOLO a los que responden el opener. Y cuando responden
+después del pitch, **Mercury IA toma la conversación** (si lo dejás activado).
 
 ## Lo que configurás por campaña
 
