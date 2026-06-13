@@ -4592,6 +4592,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
       // Sort: usar el actual de Llamadas para consistencia
       switch (sortMode) {
+        case 'score':        leads.sort((a, b) => _callScore(b) - _callScore(a) || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)); break;
+        case 'follow_up':    leads.sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a)); break;
         case 'recent':       leads.sort((a, b) => new Date(b.importedAt || 0) - new Date(a.importedAt || 0)); break;
         case 'oldest':       leads.sort((a, b) => new Date(a.importedAt || 0) - new Date(b.importedAt || 0)); break;
         case 'country':      leads.sort((a, b) => (a.country || '').localeCompare(b.country || '')); break;
@@ -4860,6 +4862,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">·</span>
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🎯 ${sc}</span>`; })()}
             ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
@@ -5282,6 +5285,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       return last ? new Date(last.ts).getTime() : 0;
     }
 
+    // Lead scoring: prioridad de a quién llamar primero. Combina señales de
+    // calidad del negocio (reseñas/rating = clínica establecida, mejor prospecto)
+    // con frescura/esfuerzo (nunca llamado vale más; muchos intentos sin éxito
+    // restan; un callback vencido suma). Resultado 0-100 aprox, mayor = llamar antes.
+    function _callScore(l) {
+      let s = 50;
+      // Calidad del negocio: reseñas (hasta +20) + rating alto (hasta +10)
+      const reviews = Number(l.reviews || 0);
+      if (reviews > 0) s += Math.min(20, Math.log10(reviews + 1) * 12);
+      const rating = parseFloat(l.rating);
+      if (Number.isFinite(rating) && rating > 0) s += Math.min(10, (rating - 3) * 5);
+      // Esfuerzo: nunca llamado = bonus fuerte; cada intento previo resta
+      const attempts = Number(l.callAttempts || 0);
+      if (attempts === 0) s += 18;
+      else s -= Math.min(24, attempts * 6);
+      // Interesado esperando agendar = máxima prioridad
+      if (l.estado === 'interesado') s += 25;
+      // Callback vencido = subir (toca seguir)
+      if (l.callbackAt) {
+        const cb = new Date(l.callbackAt).getTime();
+        if (cb && cb <= Date.now()) s += 15;
+      }
+      // Señales negativas de teléfono
+      if (l.phoneStatus === 'voicemail') s -= 6;
+      if (l.phoneStatus === 'wrong' || l.phoneStatus === 'invalid') s -= 40;
+      // Datos de contacto enriquecidos = lead más trabajable
+      if (l.email) s += 3;
+      if (l.website) s += 2;
+      return s;
+    }
+    window._callScore = _callScore;
+
     // Sprint 21: Render de chips de filtro por país (con bandera + count)
     function _callsRenderCountryChips() {
       const wrap = document.getElementById('calls-country-chips');
@@ -5660,6 +5695,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Sort configurable según el dropdown
       switch (sortMode) {
+        case 'score':
+          leads.sort((a, b) => _callScore(b) - _callScore(a)
+            || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)
+            || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+          break;
         case 'follow_up':
           leads.sort((a, b) => {
             const ad = _isDueCallback(a), bd = _isDueCallback(b);
