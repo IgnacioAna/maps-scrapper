@@ -9151,7 +9151,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       realizada: { bg: 'var(--success-soft)', color: 'var(--success)', label: '✅ Realizada' },
       no_show:   { bg: 'var(--danger-soft)', color: 'var(--danger)', label: '👻 No-show' },
       cancelada: { bg: 'rgba(126,132,148,0.15)', color: 'var(--text-tertiary)', label: '❌ Cancelada' },
-      reagendada:{ bg: 'var(--info-soft)', color: 'var(--info)', label: '🔄 Reagendada' }
+      reagendada:{ bg: 'var(--info-soft)', color: 'var(--info)', label: '🔄 Reagendada' },
+      ganada:    { bg: 'rgba(255,179,65,0.15)', color: '#FFB341', label: '🏆 Ganada' }
     };
 
     list.innerHTML = entries.map(e => {
@@ -9176,6 +9177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span style="background:${sc.bg}; color:${sc.color}; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600;">${sc.label}</span>
             ${isPast && e.calendarioEstado === 'pendiente' ? '<span style="background:var(--danger-soft); color:var(--danger); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600;">⚠️ ATRASADA</span>' : ''}
             ${e.sourceCall ? '<span style="background:var(--accent-soft); color:var(--accent); padding:2px 8px; border-radius:6px; font-size:10px;">desde llamada</span>' : ''}
+            ${e.calendarioEstado === 'ganada' && e.valorProyecto ? `<span style="background:rgba(255,179,65,0.15); color:#FFB341; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700;">💵 $${Number(e.valorProyecto).toLocaleString('es-AR')}</span>` : ''}
           </div>
           <div style="font-size:13px; color:var(--text-secondary); margin-bottom:3px;">📆 <strong>${escHtml(fechaStr)}</strong> · agendó: <strong>${escHtml(e.setterName || e.setterId || '?')}</strong></div>
           ${lead ? `<div style="font-size:12px; color:var(--text-tertiary);">📞 ${escHtml(lead.phone || '')} · ${escHtml(lead.city || '')}${lead.city && lead.country ? ' / ' : ''}${escHtml(lead.country || '')}${lead.doctor && !String(lead.doctor).includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}${lead.callAttempts ? ` · ${lead.callAttempts} intento${lead.callAttempts>1?'s':''}` : ''}</div>` : ''}
@@ -9185,6 +9187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <select onchange="window._updateScheduledStatus('${escHtml(e.id)}', this.value)" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:160px; cursor:pointer; font-family:inherit;">
           <option value="">— Cambiar estado —</option>
           <option value="realizada">✅ Marcar realizada</option>
+          <option value="ganada">🏆 GANADA (cierre de venta)</option>
           <option value="no_show">👻 No-show</option>
           <option value="cancelada">❌ Cancelar</option>
           <option value="reagendada">🔄 Reagendar (cambiar fecha)</option>
@@ -9197,6 +9200,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._updateScheduledStatus = async (entryId, status) => {
     if (!status) return;
     let body = { calendarioEstado: status };
+    if (status === 'ganada') {
+      const val = await window.askText({
+        title: '🏆 Cerrar venta',
+        subtitle: 'Valor del proyecto cerrado (USD). Dejá 0 si no aplica.',
+        type: 'input',
+        placeholder: 'Ej: 1500',
+        confirmLabel: 'Marcar ganada',
+      });
+      if (val === null || val === undefined) return; // canceló
+      const num = Number(String(val).replace(/[^\d.]/g, '')) || 0;
+      body.valorProyecto = num;
+    }
     if (status === 'reagendada') {
       const newDate = await window.askText({
         title: 'Reagendar llamada',
@@ -11005,13 +11020,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>`;
 
     const dealsLabel = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary); font-size:14px;">—</span>`;
+    const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'Marcá citas como 🏆 ganadas';
     cont.innerHTML = `
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:18px;">
         ${stage('📞', 'Dials Made', m.dials, 'Llamadas marcadas', '#7E8494')}
         ${stage('📲', 'Connects', m.connects, fmtPct(r.connectRate) + ' rate', '#79B8FF')}
         ${stage('💬', 'Conversations', m.conversations, fmtPct(r.conversationRate) + ' de connects', '#9D85F2')}
         ${stage('📅', 'Appointments', m.appointments, fmtPct(r.bookingRate) + ' de convs', '#5BB974')}
-        ${stage('💰', 'Deals Closed', dealsLabel, m.deals === 0 ? '(estado no implementado)' : fmtPct(r.closeRate) + ' rate', '#FFB341')}
+        ${stage('💰', 'Deals Closed', dealsLabel, m.deals > 0 ? fmtPct(r.closeRate) + ' rate · ' + revenueStr : revenueStr, '#FFB341')}
       </div>
 
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px; padding-top:14px; border-top:1px solid var(--border-soft);">

@@ -524,6 +524,11 @@ function ensureLeadDefaults(lead = {}) {
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
   if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
+  // Cierre de venta (funnel SDR). Se setean cuando una cita del calendario se
+  // marca 'ganada' (estado='cerrado'). closedAt = ISO del cierre (para filtrar
+  // deals por período en cold-call-metrics). dealValue = valor del proyecto cerrado.
+  if (!lead.closedAt) lead.closedAt = '';
+  if (typeof lead.dealValue !== 'number') lead.dealValue = 0;
   // Show rate: si el lead llegó a estado "agendado", el closer marca tras la
   // llamada si el prospecto se presentó. true = show, false = no-show, null =
   // todavia no se sabe / no aplica.
@@ -3760,7 +3765,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
 
   const data = loadSettersData();
   let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
-  let totalDurationS = 0;
+  let totalDurationS = 0, revenue = 0;
 
   for (const id in data.leads) {
     const lead = data.leads[id];
@@ -3779,9 +3784,17 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
         if (APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
       }
     }
-    // Deals closed: por ahora no hay estado closed_won formal — placeholder
-    // Si en el futuro agregamos `lead.dealWon === true` o estado='ganado',
-    // contar acá los que se cerraron en el período.
+  }
+
+  // Deals cerrados: citas del calendario marcadas 'ganada' cuyo cierre (closedAt)
+  // cae en el período. Se atribuyen al setter que agendó (entry.setterId).
+  for (const entry of (Array.isArray(data.calendar) ? data.calendar : [])) {
+    if (entry.calendarioEstado !== 'ganada') continue;
+    if (setterId && entry.setterId !== setterId) continue;
+    const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
+    if (!closedTs || closedTs < fromTs) continue;
+    deals++;
+    revenue += Number(entry.valorProyecto || 0);
   }
 
   const ratio = (n, d) => d > 0 ? +(n / d * 100).toFixed(1) : 0;
@@ -3789,7 +3802,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
     period,
     fromTs,
     setterId: setterId || null,
-    metrics: { dials, connects, conversations, appointments, deals },
+    metrics: { dials, connects, conversations, appointments, deals, revenue },
     rates: {
       connectRate: ratio(connects, dials),
       conversationRate: ratio(conversations, connects),
@@ -7187,7 +7200,7 @@ app.post('/api/setters/calendar', requireAuth, (req, res) => {
   const { leadId, fecha, nombre, calendarioEstado, valorProyecto, comision, setterId } = req.body || {};
   // 2026-05-23: validacion de calendarioEstado (whitelist) + tipo de fecha + tope length.
   // Antes cualquier basura entraba al calendar.
-  const validEstados = ['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada'];
+  const validEstados = ['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada', 'ganada'];
   if (calendarioEstado !== undefined && !validEstados.includes(calendarioEstado)) {
     return res.status(400).json({ error: `calendarioEstado inválido (debe ser uno de: ${validEstados.join(', ')}).` });
   }
@@ -7242,7 +7255,7 @@ app.get('/api/setters/calendar/enriched', requireAuth, (req, res) => {
 });
 
 // PATCH: actualizar estado de una entry (admin marca realizada/no-show/cancelada/reagendada)
-const CALENDAR_STATES = new Set(['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada']);
+const CALENDAR_STATES = new Set(['pendiente', 'realizada', 'no_show', 'cancelada', 'reagendada', 'ganada']);
 app.patch('/api/setters/calendar/:id', requireAuth, (req, res) => {
   const data = loadSettersData();
   if (!Array.isArray(data.calendar)) data.calendar = [];
@@ -7251,6 +7264,7 @@ app.patch('/api/setters/calendar/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && entry.setterId !== req.auth.user.setterId) {
     return res.status(403).json({ error: 'No autorizado.' });
   }
+  const prevEstado = entry.calendarioEstado;
   if (req.body.calendarioEstado !== undefined) {
     if (!CALENDAR_STATES.has(req.body.calendarioEstado)) {
       return res.status(400).json({ error: `Estado inválido. Esperado uno de: ${[...CALENDAR_STATES].join(', ')}` });
@@ -7262,6 +7276,32 @@ app.patch('/api/setters/calendar/:id', requireAuth, (req, res) => {
   if (req.body.notas !== undefined) entry.notas = String(req.body.notas).slice(0, 1000);
   if (req.body.valorProyecto !== undefined) entry.valorProyecto = Number(req.body.valorProyecto) || 0;
   if (req.body.comision !== undefined) entry.comision = Number(req.body.comision) || 0;
+
+  // Cierre del funnel SDR: marcar una cita como 'ganada' cierra la venta.
+  // Propaga al lead (estado='cerrado' + closedAt + dealValue) para que el
+  // cold-call-metrics cuente el deal y atribuya el revenue al setter que agendó.
+  // Revertir el estado 'ganada' deshace el cierre (vuelve la cita a 'realizada').
+  const nowIso = new Date().toISOString();
+  const lead = entry.leadId ? data.leads[entry.leadId] : null;
+  if (entry.calendarioEstado === 'ganada' && prevEstado !== 'ganada') {
+    entry.closedAt = nowIso;
+    if (lead) {
+      lead.estado = 'cerrado';
+      lead.closedAt = nowIso;
+      lead.dealValue = entry.valorProyecto || 0;
+    }
+  } else if (prevEstado === 'ganada' && entry.calendarioEstado !== 'ganada') {
+    entry.closedAt = '';
+    if (lead && lead.estado === 'cerrado') {
+      lead.estado = 'agendado';
+      lead.closedAt = '';
+      lead.dealValue = 0;
+    }
+  } else if (entry.calendarioEstado === 'ganada' && req.body.valorProyecto !== undefined && lead) {
+    // Editar el valor de un deal ya cerrado (sin cambiar estado).
+    lead.dealValue = entry.valorProyecto || 0;
+  }
+
   saveSettersData(data);
   res.json({ entry });
 });
