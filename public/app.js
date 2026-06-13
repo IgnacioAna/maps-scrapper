@@ -4504,6 +4504,68 @@ document.addEventListener('DOMContentLoaded', async () => {
       queue: [],          // array de lead IDs en orden
       currentIdx: 0,
       processed: 0,
+      autopilot: false,     // auto-disca el siguiente lead tras cada disposition
+      autopilotArmed: false,// flag interno: el próximo render debe disparar countdown
+      autopilotTimer: null, // handle del setInterval del countdown
+    };
+    function _pdAutopilotKey() { return 'pd_autopilot_' + (currentUser?.id || 'anon'); }
+    // Cancela cualquier countdown de autopiloto pendiente y limpia el banner.
+    function _pdCancelAutopilot() {
+      if (_pd.autopilotTimer) { clearInterval(_pd.autopilotTimer); _pd.autopilotTimer = null; }
+      const banner = document.getElementById('pd-autopilot-countdown');
+      if (banner) banner.remove();
+    }
+    // Arranca la cuenta regresiva y, al llegar a 0, disca el lead actual.
+    // Se cancela si el usuario interactúa (llamar/saltar/disposition/Esc) o
+    // si ya hay una llamada Telnyx activa (panel visible).
+    function _pdStartAutopilotCountdown() {
+      _pdCancelAutopilot();
+      const panel = document.getElementById('telnyx-call-panel');
+      if (panel && panel.style.display !== 'none' && panel.style.display !== '') return; // ya hay llamada
+      const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
+      if (!lead) return;
+      let secs = 3;
+      const wrap = document.getElementById('pd-current-wrap');
+      if (!wrap) return;
+      const banner = document.createElement('div');
+      banner.id = 'pd-autopilot-countdown';
+      banner.style.cssText = 'margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:linear-gradient(135deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.05) 100%); border:1px solid rgba(157,133,242,0.4); border-radius:12px;';
+      const render = () => { banner.innerHTML = `<span style="font-size:13px; color:var(--text-primary);">🚀 Autopiloto: llamando a <strong>${escHtml(lead.name)}</strong> en <strong style="color:var(--accent); font-variant-numeric:tabular-nums;">${secs}</strong>…</span><button type="button" onclick="window._pdCancelAutopilotNow()" style="padding:7px 14px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:8px; cursor:pointer; font-size:12px;">Cancelar (P)</button>`; };
+      render();
+      wrap.appendChild(banner);
+      _pd.autopilotTimer = setInterval(() => {
+        secs--;
+        if (secs <= 0) {
+          _pdCancelAutopilot();
+          window._startTelnyxCall?.(lead.id);
+        } else { render(); }
+      }, 1000);
+    }
+    window._pdCancelAutopilotNow = function() { _pdCancelAutopilot(); };
+    // Refleja el estado del autopiloto en el botón del header.
+    function _pdSyncAutopilotToggle() {
+      const btn = document.getElementById('pd-autopilot-toggle');
+      if (!btn) return;
+      if (_pd.autopilot) {
+        btn.style.background = 'rgba(157,133,242,0.22)';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--text-primary)';
+        btn.innerHTML = '🚀 Autopiloto: ON';
+        btn.title = 'Auto-disca el siguiente lead tras cada resultado. Click o tecla A para apagar.';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.borderColor = 'rgba(255,255,255,0.15)';
+        btn.style.color = 'var(--text-secondary)';
+        btn.innerHTML = '🚀 Autopiloto: OFF';
+        btn.title = 'Marcá un resultado y discás manualmente. Click o tecla A para encender el discado continuo.';
+      }
+    }
+    window._pdToggleAutopilot = function() {
+      _pd.autopilot = !_pd.autopilot;
+      localStorage.setItem(_pdAutopilotKey(), _pd.autopilot ? '1' : '0');
+      _pdSyncAutopilotToggle();
+      if (!_pd.autopilot) _pdCancelAutopilot();
+      window.showToast?.(_pd.autopilot ? 'Autopiloto encendido · discado continuo' : 'Autopiloto apagado', { type: _pd.autopilot ? 'success' : 'info', duration: 1800 });
     };
     function _pdBuildQueue() {
       // Tomar los leads visibles según los filtros actuales, sort actual,
@@ -4555,6 +4617,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.currentIdx = 0;
       _pd.processed = 0;
       _pd.active = true;
+      _pd.autopilot = localStorage.getItem(_pdAutopilotKey()) === '1';
+      _pd.autopilotArmed = false; // no auto-discar el primer lead al abrir
+      _pdSyncAutopilotToggle();
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
       _pdRender();
@@ -4567,6 +4632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!confirm('Hay una llamada activa. ¿Salir del power dialer? La llamada se va a colgar.')) return;
         try { _telnyx.activeCall.hangup?.(); } catch {}
       }
+      _pdCancelAutopilot();
       _pd.active = false;
       document.getElementById('power-dialer').style.display = 'none';
       document.body.style.overflow = '';
@@ -4643,6 +4709,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._pdRenderToday = _pdRenderToday;
 
     function _pdAdvance() {
+      _pdCancelAutopilot();
+      _pd.autopilotArmed = _pd.autopilot; // el próximo render dispara el countdown
       _pd.currentIdx++;
       _pd.processed++;
       if (_pd.currentIdx >= _pd.queue.length) {
@@ -4660,6 +4728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdRender();
     }
     function _pdRender() {
+      _pdCancelAutopilot(); // limpiar countdown previo antes de re-renderizar
       _pdRenderToday();
       const currentId = _pd.queue[_pd.currentIdx];
       const lead = _callsLeadsById.get(currentId);
@@ -4936,6 +5005,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         }).catch(() => {});
       }
+
+      // Autopiloto: si venimos de un advance con autopiloto encendido, arrancar
+      // la cuenta regresiva para discar este lead automáticamente.
+      if (_pd.autopilotArmed) {
+        _pd.autopilotArmed = false;
+        _pdStartAutopilotCountdown();
+      }
     }
     // Cache de tarifas por número durante la sesión del PD
     const _pdRateCache = new Map();
@@ -5093,17 +5169,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._startTelnyxCall?.(ghostId);
     });
 
+    // Volver al lead anterior (por si se marcó un resultado equivocado).
+    window._pdBack = function() {
+      if (_pd.currentIdx <= 0) { window.showToast?.('Ya estás en el primer lead', { type: 'info', duration: 1500 }); return; }
+      _pdCancelAutopilot();
+      _pd.autopilotArmed = false; // al volver atrás, no auto-discar
+      _pd.currentIdx--;
+      if (_pd.processed > 0) _pd.processed--;
+      _pdRender();
+    };
+
+    // Mapa de teclas numéricas → outcomes (mismo orden que el grid de disposition).
+    const _pdKeyOutcomes = ['answered_interested','answered_not_interested','hung_up','no_answer','voicemail','callback_later','wrong_number','invalid_number'];
+
     // Shortcuts globales para power dialer
     document.addEventListener('keydown', (e) => {
       if (!_pd.active) return;
-      // Ignorar si está tipeando en input/textarea
-      if (e.target?.matches?.('input,textarea,select')) return;
-      if (e.key === 'Escape') { window._pdExit(); }
-      else if (e.key === 'c' || e.key === 'C') {
+      // Ignorar si está tipeando en input/textarea/select (excepto Escape)
+      const typing = e.target?.matches?.('input,textarea,select');
+      if (e.key === 'Escape') { if (_pd.autopilotTimer) { _pdCancelAutopilot(); } else { window._pdExit(); } return; }
+      if (typing) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'c' || e.key === 'C') {
+        _pdCancelAutopilot();
         const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
         if (lead) window._startTelnyxCall?.(lead.id);
       }
-      else if (e.key === 's' || e.key === 'S') { window._pdSkip(); }
+      else if (e.key === 's' || e.key === 'S') { _pdCancelAutopilot(); window._pdSkip(); }
+      else if (e.key === 'b' || e.key === 'B') { window._pdBack(); }
+      else if (e.key === 'a' || e.key === 'A') { window._pdToggleAutopilot(); }
+      else if (e.key === 'p' || e.key === 'P') { _pdCancelAutopilot(); }
+      else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); document.getElementById('pd-call-note')?.focus(); }
+      else if (e.key >= '1' && e.key <= '8') {
+        const outcome = _pdKeyOutcomes[parseInt(e.key, 10) - 1];
+        const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
+        if (lead && outcome) { _pdCancelAutopilot(); window._pdHandleDispositionDirect(lead.id, outcome); }
+      }
     });
 
     // Sprint 33: render barra de quota diaria
