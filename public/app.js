@@ -4923,11 +4923,25 @@ document.addEventListener('DOMContentLoaded', async () => {
               let costStr = '';
               if (typeof entry.realCost === 'number') costStr = `<span title="costo real facturado por Telnyx" style="color:#ffc828;">$${entry.realCost.toFixed(4)} real</span>`;
               else if (typeof entry.cost === 'number' && entry.cost > 0) costStr = `<span title="costo estimado (tabla local)" style="color:var(--text-tertiary);">~$${entry.cost.toFixed(4)}</span>`;
-              return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">
+              const segs = entry.transcript?.segments;
+              const hasTr = Array.isArray(segs) && segs.length > 0;
+              const rowInner = `
                 <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
-                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}</span>
-                <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px; display:flex; gap:8px; align-items:center;">${costStr}${t}</span>
-              </div>`;
+                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:#9D85F2;">🎤</span>' : ''}</span>
+                <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px; display:flex; gap:8px; align-items:center;">${costStr}${t}</span>`;
+              if (!hasTr) {
+                return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">${rowInner}</div>`;
+              }
+              // Con transcript: fila expandible inline (details nativo, sin JS)
+              const segsHtml = segs.map(s => {
+                const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+                const lbl = s.speaker === 'setter' ? 'Setter' : 'Lead';
+                return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; min-width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="color:var(--text-secondary);">${escHtml(s.text || '')}</span></div>`;
+              }).join('');
+              return `<details style="background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; overflow:hidden;">
+                <summary style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; font-size:11.5px; cursor:pointer; list-style:none;">${rowInner}</summary>
+                <div style="padding:9px 12px 11px; border-top:1px solid var(--border-subtle); font-size:11px; line-height:1.5; max-height:220px; overflow-y:auto;">${segsHtml}</div>
+              </details>`;
             }).join('')}
           </div>
         </div>` : ''}
