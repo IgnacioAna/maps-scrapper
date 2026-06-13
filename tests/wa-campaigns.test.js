@@ -195,6 +195,20 @@ describe("buildVariantAssignments (split ponderado)", () => {
   });
 });
 
+describe("buildAccountAssignments (distribución multi-número)", () => {
+  it("sin distribución → round-robin sobre accountIds", () => {
+    const a = camp.buildAccountAssignments(["wa1", "wa2"], [], 10);
+    expect(a.filter((x) => x === "wa1").length).toBe(5);
+    expect(a.filter((x) => x === "wa2").length).toBe(5);
+  });
+  it("con pesos 2:1 reparte ~66/33", () => {
+    const a = camp.buildAccountAssignments(["wa1", "wa2"], [{ accountId: "wa1", weight: 2 }, { accountId: "wa2", weight: 1 }], 99);
+    expect(a.filter((x) => x === "wa1").length).toBe(66);
+    expect(a.filter((x) => x === "wa2").length).toBe(33);
+  });
+  it("sin cuentas → []", () => expect(camp.buildAccountAssignments([], [], 5)).toEqual([]));
+});
+
 describe("selectLeadsFromMap", () => {
   const leads = {
     L1: { phone: "521111", country: "MX", estado: "sin_contactar", assignedTo: "s1" },

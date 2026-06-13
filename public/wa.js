@@ -688,9 +688,12 @@ async function openCampaignBuilder() {
           <input id="cb-name" class="camp-inp" placeholder="Ej: México lote 1"></div>
 
         <div><label class="camp-lbl">Cuenta(s) WhatsApp de salida</label>
-          <div id="cb-accounts" style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${accs.length ? accs.map((a) => `<label class="camp-pick"><input type="checkbox" value="${a.id}"> ${escHtml(a.label)}</label>`).join("") : '<span style="color:var(--warning);font-size:12px;">No hay cuentas conectadas.</span>'}
-          </div></div>
+          <div id="cb-accounts" style="display:flex;flex-direction:column;gap:6px;">
+            ${accs.length ? accs.map((a) => `<label class="camp-pick" style="justify-content:space-between;">
+              <span><input type="checkbox" value="${a.id}"> ${escHtml(a.label)}</span>
+              <span class="cb-acc-wwrap" style="display:none;align-items:center;gap:4px;font-size:11px;color:var(--text-tertiary);">peso <input type="number" class="cb-aweight camp-inp" data-aid="${a.id}" value="1" min="1" style="width:54px;" title="peso de reparto"></span></label>`).join("") : '<span style="color:var(--warning);font-size:12px;">No hay cuentas conectadas.</span>'}
+          </div>
+          <div id="cb-acc-hint" style="font-size:11px;color:var(--text-tertiary);margin-top:3px;display:none;">Con 2+ cuentas, los leads se reparten según el peso (ej. 2 y 1 → 66%/33%). Dejá todo en 1 para reparto parejo.</div></div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
           <div><label class="camp-lbl">País (leads)</label><input id="cb-country" class="camp-inp" placeholder="México o MX (vacío=todos)"></div>
@@ -751,6 +754,20 @@ async function openCampaignBuilder() {
   overlay.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", close));
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
+  // Pesos por cuenta: solo se muestran cuando hay 2+ cuentas tildadas.
+  const refreshAccountWeights = () => {
+    const checked = [...overlay.querySelectorAll("#cb-accounts input[type=checkbox]:checked")];
+    const showWeights = checked.length >= 2;
+    overlay.querySelectorAll("#cb-accounts .camp-pick").forEach((lbl) => {
+      const cb = lbl.querySelector("input[type=checkbox]");
+      const wrap = lbl.querySelector(".cb-acc-wwrap");
+      if (wrap) wrap.style.display = (showWeights && cb.checked) ? "flex" : "none";
+    });
+    const hint = overlay.querySelector("#cb-acc-hint");
+    if (hint) hint.style.display = showWeights ? "block" : "none";
+  };
+  overlay.querySelectorAll("#cb-accounts input[type=checkbox]").forEach((cb) => cb.addEventListener("change", refreshAccountWeights));
+
   overlay.querySelector("#cb-save").addEventListener("click", async () => {
     const statusEl = overlay.querySelector("#cb-status");
     const accountIds = [...overlay.querySelectorAll("#cb-accounts input:checked")].map((i) => i.value);
@@ -764,9 +781,14 @@ async function openCampaignBuilder() {
     if (!accountIds.length) return (statusEl.textContent = "Elegí al menos una cuenta.");
     if (!openers.length) return (statusEl.textContent = "Escribí al menos un mensaje de apertura (opener).");
     if (!variantSplit.length) return (statusEl.textContent = "Elegí al menos una variante (pitch).");
+    // Distribución por peso (solo si hay 2+ cuentas). Con 1 cuenta queda [].
+    const accountDistribution = accountIds.length >= 2
+      ? accountIds.map((aid) => ({ aid, weight: parseInt(overlay.querySelector(`.cb-aweight[data-aid="${aid}"]`)?.value, 10) || 1 }))
+          .map((x) => ({ accountId: x.aid, weight: x.weight }))
+      : [];
     const body = {
       name: overlay.querySelector("#cb-name").value.trim(),
-      accountIds, variantSplit, openers,
+      accountIds, variantSplit, openers, accountDistribution,
       useMercury: overlay.querySelector("#cb-mercury").checked,
       drip: { batchSize: parseInt(overlay.querySelector("#cb-batch").value, 10) || 1, intervalMinutes: parseInt(overlay.querySelector("#cb-interval").value, 10) || 5 },
       window: { hourStart: parseInt(overlay.querySelector("#cb-hstart").value, 10), hourEnd: parseInt(overlay.querySelector("#cb-hend").value, 10), days: days.length ? days : [1, 2, 3, 4, 5], timezone: overlay.querySelector("#cb-tz").value },
