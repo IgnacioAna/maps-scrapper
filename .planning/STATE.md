@@ -80,7 +80,7 @@ del flow de scripts en vivo (Phase 7 candidate), parallel dialer, call recording
 | 4 | Bloque D — IA mejorada | Pending (futuro) |
 | 5 | Bloque E — Llamadas IA | Pending (futuro lejano — depende de Phase 6) |
 | 6 | **Telnyx Calls Foundation** | ✅ **DONE (2026-05-22)** |
-| 7 | **Motor de Campañas Drip WhatsApp** | ✅ v2 2026-06-12 — flujo REDISEÑADO: opener→espera→(si responde)pitch en bloques→espera→Mercury IA conversa. Sin bumps (a quien no responde no se le manda nada). Mercury integrado (campaignMercuryReply). Ritmo configurable por cuenta (gap anti-ráfaga). Distribución multi-número por peso. 106 tests. PENDIENTE: tipeo humano forzado (repack wa-multi v0.5.10) + UI de pesos por cuenta. |
+| 7 | **Motor de Campañas Drip WhatsApp** | ✅ v2 2026-06-12 — flujo REDISEÑADO: opener→espera→(si responde)pitch en bloques→espera→Mercury IA conversa. Sin bumps (a quien no responde no se le manda nada). Mercury integrado (campaignMercuryReply). Ritmo configurable por cuenta (gap anti-ráfaga). Distribución multi-número por peso. 106 tests. Ver-leads ✅. Tipeo humano ✅ (wa-multi v0.5.10, repack hecho — sendMessageInWindow tipea letra por letra). PENDIENTE menor: UI de pesos por cuenta (backend ya reparte por peso, falta el input). |
 | 8 | **Anti-detección wa-multi: Proxy + Fingerprint** | ✅ DONE 2026-06-11 — backend+panel LIVE; **repack wa-multi v0.5.9 hecho** (patch del app.asar con @electron/asar, en versiones/wa-multi-portable-v0.5.9). Falta solo que el user lo abra y corra el checklist de VERIFICATION.md con un proxy real |
 | 9+ | (Futuro) Cold Calling efectividad | Posible: parallel dialer, call recording, Mercury IA en vivo, scoring leads |
 
