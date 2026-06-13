@@ -1072,7 +1072,28 @@
         <div id="telnyx-script-triggers" style="padding:10px 14px 0; display:flex; gap:5px; flex-wrap:wrap; max-height:120px; overflow-y:auto;"></div>
 
         <!-- Texto del script seleccionado -->
-        <div id="telnyx-script-text" style="margin:10px 14px 0; padding:14px; font-size:13px; line-height:1.65; color:#fff; white-space:pre-wrap; flex:1; overflow-y:auto; min-height:120px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:10px;">Elegí un guion arriba ↑</div>
+        <div id="telnyx-script-text" style="margin:10px 14px 0; padding:14px; font-size:13px; line-height:1.65; color:#fff; white-space:pre-wrap; flex:1; overflow-y:auto; min-height:90px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:10px;">Elegí un guion arriba ↑</div>
+
+        <!-- Mercury en vivo: responde a lo que dijo el prospect, al toque -->
+        <div style="margin:10px 14px 0; border:1px solid rgba(157,133,242,0.22); border-radius:10px; overflow:hidden;">
+          <button id="telnyx-mercury-toggle" type="button" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; background:rgba(157,133,242,0.08); border:none; color:#fff; cursor:pointer; font-size:11.5px; font-weight:600; font-family:inherit;">
+            <span>🤖 Mercury en vivo · respuesta a una objeción</span>
+            <span id="telnyx-mercury-caret" style="color:var(--accent);">▾</span>
+          </button>
+          <div id="telnyx-mercury-body" style="display:none; padding:10px 12px; background:rgba(0,0,0,0.15);">
+            <div id="telnyx-mercury-chips" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+              <button type="button" class="tlx-merc-chip" data-objection="Me parece caro / no tengo presupuesto ahora">💸 Precio</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Ya tengo un sistema / una agencia que me maneja esto">🔁 Ya tiene sistema</button>
+              <button type="button" class="tlx-merc-chip" data-objection="No tengo tiempo ahora">⏱️ Sin tiempo</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Mandame info por mail / WhatsApp y lo veo">📧 Mandá info</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Tengo que pensarlo / consultarlo">🤔 Lo piensa</button>
+              <button type="button" class="tlx-merc-chip" data-objection="¿Quiénes son ustedes? No los conozco">❓ Quién sos</button>
+            </div>
+            <textarea id="telnyx-mercury-input" rows="2" placeholder="Pegá o escribí lo que dijo el prospect…" style="width:100%; padding:8px 11px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#fff; font-size:12px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
+            <button id="telnyx-mercury-generate" type="button" class="btn-primary" style="width:100%; margin-top:8px; font-size:11.5px; padding:9px; border-radius:8px;">⚡ Generar respuesta</button>
+            <div id="telnyx-mercury-output" style="margin-top:9px; display:none; flex-direction:column; gap:7px;"></div>
+          </div>
+        </div>
 
         <!-- Footer: copiar -->
         <div style="padding:10px 14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; gap:8px; background:rgba(0,0,0,0.2);">

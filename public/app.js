@@ -6646,6 +6646,69 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { window.showToast?.('No pude copiar', { type: 'error' }); }
     });
 
+    // ── Mercury en vivo dentro del panel de scripts ──────────────────
+    // Genera una respuesta sanitizada a la objeción del prospect, reusando
+    // el mismo endpoint del Asistente (/api/mercury/generate). Contexto: el
+    // lead activo de la llamada (nombre/ciudad/país) para personalizar.
+    const _mercToggle = document.getElementById('telnyx-mercury-toggle');
+    const _mercBody = document.getElementById('telnyx-mercury-body');
+    const _mercInput = document.getElementById('telnyx-mercury-input');
+    const _mercOut = document.getElementById('telnyx-mercury-output');
+    _mercToggle?.addEventListener('click', () => {
+      const open = _mercBody.style.display !== 'none';
+      _mercBody.style.display = open ? 'none' : 'block';
+      const caret = document.getElementById('telnyx-mercury-caret');
+      if (caret) caret.textContent = open ? '▾' : '▴';
+      if (!open) setTimeout(() => _mercInput?.focus(), 60);
+    });
+    document.querySelectorAll('.tlx-merc-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        if (_mercInput) _mercInput.value = chip.dataset.objection || '';
+        _mercLiveGenerate();
+      });
+    });
+    document.getElementById('telnyx-mercury-generate')?.addEventListener('click', () => _mercLiveGenerate());
+    _mercInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); _mercLiveGenerate(); }
+    });
+
+    async function _mercLiveGenerate() {
+      const msg = (_mercInput?.value || '').trim();
+      if (!msg) { window.showToast?.('Escribí o elegí qué dijo el prospect', { type: 'warn', duration: 1800 }); return; }
+      if (!_mercOut) return;
+      // Contexto del lead activo (si hay llamada en curso)
+      const lead = _telnyxCallState.leadId ? _callsLeadsById.get(_telnyxCallState.leadId) : null;
+      const ctx = lead ? `Prospect: ${lead.name || ''}${lead.city ? ', ' + lead.city : ''}${lead.country ? ', ' + lead.country : ''}. Canal: llamada en frío.` : 'Canal: llamada en frío.';
+      _mercOut.style.display = 'flex';
+      _mercOut.innerHTML = '<div style="color:rgba(255,255,255,0.6); font-size:11.5px; padding:6px 2px;">⚡ Mercury pensando…</div>';
+      try {
+        const r = await fetch(apiUrl('/api/mercury/generate'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ prospectMessage: msg, context: ctx, channel: 'call' }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+        const blocks = Array.isArray(d.blocks) && d.blocks.length ? d.blocks : (d.text ? [d.text] : []);
+        if (!blocks.length) { _mercOut.innerHTML = '<div style="color:#FFB341; font-size:11.5px; padding:6px 2px;">Mercury no devolvió respuesta. Probá reformular.</div>'; return; }
+        _mercOut.innerHTML = blocks.map((b, i) => `
+          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:9px 11px;">
+            <div style="color:#fff; font-size:12.5px; line-height:1.5; white-space:pre-wrap;">${escHtml(b)}</div>
+            <button type="button" class="tlx-merc-copy" data-block="${i}" style="margin-top:7px; font-size:10.5px; padding:5px 10px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.35); color:#fff; border-radius:6px; cursor:pointer;">📋 Copiar</button>
+          </div>`).join('') +
+          (d.usedFallback ? '<div style="color:rgba(255,255,255,0.4); font-size:10px; padding:2px;">respuesta del banco (fallback)</div>' : '');
+        _mercOut.querySelectorAll('.tlx-merc-copy').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const idx = parseInt(btn.dataset.block, 10);
+            try { await navigator.clipboard.writeText(blocks[idx] || ''); window.showToast?.('Copiado ✓', { type: 'success', duration: 1200 }); } catch {}
+          });
+        });
+      } catch (e) {
+        _mercOut.innerHTML = `<div style="color:#f85149; font-size:11.5px; padding:6px 2px;">Error: ${escHtml(e.message)}</div>`;
+      }
+    }
+
     // Botón colgar del panel
     document.getElementById('telnyx-call-hangup')?.addEventListener('click', () => {
       if (_telnyx.activeCall) {
