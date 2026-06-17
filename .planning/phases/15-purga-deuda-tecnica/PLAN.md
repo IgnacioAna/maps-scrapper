@@ -68,6 +68,41 @@ Mis WhatsApps, Entrenamiento, Google Maps + Historial scrapes, Objeciones, Revis
 
 ---
 
+## C) Consolidación de TODO el panel (admin + setter) — 2 agentes (2026-06-17)
+
+### Duplicación admin (el quilombo principal)
+La misma data se computa/renderiza en varias vistas:
+- **Performance por setter computada 3×** en backend (`/api/setters/command` + `/performance` + `/team-performance`) — misma fórmula `pctConexion/pctApertura/pctCalificacion`. → extraer **`_computeSetterStats(leads)`** único; deprecar `/stats`; mergear `/team-performance` en `/command` con `?scope`. (-600 LoC backend)
+- **Métricas cold-call en 2 lados** con agregaciones distintas (command callStats ≠ cold-call-metrics) → una sola fuente.
+- **Presencia (view-online)** → debe ser una **columna en Equipo**, no vista propia.
+- **Historial de scrapes** → **tab dentro de Prospección/Maps**, no vista propia.
+- **Mercury config + review** → **una vista "Mercury IA" con tabs** (config/review/stats).
+- **Historial de llamadas** → modal contextual desde la fila de Equipo.
+→ Admin: **22→16 vistas, 6→4 endpoints de stats, single-source-of-truth por métrica.** ~1800 LoC de duplicación eliminable.
+
+### Panel setter
+Consolidar 10 vistas → 5 core + drawer Help (Entrenamiento/Guía al cajón). Lead modal **unificado** que muestre AMBOS carriles (WhatsApp + llamadas) del mismo lead. Toolbar comprimida (search + Filtros▼ + Acciones▼).
+
+### 🧩 Shared Component Library (el cambio que mata la inconsistencia visual)
+8 bloques repetidos en toda la app, cada uno con 4-7 implementaciones distintas:
+| Componente | Impls hoy | Reemplaza |
+|---|---|---|
+| `leadCard(lead, mode)` | 4 (row/dialer/modal/history) | `_renderRowSimple`, `_pdRender` card, modal, call-history row |
+| `kpiCard(label,val,delta)` | 5 (crm/myperf/command/team/telnyx) | todas las stat-cards |
+| `dataTable(cols,rows)` | 5 tablas | leads/calls/history/team/scheduled |
+| `modal(title,body,footer)` | 7 modales | callback/schedule/objection/manual-dial/faq/variants/lead |
+| `chip(text,variant)` | clase CSS existe pero se arma **inline 6+ veces** | todos los chips de estado |
+| `filterBar(filters)` | 4 | pipeline/toolbar/calls-sort/faq |
+| `quickLinks(lead)` | — | Maps/web/IG/email/WA |
+| utilidades CSS | 230+ inline styles | `.uppercase-label`, `.box`, `.flex-col`, tints |
+
+→ ~700 LoC menos + **consistencia 3×** + mantenibilidad 10× (cambiás 1 componente = cambia en todos lados). **Es el vehículo de implementación de la cohesión visual de Phase 13** (anatomía única de lead-card + chips semánticos = exactamente `leadCard` + `chip`).
+
+### Conteo total de la purga + consolidación
+~22→16 vistas admin (+ setter a 5 core), 6→4 endpoints stats, ~1800 LoC duplicación admin + ~700 LoC componentes + ~140 LoC Tier 1 muerto. **Sistema dramáticamente más legible y chico.**
+
+---
+
 ## Cómo se conecta
 
 - La simplificación es el **primer build**: limpia el lienzo antes de meter el restructure (Phase 13/14).
