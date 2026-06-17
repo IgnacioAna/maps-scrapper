@@ -8024,7 +8024,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // KPIs + tabla por setter + top países
         const kpi = (label, val, sub) => `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 16px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div><div style="font-size:26px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; margin-top:3px;">${val}</div>${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${sub}</div>` : ''}</div>`;
         const setterRows = (d.bySetter || []).map(s => `<tr><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.total}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched} sin tocar</td></tr>`).join('');
-        const topCountries = (d.byCountry || []).slice(0, 8).map(c => `<span style="font-size:11.5px; background:var(--bg-input); padding:3px 9px; border-radius:6px; margin:0 4px 4px 0; display:inline-block;">${escHtml(c.country)}: <strong>${c.count}</strong></span>`).join('');
+        // ¿A qué país llamar AHORA? — hora local de cada país + flag horario hábil.
+        const countryTiming = (d.byCountry || [])
+          .filter(c => c.country && c.country !== 'Sin país')
+          .map(c => { const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime({ country: c.country }) : null; return { country: c.country, count: c.count, time: lt ? lt.time : null, ok: lt ? lt.ok : false, hasTz: !!lt }; });
+        countryTiming.sort((a, b) => (Number(b.ok) - Number(a.ok)) || (b.count - a.count));
+        const callNowHtml = countryTiming.slice(0, 14).map(c => {
+          const col = !c.hasTz ? '#7E8494' : c.ok ? '#5BB974' : '#FFB341';
+          const dot = !c.hasTz ? '' : c.ok ? '🟢' : '🟡';
+          return `<span title="${c.ok ? 'horario hábil' : (c.hasTz ? 'fuera de horario' : 'sin zona horaria')}" style="font-size:11.5px; color:${col}; background:${col}18; padding:4px 10px; border-radius:7px; margin:0 5px 5px 0; display:inline-block; font-weight:600;">${dot} ${escHtml(c.country)}${c.time ? ' · ' + c.time : ''} · <strong>${c.count}</strong></span>`;
+        }).join('');
         const t = d.byTier || {};
         const tierChip = (label, n, col) => `<div style="flex:1; min-width:130px; background:${col}18; border:1px solid ${col}55; border-radius:10px; padding:12px 14px;"><div style="font-size:11px; color:${col}; font-weight:700;">${label}</div><div style="font-size:24px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; margin-top:2px;">${n||0}</div></div>`;
         sumEl.innerHTML = `
@@ -8040,10 +8049,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${tierChip('3 · A medias', t.medio, '#FFB341')}
             ${tierChip('4 · No interesados', t.no_interesado, '#7E8494')}
           </div>
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">🌎 ¿A qué país llamar ahora? <span style="text-transform:none; font-weight:400;">(🟢 horario hábil 9-19h local · 🟡 fuera de hora)</span></div>
+          <div style="margin-bottom:20px;">${callNowHtml || '<span class="muted">Sin países con zona horaria.</span>'}</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;">
             <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por setter</div>
               <table style="width:100%; border-collapse:collapse; font-size:13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">${setterRows || '<tr><td style="padding:10px;" class="muted">Sin setters con leads</td></tr>'}</table></div>
-            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por país</div><div>${topCountries}</div></div>
+            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por país (todos)</div><div>${(d.byCountry || []).slice(0, 10).map(c => `<span style="font-size:11.5px; background:var(--bg-input); padding:3px 9px; border-radius:6px; margin:0 4px 4px 0; display:inline-block;">${escHtml(c.country)}: <strong>${c.count}</strong></span>`).join('')}</div></div>
           </div>`;
         // poblar selects
         const fromSel = document.getElementById('pool-from');
