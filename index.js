@@ -4336,10 +4336,24 @@ app.get('/api/setters/leads', requireAuth, (req, res) => {
 
 // Sin WSP - DEBE estar antes de las rutas con :id
 app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
-  const { setter } = req.query;
+  const { setter, include } = req.query;
+  // BUGFIX 2026-06-17: el flag `include=callable` estaba documentado (CLAUDE.md #53)
+  // y el frontend lo manda (checkbox "Incluir leads de Setteo"), pero el backend
+  // nunca lo miraba. Cuando está activo, además de los 'sin_wsp' (carril llamadas),
+  // devolvemos los leads de Setteo que IGUAL se pueden llamar: con teléfono y no
+  // terminales (descartado/agendado). Sin el flag, comportamiento histórico intacto.
+  const includeCallable = include === 'callable';
   const data = loadSettersData();
   let leads = Object.entries(data.leads)
-    .filter(([_, l]) => l.conexion === 'sin_wsp')
+    .filter(([_, l]) => {
+      if (l.conexion === 'sin_wsp') return true;
+      if (includeCallable) {
+        const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
+        const terminal = l.estado === 'descartado' || l.estado === 'agendado';
+        return hasPhone && !terminal;
+      }
+      return false;
+    })
     .map(([id, l]) => ({ id, ...l }));
   const eff = getEffectiveAuth(req);
   const authSetterId = eff.role === 'setter' ? eff.setterId : '';
