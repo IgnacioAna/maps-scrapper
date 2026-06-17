@@ -5122,6 +5122,8 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
     total: leads.length,
     unassigned: { total: unassigned, untouched: unassignedUntouched },
     byTier,
+    // TODOS los setters (para el dropdown de destino, aunque tengan 0 leads).
+    allSetters: (data.setters || []).filter((s) => !s.hidden).map((s) => ({ id: s.id, name: s.name || s.id })),
     bySetter: Object.values(bySetter).sort((a, b) => b.total - a.total),
     byCountry: Object.entries(byCountry).map(([k, v]) => ({ country: k, count: v })).sort((a, b) => b.count - a.count),
     byEstado: Object.entries(byEstado).map(([k, v]) => ({ estado: k, count: v })).sort((a, b) => b.count - a.count),

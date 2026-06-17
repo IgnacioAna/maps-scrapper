@@ -8051,7 +8051,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const countrySel = document.getElementById('pool-country');
         const setterOpts = (d.bySetter || []).map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${s.total})</option>`).join('');
         fromSel.innerHTML = `<option value="__unassigned__">Sin asignar / pool (${d.unassigned.total})</option><option value="__all__">Todo el pool (${d.total})</option>` + setterOpts;
-        const toSetters = (settersList && settersList.length) ? settersList.filter(s => !s.hidden) : (d.bySetter || []);
+        // Destino: SIEMPRE todos los setters (allSetters del backend), aunque tengan 0 leads.
+        const toSetters = (d.allSetters && d.allSetters.length) ? d.allSetters
+          : (settersList && settersList.length) ? settersList.filter(s => !s.hidden) : (d.bySetter || []);
         toSel.innerHTML = `<option value="">Elegí setter…</option>` + toSetters.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
         countrySel.innerHTML = '<option value="">Todos</option>' + (d.byCountry || []).map(c => `<option value="${escHtml(c.country)}">${escHtml(c.country)} (${c.count})</option>`).join('');
       } catch (e) {
@@ -8094,28 +8096,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
-    document.getElementById('pool-recycle-btn')?.addEventListener('click', async () => {
-      const btn = document.getElementById('pool-recycle-btn');
-      const resEl = document.getElementById('pool-recycle-result');
-      btn.disabled = true; resEl.style.color = 'var(--text-secondary)'; resEl.textContent = 'Calculando…';
-      try {
-        // 1) dryRun para previsualizar
-        const dry = await (await fetch(apiUrl('/api/admin/recycle-pool'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ dryRun: true }) })).json();
-        const t = dry.byTier || {};
-        const msg = `Vas a reciclar ${dry.total} leads → todos al pool sin asignar, reseteados.\n\nPrioridad estampada:\n  1·Interesados: ${t.interesado||0} (se les conservan las notas)\n  2·Sin contactar: ${t.sin_contactar||0}\n  3·A medias: ${t.medio||0}\n  4·No interesados: ${t.no_interesado||0}\n\nSe hace backup. ¿Confirmás?`;
-        if (!confirm(msg)) { resEl.textContent = ''; btn.disabled = false; return; }
-        // 2) real
-        resEl.textContent = 'Reciclando…';
-        const real = await (await fetch(apiUrl('/api/admin/recycle-pool'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ dryRun: false }) })).json();
-        resEl.style.color = 'var(--success)';
-        resEl.innerHTML = `✓ Reciclados <strong>${real.total}</strong> leads al pool (notas conservadas en ${real.notesKept} interesados). Distribuilos abajo.`;
-        await loadPoolView();
-      } catch (e) {
-        resEl.style.color = 'var(--danger)'; resEl.textContent = 'Error: ' + e.message;
-      } finally {
-        btn.disabled = false;
-      }
-    });
+    // (El reciclaje del pool fue una operación de UNA vez — botón removido. El
+    //  endpoint /api/admin/recycle-pool queda en el backend por si se necesita.)
 
     const poolMenuItem = document.querySelector('[data-target="view-pool"]');
     if (poolMenuItem) poolMenuItem.addEventListener('click', () => { loadPoolView(); });
