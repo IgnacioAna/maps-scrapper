@@ -125,6 +125,43 @@ Costos aproximados del backfill total (estimados, a confirmar con tarifas reales
 
 ---
 
+## Adiciones tras discusión con el user (2026-06-17, parte 2)
+
+- **C4 → el brief da MUNICIÓN, no libreto** [decisión del user]: sacar "apertura sugerida"
+  (frase para recitar → el vendedor se vuelve loro). Reemplazar por **"el ángulo"** (con qué
+  abrir, en formato dato). Las PALABRAS salen de la skill del vendedor + las cards + Mercury.
+  Opcional: un "ver ejemplo" colapsado como red de seguridad para reps nuevos, nunca lo principal.
+- **B → panel "¿a qué país llamar ahora?"** [pedido del user]: dado el momento, rankear países
+  por conveniencia de llamar AHORA (horario hábil local + ventana óptima). El navegador da la hora
+  del vendedor (sin IP); el país/coords del lead da la suya. Chip de hora local por lead + boost answerScore.
+- **Legal → de bloqueante a guardrails baratos** [recalibrado con el user]: llamar a un negocio
+  a su número público, discando manual un humano, es la forma B2B más defendible y generalmente legal
+  (DNC US es residencial; TCPA pega a robo-dialers, no a humano manual). Guardrails de higiene:
+  lista DNC interna (respetar "no me llames") + horario 8-21 local + caller ID real + ES sin móvil.
+  No frena nada. (No es asesoría legal; validar US/ES con abogado local antes del go-live masivo.)
+
+## NUEVA PIEZA — Sistema de Scripts = Battlecards situacionales (separado, grande)
+
+El "PACE framework + 30 scripts rígidos" actual el user NUNCA lo usó y no le gusta (robótico).
+La investigación (agente, 2026-06-17) valida su instinto: los mejores equipos usan **battlecards /
+cue cards cortas y glanceables por escenario**, NO monólogos lineales. La INFRA ya existe (CRUD de
+scripts admin + panel en la llamada + buscador). Lo que cambia es el MODELO y el contenido:
+
+- **Cards tipadas por escenario** (lo que el user describió): `opener` (varias), `gatekeeper_con_nombre`,
+  `gatekeeper_sin_nombre`, `identificar_decisor`, `value_prop` (variantes), `objecion` (sub-tag), `cierre`.
+- Cada card = **título + 2-4 bullets glanceables** (no párrafos). El rep mira y lo dice con sus palabras.
+- **El admin (user) carga/edita/titula/versiona** — ya puede; sumar `variantId` + versionado para A/B.
+- **Surface glanceable, NO pop-ups** (la investigación: los pop-ups automáticos distraen, los reps los odian).
+  El rep elige; buscador por keyword ya existe. Rotular "Munición"/"Cards", no "Script".
+- **A/B atado a outcomes**: variante de opener/pitch → reuniones por 100 conexiones (el Cold Call Funnel
+  ya calcula booking rate; falta atar variante→outcome). El user promueve el ganador (patrón Mercury Review).
+- **Mercury = asistente bajo pedido** (#79 ya existe) — el modelo ganador, no el pop-up intrusivo.
+- **Ramp de nuevos**: role-play pre-llamada contra Mercury (patrón Hyperbound) + grabaciones de mejores
+  llamadas (transcripts ya guardados) + densidad de cards decreciente (semana 1 expandido → mes 3 colapsado).
+
+→ Esto es lo suficientemente grande como para ser su propia fase (Phase 11 candidata) o una ola dedicada.
+Decisión pendiente del user: hacerlo junto con Phase 10 o aparte.
+
 ## Lo que NO se hace (decidido)
 
 - Dedup (ya perfecto, 0 duplicados).
