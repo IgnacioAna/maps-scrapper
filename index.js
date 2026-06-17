@@ -529,6 +529,8 @@ function ensureLeadDefaults(lead = {}) {
   // deals por período en cold-call-metrics). dealValue = valor del proyecto cerrado.
   if (!lead.closedAt) lead.closedAt = '';
   if (typeof lead.dealValue !== 'number') lead.dealValue = 0;
+  // Phase 14: prioridad de re-contacto estampada al reciclar el pool (1-4). 0 = sin estampar.
+  if (typeof lead.recontactPriority !== 'number') lead.recontactPriority = 0;
   // Show rate: si el lead llegó a estado "agendado", el closer marca tras la
   // llamada si el prospecto se presentó. true = show, false = no-show, null =
   // todavia no se sabe / no aplica.
@@ -5031,7 +5033,13 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 // Clasifica un lead en un TIER de prioridad para re-contacto (Phase 14 pool).
 // Usa el trabajo previo del setter SOLO para ordenar — el lead se resetea al
 // distribuirlo. Orden: 1 interesado → 2 sin contactar → 3 a medias → 4 no interesado.
+const _TIER_META = { 1: ['interesado', 'Interesados (re-contactar)'], 2: ['sin_contactar', 'Sin contactar'], 3: ['medio', 'A medias / otros'], 4: ['no_interesado', 'No interesados'] };
 function _leadPoolTier(lead = {}) {
+  // Si el lead fue reciclado, la prioridad quedó estampada (sobrevive al reset).
+  if (lead.recontactPriority >= 1 && lead.recontactPriority <= 4) {
+    const [key, label] = _TIER_META[lead.recontactPriority];
+    return { tier: lead.recontactPriority, key, label };
+  }
   const log = Array.isArray(lead.callLog) ? lead.callLog : [];
   const hadInterest = lead.interes === 'si' || ['interesado', 'agendado', 'cerrado'].includes(lead.estado)
     || log.some(e => e.outcome === 'answered_interested' || e.outcome === 'scheduled_with_admin');
@@ -5171,6 +5179,48 @@ app.post('/api/setters/pool-distribute', requireAuth, requireRole('admin'), (req
 
   res.json({ ok: true, moved: toMove.length, byTierMoved, backup: backup?.path || null,
     toSetter: { id: toSetter.id, name: toSetter.name, total: toTotal }, fromRemaining });
+});
+
+// POST /api/admin/recycle-pool — admin: RECICLA TODO el pool. Saca todos los leads
+// de sus setters (assignedTo=''), los resetea para re-contacto por LLAMADA, y
+// ESTAMPA la prioridad de re-contacto (recontactPriority 1-4) ANTES de resetear
+// para que el orden (interesados primero) sobreviva. Conserva el historial de
+// llamadas (callLog) siempre; conserva notas SOLO de los interesados (contexto).
+// Body: { dryRun?: bool }. Operación destructiva → backup automático.
+app.post('/api/admin/recycle-pool', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  const leads = Object.values(data.leads || {});
+  const byTier = { interesado: 0, sin_contactar: 0, medio: 0, no_interesado: 0 };
+  let notesKept = 0;
+  if (!dryRun && leads.length > 0) makeBackup('pre-recycle-pool');
+  for (const lead of leads) {
+    const t = _leadPoolTier(lead);   // del estado VIVO (antes de resetear)
+    byTier[t.key]++;
+    if (dryRun) continue;
+    lead.recontactPriority = t.tier;       // estampar (sobrevive al reset)
+    lead.assignedTo = '';                  // al pool sin asignar
+    lead.estado = 'sin_contactar';
+    lead.conexion = 'sin_wsp';             // todo es llamada ahora
+    lead.respondio = false;
+    lead.calificado = false;
+    lead.interes = null;
+    lead.apertura = '';
+    lead.callbackAt = '';
+    lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+    lead.followUpStartedAt = null;
+    lead.followUpNotes = {};
+    // Conservar SIEMPRE callLog/callAttempts/phoneStatus (historial + datos de número).
+    // Notas + interactions: conservar solo para interesados (contexto de lo hablado).
+    if (t.tier !== 1) {
+      lead.notes = [];
+      lead.interactions = [];
+    } else {
+      if (Array.isArray(lead.notes) && lead.notes.length) notesKept++;
+    }
+  }
+  if (!dryRun && leads.length > 0) saveSettersData(data);
+  res.json({ ok: true, dryRun, total: leads.length, byTier, notesKept });
 });
 
 // POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
