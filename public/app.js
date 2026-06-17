@@ -8015,6 +8015,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
     if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
 
+    // ─── Distribución de leads (Phase 14: el pool) ──────────────────
+    async function loadPoolView() {
+      const sumEl = document.getElementById('pool-summary');
+      if (!sumEl) return;
+      try {
+        const d = await (await fetch(apiUrl('/api/setters/pool-summary'), { credentials: 'include' })).json();
+        // KPIs + tabla por setter + top países
+        const kpi = (label, val, sub) => `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 16px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div><div style="font-size:26px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; margin-top:3px;">${val}</div>${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${sub}</div>` : ''}</div>`;
+        const setterRows = (d.bySetter || []).map(s => `<tr><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.total}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched} sin tocar</td></tr>`).join('');
+        const topCountries = (d.byCountry || []).slice(0, 8).map(c => `<span style="font-size:11.5px; background:var(--bg-input); padding:3px 9px; border-radius:6px; margin:0 4px 4px 0; display:inline-block;">${escHtml(c.country)}: <strong>${c.count}</strong></span>`).join('');
+        sumEl.innerHTML = `
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:18px;">
+            ${kpi('Total leads', d.total)}
+            ${kpi('Sin asignar (pool)', d.unassigned.total, d.unassigned.untouched + ' sin tocar')}
+            ${kpi('Setters con leads', (d.bySetter || []).length)}
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;">
+            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por setter</div>
+              <table style="width:100%; border-collapse:collapse; font-size:13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">${setterRows || '<tr><td style="padding:10px;" class="muted">Sin setters con leads</td></tr>'}</table></div>
+            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por país</div><div>${topCountries}</div></div>
+          </div>`;
+        // poblar selects
+        const fromSel = document.getElementById('pool-from');
+        const toSel = document.getElementById('pool-to');
+        const countrySel = document.getElementById('pool-country');
+        const setterOpts = (d.bySetter || []).map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${s.total})</option>`).join('');
+        fromSel.innerHTML = `<option value="__unassigned__">Sin asignar / pool (${d.unassigned.total})</option>` + setterOpts;
+        const toSetters = (settersList && settersList.length) ? settersList.filter(s => !s.hidden) : (d.bySetter || []);
+        toSel.innerHTML = `<option value="">Elegí setter…</option>` + toSetters.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
+        countrySel.innerHTML = '<option value="">Todos</option>' + (d.byCountry || []).map(c => `<option value="${escHtml(c.country)}">${escHtml(c.country)} (${c.count})</option>`).join('');
+      } catch (e) {
+        sumEl.innerHTML = `<p style="color:var(--danger);">Error cargando pool: ${escHtml(e.message)}</p>`;
+      }
+    }
+    window.loadPoolView = loadPoolView;
+
+    document.getElementById('pool-distribute-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('pool-distribute-btn');
+      const resEl = document.getElementById('pool-result');
+      const fromSetterId = document.getElementById('pool-from').value;
+      const toSetterId = document.getElementById('pool-to').value;
+      const country = document.getElementById('pool-country').value;
+      const countRaw = document.getElementById('pool-count').value;
+      if (!toSetterId) { resEl.innerHTML = '<span style="color:var(--danger);">Elegí un setter destino.</span>'; return; }
+      if (fromSetterId === toSetterId) { resEl.innerHTML = '<span style="color:var(--danger);">Origen y destino no pueden ser el mismo.</span>'; return; }
+      const body = { fromSetterId, toSetterId };
+      if (country) body.country = country;
+      if (countRaw && Number(countRaw) > 0) body.count = Number(countRaw);
+      btn.disabled = true; btn.textContent = 'Distribuyendo…';
+      try {
+        const r = await fetch(apiUrl('/api/setters/reassign-bulk'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'http ' + r.status);
+        resEl.innerHTML = `<span style="color:var(--success);">✓ Moví <strong>${d.moved}</strong> leads a ${escHtml(d.toSetter.name)} (ahora tiene ${d.toSetter.total}). Origen restante: ${d.fromSetter.remaining}.</span>`;
+        if (d.moved === 0) resEl.innerHTML = '<span style="color:var(--warning);">No había leads sin tocar que cumplan ese filtro. (Solo se mueven leads nunca contactados.)</span>';
+        await loadPoolView();
+      } catch (e) {
+        resEl.innerHTML = `<span style="color:var(--danger);">Error: ${escHtml(e.message)}</span>`;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Distribuir';
+      }
+    });
+
+    const poolMenuItem = document.querySelector('[data-target="view-pool"]');
+    if (poolMenuItem) poolMenuItem.addEventListener('click', () => { loadPoolView(); });
+
     const faqMenuItem = document.querySelector('[data-target="view-faqs"]');
     if (faqMenuItem) faqMenuItem.addEventListener('click', () => { loadFaqsModule(); });
 

@@ -142,6 +142,10 @@
 
         <!-- ═══ EQUIPO — gestión y monitoreo (admin/supervisor) ═══ -->
         <div class="menu-group-label" data-roles="admin,supervisor">Equipo</div>
+          <a href="#" class="menu-item" data-target="view-pool" data-label="Distribución de leads" data-roles="admin,supervisor">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span>Distribución</span>
+          </a>
           <a href="#" class="menu-item" data-target="view-command" data-label="Centro de Comando" data-roles="admin,supervisor">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
             <span>Centro de Comando</span>
@@ -1625,6 +1629,45 @@
       </div>
 
       <!-- VISTA 5: CENTRO DE COMANDO -->
+      <div id="view-pool" class="module-view hidden" data-roles="admin,supervisor">
+        <div class="content-header">
+          <h2>Distribución de leads</h2>
+          <span class="calls-header-subtitle">Todos los leads del sistema — repartilos a cada setter</span>
+        </div>
+        <div style="padding:0 32px 40px;">
+          <div id="pool-summary" style="margin-bottom:22px;">
+            <p class="muted" style="padding:20px 0;">Cargando pool…</p>
+          </div>
+          <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:20px 22px; max-width:780px;">
+            <h3 style="margin:0 0 4px; font-size:15px;">Repartir leads a un setter</h3>
+            <p class="muted" style="margin:0 0 16px; font-size:12.5px;">Mové leads <strong>sin tocar</strong> (nunca contactados) de un origen a un setter. Hace backup automático.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px;">
+              <label style="display:flex; flex-direction:column; gap:5px;">
+                <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Origen</span>
+                <select id="pool-from" class="calls-filter-select"><option value="__unassigned__">Sin asignar (pool)</option></select>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:5px;">
+                <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Destino *</span>
+                <select id="pool-to" class="calls-filter-select"><option value="">Elegí setter…</option></select>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:5px;">
+                <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">País (opcional)</span>
+                <select id="pool-country" class="calls-filter-select"><option value="">Todos</option></select>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:5px;">
+                <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Cantidad</span>
+                <input type="number" id="pool-count" min="1" placeholder="Todos" class="calls-filter-select" style="font-family:ui-monospace,monospace;">
+              </label>
+            </div>
+            <div style="display:flex; align-items:center; gap:14px; margin-top:16px;">
+              <button id="pool-distribute-btn" class="btn-primary pill-btn">Distribuir</button>
+              <span id="pool-preview" class="muted" style="font-size:12.5px;"></span>
+            </div>
+            <div id="pool-result" style="margin-top:12px; font-size:13px;"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="view-command" class="module-view hidden" data-roles="admin,supervisor">
         <div class="content-header">
           <h2>Centro de Comando</h2>
@@ -3083,7 +3126,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260617a"></script>
+  <script type="module" src="/app.js?v=20260617b"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

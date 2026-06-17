@@ -5029,14 +5029,56 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──
 function getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly } = {}) {
+  // fromSetterId '__unassigned__' = leads huérfanos (sin assignedTo). Permite
+  // distribuir el pool sin dueño a los setters (pieza central del Phase 14).
+  const matchSource = fromSetterId === '__unassigned__'
+    ? (lead) => !lead.assignedTo
+    : (lead) => lead.assignedTo === fromSetterId;
   return Object.entries(data.leads || {})
-    .filter(([_id, lead]) => lead.assignedTo === fromSetterId)
+    .filter(([_id, lead]) => matchSource(lead))
     .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
     .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
     .filter(([_id, lead]) => !estado || lead.estado === estado)
     .filter(([_id, lead]) => !untouchedOnly || (!lead.lastContactAt && !(Array.isArray(lead.interactions) && lead.interactions.length > 0) && !lead.conexion))
     .sort((a, b) => (Number(a[1].num) || 0) - (Number(b[1].num) || 0));
 }
+
+// GET /api/setters/pool-summary — admin/supervisor: panorama del pool de leads
+// para la vista de Distribución. Total + por setter (con dueño + sin tocar) +
+// sin asignar + por país + por estado. Es el "dónde tengo todos los leads".
+app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const data = loadSettersData();
+  const leads = Object.values(data.leads || {});
+  const isUntouched = (l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0) && !l.conexion;
+  const settersById = {};
+  for (const s of (data.setters || [])) settersById[s.id] = s.name || s.id;
+
+  const bySetter = {};
+  let unassigned = 0, unassignedUntouched = 0;
+  const byCountry = {};
+  const byEstado = {};
+  for (const l of leads) {
+    const sid = l.assignedTo || '';
+    if (!sid) { unassigned++; if (isUntouched(l)) unassignedUntouched++; }
+    else {
+      if (!bySetter[sid]) bySetter[sid] = { id: sid, name: settersById[sid] || sid, total: 0, untouched: 0, orphanSetter: !settersById[sid] };
+      bySetter[sid].total++;
+      if (isUntouched(l)) bySetter[sid].untouched++;
+    }
+    const c = (l.country || 'Sin país').trim() || 'Sin país';
+    byCountry[c] = (byCountry[c] || 0) + 1;
+    const e = l.estado || 'sin_contactar';
+    byEstado[e] = (byEstado[e] || 0) + 1;
+  }
+
+  res.json({
+    total: leads.length,
+    unassigned: { total: unassigned, untouched: unassignedUntouched },
+    bySetter: Object.values(bySetter).sort((a, b) => b.total - a.total),
+    byCountry: Object.entries(byCountry).map(([k, v]) => ({ country: k, count: v })).sort((a, b) => b.count - a.count),
+    byEstado: Object.entries(byEstado).map(([k, v]) => ({ estado: k, count: v })).sort((a, b) => b.count - a.count),
+  });
+});
 
 // POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
 // uno destino. Body: { fromSetterId, toSetterId, count?, country?, city?, estado?,
@@ -5061,7 +5103,10 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
     return res.status(400).json({ error: 'fromSetterId y toSetterId no pueden ser iguales.' });
   }
   const data = loadSettersData();
-  const fromSetter = (data.setters || []).find((s) => s.id === fromSetterId);
+  const fromUnassigned = fromSetterId === '__unassigned__';
+  const fromSetter = fromUnassigned
+    ? { id: '__unassigned__', name: 'Sin asignar (pool)' }
+    : (data.setters || []).find((s) => s.id === fromSetterId);
   const toSetter = (data.setters || []).find((s) => s.id === toSetterId);
   if (!fromSetter) return res.status(404).json({ error: `Setter origen no encontrado: ${fromSetterId}` });
   if (!toSetter) return res.status(404).json({ error: `Setter destino no encontrado: ${toSetterId}` });
@@ -5093,7 +5138,9 @@ app.post('/api/setters/reassign-bulk', requireAuth, requireRole('admin'), (req, 
 
   // Re-contar restantes y total destino
   const allLeadsNow = Object.values(data.leads || {});
-  const fromRemaining = allLeadsNow.filter((l) => l.assignedTo === fromSetterId).length;
+  const fromRemaining = fromUnassigned
+    ? allLeadsNow.filter((l) => !l.assignedTo).length
+    : allLeadsNow.filter((l) => l.assignedTo === fromSetterId).length;
   const toTotal = allLeadsNow.filter((l) => l.assignedTo === toSetterId).length;
 
   res.json({
