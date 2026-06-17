@@ -5311,12 +5311,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (reviews > 0) s += Math.min(20, Math.log10(reviews + 1) * 12);
       const rating = parseFloat(l.rating);
       if (Number.isFinite(rating) && rating > 0) s += Math.min(10, (rating - 3) * 5);
-      // Esfuerzo: nunca llamado = bonus fuerte; cada intento previo resta
+      // Esfuerzo + PERSISTENCIA (research: el 93% de las conversaciones se logran al
+      // 3er intento; la mayoría abandona al 4to — NO penalizar 1-6 intentos).
       const attempts = Number(l.callAttempts || 0);
-      if (attempts === 0) s += 18;
-      else s -= Math.min(24, attempts * 6);
-      // Interesado esperando agendar = máxima prioridad
-      if (l.estado === 'interesado') s += 25;
+      if (attempts === 0) s += 18;          // nunca llamado: fresco
+      else if (attempts <= 6) s += 8;       // zona productiva: seguir insistiendo
+      else s -= Math.min(20, (attempts - 6) * 5); // recién después del 6to baja
+      // Interesado = máxima prioridad. Vale tanto el estado vivo como el estampado
+      // por el reciclaje del pool (recontactPriority 1), que sobrevive al reset.
+      if (l.estado === 'interesado' || l.recontactPriority === 1) s += 25;
       // Callback vencido = subir (toca seguir)
       if (l.callbackAt) {
         const cb = new Date(l.callbackAt).getTime();
