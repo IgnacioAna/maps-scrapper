@@ -4863,6 +4863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
             ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🎯 ${sc}</span>`; })()}
+            ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? '#5BB974' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🕐 ${lt.time}${lt.ok ? '' : ' ⚠'}</span>`; })()}
             ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
@@ -5330,6 +5331,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       return s;
     }
     window._callScore = _callScore;
+
+    // Hora local del lead según su país (pedido del user: "saber qué hora es para el lead").
+    // Mapa país (nombre español, como usa la data) → zona horaria IANA. Devuelve
+    // { time:'HH:MM', tz, ok } donde ok = está en horario hábil (9-19h) del lead.
+    // El navegador ya sabe la hora del setter; esto calcula la del lead sin IP.
+    const _LEAD_TZ = {
+      'Argentina':'America/Argentina/Buenos_Aires', 'México':'America/Mexico_City', 'Mexico':'America/Mexico_City',
+      'Colombia':'America/Bogota', 'Chile':'America/Santiago', 'Perú':'America/Lima', 'Peru':'America/Lima',
+      'Uruguay':'America/Montevideo', 'Bolivia':'America/La_Paz', 'Ecuador':'America/Guayaquil',
+      'España':'Europe/Madrid', 'Espana':'Europe/Madrid', 'Costa Rica':'America/Costa_Rica',
+      'Estados Unidos':'America/New_York', 'USA':'America/New_York', 'Venezuela':'America/Caracas',
+      'Brasil':'America/Sao_Paulo', 'Paraguay':'America/Asuncion', 'Panamá':'America/Panama',
+      'Guatemala':'America/Guatemala', 'Honduras':'America/Tegucigalpa', 'El Salvador':'America/El_Salvador',
+      'Nicaragua':'America/Managua',
+    };
+    function _leadLocalTime(lead) {
+      const tz = _LEAD_TZ[(lead && lead.country || '').trim()];
+      if (!tz) return null;
+      try {
+        const now = new Date();
+        const time = now.toLocaleTimeString('es-AR', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+        const hour = Number(now.toLocaleString('en-US', { timeZone: tz, hour: '2-digit', hour12: false }).replace(/\D/g, '')) || 0;
+        return { time, tz, ok: hour >= 9 && hour < 19 };
+      } catch { return null; }
+    }
+    window._leadLocalTime = _leadLocalTime;
 
     // Sprint 21: Render de chips de filtro por país (con bandera + count)
     function _callsRenderCountryChips() {
