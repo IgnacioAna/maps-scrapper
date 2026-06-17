@@ -1,6 +1,40 @@
 {
   "events": [
     {
+      "id": "ev_1781618684626_u9bmwa",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-16T14:04:44.626Z"
+    },
+    {
+      "id": "ev_1781618683705_a7f7jg",
+      "type": "qr-visible",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-16T14:04:43.705Z"
+    },
+    {
+      "id": "ev_1781618682775_m0jhy8",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-06-16T14:04:42.775Z"
+    },
+    {
+      "id": "ev_1781618682693_joz2m6",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-06-16T14:04:42.693Z"
+    },
+    {
       "id": "ev_1781205861559_yls9fn",
       "type": "window-closed",
       "accountId": "wa_1781190363457_24tm38",
@@ -6150,64 +6184,6 @@
         "via": "enter"
       },
       "createdAt": "2026-06-05T17:59:48.199Z"
-    },
-    {
-      "id": "ev_1780682369866_g6g1si",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:59:29.866Z"
-    },
-    {
-      "id": "ev_1780682358788_liasnl",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:59:18.788Z"
-    },
-    {
-      "id": "ev_1780682345503_jladc4",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:59:05.503Z"
-    },
-    {
-      "id": "ev_1780682329410_4rc51h",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51933956449",
-        "contactName": "",
-        "contactPhone": "+51933956449",
-        "message": "Hola  Gracias por escribir a Odonto Solutions. Para coordinar mejor tu atención, ¿puedes indicarnos:\n Nombre completo\n Tipo de servicio que buscas\nTe respondemos enseguida",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T17:58:49.410Z"
     }
   ]
 }
