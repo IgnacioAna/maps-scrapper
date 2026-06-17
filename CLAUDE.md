@@ -656,4 +656,15 @@ El handoff a Mercury IA (conversar + agendar) es Phase 4, NO esta fase. Plan en
 
 81. **Call recording → decisión: visibilidad del transcript (NO audio)**. El audio se graba en browser (MediaRecorder, setter+lead) y se sube a `/api/telnyx/calls/:leadId/transcribe` (Whisper) pero **NO se persiste** — solo queda `entry.transcript = {segments:[{speaker,text}], transcribedAt, whisperModel, language}` en el callLog. El user eligió NO persistir audio (tradeoff de storage/volumen/backups) sino mejorar la visibilidad del transcript que ya existe. Hecho: el bloque "Últimas llamadas" de la card del Power Dialer ahora muestra 🎤 en las llamadas con transcript y son **expandibles inline** (`<details>` nativo, sin JS) para leer los segments setter/lead. Antes el transcript solo se veía en el drilldown de Historial de llamadas (`view-call-history`). Si en el futuro se quiere audio: `DATA_DIR/recordings/`, `entry.recordingFile`, endpoint de stream + player, opt-in por flag.
 
-82. **Cache-buster actual: `v=20260613a`** (reemplaza #64). app.js + index.html. style.css NO se tocó (sigue en `v=20260604b`). wa.js en `v=20260610g`. 490 tests verdes (25 files).
+82. **Cache-buster actual: `v=20260617a`** (reemplaza #64). app.js + index.html. style.css NO se tocó (sigue en `v=20260604b`). wa.js en `v=20260610g`.
+
+## Sesión 2026-06-17 — Planificación masiva (Phases 10-15) + Ola 1 build (rama)
+
+83. **Planificación completa en `.planning/phases/10..15/` + `.planning/BUILD-AGENTS.md`** (20 agentes de research). 6 fases: 10 Enrichment/arsenal, 11 Battlecards, 12 SDR Operating System, 13 UI restructure (leadStore+Hoy+dialpad), 14 Lead-Ops pool único + 3 carriles (bot parkeado), 15 Purga deuda técnica + consolidación panel. Plan de build multi-agente: 7 roles por zona de archivo, 6 olas. **Decisiones clave del user**: pool único de distribución a setters; bots PARKEADOS (sin acceso aún, solo el owner); sin-WhatsApp = carril llamada (NO borrar); legal = guardrails no bloqueante; brief = munición no libreto; scripts → battlecards situacionales.
+
+84. **Ola 1 build en rama `build/ola1-purga-componentes`** (NO deployado aún — pendiente review del user + pre-deploy). 3 fixes/features verificados (tests + preview):
+    - **fix `include=callable`** (`index.js` GET /leads/sin-wsp): el checkbox "Incluir leads de Setteo" no hacía nada (el front mandaba el flag, el back lo ignoraba). Ahora suma leads de Setteo llamables. Preview: 1245→5163 leads. `tests/callable-leads.test.js`.
+    - **backfill país** (`countryFromPhonePrefix()` + `POST /api/admin/backfill-country`, dryRun+backup, idempotente, no pisa país existente). Preview dryRun: 1359 leads completables. **NO afecta caller ID** (rutea por prefijo del tel, re-verificado contra el agente que decía lo contrario). `tests/country-backfill.test.js`.
+    - **hora local del lead** (`_leadLocalTime()` país→IANA tz, chip 🕐 en card del Power Dialer con flag horario hábil 9-19h). Verificado contra UTC.
+    - ⚠️ **El research de agentes tuvo 2 errores reales que el re-check atrapó**: (1) "campos muertos" `lastStage` SÍ se usa (export CSV); (2) backfill país NO mejora caller ID. Lección: verificar siempre, no confiar 100% en los agentes.
+    - Test pre-existente que falla (no relacionado): `wa-campaign-engine.test.js` 1 test dependiente de hora/día (falla igual en main limpio). Bot parkeado.
