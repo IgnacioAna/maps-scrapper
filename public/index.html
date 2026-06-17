@@ -1640,11 +1640,21 @@
           </div>
           <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:20px 22px; max-width:780px;">
             <h3 style="margin:0 0 4px; font-size:15px;">Repartir leads a un setter</h3>
-            <p class="muted" style="margin:0 0 16px; font-size:12.5px;">Mové leads <strong>sin tocar</strong> (nunca contactados) de un origen a un setter. Hace backup automático.</p>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:12px;">
+            <p class="muted" style="margin:0 0 16px; font-size:12.5px;">Reparte en orden de prioridad (interesados primero). El lead llega <strong>limpio</strong> al setter (se resetea para re-contacto), conservando el historial de llamadas. Backup automático.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px;">
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Origen</span>
                 <select id="pool-from" class="calls-filter-select"><option value="__unassigned__">Sin asignar (pool)</option></select>
+              </label>
+              <label style="display:flex; flex-direction:column; gap:5px;">
+                <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Prioridad</span>
+                <select id="pool-tier" class="calls-filter-select">
+                  <option value="all">Auto (interesados primero)</option>
+                  <option value="interesado">Solo interesados</option>
+                  <option value="sin_contactar">Solo sin contactar</option>
+                  <option value="medio">Solo a medias</option>
+                  <option value="no_interesado">Solo no interesados</option>
+                </select>
               </label>
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Destino *</span>
@@ -3126,7 +3136,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260617b"></script>
+  <script type="module" src="/app.js?v=20260617c"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

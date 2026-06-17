@@ -5028,6 +5028,42 @@ app.delete("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (
 });
 
 // ── Borrar leads de un setter con filtro opcional por país/ciudad ──
+// Clasifica un lead en un TIER de prioridad para re-contacto (Phase 14 pool).
+// Usa el trabajo previo del setter SOLO para ordenar — el lead se resetea al
+// distribuirlo. Orden: 1 interesado → 2 sin contactar → 3 a medias → 4 no interesado.
+function _leadPoolTier(lead = {}) {
+  const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+  const hadInterest = lead.interes === 'si' || ['interesado', 'agendado', 'cerrado'].includes(lead.estado)
+    || log.some(e => e.outcome === 'answered_interested' || e.outcome === 'scheduled_with_admin');
+  const rejected = lead.interes === 'no' || lead.estado === 'descartado'
+    || lead.phoneStatus === 'wrong' || lead.phoneStatus === 'invalid'
+    || log.some(e => e.outcome === 'answered_not_interested');
+  const untouched = !lead.lastContactAt
+    && !(Array.isArray(lead.interactions) && lead.interactions.length > 0)
+    && !lead.conexion && log.length === 0;
+  if (hadInterest && !rejected) return { tier: 1, key: 'interesado', label: 'Interesados (re-contactar)' };
+  if (rejected) return { tier: 4, key: 'no_interesado', label: 'No interesados' };
+  if (untouched) return { tier: 2, key: 'sin_contactar', label: 'Sin contactar' };
+  return { tier: 3, key: 'medio', label: 'A medias / otros' };
+}
+
+// Resetea el estado OPERATIVO de un lead para re-contacto desde cero, conservando
+// el historial (callLog/notes) como referencia. NO toca name/phone/country/etc.
+function _resetLeadForRedistribution(lead) {
+  lead.conexion = '';
+  lead.estado = 'sin_contactar';
+  lead.respondio = false;
+  lead.calificado = false;
+  lead.interes = null;
+  lead.apertura = '';
+  lead.callbackAt = '';
+  lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
+  lead.followUpStartedAt = null;
+  lead.followUpNotes = {};
+  lead.phoneStatus = '';
+  // Se conservan a propósito: callLog, notes, interactions (historial/contexto).
+}
+
 function getReassignCandidates(data, { fromSetterId, country, city, estado, untouchedOnly } = {}) {
   // fromSetterId '__unassigned__' = leads huérfanos (sin assignedTo). Permite
   // distribuir el pool sin dueño a los setters (pieza central del Phase 14).
@@ -5057,6 +5093,8 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   let unassigned = 0, unassignedUntouched = 0;
   const byCountry = {};
   const byEstado = {};
+  // Tiers de prioridad de re-contacto (1 interesado → 4 no interesado).
+  const byTier = { interesado: 0, sin_contactar: 0, medio: 0, no_interesado: 0 };
   for (const l of leads) {
     const sid = l.assignedTo || '';
     if (!sid) { unassigned++; if (isUntouched(l)) unassignedUntouched++; }
@@ -5069,15 +5107,70 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
     byCountry[c] = (byCountry[c] || 0) + 1;
     const e = l.estado || 'sin_contactar';
     byEstado[e] = (byEstado[e] || 0) + 1;
+    byTier[_leadPoolTier(l).key]++;
   }
 
   res.json({
     total: leads.length,
     unassigned: { total: unassigned, untouched: unassignedUntouched },
+    byTier,
     bySetter: Object.values(bySetter).sort((a, b) => b.total - a.total),
     byCountry: Object.entries(byCountry).map(([k, v]) => ({ country: k, count: v })).sort((a, b) => b.count - a.count),
     byEstado: Object.entries(byEstado).map(([k, v]) => ({ estado: k, count: v })).sort((a, b) => b.count - a.count),
   });
+});
+
+// POST /api/setters/pool-distribute — admin reparte leads del pool a un setter,
+// EN ORDEN DE PRIORIDAD (interesados → sin contactar → a medias → no interesados),
+// reseteando el estado operativo del lead (re-contacto desde cero, conserva historial).
+// Body: { toSetterId, count?, tier? ('all'|key), country?, fromSetterId? }.
+//   fromSetterId: '__unassigned__' (huérfanos) | '__all__' (todo el pool) | <setterId>. Default '__unassigned__'.
+// Devuelve { moved, byTierMoved, fromRemaining, toTotal }.
+app.post('/api/setters/pool-distribute', requireAuth, requireRole('admin'), (req, res) => {
+  const { toSetterId, count, tier, country } = req.body || {};
+  const fromSetterId = req.body?.fromSetterId || '__unassigned__';
+  if (!toSetterId) return res.status(400).json({ error: 'toSetterId es requerido.' });
+  const data = loadSettersData();
+  const toSetter = (data.setters || []).find((s) => s.id === toSetterId);
+  if (!toSetter) return res.status(404).json({ error: `Setter destino no encontrado: ${toSetterId}` });
+
+  const matchSource = fromSetterId === '__unassigned__' ? (l) => !l.assignedTo
+    : fromSetterId === '__all__' ? () => true
+    : (l) => l.assignedTo === fromSetterId;
+
+  let candidates = Object.entries(data.leads || {})
+    .filter(([_id, l]) => matchSource(l) && l.assignedTo !== toSetterId)
+    .filter(([_id, l]) => !country || (l.country || '').toLowerCase().includes(String(country).toLowerCase()))
+    .map(([id, l]) => ({ id, lead: l, t: _leadPoolTier(l) }))
+    .filter((x) => !tier || tier === 'all' || x.t.key === tier);
+  // Ordenar por prioridad de tier (1 primero), luego por num asc.
+  candidates.sort((a, b) => (a.t.tier - b.t.tier) || ((Number(a.lead.num) || 0) - (Number(b.lead.num) || 0)));
+
+  let wanted = candidates.length;
+  if (count !== undefined && count !== null && count !== '') {
+    const n = Number(count);
+    if (!Number.isFinite(n) || n <= 0) return res.status(400).json({ error: 'count debe ser > 0.' });
+    wanted = Math.min(Math.floor(n), candidates.length);
+  }
+  const toMove = candidates.slice(0, wanted);
+
+  const byTierMoved = { interesado: 0, sin_contactar: 0, medio: 0, no_interesado: 0 };
+  for (const { lead, t } of toMove) {
+    lead.assignedTo = toSetterId;
+    _resetLeadForRedistribution(lead);
+    byTierMoved[t.key]++;
+  }
+  const backup = toMove.length > 0 ? makeBackup('pre-pool-distribute') : null;
+  if (toMove.length > 0) saveSettersData(data);
+
+  const allNow = Object.values(data.leads || {});
+  const fromRemaining = fromSetterId === '__unassigned__' ? allNow.filter((l) => !l.assignedTo).length
+    : fromSetterId === '__all__' ? allNow.length
+    : allNow.filter((l) => l.assignedTo === fromSetterId).length;
+  const toTotal = allNow.filter((l) => l.assignedTo === toSetterId).length;
+
+  res.json({ ok: true, moved: toMove.length, byTierMoved, backup: backup?.path || null,
+    toSetter: { id: toSetter.id, name: toSetter.name, total: toTotal }, fromRemaining });
 });
 
 // POST /api/setters/reassign-bulk — admin reasigna N leads de un setter origen a
