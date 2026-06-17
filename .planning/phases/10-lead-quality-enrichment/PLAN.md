@@ -92,6 +92,39 @@ Costos aproximados del backfill total (estimados, a confirmar con tarifas reales
 
 ---
 
+## Adiciones tras auditoría de gaps (2026-06-17, 2 agentes: publicidad + cold-call)
+
+### 🔴 Ola B0 — COMPLIANCE LEGAL (bloqueante, va ANTES de escalar) [G1]
+
+⚠️ No es asesoría legal — señales de riesgo a validar con abogado local ES + US antes del go-live masivo.
+
+- **España (crítico):** Ley 11/2022, desde jun-2025 **prohíbe móviles para llamadas comerciales** (multa "muy grave" hasta €20M). → el caller ID de Telnyx ruteado a ES **debe ser fijo, no móvil**. Guard en `telnyx_config.json` + validación.
+- **US/Canadá:** TCPA trata todo celular como residencial (DNC aplica, $500-1500/llamada). Chip rojo "⚠️ móvil — riesgo" cuando `country∈{US,CA,ES}` && `phoneType==='mobile'` (reusa B2) + degradar en score.
+- **Lista DNC interna:** campo `lead.doNotCall` + outcome de disposition "no llamar nunca" (hoy NO existe → exposición). Un rep no debe poder re-discar a quien pidió baja.
+- **Ventana horaria legal por país** (gate DURO, distinto del best-time de B1 que es efectividad): ES 9-21 sin findes, US/CA 8-21 local.
+
+### Adiciones a las olas existentes
+
+- **A3 → usar `business_status` como GATE** [G2]: no discar `CLOSED_PERMANENTLY/TEMPORARILY`. Chip "⚠️ verificar cerrado". No desperdiciar el dial del rep nuevo.
+- **B → `answerScore` separado de `fitScore`** [G3]: hoy `_callScore` mezcla calidad-de-negocio con probabilidad-de-atención. Separar: `answerScore` (phoneType móvil del dueño, tamaño chico = atiende directo, hora hábil, historial CDR) × `fitScore` (reviews/ads/tratamiento). Power Dialer ordena por combinación configurable.
+- **C3/C5 → Gatekeeper intel** [G5]: en el mismo call de IA, extraer nombre exacto a pedir ("pedí por la Dra. X") + `clinicSize`/`staffSignals` (¿atiende el dueño o hay recepción? → decide ruta A/B/C del gatekeeper script v2).
+- **C4 → brief en el panel de llamada EN VIVO** [G4]: inyectar las 4 líneas de oro (decisor + dolor#1 con cita + opener + objeción) en el `#telnyx-call-panel` flotante mientras suena (reusa Mercury-en-vivo #79). El arsenal donde el rep lo necesita.
+- **C6 (NUEVO) → Detección de publicidad** [pedido del user]: 
+  - **Pixel del HTML** (gratis, ya se baja): `hasMetaPixel` (fbq/fbevents), `hasGoogleAdsTag` (AW-), `hasRetargeting`, `hasTikTokPixel`, `hasGTM/GA4`. Prueba directa de inversión.
+  - **Meta Ad Library** (Apify, ~$0.01-0.05/lead): `runsMetaAds`, `activeMetaAdsCount`, `metaAdsOldestDays`. Match por handle de IG (ya scrapeado).
+  - **Google Ads Transparency** (SerpApi, ya se usa): `runsGoogleAds`. Secundario (clínicas LatAm usan poco Google Ads).
+  - Derivar `adIntensity` (none/low/med/high) → boost FUERTE en `fitScore` (anuncia = tiene leads = los pierde = fit perfecto). El monto exacto NO es público; la intensidad alcanza.
+  - Ángulo de llamada: *"Vi que tenés X anuncios corriendo en IG, ¿esos leads los sigue alguien o se enfrían?"*
+
+### 🆕 Ola E — Loop de aprendizaje & conversation intel (post-volumen)
+
+- **E1 [G7] (must):** las disposiciones + CDRs re-entrenan el scoring. Agregador por cohorte (país × franja × tratamiento): `no_answer` por franja baja `answerScore`; `answered_interested` por vertical sube `fitScore`. El scoring deja de ser estático.
+- **E2 [G9] (nice, techo alto):** minar los transcripts Whisper (#81, ya se capturan) → objeciones reales por vertical al banco Mercury + qué openers conectan + auto-sugerir disposition. Requiere volumen acumulado.
+- **E3 [G8] (nice):** regla de cadencia multi-canal (call→WA→email) que consume `whatsappCapable`/`phoneType` del enrich, sobre el motor de Phase 7.
+- **G6 (nice):** capturar `gatekeeperIntel` estructurado post-call. **G10 (nice, trivial):** copy localizado por dialecto (usted/tú/vos por `country`) en C4/#79.
+
+---
+
 ## Lo que NO se hace (decidido)
 
 - Dedup (ya perfecto, 0 duplicados).
@@ -106,10 +139,13 @@ Costos aproximados del backfill total (estimados, a confirmar con tarifas reales
 ## Orden de ejecución recomendado
 
 1. **Ola A** (higiene + captura) — base para todo, gratis.
-2. **B1 best-time-to-call** — mayor lift de connect rate, bajo esfuerzo.
-3. **Ola C** (enriquecimiento v2 — el arsenal) — máximo valor para los reps.
-4. **B2/B3** (validación número + WhatsApp) — antes de la campaña grande.
+2. **B1 best-time-to-call** + B0 ventana legal — mayor lift de connect rate + gate legal.
+3. **Ola C** (enriquecimiento v2 — el arsenal, incluye C6 publicidad) — máximo valor para los reps.
+4. **B2/B3 + resto de B0** (validación número + WhatsApp + DNC + caller-ID ES fijo) — ANTES de la campaña grande / go-live.
 5. **Ola D** (backfill masivo selectivo) — cuando A/B/C están listos.
+6. **Ola E** (loop de aprendizaje) — cuando haya volumen de llamadas.
+
+Nota: B0 (compliance) se construye en paralelo y DEBE estar completo antes del go-live con vendedores. Validación legal local (ES + US) pendiente del user.
 
 Cada ola = commits atómicos + tests + pre-deploy antes de pushear.
 
@@ -117,5 +153,10 @@ Cada ola = commits atómicos + tests + pre-deploy antes de pushear.
 
 ## Estado
 
-- 2026-06-17 — Phase 10 planificada tras auditoría de 5 agentes. Pendiente: confirmar
-  orden de ejecución con el user y arrancar Ola A.
+- 2026-06-17 — Phase 10 planificada tras auditoría de 5 agentes.
+- 2026-06-17 — Decisiones del user: backfill de reviews = **selectivo** (premium + a-llamar,
+  no gastar en los 2440 con 0 reviews). Arranque = **Ola A completa**.
+- 2026-06-17 — Auditoría de gaps (2 agentes): sumado Ola B0 (compliance legal — BLOQUEANTE),
+  C6 (detección de publicidad), Ola E (loop de aprendizaje), y mejoras a A3/B/C3/C4/C5.
+  ⚠️ Compliance ES (móvil prohibido jun-2025) + TCPA US requieren validación legal local.
+  Pendiente: revisión final del user del plan antes de construir (con varios agentes).
