@@ -924,7 +924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const resp = await fetch(apiUrl('/api/history/stats'));
         const stats = await resp.json();
         if (stats.totalEntries > 0) {
-          historyInfo.innerHTML = `Historial local: <strong>${stats.totalEntries} leads totales</strong>`;
+          historyInfo.innerHTML = `Historial de scrapeo: <strong>${stats.totalEntries}</strong> <span title="Negocios ya scrapeados de Google Maps (para no repetir). NO son tus leads del sistema.">negocios</span>`;
           historyInfo.classList.remove('hidden');
         } else {
           historyInfo.classList.add('hidden');
