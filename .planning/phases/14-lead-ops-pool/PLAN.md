@@ -112,8 +112,18 @@ Cooldown 3-6 meses para trabajado-sin-éxito. "Interesado" viejo no cerrado = **
 
 ---
 
+## Aclaraciones del user (2026-06-17, parte final)
+
+- **POOL_STAGING es EL objetivo central**: un lugar donde el user ve TODOS los leads y se los
+  va mandando a cada setter; el pool se vacía al repartir. Con varios llamadores, reasigna a c/u.
+  (Es exactamente lo descrito; confirmado como la pieza prioritaria.)
+- **Bots PARKEADOS**: se construye la base (LANE_BOT) pero **sin acceso todavía** — por ahora solo
+  el owner trabaja. Se habilita a setters más adelante. → NO construir UI de bots ahora.
+- **Llamadas + WhatsApp humano** unificados; bot diferido.
+
 ## Estado
 
 - 2026-06-17 — Phase 14 sintetizada de 3 agentes. La base está sana (limpieza marginal).
-  El trabajo grande es re-engagement (2465) + enriquecer lineType/waCapable + el pool de staging.
-  Pendiente: cerrar planificación y definir secuencia de build.
+  El trabajo grande es re-engagement (2465) + enriquecer lineType/waCapable + el **pool de staging
+  para distribuir a setters** (la pieza #1). Bots parkeados. Pendiente: purga de deuda técnica
+  (Phase 15) + cerrar planificación + secuencia de build.
