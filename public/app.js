@@ -8668,15 +8668,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     window.checkWelcomeBanner = checkWelcomeBanner;
 
+    // Vista por defecto para TODOS los roles: Llamadas (el Setteo WhatsApp quedó
+    // parkeado — "todo el trabajo es por llamada"). El handler de view-calls ya está
+    // bindeado (línea ~7242), así que el click dispara loadCallsView() y carga la data.
+    const _defaultMenuItem = document.querySelector('[data-target="view-calls"]');
+    _defaultMenuItem?.click();
     if (currentUser?.role === 'setter') {
-      const setterMenuItem = document.querySelector('[data-target="view-crm"]');
-      setterMenuItem?.click();
-      loadSetterModule().then(() => {
-        setTimeout(() => { renderHoyWidget(); checkWelcomeBanner(); }, 200);
-      });
-    } else {
-      const mapsMenuItem = document.querySelector('[data-target="view-maps"]');
-      mapsMenuItem?.click();
+      setTimeout(() => { checkWelcomeBanner(); }, 200);
     }
 
   // ══════════════════════════════════════════════════════════════
