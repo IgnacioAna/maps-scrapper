@@ -606,6 +606,30 @@ function computeWspProbability(lead = {}) {
   return 'unknown';
 }
 
+// Deriva el país (nombre canónico en español, igual que usa la data) desde el
+// prefijo internacional del teléfono. Devuelve '' si no se reconoce.
+// Matching por prefijo MÁS LARGO primero (591 antes que 5/59; 506 antes que 5).
+// NOTA: el caller ID de Telnyx NO depende de esto (rutea por el prefijo del tel
+// directo). Esto es para distribución/filtros/stats/timezone por país.
+const _PHONE_PREFIX_COUNTRY = [
+  ['591', 'Bolivia'], ['593', 'Ecuador'], ['595', 'Paraguay'], ['598', 'Uruguay'],
+  ['502', 'Guatemala'], ['503', 'El Salvador'], ['504', 'Honduras'], ['505', 'Nicaragua'],
+  ['506', 'Costa Rica'], ['507', 'Panamá'],
+  ['54', 'Argentina'], ['55', 'Brasil'], ['56', 'Chile'], ['57', 'Colombia'], ['58', 'Venezuela'],
+  ['51', 'Perú'], ['52', 'México'], ['34', 'España'],
+  ['1', 'Estados Unidos'],
+];
+function countryFromPhonePrefix(phone) {
+  let d = String(phone || '').replace(/\D/g, '');
+  if (!d) return '';
+  // tolerar 00 internacional al inicio
+  if (d.startsWith('00')) d = d.slice(2);
+  for (const [pref, name] of _PHONE_PREFIX_COUNTRY) {
+    if (d.startsWith(pref)) return name;
+  }
+  return '';
+}
+
 function normalizeBlockRecord(block = {}, index = 0) {
   const rawLabel = String(block.label || block.name || '').trim();
   return {
@@ -1647,6 +1671,33 @@ app.post('/api/admin/backfill-corrupt-phones', requireAuth, requireRole('admin')
   }
   if (!dryRun && (fixed + cleared) > 0) saveSettersData(data);
   res.json({ scanned, fixed, cleared, dryRun, sample });
+});
+
+// Backfill país desde el prefijo del teléfono (2026-06-17). Rellena lead.country
+// SOLO cuando está vacío, derivándolo del prefijo internacional. NO sobrescribe
+// países existentes. Idempotente. Soporta dryRun para previsualizar. Hace backup.
+// Valor: distribución/filtros/timezone por país (NO afecta caller ID — ese rutea
+// por el prefijo del teléfono directamente).
+app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, filled: 0, dryRun, byCountry: {} });
+  let scanned = 0, filled = 0;
+  const byCountry = {};
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    if (lead.country && String(lead.country).trim()) continue; // no pisar
+    const c = countryFromPhonePrefix(lead.phone);
+    if (!c) continue;
+    byCountry[c] = (byCountry[c] || 0) + 1;
+    if (sample.length < 10) sample.push({ id, name: lead.name, phone: lead.phone, country: c });
+    if (!dryRun) lead.country = c;
+    filled++;
+  }
+  if (!dryRun && filled > 0) { makeBackup('pre-backfill-country'); saveSettersData(data); }
+  res.json({ scanned, filled, dryRun, byCountry, sample });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
