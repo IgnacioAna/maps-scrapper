@@ -7496,7 +7496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (totalBadge) totalBadge.textContent = t.total + ' leads totales en setters';
 
         // Tabla por setter
-        document.getElementById('cmd-table-body').innerHTML = data.perSetter.map(s =>
+        const _cmdSetterBody = document.getElementById('cmd-table-body');
+        if (_cmdSetterBody) _cmdSetterBody.innerHTML = data.perSetter.map(s =>
           '<tr>' +
           '<td style="font-weight:600;">' + escHtml(s.name) + '</td>' +
           '<td>' + s.total + '</td>' +
@@ -7545,7 +7546,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return (Number(b.total) || 0) - (Number(a.total) || 0);
           });
 
-        document.getElementById('cmd-var-body').innerHTML = filteredVariants.map(v =>
+        const _cmdVarBody = document.getElementById('cmd-var-body');
+        if (_cmdVarBody) _cmdVarBody.innerHTML = filteredVariants.map(v =>
           '<tr>' +
           '<td style="font-weight:600; color:var(--warning);">' + escHtml(v.name) + '</td>' +
           '<td>' + v.total + '</td>' +

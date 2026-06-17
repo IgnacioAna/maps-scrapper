@@ -1767,82 +1767,11 @@
           <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
         </div>
         <section class="results-panel" style="padding:0 32px;">
-          <!-- Sección "Setters" eliminada: la info de cada setter ya está en
-               la tabla de Equipo (arriba) con sus acciones (Editar/Duplicar/Eliminar)
-               y en la tabla "Rendimiento por Setter" (abajo) con sus métricas.
-               El admin-setters-list duplicaba esa info. -->
-          <div class="admin-variable-panel" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
-            <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
-              <div>
-                <h3 style="margin:0 0 4px; font-size:15px;">Variables del Setter</h3>
-                <p style="margin:0; color:var(--text-secondary); font-size:12px;">Creá variables y bloques ilimitados para cada setter.</p>
-              </div>
-              <select id="cmd-variable-setter-filter" class="setter-input" style="min-width:220px; max-width:280px;">
-                <option value="">Todos los setters</option>
-              </select>
-            </div>
-            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-              <input id="cmd-variable-search" autocomplete="off" type="text" class="setter-input" placeholder="Buscar variable o bloque" style="min-width:260px; flex:1;">
-            </div>
-            <div id="admin-variable-summary" style="margin-top:12px; color:var(--text-secondary); font-size:12px;"></div>
-            <div id="admin-variable-list" style="margin-top:14px;"></div>
-          </div>
-          <div id="inline-variant-editor" style="margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px; background:rgba(255,255,255,0.02);">
-            <h3 style="margin:0 0 8px; font-size:15px;">Editor de variables</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-              <input type="text" id="inline-var-name" placeholder="Nombre de variable" class="setter-input">
-              <input type="text" id="inline-var-week" placeholder="Semana / etiqueta" class="setter-input">
-              <select id="inline-var-setter" class="setter-input" style="grid-column:1/-1;">
-                <option value="">Asignar a setter</option>
-              </select>
-            </div>
-            <div id="inline-var-blocks"></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
-              <button id="inline-add-block-btn" type="button" class="btn-table-action">+ Agregar bloque</button>
-              <button id="inline-save-variable-btn" type="button" class="btn-primary pill-btn">+ Guardar variable</button>
-            </div>
-          </div>
-          <h3 style="margin:16px 0 12px; font-size:15px;">Rendimiento por Setter</h3>
-          <div class="table-container">
-            <table id="cmd-table">
-              <thead>
-                <tr>
-                  <th>Setter</th>
-                  <th>Total Leads</th>
-                  <th>Mensajes</th>
-                  <th>Conexiones</th>
-                  <th>% Conexión</th>
-                  <th>Respondieron</th>
-                  <th>% Apertura</th>
-                  <th>Calificados</th>
-                  <th>Interesados</th>
-                  <th>% Calificación</th>
-                  <th>Agendados</th>
-                  <th>Variante Activa</th>
-                </tr>
-              </thead>
-              <tbody id="cmd-table-body"></tbody>
-            </table>
-          </div>
-          <h3 style="margin:24px 0 12px; font-size:15px;">Rendimiento por Variante</h3>
-          <div class="table-container">
-            <table id="cmd-var-table">
-              <thead>
-                <tr>
-                  <th>Variante</th>
-                  <th>Total Leads</th>
-                  <th>Mensajes</th>
-                  <th>Conexiones</th>
-                  <th>Respondieron</th>
-                  <th>Calificados</th>
-                  <th>% Apertura</th>
-                  <th>Interesados</th>
-                  <th>% Calificación</th>
-                </tr>
-              </thead>
-              <tbody id="cmd-var-body"></tbody>
-            </table>
-          </div>
+          <!-- Consolidación 2026-06-17: se quitaron del Centro de Comando las
+               secciones de Setteo WhatsApp (Variables del Setter, Editor de
+               variables, "Rendimiento por Setter" — duplicaba Equipo — y
+               "Rendimiento por Variante"). El flujo WhatsApp quedó parkeado;
+               la comparativa por setter vive en la vista "Equipo". -->
           <!-- Base de Datos de Scraping -->
           <div class="admin-variable-panel" style="margin-top:20px; margin-bottom:20px; padding:16px; border:1px solid var(--border-color); border-radius:16px;">
             <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:12px;">
@@ -3136,7 +3065,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260617j"></script>
+  <script type="module" src="/app.js?v=20260617k"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
