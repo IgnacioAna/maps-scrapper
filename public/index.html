@@ -2585,6 +2585,15 @@
             </label>
           </div>
 
+          <!-- Analytics avanzado (Costo real + Efectividad) colapsado: la pantalla
+               lidera con la config; las métricas pesadas de Telnyx quedan a un click. -->
+          <details id="tlx-analytics-drawer" style="margin-top:4px;">
+            <summary class="tlx-drawer-summary" style="cursor:pointer; padding:14px 18px; border-radius:14px; background:rgba(255,255,255,0.02); border:1px solid var(--border-color); font-size:14px; font-weight:600; display:flex; align-items:center; gap:8px;">
+              <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(255,200,40,0.15); border-radius:7px;">📊</span>
+              Costos y efectividad <span style="font-weight:400; color:var(--text-secondary); font-size:12px;">— métricas avanzadas de Telnyx</span>
+            </summary>
+            <div style="display:grid; gap:16px; margin-top:14px;">
+
           <!-- 3.7 COSTO REAL (CDRs de Telnyx, no estimado) -->
           <div class="card" style="padding:20px; border-radius:14px;">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
@@ -2698,6 +2707,9 @@
               </div>
             </details>
           </div>
+
+            </div>
+          </details>
 
         </section>
       </div>
