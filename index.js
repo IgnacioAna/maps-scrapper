@@ -3690,6 +3690,7 @@ app.patch('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res)
   if (!setter) return res.status(404).json({ error: "Setter no encontrado." });
   if (req.body.activeVariantId !== undefined) setter.activeVariantId = req.body.activeVariantId;
   if (req.body.name) setter.name = req.body.name;
+  if (req.body.hidden !== undefined) setter.hidden = !!req.body.hidden;
   saveSettersData(data);
   res.json({ setter });
 });

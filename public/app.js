@@ -12784,10 +12784,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isSupervisor = role === 'supervisor';
     const views = [
       { id: 'v-crm', target: 'view-crm', label: 'Ir a Setteo (WhatsApp)', icon: '💬', roles: ['admin','setter','supervisor'] },
-      // Audit Sprint 37: alinear con sidebar — `view-calls` es admin+supervisor only
-      // desde 2026-05-22 (setters siguen con WA). Antes era setter-accesible vía
-      // cmdk, ahora se oculta para coincidir con sidebar.
-      { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','supervisor'] },
+      // 2026-06-17: el modelo cambió a "todos llaman" — los setters ahora SÍ acceden
+      // a Llamadas (antes solo WhatsApp). Alineado con el nav.
+      { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','supervisor','setter'] },
       { id: 'v-myperf', target: 'view-myperf', label: 'Ir a Mi rendimiento', icon: '📊', roles: ['admin','setter','supervisor'] },
       { id: 'v-assistant', target: 'view-assistant', label: 'Ir a Asistente IA', icon: '🤖', roles: ['admin','setter'] },
       { id: 'v-faqs', target: 'view-faqs', label: 'Ir a Banco de Respuestas', icon: '📚', roles: ['admin','setter','supervisor'] },
