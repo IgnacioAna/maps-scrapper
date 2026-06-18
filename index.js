@@ -6474,6 +6474,39 @@ app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, re
   res.json({ ok: true });
 });
 
+// Borrado masivo de leads por país (admin). Matchea por lead.country O por prefijo
+// del teléfono (countryFromPhonePrefix). dryRun cuenta sin borrar; al borrar hace
+// BACKUP primero + limpia entradas de calendario huérfanas. NO toca history.json.
+app.post('/api/admin/delete-by-country', requireAuth, requireRole('admin'), (req, res) => {
+  const { country, dryRun = false } = req.body || {};
+  if (!country || typeof country !== 'string' || !country.trim()) {
+    return res.status(400).json({ error: 'country requerido' });
+  }
+  const target = country.trim().toLowerCase();
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ matched: 0, deleted: 0, dryRun });
+  const ids = [];
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const l = data.leads[id];
+    const c = String(l.country || '').trim().toLowerCase();
+    const byPrefix = (countryFromPhonePrefix(l.phone) || '').toLowerCase();
+    if (c === target || byPrefix === target) {
+      ids.push(id);
+      if (sample.length < 12) sample.push({ id, name: l.name, country: l.country, phone: l.phone, assignedTo: l.assignedTo });
+    }
+  }
+  if (dryRun) return res.json({ dryRun: true, matched: ids.length, sample });
+  let backup = null;
+  if (ids.length) {
+    backup = makeBackup('pre-delete-country');
+    for (const id of ids) delete data.leads[id];
+    if (Array.isArray(data.calendar)) data.calendar = data.calendar.filter((e) => !ids.includes(e.leadId));
+    saveSettersData(data);
+  }
+  res.json({ ok: true, deleted: ids.length, backup: backup?.path || null, sample });
+});
+
 // Disposition de una llamada — endpoint específico de Llamadas.
 // Recibe { outcome, notes?, callbackAt?, scheduled? } y aplica los cambios de estado
 // + log de la llamada + opcional creación de evento en el calendario (agenda con admin).
