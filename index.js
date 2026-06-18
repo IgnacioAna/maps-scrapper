@@ -6504,7 +6504,7 @@ app.post('/api/admin/delete-by-country', requireAuth, requireRole('admin'), (req
     if (Array.isArray(data.calendar)) data.calendar = data.calendar.filter((e) => !ids.includes(e.leadId));
     saveSettersData(data);
   }
-  res.json({ ok: true, deleted: ids.length, backup: backup?.path || null, sample });
+  res.json({ ok: true, deleted: ids.length, backup: backup?.dir || null, sample });
 });
 
 // Disposition de una llamada — endpoint específico de Llamadas.
