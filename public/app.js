@@ -8663,7 +8663,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await resp.json();
         if (out) {
           if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
-          else out.textContent = `✅ ${d.briefed || 0} briefs generados de ${d.scanned || 0} premium.` + (d.scanned >= 8 ? ' Hay más → clic de nuevo.' : ' (no quedan más premium sin brief)') + (Object.keys(d.errors || {}).length ? ' · errores: ' + JSON.stringify(d.errors) : '');
+          else out.textContent = `✅ ${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.`;
         }
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
