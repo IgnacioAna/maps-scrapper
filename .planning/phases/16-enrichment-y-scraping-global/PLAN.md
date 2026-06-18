@@ -8,6 +8,8 @@
 - **Phase 12 (SDR Operating System)**: el brief es input del flujo del SDR.
 - **Phases 13-15 (UI / pool / purga)**: ya deployadas. Esta fase agrega chips de señales en la card de Llamadas/Power Dialer (UI ya consolidada).
 
+## ESTADO (2026-06-18): Olas A, B, C ✅ COMPLETAS y deployadas a prod. Barrida ejecutada (5178 leads). Ver CLAUDE.md notas #89-94.
+
 ## Olas de build (cada una: implementar → test vitest → preview → deploy)
 
 ### Ola A — Lead Signals / Brief + barrida sobre leads existentes  ⭐ prioridad
