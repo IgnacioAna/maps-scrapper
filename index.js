@@ -552,6 +552,13 @@ function ensureLeadDefaults(lead = {}) {
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
   if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
+  // Phase 17 Ola 2: callback compartido (cualquier setter lo puede tomar, no solo
+  // el dueño). false = privado (comportamiento histórico).
+  if (typeof lead.callbackShared !== 'boolean') lead.callbackShared = false;
+  // Phase 17 Ola 3: cadencia de auto-redial. cadenceStep = nº de reintento
+  // auto-programado por racha de no-contacto. cadenceExhausted = agotó los autos.
+  if (typeof lead.cadenceStep !== 'number') lead.cadenceStep = 0;
+  if (typeof lead.cadenceExhausted !== 'boolean') lead.cadenceExhausted = false;
   // Cierre de venta (funnel SDR). Se setean cuando una cita del calendario se
   // marca 'ganada' (estado='cerrado'). closedAt = ISO del cierre (para filtrar
   // deals por período en cold-call-metrics). dealValue = valor del proyecto cerrado.
@@ -4663,7 +4670,11 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   const eff = getEffectiveAuth(req);
   const authSetterId = eff.role === 'setter' ? eff.setterId : '';
   if (authSetterId) {
-    leads = leads.filter((l) => l.assignedTo === authSetterId);
+    // Phase 17 Ola 2: el setter ve los suyos + los callbacks COMPARTIDOS vencidos
+    // de cualquiera (cola compartida — el primero que lo agarra lo trabaja).
+    const _now = Date.now();
+    leads = leads.filter((l) => l.assignedTo === authSetterId
+      || (l.callbackShared && l.callbackAt && new Date(l.callbackAt).getTime() <= _now));
   } else if (setter) {
     leads = leads.filter(l => l.assignedTo === setter);
   }
@@ -6241,11 +6252,21 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
-  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+  // Phase 17 Ola 2: un setter puede actuar sobre un lead ajeno SOLO si es un
+  // callback compartido vencido (cualquiera lo puede tomar). Al tomarlo se lo
+  // reasigna y deja de ser compartido.
+  const _isSetter = req.auth?.user?.role === 'setter';
+  const _isOwner = lead.assignedTo === req.auth?.user?.setterId;
+  const _isSharedDue = !!lead.callbackShared && !!lead.callbackAt && new Date(lead.callbackAt).getTime() <= Date.now();
+  if (_isSetter && !_isOwner && !_isSharedDue) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
+  if (_isSetter && !_isOwner && _isSharedDue) {
+    lead.assignedTo = req.auth.user.setterId; // el setter "toma" el callback compartido
+    lead.callbackShared = false;
+  }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -6458,6 +6479,8 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     case 'callback_later':
       // callbackAt debe venir en ISO. Si no, default a +24hs
       lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      // Phase 17 Ola 2: callback compartido (cualquier setter lo toma) vs privado.
+      if (typeof callbackShared === 'boolean') lead.callbackShared = callbackShared;
       break;
 
     case 'scheduled_with_admin':
@@ -6491,6 +6514,27 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.doNotCallAt = now;
     lead.doNotCallBy = req.auth?.user?.name || '';
     lead.estado = 'descartado';
+  }
+
+  // Phase 17 Ola 3: cadencia de auto-redial. Para no_answer/voicemail, si el setter
+  // NO puso un callback manual y el lead no es DNC, programamos el próximo intento
+  // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
+  // dialer automático (compliance: la llamada siempre la dispara una persona).
+  const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
+  // Horas hasta el próximo reintento, por nº de racha (1er, 2do, 3er). Tras agotar → stop.
+  const CADENCE_HOURS = [3, 24, 72];
+  if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
+    let streak = 0;
+    for (let i = lead.callLog.length - 1; i >= 0; i--) {
+      if (_NO_CONTACT.has(lead.callLog[i].outcome)) streak++; else break;
+    }
+    if (streak <= CADENCE_HOURS.length) {
+      lead.callbackAt = new Date(Date.now() + CADENCE_HOURS[streak - 1] * 3600000).toISOString();
+      lead.cadenceStep = streak;
+      lead.cadenceExhausted = false;
+    } else {
+      lead.cadenceExhausted = true; // agotó los reintentos automáticos
+    }
   }
 
   saveSettersData(data);

@@ -5931,6 +5931,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             callbackBadge = `<span style="font-size:10px; color:var(--info, #5BA3F2); background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">📅 ${cbLabel}</span>`;
           }
         }
+        // Phase 17 Ola 2: indicador de callback compartido.
+        if (l.callbackShared && l.callbackAt) {
+          callbackBadge += ` <span style="font-size:10px; color:#7DD3FC; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); padding:2px 7px; border-radius:6px;" title="Callback compartido — cualquier setter lo puede tomar">🔁 compartido</span>`;
+        }
+        // Phase 17 Ola 3: indicador de auto-reintento (cadencia).
+        if (l.cadenceStep > 0 && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()) {
+          callbackBadge += ` <span style="font-size:10px; color:#FFB341; background:rgba(255,179,65,0.10); padding:2px 6px; border-radius:6px;" title="Reintento automático programado por cadencia (no atendió)">🔁 auto #${l.cadenceStep}</span>`;
+        }
 
         // Sprint 28: visualizar descartados con UI degradada
         const isDiscarded = l.estado === 'descartado';
@@ -6317,56 +6325,61 @@ document.addEventListener('DOMContentLoaded', async () => {
       const linkBtns = [];
       if (lead.website && !lead.website.includes('N/A')) {
         const safeW = safeUrl(lead.website);
-        if (safeW) linkBtns.push(`<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" title="Abrir sitio web" style="font-size:11px; padding:2px 7px; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
+        if (safeW) linkBtns.push(`<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" title="Abrir sitio web" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
       }
       // Google Maps directo desde nombre + ciudad
       if (lead.name) {
         const mapsQuery = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
-        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:11px; padding:2px 7px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">🗺 Maps</a>`);
+        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">🗺 Maps</a>`);
       }
       if (lead.instagram && !lead.instagram.includes('N/A')) {
         const igRaw = String(lead.instagram).trim();
         const igUrl = igRaw.startsWith('http') ? safeUrl(igRaw) : `https://www.instagram.com/${igRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '')}/`;
-        if (igUrl) linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Instagram" style="font-size:11px; padding:2px 7px; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
+        if (igUrl) linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Instagram" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
       }
       if (lead.facebook && !lead.facebook.includes('N/A')) {
         const fbRaw = String(lead.facebook).trim();
         const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : `https://www.facebook.com/${fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '')}`;
-        if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:11px; padding:2px 7px; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
+        if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
       }
       if (links) links.innerHTML = linkBtns.join('');
     }
 
-    // Histórico inline: si el lead ya tiene callLog, mostrar último intento.
-    // Permite al setter saber "ya lo llamé el lunes y dijo X" sin ir a buscar.
+    // Phase 17 Ola 4: timeline unificada del lead (llamadas + notas, más reciente
+    // primero). Reemplaza el "solo último intento" — el setter ve TODO el historial
+    // del lead de un vistazo durante la llamada (idea Adversus: Activity timeline).
     function _renderCallHistory(lead) {
       const box = document.getElementById('telnyx-call-history');
       const content = document.getElementById('telnyx-call-history-content');
       if (!box || !content) return;
       const log = (lead && Array.isArray(lead.callLog)) ? lead.callLog : [];
-      if (log.length === 0) { box.style.display = 'none'; return; }
-      const last = log[log.length - 1];
-      const lastDate = new Date(last.ts);
-      const daysAgo = Math.floor((Date.now() - lastDate.getTime()) / (24 * 60 * 60 * 1000));
-      const daysTxt = daysAgo === 0 ? 'hoy' : daysAgo === 1 ? 'ayer' : `hace ${daysAgo} días`;
+      const notes = (lead && Array.isArray(lead.notes)) ? lead.notes : [];
+      const events = [];
+      for (const c of log) events.push({ kind: 'call', ts: c.ts ? new Date(c.ts).getTime() : 0, outcome: c.outcome, notes: c.notes, duration: c.duration });
+      for (const n of notes) events.push({ kind: 'note', ts: (n.date || n.ts) ? new Date(n.date || n.ts).getTime() : 0, text: n.text, by: n.by });
+      if (events.length === 0) { box.style.display = 'none'; return; }
+      events.sort((a, b) => b.ts - a.ts);
       const outcomeMap = {
-        answered_interested: '✅ Interesado',
-        answered_not_interested: '❌ No interesado',
-        no_answer: '📵 No atendió',
-        voicemail: '📭 Buzón',
-        wrong_number: '🔢 Número equivocado',
-        invalid_number: '🚫 No existe',
-        callback_later: '🔄 Callback',
-        scheduled_with_admin: '📅 Agendado',
+        answered_interested: '✅ Interesado', answered_not_interested: '❌ No interesado',
+        no_answer: '📵 No atendió', voicemail: '📭 Buzón', wrong_number: '🔢 Equivocado',
+        invalid_number: '🚫 No existe', callback_later: '🔄 Callback', scheduled_with_admin: '📅 Agendado',
+        hung_up: '🚪 Cortó', placeholder_sent: '📧 Hold',
       };
-      const outcomeTxt = outcomeMap[last.outcome] || last.outcome || '—';
-      const duration = last.duration ? ` · ${Math.floor(last.duration / 60)}:${String(last.duration % 60).padStart(2, '0')}` : '';
-      const attemptsCount = log.length;
-      content.innerHTML = `
-        <div><strong>${outcomeTxt}</strong> — ${daysTxt}${duration}</div>
-        ${last.notes ? `<div style="margin-top:3px; font-size:10.5px; color:rgba(255,255,255,0.55); font-style:italic;">"${escHtml(last.notes.substring(0, 120))}${last.notes.length > 120 ? '…' : ''}"</div>` : ''}
-        ${attemptsCount > 1 ? `<div style="margin-top:3px; font-size:10px; color:rgba(255,255,255,0.4);">${attemptsCount} intentos totales</div>` : ''}
-      `;
+      const fmtAgo = (ts) => {
+        if (!ts) return '';
+        const d = Math.floor((Date.now() - ts) / 86400000);
+        return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d}d`;
+      };
+      const items = events.slice(0, 6).map(e => {
+        const when = fmtAgo(e.ts);
+        if (e.kind === 'call') {
+          const o = outcomeMap[e.outcome] || e.outcome || '—';
+          const dur = e.duration ? ` · ${Math.floor(e.duration / 60)}:${String(e.duration % 60).padStart(2, '0')}` : '';
+          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">📞 <strong>${o}</strong> <span style="opacity:0.5;">· ${when}${dur}</span>${e.notes ? `<div style="margin-top:2px; font-size:10.5px; color:rgba(255,255,255,0.55); font-style:italic;">"${escHtml(e.notes.substring(0, 100))}${e.notes.length > 100 ? '…' : ''}"</div>` : ''}</div>`;
+        }
+        return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">📝 ${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
+      }).join('');
+      content.innerHTML = items + (events.length > 6 ? `<div style="font-size:10px; opacity:0.5; margin-top:4px;">+${events.length - 6} eventos más</div>` : '');
       box.style.display = 'block';
     }
 
@@ -7053,6 +7066,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Default: mañana 10am hora local
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
       fechaInput.value = _toDatetimeLocal(m);
+      // Phase 17 Ola 2: reset checkbox "compartido" al abrir.
+      const _cbShared = document.getElementById('call-cb-shared');
+      if (_cbShared) _cbShared.checked = false;
 
       // Sprint 23: render quick-picks. Calculados al abrir el modal así
       // siempre son relativos a "ahora" (no se cachean stale).
@@ -7085,10 +7101,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         confirmBtn.disabled = true; const _oldTxt = confirmBtn.textContent; confirmBtn.textContent = 'Guardando…';
         try {
           const callbackIso = new Date(fecha).toISOString();
+          const callbackShared = !!document.getElementById('call-cb-shared')?.checked;
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso })
+            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           // Update optimista del cache ANTES de cerrar el modal. El poller del

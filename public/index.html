@@ -1329,6 +1329,9 @@
 
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
             <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-top:14px; cursor:pointer;">
+              <input type="checkbox" id="call-cb-shared"> 🔁 Callback compartido <span style="color:var(--text-tertiary); font-size:11px;">(cualquier setter lo puede tomar)</span>
+            </label>
             <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
               <button class="btn-primary pill-btn" id="call-cb-confirm">Programar</button>
@@ -3090,7 +3093,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618d"></script>
+  <script type="module" src="/app.js?v=20260618f"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
