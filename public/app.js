@@ -5199,6 +5199,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (e.key === 'Enter') { e.preventDefault(); document.getElementById('manual-dial-go')?.click(); }
       if (e.key === 'Escape') { e.preventDefault(); _closeManualDial(); }
     });
+    // Phase 13: keypad 3×4 — cada tecla appendea al input.
+    document.querySelectorAll('#manual-dial-keypad .dialpad-key').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!_manualDialInput) return;
+        _manualDialInput.value += btn.getAttribute('data-k') || '';
+        _manualDialInput.focus();
+      });
+    });
     document.getElementById('manual-dial-go')?.addEventListener('click', () => {
       const raw = (_manualDialInput?.value || '').trim();
       // Sanitizar: dejar solo + y digitos
@@ -5373,6 +5381,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Señales negativas de teléfono
       if (l.phoneStatus === 'voicemail') s -= 6;
       if (l.phoneStatus === 'wrong' || l.phoneStatus === 'invalid') s -= 40;
+      // Phase 10 A3: negocio cerrado según Google → casi nunca llamar (deprioriza fuerte).
+      if (typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED')) s -= 50;
       // Datos de contacto enriquecidos = lead más trabajable
       if (l.email) s += 3;
       if (l.website) s += 2;
@@ -5966,6 +5976,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${interesadoBadge}
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
+              ${typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED') ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.3); padding:2px 7px; border-radius:6px;" title="Google lo marca cerrado (${escHtml(l.businessStatus)}) — verificar antes de discar">⚠ Cerrado</span>` : ''}
               ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">🚫 No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">↩️ Quitar</button>` : ''}
               ${notesBadge}
               ${fupBadge}
@@ -6919,6 +6930,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           btn.classList.add('tlx-mute-active');
         }
       } catch (e) { console.warn('[telnyx] mute toggle:', e); }
+    });
+
+    // Phase 13: DTMF — toggle del pad + envío de tonos al call activo (IVRs/centrales).
+    document.getElementById('telnyx-call-dtmf-toggle')?.addEventListener('click', () => {
+      const pad = document.getElementById('telnyx-dtmf-pad');
+      if (!pad) return;
+      pad.style.display = pad.style.display === 'grid' ? 'none' : 'grid';
+    });
+    document.querySelectorAll('#telnyx-dtmf-pad .dtmf-key').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const k = btn.getAttribute('data-k');
+        if (!k || !_telnyx.activeCall) return;
+        try {
+          if (typeof _telnyx.activeCall.dtmf === 'function') _telnyx.activeCall.dtmf(k);
+        } catch (e) { console.warn('[telnyx] dtmf:', e); }
+      });
     });
 
     // Confirm exit si hay llamada activa
@@ -11525,6 +11552,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const dealsLabel = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary); font-size:14px;">—</span>`;
     const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'Marcá citas como 🏆 ganadas';
+    // Phase 12 P0-4: indicador vs benchmark 2026 por ratio (▲ en/sobre meta · ◆ cerca · ▼ debajo).
+    const bench = (val, ok, good, label) => {
+      const v = parseFloat(val) || 0;
+      const col = v >= good ? '#5BB974' : v >= ok ? '#FFB341' : '#F47272';
+      const icon = v >= good ? '▲' : v >= ok ? '◆' : '▼';
+      return `<div style="font-size:9px; color:${col}; margin-top:3px; font-weight:600;" title="Benchmark SDR 2026">${icon} meta ${label}</div>`;
+    };
     cont.innerHTML = `
       <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:18px;">
         ${stage('📞', 'Dials Made', m.dials, 'Llamadas marcadas', '#7E8494')}
@@ -11538,18 +11572,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="text-align:center; padding:8px;">
           <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.connectRate)}</div>
           <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Connect Rate</div>
+          ${bench(r.connectRate, 8, 15, '15-25%')}
         </div>
         <div style="text-align:center; padding:8px;">
           <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.conversationRate)}</div>
           <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Conversation Rate</div>
+          ${bench(r.conversationRate, 40, 50, '50-60%')}
         </div>
         <div style="text-align:center; padding:8px;">
           <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.bookingRate)}</div>
           <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Booking Rate</div>
+          ${bench(r.bookingRate, 10, 15, '15-25%')}
         </div>
         <div style="text-align:center; padding:8px;">
           <div style="font-size:18px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;">${fmtPct(r.dialToAppointment)}</div>
           <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Dial → Appointment</div>
+          ${bench(r.dialToAppointment, 1, 2, '1-3%')}
         </div>
         <div style="text-align:center; padding:8px;">
           <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtDur(d.avgConvDurationS)}</div>

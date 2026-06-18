@@ -595,6 +595,8 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.category !== 'string') lead.category = '';
   // Phase 10 C6: el negocio corre publicidad (Meta/Google pixel detectado en su web).
   if (typeof lead.runsAds !== 'boolean') lead.runsAds = false;
+  // Phase 10 A3: estado del negocio según Google (CLOSED_PERMANENTLY/TEMPORARILY → no discar).
+  if (typeof lead.businessStatus !== 'string') lead.businessStatus = '';
   // Phase 16: brief/señales derivadas para el SDR. Lazy (si faltan, se computan
   // de rating/reviews/web/instagram). La barrida POST /api/admin/backfill-signals
   // las recomputa para todos; enrich-from-maps y manual-add las refrescan.
@@ -2998,6 +3000,12 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
         types: Array.isArray(item.types) ? item.types.join(', ') : (item.type || ""),
         unclaimed: item.unclaimed_listing ? "Sí (Oportunidad)" : "Reclamado",
         locationSearched: location || "General",
+        // Phase 10 A3: capturar lo que SerpAPI YA devuelve y se descartaba.
+        category: item.type || "",
+        placeId: item.place_id || "",
+        coordinates: item.gps_coordinates ? { lat: item.gps_coordinates.latitude, lng: item.gps_coordinates.longitude } : null,
+        openingHours: item.operating_hours || item.hours || null,
+        businessStatus: item.business_status || (item.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
         country,
         city
       };
@@ -6538,8 +6546,10 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
   // dialer automático (compliance: la llamada siempre la dispara una persona).
   const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
-  // Horas hasta el próximo reintento, por nº de racha (1er, 2do, 3er). Tras agotar → stop.
-  const CADENCE_HOURS = [3, 24, 72];
+  // Phase 12 P0-1 (persistencia): 6 reintentos antes de agotar — el 95% de los que
+  // convierten se alcanzan recién al 6to intento; la mayoría abandona al 4to (error).
+  // Horas hasta el próximo reintento por nº de racha: 3h, 1d, 3d, 4d, 7d, 7d.
+  const CADENCE_HOURS = [3, 24, 72, 96, 168, 168];
   if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
     let streak = 0;
     for (let i = lead.callLog.length - 1; i >= 0; i--) {

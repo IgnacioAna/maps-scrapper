@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260604b">
+  <link rel="stylesheet" href="/style.css?v=20260618a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -796,6 +796,21 @@
             <div style="padding:20px;">
               <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);margin-bottom:8px;">N&uacute;mero (formato E.164)</label>
               <input id="manual-dial-input" type="tel" autocomplete="off" placeholder="+5492954555113" style="width:100%;padding:12px 14px;background:var(--bg-app);border:1px solid var(--border-color);border-radius:10px;color:var(--text-primary);font-size:18px;font-family:ui-monospace,monospace;letter-spacing:0.5px;box-sizing:border-box;">
+              <!-- Phase 13: keypad 3×4 real -->
+              <div id="manual-dial-keypad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;">
+                <button type="button" class="dialpad-key" data-k="1">1</button>
+                <button type="button" class="dialpad-key" data-k="2">2<span class="dk-sub">ABC</span></button>
+                <button type="button" class="dialpad-key" data-k="3">3<span class="dk-sub">DEF</span></button>
+                <button type="button" class="dialpad-key" data-k="4">4<span class="dk-sub">GHI</span></button>
+                <button type="button" class="dialpad-key" data-k="5">5<span class="dk-sub">JKL</span></button>
+                <button type="button" class="dialpad-key" data-k="6">6<span class="dk-sub">MNO</span></button>
+                <button type="button" class="dialpad-key" data-k="7">7<span class="dk-sub">PQRS</span></button>
+                <button type="button" class="dialpad-key" data-k="8">8<span class="dk-sub">TUV</span></button>
+                <button type="button" class="dialpad-key" data-k="9">9<span class="dk-sub">WXYZ</span></button>
+                <button type="button" class="dialpad-key" data-k="*">&#42;</button>
+                <button type="button" class="dialpad-key" data-k="0">0<span class="dk-sub">+</span></button>
+                <button type="button" class="dialpad-key" data-k="#">#</button>
+              </div>
               <p style="margin:10px 0 0;font-size:11.5px;color:var(--text-tertiary);line-height:1.5;">Incluir c&oacute;digo de pa&iacute;s con <code style="color:var(--accent);">+</code>. Ej: <code style="color:var(--accent);">+5492954555113</code> (Argentina celular), <code style="color:var(--accent);">+34611234567</code> (Espa&ntilde;a).</p>
               <p style="margin:6px 0 0;font-size:11px;color:var(--text-tertiary);">La llamada queda registrada como "Llamada manual" en el Historial. Sin vincular a un lead.</p>
             </div>
@@ -1219,10 +1234,26 @@
             <textarea id="telnyx-call-quick-note" placeholder="Tip rápido para vos mismo: qué probaste, qué dijo el lead, qué cambiar la próxima…" rows="2" style="width:100%; padding:8px 11px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#fff; font-size:11.5px; resize:vertical; min-height:50px; font-family:inherit; box-sizing:border-box;"></textarea>
           </div>
 
-          <!-- Botones de acción: 2 cols (Guion / Mute) + 1 col (Colgar) -->
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
-            <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 8px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">📝 Guion</button>
-            <button id="telnyx-call-mute" class="tlx-btn-action" style="padding:11px 8px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">🎤 Mute</button>
+          <!-- Botones de acción: 3 cols (Guion / Mute / Teclado) + 1 col (Colgar) -->
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
+            <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">📝 Guion</button>
+            <button id="telnyx-call-mute" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">🎤 Mute</button>
+            <button id="telnyx-call-dtmf-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;" title="Teclado para IVRs (marcar opciones durante la llamada)">🔢 Teclado</button>
+          </div>
+          <!-- Phase 13: pad DTMF (para centrales/IVRs durante la llamada) -->
+          <div id="telnyx-dtmf-pad" style="display:none; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px;">
+            <button type="button" class="dialpad-key dtmf-key" data-k="1" style="font-size:16px; padding:9px 0;">1</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="2" style="font-size:16px; padding:9px 0;">2</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="3" style="font-size:16px; padding:9px 0;">3</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="4" style="font-size:16px; padding:9px 0;">4</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="5" style="font-size:16px; padding:9px 0;">5</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="6" style="font-size:16px; padding:9px 0;">6</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="7" style="font-size:16px; padding:9px 0;">7</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="8" style="font-size:16px; padding:9px 0;">8</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="9" style="font-size:16px; padding:9px 0;">9</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="*" style="font-size:16px; padding:9px 0;">&#42;</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="0" style="font-size:16px; padding:9px 0;">0</button>
+            <button type="button" class="dialpad-key dtmf-key" data-k="#" style="font-size:16px; padding:9px 0;">#</button>
           </div>
           <button id="telnyx-call-hangup" style="width:100%; padding:13px; border-radius:11px; font-size:13px; cursor:pointer; background:linear-gradient(180deg, #f85149 0%, #d63a32 100%); color:#fff; border:none; font-weight:600; box-shadow:0 4px 14px rgba(248,81,73,0.35); transition:all 0.15s;">
             <span style="display:inline-flex; align-items:center; justify-content:center; gap:6px;">
@@ -3093,7 +3124,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618g"></script>
+  <script type="module" src="/app.js?v=20260618h"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

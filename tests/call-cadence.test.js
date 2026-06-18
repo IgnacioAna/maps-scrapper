@@ -63,8 +63,20 @@ describe("cadencia de auto-redial", () => {
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(71);
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(73);
   });
-  it("4to no_answer → agota la cadencia (cadenceExhausted)", async () => {
+  it("4to no_answer → +4d, step 4 (persistencia: ya no agota al 4to)", async () => {
     const r = await disp({ outcome: "no_answer" });
+    expect(r.body.lead.cadenceStep).toBe(4);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(95);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(97);
+    expect(r.body.lead.cadenceExhausted).toBe(false);
+  });
+  it("5to y 6to no_answer → +7d cada uno; recién el 7mo agota", async () => {
+    let r = await disp({ outcome: "no_answer" }); // 5
+    expect(r.body.lead.cadenceStep).toBe(5);
+    r = await disp({ outcome: "no_answer" }); // 6
+    expect(r.body.lead.cadenceStep).toBe(6);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(167);
+    r = await disp({ outcome: "no_answer" }); // 7 → agota
     expect(r.body.lead.cadenceExhausted).toBe(true);
   });
   it("un connect (hung_up) rompe la racha → próximo no_answer vuelve a step 1", async () => {
