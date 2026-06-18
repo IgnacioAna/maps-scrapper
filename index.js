@@ -760,10 +760,10 @@ function _buildBriefMessages(lead = {}, reviews = []) {
   ].filter(Boolean).join('\n');
   const sys = 'Sos un analista SDR para venta de servicios de marketing/sistemas a clínicas dentales y estéticas. ' +
     'A partir de los datos del negocio y sus reseñas de Google, generás MUNICIÓN para una llamada en frío (no un libreto). ' +
-    'Respondé SOLO con un objeto JSON válido, sin markdown ni texto extra, con esta forma exacta:\n' +
-    '{"treatments":["..."],"painPoints":[{"dolor":"...","cita":"..."}],"fitScore":0-100,"hookPhrase":"...","brief":"2-3 líneas"}\n' +
-    'treatments = servicios/tratamientos que ofrece (inferidos de reseñas/rubro). painPoints = dolores reales con cita textual de una reseña si la hay (máx 3). ' +
-    'fitScore = qué tan buen prospecto es (0-100). hookPhrase = un ángulo de apertura concreto basado en un dato real. brief = resumen accionable. En español.';
+    'Devolvé UN ÚNICO objeto JSON: empieza con { y termina con }. NUNCA un array []. Sin markdown ni texto extra.\n' +
+    'Ejemplo EXACTO del formato (con valores de muestra):\n' +
+    '{"treatments":["implantes","ortodoncia","blanqueamiento"],"painPoints":[{"dolor":"esperas largas en recepción","cita":"esperé más de una hora"},{"dolor":"difícil sacar turno","cita":"no atienden el teléfono"}],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas/seguimiento."}\n' +
+    'Reglas: treatments = servicios/tratamientos inferidos de reseñas/rubro. painPoints = hasta 3 dolores REALES, cada uno con cita textual de una reseña (si no hay reseñas, devolvé []). fitScore = 0-100 (qué tan buen prospecto). hookPhrase = ángulo de apertura concreto basado en un dato real. brief = 2-3 líneas accionables. Todo en español. Respondé SOLO el objeto JSON.';
   const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
   // UN solo mensaje user (Mercury devuelve vacío con system+user en español — el
   // patrón que funciona en prod, ver autoTag, es user único + response_format json).
