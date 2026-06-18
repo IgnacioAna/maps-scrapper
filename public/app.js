@@ -4293,6 +4293,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       _callsLeadsById = new Map(callsLeadsCache.map(l => [l.id, l]));
     }
 
+    // Phase 13 (_leadStore): escritura ÚNICA de estado de lead. Mantiene los dos
+    // cachés sincronizados (Map del Power Dialer + array de la lista) en cada
+    // mutación, así las vistas no divergen (queja c). Centraliza lo que antes se
+    // hacía ad-hoc y a veces incompleto en cada handler de disposition.
+    // patch = objeto parcial a mergear (ej. {estado, callbackAt, doNotCall}).
+    function _leadStoreApply(id, patch) {
+      if (!id || !patch || typeof patch !== 'object') return;
+      // 1) Map (Power Dialer + _startTelnyxCall lo leen)
+      try { if (_callsLeadsById?.has?.(id)) Object.assign(_callsLeadsById.get(id), patch); } catch {}
+      // 2) Array (renderCallsList lo lee)
+      const idx = (callsLeadsCache || []).findIndex(l => l && l.id === id);
+      if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...patch, id };
+    }
+    window._leadStoreApply = _leadStoreApply;
+
     function buildTelLink(phone, country) {
       if (!phone) return '';
       let digits = String(phone).replace(/\D/g, '');
@@ -7116,9 +7131,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
-        // Actualizar cache local
-        const idx = callsLeadsCache.findIndex(l => l.id === leadId);
-        if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...data.lead, id: leadId };
+        // _leadStore: escritura única → sincroniza lista + Power Dialer.
+        if (data.lead) _leadStoreApply(leadId, data.lead);
         renderCallsList();
         renderCallsStats();
         // Audit fix Sprint 36 (bug 3): refrescar barra de quota tras cada disposition
@@ -7243,10 +7257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
           // avanza; sin esto hay un race con loadCallsView() (reconstruye el índice
           // async) y el dialer queda trabado en el mismo lead.
-          const _ci = callsLeadsCache.findIndex(l => l.id === leadId);
-          if (_ci >= 0) callsLeadsCache[_ci].callbackAt = callbackIso;
-          const _cached = _callsLeadsById.get(leadId);
-          if (_cached) _cached.callbackAt = callbackIso;
+          _leadStoreApply(leadId, { callbackAt: callbackIso, callbackShared });
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) {
@@ -7390,10 +7401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           // Update optimista: 'No interesado' descarta el lead en el backend; el
           // poller del Power Dialer mira lead.estado para avanzar al siguiente.
-          const _oi = callsLeadsCache.findIndex(l => l.id === leadId);
-          if (_oi >= 0) callsLeadsCache[_oi].estado = 'descartado';
-          const _oc = _callsLeadsById.get(leadId);
-          if (_oc) _oc.estado = 'descartado';
+          _leadStoreApply(leadId, { estado: 'descartado', interes: 'no', doNotCall: !!body.doNotCall });
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) {
@@ -7466,10 +7474,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           confirmed = true;
           observer?.disconnect();
           // Update optimista: el poller del Power Dialer mira lead.estado para avanzar.
-          const _si = callsLeadsCache.findIndex(l => l.id === leadId);
-          if (_si >= 0) callsLeadsCache[_si].estado = 'agendado';
-          const _sc = _callsLeadsById.get(leadId);
-          if (_sc) _sc.estado = 'agendado';
+          _leadStoreApply(leadId, { estado: 'agendado' });
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) { alert('Error: ' + e.message); }
