@@ -4331,6 +4331,100 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<span class="fi fi-${iso}" style="display:inline-block; ${dims} border-radius:2px; box-shadow:0 0 0 1px rgba(0,0,0,0.15); vertical-align:middle;" aria-hidden="true"></span>`;
     }
 
+    // ─── HOME "HOY" (Phase 13) — cola priorizada del día en 4 secciones ───────
+    // Vista ADITIVA (no toca Llamadas/Power Dialer). Lee los mismos leads callable,
+    // los clasifica client-side y los muestra accionables. Popula _callsLeadsById
+    // para que el botón "Llamar" (window._startTelnyxCall) resuelva el lead.
+    async function loadHoyView() {
+      const kpisEl = document.getElementById('hoy-kpis');
+      const secEl = document.getElementById('hoy-sections');
+      const greetEl = document.getElementById('hoy-greeting');
+      if (!secEl) return;
+      secEl.innerHTML = '<div style="color:var(--text-tertiary); padding:20px;">Cargando…</div>';
+      try {
+        const [leadsResp, mResp] = await Promise.all([
+          fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable'), { credentials: 'include' }),
+          fetch(apiUrl('/api/setters/cold-call-metrics?period=today'), { credentials: 'include' }).catch(() => null),
+        ]);
+        const leads = (await leadsResp.json()).leads || [];
+        leads.forEach(l => { if (l && l.id) _callsLeadsById.set(l.id, l); });
+        const now = Date.now();
+        const claimed = new Set();
+        const notDnc = (l) => !l.doNotCall;
+        const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
+        const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
+        // 1) Callbacks vencidos/hoy
+        const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= now)
+          .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
+        callbacks.forEach(l => claimed.add(l.id));
+        // 2) Interesados sin agendar
+        const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
+        interesados.forEach(l => claimed.add(l.id));
+        // 3) Para reintentar (no atendió / buzón / cortó)
+        const RETRY = new Set(['no_answer', 'voicemail', 'hung_up']);
+        const reintentar = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && RETRY.has(lastOutcome(l)))
+          .sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a));
+        reintentar.forEach(l => claimed.add(l.id));
+        // 4) Vírgenes priorizados (nunca llamados, por score)
+        const virgenes = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0))
+          .sort((a, b) => _callScore(b) - _callScore(a)).slice(0, 40);
+
+        // KPIs hoy
+        if (kpisEl && mResp) {
+          try {
+            const d = await mResp.json(); const m = d.metrics || {};
+            kpisEl.innerHTML =
+              `<div class="stat-card"><span class="stat-num">${m.dials || 0}</span><span class="stat-label">Llamadas hoy</span></div>` +
+              `<div class="stat-card"><span class="stat-num">${m.connects || 0}</span><span class="stat-label">Conectadas</span></div>` +
+              `<div class="stat-card"><span class="stat-num">${m.conversations || 0}</span><span class="stat-label">Conversaciones</span></div>` +
+              `<div class="stat-card stat-card-accent"><span class="stat-num">${m.appointments || 0}</span><span class="stat-label">Agendadas</span></div>`;
+          } catch {}
+        }
+        const totalPend = callbacks.length + interesados.length + reintentar.length;
+        if (greetEl) greetEl.textContent = `${totalPend} para seguir + ${virgenes.length} nuevos en cola`;
+
+        secEl.innerHTML =
+          _hoyRenderSection('🔁 Callbacks de hoy', callbacks, '#5BA3F2', 'Llamá a los que quedaron en volver a contactar.') +
+          _hoyRenderSection('🟢 Interesados sin agendar', interesados, '#5BB974', 'Dijeron que sí — cerrá la reunión.') +
+          _hoyRenderSection('📞 Para reintentar', reintentar, '#FFB341', 'No atendieron / buzón / cortaron. Insistí.') +
+          _hoyRenderSection('🆕 Nuevos priorizados', virgenes, '#9D85F2', 'Nunca llamados, ordenados por prioridad.');
+      } catch (e) {
+        console.error('[hoy]', e);
+        secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
+      }
+    }
+    function _hoyRenderSection(title, leads, color, hint) {
+      const rows = leads.map(l => {
+        const sc = Math.round(_callScore(l));
+        const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
+        const sigs = (typeof _signalChips === 'function') ? _signalChips(l) : '';
+        const cb = l.callbackAt ? new Date(l.callbackAt) : null;
+        const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
+        return `<div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border-subtle);">
+          <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
+              ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
+              <strong style="color:var(--text-primary); font-size:13.5px;">${escHtml(l.name || '')}</strong>
+              ${cbStr ? `<span style="font-size:10px; color:#5BA3F2; background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">📅 ${cbStr}</span>` : ''}
+              ${lt ? `<span style="font-size:10px; color:${lt.ok?'#5BB974':'#FFB341'}; background:${lt.ok?'rgba(91,185,116,0.1)':'rgba(255,179,65,0.1)'}; padding:2px 7px; border-radius:6px;">🕐 ${lt.time}${lt.ok?'':' ⚠'}</span>` : ''}
+              ${sigs}
+            </div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · 💡 ' + escHtml(l.openingAngle) : ''}</div>
+          </div>
+          <span title="Prioridad" style="font-size:10.5px; color:${sc>=70?'#5BB974':sc>=50?'#FFB341':'#7E8494'}; font-weight:700;">${sc}</span>
+          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer; white-space:nowrap;">📞 Llamar</button>
+        </div>`;
+      }).join('');
+      return `<div style="background:var(--surface-color, rgba(255,255,255,0.02)); border:1px solid var(--border-color); border-left:3px solid ${color}; border-radius:12px; overflow:hidden;">
+        <div style="padding:11px 14px; border-bottom:1px solid var(--border-subtle);">
+          <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">${title} <span style="color:${color};">${leads.length}</span></div>
+          <div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${hint}</div>
+        </div>
+        ${leads.length ? rows : '<div style="padding:14px; color:var(--text-tertiary); font-size:12px;">Nada acá ahora. 👌</div>'}
+      </div>`;
+    }
+    window.loadHoyView = loadHoyView;
+
     async function loadCallsView() {
       const setter = document.getElementById('calls-setter-select').value;
       // 2026-05-25: si el check "Incluir leads de Setteo" está activo, pedimos
@@ -7404,6 +7498,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const callsMenuItem = document.querySelector('[data-target="view-calls"]');
     if (callsMenuItem) callsMenuItem.addEventListener('click', () => { loadCallsView(); });
+    // Phase 13: home "Hoy"
+    document.querySelector('[data-target="view-hoy"]')?.addEventListener('click', () => { loadHoyView(); });
     document.getElementById('calls-setter-select').addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
     document.getElementById('calls-country-filter').addEventListener('change', (e) => {
       localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), e.target.value);
