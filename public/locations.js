@@ -102,7 +102,44 @@ const LOCATIONS_DB = {
     "São Paulo", "Rio de Janeiro", "Brasília", "Salvador", "Fortaleza",
     "Belo Horizonte", "Manaus", "Curitiba", "Recife", "Porto Alegre",
     "Belém", "Goiânia", "Guarulhos", "Campinas", "São Luís",
-    "Maceió", "Florianópolis", "Natal", "Campo Grande", "Vitória"
+    "Maceió", "Florianópolis", "Natal", "Campo Grande", "Vitória",
+    "Teresina", "São Bernardo do Campo", "João Pessoa", "Santo André", "Osasco",
+    "Ribeirão Preto", "Uberlândia", "Sorocaba", "Cuiabá", "Aracaju"
+  ],
+  "Canadá": [
+    "Toronto", "Montréal", "Vancouver", "Calgary", "Edmonton",
+    "Ottawa", "Winnipeg", "Québec", "Hamilton", "Kitchener",
+    "London", "Victoria", "Halifax", "Oshawa", "Windsor",
+    "Saskatoon", "Regina", "Mississauga", "Brampton", "Surrey",
+    "Laval", "Gatineau", "Burnaby", "Markham", "Richmond"
+  ],
+  "Reino Unido": [
+    "London", "Birmingham", "Manchester", "Glasgow", "Liverpool",
+    "Leeds", "Sheffield", "Edinburgh", "Bristol", "Cardiff",
+    "Leicester", "Coventry", "Nottingham", "Newcastle", "Belfast",
+    "Brighton", "Southampton", "Portsmouth", "Reading", "Aberdeen",
+    "Plymouth", "Derby", "Wolverhampton", "Swansea", "Milton Keynes"
+  ],
+  "Alemania": [
+    "Berlin", "Hamburg", "München", "Köln", "Frankfurt",
+    "Stuttgart", "Düsseldorf", "Leipzig", "Dortmund", "Essen",
+    "Bremen", "Dresden", "Hannover", "Nürnberg", "Duisburg",
+    "Bochum", "Wuppertal", "Bielefeld", "Bonn", "Münster",
+    "Karlsruhe", "Mannheim", "Augsburg", "Wiesbaden", "Mönchengladbach"
+  ],
+  "Francia": [
+    "Paris", "Marseille", "Lyon", "Toulouse", "Nice",
+    "Nantes", "Montpellier", "Strasbourg", "Bordeaux", "Lille",
+    "Rennes", "Reims", "Saint-Étienne", "Toulon", "Le Havre",
+    "Grenoble", "Dijon", "Angers", "Nîmes", "Villeurbanne",
+    "Clermont-Ferrand", "Aix-en-Provence", "Brest", "Tours", "Amiens"
+  ],
+  "Italia": [
+    "Roma", "Milano", "Napoli", "Torino", "Palermo",
+    "Genova", "Bologna", "Firenze", "Bari", "Catania",
+    "Venezia", "Verona", "Messina", "Padova", "Trieste",
+    "Brescia", "Parma", "Taranto", "Prato", "Modena",
+    "Reggio Calabria", "Reggio Emilia", "Perugia", "Livorno", "Cagliari"
   ]
 };
 

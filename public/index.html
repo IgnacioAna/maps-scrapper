@@ -322,7 +322,13 @@
               
               <button type="submit" id="search-btn" style="display: none;">Buscar</button>
             </div>
-            
+
+            <!-- Phase 16: keywords sugeridas según el país elegido (idioma local). Clic = agregar. -->
+            <div id="maps-keyword-suggestions" style="display:none; margin-top:10px; padding:0 2px;">
+              <span style="font-size:11px; color:var(--text-tertiary); margin-right:6px;">Keywords sugeridas (clic para agregar):</span>
+              <span id="maps-keyword-chips"></span>
+            </div>
+
             <input type="hidden" id="location" name="location">
           </form>
         </section>
@@ -3077,7 +3083,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618a"></script>
+  <script type="module" src="/app.js?v=20260618b"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

@@ -794,8 +794,43 @@ document.addEventListener('DOMContentLoaded', async () => {
       countrySelect.appendChild(opt);
     });
 
+    // Phase 16: keywords sugeridas por país (idioma local) para el scraper.
+    // El admin no tiene que saber alemán/portugués; clic en un chip lo agrega al textarea.
+    const _MAPS_KEYWORDS = {
+      "Estados Unidos": ["dentist", "dental clinic", "cosmetic dentist", "dental implants", "orthodontist", "med spa", "aesthetic clinic", "botox clinic"],
+      "Canadá": ["dentist", "dental clinic", "cosmetic dentistry", "dental implants", "med spa", "medical aesthetics clinic", "clinique dentaire", "médecine esthétique"],
+      "Reino Unido": ["dentist", "dental practice", "dental clinic", "cosmetic dentist", "dental implants", "aesthetic clinic", "medical aesthetics", "botox clinic"],
+      "Alemania": ["Zahnarzt", "Zahnarztpraxis", "Kieferorthopäde", "Implantologie", "Kosmetikstudio", "Ästhetische Medizin", "Botox Behandlung"],
+      "Francia": ["dentiste", "cabinet dentaire", "chirurgien-dentiste", "implant dentaire", "médecine esthétique", "clinique esthétique", "injection botox"],
+      "Italia": ["dentista", "studio dentistico", "odontoiatra", "implantologia", "medicina estetica", "centro estetico", "trattamenti botox"],
+      "Brasil": ["dentista", "clínica odontológica", "implante dentário", "ortodontista", "harmonização facial", "harmonização orofacial", "clínica de estética", "botox"],
+      "España": ["dentista", "clínica dental", "implantes dentales", "ortodoncista", "medicina estética", "clínica estética", "botox"],
+    };
+    const _MAPS_KEYWORDS_DEFAULT = ["clínica dental", "dentista", "consultorio odontológico", "implantes dentales", "ortodoncia", "clínica estética"];
+    function _renderKeywordSuggestions(country) {
+      const box = document.getElementById('maps-keyword-suggestions');
+      const chips = document.getElementById('maps-keyword-chips');
+      if (!box || !chips) return;
+      const kws = _MAPS_KEYWORDS[country] || (country ? _MAPS_KEYWORDS_DEFAULT : null);
+      if (!kws) { box.style.display = 'none'; chips.innerHTML = ''; return; }
+      box.style.display = 'block';
+      chips.innerHTML = kws.map(k => `<button type="button" class="kw-chip" data-kw="${k.replace(/"/g, '&quot;')}" style="font-size:11px; margin:2px 4px 2px 0; padding:3px 9px; background:rgba(157,133,242,0.12); color:var(--accent); border:1px solid rgba(157,133,242,0.3); border-radius:999px; cursor:pointer;">+ ${escHtml(k)}</button>`).join('');
+      chips.querySelectorAll('.kw-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const q = document.getElementById('query');
+          if (!q) return;
+          const kw = btn.getAttribute('data-kw');
+          const lines = q.value.split('\n').map(s => s.trim()).filter(Boolean);
+          if (!lines.includes(kw)) lines.push(kw);
+          q.value = lines.join('\n');
+          q.focus();
+        });
+      });
+    }
+
     countrySelect.addEventListener('change', () => {
       const country = countrySelect.value;
+      _renderKeywordSuggestions(country);
       citySelect.innerHTML = '';
 
       if (!country) {

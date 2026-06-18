@@ -497,6 +497,33 @@ function parseLocationParts(location = "") {
   return { country: raw, city: "" };
 }
 
+// ── Localización del scraping por país (Phase 16) ──────────────────────────
+// Mapea el país (clave EXACTA de public/locations.js) a los params de SerpApi
+// google_maps para mercados NO hispanos. Para LatAm/España devuelve null → el
+// scraper mantiene su comportamiento histórico ("${query} en ${location}"),
+// cero regresión. NOTA: gl no rige la búsqueda (solo Place API en SerpApi); el
+// targeting real lo dan la query localizada + hl + google_domain. gl se incluye
+// por congruencia. El caller ID de Telnyx NO depende de esto (rutea por prefijo).
+const COUNTRY_LOCALE = {
+  "Estados Unidos": { hl: "en", gl: "us", google_domain: "google.com" },
+  "Canadá":         { hl: "en", gl: "ca", google_domain: "google.ca" },
+  "Reino Unido":    { hl: "en", gl: "uk", google_domain: "google.co.uk" },
+  "Alemania":       { hl: "de", gl: "de", google_domain: "google.de" },
+  "Francia":        { hl: "fr", gl: "fr", google_domain: "google.fr" },
+  "Italia":         { hl: "it", gl: "it", google_domain: "google.it" },
+  "Brasil":         { hl: "pt", gl: "br", google_domain: "google.com.br" },
+};
+function localeForCountry(country) {
+  return COUNTRY_LOCALE[String(country || '').trim()] || null;
+}
+// Raíces de sector multiidioma para el filtro de relevancia del scraping. Se
+// usan en OR con las raíces de la query → el filtro queda MÁS permisivo (nunca
+// descarta de más), para no perder resultados legítimos en EN/DE/PT/FR/IT.
+const SECTOR_ROOTS = ['dent','odont','clin','impl','ortod','orth','zahn','kiefer','estet','esthe','aesth','kosmet','botox','harmon','derm','spa','skin','facial','beaut','medspa','belle','schon'];
+function _isSectorRelevant(text, queryRoots) {
+  return SECTOR_ROOTS.some(r => text.includes(r)) || queryRoots.some(root => text.includes(root));
+}
+
 function ensureLeadDefaults(lead = {}) {
   if (!lead.followUps) lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
   // Nueva semántica (2026-04-30): tildar un checkbox de follow-up significa
@@ -2821,7 +2848,18 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
       if (location.startsWith('@')) {
         searchParams.ll = location;
       } else {
-        searchQuery = `${query} en ${location}`;
+        const { country } = parseLocationParts(location);
+        const loc = localeForCountry(country);
+        if (loc) {
+          // Mercado no-hispano: query neutra (coma, no "en") + idioma/dominio del país.
+          searchQuery = `${query}, ${location}`;
+          searchParams.hl = loc.hl;
+          if (loc.gl) searchParams.gl = loc.gl;
+          if (loc.google_domain) searchParams.google_domain = loc.google_domain;
+        } else {
+          // LatAm / España (default es): comportamiento histórico EXACTO.
+          searchQuery = `${query} en ${location}`;
+        }
       }
     }
 
@@ -2861,7 +2899,7 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
       const relevantCount = parsedData.filter(item => {
         const text = [item.name, item.type, item.types].join(' ').toLowerCase()
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        return queryRoots.some(root => text.includes(root));
+        return _isSectorRelevant(text, queryRoots);
       }).length;
 
       const relevanceRatio = relevantCount / parsedData.length;
@@ -2873,7 +2911,7 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
         const relevantOnly = parsedData.filter(item => {
           const text = [item.name, item.type, item.types].join(' ').toLowerCase()
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-          return queryRoots.some(root => text.includes(root));
+          return _isSectorRelevant(text, queryRoots);
         });
         results.push(...relevantOnly);
         break;
@@ -3028,7 +3066,7 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
           .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
         // El resultado es relevante si ALGUNA raíz de la búsqueda aparece en su nombre/tipo
         // "dent" matchea "dentist", "dental", "dentales", "dentalaser", etc.
-        const isRelevant = queryRoots.some(root => text.includes(root));
+        const isRelevant = _isSectorRelevant(text, queryRoots);
         if (!isRelevant) {
           irrelevantRemoved++;
           return false;
@@ -4670,10 +4708,16 @@ app.post('/api/setters/leads/enrich-from-maps', requireAuth, requireRole('admin'
   if (!apiKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada en Railway' });
   try {
     const locationPart = [city, country].filter(Boolean).join(', ');
-    const searchQuery = locationPart ? `${name.trim()} en ${locationPart}` : name.trim();
+    // Phase 16: localización por país (no-hispano → coma + hl/gl/domain).
+    const loc = localeForCountry(country);
+    const searchQuery = locationPart
+      ? (loc ? `${name.trim()}, ${locationPart}` : `${name.trim()} en ${locationPart}`)
+      : name.trim();
+    const serpParams = { engine: 'google_maps', api_key: apiKey, type: 'search', q: searchQuery };
+    if (loc) { serpParams.hl = loc.hl; if (loc.gl) serpParams.gl = loc.gl; if (loc.google_domain) serpParams.google_domain = loc.google_domain; }
     // Audit fix: timeout 15s para que SerpAPI no cuelgue indefinidamente
     const json = await Promise.race([
-      getJson({ engine: 'google_maps', api_key: apiKey, type: 'search', q: searchQuery }),
+      getJson(serpParams),
       new Promise((_, rej) => setTimeout(() => rej(new Error('SerpAPI timeout 15s')), 15000)),
     ]);
     if (json.error) return res.status(502).json({ error: 'Google Maps: ' + json.error });
@@ -8842,6 +8886,8 @@ function detectMercuryIntent(message, history = "") {
 // pero index.js arranca el server; los tests usan setup con DATA_DIR para evitar side effects).
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
+// Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
