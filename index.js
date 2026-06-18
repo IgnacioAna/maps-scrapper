@@ -2174,7 +2174,10 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       for (const id of Object.keys(results)) {
         const lead = d.leads && d.leads[id]; if (!lead) continue;
         const r = results[id];
-        lead.leadBrief = { brief: r.brief, hookPhrase: r.hookPhrase, painPoints: r.painPoints, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
+        // Mercury es débil para multi-campo: a veces solo da treatments/painPoints.
+        // El hook/brief caen al openingAngle rule-based (que ya tenemos) si faltan.
+        const angle = lead.openingAngle || '';
+        lead.leadBrief = { brief: r.brief || angle, hookPhrase: r.hookPhrase || angle, painPoints: r.painPoints, treatments: r.treatments, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
         if (Array.isArray(r.treatments) && r.treatments.length) lead.treatments = r.treatments;
         if (r.fitScore != null) lead.fitScore = r.fitScore;
         if (r.placeId && !lead.placeId) lead.placeId = r.placeId;
