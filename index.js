@@ -2106,8 +2106,10 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     if (l.leadBrief && !body.force) continue;                 // ya tiene brief
     if ((parseInt(l.reviews, 10) || 0) < minReviews) continue; // selectivo premium
     candidates.push({ id, name: l.name, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
-    if (candidates.length >= limit) break;
+    if (candidates.length >= limit * 5) break; // junto más: muchos no resuelven place_id
   }
+  // Priorizar los que YA tienen place_id (resuelven seguro + barato).
+  candidates.sort((a, b) => (b.placeId ? 1 : 0) - (a.placeId ? 1 : 0));
   if (dryRun) return res.json({ dryRun: true, limit, minReviews, candidates: candidates.length });
 
   // DEBUG: escanea hasta 6 candidatos, resuelve place_id de cada uno y, en el
@@ -2142,6 +2144,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
 
   const results = {}; const errors = {}; let briefed = 0;
   for (const c of candidates) { // secuencial: LLM+SerpApi, no saturar la cuota
+    if (briefed >= limit) break; // ya logramos los necesarios (saltamos los que fallan)
     try {
       let placeId = c.placeId;
       if (!placeId) {
