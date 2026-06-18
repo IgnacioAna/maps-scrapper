@@ -765,7 +765,9 @@ function _buildBriefMessages(lead = {}, reviews = []) {
     'treatments = servicios/tratamientos que ofrece (inferidos de reseñas/rubro). painPoints = dolores reales con cita textual de una reseña si la hay (máx 3). ' +
     'fitScore = qué tan buen prospecto es (0-100). hookPhrase = un ángulo de apertura concreto basado en un dato real. brief = resumen accionable. En español.';
   const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
-  return [{ role: 'system', content: sys }, { role: 'user', content: user }];
+  // UN solo mensaje user (Mercury devuelve vacío con system+user en español — el
+  // patrón que funciona en prod, ver autoTag, es user único + response_format json).
+  return [{ role: 'user', content: sys + '\n\n' + user }];
 }
 // Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido. null si falla.
 function _parseBriefOutput(text) {
@@ -2108,7 +2110,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (placeId) {
           const rj = await getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
           const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
-          const completion = await ai.chat.completions.create({ model: AI_MODEL, messages: _buildBriefMessages(c, reviews), temperature: 0.4, max_tokens: 700 });
+          const completion = await ai.chat.completions.create({ model: AI_MODEL, messages: _buildBriefMessages(c, reviews), temperature: 0.1, max_tokens: 700, response_format: { type: 'json_object' } });
           dbg.resolvedOn = c.name;
           dbg.reviewsFound = reviews.length;
           dbg.rawLLM = (completion?.choices?.[0]?.message?.content || '(vacío)').slice(0, 1800);
@@ -2126,8 +2128,11 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       let placeId = c.placeId;
       if (!placeId) {
         const loc = [c.city, c.country].filter(Boolean).join(', ');
+        const lc = localeForCountry(c.country) || {};
+        const sp = { engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey };
+        if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
         const sj = await Promise.race([
-          getJson({ engine: 'google_maps', type: 'search', q: loc ? `${c.name} ${loc}` : c.name, api_key: serpKey }),
+          getJson(sp),
           new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
         ]);
         placeId = sj?.local_results?.[0]?.place_id || '';
@@ -2139,7 +2144,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       ]);
       const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
       const messages = _buildBriefMessages(c, reviews);
-      const completion = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: 0.4, max_tokens: 700 });
+      const completion = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: 0.1, max_tokens: 700, response_format: { type: 'json_object' } });
       const out = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
       if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; continue; }
       results[c.id] = { ...out, placeId, reviewsMined: reviews.length };

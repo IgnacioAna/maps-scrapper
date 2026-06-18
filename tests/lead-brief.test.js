@@ -27,16 +27,17 @@ const { _buildBriefMessages, _parseBriefOutput } = globalThis.__phase16;
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
 describe("_buildBriefMessages", () => {
-  it("arma system+user con el negocio y las reseñas", () => {
+  it("arma un único mensaje user con instrucciones + negocio + reseñas (Mercury devuelve vacío con system)", () => {
     const msgs = _buildBriefMessages({ name: "Clínica Sonrisa", city: "Bogotá", country: "Colombia", rating: "4.8", reviews: 320 }, ["Muy buena atención", { snippet: "Tardaron en atenderme" }]);
-    expect(msgs).toHaveLength(2);
-    expect(msgs[0].role).toBe("system");
-    expect(msgs[1].content).toContain("Clínica Sonrisa");
-    expect(msgs[1].content).toContain("Tardaron en atenderme");
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0].role).toBe("user");
+    expect(msgs[0].content).toContain("Clínica Sonrisa");
+    expect(msgs[0].content).toContain("Tardaron en atenderme");
+    expect(msgs[0].content).toContain("JSON");
   });
   it("sin reseñas no rompe", () => {
     const msgs = _buildBriefMessages({ name: "X" }, []);
-    expect(msgs[1].content).toContain("sin reseñas");
+    expect(msgs[0].content).toContain("sin reseñas");
   });
 });
 
