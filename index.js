@@ -597,6 +597,8 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.runsAds !== 'boolean') lead.runsAds = false;
   // Phase 10 A3: estado del negocio según Google (CLOSED_PERMANENTLY/TEMPORARILY → no discar).
   if (typeof lead.businessStatus !== 'string') lead.businessStatus = '';
+  // Phase 10 B2: tipo de línea validado vía Telnyx Number Lookup (mobile/landline/voip).
+  if (typeof lead.phoneType !== 'string') lead.phoneType = '';
   // Phase 16: brief/señales derivadas para el SDR. Lazy (si faltan, se computan
   // de rating/reviews/web/instagram). La barrida POST /api/admin/backfill-signals
   // las recomputa para todos; enrich-from-maps y manual-add las refrescan.
@@ -1956,6 +1958,63 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   }
 
   res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, errors });
+});
+
+// Phase 10 B2: validación de número (Telnyx Number Lookup) — opt-in, batch con cap.
+// Persiste lead.phoneType (mobile/landline/voip) + carrier. Mata el "38% invalid"
+// antes de discar. Fetches FUERA del mutex; aplica adentro. 💲 cuesta ~$0.0015/lookup.
+app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  const dryRun = !!body.dryRun;
+  const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 25), 100);
+  const onlyMissing = body.onlyMissing !== false; // default: solo los sin validar
+  const cfg = loadTelnyxConfig();
+  const apiKey = cfg.apiKey;
+  if (!apiKey) return res.status(503).json({ error: 'Telnyx API key no configurada.' });
+
+  const data = loadSettersData();
+  const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  const candidates = [];
+  for (const id of Object.keys(leadsMap)) {
+    const l = leadsMap[id];
+    if (!l) continue;
+    const phone = String(l.phone || '').trim();
+    if (!phone || phone.replace(/\D/g, '').length < 8) continue;
+    if (onlyMissing && String(l.phoneType || '').trim()) continue;
+    candidates.push({ id, phone });
+    if (candidates.length >= limit) break;
+  }
+  if (dryRun) return res.json({ dryRun: true, limit, candidates: candidates.length });
+
+  const results = {};
+  const byType = {};
+  const errors = {};
+  let looked = 0;
+  const CONC = 5;
+  for (let i = 0; i < candidates.length; i += CONC) {
+    const chunk = candidates.slice(i, i + CONC);
+    await Promise.all(chunk.map(async (c) => {
+      const e164 = c.phone.startsWith('+') ? c.phone : ('+' + c.phone.replace(/\D/g, ''));
+      const r = await _telnyxNumberLookup(apiKey, e164, { timeoutMs: 8000 });
+      if (r.ok) { results[c.id] = { phoneType: r.phoneType, carrier: r.carrier }; byType[r.phoneType || 'unknown'] = (byType[r.phoneType || 'unknown'] || 0) + 1; looked++; }
+      else errors[r.error || 'error'] = (errors[r.error || 'error'] || 0) + 1;
+    }));
+  }
+  let applied = 0;
+  if (Object.keys(results).length) {
+    makeBackup('pre-validate-numbers');
+    await mutateSettersData((d) => {
+      for (const id of Object.keys(results)) {
+        const lead = d.leads && d.leads[id];
+        if (!lead) continue;
+        lead.phoneType = results[id].phoneType || '';
+        if (results[id].carrier) lead.lookupCarrier = results[id].carrier;
+        lead.lookupAt = new Date().toISOString();
+        applied++;
+      }
+    });
+  }
+  res.json({ ok: true, scanned: candidates.length, looked, applied, byType, errors });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
@@ -9102,7 +9161,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
@@ -10205,6 +10264,43 @@ async function _telnyxFetchDetailRecords(apiKey, { recordType, dateRange = "toda
     return { ok: true, records: json?.data || [], totalPages: json?.meta?.total_pages ?? 1, meta: json?.meta || {} };
   } catch (e) {
     return { ok: false, error: e.message, records: [] };
+  }
+}
+
+// Phase 10 B2 — Number Lookup. PURA: parsea la respuesta de Telnyx number_lookup.
+// Devuelve { phoneType:'mobile'|'landline'|'voip'|'', carrier, reachable }.
+function _parseTelnyxLookup(json) {
+  const data = json && json.data ? json.data : null;
+  if (!data) return { phoneType: '', carrier: '', reachable: false };
+  const carrier = data.carrier || {};
+  const t = String(carrier.type || '').toLowerCase();
+  const phoneType = ['mobile', 'landline', 'voip', 'fixed_line'].includes(t) ? (t === 'fixed_line' ? 'landline' : t) : '';
+  return { phoneType, carrier: carrier.name || '', reachable: true };
+}
+// GET https://api.telnyx.com/v2/number_lookup/{e164}?type=carrier → line type + carrier.
+// Nunca tira: { ok, phoneType, carrier, reachable, error }. fetchImpl inyectable para tests.
+async function _telnyxNumberLookup(apiKey, phoneE164, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {
+  if (!apiKey) return { ok: false, error: 'sin api key' };
+  if (!phoneE164) return { ok: false, error: 'sin numero' };
+  try {
+    const num = encodeURIComponent(String(phoneE164).trim());
+    const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => { try { ctrl.abort(); } catch {} }, timeoutMs) : null;
+    let resp;
+    try {
+      resp = await fetchImpl(`https://api.telnyx.com/v2/number_lookup/${num}?type=carrier`, {
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+        signal: ctrl?.signal,
+      });
+    } finally { if (timer) clearTimeout(timer); }
+    if (!resp || resp.ok === false) {
+      const body = resp && typeof resp.text === 'function' ? await resp.text().catch(() => '') : '';
+      return { ok: false, status: resp?.status, error: (body || 'http error').substring(0, 200) };
+    }
+    const json = await resp.json();
+    return { ok: true, ..._parseTelnyxLookup(json) };
+  } catch (e) {
+    return { ok: false, error: e.name === 'AbortError' ? 'timeout' : (e.message || 'error') };
   }
 }
 

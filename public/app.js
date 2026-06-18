@@ -5977,6 +5977,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
               ${typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED') ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.3); padding:2px 7px; border-radius:6px;" title="Google lo marca cerrado (${escHtml(l.businessStatus)}) — verificar antes de discar">⚠ Cerrado</span>` : ''}
+              ${l.phoneType === 'mobile' ? '<span style="font-size:10px; color:#5BB974; background:rgba(91,185,116,0.1); padding:2px 7px; border-radius:6px;" title="Línea móvil (validada Telnyx)">📱 móvil</span>' : (l.phoneType === 'landline' ? '<span style="font-size:10px; color:var(--text-tertiary); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:6px;" title="Línea fija (validada Telnyx)">☎ fijo</span>' : '')}
               ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">🚫 No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">↩️ Quitar</button>` : ''}
               ${notesBadge}
               ${fupBadge}
@@ -8526,6 +8527,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email (web)'));
     const cmdEnrichNpiBtn = document.getElementById('cmd-enrich-npi-btn');
     if (cmdEnrichNpiBtn) cmdEnrichNpiBtn.addEventListener('click', () => _cmdRunEnrich('npi', cmdEnrichNpiBtn, '🇺🇸 Enriquecer dueño (NPI)'));
+    // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.
+    const cmdValidateBtn = document.getElementById('cmd-validate-numbers-btn');
+    if (cmdValidateBtn) cmdValidateBtn.addEventListener('click', async () => {
+      if (!confirm('Validar tipo de línea de hasta 25 números vía Telnyx Number Lookup. Cuesta ~$0.0015 por número. ¿Seguir?')) return;
+      cmdValidateBtn.disabled = true; const lbl = cmdValidateBtn.textContent; cmdValidateBtn.textContent = '⏳ Validando...';
+      const out = document.getElementById('cmd-enrich-result');
+      try {
+        const resp = await fetch(apiUrl('/api/admin/validate-numbers'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 25 }) });
+        const d = await resp.json();
+        if (out) {
+          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          else { const bt = d.byType || {}; out.textContent = `✅ ${d.looked || 0} validados de ${d.scanned || 0}: 📱 ${bt.mobile || 0} móvil · ☎ ${bt.landline || 0} fijo · ${bt.voip || 0} voip.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)'); }
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      cmdValidateBtn.disabled = false; cmdValidateBtn.textContent = lbl;
+    });
 
     const cmdClearBtn = document.getElementById('cmd-clear-btn');
     if (cmdClearBtn) {
