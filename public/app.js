@@ -4928,6 +4928,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
       </div>` : ''}
 
+      <!-- Bloque 1.6: Lead Brief IA (reseñas mineadas: dolor+cita+hook+fit) -->
+      ${lead.leadBrief ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">🧠 Brief IA${lead.leadBrief.fitScore != null ? ` · fit ${lead.leadBrief.fitScore}/100` : ''}${lead.leadBrief.reviewsMined ? ` · ${lead.leadBrief.reviewsMined} reseñas` : ''}</div>
+        ${lead.leadBrief.hookPhrase ? `<div style="color:#fff; font-size:13.5px; line-height:1.5; margin-bottom:6px;">🎣 ${escHtml(lead.leadBrief.hookPhrase)}</div>` : ''}
+        ${(lead.leadBrief.painPoints || []).slice(0, 2).map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
+        ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
+      </div>` : ''}
+
       <!-- Bloque 2: Pre-call note destacada (si existe) — sin emoji, label limpio -->
       ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.32); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:5px;">Pre-call · qué decir</div>
@@ -8542,6 +8550,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       cmdValidateBtn.disabled = false; cmdValidateBtn.textContent = lbl;
+    });
+    // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
+    const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
+    if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {
+      if (!confirm('Generar Lead Brief IA para hasta 8 leads premium (50+ reseñas). Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?')) return;
+      cmdBriefBtn.disabled = true; const lbl = cmdBriefBtn.textContent; cmdBriefBtn.textContent = '⏳ Generando (tarda)...';
+      const out = document.getElementById('cmd-enrich-result');
+      try {
+        const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 8 }) });
+        const d = await resp.json();
+        if (out) {
+          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          else out.textContent = `✅ ${d.briefed || 0} briefs generados de ${d.scanned || 0} premium.` + (d.scanned >= 8 ? ' Hay más → clic de nuevo.' : ' (no quedan más premium sin brief)') + (Object.keys(d.errors || {}).length ? ' · errores: ' + JSON.stringify(d.errors) : '');
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
     });
 
     const cmdClearBtn = document.getElementById('cmd-clear-btn');

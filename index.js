@@ -744,6 +744,53 @@ function computeLeadSignals(lead = {}) {
   return { signals, reputationTier, ratingNum: rating, hasWebsite, openingAngle };
 }
 
+// ── Lead Brief IA (Phase 10 C3/C4) — review mining + tratamientos + brief ──────
+// Helpers PUROS (sin red) para testear el prompt y el parseo del output del LLM.
+// El LLM recibe el negocio + reseñas y devuelve JSON con la munición para la call.
+function _buildBriefMessages(lead = {}, reviews = []) {
+  const revText = (Array.isArray(reviews) ? reviews : [])
+    .map((r) => (typeof r === 'string' ? r : (r && r.snippet) || '')).filter(Boolean)
+    .slice(0, 15).map((t) => '- ' + String(t).replace(/\s+/g, ' ').slice(0, 400)).join('\n');
+  const ctx = [
+    `Negocio: ${lead.name || ''}`,
+    lead.category ? `Rubro: ${lead.category}` : '',
+    (lead.city || lead.country) ? `Ubicación: ${[lead.city, lead.country].filter(Boolean).join(', ')}` : '',
+    lead.rating ? `Rating Google: ${lead.rating} (${lead.reviews || 0} reseñas)` : '',
+    lead.website ? `Web: ${lead.website}` : '',
+  ].filter(Boolean).join('\n');
+  const sys = 'Sos un analista SDR para venta de servicios de marketing/sistemas a clínicas dentales y estéticas. ' +
+    'A partir de los datos del negocio y sus reseñas de Google, generás MUNICIÓN para una llamada en frío (no un libreto). ' +
+    'Respondé SOLO con un objeto JSON válido, sin markdown ni texto extra, con esta forma exacta:\n' +
+    '{"treatments":["..."],"painPoints":[{"dolor":"...","cita":"..."}],"fitScore":0-100,"hookPhrase":"...","brief":"2-3 líneas"}\n' +
+    'treatments = servicios/tratamientos que ofrece (inferidos de reseñas/rubro). painPoints = dolores reales con cita textual de una reseña si la hay (máx 3). ' +
+    'fitScore = qué tan buen prospecto es (0-100). hookPhrase = un ángulo de apertura concreto basado en un dato real. brief = resumen accionable. En español.';
+  const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
+  return [{ role: 'system', content: sys }, { role: 'user', content: user }];
+}
+// Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido. null si falla.
+function _parseBriefOutput(text) {
+  if (!text || typeof text !== 'string') return null;
+  let raw = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  const a = raw.indexOf('{'); const b = raw.lastIndexOf('}');
+  if (a === -1 || b === -1 || b <= a) return null;
+  let obj;
+  try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { return null; }
+  if (!obj || typeof obj !== 'object') return null;
+  const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string').slice(0, 12) : [];
+  const painPoints = Array.isArray(obj.painPoints)
+    ? obj.painPoints.filter((p) => p && typeof p === 'object' && p.dolor).map((p) => ({ dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) })).slice(0, 5)
+    : [];
+  let fitScore = parseInt(obj.fitScore, 10);
+  if (!Number.isFinite(fitScore)) fitScore = null; else fitScore = Math.max(0, Math.min(100, fitScore));
+  return {
+    treatments,
+    painPoints,
+    fitScore,
+    hookPhrase: typeof obj.hookPhrase === 'string' ? obj.hookPhrase.slice(0, 300) : '',
+    brief: typeof obj.brief === 'string' ? obj.brief.slice(0, 600) : '',
+  };
+}
+
 // Deriva el país (nombre canónico en español, igual que usa la data) desde el
 // prefijo internacional del teléfono. Devuelve '' si no se reconoce.
 // Matching por prefijo MÁS LARGO primero (591 antes que 5/59; 506 antes que 5).
@@ -2015,6 +2062,76 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
     });
   }
   res.json({ ok: true, scanned: candidates.length, looked, applied, byType, errors });
+});
+
+// Phase 10 C3/C4: Lead Brief IA — re-fetch reseñas (SerpApi) + minería LLM →
+// painPoints+cita, fitScore, hookPhrase, brief, treatments. Opt-in, SELECTIVO
+// (premium: reviews>=minReviews), cap chico (LLM+SerpApi por lead). Secuencial
+// para no saturar. 💲 cuesta SerpApi (search+reviews) + LLM por lead.
+app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  const dryRun = !!body.dryRun;
+  const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 8), 25);
+  const minReviews = Number.isFinite(parseInt(body.minReviews, 10)) ? parseInt(body.minReviews, 10) : 50;
+  const serpKey = process.env.API_KEY;
+  if (!serpKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada.' });
+  if (!mercuryKey && !qwenKey) return res.status(503).json({ error: 'Sin IA disponible (MERCURY/QWEN).' });
+
+  const data = loadSettersData();
+  const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  const candidates = [];
+  for (const id of Object.keys(leadsMap)) {
+    const l = leadsMap[id];
+    if (!l) continue;
+    if (l.leadBrief && !body.force) continue;                 // ya tiene brief
+    if ((parseInt(l.reviews, 10) || 0) < minReviews) continue; // selectivo premium
+    candidates.push({ id, name: l.name, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
+    if (candidates.length >= limit) break;
+  }
+  if (dryRun) return res.json({ dryRun: true, limit, minReviews, candidates: candidates.length });
+
+  const results = {}; const errors = {}; let briefed = 0;
+  for (const c of candidates) { // secuencial: LLM+SerpApi, no saturar la cuota
+    try {
+      let placeId = c.placeId;
+      if (!placeId) {
+        const loc = [c.city, c.country].filter(Boolean).join(', ');
+        const sj = await Promise.race([
+          getJson({ engine: 'google_maps', type: 'search', q: loc ? `${c.name} ${loc}` : c.name, api_key: serpKey }),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
+        ]);
+        placeId = sj?.local_results?.[0]?.place_id || '';
+      }
+      if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; continue; }
+      const rj = await Promise.race([
+        getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
+      ]);
+      const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
+      const messages = _buildBriefMessages(c, reviews);
+      const completion = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: 0.4, max_tokens: 700 });
+      const out = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
+      if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; continue; }
+      results[c.id] = { ...out, placeId, reviewsMined: reviews.length };
+      briefed++;
+    } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; }
+  }
+  let applied = 0;
+  if (Object.keys(results).length) {
+    makeBackup('pre-enrich-brief');
+    await mutateSettersData((d) => {
+      for (const id of Object.keys(results)) {
+        const lead = d.leads && d.leads[id]; if (!lead) continue;
+        const r = results[id];
+        lead.leadBrief = { brief: r.brief, hookPhrase: r.hookPhrase, painPoints: r.painPoints, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
+        if (Array.isArray(r.treatments) && r.treatments.length) lead.treatments = r.treatments;
+        if (r.fitScore != null) lead.fitScore = r.fitScore;
+        if (r.placeId && !lead.placeId) lead.placeId = r.placeId;
+        applied++;
+      }
+    });
+  }
+  res.json({ ok: true, scanned: candidates.length, briefed, applied, errors });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
@@ -9161,7 +9278,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
