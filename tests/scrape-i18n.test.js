@@ -79,4 +79,9 @@ describe("computeLeadSignals + _leadHasRealWebsite", () => {
     expect(s.signals).toContain("rating_bajo");
     expect(s.reputationTier).toBe("debil");
   });
+  it("runsAds → señal ads_activos dominante (primera) + ángulo (Phase 10 C6)", () => {
+    const s = computeLeadSignals({ rating: "4.8", reviews: 5, website: "https://x.com", runsAds: true });
+    expect(s.signals[0]).toBe("ads_activos");
+    expect(s.openingAngle.toLowerCase()).toContain("anuncios");
+  });
 });

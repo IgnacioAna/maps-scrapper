@@ -5410,6 +5410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ángulo de la cold call). El backend (computeLeadSignals) las deriva de
     // rating/reviews/web/instagram. Acá solo se muestran como chips accionables.
     const _SIGNAL_LABELS = {
+      ads_activos: '📣 Corre anuncios',
       muchas_reviews_sin_web: '🌐 Sin web · muchas reseñas',
       sin_web: '🌐 Sin web',
       rating_bajo: '⚠ Rating bajo',
@@ -8489,7 +8490,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (out) {
           if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
           else if (source === 'npi') out.textContent = `✅ ${d.npiMatched || 0} dueños de ${d.scanned || 0} leads US.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
-          else out.textContent = `✅ ${d.emailsFound || 0} emails de ${d.scanned || 0} sitios.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
+          else out.textContent = `✅ ${d.emailsFound || 0} emails · ${d.adsFound || 0} con ads, de ${d.scanned || 0} sitios.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
         }
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       btn.disabled = false; btn.textContent = origLabel;

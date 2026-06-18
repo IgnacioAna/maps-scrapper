@@ -104,10 +104,12 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
   it("degrada a no_website cuando falta el website", async () => {
     expect(await enrichFromWebsite("", { fetchImpl: mockFetch() })).toEqual({
       email: null,
+      ads: null,
       error: "no_website",
     });
     expect(await enrichFromWebsite(null, { fetchImpl: mockFetch() })).toEqual({
       email: null,
+      ads: null,
       error: "no_website",
     });
   });

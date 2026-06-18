@@ -593,6 +593,8 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.importedManually !== 'boolean') lead.importedManually = false;
   // Phase 16: categoría del negocio (dental/estética/spa) desde el scraping.
   if (typeof lead.category !== 'string') lead.category = '';
+  // Phase 10 C6: el negocio corre publicidad (Meta/Google pixel detectado en su web).
+  if (typeof lead.runsAds !== 'boolean') lead.runsAds = false;
   // Phase 16: brief/señales derivadas para el SDR. Lazy (si faltan, se computan
   // de rating/reviews/web/instagram). La barrida POST /api/admin/backfill-signals
   // las recomputa para todos; enrich-from-maps y manual-add las refrescan.
@@ -699,6 +701,8 @@ function _openingAngleFor(signal, ctx = {}) {
       return `Instagram sin web → "¿cuántos de tus seguidores terminan agendando una consulta?"`;
     case 'sin_contacto_digital':
       return `Sin web ni redes visibles → oportunidad digital total, casi seguro depende del boca a boca`;
+    case 'ads_activos':
+      return `Corre anuncios (Meta/Google) → "esos leads que entran, ¿los sigue alguien o se enfrían?"`;
     default:
       return '';
   }
@@ -712,6 +716,8 @@ function computeLeadSignals(lead = {}) {
   const hasInstagram = !!String(lead.instagram || '').trim();
 
   const signals = [];
+  // Phase 10 C6: "ya pauta" — el ángulo más caliente (tiene leads, los pierde). Va primero.
+  if (lead.runsAds) signals.push('ads_activos');
   // Gap web (el ángulo más fuerte) — mutuamente excluyentes por volumen de reviews
   if (!hasWebsite && reviews >= 100) signals.push('muchas_reviews_sin_web');
   else if (!hasWebsite && reviews >= 10) signals.push('sin_web');
@@ -1884,30 +1890,33 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   for (const id of Object.keys(leadsMap)) {
     const l = leadsMap[id];
     if (!l) continue;
-    const needsEmail = wantsWeb && _leadHasRealWebsite(l) && !String(l.email || '').trim();
+    // Fetch del sitio si tiene web real y falta email O nunca se chequeó publicidad.
+    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && (!String(l.email || '').trim() || !l.adsCheckedAt);
     const isUS = String(l.country || '').trim() === 'Estados Unidos';
     const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim();
-    if (needsEmail || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, needsEmail, needsOwner });
+    if (needsWeb || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, needsWeb, needsOwner });
     if (candidates.length >= limit) break;
   }
 
   if (dryRun) {
-    return res.json({ dryRun: true, source, limit, candidates: candidates.length, sample: candidates.slice(0, 10).map(c => ({ id: c.id, name: c.name, needsEmail: c.needsEmail, needsOwner: c.needsOwner })) });
+    return res.json({ dryRun: true, source, limit, candidates: candidates.length, sample: candidates.slice(0, 10).map(c => ({ id: c.id, name: c.name, needsWeb: c.needsWeb, needsOwner: c.needsOwner })) });
   }
 
   // Fetches con concurrencia limitada, FUERA del mutex.
   const results = {};
   const errors = {};
-  let emailsFound = 0, npiMatched = 0;
+  let emailsFound = 0, npiMatched = 0, adsFound = 0;
   const CONC = 5;
   for (let i = 0; i < candidates.length; i += CONC) {
     const chunk = candidates.slice(i, i + CONC);
     await Promise.all(chunk.map(async (c) => {
       const out = {};
-      if (c.needsEmail) {
+      if (c.needsWeb) {
         const w = await enrichFromWebsite(c.website, { timeoutMs: 8000 });
+        out.adsChecked = true;
         if (w.email) { out.email = w.email; emailsFound++; }
         else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
+        if (w.ads && w.ads.runsAds) { out.runsAds = true; adsFound++; }
       }
       if (c.needsOwner) {
         const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 8000 });
@@ -1930,13 +1939,21 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
         if (r.specialty) lead.specialty = r.specialty;
         if (r.npi) lead.npi = r.npi;
+        if (r.adsChecked) {
+          lead.adsCheckedAt = new Date().toISOString();
+          lead.runsAds = !!r.runsAds;
+          // Recomputar señales: runsAds agrega 'ads_activos' (ángulo dominante).
+          const _sig = computeLeadSignals(lead);
+          lead.signals = _sig.signals; lead.reputationTier = _sig.reputationTier;
+          lead.openingAngle = _sig.openingAngle; lead.signalsAt = new Date().toISOString();
+        }
         lead.enrichedAt = new Date().toISOString();
         applied++;
       }
     });
   }
 
-  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, errors });
+  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, errors });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con

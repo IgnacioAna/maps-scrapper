@@ -261,39 +261,62 @@ async function safeFetch(url, { fetchImpl, timeoutMs, headers = {} }) {
 }
 
 /**
- * Hace fetch del website del lead y extrae el email más probable.
- * Nunca lanza. Degrada a { email:null, error:"..." }.
+ * PURA. Detecta píxeles/tags de publicidad en el HTML (prueba directa de que el
+ * negocio invierte en ads → señal de cold call "ya pauta, ¿ese lead lo sigue
+ * alguien?"). Phase 10 C6. Devuelve { hasMetaPixel, hasGoogleAds, hasTikTokPixel,
+ * hasGTM, runsAds }.
+ */
+export function detectAdPixels(html) {
+  const out = { hasMetaPixel: false, hasGoogleAds: false, hasTikTokPixel: false, hasGTM: false, runsAds: false };
+  if (!html || typeof html !== "string") return out;
+  const h = html.toLowerCase();
+  // Meta/Facebook pixel
+  out.hasMetaPixel = h.includes("connect.facebook.net/en_us/fbevents.js") || h.includes("fbq('init'") || h.includes('fbq("init"') || /\bfbq\(/.test(h) || h.includes("facebook.com/tr?id=");
+  // Google Ads (conversion/remarketing AW-) — distinto de GA4 (analytics, no ads)
+  out.hasGoogleAds = /aw-\d{6,}/.test(h) || h.includes("googleadservices.com") || h.includes("google_conversion_id") || h.includes("gtag/js?id=aw-");
+  // TikTok pixel
+  out.hasTikTokPixel = h.includes("analytics.tiktok.com") || h.includes("ttq.load");
+  // Google Tag Manager (señal débil de stack de marketing)
+  out.hasGTM = h.includes("googletagmanager.com/gtm.js") || h.includes("gtm-");
+  out.runsAds = out.hasMetaPixel || out.hasGoogleAds || out.hasTikTokPixel;
+  return out;
+}
+
+/**
+ * Hace fetch del website del lead y extrae el email más probable + señales de
+ * publicidad (píxeles). Nunca lanza. Degrada a { email:null, ads:null, error }.
  *
  * @param {string} website
  * @param {{ fetchImpl?: Function, timeoutMs?: number }} [opts]
- * @returns {Promise<{ email: string|null, error: string|null }>}
+ * @returns {Promise<{ email: string|null, ads: object|null, error: string|null }>}
  */
 export async function enrichFromWebsite(website, opts = {}) {
   const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
   const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
   try {
     if (!website || typeof website !== "string" || !website.trim()) {
-      return { email: null, error: "no_website" };
+      return { email: null, ads: null, error: "no_website" };
     }
-    if (!fetchImpl) return { email: null, error: "no_fetch" };
+    if (!fetchImpl) return { email: null, ads: null, error: "no_fetch" };
 
     let url = website.trim();
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
     // Filtrar websites-basura típicos (wa.me, links de redes que no son sitio).
     const host = hostFromUrl(url);
-    if (!host) return { email: null, error: "bad_url" };
+    if (!host) return { email: null, ads: null, error: "bad_url" };
     if (/^(wa\.me|api\.whatsapp\.com|whatsapp\.com|m\.facebook\.com|facebook\.com|instagram\.com|t\.me|linktr\.ee|goo\.gl|bit\.ly|maps\.google\.)/i.test(host)) {
-      return { email: null, error: "junk_website" };
+      return { email: null, ads: null, error: "junk_website" };
     }
 
     const r = await safeFetch(url, { fetchImpl, timeoutMs });
-    if (!r.ok) return { email: null, error: r.error || "fetch_failed" };
+    if (!r.ok) return { email: null, ads: null, error: r.error || "fetch_failed" };
 
     const email = extractEmailFromHtml(r.text, url);
-    return { email: email || null, error: email ? null : "no_email_found" };
+    const ads = detectAdPixels(r.text);
+    return { email: email || null, ads, error: email ? null : "no_email_found" };
   } catch {
-    return { email: null, error: "unexpected" };
+    return { email: null, ads: null, error: "unexpected" };
   }
 }
 
@@ -457,6 +480,7 @@ export async function enrichFromNPI(q = {}, opts = {}) {
 
 export default {
   extractEmailFromHtml,
+  detectAdPixels,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
