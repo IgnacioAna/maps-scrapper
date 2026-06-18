@@ -4868,6 +4868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
             ${lead.phoneStatus === 'voicemail' ? '<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.12); padding:3px 9px; border-radius:6px;">📭 buzón</span>' : ''}
+            ${typeof _signalChips === 'function' ? _signalChips(lead) : ''}
           </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:9px; min-width:200px;">
@@ -4882,6 +4883,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           </button>
         </div>
       </div>
+
+      <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (de las señales del brief) -->
+      ${lead.openingAngle && lead.openingAngle.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.03) 100%); border:1px solid rgba(157,133,242,0.32); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">💡 Ángulo sugerido</div>
+        <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
+      </div>` : ''}
 
       <!-- Bloque 2: Pre-call note destacada (si existe) — sin emoji, label limpio -->
       ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.32); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
@@ -5360,6 +5367,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch { return null; }
     }
     window._leadLocalTime = _leadLocalTime;
+
+    // Phase 16: etiquetas cortas de las señales del brief (lo que el SDR usa como
+    // ángulo de la cold call). El backend (computeLeadSignals) las deriva de
+    // rating/reviews/web/instagram. Acá solo se muestran como chips accionables.
+    const _SIGNAL_LABELS = {
+      muchas_reviews_sin_web: '🌐 Sin web · muchas reseñas',
+      sin_web: '🌐 Sin web',
+      rating_bajo: '⚠ Rating bajo',
+      pocas_reviews: '📉 Pocas reseñas',
+      ig_sin_web: '📸 IG sin web',
+      sin_contacto_digital: '🚫 Sin presencia digital',
+    };
+    function _signalChips(lead) {
+      const sigs = Array.isArray(lead && lead.signals) ? lead.signals : [];
+      if (!sigs.length) return '';
+      return sigs.map(s => {
+        const label = _SIGNAL_LABELS[s] || s;
+        return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:#C4B5FD; background:rgba(157,133,242,0.16); border:1px solid rgba(157,133,242,0.3); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
+      }).join('');
+    }
+    window._signalChips = _signalChips;
 
     // Sprint 21: Render de chips de filtro por país (con bandera + count)
     function _callsRenderCountryChips() {
@@ -6210,6 +6238,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🎯 Pre-call</div>
           <div style="color:#fff; font-size:12px; line-height:1.45; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
         </div>`);
+      }
+      // Phase 16: ángulo sugerido (de las señales del brief) + chips de señales.
+      if (lead.openingAngle && lead.openingAngle.trim()) {
+        rows.push(`<div style="background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.04) 100%); border:1px solid rgba(157,133,242,0.35); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">💡 Ángulo sugerido</div>
+          <div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
+        </div>`);
+      }
+      if (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) {
+        rows.push(`<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${_signalChips(lead)}</div>`);
       }
       if (lead.doctor && !lead.doctor.includes('N/A')) rows.push(`<div><strong style="color:#fff;">Doctor:</strong> ${escHtml(lead.doctor)}</div>`);
       if (lead.address) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">📍</strong> ${escHtml(lead.address)}</div>`);

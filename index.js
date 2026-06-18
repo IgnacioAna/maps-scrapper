@@ -548,6 +548,20 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.email !== 'string') lead.email = '';
   if (typeof lead.doctor !== 'string') lead.doctor = '';
   if (typeof lead.importedManually !== 'boolean') lead.importedManually = false;
+  // Phase 16: categoría del negocio (dental/estética/spa) desde el scraping.
+  if (typeof lead.category !== 'string') lead.category = '';
+  // Phase 16: brief/señales derivadas para el SDR. Lazy (si faltan, se computan
+  // de rating/reviews/web/instagram). La barrida POST /api/admin/backfill-signals
+  // las recomputa para todos; enrich-from-maps y manual-add las refrescan.
+  if (!Array.isArray(lead.signals)) {
+    const _sig = computeLeadSignals(lead);
+    lead.signals = _sig.signals;
+    lead.reputationTier = _sig.reputationTier;
+    lead.ratingNum = _sig.ratingNum;
+    lead.hasWebsite = _sig.hasWebsite;
+    lead.openingAngle = _sig.openingAngle;
+    lead.signalsAt = new Date().toISOString();
+  }
   // Sprint 24: Nota pre-call. Texto que el setter prepara ANTES de discar.
   // Distinto del array `notes[]` (que son post-interacciones). Útil para
   // guion personalizado del lead, contexto que descubrió en la web, etc.
@@ -606,6 +620,75 @@ function computeWspProbability(lead = {}) {
   const hasPhone = !!(lead.phone && String(lead.phone).replace(/\D/g, '').length >= 7);
   if (hasPhone) return 'low'; // teléfono pero ninguna señal de WSP → llamada
   return 'unknown';
+}
+
+// ── Lead Signals / Brief (Phase 16) ───────────────────────────────────────
+// Deriva señales accionables para el SDR a partir de lo que YA se scrapeó
+// (rating, reviews, web, instagram). Pura derivación, sin APIs externas. Cada
+// señal habilita un ángulo de apertura en la llamada en frío. Recomputable.
+function _leadRatingNum(lead = {}) {
+  const r = parseFloat(String(lead.rating ?? '').replace(',', '.'));
+  return Number.isFinite(r) ? r : null;
+}
+// True solo si `website` es un sitio web REAL (no wa.me ni link de red social,
+// que a veces caen en el campo website durante el scraping).
+function _leadHasRealWebsite(lead = {}) {
+  const w = String(lead.website || '').trim().toLowerCase();
+  if (!w) return false;
+  const junk = ['wa.me', 'whatsapp.com', 'api.whatsapp', 'instagram.com', 'facebook.com', 'fb.me', 'fb.com', 'linktr.ee', 'linktree', 't.me', 'tiktok.com'];
+  if (junk.some((j) => w.includes(j))) return false;
+  return w.includes('.');
+}
+// Cue corto (1 línea) que el SDR lee al discar. Munición, no libreto.
+function _openingAngleFor(signal, ctx = {}) {
+  const rating = ctx.rating != null ? String(ctx.rating) : '';
+  const reviews = ctx.reviews || 0;
+  switch (signal) {
+    case 'muchas_reviews_sin_web':
+      return `${reviews} reseñas y ${rating}★ pero SIN web → "¿toda esa gente que te busca cómo agenda?"`;
+    case 'sin_web':
+      return `Sin sitio web → "¿cómo te encuentran y reservan los pacientes nuevos?"`;
+    case 'rating_bajo':
+      return `Rating ${rating}★ (bajo) → "abajo de 4.7 muchos pacientes llaman al de al lado, ¿lo tenés medido?"`;
+    case 'pocas_reviews':
+      return `Buen rating, solo ${reviews} reseñas → "con pocas reseñas no aparecés en el top del mapa, ahí está la fuga"`;
+    case 'ig_sin_web':
+      return `Instagram sin web → "¿cuántos de tus seguidores terminan agendando una consulta?"`;
+    case 'sin_contacto_digital':
+      return `Sin web ni redes visibles → oportunidad digital total, casi seguro depende del boca a boca`;
+    default:
+      return '';
+  }
+}
+// Devuelve { signals[], reputationTier, ratingNum, hasWebsite, openingAngle }.
+// `signals` ordenadas por prioridad (la primera = dominante → openingAngle).
+function computeLeadSignals(lead = {}) {
+  const rating = _leadRatingNum(lead);
+  const reviews = parseInt(lead.reviews, 10) || 0;
+  const hasWebsite = _leadHasRealWebsite(lead);
+  const hasInstagram = !!String(lead.instagram || '').trim();
+
+  const signals = [];
+  // Gap web (el ángulo más fuerte) — mutuamente excluyentes por volumen de reviews
+  if (!hasWebsite && reviews >= 100) signals.push('muchas_reviews_sin_web');
+  else if (!hasWebsite && reviews >= 10) signals.push('sin_web');
+  // Reputación
+  if (rating !== null && rating < 4.5 && reviews >= 5) signals.push('rating_bajo');
+  if (rating !== null && rating >= 4.6 && reviews > 0 && reviews < 40) signals.push('pocas_reviews');
+  // Estética / digital
+  if (hasInstagram && !hasWebsite) signals.push('ig_sin_web');
+  if (!hasWebsite && !hasInstagram && reviews < 10) signals.push('sin_contacto_digital');
+
+  let reputationTier = 'desconocido';
+  if (rating !== null) {
+    if (rating < 4.0) reputationTier = 'critico';
+    else if (rating < 4.5) reputationTier = 'debil';
+    else if (rating < 4.7) reputationTier = 'medio';
+    else reputationTier = 'fuerte';
+  }
+
+  const openingAngle = signals.length ? _openingAngleFor(signals[0], { rating, reviews }) : '';
+  return { signals, reputationTier, ratingNum: rating, hasWebsite, openingAngle };
 }
 
 // Deriva el país (nombre canónico en español, igual que usa la data) desde el
@@ -1700,6 +1783,41 @@ app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req,
   }
   if (!dryRun && filled > 0) { makeBackup('pre-backfill-country'); saveSettersData(data); }
   res.json({ scanned, filled, dryRun, byCountry, sample });
+});
+
+// Phase 16: BARRIDA de señales/brief sobre TODOS los leads. Recomputa
+// signals[]/reputationTier/ratingNum/hasWebsite/openingAngle de cada lead desde
+// rating/reviews/web/instagram (datos YA scrapeados). Idempotente; no toca el
+// estado operativo ni los datos de scraping. dryRun reporta sin escribir.
+app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, updated: 0, dryRun, byTier: {}, bySignal: {} });
+  let scanned = 0, withAngle = 0;
+  const byTier = {};
+  const bySignal = {};
+  const sample = [];
+  const now = new Date().toISOString();
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    const sig = computeLeadSignals(lead);
+    byTier[sig.reputationTier] = (byTier[sig.reputationTier] || 0) + 1;
+    for (const s of sig.signals) bySignal[s] = (bySignal[s] || 0) + 1;
+    if (sig.openingAngle) withAngle++;
+    if (sig.signals.length && sample.length < 12) sample.push({ id, name: lead.name, rating: lead.rating, reviews: lead.reviews, signals: sig.signals, angle: sig.openingAngle });
+    if (!dryRun) {
+      lead.signals = sig.signals;
+      lead.reputationTier = sig.reputationTier;
+      lead.ratingNum = sig.ratingNum;
+      lead.hasWebsite = sig.hasWebsite;
+      lead.openingAngle = sig.openingAngle;
+      lead.signalsAt = now;
+    }
+  }
+  // Determinístico → idempotente en efecto (recorrer dos veces da el mismo resultado).
+  if (!dryRun && scanned > 0) { makeBackup('pre-backfill-signals'); saveSettersData(data); }
+  res.json({ scanned, updated: dryRun ? 0 : scanned, withAngle, dryRun, byTier, bySignal, sample });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
