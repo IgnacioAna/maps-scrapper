@@ -703,4 +703,16 @@ Origen: demo en vivo de Adversus (cold-call CRM). Backlog en `.planning/backlog/
 
 96. **DNC (No-llamar)**: `lead.doNotCall` (+ `doNotCallReason/At/By`) en `ensureLeadDefaults`. Se setea desde el modal (checkbox), o auto si la razón es `no_contactar` (`DNC_REASONS`), o vía bulk `mark_dnc`. **Saca el lead de TODA cola de llamada**: `sin-wsp` (guard al tope; `?dnc=1` para que el admin los liste), `getReassignCandidates` (no se distribuyen), `pool-summary` (los cuenta en `dnc` aparte, fuera de byTier). Deshacer: bulk `clear_dnc` (vuelve a sin_contactar+sin_wsp). UI: toggle "🚫 No-llamar" en Llamadas (vista `dnc=1`, bypassa el filtro de descartados en renderCallsList) + badge rojo + botón "↩️ Quitar" por card. **Compliance** para cold calling EU/USA/CA (DNC/TPS/CASL). Tests: `tests/disposition-dnc.test.js` (6).
 
-97. **Cache-buster actual: `v=20260618d`** (reemplaza #94). app.js + index.html. style.css sigue en `v=20260604b`. wa.js en `v=20260610g`.
+97. **Cache-buster (histórico)**: `v=20260618d`. Reemplazado por #101.
+
+## Sesión 2026-06-18 (parte 3) — Phase 17 Olas 2-4 (shared callback, cadencia, UX)
+
+Plan completo en `.planning/phases/17-disposition-dnc-cadencias/PLAN.md`. Las 4 olas de Phase 17 ya están deployadas.
+
+98. **Ola 2 — Shared vs Private callback**: `lead.callbackShared` (bool, default false=privado) en `ensureLeadDefaults`. `call-disposition` `callback_later` acepta `callbackShared`. Los callbacks **compartidos vencidos** aparecen en la cola `sin-wsp` de TODOS los setters (no solo el dueño): el filtro de setter ahora es `assignedTo===yo || (callbackShared && callbackAt vencido)`. Cuando un setter toca un lead ajeno que es shared-due, el guard de auth lo permite + **lo reasigna + apaga callbackShared** (lo "tomó"). UI: checkbox "🔁 Callback compartido" en el modal de callback + chip 🔁 en la card. Tests: `tests/shared-callback.test.js` (3).
+
+99. **Ola 3 — Cadencia / auto-redial (solo-llamada, sin dialer automático)**: en `call-disposition`, `no_answer`/`voicemail` SIN callback manual y no-DNC auto-programan `callbackAt` según la racha de no-contacto (`CADENCE_HOURS=[3,24,72]` → +3h, +1d, +3d; tras agotar → `lead.cadenceExhausted=true`). `lead.cadenceStep` = nº de reintento. Un connect (cualquier outcome ≠ no_answer/voicemail) rompe la racha. **Reusa `callbackAt` + la cola "Para seguir" — NO hay dialer automático, la llamada siempre la dispara una persona** (compliance). Defaults `cadenceStep`/`cadenceExhausted` en `ensureLeadDefaults`. UI: chip "🔁 auto #N" en la card. Tests: `tests/call-cadence.test.js` (6).
+
+100. **Ola 4 — UX**: `_renderCallHistory` (panel durante la llamada) ahora es una **timeline unificada** (callLog + notes ordenados por fecha desc, últimos 6 + contador) en vez de "solo el último intento" (idea Adversus: Activity timeline). Quick-links (Web/Maps/IG/FB) del lead-file más prominentes (font/padding bump, 4 ocurrencias). Frontend-only, sin tests nuevos.
+
+101. **Cache-buster actual: `v=20260618f`** (reemplaza #97). app.js + index.html. style.css sigue en `v=20260604b`. wa.js en `v=20260610g`. **Phase 17 COMPLETA (olas 1-4).** Pendiente del backlog Adversus: nada crítico (la lista de razones de descalificación es editable a futuro; "Journeys" multicanal = Phase 7 parkeada).

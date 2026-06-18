@@ -4,7 +4,7 @@
 > Adversus (backlog en `.planning/backlog/ideas-adversus-2026-06-18.md`). Prioridad
 > por valor/riesgo. Cada ola: implementar → test → preview → deploy.
 
-## ESTADO (2026-06-18): Ola 1 ✅ COMPLETA y deployada (ver CLAUDE.md #95-96). Olas 2-4 pendientes.
+## ESTADO (2026-06-18): TODAS las olas (1-4) ✅ COMPLETAS y deployadas. Ver CLAUDE.md #95-101.
 
 ## Ola 1 — Razón de descalificación + DNC (ALTA, build primero) ⭐
 - **Razón de descalificación**: al marcar outcome `answered_not_interested`, capturar `lead.disqualifyReason` de una lista whitelisteada (no_es_icp, no_es_decisor, ya_no_trabaja, sin_presupuesto, ya_tiene_proveedor, cliente_actual, mala_experiencia, no_contactar, ya_agendado, otro). Persistir en lead + logEntry. Reporte en cold-call-metrics (byReason).
