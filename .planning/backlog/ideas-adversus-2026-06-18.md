@@ -38,5 +38,13 @@
    - Propuesta: `lead.callbackShared` (bool) + cola de callbacks compartidos en view-calls; cadencia de auto-redial opcional por outcome no_answer.
    - Esfuerzo: medio-alto (auto-redial toca el motor de discado).
 
+## Ronda 3 — estructura/nav (2026-06-18)
+
+6. **"Journeys" = constructor de cadencias de contacto** — MEDIA/ALTA (generaliza el auto-redial de idea #5).
+   - Flujo configurable: llamada → no atiende → esperar Xh → reintentar (hasta N) → buzón → SMS/WA → sin respuesta → reasignar/DNC.
+   - Es el motor de cadencia. La parte SDR (reintentos de llamada por outcome) NO depende de bots. La parte multicanal (SMS/WA auto) sí toca el módulo WA parkeado / Phase 7 (campañas drip).
+   - Propuesta incremental: arrancar por cadencia de SOLO-llamada (reglas por outcome: no_answer → +2h x3; voicemail → +1d) antes de meter multicanal. Reusa scheduledMessages/followups que ya existen.
+   - Nota: el resto del nav de Adversus (Dialer/Users/Insights/Warehouse/Leads/Messages/Settings) ya tiene equivalente nuestro. "Changelog" (feed de novedades para el equipo) = idea menor, hoy suplido por la Guía.
+
 ## NO aplica (otro vertical)
 - Campos firmográficos (Company Size/Domain/Industry/Specialities/LinkedIn): son para vender SaaS a empresas. Nuestro vertical = clínicas locales (rating/reseñas/web/IG/doctor). Excepción: `specialty` ya lo sacamos del NPI (USA).
