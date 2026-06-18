@@ -559,6 +559,14 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.dealValue !== 'number') lead.dealValue = 0;
   // Phase 14: prioridad de re-contacto estampada al reciclar el pool (1-4). 0 = sin estampar.
   if (typeof lead.recontactPriority !== 'number') lead.recontactPriority = 0;
+  // Phase 17: DNC (no-llamar) + razón de descalificación. doNotCall saca el lead
+  // de TODA cola de llamada para siempre (compliance EU/USA/CA). disqualifyReason
+  // = por qué se perdió (capturado al marcar No interesado).
+  if (typeof lead.doNotCall !== 'boolean') lead.doNotCall = false;
+  if (typeof lead.doNotCallReason !== 'string') lead.doNotCallReason = '';
+  if (typeof lead.doNotCallAt !== 'string') lead.doNotCallAt = '';
+  if (typeof lead.doNotCallBy !== 'string') lead.doNotCallBy = '';
+  if (typeof lead.disqualifyReason !== 'string') lead.disqualifyReason = '';
   // Show rate: si el lead llegó a estado "agendado", el closer marca tras la
   // llamada si el prospecto se presentó. true = show, false = no-show, null =
   // todavia no se sabe / no aplica.
@@ -4053,6 +4061,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   const data = loadSettersData();
   let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
   let totalDurationS = 0, revenue = 0;
+  const byReason = {}; // Phase 17: razones de descalificación (answered_not_interested)
 
   for (const id in data.leads) {
     const lead = data.leads[id];
@@ -4069,6 +4078,10 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
         totalDurationS += duration;
         if (duration >= CONV_MIN_DURATION_S) conversations++;
         if (APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
+      }
+      if (outcome === 'answered_not_interested') {
+        const r = entry.disqualifyReason || 'sin_razon';
+        byReason[r] = (byReason[r] || 0) + 1;
       }
     }
   }
@@ -4090,6 +4103,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
     fromTs,
     setterId: setterId || null,
     metrics: { dials, connects, conversations, appointments, deals, revenue },
+    byReason, // Phase 17: razones de "no interesado" en el período
     rates: {
       connectRate: ratio(connects, dials),
       conversationRate: ratio(conversations, connects),
@@ -4630,9 +4644,13 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   // devolvemos los leads de Setteo que IGUAL se pueden llamar: con teléfono y no
   // terminales (descartado/agendado). Sin el flag, comportamiento histórico intacto.
   const includeCallable = include === 'callable';
+  const showDnc = req.query.dnc === '1'; // Phase 17: admin puede ver los DNC para revisarlos
   const data = loadSettersData();
   let leads = Object.entries(data.leads)
     .filter(([_, l]) => {
+      // Phase 17: los DNC (no-llamar) salen de TODA cola de llamada salvo dnc=1.
+      if (l.doNotCall && !showDnc) return false;
+      if (showDnc) return !!l.doNotCall;
       if (l.conexion === 'sin_wsp') return true;
       if (includeCallable) {
         const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
@@ -5320,6 +5338,7 @@ function getReassignCandidates(data, { fromSetterId, country, city, estado, unto
     : (lead) => lead.assignedTo === fromSetterId;
   return Object.entries(data.leads || {})
     .filter(([_id, lead]) => matchSource(lead))
+    .filter(([_id, lead]) => !lead.doNotCall) // Phase 17: nunca distribuir leads DNC
     .filter(([_id, lead]) => !country || (lead.country || '').toLowerCase().includes(country.toLowerCase()))
     .filter(([_id, lead]) => !city || (lead.city || '').toLowerCase().includes(city.toLowerCase()) || (lead.locationSearched || '').toLowerCase().includes(city.toLowerCase()))
     .filter(([_id, lead]) => !estado || lead.estado === estado)
@@ -5338,12 +5357,14 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   for (const s of (data.setters || [])) settersById[s.id] = s.name || s.id;
 
   const bySetter = {};
-  let unassigned = 0, unassignedUntouched = 0;
+  let unassigned = 0, unassignedUntouched = 0, dnc = 0;
   const byCountry = {};
   const byEstado = {};
   // Tiers de prioridad de re-contacto (1 interesado → 4 no interesado).
   const byTier = { interesado: 0, sin_contactar: 0, medio: 0, no_interesado: 0 };
   for (const l of leads) {
+    // Phase 17: los DNC se cuentan aparte y NO entran al pool distribuible.
+    if (l.doNotCall) { dnc++; continue; }
     const sid = l.assignedTo || '';
     if (!sid) { unassigned++; if (isUntouched(l)) unassignedUntouched++; }
     else {
@@ -5360,6 +5381,7 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
 
   res.json({
     total: leads.length,
+    dnc, // Phase 17: leads marcados no-llamar (fuera del pool distribuible)
     unassigned: { total: unassigned, untouched: unassignedUntouched },
     byTier,
     // TODOS los setters (para el dropdown de destino, aunque tengan 0 leads).
@@ -5841,7 +5863,7 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
   if (leadIds.length > 500) {
     return res.status(400).json({ error: 'Máximo 500 leads por operación bulk.' });
   }
-  const VALID_ACTIONS = ['mark_wrong','mark_invalid','discard','assign','move_to_setteo'];
+  const VALID_ACTIONS = ['mark_wrong','mark_invalid','discard','assign','move_to_setteo','mark_dnc','clear_dnc'];
   if (!VALID_ACTIONS.includes(action)) {
     return res.status(400).json({ error: `action inválida. Esperado uno de: ${VALID_ACTIONS.join(', ')}` });
   }
@@ -5890,6 +5912,21 @@ app.post('/api/setters/leads/bulk', requireAuth, requireRole('admin'), (req, res
       case 'discard':
         lead.estado = 'descartado';
         lead.interes = 'no';
+        break;
+      case 'mark_dnc': // Phase 17: marcar No llamar (sale de toda cola)
+        lead.doNotCall = true;
+        lead.doNotCallReason = 'manual';
+        lead.doNotCallAt = now;
+        lead.doNotCallBy = byName;
+        lead.estado = 'descartado';
+        break;
+      case 'clear_dnc': // Phase 17: deshacer DNC y devolver a la cola de llamadas
+        lead.doNotCall = false;
+        lead.doNotCallReason = '';
+        lead.doNotCallAt = '';
+        lead.doNotCallBy = '';
+        lead.conexion = 'sin_wsp';
+        if (lead.estado === 'descartado') { lead.estado = 'sin_contactar'; lead.interes = null; }
         break;
       case 'assign':
         lead.assignedTo = assignTo;
@@ -6184,6 +6221,22 @@ const CALL_OUTCOMES = new Set([
   'placeholder_sent'         // 📧 Hold de calendario enviado por mail (no cambia estado, queda en Llamadas)
 ]);
 
+// Phase 17: razones de descalificación (al marcar No interesado). Whitelist
+// estricta. La razón 'no_contactar' implica DNC automático (pidió no ser llamado).
+const DISQUALIFY_REASONS = new Set([
+  'no_es_icp',          // No es el perfil de cliente que buscamos
+  'no_es_decisor',      // Habló pero no es quien decide
+  'ya_no_trabaja',      // Esa persona ya no trabaja ahí
+  'sin_presupuesto',    // No tiene presupuesto
+  'ya_tiene_proveedor', // Ya tiene agencia / proveedor
+  'cliente_actual',     // Ya es cliente
+  'mala_experiencia',   // Ex-cliente / mala experiencia previa
+  'no_contactar',       // Pidió expresamente no ser contactado → DNC
+  'ya_agendado',        // Ya se coordinó por otra vía
+  'otro'
+]);
+const DNC_REASONS = new Set(['no_contactar']);
+
 app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
@@ -6192,10 +6245,12 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
+  // Phase 17: razón de descalificación (whitelist). Solo se persiste si es válida.
+  const cleanReason = (typeof disqualifyReason === 'string' && DISQUALIFY_REASONS.has(disqualifyReason)) ? disqualifyReason : '';
   // Sprint 25: tags de objeción válidos (solo para answered_not_interested,
   // pero los permitimos en cualquier outcome por si en el futuro se usan
   // en otros casos). Whitelist estricta para evitar inyección de tags raros.
@@ -6354,6 +6409,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     logEntry.channel = 'manual';
   }
 
+  if (cleanReason) logEntry.disqualifyReason = cleanReason; // Phase 17
   lead.callLog.push(logEntry);
   // Sprint 37: cap callLog a últimas 500 entries para prevenir crecimiento
   // descontrolado si un lead recibe miles de no_answer (rare pero posible).
@@ -6378,6 +6434,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
       lead.respondio = true;
       lead.interes = 'no';
       lead.estado = 'descartado';
+      lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
       break;
 
     case 'no_answer':
@@ -6424,6 +6481,16 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
       lead.interes = 'si';
       lead.estado = 'agendado';
       break;
+  }
+
+  // Phase 17: DNC. Se marca si el setter lo pide explícito (doNotCall:true) o si
+  // la razón de descalificación implica no-contactar. Saca el lead de TODA cola.
+  if (doNotCall === true || DNC_REASONS.has(cleanReason)) {
+    lead.doNotCall = true;
+    lead.doNotCallReason = cleanReason || 'manual';
+    lead.doNotCallAt = now;
+    lead.doNotCallBy = req.auth?.user?.name || '';
+    lead.estado = 'descartado';
   }
 
   saveSettersData(data);

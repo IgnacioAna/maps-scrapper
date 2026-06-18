@@ -834,6 +834,10 @@
               <input type="checkbox" id="calls-show-discarded">
               <span>Descartados</span>
             </label>
+            <label data-roles="admin,supervisor" class="calls-toggle-discarded" title="Ver y deshacer leads marcados No-llamar (DNC)">
+              <input type="checkbox" id="calls-show-dnc">
+              <span>🚫 No-llamar</span>
+            </label>
           </div>
         </section>
 
@@ -3086,7 +3090,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618c"></script>
+  <script type="module" src="/app.js?v=20260618d"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

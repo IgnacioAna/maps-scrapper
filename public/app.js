@@ -4339,6 +4339,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const params = new URLSearchParams();
       if (setter) params.set('setter', setter);
       if (includeSetteo) params.set('include', 'callable');
+      // Phase 17: vista de leads No-llamar (DNC) para revisarlos/deshacerlos.
+      const showDnc = document.getElementById('calls-show-dnc')?.checked;
+      if (showDnc) params.set('dnc', '1');
       const qs = params.toString();
       const url = '/api/setters/leads/sin-wsp' + (qs ? '?' + qs : '');
       try {
@@ -5787,9 +5790,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Ocultar agendados (ya pasaron). Sprint 28: si toggle "Ver descartados"
       // está ON, los descartados se muestran (con UI degradada y botón reactivar).
-      const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
-      const hiddenStates = showDiscarded ? ['agendado'] : ['descartado','agendado'];
-      leads = leads.filter(l => !hiddenStates.includes(l.estado));
+      // Phase 17: la vista DNC (calls-show-dnc) muestra TODOS los DNC sin importar
+      // su estado (son descartados por definición) → bypassea el filtro.
+      const showDncView = document.getElementById('calls-show-dnc')?.checked;
+      if (!showDncView) {
+        const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
+        const hiddenStates = showDiscarded ? ['agendado'] : ['descartado','agendado'];
+        leads = leads.filter(l => !hiddenStates.includes(l.estado));
+      }
 
       // "Para seguir": cola de seguimiento = callbacks vencidos + leads cuyo
       // último resultado fue "Me cortó"/"No atendió"/"Buzón" (re-llamables).
@@ -5949,6 +5957,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${interesadoBadge}
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
+              ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">🚫 No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">↩️ Quitar</button>` : ''}
               ${notesBadge}
               ${fupBadge}
               ${callbackBadge}
@@ -7118,6 +7127,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       { key: 'mal_momento',        label: '📆 Mal momento',      hint: 'Vacaciones, mudanza, etc.' },
       { key: 'otra',               label: '➕ Otra',             hint: 'Distinta a las anteriores' },
     ];
+    // Phase 17: razones de descalificación (Adversus-style). Keys = whitelist del backend.
+    const DISQUALIFY_REASONS_UI = [
+      { key: '', label: 'Sin razón específica' },
+      { key: 'no_es_icp', label: 'No es el perfil (ICP)' },
+      { key: 'no_es_decisor', label: 'No es quien decide' },
+      { key: 'ya_no_trabaja', label: 'Esa persona ya no trabaja ahí' },
+      { key: 'sin_presupuesto', label: 'Sin presupuesto' },
+      { key: 'ya_tiene_proveedor', label: 'Ya tiene agencia / proveedor' },
+      { key: 'cliente_actual', label: 'Ya es cliente' },
+      { key: 'mala_experiencia', label: 'Ex-cliente / mala experiencia' },
+      { key: 'no_contactar', label: '🚫 Pidió NO ser contactado (DNC)' },
+      { key: 'ya_agendado', label: 'Ya se coordinó por otra vía' },
+      { key: 'otro', label: 'Otro' },
+    ];
     function openObjectionModal(leadId) {
       let modal = document.getElementById('call-objection-modal');
       if (!modal) {
@@ -7134,6 +7157,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="padding:18px 22px;">
             <p style="color:var(--text-secondary); font-size:12.5px; margin:0 0 14px; line-height:1.5;">Elegí uno o más motivos (multi-select). Los tags alimentan al Mercury IA y muestran qué objeciones son las más comunes. Podés saltearlo si no querés taggear.</p>
             <div id="call-obj-tags" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:16px;"></div>
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">Razón de descalificación (para reporting)</label>
+            <select id="call-obj-reason" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; margin-bottom:12px; cursor:pointer;"></select>
+            <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-bottom:14px; cursor:pointer;">
+              <input type="checkbox" id="call-obj-dnc"> 🚫 No llamar nunca más (lo saca de todas las colas)
+            </label>
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">Nota libre (opcional)</label>
             <textarea id="call-obj-note" rows="2" placeholder="Ej: dijo que está pensando en cerrar la clínica…" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; resize:vertical;"></textarea>
             <div style="display:flex; gap:10px; margin-top:16px; justify-content:space-between; align-items:center;">
@@ -7167,6 +7195,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       // Reset nota libre
       document.getElementById('call-obj-note').value = '';
+      // Phase 17: poblar razón de descalificación + reset DNC.
+      const reasonSel = document.getElementById('call-obj-reason');
+      if (reasonSel) reasonSel.innerHTML = DISQUALIFY_REASONS_UI.map(r => `<option value="${r.key}">${escHtml(r.label)}</option>`).join('');
+      const dncChk = document.getElementById('call-obj-dnc');
+      if (dncChk) dncChk.checked = false;
+      // Si elige "no_contactar", tildar DNC automáticamente (espejo del backend).
+      if (reasonSel && dncChk) reasonSel.onchange = () => { if (reasonSel.value === 'no_contactar') dncChk.checked = true; };
       modal.classList.remove('hidden');
 
       // Audit fix Sprint 30 + 36: Esc cierra el modal. Cleanup en cualquier
@@ -7190,7 +7225,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           const body = {
             outcome: 'answered_not_interested',
             notes: note,
-            objectionTags: withTags ? [...selectedTags] : []
+            objectionTags: withTags ? [...selectedTags] : [],
+            disqualifyReason: document.getElementById('call-obj-reason')?.value || '',
+            doNotCall: !!document.getElementById('call-obj-dnc')?.checked
           };
           // Adjuntar telnyxMeta si hay
           const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
@@ -7323,6 +7360,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calls-search').addEventListener('input', () => { _callsCurrentPage = 1; renderCallsList(); });
     // Sprint 28: toggle "Ver descartados"
     document.getElementById('calls-show-discarded')?.addEventListener('change', () => { _callsCurrentPage = 1; _callsRenderCountryChips(); renderCallsList(); });
+    // Phase 17: la vista DNC requiere REFETCH (data distinta), no solo re-render.
+    document.getElementById('calls-show-dnc')?.addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
+    // Quitar DNC de un lead (bulk clear_dnc) y refrescar.
+    window._callsClearDnc = async (leadId) => {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/bulk'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadIds: [leadId], action: 'clear_dnc' }) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        loadCallsView();
+      } catch (e) { alert('Error quitando DNC: ' + e.message); }
+    };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
       _callsSelected.clear();
