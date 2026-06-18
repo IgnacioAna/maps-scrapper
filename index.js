@@ -2090,28 +2090,31 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   }
   if (dryRun) return res.json({ dryRun: true, limit, minReviews, candidates: candidates.length });
 
-  // DEBUG: procesa solo el primer candidato y devuelve los outputs CRUDOS (place_id,
-  // nº reseñas, contenido del LLM, parsed) sin persistir. Para diagnosticar fallas.
+  // DEBUG: escanea hasta 6 candidatos, resuelve place_id de cada uno y, en el
+  // PRIMERO que resuelva, devuelve reseñas + output CRUDO del LLM + parsed. Sin persistir.
   if (body.debug && candidates.length) {
-    const c = candidates[0];
-    const dbg = { id: c.id, name: c.name };
+    const dbg = { model: AI_MODEL, scanned: [], resolvedOn: null };
     try {
-      let placeId = c.placeId;
-      if (!placeId) {
-        const loc = [c.city, c.country].filter(Boolean).join(', ');
-        const sj = await getJson({ engine: 'google_maps', type: 'search', q: loc ? `${c.name} ${loc}` : c.name, api_key: serpKey });
-        placeId = sj?.local_results?.[0]?.place_id || '';
-        dbg.searchResults = (sj?.local_results || []).length;
-      }
-      dbg.placeId = placeId || '(ninguno)';
-      if (placeId) {
-        const rj = await getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
-        const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
-        dbg.reviewsFound = reviews.length;
-        const completion = await ai.chat.completions.create({ model: AI_MODEL, messages: _buildBriefMessages(c, reviews), temperature: 0.4, max_tokens: 700 });
-        dbg.model = AI_MODEL;
-        dbg.rawLLM = (completion?.choices?.[0]?.message?.content || '(vacío)').slice(0, 1500);
-        dbg.parsed = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
+      for (const c of candidates.slice(0, 6)) {
+        let placeId = c.placeId;
+        let sres = -1;
+        if (!placeId) {
+          const loc = [c.city, c.country].filter(Boolean).join(', ');
+          const sj = await getJson({ engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey });
+          sres = (sj?.local_results || []).length;
+          placeId = sj?.local_results?.[0]?.place_id || '';
+        }
+        dbg.scanned.push({ name: c.name, city: c.city || '', country: c.country || '', searchResults: sres, placeId: placeId ? 'sí' : 'no' });
+        if (placeId) {
+          const rj = await getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
+          const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
+          const completion = await ai.chat.completions.create({ model: AI_MODEL, messages: _buildBriefMessages(c, reviews), temperature: 0.4, max_tokens: 700 });
+          dbg.resolvedOn = c.name;
+          dbg.reviewsFound = reviews.length;
+          dbg.rawLLM = (completion?.choices?.[0]?.message?.content || '(vacío)').slice(0, 1800);
+          dbg.parsed = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
+          break;
+        }
       }
     } catch (e) { dbg.error = e?.message || 'error'; }
     return res.json({ debug: true, ...dbg });
