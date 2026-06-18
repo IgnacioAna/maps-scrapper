@@ -21,5 +21,22 @@
    - Hoy tenemos historial de llamadas (view-call-history) + notas[] + callLog separados. Unificar en un timeline por-lead visible durante la llamada.
    - Esfuerzo: medio (agregar panel + merge de callLog/notes/interactions ordenado por fecha).
 
+## Ronda 2 — capturas en vivo durante demo (2026-06-18)
+
+4. **Status con RAZÓN obligatoria condicional (disqualification reasons)** — ALTA (analytics + data quality). ⭐ el mejor hallazgo.
+   - Al elegir Status="Unqualified", aparece campo requerido **"Razón de unqualified*"** (dropdown). Sin esto no se guarda.
+   - Taxonomía que usan (adaptable a clínicas): *No es ICP · No es Buyer · Ya no trabaja más ahí · Sin poder de decisión · No contactar a su número personal · Cliente actual · Ex-cliente con mala experiencia · Ya se agendó reunión con esta empresa*.
+   - Por qué importa: hoy nuestros outcomes dicen QUÉ pasó (no atendió, no interesado) pero no POR QUÉ se pierde. Capturar la razón estructurada = saber si el problema es la lista (no-ICP), el pitch, o el timing. Reporting de "razones de pérdida".
+   - Sinergia: varias razones mapean a acciones — "No contactar a su número personal" / "Ex-cliente mala experiencia" → candidatos a DNC (idea #1). "Cliente actual" / "Ya se agendó" → sacar de la cola sin marcar como perdido.
+   - Propuesta: `lead.disqualifyReason` + dropdown condicional cuando outcome = no_interesado/unqualified. Editable la lista de razones (como las battlecards). Reporte en el Cold Call Funnel.
+   - Esfuerzo: medio. Dropdown condicional en disposition + persistir + agregación.
+
+5. **Auto-redial + Shared vs Private callback** — MEDIA.
+   - **Aut. redial**: si no atiende, el sistema reintenta solo más tarde (cadencia automática), sin que el setter agende a mano. Hoy tenemos callback manual + follow-ups.
+   - **Shared callback vs Private callback**: un callback puede ser *privado* (solo el setter que lo agendó) o *compartido* (cualquiera lo puede tomar). Cola de callbacks compartida = no se pierde el lead si el setter no está. Hoy el callback está atado al dueño del lead.
+   - El timeline loguea la disposición + **"Next call is @ fecha hora"** (refina idea #3: el timeline muestra la próxima acción agendada).
+   - Propuesta: `lead.callbackShared` (bool) + cola de callbacks compartidos en view-calls; cadencia de auto-redial opcional por outcome no_answer.
+   - Esfuerzo: medio-alto (auto-redial toca el motor de discado).
+
 ## NO aplica (otro vertical)
 - Campos firmográficos (Company Size/Domain/Industry/Specialities/LinkedIn): son para vender SaaS a empresas. Nuestro vertical = clínicas locales (rating/reseñas/web/IG/doctor). Excepción: `specialty` ya lo sacamos del NPI (USA).
