@@ -762,8 +762,8 @@ function _buildBriefMessages(lead = {}, reviews = []) {
     'A partir de los datos del negocio y sus reseñas de Google, generás MUNICIÓN para una llamada en frío (no un libreto). ' +
     'Devolvé UN ÚNICO objeto JSON: empieza con { y termina con }. NUNCA un array []. Sin markdown ni texto extra.\n' +
     'Ejemplo EXACTO del formato (con valores de muestra):\n' +
-    '{"treatments":["implantes","ortodoncia","blanqueamiento"],"painPoints":[{"dolor":"esperas largas en recepción","cita":"esperé más de una hora"},{"dolor":"difícil sacar turno","cita":"no atienden el teléfono"}],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas/seguimiento."}\n' +
-    'Reglas: treatments = servicios/tratamientos inferidos de reseñas/rubro. painPoints = hasta 3 dolores REALES, cada uno con cita textual de una reseña (si no hay reseñas, devolvé []). fitScore = 0-100 (qué tan buen prospecto). hookPhrase = ángulo de apertura concreto basado en un dato real. brief = 2-3 líneas accionables. Todo en español. Respondé SOLO el objeto JSON.';
+    '{"treatments":["implantes","ortodoncia"],"painPoints":["esperas largas en recepción (un paciente: esperé más de una hora)","cuesta sacar turno, no atienden el teléfono"],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas."}\n' +
+    'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. fitScore = número 0-100. hookPhrase = string, ángulo de apertura con un dato real. brief = string de 2-3 líneas. Todo en español. Respondé SOLO el objeto JSON.';
   const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
   // UN solo mensaje user (Mercury devuelve vacío con system+user en español — el
   // patrón que funciona en prod, ver autoTag, es user único + response_format json).
@@ -780,7 +780,11 @@ function _parseBriefOutput(text) {
   if (!obj || typeof obj !== 'object') return null;
   const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string').slice(0, 12) : [];
   const painPoints = Array.isArray(obj.painPoints)
-    ? obj.painPoints.filter((p) => p && typeof p === 'object' && p.dolor).map((p) => ({ dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) })).slice(0, 5)
+    ? obj.painPoints.map((p) => {
+        if (typeof p === 'string' && p.trim()) return { dolor: p.trim().slice(0, 300), cita: '' };
+        if (p && typeof p === 'object' && p.dolor) return { dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) };
+        return null;
+      }).filter(Boolean).slice(0, 5)
     : [];
   let fitScore = parseInt(obj.fitScore, 10);
   if (!Number.isFinite(fitScore)) fitScore = null; else fitScore = Math.max(0, Math.min(100, fitScore));
@@ -791,6 +795,20 @@ function _parseBriefOutput(text) {
     hookPhrase: typeof obj.hookPhrase === 'string' ? obj.hookPhrase.slice(0, 300) : '',
     brief: typeof obj.brief === 'string' ? obj.brief.slice(0, 600) : '',
   };
+}
+// Llama al LLM con RETRY (Mercury es inconsistente para JSON en español: a veces
+// devuelve vacío o []). Hasta 3 intentos, sube temp tras el 1ro. Devuelve {parsed,raw}.
+async function _briefLLM(messages) {
+  for (let i = 0; i < 3; i++) {
+    try {
+      const c = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: i === 0 ? 0.1 : 0.6, max_tokens: 700, response_format: { type: 'json_object' } });
+      const raw = c?.choices?.[0]?.message?.content || '';
+      const parsed = _parseBriefOutput(raw);
+      if (parsed && (parsed.brief || parsed.hookPhrase || parsed.painPoints.length || parsed.treatments.length)) return { parsed, raw };
+      if (i === 2) return { parsed: null, raw }; // último intento: devolver raw para diagnóstico
+    } catch { /* retry */ }
+  }
+  return { parsed: null, raw: '' };
 }
 
 // Deriva el país (nombre canónico en español, igual que usa la data) desde el
@@ -2110,11 +2128,11 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (placeId) {
           const rj = await getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
           const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
-          const completion = await ai.chat.completions.create({ model: AI_MODEL, messages: _buildBriefMessages(c, reviews), temperature: 0.1, max_tokens: 700, response_format: { type: 'json_object' } });
+          const { parsed, raw } = await _briefLLM(_buildBriefMessages(c, reviews));
           dbg.resolvedOn = c.name;
           dbg.reviewsFound = reviews.length;
-          dbg.rawLLM = (completion?.choices?.[0]?.message?.content || '(vacío)').slice(0, 1800);
-          dbg.parsed = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
+          dbg.rawLLM = (raw || '(vacío)').slice(0, 1800);
+          dbg.parsed = parsed;
           break;
         }
       }
@@ -2143,9 +2161,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
       ]);
       const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
-      const messages = _buildBriefMessages(c, reviews);
-      const completion = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: 0.1, max_tokens: 700, response_format: { type: 'json_object' } });
-      const out = _parseBriefOutput(completion?.choices?.[0]?.message?.content || '');
+      const { parsed: out } = await _briefLLM(_buildBriefMessages(c, reviews));
       if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; continue; }
       results[c.id] = { ...out, placeId, reviewsMined: reviews.length };
       briefed++;
