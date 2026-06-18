@@ -8415,6 +8415,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         cmdDedupBtn.disabled = false; cmdDedupBtn.textContent = 'Limpiar Duplicados de Setters';
       });
     }
+    // Phase 16 Ola C: enriquecimiento por API (email web / dueño NPI). 1 lote de 25 por clic.
+    async function _cmdRunEnrich(source, btn, origLabel) {
+      btn.disabled = true; btn.textContent = '⏳ Enriqueciendo...';
+      const out = document.getElementById('cmd-enrich-result');
+      try {
+        const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: 25 }) });
+        const d = await resp.json();
+        if (out) {
+          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          else if (source === 'npi') out.textContent = `✅ ${d.npiMatched || 0} dueños de ${d.scanned || 0} leads US.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
+          else out.textContent = `✅ ${d.emailsFound || 0} emails de ${d.scanned || 0} sitios.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      btn.disabled = false; btn.textContent = origLabel;
+    }
+    const cmdEnrichBtn = document.getElementById('cmd-enrich-btn');
+    if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email (web)'));
+    const cmdEnrichNpiBtn = document.getElementById('cmd-enrich-npi-btn');
+    if (cmdEnrichNpiBtn) cmdEnrichNpiBtn.addEventListener('click', () => _cmdRunEnrich('npi', cmdEnrichNpiBtn, '🇺🇸 Enriquecer dueño (NPI)'));
+
     const cmdClearBtn = document.getElementById('cmd-clear-btn');
     if (cmdClearBtn) {
       cmdClearBtn.addEventListener('click', () => {

@@ -7,6 +7,7 @@ import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { mountWa } from "./src/wa/index.js";
+import { enrichFromWebsite, enrichFromNPI } from "./src/enrichment.js";
 
 dotenv.config();
 const apiKey = process.env.API_KEY;
@@ -1845,6 +1846,82 @@ app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req,
   // Determinístico → idempotente en efecto (recorrer dos veces da el mismo resultado).
   if (!dryRun && scanned > 0) { makeBackup('pre-backfill-signals'); saveSettersData(data); }
   res.json({ scanned, updated: dryRun ? 0 : scanned, withAngle, dryRun, byTier, bySignal, sample });
+});
+
+// Phase 16 Ola C: enriquecimiento por API GRATIS (opt-in, batch con cap).
+//   source='website' (global): fetch del sitio del lead → email.
+//   source='npi' (USA): NPI Registry → ownerName (decisor) + specialty.
+//   source='both': ambos.
+// Los fetches (lentos) van FUERA del mutex; el resultado se aplica adentro
+// (rápido) para no bloquear escrituras concurrentes. dryRun reporta candidatos.
+// Cap por request (default 25, max 100) para respetar rate limits y no colgar.
+app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  const dryRun = !!body.dryRun;
+  const source = (body.source === 'npi' || body.source === 'both') ? body.source : 'website';
+  const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 25), 100);
+  const wantsWeb = source === 'website' || source === 'both';
+  const wantsNpi = source === 'npi' || source === 'both';
+
+  const data = loadSettersData();
+  const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  const candidates = [];
+  for (const id of Object.keys(leadsMap)) {
+    const l = leadsMap[id];
+    if (!l) continue;
+    const needsEmail = wantsWeb && _leadHasRealWebsite(l) && !String(l.email || '').trim();
+    const isUS = String(l.country || '').trim() === 'Estados Unidos';
+    const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim();
+    if (needsEmail || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, needsEmail, needsOwner });
+    if (candidates.length >= limit) break;
+  }
+
+  if (dryRun) {
+    return res.json({ dryRun: true, source, limit, candidates: candidates.length, sample: candidates.slice(0, 10).map(c => ({ id: c.id, name: c.name, needsEmail: c.needsEmail, needsOwner: c.needsOwner })) });
+  }
+
+  // Fetches con concurrencia limitada, FUERA del mutex.
+  const results = {};
+  const errors = {};
+  let emailsFound = 0, npiMatched = 0;
+  const CONC = 5;
+  for (let i = 0; i < candidates.length; i += CONC) {
+    const chunk = candidates.slice(i, i + CONC);
+    await Promise.all(chunk.map(async (c) => {
+      const out = {};
+      if (c.needsEmail) {
+        const w = await enrichFromWebsite(c.website, { timeoutMs: 8000 });
+        if (w.email) { out.email = w.email; emailsFound++; }
+        else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
+      }
+      if (c.needsOwner) {
+        const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 8000 });
+        if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
+        else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
+      }
+      if (Object.keys(out).length) results[c.id] = out;
+    }));
+  }
+
+  let applied = 0;
+  if (Object.keys(results).length) {
+    makeBackup('pre-enrich-leads');
+    await mutateSettersData((d) => {
+      for (const id of Object.keys(results)) {
+        const lead = d.leads && d.leads[id];
+        if (!lead) continue;
+        const r = results[id];
+        if (r.email && !String(lead.email || '').trim()) lead.email = r.email;
+        if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
+        if (r.specialty) lead.specialty = r.specialty;
+        if (r.npi) lead.npi = r.npi;
+        lead.enrichedAt = new Date().toISOString();
+        applied++;
+      }
+    });
+  }
+
+  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, errors });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con

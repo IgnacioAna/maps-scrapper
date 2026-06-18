@@ -1770,7 +1770,10 @@
             <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
           </label>
           <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">🗑 Borrar leads de Setter</button>
+          <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Enriquece leads sin email buscando en su sitio web (lote de 25). Repetir para más.">✨ Enriquecer email (web)</button>
+          <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">🇺🇸 Enriquecer dueño (NPI)</button>
           <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
+          <span id="cmd-enrich-result" style="font-size:12px; color:#9D85F2;"></span>
         </div>
         <section class="results-panel" style="padding:0 32px;">
           <!-- Consolidación 2026-06-17: se quitaron del Centro de Comando las
@@ -3083,7 +3086,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618b"></script>
+  <script type="module" src="/app.js?v=20260618c"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
