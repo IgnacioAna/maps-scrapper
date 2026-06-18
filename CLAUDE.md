@@ -693,4 +693,14 @@ Plan en `.planning/phases/16-enrichment-y-scraping-global/PLAN.md`. Research bas
 
 93. **Tests flaky/ambientales (NO regresiones)**: `wa-campaign-engine` (time/day), `followups:153` (assertion de tiempo relativo cerca de medianoche), `mercury-generate` (red/timing, pasa en retry/exit 0). Fallan en aislado + pasaron en corridas previas la misma sesión. La suite "real" (mis features) = `lead-signals` 4 + `scrape-i18n` 8 + `enrichment` 29, todas verdes. Si CI los marca, re-correr.
 
-94. **Cache-buster actual: `v=20260618c`** (reemplaza #88). app.js + index.html. style.css sigue en `v=20260604b`. wa.js en `v=20260610g`.
+94. **Cache-buster (histórico)**: `v=20260618c`. Reemplazado por #97.
+
+## Sesión 2026-06-18 (parte 2) — Phase 17 Ola 1: razón de descalificación + DNC (ideas Adversus)
+
+Origen: demo en vivo de Adversus (cold-call CRM). Backlog en `.planning/backlog/ideas-adversus-2026-06-18.md`, plan en `.planning/phases/17-disposition-dnc-cadencias/PLAN.md`. Olas 2-4 (shared callback, cadencias/auto-redial, UX) pendientes.
+
+95. **Razón de descalificación**: `call-disposition` acepta `disqualifyReason` (whitelist `DISQUALIFY_REASONS`: no_es_icp, no_es_decisor, ya_no_trabaja, sin_presupuesto, ya_tiene_proveedor, cliente_actual, mala_experiencia, no_contactar, ya_agendado, otro) en outcome `answered_not_interested`. Persiste en `lead.disqualifyReason` + `logEntry.disqualifyReason`. Reporte en `cold-call-metrics.byReason` (razones de pérdida por período). UI: el modal "¿por qué dijo que no?" (Sprint 25, era solo objectionTags) ahora tiene también un dropdown de razón + checkbox DNC.
+
+96. **DNC (No-llamar)**: `lead.doNotCall` (+ `doNotCallReason/At/By`) en `ensureLeadDefaults`. Se setea desde el modal (checkbox), o auto si la razón es `no_contactar` (`DNC_REASONS`), o vía bulk `mark_dnc`. **Saca el lead de TODA cola de llamada**: `sin-wsp` (guard al tope; `?dnc=1` para que el admin los liste), `getReassignCandidates` (no se distribuyen), `pool-summary` (los cuenta en `dnc` aparte, fuera de byTier). Deshacer: bulk `clear_dnc` (vuelve a sin_contactar+sin_wsp). UI: toggle "🚫 No-llamar" en Llamadas (vista `dnc=1`, bypassa el filtro de descartados en renderCallsList) + badge rojo + botón "↩️ Quitar" por card. **Compliance** para cold calling EU/USA/CA (DNC/TPS/CASL). Tests: `tests/disposition-dnc.test.js` (6).
+
+97. **Cache-buster actual: `v=20260618d`** (reemplaza #94). app.js + index.html. style.css sigue en `v=20260604b`. wa.js en `v=20260610g`.

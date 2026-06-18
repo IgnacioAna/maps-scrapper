@@ -4,6 +4,8 @@
 > Adversus (backlog en `.planning/backlog/ideas-adversus-2026-06-18.md`). Prioridad
 > por valor/riesgo. Cada ola: implementar → test → preview → deploy.
 
+## ESTADO (2026-06-18): Ola 1 ✅ COMPLETA y deployada (ver CLAUDE.md #95-96). Olas 2-4 pendientes.
+
 ## Ola 1 — Razón de descalificación + DNC (ALTA, build primero) ⭐
 - **Razón de descalificación**: al marcar outcome `answered_not_interested`, capturar `lead.disqualifyReason` de una lista whitelisteada (no_es_icp, no_es_decisor, ya_no_trabaja, sin_presupuesto, ya_tiene_proveedor, cliente_actual, mala_experiencia, no_contactar, ya_agendado, otro). Persistir en lead + logEntry. Reporte en cold-call-metrics (byReason).
 - **DNC / No llamar**: `lead.doNotCall` (+ reason/at/by). Excluye el lead de TODA cola de llamada (sin-wsp callable, pool-distribute, pool-summary, renderCallsList). Distinto de `descartado` (por-campaña) y `phoneStatus`. Razón `no_contactar` auto-setea DNC. Compliance para EU/USA/CA.
