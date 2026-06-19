@@ -6103,6 +6103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 ver chat</a>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
+              ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 30 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">🧠 brief IA</button>` : ''}
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -7538,6 +7539,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadCallsView();
       } catch (e) { alert('Error quitando DNC: ' + e.message); }
     };
+    // Brief IA por-lead (admin only). Elegís exactamente sobre quién, sin pasar
+    // por el lote. El endpoint ya es admin-only → los setters no pueden gastarte.
+    window._genLeadBrief = async (leadId, btn) => {
+      const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      const name = (lead && lead.name) || leadId;
+      if (!confirm(`Generar Brief IA para "${name}"?\nRe-fetchea reseñas de Google + corre la IA (dolores, hook, fit). Cuesta SerpApi + LLM.`)) return;
+      const orig = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+      try {
+        const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [leadId], limit: 1, force: true }) });
+        const d = await resp.json();
+        if (!resp.ok) { alert('⚠ ' + (d.error || 'error')); }
+        else if ((d.briefed || 0) > 0) { loadCallsView(); return; }
+        else {
+          const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : ((d.errors && Object.keys(d.errors).join(', ')) || 'sin reseñas suficientes');
+          alert(`No se pudo generar el brief: ${why}.\nProbá con otro lead que sí aparezca en Google Maps.`);
+        }
+      } catch (e) { console.error(e); alert('⚠ error de red'); }
+      if (btn) { btn.disabled = false; btn.textContent = orig || '🧠 brief IA'; }
+    };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
       _callsSelected.clear();
@@ -8668,7 +8689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {
-      if (!confirm('Generar Lead Brief IA para hasta 8 leads premium (50+ reseñas). Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?')) return;
+      if (!confirm('Generar Lead Brief IA para hasta 8 leads premium (50+ reseñas), agarrando los de MÁS reseñas primero. Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?\n\n(Tip: para elegir UN lead puntual, usá el botón "🧠 brief IA" en su card de Llamadas.)')) return;
       cmdBriefBtn.disabled = true; const lbl = cmdBriefBtn.textContent; cmdBriefBtn.textContent = '⏳ Generando (tarda)...';
       const out = document.getElementById('cmd-enrich-result');
       try {

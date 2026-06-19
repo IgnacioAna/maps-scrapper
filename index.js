@@ -2100,17 +2100,29 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
 
   const data = loadSettersData();
   const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  // Modo explícito: admin eligió leads puntuales (botón por-lead). Bypassa el
+  // filtro premium (los eligió a mano) pero respeta el skip de ya-briefeado salvo force.
+  const explicitIds = Array.isArray(body.ids) ? body.ids.filter((x) => leadsMap[x]) : null;
+  const countryFilter = body.country ? String(body.country).trim().toLowerCase() : '';
   const candidates = [];
-  for (const id of Object.keys(leadsMap)) {
+  const idIter = (explicitIds && explicitIds.length) ? explicitIds : Object.keys(leadsMap);
+  for (const id of idIter) {
     const l = leadsMap[id];
     if (!l) continue;
     if (l.leadBrief && !body.force) continue;                 // ya tiene brief
-    if ((parseInt(l.reviews, 10) || 0) < minReviews) continue; // selectivo premium
+    if (!explicitIds) {
+      if ((parseInt(l.reviews, 10) || 0) < minReviews) continue;                          // selectivo premium
+      if (countryFilter && String(l.country || '').toLowerCase() !== countryFilter) continue; // filtro país opcional
+    }
     candidates.push({ id, name: l.name, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
-    if (candidates.length >= limit * 5) break; // junto más: muchos no resuelven place_id
   }
-  // Priorizar los que YA tienen place_id (resuelven seguro + barato).
-  candidates.sort((a, b) => (b.placeId ? 1 : 0) - (a.placeId ? 1 : 0));
+  // MEJOR PRIMERO: más reseñas arriba; a igualdad, los que ya tienen place_id
+  // (resuelven seguro + barato). Así el gasto va a los mejores prospectos.
+  candidates.sort((a, b) => {
+    const ra = parseInt(a.reviews, 10) || 0, rb = parseInt(b.reviews, 10) || 0;
+    if (rb !== ra) return rb - ra;
+    return (b.placeId ? 1 : 0) - (a.placeId ? 1 : 0);
+  });
   if (dryRun) return res.json({ dryRun: true, limit, minReviews, candidates: candidates.length });
 
   // DEBUG: escanea hasta 6 candidatos, resuelve place_id de cada uno y, en el
@@ -2144,9 +2156,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     return res.json({ debug: true, ...dbg });
   }
 
-  const results = {}; const errors = {}; let briefed = 0;
+  const results = {}; const errors = {}; let briefed = 0; let attempts = 0;
+  // Tope de intentos: bound del gasto SerpApi por tanda. En modo explícito hace
+  // todos los elegidos; en lote, hasta limit*6 búsquedas aunque no junte los N.
+  const maxAttempts = (explicitIds && explicitIds.length) ? candidates.length : limit * 6;
   for (const c of candidates) { // secuencial: LLM+SerpApi, no saturar la cuota
     if (briefed >= limit) break; // ya logramos los necesarios (saltamos los que fallan)
+    if (attempts >= maxAttempts) { errors.scan_cap = (errors.scan_cap || 0) + 1; break; }
+    attempts++;
     try {
       let placeId = c.placeId;
       if (!placeId) {
