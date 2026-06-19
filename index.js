@@ -1988,7 +1988,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   // Fetches con concurrencia limitada, FUERA del mutex.
   const results = {};
   const errors = {};
-  let emailsFound = 0, npiMatched = 0, adsFound = 0;
+  let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0;
   const CONC = 5;
   for (let i = 0; i < candidates.length; i += CONC) {
     const chunk = candidates.slice(i, i + CONC);
@@ -2000,6 +2000,12 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (w.email) { out.email = w.email; emailsFound++; }
         else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
         if (w.ads && w.ads.runsAds) { out.runsAds = true; adsFound++; }
+        // Redes GRATIS del mismo HTML que ya bajamos.
+        if (w.social && (w.social.instagram || w.social.facebook)) {
+          if (w.social.instagram) out.instagram = w.social.instagram;
+          if (w.social.facebook) out.facebook = w.social.facebook;
+          socialFound++;
+        }
       }
       if (c.needsOwner) {
         out.npiChecked = true; // registrar el intento (haya match o no) → no reintentar
@@ -2020,6 +2026,8 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (!lead) continue;
         const r = results[id];
         if (r.email && !String(lead.email || '').trim()) lead.email = r.email;
+        if (r.instagram && !String(lead.instagram || '').trim()) lead.instagram = r.instagram;
+        if (r.facebook && !String(lead.facebook || '').trim()) lead.facebook = r.facebook;
         if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
         if (r.specialty) lead.specialty = r.specialty;
         if (r.npi) lead.npi = r.npi;
@@ -2039,7 +2047,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
     });
   }
 
-  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, errors });
+  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, errors });
 });
 
 // Phase 10 B2: validación de número (Telnyx Number Lookup) — opt-in, batch con cap.

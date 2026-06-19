@@ -283,40 +283,73 @@ export function detectAdPixels(html) {
 }
 
 /**
+ * PURA. Extrae links de Instagram/Facebook del HTML del sitio (gratis, del mismo
+ * fetch que ya hacemos para email/ads). Filtra paths que NO son perfiles
+ * (sharer, plugins, /p/, /reel/, etc.). Devuelve { instagram:"", facebook:"" }.
+ */
+export function extractSocialFromHtml(html) {
+  const out = { instagram: "", facebook: "" };
+  if (!html || typeof html !== "string") return out;
+  // Instagram: instagram.com/<handle> — excluir paths que no son perfiles.
+  const IG_BAD = new Set(["p", "reel", "reels", "explore", "accounts", "about", "developer", "legal", "directory", "tv", "stories", "share", "embed", "graphql"]);
+  const igRe = /(?:https?:)?\/\/(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]{2,40})\/?/gi;
+  let m;
+  while ((m = igRe.exec(html)) !== null) {
+    const handle = m[1];
+    if (!handle || IG_BAD.has(handle.toLowerCase())) continue;
+    out.instagram = "https://instagram.com/" + handle;
+    break;
+  }
+  // Facebook: facebook.com/<handle> — excluir sharer/plugins/dialog/tr/etc.
+  const FB_BAD = new Set(["sharer", "sharer.php", "plugins", "dialog", "tr", "login", "help", "privacy", "policies", "watch", "gaming", "marketplace", "share", "l.php", "events", "groups"]);
+  const fbRe = /(?:https?:)?\/\/(?:www\.|m\.|web\.)?facebook\.com\/([a-zA-Z0-9_.\-]{2,60})\/?/gi;
+  while ((m = fbRe.exec(html)) !== null) {
+    const handle = m[1];
+    const low = (handle || "").toLowerCase();
+    if (!handle || FB_BAD.has(low) || low.startsWith("sharer") || low.startsWith("tr?")) continue;
+    out.facebook = "https://facebook.com/" + handle;
+    break;
+  }
+  return out;
+}
+
+/**
  * Hace fetch del website del lead y extrae el email más probable + señales de
- * publicidad (píxeles). Nunca lanza. Degrada a { email:null, ads:null, error }.
+ * publicidad (píxeles) + redes (instagram/facebook). Nunca lanza. Degrada a
+ * { email:null, ads:null, social:{}, error }.
  *
  * @param {string} website
  * @param {{ fetchImpl?: Function, timeoutMs?: number }} [opts]
- * @returns {Promise<{ email: string|null, ads: object|null, error: string|null }>}
+ * @returns {Promise<{ email: string|null, ads: object|null, social: object, error: string|null }>}
  */
 export async function enrichFromWebsite(website, opts = {}) {
   const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
   const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
   try {
     if (!website || typeof website !== "string" || !website.trim()) {
-      return { email: null, ads: null, error: "no_website" };
+      return { email: null, ads: null, social: {}, error: "no_website" };
     }
-    if (!fetchImpl) return { email: null, ads: null, error: "no_fetch" };
+    if (!fetchImpl) return { email: null, ads: null, social: {}, error: "no_fetch" };
 
     let url = website.trim();
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
     // Filtrar websites-basura típicos (wa.me, links de redes que no son sitio).
     const host = hostFromUrl(url);
-    if (!host) return { email: null, ads: null, error: "bad_url" };
+    if (!host) return { email: null, ads: null, social: {}, error: "bad_url" };
     if (/^(wa\.me|api\.whatsapp\.com|whatsapp\.com|m\.facebook\.com|facebook\.com|instagram\.com|t\.me|linktr\.ee|goo\.gl|bit\.ly|maps\.google\.)/i.test(host)) {
-      return { email: null, ads: null, error: "junk_website" };
+      return { email: null, ads: null, social: {}, error: "junk_website" };
     }
 
     const r = await safeFetch(url, { fetchImpl, timeoutMs });
-    if (!r.ok) return { email: null, ads: null, error: r.error || "fetch_failed" };
+    if (!r.ok) return { email: null, ads: null, social: {}, error: r.error || "fetch_failed" };
 
     const email = extractEmailFromHtml(r.text, url);
     const ads = detectAdPixels(r.text);
-    return { email: email || null, ads, error: email ? null : "no_email_found" };
+    const social = extractSocialFromHtml(r.text);
+    return { email: email || null, ads, social, error: email ? null : "no_email_found" };
   } catch {
-    return { email: null, ads: null, error: "unexpected" };
+    return { email: null, ads: null, social: {}, error: "unexpected" };
   }
 }
 
@@ -481,6 +514,7 @@ export async function enrichFromNPI(q = {}, opts = {}) {
 export default {
   extractEmailFromHtml,
   detectAdPixels,
+  extractSocialFromHtml,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,

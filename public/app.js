@@ -8658,32 +8658,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btn.dataset.running === '1') { _enrichLoopStop = true; btn.textContent = '⏹ Parando...'; return; }
       _enrichLoopStop = false; btn.dataset.running = '1'; btn.textContent = '⏹ Parar';
       const out = document.getElementById('cmd-enrich-result');
-      let emails = 0, ads = 0, npi = 0, scanned = 0, rounds = 0;
+      let emails = 0, ads = 0, npi = 0, social = 0, scanned = 0, rounds = 0;
       try {
         while (!_enrichLoopStop && rounds < 500) {
           rounds++;
           if (out) out.textContent = source === 'npi'
             ? `⏳ NPI ronda ${rounds}: ${npi} dueños (${scanned} leads US escaneados)...`
-            : `⏳ Email ronda ${rounds}: ${emails} emails · ${ads} con ads (${scanned} sitios)...`;
+            : `⏳ Email ronda ${rounds}: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios)...`;
           const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: 25 }) });
           const d = await resp.json();
           if (!resp.ok) { if (out) out.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${scanned})`; break; }
-          emails += (d.emailsFound || 0); ads += (d.adsFound || 0); npi += (d.npiMatched || 0); scanned += (d.scanned || 0);
+          emails += (d.emailsFound || 0); ads += (d.adsFound || 0); npi += (d.npiMatched || 0); social += (d.socialFound || 0); scanned += (d.scanned || 0);
           if ((d.scanned || 0) < 25) { // no quedan más candidatos → terminó
             if (out) out.textContent = source === 'npi'
               ? `✅ Listo: ${npi} dueños encontrados de ${scanned} leads US.`
-              : `✅ Listo: ${emails} emails · ${ads} con ads, de ${scanned} sitios escaneados.`;
+              : `✅ Listo: ${emails} emails · ${ads} con ads · ${social} con redes, de ${scanned} sitios.`;
             break;
           }
         }
         if (_enrichLoopStop && out) out.textContent = source === 'npi'
           ? `⏹ Parado: ${npi} dueños (${scanned} escaneados).`
-          : `⏹ Parado: ${emails} emails · ${ads} con ads (${scanned} sitios).`;
+          : `⏹ Parado: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios).`;
       } catch (e) { console.error(e); if (out) out.textContent = `⚠ error de red (frené en ${scanned})`; }
       btn.dataset.running = ''; btn.textContent = origLabel;
     }
     const cmdEnrichBtn = document.getElementById('cmd-enrich-btn');
-    if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email (web)'));
+    if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email + redes (web)'));
     const cmdEnrichNpiBtn = document.getElementById('cmd-enrich-npi-btn');
     if (cmdEnrichNpiBtn) cmdEnrichNpiBtn.addEventListener('click', () => _cmdRunEnrich('npi', cmdEnrichNpiBtn, '🇺🇸 Enriquecer dueño (NPI)'));
     // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.

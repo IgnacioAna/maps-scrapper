@@ -6,6 +6,7 @@
 import { describe, it, expect } from "vitest";
 import {
   extractEmailFromHtml,
+  extractSocialFromHtml,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
@@ -22,6 +23,30 @@ function mockFetch({ body = "", status = 200, ok = true, throwErr = null } = {})
     };
   };
 }
+
+describe("extractSocialFromHtml (PURA)", () => {
+  it("extrae el handle de Instagram", () => {
+    const html = `<a href="https://www.instagram.com/clinicasonrisa/">IG</a>`;
+    expect(extractSocialFromHtml(html).instagram).toBe("https://instagram.com/clinicasonrisa");
+  });
+  it("extrae el handle de Facebook", () => {
+    const html = `<a href="https://facebook.com/ClinicaSonrisaOK">FB</a>`;
+    expect(extractSocialFromHtml(html).facebook).toBe("https://facebook.com/ClinicaSonrisaOK");
+  });
+  it("ignora paths que no son perfiles (sharer, /p/, plugins)", () => {
+    const html = `
+      <a href="https://www.facebook.com/sharer/sharer.php?u=x">share</a>
+      <a href="https://www.instagram.com/p/ABC123/">post</a>
+      <a href="https://www.facebook.com/plugins/like.php">like</a>`;
+    const out = extractSocialFromHtml(html);
+    expect(out.instagram).toBe("");
+    expect(out.facebook).toBe("");
+  });
+  it("sin redes → strings vacíos, no rompe", () => {
+    expect(extractSocialFromHtml("<p>hola</p>")).toEqual({ instagram: "", facebook: "" });
+    expect(extractSocialFromHtml(null)).toEqual({ instagram: "", facebook: "" });
+  });
+});
 
 describe("extractEmailFromHtml (PURA)", () => {
   it("extrae email de un mailto:", () => {
@@ -105,11 +130,13 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
     expect(await enrichFromWebsite("", { fetchImpl: mockFetch() })).toEqual({
       email: null,
       ads: null,
+      social: {},
       error: "no_website",
     });
     expect(await enrichFromWebsite(null, { fetchImpl: mockFetch() })).toEqual({
       email: null,
       ads: null,
+      social: {},
       error: "no_website",
     });
   });
