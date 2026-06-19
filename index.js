@@ -1970,10 +1970,13 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   for (const id of Object.keys(leadsMap)) {
     const l = leadsMap[id];
     if (!l) continue;
-    // Fetch del sitio si tiene web real y falta email O nunca se chequeó publicidad.
-    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && (!String(l.email || '').trim() || !l.adsCheckedAt);
+    // Fetch del sitio UNA vez (si tiene web real y nunca se chequeó). Ese fetch
+    // saca email + chequea ads de una. Marcado con adsCheckedAt → no se repite
+    // aunque no haya encontrado email (sino la barrida loopea infinito).
+    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && !l.adsCheckedAt;
     const isUS = String(l.country || '').trim() === 'Estados Unidos';
-    const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim();
+    // NPI: intentar UNA vez (marcado con npiCheckedAt) — sino loopea en los que no matchean.
+    const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim() && !l.npiCheckedAt;
     if (needsWeb || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, needsWeb, needsOwner });
     if (candidates.length >= limit) break;
   }
@@ -1999,6 +2002,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (w.ads && w.ads.runsAds) { out.runsAds = true; adsFound++; }
       }
       if (c.needsOwner) {
+        out.npiChecked = true; // registrar el intento (haya match o no) → no reintentar
         const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 8000 });
         if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
         else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
@@ -2019,6 +2023,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
         if (r.specialty) lead.specialty = r.specialty;
         if (r.npi) lead.npi = r.npi;
+        if (r.npiChecked) lead.npiCheckedAt = new Date().toISOString();
         if (r.adsChecked) {
           lead.adsCheckedAt = new Date().toISOString();
           lead.runsAds = !!r.runsAds;

@@ -8652,19 +8652,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     // Phase 16 Ola C: enriquecimiento por API (email web / dueño NPI). 1 lote de 25 por clic.
+    // Auto-loop: un clic barre TODO (es gratis). Segundo clic mientras corre = parar.
+    let _enrichLoopStop = false;
     async function _cmdRunEnrich(source, btn, origLabel) {
-      btn.disabled = true; btn.textContent = '⏳ Enriqueciendo...';
+      if (btn.dataset.running === '1') { _enrichLoopStop = true; btn.textContent = '⏹ Parando...'; return; }
+      _enrichLoopStop = false; btn.dataset.running = '1'; btn.textContent = '⏹ Parar';
       const out = document.getElementById('cmd-enrich-result');
+      let emails = 0, ads = 0, npi = 0, scanned = 0, rounds = 0;
       try {
-        const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: 25 }) });
-        const d = await resp.json();
-        if (out) {
-          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
-          else if (source === 'npi') out.textContent = `✅ ${d.npiMatched || 0} dueños de ${d.scanned || 0} leads US.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
-          else out.textContent = `✅ ${d.emailsFound || 0} emails · ${d.adsFound || 0} con ads, de ${d.scanned || 0} sitios.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)');
+        while (!_enrichLoopStop && rounds < 500) {
+          rounds++;
+          if (out) out.textContent = source === 'npi'
+            ? `⏳ NPI ronda ${rounds}: ${npi} dueños (${scanned} leads US escaneados)...`
+            : `⏳ Email ronda ${rounds}: ${emails} emails · ${ads} con ads (${scanned} sitios)...`;
+          const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: 25 }) });
+          const d = await resp.json();
+          if (!resp.ok) { if (out) out.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${scanned})`; break; }
+          emails += (d.emailsFound || 0); ads += (d.adsFound || 0); npi += (d.npiMatched || 0); scanned += (d.scanned || 0);
+          if ((d.scanned || 0) < 25) { // no quedan más candidatos → terminó
+            if (out) out.textContent = source === 'npi'
+              ? `✅ Listo: ${npi} dueños encontrados de ${scanned} leads US.`
+              : `✅ Listo: ${emails} emails · ${ads} con ads, de ${scanned} sitios escaneados.`;
+            break;
+          }
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
-      btn.disabled = false; btn.textContent = origLabel;
+        if (_enrichLoopStop && out) out.textContent = source === 'npi'
+          ? `⏹ Parado: ${npi} dueños (${scanned} escaneados).`
+          : `⏹ Parado: ${emails} emails · ${ads} con ads (${scanned} sitios).`;
+      } catch (e) { console.error(e); if (out) out.textContent = `⚠ error de red (frené en ${scanned})`; }
+      btn.dataset.running = ''; btn.textContent = origLabel;
     }
     const cmdEnrichBtn = document.getElementById('cmd-enrich-btn');
     if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email (web)'));
