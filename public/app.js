@@ -8717,6 +8717,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdSweepBtn = document.getElementById('cmd-brief-sweep-btn');
     const cmdSweepStop = document.getElementById('cmd-brief-sweep-stop');
     if (cmdSweepStop) cmdSweepStop.addEventListener('click', () => { _briefSweepStop = true; cmdSweepStop.textContent = '⏹ Parando...'; });
+    // Al elegir país: contar pendientes (gratis) y pre-llenar el tope con ese número.
+    const cmdSweepCountrySel = document.getElementById('cmd-brief-sweep-country');
+    if (cmdSweepCountrySel) cmdSweepCountrySel.addEventListener('change', async () => {
+      const country = cmdSweepCountrySel.value;
+      const prog = document.getElementById('cmd-brief-sweep-progress');
+      if (!country) { if (prog) prog.textContent = ''; return; }
+      if (prog) prog.textContent = '⏳ contando pendientes...';
+      try {
+        const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true, country }) });
+        const d = await r.json();
+        if (r.ok) {
+          const pend = d.pending || 0;
+          const maxInput = document.getElementById('cmd-brief-sweep-max');
+          if (maxInput) maxInput.value = Math.min(pend, 700) || 1;
+          if (prog) prog.innerHTML = `📊 <b>${pend}</b> leads premium sin brief en ${country}. Tope puesto en ${Math.min(pend, 700)} (ajustalo si querés). ~${pend} a ${pend * 2} búsquedas.`;
+        } else if (prog) prog.textContent = '⚠ ' + (d.error || 'error');
+      } catch (e) { if (prog) prog.textContent = '⚠ error contando'; }
+    });
     if (cmdSweepBtn) cmdSweepBtn.addEventListener('click', async () => {
       const country = document.getElementById('cmd-brief-sweep-country').value;
       const maxBriefs = Math.max(1, parseInt(document.getElementById('cmd-brief-sweep-max').value, 10) || 150);
