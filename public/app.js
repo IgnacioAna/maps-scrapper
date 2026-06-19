@@ -8730,7 +8730,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 120) {
           rounds++;
           if (prog) prog.innerHTML = `⏳ ${country}: ${totalBriefed} briefs · ${totalSkipped} sin ficha · ronda ${rounds}...`;
-          const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 8 }) });
+          const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 5 }) });
           const d = await resp.json();
           if (!resp.ok) { if (prog) prog.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${totalBriefed} briefs)`; break; }
           totalBriefed += (d.briefed || 0);
