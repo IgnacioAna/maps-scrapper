@@ -8712,6 +8712,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       cmdReconBtn.disabled = false; cmdReconBtn.textContent = lbl;
     });
+    // Barrida brief por país: loop de lotes hasta terminar el país o el tope.
+    let _briefSweepStop = false;
+    const cmdSweepBtn = document.getElementById('cmd-brief-sweep-btn');
+    const cmdSweepStop = document.getElementById('cmd-brief-sweep-stop');
+    if (cmdSweepStop) cmdSweepStop.addEventListener('click', () => { _briefSweepStop = true; cmdSweepStop.textContent = '⏹ Parando...'; });
+    if (cmdSweepBtn) cmdSweepBtn.addEventListener('click', async () => {
+      const country = document.getElementById('cmd-brief-sweep-country').value;
+      const maxBriefs = Math.max(1, parseInt(document.getElementById('cmd-brief-sweep-max').value, 10) || 150);
+      const prog = document.getElementById('cmd-brief-sweep-progress');
+      if (!country) { if (prog) prog.textContent = '⚠ Elegí un país primero.'; return; }
+      if (!confirm(`Barrer ${country}: generar briefs hasta ${maxBriefs} leads (o hasta terminar el país). Gasta SerpApi + LLM. ¿Seguir?`)) return;
+      _briefSweepStop = false;
+      cmdSweepBtn.disabled = true; cmdSweepStop.classList.remove('hidden');
+      let totalBriefed = 0, totalSkipped = 0, rounds = 0;
+      try {
+        while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 120) {
+          rounds++;
+          if (prog) prog.innerHTML = `⏳ ${country}: ${totalBriefed} briefs · ${totalSkipped} sin ficha · ronda ${rounds}...`;
+          const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 8 }) });
+          const d = await resp.json();
+          if (!resp.ok) { if (prog) prog.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${totalBriefed} briefs)`; break; }
+          totalBriefed += (d.briefed || 0);
+          totalSkipped += (d.skipped || 0);
+          if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
+          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
+        }
+        if (_briefSweepStop && prog) prog.innerHTML = `⏹ Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
+        else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `🎯 Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs en ${country}. Subí el tope para seguir.`;
+      } catch (e) { console.error(e); if (prog) prog.textContent = `⚠ error de red (frené en ${totalBriefed} briefs)`; }
+      cmdSweepBtn.disabled = false; cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = '⏹ Parar';
+    });
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {

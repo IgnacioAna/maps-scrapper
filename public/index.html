@@ -1833,6 +1833,22 @@
           <span id="cmd-enrich-result" style="font-size:12px; color:#9D85F2;"></span>
         </div>
         <div id="cmd-brief-recon-result" style="padding:0 32px 8px; font-size:12.5px; color:var(--text-secondary); line-height:1.6;"></div>
+        <div data-roles="admin" style="padding:4px 32px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--border-subtle); margin-top:4px; padding-top:14px;">
+          <span style="font-size:12.5px; color:var(--text-primary); font-weight:600;">🧹 Barrida brief por país ($):</span>
+          <select id="cmd-brief-sweep-country" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit; cursor:pointer;">
+            <option value="">— Elegí país —</option>
+            <option value="Colombia">Colombia</option>
+            <option value="México">México</option>
+            <option value="España">España</option>
+            <option value="Ecuador">Ecuador</option>
+            <option value="Costa Rica">Costa Rica</option>
+            <option value="Perú">Perú</option>
+          </select>
+          <label style="font-size:12px; color:var(--text-secondary);">tope briefs: <input id="cmd-brief-sweep-max" type="number" value="150" min="1" max="700" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit;"></label>
+          <button id="cmd-brief-sweep-btn" class="btn-table-action" style="color:#FFB341; border-color:rgba(255,179,65,0.4);">🧹 Barrer país</button>
+          <button id="cmd-brief-sweep-stop" class="btn-table-action hidden" style="color:#f85149; border-color:rgba(248,81,73,0.4);">⏹ Parar</button>
+          <span id="cmd-brief-sweep-progress" style="font-size:12.5px; color:var(--accent); line-height:1.5;"></span>
+        </div>
         <section class="results-panel" style="padding:0 32px;">
           <!-- Consolidación 2026-06-17: se quitaron del Centro de Comando las
                secciones de Setteo WhatsApp (Variables del Setter, Editor de
@@ -3144,7 +3160,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618r"></script>
+  <script type="module" src="/app.js?v=20260618s"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

@@ -2109,12 +2109,12 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   for (const id of idIter) {
     const l = leadsMap[id];
     if (!l) continue;
-    if (l.leadBrief && !body.force) continue;                 // ya tiene brief
+    if ((l.leadBrief || l.briefSkipped) && !body.force) continue; // ya tiene brief o ya falló (no reintentar en la barrida)
     if (!explicitIds) {
       if ((parseInt(l.reviews, 10) || 0) < minReviews) continue;                          // selectivo premium
       if (countryFilter && String(l.country || '').toLowerCase() !== countryFilter) continue; // filtro país opcional
     }
-    candidates.push({ id, name: l.name, address: l.address, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
+    candidates.push({ id, name: l.name, address: l.address, city: l.city, country: l.country, placeId: l.placeId, coordinates: l.coordinates, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
   }
   // MEJOR PRIMERO: más reseñas arriba; a igualdad, los que ya tienen place_id
   // (resuelven seguro + barato). Así el gasto va a los mejores prospectos.
@@ -2164,7 +2164,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     return res.json({ debug: true, ...dbg });
   }
 
-  const results = {}; const errors = {}; let briefed = 0; let attempts = 0;
+  const results = {}; const skips = {}; const errors = {}; let briefed = 0; let attempts = 0;
   // Tope de intentos: bound del gasto SerpApi por tanda. En modo explícito hace
   // todos los elegidos; en lote, hasta limit*6 búsquedas aunque no junte los N.
   const maxAttempts = (explicitIds && explicitIds.length) ? candidates.length : limit * 6;
@@ -2174,6 +2174,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     attempts++;
     try {
       let placeId = c.placeId;
+      let enriched = null;
       if (!placeId) {
         // Palanca de costo: buscar por "nombre, DIRECCIÓN" resuelve mucho mejor
         // que "nombre, ciudad" (los scrapeos viejos no guardaron place_id).
@@ -2181,31 +2182,55 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         const q = (c.address && String(c.address).trim()) ? `${c.name}, ${c.address}` : (loc ? `${c.name}, ${loc}` : c.name);
         const lc = localeForCountry(c.country) || {};
         const sp = { engine: 'google_maps', type: 'search', q, api_key: serpKey };
+        // Desambiguar con coordenadas si el lead las tiene (sube el match rate).
+        if (c.coordinates && c.coordinates.lat != null && c.coordinates.lng != null) sp.ll = `@${c.coordinates.lat},${c.coordinates.lng},14z`;
         if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
         const sj = await Promise.race([
           getJson(sp),
           new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
         ]);
-        placeId = sj?.local_results?.[0]?.place_id || '';
+        const lr = sj?.local_results?.[0] || null;
+        placeId = lr?.place_id || '';
+        // Data GRATIS del response que ya pagamos: capturar para enriquecer el lead.
+        if (lr) enriched = {
+          coordinates: lr.gps_coordinates ? { lat: lr.gps_coordinates.latitude, lng: lr.gps_coordinates.longitude } : null,
+          openingHours: lr.operating_hours || lr.hours || null,
+          businessStatus: lr.business_status || (lr.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
+          category: lr.type || '',
+          website: lr.website || '',
+          dataId: lr.data_id || '',
+          priceLevel: lr.price || '',
+        };
       }
-      if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; continue; }
+      if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; skips[c.id] = 'no_place_id'; continue; }
       const rj = await Promise.race([
         getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
       ]);
-      const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
+      // Peores reseñas primero (1-2★ = los dolores reales) → mejor munición para el LLM.
+      const reviews = (rj?.reviews || [])
+        .filter((r) => r && r.snippet)
+        .sort((a, b) => ((a.rating == null ? 3 : a.rating) - (b.rating == null ? 3 : b.rating)))
+        .map((r) => r.snippet);
       const { parsed: out } = await _briefLLM(_buildBriefMessages(c, reviews));
-      if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; continue; }
-      results[c.id] = { ...out, placeId, reviewsMined: reviews.length };
+      if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; skips[c.id] = 'bad_llm'; continue; }
+      results[c.id] = { ...out, placeId, reviewsMined: reviews.length, enriched };
       briefed++;
     } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; }
   }
   let applied = 0;
-  if (Object.keys(results).length) {
+  if (Object.keys(results).length || Object.keys(skips).length) {
     makeBackup('pre-enrich-brief');
     await mutateSettersData((d) => {
+      // Marca los que no resolvieron para no reintentarlos (y quemar quota) en la
+      // próxima barrida. force:true (botón por-lead) los puede reintentar igual.
+      for (const id of Object.keys(skips)) {
+        const lead = d.leads && d.leads[id]; if (!lead || lead.leadBrief) continue;
+        lead.briefSkipped = { reason: skips[id], at: new Date().toISOString() };
+      }
       for (const id of Object.keys(results)) {
         const lead = d.leads && d.leads[id]; if (!lead) continue;
+        if (lead.briefSkipped) delete lead.briefSkipped; // resolvió: limpiar marca vieja
         const r = results[id];
         // Mercury es débil para multi-campo: a veces solo da treatments/painPoints.
         // El hook/brief caen al openingAngle rule-based (que ya tenemos) si faltan.
@@ -2214,6 +2239,17 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (Array.isArray(r.treatments) && r.treatments.length) lead.treatments = r.treatments;
         if (r.fitScore != null) lead.fitScore = r.fitScore;
         if (r.placeId && !lead.placeId) lead.placeId = r.placeId;
+        // Data GRATIS del response de búsqueda: aditiva, no pisa lo que ya existe.
+        const en = r.enriched;
+        if (en) {
+          if (en.coordinates && !lead.coordinates) lead.coordinates = en.coordinates;
+          if (en.openingHours && !lead.openingHours) lead.openingHours = en.openingHours;
+          if (en.businessStatus && !lead.businessStatus) lead.businessStatus = en.businessStatus;
+          if (en.category && !lead.category) lead.category = en.category;
+          if (en.website && !String(lead.website || '').trim()) lead.website = en.website;
+          if (en.dataId && !lead.dataId) lead.dataId = en.dataId;
+          if (en.priceLevel && !lead.priceLevel) lead.priceLevel = en.priceLevel;
+        }
         applied++;
       }
     });
@@ -2222,7 +2258,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     const c = candidates.find((x) => x.id === id);
     return { id, name: (c && c.name) || id, fitScore: results[id].fitScore != null ? results[id].fitScore : null, reviewsMined: results[id].reviewsMined || 0 };
   });
-  res.json({ ok: true, scanned: candidates.length, briefed, applied, errors, briefedSample });
+  res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
