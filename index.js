@@ -615,6 +615,10 @@ function ensureLeadDefaults(lead = {}) {
   // Distinto del array `notes[]` (que son post-interacciones). Útil para
   // guion personalizado del lead, contexto que descubrió en la web, etc.
   if (typeof lead.precallNote !== 'string') lead.precallNote = '';
+  // Contacto secundario: número que te pasa la recepción (encargado/decisor).
+  // Distinto de lead.phone (el del negocio). Permite tener 2 números a discar.
+  if (typeof lead.altPhone !== 'string') lead.altPhone = '';
+  if (typeof lead.altPhoneLabel !== 'string') lead.altPhoneLabel = '';
   // 2026-05-23: campos del módulo follow-ups extendido. El backend los lee
   // (_isFollowupHidden + _computeFollowupsDue) pero antes no los inicializaba,
   // así que aparecían undefined hasta que algún handler los seteaba — generaba
@@ -6400,6 +6404,26 @@ app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
   lead.precallNote = text;
   saveSettersData(data);
   res.json({ ok: true, precallNote: lead.precallNote });
+});
+
+// Contacto secundario del lead (ej: número del encargado que pasó la recepción).
+app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
+  if (!req.body || typeof req.body !== 'object') return res.status(400).json({ error: 'Body JSON requerido.' });
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+  ensureLeadDefaults(lead);
+  const rawPhone = (typeof req.body.phone === 'string' ? req.body.phone : '').trim();
+  const phone = rawPhone.replace(/[^\d+]/g, ''); // dejar solo + y dígitos
+  if (rawPhone && !/^\+?\d{6,15}$/.test(phone)) return res.status(400).json({ error: 'Teléfono inválido. Formato E.164: +5491112345678' });
+  const label = (typeof req.body.label === 'string' ? req.body.label : '').trim().slice(0, 60);
+  lead.altPhone = phone ? (phone.startsWith('+') ? phone : '+' + phone) : '';
+  lead.altPhoneLabel = lead.altPhone ? label : '';
+  saveSettersData(data);
+  res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel });
 });
 
 // Notas

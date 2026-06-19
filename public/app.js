@@ -5329,7 +5329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Sanitizar: dejar solo + y digitos
       const phone = raw.replace(/[^\d+]/g, '');
       if (!phone) { window.showToast?.('Pone un numero', { type: 'warn' }); return; }
-      if (!/^\+?\d{8,15}$/.test(phone)) { window.showToast?.('Numero invalido. Formato E.164: +5492954555113', { type: 'error' }); return; }
+      if (!/^\+?\d{8,15}$/.test(phone)) { window.showToast?.('Numero invalido. Formato E.164: +5491112345678', { type: 'error' }); return; }
       const e164 = phone.startsWith('+') ? phone : ('+' + phone);
       // Detectar pais por prefijo para que pickNumberForDestination elija bien caller ID
       const countryByPrefix = { '+54': 'Argentina', '+56': 'Chile', '+57': 'Colombia', '+58': 'Venezuela', '+51': 'Peru', '+591': 'Bolivia', '+593': 'Ecuador', '+595': 'Paraguay', '+598': 'Uruguay', '+52': 'Mexico', '+34': 'Espana', '+1': 'USA', '+506': 'Costa Rica', '+507': 'Panama', '+503': 'El Salvador', '+502': 'Guatemala', '+504': 'Honduras', '+505': 'Nicaragua' };
@@ -6104,6 +6104,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 ver chat</a>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 30 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">🧠 brief IA</button>` : ''}
+              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">📇 ${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">📞 alt</button>` : ''}
+              <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📇 ${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -6434,6 +6436,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) {
         rows.push(`<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${_signalChips(lead)}</div>`);
       }
+      // Contacto secundario (encargado/decisor que te pasa la recepción). Siempre
+      // visible para cargarlo en el momento de la llamada.
+      {
+        const altCall = lead.altPhone
+          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;">📇 <b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">📞 Llamar</button></div>`
+          : `<div style="font-size:11px; color:rgba(255,255,255,0.6);">Si te pasan otro número (encargado/decisor), cargalo acá.</div>`;
+        rows.push(`<div style="background:rgba(121,184,255,0.07); border:1px solid rgba(121,184,255,0.25); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#79B8FF; margin-bottom:5px;">📇 Contacto secundario</div>
+          ${altCall}
+          <div style="margin-top:6px;"><button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="font-size:10px; padding:3px 9px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📇 ${lead.altPhone ? 'editar' : '+ Agregar contacto'}</button></div>
+        </div>`);
+      }
       // Brief IA (reseñas mineadas) — visible DURANTE la llamada, no solo en el Power Dialer.
       if (lead.leadBrief) {
         const lb = lead.leadBrief;
@@ -6551,9 +6565,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inicia una llamada Telnyx WebRTC para un lead.
     // Flow: ensureClient() -> abre panel -> client.newCall() -> wire eventos.
-    window._startTelnyxCall = async (leadId) => {
+    window._startTelnyxCall = async (leadId, phoneOverride) => {
       const lead = _callsLeadsById.get(leadId);
-      if (!lead?.phone) {
+      // phoneOverride = contacto secundario (encargado). Se disca ese número pero
+      // la disposición y el callLog siguen pegados al lead real.
+      const dialPhone = (phoneOverride && String(phoneOverride).trim()) ? String(phoneOverride).trim() : (lead?.phone || '');
+      if (!lead || !dialPhone) {
         window.showToast?.('Este lead no tiene teléfono cargado', { type: 'error' });
         return;
       }
@@ -6561,7 +6578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast?.('Ya tenés una llamada activa', { type: 'warn' });
         return;
       }
-      const fromNum = _telnyx.pickNumberForDestination(lead.phone);
+      const fromNum = _telnyx.pickNumberForDestination(dialPhone);
       if (!fromNum) {
         window.showToast?.('No hay número saliente configurado para este destino. Admin debe agregar uno en Centralita Telnyx.', { type: 'error', duration: 6000 });
         return;
@@ -6571,7 +6588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const panel = document.getElementById('telnyx-call-panel');
       const leadName = lead.name || '(sin nombre)';
       document.getElementById('telnyx-call-lead-name').textContent = leadName;
-      document.getElementById('telnyx-call-lead-meta').textContent = `${lead.phone}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
+      document.getElementById('telnyx-call-lead-meta').textContent = `${dialPhone}${phoneOverride ? ' (' + (lead.altPhoneLabel || 'contacto alt') + ')' : ''}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
       // Avatar: 2 iniciales del nombre (o phone si no hay nombre)
       const initials = (() => {
         const words = leadName.replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ\s]/g, '').trim().split(/\s+/).filter(Boolean);
@@ -6623,9 +6640,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Sprint 19: sanitize phone a E.164 estricto antes de pasar a Telnyx.
         // Los leads scrapeados pueden venir con espacios "+591 77750733" o
         // formato raro. Telnyx WebRTC necesita E.164 limpio (+591777507333).
-        const cleanDestination = _sanitizePhoneE164(lead.phone);
+        const cleanDestination = _sanitizePhoneE164(dialPhone);
         if (!cleanDestination) {
-          window.showToast?.('Teléfono inválido: ' + (lead.phone || '(vacío)'), { type: 'error' });
+          window.showToast?.('Teléfono inválido: ' + (dialPhone || '(vacío)'), { type: 'error' });
           _closeTelnyxCallPanel();
           return;
         }
@@ -7558,6 +7575,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (e) { console.error(e); alert('⚠ error de red'); }
       if (btn) { btn.disabled = false; btn.textContent = orig || '🧠 brief IA'; }
+    };
+    // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
+    window._callsAltContact = async (leadId) => {
+      const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      const phone = prompt('Número del contacto secundario (el que te pasó la recepción: encargado/decisor).\nCon código de país y +. Dejalo vacío para borrarlo.', (lead && lead.altPhone) || '');
+      if (phone === null) return; // canceló
+      const label = phone.trim() ? (prompt('¿Quién es? (ej: Encargado, Dra. Pérez, Recepción)', (lead && lead.altPhoneLabel) || '') || '') : '';
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone.trim(), label }) });
+        const d = await r.json();
+        if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
+        if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel });
+        window.showToast?.(d.altPhone ? '✓ Contacto guardado' : 'Contacto borrado', { type: 'success' });
+        if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
+        if (typeof renderCallsList === 'function') renderCallsList();
+      } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
     };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
