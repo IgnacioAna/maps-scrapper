@@ -2190,7 +2190,11 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       }
     });
   }
-  res.json({ ok: true, scanned: candidates.length, briefed, applied, errors });
+  const briefedSample = Object.keys(results).map((id) => {
+    const c = candidates.find((x) => x.id === id);
+    return { id, name: (c && c.name) || id, fitScore: results[id].fitScore != null ? results[id].fitScore : null, reviewsMined: results[id].reviewsMined || 0 };
+  });
+  res.json({ ok: true, scanned: candidates.length, briefed, applied, errors, briefedSample });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con

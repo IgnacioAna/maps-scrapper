@@ -8676,7 +8676,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await resp.json();
         if (out) {
           if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
-          else out.textContent = `✅ ${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.`;
+          else {
+            const names = (d.briefedSample || []).map((b) => `${b.name}${b.fitScore != null ? ` (fit ${b.fitScore})` : ''}`).join(', ');
+            out.innerHTML = `✅ ${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
+          }
         }
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
