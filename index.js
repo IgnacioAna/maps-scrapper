@@ -1989,13 +1989,13 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   const results = {};
   const errors = {};
   let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0;
-  const CONC = 5;
+  const CONC = 8;
   for (let i = 0; i < candidates.length; i += CONC) {
     const chunk = candidates.slice(i, i + CONC);
     await Promise.all(chunk.map(async (c) => {
       const out = {};
       if (c.needsWeb) {
-        const w = await enrichFromWebsite(c.website, { timeoutMs: 8000 });
+        const w = await enrichFromWebsite(c.website, { timeoutMs: 6000 });
         out.adsChecked = true;
         if (w.email) { out.email = w.email; emailsFound++; }
         else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
@@ -2009,7 +2009,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
       }
       if (c.needsOwner) {
         out.npiChecked = true; // registrar el intento (haya match o no) → no reintentar
-        const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 8000 });
+        const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 6000 });
         if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
         else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
       }

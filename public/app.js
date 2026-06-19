@@ -8658,18 +8658,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btn.dataset.running === '1') { _enrichLoopStop = true; btn.textContent = '⏹ Parando...'; return; }
       _enrichLoopStop = false; btn.dataset.running = '1'; btn.textContent = '⏹ Parar';
       const out = document.getElementById('cmd-enrich-result');
-      let emails = 0, ads = 0, npi = 0, social = 0, scanned = 0, rounds = 0;
+      let emails = 0, ads = 0, npi = 0, social = 0, scanned = 0, rounds = 0, consecErrors = 0;
+      const LIM = 12; // lotes chicos → cada request vuelve rápido (no timeout del gateway)
       try {
-        while (!_enrichLoopStop && rounds < 500) {
+        while (!_enrichLoopStop && rounds < 800) {
           rounds++;
           if (out) out.textContent = source === 'npi'
             ? `⏳ NPI ronda ${rounds}: ${npi} dueños (${scanned} leads US escaneados)...`
             : `⏳ Email ronda ${rounds}: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios)...`;
-          const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: 25 }) });
-          const d = await resp.json();
-          if (!resp.ok) { if (out) out.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${scanned})`; break; }
+          let d = null, ok = false;
+          try {
+            const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: LIM }) });
+            ok = resp.ok; d = await resp.json().catch(() => null);
+          } catch (e) { ok = false; }
+          if (!ok || !d) {
+            // Error de ronda (timeout/red) → reintentar, no morir.
+            consecErrors++;
+            if (consecErrors >= 4) { if (out) out.textContent = `⚠ Corté tras 4 errores seguidos (${scanned} sitios hechos, guardado). Reintentá.`; break; }
+            if (out) out.textContent = `⏳ error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${scanned} sitios.`;
+            await new Promise((r) => setTimeout(r, 3000));
+            continue;
+          }
+          consecErrors = 0;
           emails += (d.emailsFound || 0); ads += (d.adsFound || 0); npi += (d.npiMatched || 0); social += (d.socialFound || 0); scanned += (d.scanned || 0);
-          if ((d.scanned || 0) < 25) { // no quedan más candidatos → terminó
+          if ((d.scanned || 0) < LIM) { // no quedan más candidatos → terminó
             if (out) out.textContent = source === 'npi'
               ? `✅ Listo: ${npi} dueños encontrados de ${scanned} leads US.`
               : `✅ Listo: ${emails} emails · ${ads} con ads · ${social} con redes, de ${scanned} sitios.`;
