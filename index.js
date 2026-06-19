@@ -801,12 +801,21 @@ function _parseBriefOutput(text) {
 async function _briefLLM(messages) {
   for (let i = 0; i < 3; i++) {
     try {
-      const c = await ai.chat.completions.create({ model: AI_MODEL, messages, temperature: i === 0 ? 0.1 : 0.6, max_tokens: 700, response_format: { type: 'json_object' } });
+      // Timeout duro: sin esto, si el LLM (Mercury) se cuelga generando el JSON,
+      // la llamada espera para siempre y clava toda la barrida. 20s por intento.
+      const c = await Promise.race([
+        ai.chat.completions.create({ model: AI_MODEL, messages, temperature: i === 0 ? 0.1 : 0.6, max_tokens: 700, response_format: { type: 'json_object' } }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
+      ]);
       const raw = c?.choices?.[0]?.message?.content || '';
       const parsed = _parseBriefOutput(raw);
       if (parsed && (parsed.brief || parsed.hookPhrase || parsed.painPoints.length || parsed.treatments.length)) return { parsed, raw };
       if (i === 2) return { parsed: null, raw }; // último intento: devolver raw para diagnóstico
-    } catch { /* retry */ }
+    } catch (e) {
+      // Si se colgó (timeout), no reintentar — el LLM está lento/caído, cortamos rápido.
+      if (String(e && e.message) === 'llm_timeout') return { parsed: null, raw: '' };
+      /* otros errores: reintentar */
+    }
   }
   return { parsed: null, raw: '' };
 }
