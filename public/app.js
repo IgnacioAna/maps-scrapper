@@ -8686,6 +8686,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
       cmdValidateBtn.disabled = false; cmdValidateBtn.textContent = lbl;
     });
+    // Recon GRATIS: dimensiona la barrida (no gasta SerpApi).
+    const cmdReconBtn = document.getElementById('cmd-brief-recon-btn');
+    if (cmdReconBtn) cmdReconBtn.addEventListener('click', async () => {
+      const out = document.getElementById('cmd-brief-recon-result');
+      cmdReconBtn.disabled = true; const lbl = cmdReconBtn.textContent; cmdReconBtn.textContent = '⏳ Contando...';
+      if (out) out.textContent = '';
+      try {
+        const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true }) });
+        const d = await resp.json();
+        if (out) {
+          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          else {
+            // Costo aprox en plan Starter ($0.025/búsqueda): place_id=1, sin=~2.
+            const cheap = d.pendingWithPlaceId || 0, exp = d.pendingWithoutPlaceId || 0;
+            const costCheap = (cheap * 0.025).toFixed(2);
+            const costExp = (exp * 2 * 0.025).toFixed(2);
+            const byC = Object.entries(d.byCountry || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `${escHtml(k)}: ${v}`).join(' · ');
+            out.innerHTML = `📊 <b>${d.pending || 0}</b> leads premium (50+ reseñas) sin brief.<br>` +
+              `✅ <b>${cheap}</b> con place_id → baratos (1 búsqueda c/u ≈ <b>$${costCheap}</b> en total).<br>` +
+              `⚠️ <b>${exp}</b> sin place_id → caros/inciertos (hasta ~$${costExp} y muchos no resuelven).<br>` +
+              (byC ? `<span style="color:var(--text-tertiary);">Por país: ${byC}</span>` : '');
+          }
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      cmdReconBtn.disabled = false; cmdReconBtn.textContent = lbl;
+    });
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {

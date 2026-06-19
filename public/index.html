@@ -1828,9 +1828,11 @@
           <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">🇺🇸 Enriquecer dueño (NPI)</button>
           <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo) vía Telnyx Number Lookup. Cuesta ~$0.0015 por número (lote de 25).">📞 Validar números ($)</button>
           <button id="cmd-enrich-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Lead Brief IA: agarra los leads de MÁS reseñas primero (premium 50+), lote de 8. Re-fetchea reseñas de Google + IA extrae dolores+cita, fit-score y ángulo. Cuesta SerpApi + LLM. Para un lead puntual usá el botón 🧠 en su card de Llamadas.">🧠 Brief IA reseñas ($)</button>
+          <button id="cmd-brief-recon-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="GRATIS — no gasta SerpApi. Cuenta cuántos leads premium (50+ reseñas) quedan por briefear, y de esos cuántos resuelven barato (ya tienen place_id) vs caros. Sirve para dimensionar la barrida antes de gastar.">📊 Recon brief (gratis)</button>
           <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
           <span id="cmd-enrich-result" style="font-size:12px; color:#9D85F2;"></span>
         </div>
+        <div id="cmd-brief-recon-result" style="padding:0 32px 8px; font-size:12.5px; color:var(--text-secondary); line-height:1.6;"></div>
         <section class="results-panel" style="padding:0 32px;">
           <!-- Consolidación 2026-06-17: se quitaron del Centro de Comando las
                secciones de Setteo WhatsApp (Variables del Setter, Editor de
@@ -3142,7 +3144,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260618q"></script>
+  <script type="module" src="/app.js?v=20260618r"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

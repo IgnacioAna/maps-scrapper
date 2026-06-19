@@ -2114,7 +2114,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       if ((parseInt(l.reviews, 10) || 0) < minReviews) continue;                          // selectivo premium
       if (countryFilter && String(l.country || '').toLowerCase() !== countryFilter) continue; // filtro país opcional
     }
-    candidates.push({ id, name: l.name, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
+    candidates.push({ id, name: l.name, address: l.address, city: l.city, country: l.country, placeId: l.placeId, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
   }
   // MEJOR PRIMERO: más reseñas arriba; a igualdad, los que ya tienen place_id
   // (resuelven seguro + barato). Así el gasto va a los mejores prospectos.
@@ -2123,7 +2123,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     if (rb !== ra) return rb - ra;
     return (b.placeId ? 1 : 0) - (a.placeId ? 1 : 0);
   });
-  if (dryRun) return res.json({ dryRun: true, limit, minReviews, candidates: candidates.length });
+  if (dryRun) {
+    // Recon GRATIS (no llama a SerpApi): cuántos premium sin brief, y de esos
+    // cuántos ya tienen place_id (1 búsqueda c/u) vs sin place_id (2 o desperdicio).
+    const withPid = candidates.filter((c) => c.placeId).length;
+    const byCountry = {};
+    for (const c of candidates) { const k = c.country || '—'; byCountry[k] = (byCountry[k] || 0) + 1; }
+    return res.json({ dryRun: true, minReviews, country: countryFilter || null, pending: candidates.length, pendingWithPlaceId: withPid, pendingWithoutPlaceId: candidates.length - withPid, byCountry });
+  }
 
   // DEBUG: escanea hasta 6 candidatos, resuelve place_id de cada uno y, en el
   // PRIMERO que resuelva, devuelve reseñas + output CRUDO del LLM + parsed. Sin persistir.
@@ -2136,7 +2143,8 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         const _serp = (params) => Promise.race([getJson(params), new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000))]);
         if (!placeId) {
           const loc = [c.city, c.country].filter(Boolean).join(', ');
-          const sj = await _serp({ engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey });
+          const q = (c.address && String(c.address).trim()) ? `${c.name}, ${c.address}` : (loc ? `${c.name}, ${loc}` : c.name);
+          const sj = await _serp({ engine: 'google_maps', type: 'search', q, api_key: serpKey });
           sres = (sj?.local_results || []).length;
           placeId = sj?.local_results?.[0]?.place_id || '';
         }
@@ -2167,9 +2175,12 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     try {
       let placeId = c.placeId;
       if (!placeId) {
+        // Palanca de costo: buscar por "nombre, DIRECCIÓN" resuelve mucho mejor
+        // que "nombre, ciudad" (los scrapeos viejos no guardaron place_id).
         const loc = [c.city, c.country].filter(Boolean).join(', ');
+        const q = (c.address && String(c.address).trim()) ? `${c.name}, ${c.address}` : (loc ? `${c.name}, ${loc}` : c.name);
         const lc = localeForCountry(c.country) || {};
-        const sp = { engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey };
+        const sp = { engine: 'google_maps', type: 'search', q, api_key: serpKey };
         if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
         const sj = await Promise.race([
           getJson(sp),
