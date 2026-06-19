@@ -6108,6 +6108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
+            ${l.openingAngle && l.openingAngle.trim() ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">💡 ${escHtml(l.openingAngle)}</div>` : ''}
             ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
@@ -6431,6 +6432,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       if (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) {
         rows.push(`<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${_signalChips(lead)}</div>`);
+      }
+      // Brief IA (reseñas mineadas) — visible DURANTE la llamada, no solo en el Power Dialer.
+      if (lead.leadBrief) {
+        const lb = lead.leadBrief;
+        const pains = (lb.painPoints || []).slice(0, 2).map(p => `<div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px;">• ${escHtml(p.dolor || '')}${p.cita ? ` <span style="opacity:0.55; font-style:italic;">"${escHtml(String(p.cita).slice(0, 90))}"</span>` : ''}</div>`).join('');
+        rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🧠 Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}</div>
+          ${lb.hookPhrase ? `<div style="color:#fff; font-size:12px; line-height:1.45;">🎣 ${escHtml(lb.hookPhrase)}</div>` : ''}
+          ${pains}
+          ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:5px;">${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
+        </div>`);
       }
       if (lead.doctor && !lead.doctor.includes('N/A')) rows.push(`<div><strong style="color:#fff;">Doctor:</strong> ${escHtml(lead.doctor)}</div>`);
       if (lead.address) rows.push(`<div><strong style="color:rgba(255,255,255,0.55);">📍</strong> ${escHtml(lead.address)}</div>`);
@@ -13078,7 +13090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('followups-welcome-banner').style.display = 'none';
     sessionStorage.setItem('fu_banner_dismissed', '1');
     // Llevar al filtro Hacer hoy del CRM
-    document.querySelector('[data-target="view-crm"]')?.click();
+    document.querySelector('[data-target="view-hoy"]')?.click();
     setTimeout(() => {
       document.querySelector('.pipe-filter[data-status="hacer_hoy"]')?.click();
     }, 200);
@@ -13186,7 +13198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           action: () => {
             const sel = document.getElementById('setter-select');
             if (sel) { sel.value = s.id; sel.dispatchEvent(new Event('change')); }
-            document.querySelector('[data-target="view-crm"]')?.click();
+            document.querySelector('[data-target="view-hoy"]')?.click();
           },
         });
       }
@@ -13354,7 +13366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           tag: 'overdue',
           requireInteraction: false,
         });
-        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-crm"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="atrasados"]')?.click(), 200); n.close(); };
+        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-hoy"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="atrasados"]')?.click(), 200); n.close(); };
       } catch {}
     } else if (currentDueToday > _lastSeenDueToday) {
       const diff = currentDueToday - _lastSeenDueToday;
@@ -13364,7 +13376,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           icon: '/favicon.svg',
           tag: 'duetoday',
         });
-        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-crm"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="hacer_hoy"]')?.click(), 200); n.close(); };
+        n.onclick = () => { window.focus(); document.querySelector('[data-target="view-hoy"]')?.click(); setTimeout(() => document.querySelector('.pipe-filter[data-status="hacer_hoy"]')?.click(), 200); n.close(); };
       } catch {}
     }
     _lastSeenOverdue = currentOverdue;

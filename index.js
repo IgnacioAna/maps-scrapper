@@ -2016,6 +2016,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
           // Recomputar señales: runsAds agrega 'ads_activos' (ángulo dominante).
           const _sig = computeLeadSignals(lead);
           lead.signals = _sig.signals; lead.reputationTier = _sig.reputationTier;
+          lead.ratingNum = _sig.ratingNum; lead.hasWebsite = _sig.hasWebsite;
           lead.openingAngle = _sig.openingAngle; lead.signalsAt = new Date().toISOString();
         }
         lead.enrichedAt = new Date().toISOString();
@@ -2120,15 +2121,16 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       for (const c of candidates.slice(0, 6)) {
         let placeId = c.placeId;
         let sres = -1;
+        const _serp = (params) => Promise.race([getJson(params), new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000))]);
         if (!placeId) {
           const loc = [c.city, c.country].filter(Boolean).join(', ');
-          const sj = await getJson({ engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey });
+          const sj = await _serp({ engine: 'google_maps', type: 'search', q: loc ? `${c.name}, ${loc}` : c.name, api_key: serpKey });
           sres = (sj?.local_results || []).length;
           placeId = sj?.local_results?.[0]?.place_id || '';
         }
         dbg.scanned.push({ name: c.name, city: c.city || '', country: c.country || '', searchResults: sres, placeId: placeId ? 'sí' : 'no' });
         if (placeId) {
-          const rj = await getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
+          const rj = await _serp({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
           const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
           const { parsed, raw } = await _briefLLM(_buildBriefMessages(c, reviews));
           dbg.resolvedOn = c.name;
