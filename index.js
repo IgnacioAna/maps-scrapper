@@ -805,7 +805,7 @@ async function _briefLLM(messages) {
       // la llamada espera para siempre y clava toda la barrida. 20s por intento.
       const c = await Promise.race([
         ai.chat.completions.create({ model: AI_MODEL, messages, temperature: i === 0 ? 0.1 : 0.6, max_tokens: 700, response_format: { type: 'json_object' } }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 15000)),
       ]);
       const raw = c?.choices?.[0]?.message?.content || '';
       const parsed = _parseBriefOutput(raw);
@@ -2190,9 +2190,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   // Tope de intentos: bound del gasto SerpApi por tanda. En modo explícito hace
   // todos los elegidos; en lote, hasta limit*6 búsquedas aunque no junte los N.
   const maxAttempts = (explicitIds && explicitIds.length) ? candidates.length : limit * 6;
+  // Deadline de pared: cada request DEBE volver rápido o el gateway de Railway la
+  // corta (502) y la barrida muere. Cortamos la ronda a los 40s y devolvemos lo
+  // hecho — la barrida del front sigue con la próxima ronda.
+  const roundDeadline = Date.now() + 40000;
   for (const c of candidates) { // secuencial: LLM+SerpApi, no saturar la cuota
     if (briefed >= limit) break; // ya logramos los necesarios (saltamos los que fallan)
     if (attempts >= maxAttempts) { errors.scan_cap = (errors.scan_cap || 0) + 1; break; }
+    if (Date.now() > roundDeadline) { errors.time_cap = (errors.time_cap || 0) + 1; break; }
     attempts++;
     try {
       let placeId = c.placeId;
@@ -2209,7 +2214,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
         const sj = await Promise.race([
           getJson(sp),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
         ]);
         const lr = sj?.local_results?.[0] || null;
         placeId = lr?.place_id || '';
@@ -2227,7 +2232,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; skips[c.id] = 'no_place_id'; continue; }
       const rj = await Promise.race([
         getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 15000)),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
       ]);
       // Peores reseñas primero (1-2★ = los dolores reales) → mejor munición para el LLM.
       const reviews = (rj?.reviews || [])

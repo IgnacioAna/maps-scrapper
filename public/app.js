@@ -8759,14 +8759,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm(`Barrer ${country}: generar briefs hasta ${maxBriefs} leads (o hasta terminar el país). Gasta SerpApi + LLM. ¿Seguir?`)) return;
       _briefSweepStop = false;
       cmdSweepBtn.disabled = true; cmdSweepStop.classList.remove('hidden');
-      let totalBriefed = 0, totalSkipped = 0, rounds = 0;
+      let totalBriefed = 0, totalSkipped = 0, rounds = 0, consecErrors = 0;
       try {
-        while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 120) {
+        while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 200) {
           rounds++;
           if (prog) prog.innerHTML = `⏳ ${country}: ${totalBriefed} briefs · ${totalSkipped} sin ficha · ronda ${rounds}...`;
-          const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 5 }) });
-          const d = await resp.json();
-          if (!resp.ok) { if (prog) prog.textContent = '⚠ ' + (d.error || 'error') + ` (frené en ${totalBriefed} briefs)`; break; }
+          let d = null, ok = false;
+          try {
+            const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 5 }) });
+            ok = resp.ok; d = await resp.json().catch(() => null);
+          } catch (e) { ok = false; }
+          if (!ok || !d) {
+            // Error de ronda (timeout del gateway, red, etc.) → reintentar, no morir.
+            consecErrors++;
+            if (consecErrors >= 4) { if (prog) prog.innerHTML = `⚠ Corté tras 4 errores seguidos. Ya van ${totalBriefed} briefs en ${country} (guardados). Reintentá en un rato.`; break; }
+            if (prog) prog.innerHTML = `⏳ ${country}: error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${totalBriefed} briefs hechos.`;
+            await new Promise((r) => setTimeout(r, 3000));
+            continue;
+          }
+          consecErrors = 0;
           totalBriefed += (d.briefed || 0);
           totalSkipped += (d.skipped || 0);
           if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
