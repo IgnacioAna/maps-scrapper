@@ -2119,7 +2119,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   const body = req.body || {};
   const dryRun = !!body.dryRun;
   const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 8), 25);
-  const minReviews = Number.isFinite(parseInt(body.minReviews, 10)) ? parseInt(body.minReviews, 10) : 50;
+  const minReviews = Number.isFinite(parseInt(body.minReviews, 10)) ? parseInt(body.minReviews, 10) : 10;
   const serpKey = process.env.API_KEY;
   if (!serpKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada.' });
   if (!mercuryKey && !qwenKey) return res.status(503).json({ error: 'Sin IA disponible (MERCURY/QWEN).' });
