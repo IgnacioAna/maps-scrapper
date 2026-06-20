@@ -1921,6 +1921,45 @@ app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req,
   res.json({ scanned, filled, dryRun, byCountry, sample });
 });
 
+// Backfill websites basura: cuando el campo `website` es en realidad un link de
+// red social / WhatsApp (wa.me, instagram, facebook), mueve IG/FB a su campo si
+// está vacío y LIMPIA el website (para que el botón "Sitio web" no abra WhatsApp).
+// Recomputa señales (mover IG puede cambiar el ángulo). Idempotente + backup.
+app.post('/api/admin/backfill-websites', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, fixed: 0, dryRun, moved: { instagram: 0, facebook: 0, cleared: 0 } });
+  let scanned = 0, fixed = 0;
+  const moved = { instagram: 0, facebook: 0, cleared: 0 };
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    scanned++;
+    const w = String(lead.website || '').trim();
+    if (!w || _leadHasRealWebsite(lead)) continue; // vacío o sitio real → no tocar
+    const lower = w.toLowerCase();
+    let action = 'cleared';
+    if (lower.includes('instagram.com') && !String(lead.instagram || '').trim()) {
+      if (!dryRun) lead.instagram = w; moved.instagram++; action = 'instagram';
+    } else if ((lower.includes('facebook.com') || lower.includes('fb.com') || lower.includes('fb.me')) && !String(lead.facebook || '').trim()) {
+      if (!dryRun) lead.facebook = w; moved.facebook++; action = 'facebook';
+    } else {
+      moved.cleared++;
+    }
+    if (sample.length < 10) sample.push({ id, name: lead.name, was: w, action });
+    if (!dryRun) {
+      lead.website = '';
+      const sig = computeLeadSignals(lead);
+      lead.signals = sig.signals; lead.reputationTier = sig.reputationTier;
+      lead.ratingNum = sig.ratingNum; lead.hasWebsite = sig.hasWebsite;
+      lead.openingAngle = sig.openingAngle; lead.signalsAt = new Date().toISOString();
+    }
+    fixed++;
+  }
+  if (!dryRun && fixed > 0) { makeBackup('pre-backfill-websites'); saveSettersData(data); }
+  res.json({ scanned, fixed, dryRun, moved, sample });
+});
+
 // Phase 16: BARRIDA de señales/brief sobre TODOS los leads. Recomputa
 // signals[]/reputationTier/ratingNum/hasWebsite/openingAngle de cada lead desde
 // rating/reviews/web/instagram (datos YA scrapeados). Idempotente; no toca el

@@ -8851,6 +8851,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, 'Enriquecer email + redes (web)'));
     const cmdEnrichNpiBtn = document.getElementById('cmd-enrich-npi-btn');
     if (cmdEnrichNpiBtn) cmdEnrichNpiBtn.addEventListener('click', () => _cmdRunEnrich('npi', cmdEnrichNpiBtn, '🇺🇸 Enriquecer dueño (NPI)'));
+    // Backfill único: limpiar websites basura (wa.me/IG/FB en el campo website).
+    const cmdBackfillWebBtn = document.getElementById('cmd-backfill-websites-btn');
+    if (cmdBackfillWebBtn) cmdBackfillWebBtn.addEventListener('click', async () => {
+      if (!confirm('Limpiar los websites basura (wa.me / Instagram / Facebook en el campo "website")? Mueve IG/FB a su campo y limpia el resto. Es seguro (backup automático) y se puede correr una sola vez.')) return;
+      const out = document.getElementById('cmd-enrich-result');
+      cmdBackfillWebBtn.disabled = true; const lbl = cmdBackfillWebBtn.textContent; cmdBackfillWebBtn.textContent = '⏳ Limpiando...';
+      try {
+        const r = await fetch(apiUrl('/api/admin/backfill-websites'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const d = await r.json();
+        if (out) out.textContent = r.ok
+          ? `✓ Listo: ${d.fixed} websites basura limpiados (${d.moved.instagram} → Instagram, ${d.moved.facebook} → Facebook, ${d.moved.cleared} borrados) de ${d.scanned} leads.`
+          : '⚠ ' + (d.error || 'error');
+      } catch (e) { if (out) out.textContent = '⚠ error de red'; }
+      cmdBackfillWebBtn.disabled = false; cmdBackfillWebBtn.textContent = lbl;
+    });
     // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.
     const cmdValidateBtn = document.getElementById('cmd-validate-numbers-btn');
     if (cmdValidateBtn) cmdValidateBtn.addEventListener('click', async () => {

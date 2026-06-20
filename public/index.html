@@ -1824,6 +1824,7 @@
             <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
           </label>
           <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de Setter</button>
+          <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
           <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
           <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">Enriquecer dueño (NPI)</button>
           <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo) vía Telnyx Number Lookup. Cuesta ~$0.0015 por número (lote de 25).">Validar números ($)</button>
@@ -3160,7 +3161,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260620h"></script>
+  <script type="module" src="/app.js?v=20260620i"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
