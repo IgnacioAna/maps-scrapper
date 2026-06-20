@@ -240980,7 +240980,11 @@
       "adsCheckedAt": "2026-06-19T17:43:37.873Z",
       "enrichedAt": "2026-06-19T17:43:37.873Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_juansebastiantobarodontologiai_573156040712": {
       "num": 4255,
@@ -241975,7 +241979,11 @@
       "adsCheckedAt": "2026-06-19T17:43:44.907Z",
       "enrichedAt": "2026-06-19T17:43:44.907Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_christianurregoodontologaodont_573216113511": {
       "num": 4265,
@@ -243352,7 +243360,11 @@
       "adsCheckedAt": "2026-06-19T17:43:52.445Z",
       "enrichedAt": "2026-06-19T17:43:52.445Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_destinationdentalbydrjuanferna_573113372245": {
       "num": 4279,
@@ -244701,7 +244713,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_dentalinnovation_573244896757": {
       "num": 4292,
@@ -245014,7 +245030,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_dentalcourtcaliclnicaodontolgi_573206800637": {
       "num": 4295,
@@ -245430,7 +245450,11 @@
       "adsCheckedAt": "2026-06-19T17:44:04.732Z",
       "enrichedAt": "2026-06-19T17:44:04.732Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "bad_llm",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_drjhoanfelipelencorreaodontlog_3186944802": {
       "num": 4299,
@@ -246146,7 +246170,11 @@
       "adsCheckedAt": "2026-06-19T17:44:04.732Z",
       "enrichedAt": "2026-06-19T17:44:04.732Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_centroodontologicosantamaria_573182386177": {
       "num": 4306,
@@ -246700,7 +246728,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_32dentalcenterodontologadrrami_573176476087": {
       "num": 4310,
@@ -248455,7 +248487,11 @@
       "adsCheckedAt": "2026-06-19T17:44:11.357Z",
       "enrichedAt": "2026-06-19T17:44:11.357Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_centrocalismiledentalclinic_576024851650": {
       "num": 4327,
@@ -248563,7 +248599,11 @@
       "adsCheckedAt": "2026-06-19T17:44:11.357Z",
       "enrichedAt": "2026-06-19T17:44:11.357Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "bad_llm",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_draluisamdelgadoaodontologiain_573136971386": {
       "num": 4328,
@@ -248859,7 +248899,11 @@
       "adsCheckedAt": "2026-06-19T17:44:19.376Z",
       "enrichedAt": "2026-06-19T17:44:19.376Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_clnicaodontolgicainnovadentix_573233475333": {
       "num": 4331,
@@ -249054,7 +249098,11 @@
       "adsCheckedAt": "2026-06-19T17:44:19.376Z",
       "enrichedAt": "2026-06-19T17:44:19.376Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_dracarolinabarragandentalclini_573113832942": {
       "num": 4333,
@@ -249424,7 +249472,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 3,
-      "category": "",
+      "category": "Dental clinic",
       "signals": [
         "sin_web",
         "rating_bajo"
@@ -249446,7 +249494,48 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "Sin sitio web → \"¿cómo te encuentran y reservan los pacientes nuevos?\"",
+        "hookPhrase": "un paciente comenta que 'las prótesis se caen y ahora tendremos que volver', señalando un problema recurrente en la gestión",
+        "painPoints": [
+          {
+            "dolor": "prótesis se caen y requieren revisiones múltiples (un paciente: 'las prótesis se caen y ahora tendremos que volver')",
+            "cita": ""
+          },
+          {
+            "dolor": "percepción de falta de transparencia en costos (un paciente: 'nos sentimos estafados')",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "ortodoncia",
+          "prótesis dental"
+        ],
+        "fitScore": 85,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:16:02.924Z"
+      },
+      "treatments": [
+        "ortodoncia",
+        "prótesis dental"
+      ],
+      "fitScore": 85,
+      "placeId": "ChIJe82DMVChMI4RUuH9BLaODhg",
+      "coordinates": {
+        "lat": 3.3966852,
+        "lng": -76.5383145
+      },
+      "openingHours": {
+        "friday": "8 AM–12 PM, 2–6 PM",
+        "saturday": "9 AM–2 PM",
+        "sunday": "Closed",
+        "monday": "8 AM–12 PM, 2–6 PM",
+        "tuesday": "8 AM–12 PM, 2–6 PM",
+        "wednesday": "8 AM–12 PM, 2–6 PM",
+        "thursday": "8 AM–12 PM, 2–6 PM"
+      },
+      "dataId": "0x8e30a1503183cd7b:0x180e8eb604fde152"
     },
     "l_crdentalclinics_576026606431": {
       "num": 4337,
@@ -249739,7 +249828,11 @@
       "adsCheckedAt": "2026-06-19T17:44:19.376Z",
       "enrichedAt": "2026-06-19T17:44:19.376Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_socialorthodonticclinic_5724470547": {
       "num": 4340,
@@ -249934,7 +250027,11 @@
       "adsCheckedAt": "2026-06-19T17:44:19.376Z",
       "enrichedAt": "2026-06-19T17:44:19.376Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_clinicadeimplantesyestticadent_573177452853": {
       "num": 4342,
@@ -250033,7 +250130,11 @@
       "adsCheckedAt": "2026-06-19T17:44:19.376Z",
       "enrichedAt": "2026-06-19T17:44:19.376Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_clnicadentasas_573027763094": {
       "num": 4343,
@@ -253960,7 +254061,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 3,
-      "category": "",
+      "category": "Dental school",
       "signals": [],
       "reputationTier": "medio",
       "ratingNum": 4.6,
@@ -253981,7 +254082,48 @@
       "adsCheckedAt": "2026-06-19T17:44:31.051Z",
       "enrichedAt": "2026-06-19T17:44:31.051Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "",
+        "hookPhrase": "",
+        "painPoints": [
+          {
+            "dolor": "dificultad para agendar citas y falta de respuesta telefónica (un paciente: \"Hola buenas tardes a donde me podría comunicar para asignaciones de citas?\")",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "ortodoncia",
+          "endodoncia",
+          "implantes",
+          "estética dental"
+        ],
+        "fitScore": 85,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:14:38.819Z"
+      },
+      "treatments": [
+        "ortodoncia",
+        "endodoncia",
+        "implantes",
+        "estética dental"
+      ],
+      "fitScore": 85,
+      "placeId": "ChIJ4T71dJ2mMI4RC3zEyNIZ5Hk",
+      "coordinates": {
+        "lat": 3.4316279,
+        "lng": -76.5474235
+      },
+      "openingHours": {
+        "friday": "7 AM–5 PM",
+        "saturday": "8–11 AM",
+        "sunday": "Closed",
+        "monday": "7 AM–5 PM",
+        "tuesday": "7 AM–5 PM",
+        "wednesday": "7 AM–5 PM",
+        "thursday": "7 AM–5 PM"
+      },
+      "dataId": "0x8e30a69d74f53ee1:0x79e419d2c8c47c0b"
     },
     "l_amatistaodontologaintegral_573128719857": {
       "num": 4379,
@@ -255882,7 +256024,11 @@
       "adsCheckedAt": "2026-06-19T17:44:37.051Z",
       "enrichedAt": "2026-06-19T17:44:37.051Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_periodonciacalitratamientoperi_573054446442": {
       "num": 4397,
@@ -258244,7 +258390,11 @@
       "adsCheckedAt": "2026-06-19T17:44:44.538Z",
       "enrichedAt": "2026-06-19T17:44:44.538Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_orthoimplants_573164270129": {
       "num": 4420,
@@ -258687,7 +258837,11 @@
       "adsCheckedAt": "2026-06-19T17:44:44.538Z",
       "enrichedAt": "2026-06-19T17:44:44.538Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_draelianagonzalezcrehabilitaci_573156823630": {
       "num": 4424,
@@ -258882,7 +259036,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_sanantoniocentroodontologicocr_573108232209": {
       "num": 4426,
@@ -258979,7 +259137,11 @@
       "adsCheckedAt": "2026-06-19T17:44:44.538Z",
       "enrichedAt": "2026-06-19T17:44:44.538Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_consultorioodontolgicodrasthef_573818948": {
       "num": 4427,
@@ -259091,7 +259253,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_odontosaniversalles_573203201041": {
       "num": 4428,
@@ -259488,7 +259654,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_centraldentodontologacali_573006085259": {
       "num": 4433,
@@ -259697,7 +259867,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_centroodontologicoburbano_576023374390": {
       "num": 4435,
@@ -259794,7 +259968,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_clinicaodontologicaglahden_573103903619": {
       "num": 4436,
@@ -260091,7 +260269,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_consultorioodontolgicoorthoeas_573185300191": {
       "num": 4439,
@@ -262012,7 +262194,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_clnicaarmonizza_573054415894": {
       "num": 4458,
@@ -262612,7 +262798,11 @@
       "adsCheckedAt": "2026-06-19T17:44:48.479Z",
       "enrichedAt": "2026-06-19T17:44:48.479Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_nuevasonrisa_576025517408": {
       "num": 4464,
@@ -266764,7 +266954,11 @@
       "adsCheckedAt": "2026-06-19T17:44:57.432Z",
       "enrichedAt": "2026-06-19T17:44:57.432Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drjorgealejandrosoto_573113091250": {
       "num": 4505,
@@ -267536,7 +267730,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Cosmetic dentist",
       "signals": [
         "ads_activos",
         "pocas_reviews"
@@ -267560,7 +267754,43 @@
       "adsCheckedAt": "2026-06-19T17:44:57.432Z",
       "enrichedAt": "2026-06-19T17:44:57.432Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "Clínica con excelente reputación y alta satisfacción de pacientes. No se identifican quejas recurrentes, lo que indica un buen encaje para soluciones de gestión de citas y marketing digital. Ideal para reforzar su presencia y automatizar procesos.",
+        "hookPhrase": "Con 36 reseñas de 5 estrellas, sus pacientes resaltan la atención humana y la tecnología de punta",
+        "painPoints": [],
+        "treatments": [
+          "diseño de sonrisa",
+          "root canal",
+          "corona de porcelana",
+          "ortodoncia"
+        ],
+        "fitScore": 92,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:15:22.085Z"
+      },
+      "treatments": [
+        "diseño de sonrisa",
+        "root canal",
+        "corona de porcelana",
+        "ortodoncia"
+      ],
+      "fitScore": 92,
+      "placeId": "ChIJGUZHLTynMI4R5vyFn4fUxBQ",
+      "coordinates": {
+        "lat": 3.4215505999999998,
+        "lng": -76.5416106
+      },
+      "openingHours": {
+        "friday": "8 AM–6 PM",
+        "saturday": "8 AM–1 PM",
+        "sunday": "Closed",
+        "monday": "8 AM–6 PM",
+        "tuesday": "8 AM–6 PM",
+        "wednesday": "8 AM–6 PM",
+        "thursday": "8 AM–6 PM"
+      },
+      "dataId": "0x8e30a73c2d474619:0x14c4d4879f85fce6"
     },
     "l_ortodonciaingridhoyosdiseodeso_573195978562": {
       "num": 4513,
@@ -268450,7 +268680,11 @@
       "adsCheckedAt": "2026-06-19T17:44:57.432Z",
       "enrichedAt": "2026-06-19T17:44:57.432Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:18.669Z"
+      }
     },
     "l_ortodonciainvisiblehabibbarhou_576025513018": {
       "num": 4522,
@@ -268645,7 +268879,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_estudiooraldrayinamuoz_573128760826": {
       "num": 4524,
@@ -270426,7 +270664,11 @@
       "adsCheckedAt": "2026-06-19T17:45:00.661Z",
       "enrichedAt": "2026-06-19T17:45:00.661Z",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_dianamargaritaecheverrirehabil_573174280142": {
       "num": 4544,
@@ -270523,7 +270765,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_odontologiageneralyespecializa_573187652076": {
       "num": 4545,
@@ -346241,7 +346487,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:35.081Z",
-      "enrichedAt": "2026-06-19T17:48:35.081Z"
+      "enrichedAt": "2026-06-19T17:48:35.081Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_oralhealthclinic_5753566149": {
       "num": 5300,
@@ -346536,7 +346786,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_doctormayadiseodesonrisabarran_573205402997": {
       "num": 5304,
@@ -346938,7 +347192,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:43.945Z",
-      "enrichedAt": "2026-06-19T17:48:43.946Z"
+      "enrichedAt": "2026-06-19T17:48:43.946Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_clinicadentalbiodentistsas_573023171950": {
       "num": 5308,
@@ -347036,7 +347294,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_draluzmarydomnguezexpertosendi_573046335166": {
       "num": 5309,
@@ -347232,7 +347494,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:43.945Z",
-      "enrichedAt": "2026-06-19T17:48:43.945Z"
+      "enrichedAt": "2026-06-19T17:48:43.945Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_carlosfernandezdecastrocfc_576053161061": {
       "num": 5311,
@@ -347411,7 +347677,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Dental clinic",
       "signals": [
         "sin_web",
         "pocas_reviews",
@@ -347434,7 +347700,43 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "Sin sitio web → \"¿cómo te encuentran y reservan los pacientes nuevos?\"",
+        "hookPhrase": "5 estrellas en Google con 36 reseñas resaltan la atención personalizada y la efectividad del blanque",
+        "painPoints": [],
+        "treatments": [
+          "aclaramiento dental",
+          "limpieza dental",
+          "ortodoncia con alineadores invisibles",
+          "diseño de sonrisa"
+        ],
+        "fitScore": 92,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:15:22.085Z"
+      },
+      "treatments": [
+        "aclaramiento dental",
+        "limpieza dental",
+        "ortodoncia con alineadores invisibles",
+        "diseño de sonrisa"
+      ],
+      "fitScore": 92,
+      "placeId": "ChIJIX3JGJYt9I4RfU9g_XZQ_wY",
+      "coordinates": {
+        "lat": 11.0061948,
+        "lng": -74.8194608
+      },
+      "openingHours": {
+        "friday": "8 AM–6 PM",
+        "saturday": "8 AM–12 PM",
+        "sunday": "Closed",
+        "monday": "8 AM–6 PM",
+        "tuesday": "8 AM–6 PM",
+        "wednesday": "8 AM–6 PM",
+        "thursday": "8 AM–6 PM"
+      },
+      "dataId": "0x8ef42d9618c97d21:0x6ff5076fd604f7d"
     },
     "l_caredental_5753854612": {
       "num": 5313,
@@ -347733,7 +348035,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:43.946Z",
-      "enrichedAt": "2026-06-19T17:48:43.946Z"
+      "enrichedAt": "2026-06-19T17:48:43.946Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_clnicasmilecaresas_573246836448": {
       "num": 5316,
@@ -348327,7 +348633,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drjoseloraodontologaespecializ_573017941076": {
       "num": 5322,
@@ -348707,7 +349017,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 3,
-      "category": "",
+      "category": "Orthodontist",
       "signals": [
         "pocas_reviews"
       ],
@@ -348730,7 +349040,45 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:50.462Z",
-      "enrichedAt": "2026-06-19T17:48:50.462Z"
+      "enrichedAt": "2026-06-19T17:48:50.462Z",
+      "leadBrief": {
+        "brief": "Buen rating, solo 29 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "hookPhrase": "Con un rating",
+        "painPoints": [],
+        "treatments": [
+          "implantes",
+          "diseño de sonrisa",
+          "limpieza dental",
+          "revisiones de rutina",
+          "odontología estética"
+        ],
+        "fitScore": 85,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:16:02.924Z"
+      },
+      "treatments": [
+        "implantes",
+        "diseño de sonrisa",
+        "limpieza dental",
+        "revisiones de rutina",
+        "odontología estética"
+      ],
+      "fitScore": 85,
+      "placeId": "ChIJve151KUt9I4RG8QEL-xNU0Q",
+      "coordinates": {
+        "lat": 11.0059261,
+        "lng": -74.8122692
+      },
+      "openingHours": {
+        "friday": "8 AM–12 PM, 2–6 PM",
+        "saturday": "Closed",
+        "sunday": "Closed",
+        "monday": "8 AM–12 PM, 2–6 PM",
+        "tuesday": "8 AM–12 PM, 2–6 PM",
+        "wednesday": "8 AM–12 PM, 2–6 PM",
+        "thursday": "8 AM–12 PM, 2–6 PM"
+      },
+      "dataId": "0x8ef42da5d479edbd:0x44534dec2f04c41b"
     },
     "l_ponceodontologia_573218430749": {
       "num": 5326,
@@ -348829,7 +349177,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:50.462Z",
-      "enrichedAt": "2026-06-19T17:48:50.462Z"
+      "enrichedAt": "2026-06-19T17:48:50.462Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_consultoriodentalbarranquilla_5753417915": {
       "num": 5327,
@@ -349674,7 +350026,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_dentixccportaldelprado_573136432128": {
       "num": 5335,
@@ -349875,7 +350231,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:50.462Z",
-      "enrichedAt": "2026-06-19T17:48:50.462Z"
+      "enrichedAt": "2026-06-19T17:48:50.462Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_beautydentalcare_576053450626": {
       "num": 5337,
@@ -350622,7 +350982,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:56.135Z",
-      "enrichedAt": "2026-06-19T17:48:56.135Z"
+      "enrichedAt": "2026-06-19T17:48:56.135Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_denticolombia_5753458019": {
       "num": 5344,
@@ -350915,7 +351279,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:18.669Z"
+      }
     },
     "l_patriciaoterobdc_573166187871": {
       "num": 5347,
@@ -351116,7 +351484,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_dentalhealthodontologiaespecia_576053855492": {
       "num": 5349,
@@ -351757,7 +352129,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:48:56.135Z",
-      "enrichedAt": "2026-06-19T17:48:56.135Z"
+      "enrichedAt": "2026-06-19T17:48:56.135Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_dratibymaldonadoodontloga_573022355853": {
       "num": 5355,
@@ -352331,7 +352707,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 3,
-      "category": "",
+      "category": "Dentist",
       "signals": [
         "pocas_reviews"
       ],
@@ -352354,7 +352730,43 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:06.118Z",
-      "enrichedAt": "2026-06-19T17:49:06.118Z"
+      "enrichedAt": "2026-06-19T17:49:06.118Z",
+      "leadBrief": {
+        "brief": "Buen rating, solo 38 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "hookPhrase": "Buen rating, solo 38 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "painPoints": [],
+        "treatments": [
+          "limpieza dental",
+          "endodoncia",
+          "restauración dental",
+          "blanqueamiento"
+        ],
+        "fitScore": 92,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:14:38.819Z"
+      },
+      "treatments": [
+        "limpieza dental",
+        "endodoncia",
+        "restauración dental",
+        "blanqueamiento"
+      ],
+      "fitScore": 92,
+      "placeId": "ChIJYbf5Z6At9I4RwGkWi5IwjOo",
+      "coordinates": {
+        "lat": 11.0017292,
+        "lng": -74.8064149
+      },
+      "openingHours": {
+        "friday": "8 AM–12 PM, 2–6 PM",
+        "saturday": "Closed",
+        "sunday": "Closed",
+        "monday": "8 AM–12 PM, 2–6 PM",
+        "tuesday": "8 AM–12 PM, 2–6 PM",
+        "wednesday": "8 AM–12 PM, 2–6 PM",
+        "thursday": "8 AM–12 PM, 2–6 PM"
+      },
+      "dataId": "0x8ef42da067f9b761:0xea8c30928b1669c0"
     },
     "l_madridydiazclinicaodontologica_5753782938": {
       "num": 5361,
@@ -352647,7 +353059,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_alianzaodontologica_573173671692": {
       "num": 5364,
@@ -353038,7 +353454,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:06.118Z",
-      "enrichedAt": "2026-06-19T17:49:06.118Z"
+      "enrichedAt": "2026-06-19T17:49:06.118Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_dralauralacoutureortodoncia_573016057808": {
       "num": 5368,
@@ -354196,7 +354616,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Medical Center",
       "signals": [
         "pocas_reviews"
       ],
@@ -354219,7 +354639,43 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:06.118Z",
-      "enrichedAt": "2026-06-19T17:49:06.118Z"
+      "enrichedAt": "2026-06-19T17:49:06.118Z",
+      "leadBrief": {
+        "brief": "Clínica con excelente reputación y clientes satisfe",
+        "hookPhrase": "Con un rating de 4.9 y 38 reseñas, los pacientes valoran la atención y los precios, pero la gestión de citas sigue siendo una oportunidad",
+        "painPoints": [],
+        "treatments": [
+          "odontología general",
+          "ortodoncia",
+          "implantes dentales",
+          "blanqueamiento dental"
+        ],
+        "fitScore": 92,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:14:38.819Z"
+      },
+      "treatments": [
+        "odontología general",
+        "ortodoncia",
+        "implantes dentales",
+        "blanqueamiento dental"
+      ],
+      "fitScore": 92,
+      "placeId": "ChIJAxVy4Ewt9I4RwcbMyMxsDkE",
+      "coordinates": {
+        "lat": 10.957077199999999,
+        "lng": -74.79508729999999
+      },
+      "openingHours": {
+        "friday": "7:30 AM–5 PM",
+        "saturday": "7 AM–5 PM",
+        "sunday": "Closed",
+        "monday": "7 AM–6 PM",
+        "tuesday": "7:30 AM–5 PM",
+        "wednesday": "7:30 AM–5 PM",
+        "thursday": "7:30 AM–5 PM"
+      },
+      "dataId": "0x8ef42d4ce0721503:0x410e6cccc8ccc6c1"
     },
     "l_dentclass_573183529551": {
       "num": 5381,
@@ -360730,7 +361186,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:14.856Z",
-      "enrichedAt": "2026-06-19T17:49:14.856Z"
+      "enrichedAt": "2026-06-19T17:49:14.856Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_dramarysolsanchez_573004232539": {
       "num": 5448,
@@ -360831,7 +361291,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:14.856Z",
-      "enrichedAt": "2026-06-19T17:49:14.856Z"
+      "enrichedAt": "2026-06-19T17:49:14.856Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_odontologiadrjacksonperezucros_573006079639": {
       "num": 5449,
@@ -361126,7 +361590,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_carlosacevedokids_573044509886": {
       "num": 5452,
@@ -361720,7 +362188,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_centroodontologico_5753659059": {
       "num": 5458,
@@ -362013,7 +362485,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_drjorgemariobarliza_573225152379": {
       "num": 5462,
@@ -365837,7 +366313,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:28.760Z",
-      "enrichedAt": "2026-06-19T17:49:28.760Z"
+      "enrichedAt": "2026-06-19T17:49:28.760Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_puntodentalbydianacastraocentr_573007873787": {
       "num": 5501,
@@ -367993,7 +368473,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:32.592Z",
-      "enrichedAt": "2026-06-19T17:49:32.592Z"
+      "enrichedAt": "2026-06-19T17:49:32.592Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_guidoperezbdiseosdesonrisadisi_573008095909": {
       "num": 5524,
@@ -368091,7 +368575,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_centroodontologicosensident_573013555197": {
       "num": 5526,
@@ -368558,7 +369046,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 3,
-      "category": "",
+      "category": "Orthodontist",
       "signals": [
         "pocas_reviews"
       ],
@@ -368581,7 +369069,51 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:49:32.592Z",
-      "enrichedAt": "2026-06-19T17:49:32.592Z"
+      "enrichedAt": "2026-06-19T17:49:32.592Z",
+      "leadBrief": {
+        "brief": "Buen rating, solo 38 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "hookPhrase": "Buen rating, solo 38 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "painPoints": [
+          {
+            "dolor": "dificultad para conseguir turno rápido (un paciente menciona que le costó mucho tiempo agendar)",
+            "cita": ""
+          },
+          {
+            "dolor": "preocupación por el costo del tratamiento (algunos pacientes buscan opciones más económicas)",
+            "cita": ""
+          },
+          {
+            "dolor": "temor a la incomodidad de los brackets tradicionales (¡Un tratamiento mucho menos traumático que",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "ortodoncia invisible",
+          "alineadores transparentes"
+        ],
+        "fitScore": null,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:14:38.819Z"
+      },
+      "treatments": [
+        "ortodoncia invisible",
+        "alineadores transparentes"
+      ],
+      "placeId": "ChIJbf1pTt8t9I4RXpbDArmMLDo",
+      "coordinates": {
+        "lat": 11.0042108,
+        "lng": -74.8131006
+      },
+      "openingHours": {
+        "friday": "7:30 AM–1 PM, 2–5:30 PM",
+        "saturday": "7:30 AM–1 PM, 2–5:30 PM",
+        "sunday": "Closed",
+        "monday": "Closed",
+        "tuesday": "7:30 AM–1 PM, 2–5:30 PM",
+        "wednesday": "2 AM–5:30 PM",
+        "thursday": "2 AM–5:30 PM"
+      },
+      "dataId": "0x8ef42ddf4e69fd6d:0x3a2c8cb902c3965e"
     },
     "l_drdiegopallaresrehabilitaciono_573014276409": {
       "num": 5531,
@@ -401416,7 +401948,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Dental clinic",
       "signals": [
         "sin_web"
       ],
@@ -401437,7 +401969,47 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "Sin sitio web → \"¿cómo te encuentran y reservan los pacientes nuevos?\"",
+        "hookPhrase": "Sin sitio web → \"¿cómo te encuentran y reservan los pacientes nuevos?\"",
+        "painPoints": [
+          {
+            "dolor": "cuando un odontólogo te indique que te deben extraer 4 premolares totalmente sanos, nadie te responde (cuando un",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "extracción de premolares",
+          "ortodoncia",
+          "blanqueamiento dental",
+          "implantes"
+        ],
+        "fitScore": null,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:16:02.924Z"
+      },
+      "treatments": [
+        "extracción de premolares",
+        "ortodoncia",
+        "blanqueamiento dental",
+        "implantes"
+      ],
+      "placeId": "ChIJibotB1Y_aI4RLlHBDqFZAbM",
+      "coordinates": {
+        "lat": 7.120296799999999,
+        "lng": -73.11601569999999
+      },
+      "openingHours": {
+        "friday": "8 AM–12 PM, 2–6 PM",
+        "saturday": "8 AM–2 PM",
+        "sunday": "Closed",
+        "monday": "8 AM–12 PM, 2–6 PM",
+        "tuesday": "8 AM–12 PM, 2–6 PM",
+        "wednesday": "8 AM–12 PM, 2–6 PM",
+        "thursday": "8 AM–12 PM, 2–6 PM"
+      },
+      "dataId": "0x8e683f56072dba89:0xb30159a10ec1512e"
     },
     "l_prioritybydrsergioestupian_573157104067": {
       "num": 5878,
@@ -401537,7 +402109,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_odontologodrcristhianfigueroao_573027547827": {
       "num": 5879,
@@ -401637,7 +402213,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:18.318Z",
-      "enrichedAt": "2026-06-19T17:50:18.318Z"
+      "enrichedAt": "2026-06-19T17:50:18.318Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_drrafaelmantillaserrano_573160970000": {
       "num": 5880,
@@ -402435,7 +403015,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Dental clinic",
       "signals": [
         "sin_web"
       ],
@@ -402456,7 +403036,41 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "leadBrief": {
+        "brief": "Clínica con rating 5 y 41 reseñas positivas, destaca por su profesionalismo y resultados de diseño de sonrisa. Buen encaje para un sistema de gestión de citas y seguimiento de tratamientos.",
+        "hookPhrase": "Los pacientes elogian la atención impecable y la seguridad en el diseño de sonrisa, como en la reseña: (Me hice un micro diseño de sonrisa y quedaron divinos!!😍)",
+        "painPoints": [],
+        "treatments": [
+          "diseño de sonrisa",
+          "micro diseño de sonrisa",
+          "ortodoncia"
+        ],
+        "fitScore": 92,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:14:38.819Z"
+      },
+      "treatments": [
+        "diseño de sonrisa",
+        "micro diseño de sonrisa",
+        "ortodoncia"
+      ],
+      "fitScore": 92,
+      "placeId": "ChIJAbB8BWg_aI4RLSrmlFjc7yo",
+      "coordinates": {
+        "lat": 7.1041004,
+        "lng": -73.12244079999999
+      },
+      "openingHours": {
+        "friday": "9 AM–12:30 PM, 2:30–7 PM",
+        "saturday": "9:30 AM–12:30 PM, 2:30–6 PM",
+        "sunday": "Closed",
+        "monday": "9 AM–12:30 PM, 2:30–7 PM",
+        "tuesday": "9 AM–12:30 PM, 2:30–7 PM",
+        "wednesday": "9 AM–12:30 PM, 2:30–7 PM",
+        "thursday": "9 AM–12:30 PM, 2–7 PM"
+      },
+      "dataId": "0x8e683f68057cb001:0x2aefdc5894e62a2d"
     },
     "l_oralblancoclnicaodontolgica_576077013502": {
       "num": 5887,
@@ -402986,7 +403600,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_molarisgrupoodontolgico_573161600004": {
       "num": 5892,
@@ -403582,7 +404200,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_clnicaodontolgicarqortodoncia_573208402192": {
       "num": 5898,
@@ -403680,7 +404302,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drrodolfoquinteroodontolgoenbu_573160411009": {
       "num": 5899,
@@ -403978,7 +404604,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_smiles_576076823827": {
       "num": 5902,
@@ -404572,7 +405202,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:25.497Z",
-      "enrichedAt": "2026-06-19T17:50:25.497Z"
+      "enrichedAt": "2026-06-19T17:50:25.497Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_armonaoralodontologosenbucaram_573103006677": {
       "num": 5908,
@@ -404867,7 +405501,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_dentalexcellencebucaramanga_576435935": {
       "num": 5911,
@@ -405061,7 +405699,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_melissadepoorteregmez_573156407777": {
       "num": 5913,
@@ -405599,7 +406241,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_hsacentroodontolgicoespecializ_573241520166": {
       "num": 5918,
@@ -412087,7 +412733,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_areaodontolgicaespecializada_5776925056": {
       "num": 5984,
@@ -414915,7 +415565,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:37.472Z",
-      "enrichedAt": "2026-06-19T17:50:37.472Z"
+      "enrichedAt": "2026-06-19T17:50:37.472Z",
+      "briefSkipped": {
+        "reason": "bad_llm",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_dentalarte_5776915247": {
       "num": 6013,
@@ -415209,7 +415863,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "bad_llm",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_dentalnet_573175163102": {
       "num": 6016,
@@ -415814,7 +416472,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drapaolacortes_573222180794": {
       "num": 6022,
@@ -416016,7 +416678,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:37.472Z",
-      "enrichedAt": "2026-06-19T17:50:37.472Z"
+      "enrichedAt": "2026-06-19T17:50:37.472Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drjohnchnavarro_573168319823": {
       "num": 6024,
@@ -416319,7 +416985,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:37.472Z",
-      "enrichedAt": "2026-06-19T17:50:37.472Z"
+      "enrichedAt": "2026-06-19T17:50:37.472Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:14:38.819Z"
+      }
     },
     "l_vivodontologabucaramanga_573143395831": {
       "num": 6027,
@@ -416813,7 +417483,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:40.325Z",
-      "enrichedAt": "2026-06-19T17:50:40.325Z"
+      "enrichedAt": "2026-06-19T17:50:40.325Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_ortodoncistalinalopezbucaraman_573170200009": {
       "num": 6032,
@@ -416911,7 +417585,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:02.924Z"
+      }
     },
     "l_drfabiomacasortodoncistaenbuca_573165066708": {
       "num": 6033,
@@ -416989,7 +417667,7 @@
       "closedAt": "",
       "dealValue": 0,
       "recontactPriority": 2,
-      "category": "",
+      "category": "Orthodontist",
       "signals": [
         "pocas_reviews"
       ],
@@ -417012,7 +417690,54 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:40.325Z",
-      "enrichedAt": "2026-06-19T17:50:40.325Z"
+      "enrichedAt": "2026-06-19T17:50:40.325Z",
+      "leadBrief": {
+        "brief": "Buen rating, solo 38 reseñas → \"con pocas reseñas no aparecés en el top del mapa, ahí está la fuga\"",
+        "hookPhrase": "Con 5 estrellas y 38 reseñas en Google",
+        "painPoints": [
+          {
+            "dolor": "dificultad para agendar citas rápidamente",
+            "cita": ""
+          },
+          {
+            "dolor": "tiempos de espera en recepción",
+            "cita": ""
+          },
+          {
+            "dolor": "falta de información clara sobre costos",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "brackets",
+          "ortodoncia",
+          "alineadores invisibles"
+        ],
+        "fitScore": 90,
+        "reviewsMined": 8,
+        "at": "2026-06-19T23:15:22.085Z"
+      },
+      "treatments": [
+        "brackets",
+        "ortodoncia",
+        "alineadores invisibles"
+      ],
+      "fitScore": 90,
+      "placeId": "ChIJicVOqGEVaI4RdsRQORDVQdw",
+      "coordinates": {
+        "lat": 7.123369899999999,
+        "lng": -73.1149178
+      },
+      "openingHours": {
+        "friday": "9 AM–12 PM, 2–7 PM",
+        "saturday": "8 AM–12 PM",
+        "sunday": "Closed",
+        "monday": "9 AM–12 PM, 2–7 PM",
+        "tuesday": "8 AM–12 PM, 2–6 PM",
+        "wednesday": "9 AM–12 PM, 2–6 PM",
+        "thursday": "9 AM–12 PM, 2–7 PM"
+      },
+      "dataId": "0x8e681561a84ec589:0xdc41d5103950c476"
     },
     "l_ingeniogrupoodontolgico_573115807500": {
       "num": 6034,
@@ -417208,7 +417933,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:40.325Z",
-      "enrichedAt": "2026-06-19T17:50:40.325Z"
+      "enrichedAt": "2026-06-19T17:50:40.325Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_juancarlosvalbuenaodontologa_573174032409": {
       "num": 6036,
@@ -417699,7 +418428,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:13:57.620Z"
+      }
     },
     "l_dradeisygarciaodontologa_573142578961": {
       "num": 6041,
@@ -421128,7 +421861,11 @@
       "altPhone": "",
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-06-19T17:50:48.036Z",
-      "enrichedAt": "2026-06-19T17:50:48.036Z"
+      "enrichedAt": "2026-06-19T17:50:48.036Z",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:16:15.608Z"
+      }
     },
     "l_dradianapedrazadrleonardomoren_573026918161": {
       "num": 6077,
@@ -425063,7 +425800,11 @@
       "businessStatus": "",
       "phoneType": "",
       "altPhone": "",
-      "altPhoneLabel": ""
+      "altPhoneLabel": "",
+      "briefSkipped": {
+        "reason": "no_place_id",
+        "at": "2026-06-19T23:15:22.085Z"
+      }
     },
     "l_jackybayonaodontologaintegral_573237833089": {
       "num": 6117,
