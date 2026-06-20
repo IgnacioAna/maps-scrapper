@@ -361,7 +361,7 @@ Tabla `TELNYX_RATES_USD_PER_MIN` en `index.js` con tarifas aprox de dic 2025. Ha
 ## Archivos principales
 
 ### Backend
-- `index.js` (3194 líneas) - Servidor Express, todos los endpoints API genéricos, lógica de negocio
+- `index.js` (~12450 líneas) - Servidor Express, todos los endpoints API genéricos, lógica de negocio
   - IMPORTANTE: rutas sin `:id` (como `/sin-wsp`) DEBEN ir ANTES de rutas con `:id`
   - `ensureLeadDefaults()` - inicializa campos de lead (incluye calificado=false)
   - Cascade logic en PATCH `/api/setters/leads/:id`
@@ -369,13 +369,13 @@ Tabla `TELNYX_RATES_USD_PER_MIN` en `index.js` con tarifas aprox de dic 2025. Ha
 - `src/wa/*` - módulo WA, montado vía `mountWa(app)`
 
 ### Frontend
-- `public/index.html` (918 líneas) - HTML completo, todas las vistas, Geist fonts
-- `public/app.js` (3478 líneas) - Toda la lógica frontend (vanilla JS, ES modules)
-- `public/style.css` (2243 líneas) - **SCM Design System v1.1** (rediseño 2026-04-25)
+- `public/index.html` (~3166 líneas) - HTML completo, todas las vistas, Geist fonts
+- `public/app.js` (~14780 líneas) - Toda la lógica frontend (vanilla JS, ES modules)
+- `public/style.css` (~3920 líneas) - **SCM Design System v1.1** (rediseño 2026-04-25)
   - Tokens: `--accent` violeta `#9D85F2`, `--bg-app #0F1115`, `--text-primary #E5E7E2`
   - Disciplina cromática: violeta sólo para acentos, no para textos
   - Variables legacy mantenidas (`--text-main`, `--primary-color`, etc.) por compatibilidad
-- `public/wa.js` (581 líneas) - lógica del módulo WA en frontend
+- `public/wa.js` (~1850 líneas) - lógica del módulo WA en frontend
 - `public/locations.js` - países/ciudades para scraping
 - `public/onboarding/` - onboarding oficial (ver sección dedicada)
 
@@ -393,7 +393,7 @@ Tabla `TELNYX_RATES_USD_PER_MIN` en `index.js` con tarifas aprox de dic 2025. Ha
 - `phone-normalization.smoke.test.js` - smoke de normalización de teléfonos
 - `hardening.test.js`, `opening-message-sanitize.test.js` - tests transversales
 - Setup pattern: `process.env.DATA_DIR = tmpdir`, pre-popular `auth.json` ANTES de `import("../index.js")`
-- **Total actual: 272 tests verde en 13 files**
+- **Total actual: ~585 tests en ~39 files** (1 flaky ambiental conocido: `wa-campaign-engine`, depende de hora/día)
 
 Comandos:
 - `npm test` - corre todo

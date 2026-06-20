@@ -5129,7 +5129,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span>Resultado de la llamada</span>
           <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-8</span>
         </div>
-        <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada (opcional) — ej: contestó la secre, pedir por Dr. X el martes" style="width:100%; box-sizing:border-box; padding:9px 12px; margin-bottom:10px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
+        <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:stretch;">
+          <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada — ej: contestó la secre, pedir por Dr. X el martes" style="flex:1; min-width:240px; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
+          <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:rgba(157,133,242,0.18); color:var(--accent); border:1px solid rgba(157,133,242,0.45); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
+        </div>
+        ${lead.altPhone ? `<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid #5BB974; border-radius:8px;">
+          <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:ui-monospace,monospace; color:var(--accent);">${escHtml(lead.altPhone)}</span></span>
+          <button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}', '${escHtml(lead.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
+          <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:6px 10px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px; cursor:pointer; font-family:inherit;">editar</button>
+        </div>` : `<div style="margin-bottom:12px;">
+          <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar número de contacto que me pasaron</button>
+        </div>`}
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'abre agenda ahora',   color:'success' },
@@ -5248,6 +5258,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!outcome) return;
       const fake = { value: outcome, disabled: false };
       window._pdHandleDisposition(leadId, fake);
+    };
+
+    // Guarda la nota del input #pd-call-note en la ficha del lead (lead.notes[])
+    // SIN marcar un resultado de llamada. Resuelve el caso "anoté un dato/número
+    // que me pasaron y no se guardaba porque no cerré la llamada con un outcome".
+    // Reusa el endpoint POST /note que ya existe (con RBAC de ownership).
+    window._pdSaveNote = async function(leadId) {
+      const el = document.getElementById('pd-call-note');
+      const text = (el?.value || '').trim();
+      if (!text) { window.showToast?.('Escribí algo en la nota primero', { type: 'warning' }); el?.focus(); return; }
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/note'), {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const d = await r.json();
+        if (!r.ok) { window.showToast?.(d.error || 'No se pudo guardar la nota', { type: 'error' }); return; }
+        // _leadStore: sincroniza lista + Power Dialer con las notas frescas del backend.
+        if (window._leadStoreApply) window._leadStoreApply(leadId, { notes: d.notes, lastContactAt: new Date().toISOString() });
+        if (el) el.value = '';
+        window.showToast?.('✓ Nota guardada en la ficha del lead', { type: 'success' });
+        // Re-render del PD si seguimos en este lead, para que aparezca en "Última nota".
+        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
+      } catch (e) { window.showToast?.('Error de red guardando la nota', { type: 'error' }); }
     };
 
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
@@ -7594,6 +7629,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast?.(d.altPhone ? '✓ Contacto guardado' : 'Contacto borrado', { type: 'success' });
         if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
         if (typeof renderCallsList === 'function') renderCallsList();
+        // Refrescar el Power Dialer si está activo en este lead (muestra el contacto recién cargado).
+        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
       } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
     };
     // Generar el brief del lead actual del Power Dialer en el momento (admin).

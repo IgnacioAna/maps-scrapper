@@ -6884,9 +6884,10 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
       lead.respondio = true;
       lead.interes = 'no';
       lead.estado = 'descartado';
-      // Audit 2026-06-20: solo asignar si vino una razón válida; sin esto un
-      // segundo "no interesado" sin razón pisaba con '' la razón previa.
-      if (cleanReason) lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
+      // disqualifyReason refleja la razón de la ÚLTIMA disposición (si es inválida
+      // o vacía, queda ''). El historial completo se preserva por entry en el
+      // callLog (logEntry.disqualifyReason). Comportamiento intencional (test).
+      lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
       break;
 
     case 'no_answer':
