@@ -2255,6 +2255,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; }
   }
   let applied = 0;
+  const builtBriefs = {}; // para devolver el brief al front (refresco en vivo del dialer)
   if (Object.keys(results).length || Object.keys(skips).length) {
     makeBackup('pre-enrich-brief');
     await mutateSettersData((d) => {
@@ -2272,6 +2273,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         // El hook/brief caen al openingAngle rule-based (que ya tenemos) si faltan.
         const angle = lead.openingAngle || '';
         lead.leadBrief = { brief: r.brief || angle, hookPhrase: r.hookPhrase || angle, painPoints: r.painPoints, treatments: r.treatments, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
+        builtBriefs[id] = lead.leadBrief;
         if (Array.isArray(r.treatments) && r.treatments.length) lead.treatments = r.treatments;
         if (r.fitScore != null) lead.fitScore = r.fitScore;
         if (r.placeId && !lead.placeId) lead.placeId = r.placeId;
@@ -2294,7 +2296,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
     const c = candidates.find((x) => x.id === id);
     return { id, name: (c && c.name) || id, fitScore: results[id].fitScore != null ? results[id].fitScore : null, reviewsMined: results[id].reviewsMined || 0 };
   });
-  res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample });
+  res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample, leadBriefs: builtBriefs });
 });
 
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con

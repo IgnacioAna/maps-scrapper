@@ -5043,7 +5043,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${lead.leadBrief.hookPhrase ? `<div style="color:#fff; font-size:13.5px; line-height:1.5; margin-bottom:6px;">🎣 ${escHtml(lead.leadBrief.hookPhrase)}</div>` : ''}
         ${(lead.leadBrief.painPoints || []).slice(0, 2).map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
         ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
-      </div>` : ''}
+      </div>` : (currentUser?.realRole === 'admin' && (parseInt(lead.reviews, 10) || 0) >= 10 ? `<div style="margin-top:16px; background:rgba(255,179,65,0.06); border:1px dashed rgba(255,179,65,0.4); padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button id="pd-gen-brief-btn" onclick="window._pdGenBrief()" style="font-size:13px; padding:9px 16px; border-radius:9px; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.5); color:#FFB341; font-weight:700; cursor:pointer; font-family:inherit;">🧠 Generar brief IA ahora</button>
+        <span style="font-size:11.5px; color:var(--text-tertiary);">Lee las ${escHtml(String(lead.reviews || 0))} reseñas y arma dolores + gancho (~$0.05)</span>
+      </div>` : '')}
 
       <!-- Bloque 2: Pre-call note destacada (si existe) — sin emoji, label limpio -->
       ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.32); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
@@ -7591,6 +7594,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
         if (typeof renderCallsList === 'function') renderCallsList();
       } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
+    };
+    // Generar el brief del lead actual del Power Dialer en el momento (admin).
+    window._pdGenBrief = async () => {
+      const id = _pd.queue[_pd.currentIdx];
+      if (!id) return;
+      const lead = _callsLeadsById.get(id);
+      const btn = document.getElementById('pd-gen-brief-btn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando (tarda)…'; }
+      try {
+        const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id], limit: 1, force: true }) });
+        const d = await r.json();
+        if (r.ok && (d.briefed || 0) > 0 && d.leadBriefs && d.leadBriefs[id]) {
+          if (lead) { lead.leadBrief = d.leadBriefs[id]; if (window._leadStoreApply) window._leadStoreApply(id, { leadBrief: d.leadBriefs[id] }); }
+          _pdRender();
+          window.showToast?.('✓ Brief generado', { type: 'success' });
+        } else {
+          const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : 'no se pudo (sin reseñas o IA caída)';
+          window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 5000 });
+          if (btn) { btn.disabled = false; btn.textContent = '🧠 Generar brief IA ahora'; }
+        }
+      } catch (e) { console.error(e); window.showToast?.('Error de red', { type: 'error' }); if (btn) { btn.disabled = false; btn.textContent = '🧠 Generar brief IA ahora'; } }
     };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
