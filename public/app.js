@@ -11103,7 +11103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ans.innerHTML = `<div style="background:var(--bg-card, rgba(255,255,255,0.03)); border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; color:var(--text-primary); font-size:13.5px; line-height:1.6; white-space:pre-wrap;">${escHtml(d.answer)}</div>`;
     } catch (e) { ans.innerHTML = '<div style="color:var(--danger);">⚠ error de red</div>'; }
   });
-  document.querySelector('[data-target="view-training"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });
+  document.querySelector('[data-target="view-training-ai"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });
 
   document.getElementById('asst-generate-btn')?.addEventListener('click', () => _asstGenerate());
 
@@ -14654,7 +14654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li><strong>Biblioteca de llamadas:</strong> escuchá/leé cómo llaman tus compañeros (anonimizado, sin datos del cliente). Mirá las que <strong>agendaron</strong> y copiá lo que funciona. Cada una tiene un resumen de la IA.</li>
           <li><strong>Preguntale a la IA:</strong> dudas del producto, cómo rebatir una objeción, cómo mejorar — la IA te responde con el conocimiento del equipo.</li>
         </ul>`,
-        goto: { target: 'view-training', label: 'Ir a Entrenamiento IA' }
+        goto: { target: 'view-training-ai', label: 'Ir a Entrenamiento IA' }
       },
       {
         id: 'rendimiento',
