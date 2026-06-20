@@ -11005,6 +11005,89 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 100);
   });
 
+  // ── Entrenamiento IA: biblioteca de llamadas anonimizada + coach IA ──────────
+  async function loadTrainingView() { _trainingLoadLibrary(); }
+  window.loadTrainingView = loadTrainingView;
+
+  async function _trainingLoadLibrary() {
+    const list = document.getElementById('training-library-list');
+    if (!list) return;
+    const outcome = document.getElementById('training-outcome-filter')?.value || '';
+    list.innerHTML = '<div style="color:var(--text-tertiary); padding:16px; font-size:13px;">Cargando…</div>';
+    try {
+      const r = await fetch(apiUrl('/api/training/calls' + (outcome ? '?outcome=' + encodeURIComponent(outcome) : '')), { credentials: 'include' });
+      const d = await r.json();
+      const calls = d.calls || [];
+      const cnt = document.getElementById('training-library-count');
+      if (cnt) cnt.textContent = `${d.total || calls.length} con transcripción`;
+      if (!calls.length) { list.innerHTML = '<div style="color:var(--text-tertiary); padding:16px; font-size:13px; line-height:1.5;">Todavía no hay llamadas transcriptas. A medida que el equipo llame, van a aparecer acá (anonimizadas) para aprender.</div>'; return; }
+      list.innerHTML = calls.map(_trainingCallRow).join('');
+    } catch (e) { list.innerHTML = '<div style="color:var(--danger); padding:16px;">Error cargando. Reintentá.</div>'; }
+  }
+  function _trainingCallRow(c) {
+    const oc = (typeof callOutcomeLabel === 'function') ? callOutcomeLabel(c.outcome) : c.outcome;
+    const dur = c.duration ? Math.round(c.duration) + 's' : '';
+    const t = c.ts ? new Date(c.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const win = (c.outcome === 'scheduled_with_admin' || c.outcome === 'answered_interested');
+    return `<div style="background:var(--bg-card, rgba(255,255,255,0.02)); border:1px solid var(--border-color); ${win ? 'border-left:3px solid #5BB974;' : ''} border-radius:10px;">
+      <div style="display:flex; align-items:center; gap:12px; padding:11px 14px;">
+        <span style="font-size:12.5px; font-weight:600; color:${win ? '#5BB974' : 'var(--text-primary)'};">${escHtml(oc)}</span>
+        <span style="font-size:11.5px; color:var(--text-secondary);">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}${dur ? ' · ' + dur : ''}</span>
+        <span style="margin-left:auto; font-size:11px; color:var(--text-tertiary); white-space:nowrap;">${t} · ${c.segCount} frases</span>
+        <button type="button" onclick="window._trainingOpenCall('${escHtml(c.leadId)}', ${c.callIdx}, this)" style="font-size:11px; padding:5px 12px; border-radius:7px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.4); color:var(--accent); cursor:pointer; font-family:inherit; white-space:nowrap;">Ver llamada</button>
+      </div>
+      <div class="training-call-body" style="display:none; padding:0 14px 14px;"></div>
+    </div>`;
+  }
+  window._trainingOpenCall = async (leadId, idx, btn) => {
+    const body = btn.closest('div').parentElement.querySelector('.training-call-body');
+    if (!body) return;
+    if (body.style.display === 'block') { body.style.display = 'none'; btn.textContent = 'Ver llamada'; return; }
+    body.style.display = 'block'; btn.textContent = 'Ocultar'; btn.disabled = true;
+    body.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px; padding:6px 0;">Cargando + resumiendo con IA (tarda unos segundos la 1ra vez)…</div>';
+    try {
+      const r = await fetch(apiUrl('/api/training/calls/' + encodeURIComponent(leadId) + '/' + idx), { credentials: 'include' });
+      const d = await r.json();
+      if (!r.ok) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">' + escHtml(d.error || 'error') + '</div>'; btn.disabled = false; return; }
+      const summary = d.summary ? `<div style="background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:10px 13px; margin-bottom:10px; font-size:12.5px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap;"><div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:5px;">Resumen IA</div>${escHtml(d.summary)}</div>` : '';
+      const dialog = (d.segments || []).map(s => {
+        const isS = s.speaker === 'setter';
+        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; min-width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SETTER' : 'CLIENTE'}</span><span style="font-size:12px; color:var(--text-secondary); line-height:1.45;">${escHtml(s.text)}</span></div>`;
+      }).join('');
+      body.innerHTML = summary + `<div style="max-height:340px; overflow-y:auto; border-top:1px solid var(--border-subtle); padding-top:10px;">${dialog || '<span style="color:var(--text-tertiary);">Sin contenido.</span>'}</div>`;
+    } catch (e) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">Error de red.</div>'; }
+    btn.disabled = false;
+  };
+  document.querySelectorAll('.training-tab').forEach((b) => {
+    b.addEventListener('click', () => {
+      const tab = b.getAttribute('data-tab');
+      document.querySelectorAll('.training-tab').forEach((x) => {
+        const on = x === b;
+        x.classList.toggle('active', on);
+        x.style.borderBottomColor = on ? 'var(--accent)' : 'transparent';
+        x.style.color = on ? 'var(--text-primary)' : 'var(--text-secondary)';
+      });
+      const lib = document.getElementById('training-pane-library');
+      const coach = document.getElementById('training-pane-coach');
+      if (lib) lib.style.display = tab === 'library' ? 'block' : 'none';
+      if (coach) coach.style.display = tab === 'coach' ? 'block' : 'none';
+    });
+  });
+  document.getElementById('training-outcome-filter')?.addEventListener('change', () => _trainingLoadLibrary());
+  document.getElementById('training-coach-ask')?.addEventListener('click', async () => {
+    const q = (document.getElementById('training-coach-q')?.value || '').trim();
+    const ans = document.getElementById('training-coach-answer');
+    if (!q) { ans.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px;">Escribí una pregunta primero.</div>'; return; }
+    ans.innerHTML = '<div style="color:var(--text-tertiary); font-size:13px;">Pensando…</div>';
+    try {
+      const r = await fetch(apiUrl('/api/training/ask'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
+      const d = await r.json();
+      if (!r.ok) { ans.innerHTML = '<div style="color:var(--danger);">⚠ ' + escHtml(d.error || 'error') + '</div>'; return; }
+      ans.innerHTML = `<div style="background:var(--bg-card, rgba(255,255,255,0.03)); border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; color:var(--text-primary); font-size:13.5px; line-height:1.6; white-space:pre-wrap;">${escHtml(d.answer)}</div>`;
+    } catch (e) { ans.innerHTML = '<div style="color:var(--danger);">⚠ error de red</div>'; }
+  });
+  document.querySelector('[data-target="view-training"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });
+
   document.getElementById('asst-generate-btn')?.addEventListener('click', () => _asstGenerate());
 
   // Botones de tono → re-generan con el mismo input + modificador

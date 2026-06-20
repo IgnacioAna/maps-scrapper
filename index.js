@@ -11555,6 +11555,135 @@ app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
   res.json({ calls: calls.slice(0, limit), total: calls.length });
 });
 
+// ── Entrenamiento IA: biblioteca de llamadas anonimizada + coach Q&A ──────────
+// Objetivo: que cualquier setter aprenda de las llamadas del equipo (propias y de
+// compañeros) SIN exponer datos sensibles del lead (nombre/teléfono/email). Más un
+// coach IA al que se le pregunta y responde con el conocimiento del banco.
+
+// Quita del texto datos sensibles del lead (nombre, teléfono, email) → para que un
+// setter no pueda robar data del lead de otro al ver la transcripción.
+function _anonymizeForTraining(text, lead = {}) {
+  let t = String(text || '');
+  if (!t) return t;
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const name = String(lead.name || '').trim();
+  if (name.length >= 3) {
+    try { t = t.replace(new RegExp(esc(name), 'gi'), '[cliente]'); } catch {}
+    name.split(/\s+/).filter((w) => w.length >= 4).forEach((w) => {
+      try { t = t.replace(new RegExp('\\b' + esc(w) + '\\b', 'gi'), '[nombre]'); } catch {}
+    });
+  }
+  t = t.replace(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi, '[email]');
+  t = t.replace(/(\+?\d[\d\s().-]{6,}\d)/g, '[teléfono]');
+  return t;
+}
+
+// Resumen de entrenamiento de una llamada (qué pasó, qué funcionó, aprendizaje).
+async function _trainingSummaryLLM(segments, outcome) {
+  if (!mercuryKey && !qwenKey) return '';
+  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 6000);
+  const prompt = `Sos analista de un call center de ventas (reactivación de pacientes para clínicas dentales). Resumí esta llamada para ENTRENAMIENTO de otros setters. Resultado de la llamada: ${outcome || 'desconocido'}.
+
+Transcripción (anonimizada):
+${dialog}
+
+Devolvé en español, claro y breve (sin nombres ni datos sensibles):
+- Qué pasó (1-2 líneas)
+- Qué hizo BIEN el setter (1-2 puntos)
+- Qué podría mejorar (1-2 puntos)
+- Aprendizaje para el equipo (1 línea)`;
+  try {
+    const c = await Promise.race([
+      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 400 }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
+    ]);
+    return (c?.choices?.[0]?.message?.content || '').trim();
+  } catch { return ''; }
+}
+
+// Coach IA: responde la pregunta del setter con el conocimiento del banco + producto.
+async function _coachAnswerLLM(question, faqs) {
+  if (!mercuryKey && !qwenKey) return '';
+  const ctx = (faqs || []).slice(0, 12).map((f) => `P: ${f.pregunta}\nR: ${f.respuesta}`).join('\n\n').slice(0, 5000);
+  const prompt = `Sos un coach de ventas experto en SCM (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un setter te hace una pregunta para mejorar. Respondé concreto y accionable, en tono argentino/rioplatense natural, SIN precios ni stack técnico, sin signos de apertura ¿¡.
+
+Banco de conocimiento del equipo (úsalo como base de verdad):
+${ctx || '(sin banco cargado)'}
+
+Pregunta del setter:
+${question}
+
+Respuesta:`;
+  try {
+    const c = await Promise.race([
+      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.5, max_tokens: 500 }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
+    ]);
+    return (c?.choices?.[0]?.message?.content || '').trim();
+  } catch { return ''; }
+}
+
+// GET /api/training/calls — biblioteca: TODAS las llamadas con transcript (de todo
+// el equipo), anonimizadas. Cualquier setter ve las de sus compañeros para aprender.
+app.get('/api/training/calls', requireAuth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit, 10) || 60, 300);
+  const outcomeFilter = (req.query.outcome || '').toString().trim();
+  const data = loadSettersData();
+  const setterName = {}; (data.setters || []).forEach((s) => { setterName[s.id] = s.name; });
+  const calls = [];
+  for (const [leadId, lead] of Object.entries(data.leads || {})) {
+    if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
+    for (let i = 0; i < lead.callLog.length; i++) {
+      const c = lead.callLog[i];
+      if (!c.transcript?.segments?.length) continue; // solo material con transcripción
+      if (outcomeFilter && c.outcome !== outcomeFilter) continue;
+      calls.push({
+        leadId, callIdx: i, ts: c.ts, duration: c.duration || 0,
+        outcome: c.outcome || '',
+        setter: setterName[lead.assignedTo] || 'Setter',
+        country: lead.country || '', category: lead.category || lead.type || '',
+        segCount: c.transcript.segments.length,
+        hasSummary: !!c.trainingSummary,
+      });
+    }
+  }
+  calls.sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime());
+  res.json({ calls: calls.slice(0, limit), total: calls.length });
+});
+
+// GET /api/training/calls/:leadId/:callIdx — transcript ANONIMIZADO + resumen IA
+// (lazy: lo genera la 1ra vez y lo cachea en el callLog).
+app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads?.[req.params.leadId];
+  const i = parseInt(req.params.callIdx, 10);
+  if (!lead || !Array.isArray(lead.callLog) || !lead.callLog[i]) return res.status(404).json({ error: 'No encontrado' });
+  const c = lead.callLog[i];
+  const segs = c.transcript?.segments || [];
+  if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
+  const anonSegs = segs.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: _anonymizeForTraining(s.text, lead) }));
+  let summary = c.trainingSummary || '';
+  if (!summary) {
+    summary = await _trainingSummaryLLM(anonSegs, c.outcome);
+    if (summary) {
+      await mutateSettersData((d) => { const l = d.leads?.[req.params.leadId]; if (l?.callLog?.[i]) l.callLog[i].trainingSummary = summary; });
+    }
+  }
+  res.json({ outcome: c.outcome || '', duration: c.duration || 0, segments: anonSegs, summary });
+});
+
+// POST /api/training/ask — coach IA: pregunta libre → respuesta con el banco.
+app.post('/api/training/ask', requireAuth, async (req, res) => {
+  const question = String(req.body?.question || '').trim();
+  if (!question) return res.status(400).json({ error: 'Escribí una pregunta.' });
+  if (!mercuryKey && !qwenKey) return res.status(503).json({ error: 'IA no disponible.' });
+  let faqs = [];
+  try { faqs = (loadFaqs().entries || []).slice().sort((a, b) => (b.usos || 0) - (a.usos || 0)); } catch {}
+  const answer = await _coachAnswerLLM(question, faqs);
+  if (!answer) return res.status(502).json({ error: 'La IA no respondió, reintentá.' });
+  res.json({ answer });
+});
+
 // GET /api/telnyx/calls/:leadId/:callIdx/transcript — devuelve el transcript completo
 // de una llamada específica. admin/supervisor todas, setter solo las suyas.
 app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res) => {

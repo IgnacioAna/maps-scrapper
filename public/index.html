@@ -105,9 +105,9 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Llamadas</span>
           </a>
-          <a href="#" class="menu-item" data-target="view-assistant" data-label="Asistente IA">
-            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1"/><circle cx="13" cy="10" r="1"/><circle cx="17" cy="10" r="1"/></svg>
-            <span>Asistente IA</span>
+          <a href="#" class="menu-item" data-target="view-training" data-label="Entrenamiento IA">
+            <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <span>Entrenamiento IA</span>
           </a>
           <a href="#" class="menu-item" data-target="view-wa-mywhats" data-label="Mis WhatsApps" data-roles="parked">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
@@ -1990,6 +1990,43 @@
         <div id="myp-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">Sin datos en el período seleccionado.</div>
       </div>
 
+      <!-- Entrenamiento IA: biblioteca de llamadas anonimizada + coach IA -->
+      <div id="view-training" class="module-view hidden" data-roles="admin,supervisor,setter">
+        <div class="content-header">
+          <h2>Entrenamiento IA</h2>
+          <span style="font-size:13px; color:var(--text-secondary);">Aprendé de las llamadas del equipo y preguntale a la IA</span>
+        </div>
+        <div style="padding:0 32px 32px;">
+          <div style="display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--border-subtle);">
+            <button class="training-tab active" data-tab="library" style="background:none; border:none; border-bottom:2px solid var(--accent); color:var(--text-primary); font-weight:600; font-size:13px; padding:9px 4px; margin-right:14px; cursor:pointer; font-family:inherit;">Biblioteca de llamadas</button>
+            <button class="training-tab" data-tab="coach" style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-secondary); font-weight:600; font-size:13px; padding:9px 4px; cursor:pointer; font-family:inherit;">Preguntale a la IA</button>
+          </div>
+          <div id="training-pane-library">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+              <span style="font-size:12px; color:var(--text-secondary);">Resultado:</span>
+              <select id="training-outcome-filter" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit; cursor:pointer;">
+                <option value="">Todas</option>
+                <option value="scheduled_with_admin">Agendó</option>
+                <option value="answered_interested">Interesado</option>
+                <option value="answered_not_interested">No interesado</option>
+                <option value="hung_up">Me cortó</option>
+                <option value="no_answer">No atendió</option>
+                <option value="voicemail">Buzón</option>
+              </select>
+              <span id="training-library-count" style="font-size:12px; color:var(--text-tertiary);"></span>
+            </div>
+            <div style="font-size:11.5px; color:var(--text-tertiary); margin-bottom:12px; line-height:1.5;">Llamadas reales del equipo, anonimizadas (sin nombres ni teléfonos del cliente). Mirá cómo hablan tus compañeros y aprendé de las que salieron bien.</div>
+            <div id="training-library-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+          </div>
+          <div id="training-pane-coach" style="display:none; max-width:760px;">
+            <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">Preguntale a la IA sobre el producto, cómo rebatir objeciones, cómo vender mejor. Responde con el conocimiento del equipo (Banco de Respuestas).</div>
+            <textarea id="training-coach-q" rows="3" placeholder="Ej: cómo respondo cuando me dicen que ya tienen un sistema?" style="width:100%; box-sizing:border-box; padding:12px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; font-family:inherit; resize:vertical;"></textarea>
+            <button id="training-coach-ask" style="margin-top:10px; padding:11px 20px; background:var(--accent); color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;">Preguntar</button>
+            <div id="training-coach-answer" style="margin-top:16px;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Asistente de respuestas (admin + setter) — mobile-first -->
       <div id="view-assistant" class="module-view hidden">
         <style>
@@ -3171,7 +3208,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260620j"></script>
+  <script type="module" src="/app.js?v=20260620k"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
