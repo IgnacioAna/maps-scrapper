@@ -4397,6 +4397,12 @@ app.patch('/api/setters/team/:id/quota', requireAuth, requireRole('admin'), (req
   res.json({ ok: true, dailyCallQuota: setter.dailyCallQuota });
 });
 
+// Umbral compartido (segundos) para considerar que una llamada fue una
+// "conversación" / pasó el opener. Definido a nivel módulo para que
+// /cold-call-metrics y /telnyx/cold-call-effectiveness usen el MISMO criterio
+// y sus números cuadren entre dashboards (audit 2026-06-20, hallazgo #2).
+const COLD_CALL_CONV_MIN_S = 30;
+
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
 // GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
 // Funnel de cold call basado en callLog: Dials → Connects → Conversations → Appointments.
@@ -4429,7 +4435,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
 
   const CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
   const APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
-  const CONV_MIN_DURATION_S = 30;
+  const CONV_MIN_DURATION_S = COLD_CALL_CONV_MIN_S;
 
   const data = loadSettersData();
   let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
@@ -4449,7 +4455,11 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
       if (CONNECT_OUTCOMES.has(outcome)) {
         connects++;
         totalDurationS += duration;
-        if (duration >= CONV_MIN_DURATION_S) conversations++;
+        // Una llamada cuenta como "conversación" si superó el umbral de duración
+        // O si terminó en agendamiento (agendar implica que hubo conversación,
+        // aunque el canal manual no registre duration). Garantiza appointments <=
+        // conversations → bookingRate nunca supera 100% (audit 2026-06-20, #3).
+        if (duration >= CONV_MIN_DURATION_S || APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
         if (APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
       }
       if (outcome === 'answered_not_interested') {
@@ -6874,7 +6884,9 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
       lead.respondio = true;
       lead.interes = 'no';
       lead.estado = 'descartado';
-      lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
+      // Audit 2026-06-20: solo asignar si vino una razón válida; sin esto un
+      // segundo "no interesado" sin razón pisaba con '' la razón previa.
+      if (cleanReason) lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
       break;
 
     case 'no_answer':
@@ -10965,6 +10977,14 @@ app.post("/api/telnyx/webhook", async (req, res) => {
     return res.status(401).json({ error: "invalid signature", reason: verification.reason });
   }
   if (verification.mode === "skipped") {
+    // Audit 2026-06-20 (#4): en producción la signature key SIEMPRE debe estar
+    // configurada (env var TELNYX_SIGNATURE_PUBLIC_KEY). Si falta, fail-closed —
+    // mismo criterio que JWT_SECRET. Sin esto, cualquiera podía POSTear eventos
+    // sin firmar y ensuciar telnyx_events.json. En dev/test seguimos aceptando.
+    if (process.env.NODE_ENV === "production") {
+      console.error("[telnyx-webhook] RECHAZADO: signaturePublicKey no configurada en producción.");
+      return res.status(503).json({ error: "webhook signature not configured" });
+    }
     console.warn("[telnyx-webhook] WARNING: signature validation skipped (signaturePublicKey not configured)");
   }
 
@@ -10979,6 +10999,8 @@ app.post("/api/telnyx/webhook", async (req, res) => {
     id: `tlx_evt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
     type: eventType,
     receivedAt: new Date().toISOString(),
+    verified: verification.mode === "skipped" ? "skipped" : !!verification.ok, // audit #4
+
     callControlId: payload.call_control_id || null,
     callLegId: payload.call_leg_id || null,
     from: payload.from || null,
@@ -11120,7 +11142,9 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   // - Ratio interesado: answered_interested / atendidas
   const attendedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'voicemail', 'callback_later'];
   const reachedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']; // hablaste con humano
-  const openerPassedCount = calls.filter(c => (c.duration || 0) > 30).length;
+  // Mismo umbral que /cold-call-metrics (COLD_CALL_CONV_MIN_S) para que ambos
+  // dashboards reporten la misma definición de "pasó el opener" (audit #2).
+  const openerPassedCount = calls.filter(c => (c.duration || 0) >= COLD_CALL_CONV_MIN_S).length;
   const attendedCount = calls.filter(c => attendedOutcomes.includes(c.outcome)).length;
   const reachedCount = calls.filter(c => reachedOutcomes.includes(c.outcome)).length;
   const scheduledCount = (byOutcome.scheduled_with_admin?.count || 0);
@@ -11506,11 +11530,22 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // Al menos uno de los dos audios debe estar.
 app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) => {
   const role = req.auth?.user?.role;
-  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  const { leadId } = req.params;
+  // RBAC (audit 2026-06-20, #1): admin/supervisor transcriben cualquier lead;
+  // el setter transcribe SOLO los suyos. Antes el endpoint era admin/supervisor
+  // only, pero el front graba+sube para cualquiera que llama → el setter recibía
+  // 403 tras subir el audio (banda desperdiciada + audio del lead grabado en vano).
+  // El ownership se chequea ANTES de llamar a Whisper (que cuesta plata).
+  if (role !== 'admin' && role !== 'supervisor') {
+    if (role !== 'setter') return res.status(403).json({ error: 'No autorizado.' });
+    const lead = loadSettersData().leads?.[leadId];
+    if (!lead || lead.assignedTo !== req.auth?.user?.setterId) {
+      return res.status(403).json({ error: 'No autorizado para este lead.' });
+    }
+  }
   if (!process.env.OPENAI_API_KEY) {
     return res.status(503).json({ error: 'OPENAI_API_KEY no configurada. Setear como env var en Railway.' });
   }
-  const { leadId } = req.params;
   const { setterAudioB64, leadAudioB64, mimeType, callStartedAt } = req.body || {};
   if (!setterAudioB64 && !leadAudioB64) {
     return res.status(400).json({ error: 'Al menos uno de setterAudioB64 o leadAudioB64 requerido' });
