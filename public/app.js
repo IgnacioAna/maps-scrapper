@@ -4424,7 +4424,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${lt ? `<span style="font-size:10px; color:${lt.ok?'#5BB974':'#FFB341'}; background:${lt.ok?'rgba(91,185,116,0.1)':'rgba(255,179,65,0.1)'}; padding:2px 7px; border-radius:6px;">🕐 ${lt.time}${lt.ok?'':' ⚠'}</span>` : ''}
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · 💡 ' + escHtml(l.openingAngle) : ''}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
           </div>
           <span title="Prioridad" style="font-size:10.5px; color:${sc>=70?'#5BB974':sc>=50?'#FFB341':'#7E8494'}; font-weight:700;">${sc}</span>
           <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer; white-space:nowrap;">📞 Llamar</button>
@@ -5009,7 +5009,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">·</span>
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-            ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🎯 ${sc}</span>`; })()}
+            ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`; })()}
             ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? '#5BB974' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🕐 ${lt.time}${lt.ok ? '' : ' ⚠'}</span>`; })()}
             ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
@@ -5033,18 +5033,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (de las señales del brief) -->
       ${lead.openingAngle && lead.openingAngle.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.03) 100%); border:1px solid rgba(157,133,242,0.32); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">💡 Ángulo sugerido</div>
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">Ángulo sugerido</div>
         <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
       </div>` : ''}
 
       <!-- Bloque 1.6: Lead Brief IA (reseñas mineadas: dolor+cita+hook+fit) -->
       ${lead.leadBrief ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">🧠 Brief IA${lead.leadBrief.fitScore != null ? ` · fit ${lead.leadBrief.fitScore}/100` : ''}${lead.leadBrief.reviewsMined ? ` · ${lead.leadBrief.reviewsMined} reseñas` : ''}</div>
-        ${lead.leadBrief.hookPhrase ? `<div style="color:#fff; font-size:13.5px; line-height:1.5; margin-bottom:6px;">🎣 ${escHtml(lead.leadBrief.hookPhrase)}</div>` : ''}
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">Brief IA${lead.leadBrief.fitScore != null ? ` · fit ${lead.leadBrief.fitScore}/100` : ''}${lead.leadBrief.reviewsMined ? ` · ${lead.leadBrief.reviewsMined} reseñas` : ''}</div>
+        ${lead.leadBrief.hookPhrase ? `<div style="color:#fff; font-size:13.5px; line-height:1.5; margin-bottom:6px;">${escHtml(lead.leadBrief.hookPhrase)}</div>` : ''}
         ${(lead.leadBrief.painPoints || []).slice(0, 2).map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
         ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
       </div>` : (currentUser?.realRole === 'admin' && (parseInt(lead.reviews, 10) || 0) >= 10 ? `<div style="margin-top:16px; background:rgba(255,179,65,0.06); border:1px dashed rgba(255,179,65,0.4); padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <button id="pd-gen-brief-btn" onclick="window._pdGenBrief()" style="font-size:13px; padding:9px 16px; border-radius:9px; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.5); color:#FFB341; font-weight:700; cursor:pointer; font-family:inherit;">🧠 Generar brief IA ahora</button>
+        <button id="pd-gen-brief-btn" onclick="window._pdGenBrief()" style="font-size:13px; padding:9px 16px; border-radius:9px; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.5); color:#FFB341; font-weight:700; cursor:pointer; font-family:inherit;">Generar brief IA ahora</button>
         <span style="font-size:11.5px; color:var(--text-tertiary);">Lee las ${escHtml(String(lead.reviews || 0))} reseñas y arma dolores + gancho (~$0.05)</span>
       </div>` : '')}
 
@@ -6106,15 +6106,15 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 ver chat</a>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
-              ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">🧠 brief IA</button>` : ''}
-              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">📇 ${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">📞 alt</button>` : ''}
-              <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📇 ${l.altPhone ? 'editar' : '+ contacto'}</button>
+              ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
+              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">📞 alt</button>` : ''}
+              <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
-            ${l.openingAngle && l.openingAngle.trim() ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">💡 ${escHtml(l.openingAngle)}</div>` : ''}
+            ${l.openingAngle && l.openingAngle.trim() ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(l.openingAngle)}</div>` : ''}
             ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
@@ -6432,7 +6432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 16: ángulo sugerido (de las señales del brief) + chips de señales.
       if (lead.openingAngle && lead.openingAngle.trim()) {
         rows.push(`<div style="background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.04) 100%); border:1px solid rgba(157,133,242,0.35); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
-          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">💡 Ángulo sugerido</div>
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">Ángulo sugerido</div>
           <div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
         </div>`);
       }
@@ -6443,12 +6443,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // visible para cargarlo en el momento de la llamada.
       {
         const altCall = lead.altPhone
-          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;">📇 <b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">📞 Llamar</button></div>`
+          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">📞 Llamar</button></div>`
           : `<div style="font-size:11px; color:rgba(255,255,255,0.6);">Si te pasan otro número (encargado/decisor), cargalo acá.</div>`;
         rows.push(`<div style="background:rgba(121,184,255,0.07); border:1px solid rgba(121,184,255,0.25); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
-          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#79B8FF; margin-bottom:5px;">📇 Contacto secundario</div>
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#79B8FF; margin-bottom:5px;">Contacto secundario</div>
           ${altCall}
-          <div style="margin-top:6px;"><button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="font-size:10px; padding:3px 9px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📇 ${lead.altPhone ? 'editar' : '+ Agregar contacto'}</button></div>
+          <div style="margin-top:6px;"><button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="font-size:10px; padding:3px 9px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${lead.altPhone ? 'editar' : '+ Agregar contacto'}</button></div>
         </div>`);
       }
       // Brief IA (reseñas mineadas) — visible DURANTE la llamada, no solo en el Power Dialer.
@@ -6456,8 +6456,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lb = lead.leadBrief;
         const pains = (lb.painPoints || []).slice(0, 2).map(p => `<div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px;">• ${escHtml(p.dolor || '')}${p.cita ? ` <span style="opacity:0.55; font-style:italic;">"${escHtml(String(p.cita).slice(0, 90))}"</span>` : ''}</div>`).join('');
         rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
-          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🧠 Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}</div>
-          ${lb.hookPhrase ? `<div style="color:#fff; font-size:12px; line-height:1.45;">🎣 ${escHtml(lb.hookPhrase)}</div>` : ''}
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}</div>
+          ${lb.hookPhrase ? `<div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lb.hookPhrase)}</div>` : ''}
           ${pains}
           ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:5px;">${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
         </div>`);
@@ -7577,7 +7577,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           alert(`No se pudo generar el brief: ${why}.\nProbá con otro lead que sí aparezca en Google Maps.`);
         }
       } catch (e) { console.error(e); alert('⚠ error de red'); }
-      if (btn) { btn.disabled = false; btn.textContent = orig || '🧠 brief IA'; }
+      if (btn) { btn.disabled = false; btn.textContent = orig || 'brief IA'; }
     };
     // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
     window._callsAltContact = async (leadId) => {
@@ -7612,9 +7612,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : 'no se pudo (sin reseñas o IA caída)';
           window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 5000 });
-          if (btn) { btn.disabled = false; btn.textContent = '🧠 Generar brief IA ahora'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; }
         }
-      } catch (e) { console.error(e); window.showToast?.('Error de red', { type: 'error' }); if (btn) { btn.disabled = false; btn.textContent = '🧠 Generar brief IA ahora'; } }
+      } catch (e) { console.error(e); window.showToast?.('Error de red', { type: 'error' }); if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; } }
     };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
@@ -8788,7 +8788,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const costCheap = (cheap * 0.025).toFixed(2);
             const costExp = (exp * 2 * 0.025).toFixed(2);
             const byC = Object.entries(d.byCountry || {}).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `${escHtml(k)}: ${v}`).join(' · ');
-            out.innerHTML = `📊 <b>${d.pending || 0}</b> leads (10+ reseñas) sin brief.<br>` +
+            out.innerHTML = `<b>${d.pending || 0}</b> leads (10+ reseñas) sin brief.<br>` +
               `✅ <b>${cheap}</b> con place_id → baratos (1 búsqueda c/u ≈ <b>$${costCheap}</b> en total).<br>` +
               `⚠️ <b>${exp}</b> sin place_id → caros/inciertos (hasta ~$${costExp} y muchos no resuelven).<br>` +
               (byC ? `<span style="color:var(--text-tertiary);">Por país: ${byC}</span>` : '');
@@ -8816,7 +8816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const pend = d.pending || 0;
           const maxInput = document.getElementById('cmd-brief-sweep-max');
           if (maxInput) maxInput.value = Math.min(pend, 700) || 1;
-          if (prog) prog.innerHTML = `📊 <b>${pend}</b> leads premium sin brief en ${country}. Tope puesto en ${Math.min(pend, 700)} (ajustalo si querés). ~${pend} a ${pend * 2} búsquedas.`;
+          if (prog) prog.innerHTML = `<b>${pend}</b> leads premium sin brief en ${country}. Tope puesto en ${Math.min(pend, 700)} (ajustalo si querés). ~${pend} a ${pend * 2} búsquedas.`;
         } else if (prog) prog.textContent = '⚠ ' + (d.error || 'error');
       } catch (e) { if (prog) prog.textContent = '⚠ error contando'; }
     });
@@ -8853,14 +8853,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
         }
         if (_briefSweepStop && prog) prog.innerHTML = `⏹ Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
-        else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `🎯 Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs en ${country}. Subí el tope para seguir.`;
+        else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs en ${country}. Subí el tope para seguir.`;
       } catch (e) { console.error(e); if (prog) prog.textContent = `⚠ error de red (frené en ${totalBriefed} briefs)`; }
       cmdSweepBtn.disabled = false; cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = '⏹ Parar';
     });
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {
-      if (!confirm('Generar Lead Brief IA para hasta 8 leads (10+ reseñas), agarrando los de MÁS reseñas primero. Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?\n\n(Tip: para elegir UN lead puntual, usá el botón "🧠 brief IA" en su card de Llamadas.)')) return;
+      if (!confirm('Generar Lead Brief IA para hasta 8 leads (10+ reseñas), agarrando los de MÁS reseñas primero. Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?\n\n(Tip: para elegir UN lead puntual, usá el botón "brief IA" en su card de Llamadas.)')) return;
       cmdBriefBtn.disabled = true; const lbl = cmdBriefBtn.textContent; cmdBriefBtn.textContent = '⏳ Generando (tarda)...';
       const out = document.getElementById('cmd-enrich-result');
       try {
