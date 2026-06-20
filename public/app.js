@@ -4368,7 +4368,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notDnc = (l) => !l.doNotCall;
         const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
         const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
-        const due = (l) => !l.callbackAt || new Date(l.callbackAt).getTime() <= now;
         // 1) Callbacks MANUALES vencidos (el setter eligió "volver a llamar")
         const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= now && lastOutcome(l) === 'callback_later')
           .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
@@ -4376,13 +4375,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2) Interesados sin agendar
         const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
         interesados.forEach(l => claimed.add(l.id));
-        // 3) Para reintentar (no atendió / buzón / cortó) — SOLO cuando ya vencieron
-        //    su reintento programado (no_answer/voicemail reaparecen 24h después).
-        const RETRY = new Set(['no_answer', 'voicemail', 'hung_up']);
-        const reintentar = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && RETRY.has(lastOutcome(l)) && due(l))
-          .sort((a, b) => _callsLastCallTs(b) - _callsLastCallTs(a));
-        reintentar.forEach(l => claimed.add(l.id));
-        // 4) Vírgenes priorizados (nunca llamados, por score)
+        // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
+        // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
+        // al 3er no-contacto se descartan automáticamente (backend).
+        // 3) Vírgenes priorizados (nunca llamados, por score)
         const virgenes = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0))
           .sort((a, b) => _callScore(b) - _callScore(a)).slice(0, 40);
 
@@ -4397,13 +4393,12 @@ document.addEventListener('DOMContentLoaded', async () => {
               `<div class="stat-card stat-card-accent"><span class="stat-num">${m.appointments || 0}</span><span class="stat-label">Agendadas</span></div>`;
           } catch {}
         }
-        const totalPend = callbacks.length + interesados.length + reintentar.length;
+        const totalPend = callbacks.length + interesados.length;
         if (greetEl) greetEl.textContent = `${totalPend} para seguir · ${virgenes.length} nuevos en cola`;
 
         secEl.innerHTML =
           _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar') +
           _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar') +
-          _hoyRenderSection('Para reintentar', reintentar, '#FFB341', 'Vuelven 24h después de no atender / buzón') +
           _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca contactados, por prioridad');
       } catch (e) {
         console.error('[hoy]', e);

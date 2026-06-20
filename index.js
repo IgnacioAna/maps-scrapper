@@ -6964,22 +6964,29 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
   // dialer automático (compliance: la llamada siempre la dispara una persona).
   const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
-  // Phase 12 P0-1 (persistencia): 6 reintentos antes de agotar — el 95% de los que
-  // convierten se alcanzan recién al 6to intento; la mayoría abandona al 4to (error).
-  // Horas hasta el próximo reintento por nº de racha: 1d, 2d, 3d, 4d, 7d, 7d.
-  // El no_answer/voicemail no descarta el lead: reaparece para re-llamar a las 24h.
-  const CADENCE_HOURS = [24, 48, 72, 96, 168, 168];
+  // Política: el lead que no atiende / cae a buzón se reintenta CADA 24h hasta
+  // MAX_NO_CONTACT intentos. NO aparece en "Hoy" — reaparece solo en Llamadas y
+  // el Power Dialer cuando vence su callback de 24h. Al llegar al 3er no-contacto
+  // seguido, se DESCARTA automáticamente. Compliance: la llamada siempre la
+  // dispara una persona (no hay dialer automático).
+  const MAX_NO_CONTACT = 3;
   if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
     let streak = 0;
     for (let i = lead.callLog.length - 1; i >= 0; i--) {
       if (_NO_CONTACT.has(lead.callLog[i].outcome)) streak++; else break;
     }
-    if (streak <= CADENCE_HOURS.length) {
-      lead.callbackAt = new Date(Date.now() + CADENCE_HOURS[streak - 1] * 3600000).toISOString();
-      lead.cadenceStep = streak;
-      lead.cadenceExhausted = false;
+    lead.cadenceStep = streak;
+    if (streak >= MAX_NO_CONTACT) {
+      // 3er no-contacto seguido → descarte automático (no se llama más).
+      lead.estado = 'descartado';
+      lead.callbackAt = '';
+      lead.cadenceExhausted = true;
+      lead.autoDiscarded = true;
+      lead.autoDiscardReason = `sin_contacto_${MAX_NO_CONTACT}x`;
     } else {
-      lead.cadenceExhausted = true; // agotó los reintentos automáticos
+      // Reintento a las 24h: reaparece en la cola de Llamadas.
+      lead.callbackAt = new Date(Date.now() + 24 * 3600000).toISOString();
+      lead.cadenceExhausted = false;
     }
   }
 

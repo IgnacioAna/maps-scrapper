@@ -1,7 +1,7 @@
 // Phase 17 Ola 3 — cadencia de auto-redial.
-// Cada no_answer/voicemail (sin callback manual) auto-programa el próximo intento
-// según la racha de no-contacto: +1d, +2d, +3d, +4d, +7d, +7d; tras agotar → cadenceExhausted.
-// Un connect rompe la racha. Reusa callbackAt (cola "Para seguir"), sin dialer.
+// Cada no_answer/voicemail (sin callback manual) reprograma el próximo intento a
+// +24h, hasta 3 intentos; al 3er no-contacto seguido el lead se DESCARTA solo.
+// Un connect rompe la racha. Reaparece en Llamadas/Power Dialer (no en Hoy).
 
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import path from "node:path";
@@ -43,46 +43,34 @@ beforeAll(async () => {
 });
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
-describe("cadencia de auto-redial", () => {
-  it("1er no_answer → callback +1d (24h), step 1", async () => {
+describe("cadencia de auto-redial (3 intentos a 24h, luego descarte)", () => {
+  it("1er no_answer → callback +24h, step 1, no descartado", async () => {
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(1);
     expect(r.body.lead.estado).not.toBe("descartado");
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
   });
-  it("2do no_answer → +2d (48h), step 2", async () => {
+  it("2do no_answer → +24h, step 2, todavía no descartado", async () => {
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(2);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(47);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(49);
+    expect(r.body.lead.estado).not.toBe("descartado");
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
   });
-  it("3er no_answer → +3d, step 3", async () => {
+  it("3er no_answer → DESCARTADO automático, sin callback", async () => {
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(3);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(71);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(73);
+    expect(r.body.lead.estado).toBe("descartado");
+    expect(r.body.lead.autoDiscarded).toBe(true);
+    expect(r.body.lead.callbackAt).toBeFalsy();
   });
-  it("4to no_answer → +4d, step 4 (persistencia: ya no agota al 4to)", async () => {
-    const r = await disp({ outcome: "no_answer" });
-    expect(r.body.lead.cadenceStep).toBe(4);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(95);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(97);
-    expect(r.body.lead.cadenceExhausted).toBe(false);
-  });
-  it("5to y 6to no_answer → +7d cada uno; recién el 7mo agota", async () => {
-    let r = await disp({ outcome: "no_answer" }); // 5
-    expect(r.body.lead.cadenceStep).toBe(5);
-    r = await disp({ outcome: "no_answer" }); // 6
-    expect(r.body.lead.cadenceStep).toBe(6);
-    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(167);
-    r = await disp({ outcome: "no_answer" }); // 7 → agota
-    expect(r.body.lead.cadenceExhausted).toBe(true);
-  });
-  it("un connect (hung_up) rompe la racha → próximo no_answer vuelve a step 1", async () => {
+  it("un connect (hung_up) rompe la racha → próximo no_answer vuelve a step 1 (+24h)", async () => {
     await disp({ outcome: "hung_up" });
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(1);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
   });
   it("callback manual NO es pisado por la cadencia", async () => {
     const manual = new Date(Date.now() + 10 * 24 * 3600000).toISOString();
