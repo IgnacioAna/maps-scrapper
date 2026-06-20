@@ -5587,7 +5587,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const sigs = Array.isArray(lead && lead.signals) ? lead.signals : [];
       if (!sigs.length) return '';
       return sigs.map(s => {
-        const label = _SIGNAL_LABELS[s] || s;
+        let label = _SIGNAL_LABELS[s] || s;
+        // El más caliente: si pauta, mostrar en qué plataforma (Meta/Google/TikTok).
+        if (s === 'ads_activos' && Array.isArray(lead.adPlatforms) && lead.adPlatforms.length) {
+          label = 'Corre anuncios · ' + lead.adPlatforms.join(', ');
+        }
         return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:#C4B5FD; background:rgba(157,133,242,0.16); border:1px solid rgba(157,133,242,0.3); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
       }).join('');
     }

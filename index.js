@@ -595,6 +595,7 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.category !== 'string') lead.category = '';
   // Phase 10 C6: el negocio corre publicidad (Meta/Google pixel detectado en su web).
   if (typeof lead.runsAds !== 'boolean') lead.runsAds = false;
+  if (!Array.isArray(lead.adPlatforms)) lead.adPlatforms = []; // ['Meta','Google','TikTok']
   // Phase 10 A3: estado del negocio según Google (CLOSED_PERMANENTLY/TEMPORARILY → no discar).
   if (typeof lead.businessStatus !== 'string') lead.businessStatus = '';
   // Phase 10 B2: tipo de línea validado vía Telnyx Number Lookup (mobile/landline/voip).
@@ -709,8 +710,10 @@ function _openingAngleFor(signal, ctx = {}) {
       return `Instagram sin web → "¿cuántos de tus seguidores terminan agendando una consulta?"`;
     case 'sin_contacto_digital':
       return `Sin web ni redes visibles → oportunidad digital total, casi seguro depende del boca a boca`;
-    case 'ads_activos':
-      return `Corre anuncios (Meta/Google) → "esos leads que entran, ¿los sigue alguien o se enfrían?"`;
+    case 'ads_activos': {
+      const plats = (Array.isArray(ctx.platforms) && ctx.platforms.length) ? ctx.platforms.join('/') : 'Meta/Google';
+      return `Corre anuncios (${plats}) → "esos leads que entran, ¿los sigue alguien o se enfrían?"`;
+    }
     default:
       return '';
   }
@@ -744,7 +747,7 @@ function computeLeadSignals(lead = {}) {
     else reputationTier = 'fuerte';
   }
 
-  const openingAngle = signals.length ? _openingAngleFor(signals[0], { rating, reviews }) : '';
+  const openingAngle = signals.length ? _openingAngleFor(signals[0], { rating, reviews, platforms: lead.adPlatforms }) : '';
   return { signals, reputationTier, ratingNum: rating, hasWebsite, openingAngle };
 }
 
@@ -2003,7 +2006,14 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         out.adsChecked = true;
         if (w.email) { out.email = w.email; emailsFound++; }
         else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
-        if (w.ads && w.ads.runsAds) { out.runsAds = true; adsFound++; }
+        if (w.ads && w.ads.runsAds) {
+          out.runsAds = true; adsFound++;
+          const plats = [];
+          if (w.ads.hasMetaPixel) plats.push('Meta');
+          if (w.ads.hasGoogleAds) plats.push('Google');
+          if (w.ads.hasTikTokPixel) plats.push('TikTok');
+          out.adPlatforms = plats;
+        }
         // Redes GRATIS del mismo HTML que ya bajamos.
         if (w.social && (w.social.instagram || w.social.facebook)) {
           if (w.social.instagram) out.instagram = w.social.instagram;
@@ -2039,7 +2049,8 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.adsChecked) {
           lead.adsCheckedAt = new Date().toISOString();
           lead.runsAds = !!r.runsAds;
-          // Recomputar señales: runsAds agrega 'ads_activos' (ángulo dominante).
+          lead.adPlatforms = Array.isArray(r.adPlatforms) ? r.adPlatforms : []; // Meta/Google/TikTok
+          // Recomputar señales: runsAds agrega 'ads_activos' (ángulo dominante, con plataformas).
           const _sig = computeLeadSignals(lead);
           lead.signals = _sig.signals; lead.reputationTier = _sig.reputationTier;
           lead.ratingNum = _sig.ratingNum; lead.hasWebsite = _sig.hasWebsite;
