@@ -4396,46 +4396,49 @@ document.addEventListener('DOMContentLoaded', async () => {
           } catch {}
         }
         const totalPend = callbacks.length + interesados.length + reintentar.length;
-        if (greetEl) greetEl.textContent = `${totalPend} para seguir + ${virgenes.length} nuevos en cola`;
+        if (greetEl) greetEl.textContent = `${totalPend} para seguir · ${virgenes.length} nuevos en cola`;
 
         secEl.innerHTML =
-          _hoyRenderSection('Callbacks de hoy', callbacks, '#5BA3F2', 'Llamá a los que quedaron en volver a contactar.') +
-          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Dijeron que sí — cerrá la reunión.') +
-          _hoyRenderSection('Para reintentar', reintentar, '#FFB341', 'No atendieron / buzón / cortaron. Insistí.') +
-          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca llamados, ordenados por prioridad.');
+          _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar') +
+          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar') +
+          _hoyRenderSection('Para reintentar', reintentar, '#FFB341', 'Sin respuesta / cortaron') +
+          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca contactados, por prioridad');
       } catch (e) {
         console.error('[hoy]', e);
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
       }
     }
-    function _hoyRenderSection(title, leads, color, hint) {
+    function _hoyRenderSection(title, leads, accent, hint) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
         const sigs = (typeof _signalChips === 'function') ? _signalChips(l) : '';
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
-        return `<div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border-subtle);">
+        const scColor = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
+        return `<div style="display:flex; align-items:center; gap:12px; padding:9px 14px; border-top:1px solid var(--border-subtle);">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
-              <strong style="color:var(--text-primary); font-size:13.5px;">${escHtml(l.name || '')}</strong>
-              ${cbStr ? `<span style="font-size:10px; color:#5BA3F2; background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">${cbStr}</span>` : ''}
-              ${lt ? `<span style="font-size:10px; color:${lt.ok?'#5BB974':'#FFB341'}; background:${lt.ok?'rgba(91,185,116,0.1)':'rgba(255,179,65,0.1)'}; padding:2px 7px; border-radius:6px;">${lt.time}${lt.ok?'':' ⚠️'}</span>` : ''}
+              <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
+              ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
+              ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
           </div>
-          <span title="Prioridad" style="font-size:10.5px; color:${sc>=70?'#5BB974':sc>=50?'#FFB341':'#7E8494'}; font-weight:700;">${sc}</span>
-          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer; white-space:nowrap;">Llamar</button>
+          <span title="Prioridad" style="font-size:11px; color:${scColor}; font-weight:700; font-variant-numeric:tabular-nums; min-width:22px; text-align:right;">${sc}</span>
+          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" style="background:var(--success); color:#0F1115; border:none; padding:7px 15px; border-radius:7px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit;">Llamar</button>
         </div>`;
       }).join('');
-      return `<div style="background:var(--surface-color, rgba(255,255,255,0.02)); border:1px solid var(--border-color); border-left:3px solid ${color}; border-radius:12px; overflow:hidden;">
-        <div style="padding:11px 14px; border-bottom:1px solid var(--border-subtle);">
-          <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">${title} <span style="color:${color};">${leads.length}</span></div>
-          <div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${hint}</div>
+      return `<div style="background:var(--bg-card, rgba(255,255,255,0.015)); border:1px solid var(--border-color); border-radius:10px; overflow:hidden;">
+        <div style="display:flex; align-items:baseline; gap:9px; padding:12px 14px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:${accent}; flex-shrink:0; align-self:center;"></span>
+          <span style="font-size:13px; font-weight:700; color:var(--text-primary);">${title}</span>
+          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}</span>
+          <span style="font-size:11px; color:var(--text-tertiary); margin-left:auto;">${hint}</span>
         </div>
-        ${leads.length ? rows : '<div style="padding:14px; color:var(--text-tertiary); font-size:12px;">Nada acá ahora. 👌</div>'}
+        ${leads.length ? rows : '<div style="padding:0 14px 14px; color:var(--text-tertiary); font-size:11.5px;">Sin pendientes.</div>'}
       </div>`;
     }
     window.loadHoyView = loadHoyView;
