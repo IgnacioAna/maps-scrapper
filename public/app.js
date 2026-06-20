@@ -14625,7 +14625,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li><strong>Mercury en vivo</strong>: si te tiran una objeción ("ya tengo sistema", "mandame info"), tocá el chip o escribila y la IA te sopla la respuesta al toque.</li>
           <li><strong>Ficha del lead</strong>: reseñas, señales, <strong>ángulo de apertura</strong> y, si tiene, el <strong>Brief IA</strong> (dolores + gancho sacados de sus reseñas).</li>
           <li><strong>Contacto secundario</strong>: si la recepción te pasa otro número (el encargado), cargalo ahí y lo llamás sin perder el lead.</li>
-        </ul>`
+        </ul>
+        <div class="guide-callout"><strong>Usá auriculares.</strong> La llamada se graba y transcribe sola para el Entrenamiento IA. Sin auriculares, la voz del cliente entra por tu micrófono y la transcripción sale mezclada. Con auriculares queda mucho más limpia — y el resto del equipo aprende de tus llamadas.</div>`
       },
       {
         id: 'llamadas',
