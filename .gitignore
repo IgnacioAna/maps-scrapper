@@ -20,6 +20,13 @@ test_qwen.js
 .env.local
 # Archivo personal con notas/credenciales scratch — nunca subirlo
 Scapper.txt
+# Dump viejo de leads (9MB con PII) que se coló en un commit de UI — destrackeado.
+# Sigue en disco local; nunca volver a commitearlo.
+paula-old.json
+# Snapshots/dumps sueltos de datos en la raíz (mismo criterio que paula-old).
+*-old.json
+# Script one-shot de armado de xlsx — no es parte del runtime.
+build_xlsx.js
 .claude/
 # Carpeta de assets del desktop WAMULTI — no pertenece a este repo
 wa-multi/
