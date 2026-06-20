@@ -4442,12 +4442,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadCallsView() {
       const setter = document.getElementById('calls-setter-select').value;
-      // 2026-05-25: si el check "Incluir leads de Setteo" está activo, pedimos
-      // también los leads con teléfono accionables (no solo sin_wsp).
-      const includeSetteo = document.getElementById('calls-include-setteo')?.checked;
+      // App call-only: la vista Llamadas SIEMPRE muestra los leads accionables
+      // (con teléfono, no terminales), no solo los marcados sin_wsp. El viejo
+      // checkbox "Incluir leads de Setteo" se removió en la limpieza del panel
+      // (Phase 15) pero la condición quedó colgada → la vista nunca pedía
+      // 'callable' y los leads distribuidos (que quedan en conexion='') no
+      // aparecían. Ahora va siempre.
       const params = new URLSearchParams();
       if (setter) params.set('setter', setter);
-      if (includeSetteo) params.set('include', 'callable');
+      params.set('include', 'callable');
       // Phase 17: vista de leads No-llamar (DNC) para revisarlos/deshacerlos.
       const showDnc = document.getElementById('calls-show-dnc')?.checked;
       if (showDnc) params.set('dnc', '1');

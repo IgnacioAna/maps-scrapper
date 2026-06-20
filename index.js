@@ -5753,7 +5753,10 @@ function _leadPoolTier(lead = {}) {
 // Resetea el estado OPERATIVO de un lead para re-contacto desde cero, conservando
 // el historial (callLog/notes) como referencia. NO toca name/phone/country/etc.
 function _resetLeadForRedistribution(lead) {
-  lead.conexion = '';
+  // App call-only: el lead distribuido entra al carril de LLAMADAS (sin_wsp),
+  // igual que el reciclaje del pool. Si se dejara en '' quedaría en limbo (no
+  // aparece en la vista Llamadas con el filtro estricto sin_wsp).
+  lead.conexion = 'sin_wsp';
   lead.estado = 'sin_contactar';
   lead.respondio = false;
   lead.calificado = false;
