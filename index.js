@@ -11587,14 +11587,14 @@ async function _trainingSummaryLLM(segments, outcome) {
 Transcripción (anonimizada):
 ${dialog}
 
-Devolvé en español, claro y breve (sin nombres ni datos sensibles):
-- Qué pasó (1-2 líneas)
-- Qué hizo BIEN el setter (1-2 puntos)
-- Qué podría mejorar (1-2 puntos)
-- Aprendizaje para el equipo (1 línea)`;
+Devolvé en español, claro y breve (sin nombres ni datos sensibles). Usá EXACTAMENTE estos 4 títulos en negrita markdown y NO te extiendas (el resumen completo entra en ~150 palabras):
+**Qué pasó** (1-2 líneas)
+**Qué hizo bien** (1-2 viñetas con "- ")
+**Qué mejorar** (1-2 viñetas con "- ")
+**Aprendizaje** (1 línea)`;
   try {
     const c = await Promise.race([
-      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 400 }),
+      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
     ]);
     return (c?.choices?.[0]?.message?.content || '').trim();
@@ -11689,10 +11689,14 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
   if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
   const anonSegs = segs.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: _anonymizeForTraining(s.text, lead) }));
   let summary = c.trainingSummary || '';
-  if (!summary) {
-    summary = await _trainingSummaryLLM(anonSegs, c.outcome);
-    if (summary) {
-      await mutateSettersData((d) => { const l = d.leads?.[req.params.leadId]; if (l?.callLog?.[i]) l.callLog[i].trainingSummary = summary; });
+  // Regenerar si está vacío o si quedó cacheado truncado (versiones viejas con
+  // max_tokens bajo: no contienen la sección final "Aprendizaje").
+  const looksTruncated = summary && !/aprendizaje/i.test(summary);
+  if (!summary || looksTruncated) {
+    const fresh = await _trainingSummaryLLM(anonSegs, c.outcome);
+    if (fresh) {
+      summary = fresh;
+      await mutateSettersData((d) => { const l = d.leads?.[req.params.leadId]; if (l?.callLog?.[i]) l.callLog[i].trainingSummary = fresh; });
     }
   }
   res.json({ outcome: c.outcome || '', duration: c.duration || 0, segments: anonSegs, summary, aiSuggestedOutcome: c.aiSuggestedOutcome || '', aiSuggestedReason: c.aiSuggestedReason || '' });

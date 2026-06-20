@@ -11025,6 +11025,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function loadTrainingView() { _trainingLoadLibrary(); }
   window.loadTrainingView = loadTrainingView;
 
+  // Markdown-lite: escapa HTML y renderiza **negrita** + viñetas "- ". Se usa para
+  // el resumen IA y la respuesta del coach (el LLM devuelve markdown).
+  function _trainingFmt(s) {
+    let h = escHtml(String(s || '').trim());
+    // **negrita** (los títulos del resumen)
+    h = h.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text-primary);">$1</strong>');
+    // *itálica* suelta (sin pisar las negritas ya convertidas)
+    h = h.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+    return h;
+  }
+
   async function _trainingLoadLibrary() {
     const list = document.getElementById('training-library-list');
     if (!list) return;
@@ -11045,10 +11056,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dur = c.duration ? Math.round(c.duration) + 's' : '';
     const t = c.ts ? new Date(c.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
     const win = (c.outcome === 'scheduled_with_admin' || c.outcome === 'answered_interested');
-    return `<div style="background:var(--bg-card, rgba(255,255,255,0.02)); border:1px solid var(--border-color); ${win ? 'border-left:3px solid #5BB974;' : ''} border-radius:10px;">
-      <div style="display:flex; align-items:center; gap:12px; padding:11px 14px;">
+    return `<div style="background:var(--bg-card, rgba(255,255,255,0.02)); border:1px solid var(--border-color); ${win ? 'border-left:3px solid #5BB974;' : ''} border-radius:10px; min-width:0; max-width:100%; overflow:hidden; box-sizing:border-box;">
+      <div style="display:flex; align-items:center; gap:12px; padding:11px 14px; min-width:0; flex-wrap:wrap;">
         <span style="font-size:12.5px; font-weight:600; color:${win ? '#5BB974' : 'var(--text-primary)'};">${escHtml(oc)}</span>
-        <span style="font-size:11.5px; color:var(--text-secondary);">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}${dur ? ' · ' + dur : ''}</span>
+        <span style="font-size:11.5px; color:var(--text-secondary); min-width:0; overflow-wrap:anywhere;">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}${dur ? ' · ' + dur : ''}</span>
         <span style="margin-left:auto; font-size:11px; color:var(--text-tertiary); white-space:nowrap;">${t} · ${c.segCount} frases</span>
         <button type="button" onclick="window._trainingOpenCall('${escHtml(c.leadId)}', ${c.callIdx}, this)" style="font-size:11px; padding:5px 12px; border-radius:7px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.4); color:var(--accent); cursor:pointer; font-family:inherit; white-space:nowrap;">Ver llamada</button>
       </div>
@@ -11066,12 +11077,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const d = await r.json();
       if (!r.ok) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">' + escHtml(d.error || 'error') + '</div>'; btn.disabled = false; return; }
       const aiRead = d.aiSuggestedOutcome ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px;"><span style="color:var(--text-tertiary);">IA leyó el resultado como:</span> <strong style="color:var(--text-primary);">${escHtml((typeof callOutcomeLabel === 'function') ? callOutcomeLabel(d.aiSuggestedOutcome) : d.aiSuggestedOutcome)}</strong>${d.aiSuggestedReason ? ` — ${escHtml(d.aiSuggestedReason)}` : ''}</div>` : '';
-      const summary = (aiRead) + (d.summary ? `<div style="background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:10px 13px; margin-bottom:10px; font-size:12.5px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap;"><div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:5px;">Resumen IA</div>${escHtml(d.summary)}</div>` : '');
+      const summary = (aiRead) + (d.summary ? `<div style="background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; box-sizing:border-box;"><div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:7px;">Resumen IA</div>${_trainingFmt(d.summary)}</div>` : '');
       const dialog = (d.segments || []).map(s => {
         const isS = s.speaker === 'setter';
-        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; min-width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SETTER' : 'CLIENTE'}</span><span style="font-size:12px; color:var(--text-secondary); line-height:1.45;">${escHtml(s.text)}</span></div>`;
+        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SETTER' : 'CLIENTE'}</span><span style="flex:1 1 auto; min-width:0; font-size:12px; color:var(--text-secondary); line-height:1.5; overflow-wrap:anywhere;">${escHtml(s.text)}</span></div>`;
       }).join('');
-      body.innerHTML = summary + `<div style="max-height:340px; overflow-y:auto; border-top:1px solid var(--border-subtle); padding-top:10px;">${dialog || '<span style="color:var(--text-tertiary);">Sin contenido.</span>'}</div>`;
+      body.innerHTML = summary + `<div style="max-height:340px; overflow-y:auto; overflow-x:hidden; border-top:1px solid var(--border-subtle); padding-top:10px;">${dialog || '<span style="color:var(--text-tertiary);">Sin contenido.</span>'}</div>`;
     } catch (e) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">Error de red.</div>'; }
     btn.disabled = false;
   };
@@ -11100,7 +11111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const r = await fetch(apiUrl('/api/training/ask'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
       const d = await r.json();
       if (!r.ok) { ans.innerHTML = '<div style="color:var(--danger);">⚠ ' + escHtml(d.error || 'error') + '</div>'; return; }
-      ans.innerHTML = `<div style="background:var(--bg-card, rgba(255,255,255,0.03)); border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; color:var(--text-primary); font-size:13.5px; line-height:1.6; white-space:pre-wrap;">${escHtml(d.answer)}</div>`;
+      ans.innerHTML = `<div style="background:var(--bg-card, rgba(255,255,255,0.03)); border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; color:var(--text-secondary); font-size:13.5px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; box-sizing:border-box;">${_trainingFmt(d.answer)}</div>`;
     } catch (e) { ans.innerHTML = '<div style="color:var(--danger);">⚠ error de red</div>'; }
   });
   document.querySelector('[data-target="view-training-ai"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });
