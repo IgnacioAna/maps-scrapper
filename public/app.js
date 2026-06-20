@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       function tick() {
         const rem = endAt - Date.now();
         if (rem <= 0) {
-          display.textContent = '✅ LISTO';
+          display.textContent = 'LISTO';
           display.style.color = 'var(--success)';
           clearInterval(intervalId); intervalId = null;
           // Alarma sonora — 3 beeps secuenciales más fuertes
@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }, 250);
           // Notificación
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('⏱️ Timer WSP listo', { body: 'Ya podés mandar el próximo mensaje.' });
+            new Notification('Timer WSP listo', { body: 'Ya podés mandar el próximo mensaje.' });
           }
           return;
         }
@@ -607,7 +607,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:14px; font-weight:700; margin-top:3px;">${escHtml(resp.leadName || resp.leadPhone || 'Lead')} respondió</div>
             <div style="font-size:11.5px; opacity:0.85; margin-top:2px;">${escHtml(cityCountry)} · ${escHtml(resp.leadPhone || '')}</div>
             <div style="display:flex; gap:6px; margin-top:8px;">
-              <button data-action="call" style="background:#fff; color:#3a8e4e; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">📞 Llamar ahora</button>
+              <button data-action="call" style="background:#fff; color:#3a8e4e; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Llamar ahora</button>
               <button data-action="dismiss" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:5px 11px; border-radius:6px; font-size:11px; cursor:pointer;">Después</button>
             </div>
           </div>
@@ -708,7 +708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:14px; font-weight:700; margin-top:3px;">${escHtml(item.name || item.phone || 'Lead')}</div>
             <div style="font-size:11.5px; opacity:0.85; margin-top:2px;">${escHtml(cityCountry)} · ${escHtml(item.phone || '')}</div>
             <div style="display:flex; gap:6px; margin-top:8px;">
-              <button data-action="call" style="background:#fff; color:#2F70C0; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">📞 Llamar ahora</button>
+              <button data-action="call" style="background:#fff; color:#2F70C0; border:none; padding:5px 11px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer;">Llamar ahora</button>
               <button data-action="dismiss" style="background:rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); padding:5px 11px; border-radius:6px; font-size:11px; cursor:pointer;">Cerrar</button>
             </div>
           </div>
@@ -1239,7 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="variant-block-text">${escHtml(text)}</div>
             <div class="variant-block-actions">
               <button type="button" class="copy-block-btn" data-copy-text="${escHtml(text)}">Copiar</button>
-              <button type="button" class="copy-block-btn" data-copy-human-text="${escHtml(text)}" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button>
+              <button type="button" class="copy-block-btn" data-copy-human-text="${escHtml(text)}" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button>
               <button type="button" class="copy-block-btn" data-open-wa="${escHtml(text)}">Abrir WhatsApp</button>
             </div>
           </div>`;
@@ -1258,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
           await copyToClipboard(ext ? ('__SCM_TYPE__:' + txt) : txt);
           const prev = btn.textContent;
-          btn.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+          btn.textContent = ext ? '✓ Ctrl+V en WA' : '⚠️ Sin extensión — copié normal';
           setTimeout(() => { btn.textContent = prev; }, 2400);
         });
       });
@@ -1589,8 +1589,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       renderTable(currentData);
       progressFill.style.width = '100%';
-      progressText.textContent = `✅ Análisis completado. Tel. rescatados: ${phonesFound}. Sin contacto: ${withoutPhone}`;
-      enrichBtn.textContent = '✅ Finalizado';
+      progressText.textContent = `Análisis completado. Tel. rescatados: ${phonesFound}. Sin contacto: ${withoutPhone}`;
+      enrichBtn.textContent = 'Finalizado';
     });
   
     const ICEBREAKERS = [
@@ -1767,7 +1767,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="text-muted truncate-text" style="font-size:12px; margin-top:2px;" title="${escHtml(item.address)}">${escHtml(item.address) || '-'}</div>
           </td>
           <td>
-            <div>⭐ ${escHtml(item.rating) || '-'}</div>
+            <div>${escHtml(item.rating) || '-'}</div>
             <div class="text-muted" style="font-size:12px; margin-top:2px;">${escHtml(item.reviews) || '0'} revs</div>
           </td>
           <td>
@@ -1844,7 +1844,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Estado cargando
         apifyRunBtn.disabled = true;
-        apifyRunBtn.textContent = '⏳ Procesando...';
+        apifyRunBtn.textContent = 'Procesando...';
         apifyProgress.classList.remove('hidden');
         apifyResultsBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;">Buscando en Instagram vía Apify...</td></tr>';
 
@@ -1896,7 +1896,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td>
             ${item.phone ? `
               <div style="display:flex; align-items:center; gap:8px;">
-                <span style="color:var(--success)">📱 ${escHtml(item.phone)}</span>
+                <span style="color:var(--success)">${escHtml(item.phone)}</span>
                 <a href="https://wa.me/${escHtml(String(item.phone).replace(/\D/g,''))}" target="_blank" title="Abrir WhatsApp" style="text-decoration:none;">💬</a>
               </div>
             ` : '<span style="color:var(--text-secondary)">No detectado</span>'}
@@ -2329,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await copyToClipboard(finalText);
         const prev = btn.textContent;
         if (asHuman && !extensionPresent) {
-          btn.textContent = '⚠ Sin extensión — copié normal';
+          btn.textContent = '⚠️ Sin extensión — copié normal';
         } else if (asHuman) {
           btn.textContent = '✓ Ctrl+V en WA';
         } else {
@@ -2553,7 +2553,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <th style="width:11%;">Estado</th>
         <th style="width:9%;">Última acción</th>
         <th style="width:14%;">Próximo paso</th>
-        <th style="width:16%; text-align:center;" title="Seguimientos programados: tildá para activar el follow-up en esa franja">📅 Seguimientos</th>
+        <th style="width:16%; text-align:center;" title="Seguimientos programados: tildá para activar el follow-up en esa franja">Seguimientos</th>
         <th style="width:13%; text-align:center;">Acciones</th>
       </tr>`;
     const _theadComplete = `
@@ -2587,7 +2587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       thead.innerHTML = _tableMode === 'simple' ? _theadSimple : _theadComplete;
       const toggleBtn = document.getElementById('setter-table-mode-toggle');
       if (toggleBtn) {
-        toggleBtn.textContent = _tableMode === 'simple' ? '🔧 Ver tabla completa' : '◀ Vista simple';
+        toggleBtn.textContent = _tableMode === 'simple' ? 'Ver tabla completa' : 'Vista simple';
       }
     }
     window._toggleTableMode = function toggleTableMode() {
@@ -2628,18 +2628,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const [icon, label, bg, col] = map[lead.estado];
         return `<span class="chip-semantic" style="background:${bg}; color:${col}; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">${icon} ${label}</span>`;
       }
-      if (lead.interes === 'si') return `<span class="chip-semantic" style="background:rgba(248,81,73,0.15); color:#f85149; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">🔥 Interesado</span>`;
+      if (lead.interes === 'si') return `<span class="chip-semantic" style="background:rgba(248,81,73,0.15); color:#f85149; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Interesado</span>`;
       if (lead.calificado === true) return `<span class="chip-semantic" style="background:rgba(157,133,242,0.18); color:#9d85f2; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">✓ Calificado</span>`;
-      if (lead.respondio === true) return `<span class="chip-semantic" style="background:rgba(255,165,80,0.15); color:#ffa550; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">💬 Respondió</span>`;
-      if (lead.conexion === 'enviada') return `<span class="chip-semantic" style="background:rgba(121,184,255,0.15); color:#79b8ff; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">📤 Enviado</span>`;
-      return `<span class="chip-semantic" style="background:rgba(126,132,148,0.12); color:#9CA3AF; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">📋 Sin contactar</span>`;
+      if (lead.respondio === true) return `<span class="chip-semantic" style="background:rgba(255,165,80,0.15); color:#ffa550; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Respondió</span>`;
+      if (lead.conexion === 'enviada') return `<span class="chip-semantic" style="background:rgba(121,184,255,0.15); color:#79b8ff; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Enviado</span>`;
+      return `<span class="chip-semantic" style="background:rgba(126,132,148,0.12); color:#9CA3AF; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Sin contactar</span>`;
     }
 
     // Helper: inferir "próximo paso" sugerido al setter
     function _nextStepFor(lead) {
       if (lead.estado === 'agendado') return ['Esperar reunión', '#5bb974'];
       if (lead.estado === 'cerrado' || lead.estado === 'descartado') return ['Listo', '#7E8494'];
-      if (lead.interes === 'si') return ['📅 Agendar reunión', '#f85149'];
+      if (lead.interes === 'si') return ['Agendar reunión', '#f85149'];
       if (lead.calificado === true && lead.interes !== 'no') return ['Marcar interés', '#9d85f2'];
       if (lead.respondio === true) return ['Calificar', '#ffa550'];
       if (lead.conexion === 'enviada') {
@@ -2940,9 +2940,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           const cls = fuItem.statusBucket === 'dueToday' ? 'followup-chip-today'
             : fuItem.statusBucket === 'dueYesterday' ? 'followup-chip-yesterday'
             : 'followup-chip-overdue';
-          fuChipHtml = '<span class="followup-chip ' + cls + '" title="Follow-up ' + escHtml(fuItem.label) + '">📅 ' + escHtml(fuItem.label) + '</span>';
+          fuChipHtml = '<span class="followup-chip ' + cls + '" title="Follow-up ' + escHtml(fuItem.label) + '">' + escHtml(fuItem.label) + '</span>';
           if (fuItem.note) {
-            fuNoteHtml = '<div class="followup-row-note" title="' + escHtml(fuItem.note) + '">📝 ' + escHtml(fuItem.note) + '</div>';
+            fuNoteHtml = '<div class="followup-row-note" title="' + escHtml(fuItem.note) + '">' + escHtml(fuItem.note) + '</div>';
           }
         }
 
@@ -2951,7 +2951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Chip pequeño con el número propio del setter usado (si está seteado)
         const myPh = lead.setterPhoneId ? (_myPhones || []).find(p => p.id === lead.setterPhoneId) : null;
-        const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">📱 ' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
+        const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
 
         return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')">' +
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
@@ -3330,7 +3330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const txt = (p.label || '(sin nombre)') + (p.phone ? ' · ' + p.phone : '');
           opts.push('<option value="' + escHtml(p.id) + '"' + (lead.setterPhoneId === p.id ? ' selected' : '') + '>' + escHtml(txt) + '</option>');
         }
-        opts.push('<option value="__add__">➕ Agregar nuevo número…</option>');
+        opts.push('<option value="__add__">Agregar nuevo número…</option>');
         waSel.innerHTML = opts.join('');
         waWrap.style.display = 'flex';
         waSel.onchange = async (e) => {
@@ -3338,7 +3338,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (val === '__add__') {
             e.target.value = lead.setterPhoneId || '';
             const label = await window.askText({
-              title: '➕ Agregar mi número',
+              title: 'Agregar mi número',
               subtitle: 'Cargá un label corto (cómo lo reconocés) y el número de teléfono. Solo vos lo ves.',
               type: 'input',
               placeholder: 'Label (ej: Línea 1, Maxi nuevo, etc.)',
@@ -3346,7 +3346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (!label) return;
             const phone = await window.askText({
-              title: '➕ Número de "' + label + '"',
+              title: 'Número de "' + label + '"',
               subtitle: 'Pegá el número (con prefijo de país si corresponde). Opcional, podés dejarlo vacío.',
               type: 'input',
               placeholder: '+54 11 1234 5678',
@@ -3421,17 +3421,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const callLog = Array.isArray(lead.callLog) ? lead.callLog.slice().reverse() : [];
         if (callLog.length > 0) {
           const outcomeLabels = {
-            answered_interested: { label: '✅ Interesado', color: 'var(--success)' },
-            answered_not_interested: { label: '❌ No interesado', color: 'var(--danger)' },
-            no_answer: { label: '📵 No atendió', color: 'var(--text-tertiary)' },
-            voicemail: { label: '📭 Buzón', color: 'var(--warning)' },
-            wrong_number: { label: '🔢 Equivocado', color: 'var(--danger)' },
-            invalid_number: { label: '🚫 No existe', color: 'var(--danger)' },
-            callback_later: { label: '🔄 Postpuesto', color: 'var(--info)' },
-            scheduled_with_admin: { label: '📅 Agendó con Ignacio', color: 'var(--accent)' }
+            answered_interested: { label: 'Interesado', color: 'var(--success)' },
+            answered_not_interested: { label: 'No interesado', color: 'var(--danger)' },
+            no_answer: { label: 'No atendió', color: 'var(--text-tertiary)' },
+            voicemail: { label: 'Buzón', color: 'var(--warning)' },
+            wrong_number: { label: 'Equivocado', color: 'var(--danger)' },
+            invalid_number: { label: 'No existe', color: 'var(--danger)' },
+            callback_later: { label: 'Postpuesto', color: 'var(--info)' },
+            scheduled_with_admin: { label: 'Agendó con Ignacio', color: 'var(--accent)' }
           };
           callLogContainer.innerHTML =
-            '<div style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:8px;">📞 Historial de llamadas (' + callLog.length + ')</div>' +
+            '<div style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:8px;">Historial de llamadas (' + callLog.length + ')</div>' +
             '<div style="display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto;">' +
             callLog.map(c => {
               const o = outcomeLabels[c.outcome] || { label: c.outcome, color: 'var(--text-secondary)' };
@@ -3475,7 +3475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notesList.innerHTML = '<p class="text-muted" style="font-size:12px; text-align:center; padding:16px;">Sin notas aún.</p>';
       }
       document.getElementById('modal-note-input').value = '';
-      // Hidratar seccion 📅 Programar mensaje: input default = mañana 10am,
+      // Hidratar seccion Programar mensaje: input default = mañana 10am,
       // textarea precargado con openMessage actual del lead, lista de
       // programados ya existentes del lead.
       try {
@@ -3495,7 +3495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cargar programados existentes del lead
         if (typeof window._loadScheduledForLead === 'function') window._loadScheduledForLead(leadId);
       } catch (e) { console.warn('schedule hydrate err:', e); }
-      // Reset modal tabs al default: empezar siempre en 💬 Conversación
+      // Reset modal tabs al default: empezar siempre en Conversación
       if (typeof window._switchLeadTab === 'function') window._switchLeadTab('convo');
       leadModal.classList.remove('hidden');
     };
@@ -3537,7 +3537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) { console.error(err); }
     });
 
-    // ─── 📅 PROGRAMAR MENSAJE ───────────────────────────────────────
+    // ─── PROGRAMAR MENSAJE ───────────────────────────────────────
     // Phase setter-automations-followups (2026-05-22)
     // Setter elige fecha + escribe mensaje + (opcionalmente) cancelar-si-responde
     // → POST a /api/scheduled-messages → entrada en queue del scheduler server-side
@@ -3609,11 +3609,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (list.length === 0) { cont.innerHTML = ''; return; }
         const statusChip = (s) => {
           const map = {
-            pending: ['rgba(157,133,242,0.15)', 'var(--accent)', '⏳ Pendiente'],
+            pending: ['rgba(157,133,242,0.15)', 'var(--accent)', 'Pendiente'],
             sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
             failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
             cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
-            expired: ['rgba(248,81,73,0.10)', 'var(--danger)', '⌛ Expirado'],
+            expired: ['rgba(248,81,73,0.10)', 'var(--danger)', 'Expirado'],
           };
           const [bg, col, label] = map[s] || ['rgba(0,0,0,0.1)', 'var(--text)', s];
           return `<span style="font-size:10px; padding:2px 8px; background:${bg}; color:${col}; border-radius:6px;">${label}</span>`;
@@ -3630,7 +3630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   ${statusChip(m.status)}
                 </div>
                 <div style="font-size:12px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${escHtml(m.message)}">${escHtml(m.message.slice(0, 100))}${m.message.length > 100 ? '…' : ''}</div>
-                ${m.lastFailureReason ? `<div style="font-size:10px; color:var(--danger); margin-top:2px;">⚠ ${escHtml(m.lastFailureReason)}</div>` : ''}
+                ${m.lastFailureReason ? `<div style="font-size:10px; color:var(--danger); margin-top:2px;">⚠️ ${escHtml(m.lastFailureReason)}</div>` : ''}
               </div>
               ${canCancel ? `<button onclick="window._cancelScheduled('${escHtml(m.id)}')" style="padding:4px 8px; background:none; border:1px solid var(--danger); color:var(--danger); border-radius:6px; font-size:11px; cursor:pointer;">Cancelar</button>` : ''}
             </div>`;
@@ -3687,7 +3687,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const countries = [...new Set((setterLeads || []).map(l => (l.country || '').trim()).filter(Boolean))].sort();
         const flagMap = { 'colombia':'🇨🇴', 'argentina':'🇦🇷', 'méxico':'🇲🇽', 'mexico':'🇲🇽', 'chile':'🇨🇱', 'perú':'🇵🇪', 'peru':'🇵🇪', 'bolivia':'🇧🇴', 'uruguay':'🇺🇾', 'paraguay':'🇵🇾', 'ecuador':'🇪🇨', 'venezuela':'🇻🇪', 'españa':'🇪🇸', 'espana':'🇪🇸' };
         const cur = setterCountryFilter.value;
-        setterCountryFilter.innerHTML = '<option value="">🌎 Todos los países</option>' +
+        setterCountryFilter.innerHTML = '<option value="">Todos los países</option>' +
           countries.map(c => {
             const flag = flagMap[c.toLowerCase()] || '';
             return `<option value="${escHtml(c)}">${flag} ${escHtml(c)}</option>`;
@@ -4085,7 +4085,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // sus leads para que el setter destino los reciba frescos.
     window._resetSetterWork = async (setterId, setterName) => {
       const ok = await window.askConfirm({
-        title: '🧹 Limpiar trabajo de ' + setterName,
+        title: 'Limpiar trabajo de ' + setterName,
         message: 'Vas a resetear TODOS los leads trabajados de ' + setterName + ' a "sin contactar". Se borran flags de conexión, respondió, calificado, interés, follow-ups, interacciones y notas de contacto.\n\nNO toca los leads marcados "Sin WSP" (esos siguen en Llamadas).\n\nSe hace backup automático antes. Esta acción es destructiva pero recuperable desde backups.\n\n¿Confirmás?',
         confirmLabel: 'Sí, limpiar trabajo',
         danger: true,
@@ -4399,10 +4399,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (greetEl) greetEl.textContent = `${totalPend} para seguir + ${virgenes.length} nuevos en cola`;
 
         secEl.innerHTML =
-          _hoyRenderSection('🔁 Callbacks de hoy', callbacks, '#5BA3F2', 'Llamá a los que quedaron en volver a contactar.') +
-          _hoyRenderSection('🟢 Interesados sin agendar', interesados, '#5BB974', 'Dijeron que sí — cerrá la reunión.') +
-          _hoyRenderSection('📞 Para reintentar', reintentar, '#FFB341', 'No atendieron / buzón / cortaron. Insistí.') +
-          _hoyRenderSection('🆕 Nuevos priorizados', virgenes, '#9D85F2', 'Nunca llamados, ordenados por prioridad.');
+          _hoyRenderSection('Callbacks de hoy', callbacks, '#5BA3F2', 'Llamá a los que quedaron en volver a contactar.') +
+          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Dijeron que sí — cerrá la reunión.') +
+          _hoyRenderSection('Para reintentar', reintentar, '#FFB341', 'No atendieron / buzón / cortaron. Insistí.') +
+          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca llamados, ordenados por prioridad.');
       } catch (e) {
         console.error('[hoy]', e);
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
@@ -4420,14 +4420,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
               <strong style="color:var(--text-primary); font-size:13.5px;">${escHtml(l.name || '')}</strong>
-              ${cbStr ? `<span style="font-size:10px; color:#5BA3F2; background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">📅 ${cbStr}</span>` : ''}
-              ${lt ? `<span style="font-size:10px; color:${lt.ok?'#5BB974':'#FFB341'}; background:${lt.ok?'rgba(91,185,116,0.1)':'rgba(255,179,65,0.1)'}; padding:2px 7px; border-radius:6px;">🕐 ${lt.time}${lt.ok?'':' ⚠'}</span>` : ''}
+              ${cbStr ? `<span style="font-size:10px; color:#5BA3F2; background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">${cbStr}</span>` : ''}
+              ${lt ? `<span style="font-size:10px; color:${lt.ok?'#5BB974':'#FFB341'}; background:${lt.ok?'rgba(91,185,116,0.1)':'rgba(255,179,65,0.1)'}; padding:2px 7px; border-radius:6px;">${lt.time}${lt.ok?'':' ⚠️'}</span>` : ''}
               ${sigs}
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
           </div>
           <span title="Prioridad" style="font-size:10.5px; color:${sc>=70?'#5BB974':sc>=50?'#FFB341':'#7E8494'}; font-weight:700;">${sc}</span>
-          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer; white-space:nowrap;">📞 Llamar</button>
+          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:8px 14px; font-weight:600; font-size:12.5px; cursor:pointer; white-space:nowrap;">Llamar</button>
         </div>`;
       }).join('');
       return `<div style="background:var(--surface-color, rgba(255,255,255,0.02)); border:1px solid var(--border-color); border-left:3px solid ${color}; border-radius:12px; overflow:hidden;">
@@ -4489,7 +4489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cf = document.getElementById('calls-country-filter');
         const savedCountry = localStorage.getItem('calls_country_filter_' + (currentUser?.id || 'anon')) || '';
         const curCountry = cf.value || savedCountry;
-        cf.innerHTML = '<option value="">🌎 Todos los países</option>' + countries.map(c => `<option value="${escHtml(c)}">${fmtCountry(c)} ${escHtml(c)}</option>`).join('');
+        cf.innerHTML = '<option value="">Todos los países</option>' + countries.map(c => `<option value="${escHtml(c)}">${fmtCountry(c)} ${escHtml(c)}</option>`).join('');
         if (curCountry && countries.includes(curCountry)) cf.value = curCountry;
 
         // Phase 6: refrescar config Telnyx ANTES de render para que los
@@ -4549,8 +4549,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         if (!groups[key]) {
           let label;
-          if (key === todayKey) label = '🔥 Hoy';
-          else if (key === tomorrowKey) label = '🌞 Mañana';
+          if (key === todayKey) label = 'Hoy';
+          else if (key === tomorrowKey) label = 'Mañana';
           else label = `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
           groups[key] = { label, items: [] };
         }
@@ -4571,7 +4571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span style="font-family:ui-monospace,monospace; font-weight:600; color:${overdue ? 'var(--warning)' : 'var(--accent)'}; font-size:12.5px; font-variant-numeric:tabular-nums;">${hour}</span>
               <span style="font-size:14px;">${flag}</span>
               <span style="color:var(--text-primary); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' · <span style=\"color:var(--text-tertiary);\">' + escHtml(l.city) + '</span>' : ''}</span>
-              <span style="font-size:10px; color:var(--text-tertiary);">${overdue ? '⏰ vencido' : 'click para abrir →'}</span>
+              <span style="font-size:10px; color:var(--text-tertiary);">${overdue ? 'vencido' : 'click para abrir →'}</span>
             </button>`;
           }).join('')}
         </div>`;
@@ -4677,7 +4677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const banner = document.createElement('div');
       banner.id = 'pd-autopilot-countdown';
       banner.style.cssText = 'margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:linear-gradient(135deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.05) 100%); border:1px solid rgba(157,133,242,0.4); border-radius:12px;';
-      const render = () => { banner.innerHTML = `<span style="font-size:13px; color:var(--text-primary);">🚀 Autopiloto: llamando a <strong>${escHtml(lead.name)}</strong> en <strong style="color:var(--accent); font-variant-numeric:tabular-nums;">${secs}</strong>…</span><button type="button" onclick="window._pdCancelAutopilotNow()" style="padding:7px 14px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:8px; cursor:pointer; font-size:12px;">Cancelar (P)</button>`; };
+      const render = () => { banner.innerHTML = `<span style="font-size:13px; color:var(--text-primary);">Autopiloto: llamando a <strong>${escHtml(lead.name)}</strong> en <strong style="color:var(--accent); font-variant-numeric:tabular-nums;">${secs}</strong>…</span><button type="button" onclick="window._pdCancelAutopilotNow()" style="padding:7px 14px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:8px; cursor:pointer; font-size:12px;">Cancelar (P)</button>`; };
       render();
       wrap.appendChild(banner);
       _pd.autopilotTimer = setInterval(() => {
@@ -4697,13 +4697,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.style.background = 'rgba(157,133,242,0.22)';
         btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--text-primary)';
-        btn.innerHTML = '🚀 Autopiloto: ON';
+        btn.innerHTML = 'Autopiloto: ON';
         btn.title = 'Auto-disca el siguiente lead tras cada resultado. Click o tecla A para apagar.';
       } else {
         btn.style.background = 'transparent';
         btn.style.borderColor = 'rgba(255,255,255,0.15)';
         btn.style.color = 'var(--text-secondary)';
-        btn.innerHTML = '🚀 Autopiloto: OFF';
+        btn.innerHTML = 'Autopiloto: OFF';
         btn.title = 'Marcá un resultado y discás manualmente. Click o tecla A para encender el discado continuo.';
       }
     }
@@ -4844,10 +4844,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const pct = Math.min(100, Math.round((s.dials / goal) * 100));
       const labelEl = document.getElementById('pd-today-label');
       const barEl = document.getElementById('pd-today-bar');
-      if (labelEl) labelEl.textContent = `🎯 ${s.dials} / ${goal}${done ? ' ✓' : ''}`;
+      if (labelEl) labelEl.textContent = `${s.dials} / ${goal}${done ? ' ✓' : ''}`;
       if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = done ? '#5BB974' : 'var(--accent)'; }
       const convosEl = document.getElementById('pd-today-convos');
-      if (convosEl) convosEl.textContent = `💬 ${s.conversations}`;
+      if (convosEl) convosEl.textContent = `${s.conversations}`;
       // El chip se pone verde al cumplir la meta.
       el.style.borderColor = done ? 'rgba(91,185,116,0.6)' : 'rgba(157,133,242,0.35)';
       el.style.background = done ? 'rgba(91,185,116,0.14)' : 'rgba(157,133,242,0.12)';
@@ -5010,11 +5010,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
             ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`; })()}
-            ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? '#5BB974' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">🕐 ${lt.time}${lt.ok ? '' : ' ⚠'}</span>`; })()}
-            ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">🆕 Nunca llamado</span>'}
+            ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? '#5BB974' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">${lt.time}${lt.ok ? '' : ' ⚠️'}</span>`; })()}
+            ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
-            ${lead.phoneStatus === 'voicemail' ? '<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.12); padding:3px 9px; border-radius:6px;">📭 buzón</span>' : ''}
+            ${lead.phoneStatus === 'voicemail' ? '<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.12); padding:3px 9px; border-radius:6px;">buzón</span>' : ''}
             ${typeof _signalChips === 'function' ? _signalChips(lead) : ''}
           </div>
         </div>
@@ -5072,8 +5072,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
         ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link" onclick="return window._waBtnClick(this, event, '${escHtml(lead.id)}');">WhatsApp</a>` : ''}
-        <button type="button" onclick="window.openPlaceholderModal('${escHtml(lead.id)}')" class="pd-quick-link" style="cursor:pointer; background:transparent; font-family:inherit;" title="Mandar invitación tentativa de calendario por mail">📅 Hold</button>
-        ${lead.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; padding:3px 8px; border:1px solid rgba(91,185,116,0.25); border-radius:6px;">📧 hold enviado</span>` : ''}
+        <button type="button" onclick="window.openPlaceholderModal('${escHtml(lead.id)}')" class="pd-quick-link" style="cursor:pointer; background:transparent; font-family:inherit;" title="Mandar invitación tentativa de calendario por mail">Hold</button>
+        ${lead.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; padding:3px 8px; border:1px solid rgba(91,185,116,0.25); border-radius:6px;">hold enviado</span>` : ''}
       </div>` : ''}
 
       <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
@@ -5540,13 +5540,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ángulo de la cold call). El backend (computeLeadSignals) las deriva de
     // rating/reviews/web/instagram. Acá solo se muestran como chips accionables.
     const _SIGNAL_LABELS = {
-      ads_activos: '📣 Corre anuncios',
-      muchas_reviews_sin_web: '🌐 Sin web · muchas reseñas',
-      sin_web: '🌐 Sin web',
-      rating_bajo: '⚠ Rating bajo',
-      pocas_reviews: '📉 Pocas reseñas',
-      ig_sin_web: '📸 IG sin web',
-      sin_contacto_digital: '🚫 Sin presencia digital',
+      ads_activos: 'Corre anuncios',
+      muchas_reviews_sin_web: 'Sin web · muchas reseñas',
+      sin_web: 'Sin web',
+      rating_bajo: '⚠️ Rating bajo',
+      pocas_reviews: 'Pocas reseñas',
+      ig_sin_web: 'IG sin web',
+      sin_contacto_digital: 'Sin presencia digital',
     };
     function _signalChips(lead) {
       const sigs = Array.isArray(lead && lead.signals) ? lead.signals : [];
@@ -5763,18 +5763,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const dueAt = new Date(followUpStartedAt).getTime() + activeFup.hours * 3600 * 1000;
         const hoursLeft = (dueAt - Date.now()) / 3600 / 1000;
         if (hoursLeft <= 0) {
-          dueText = `⏰ Follow-up vencido (era ${activeFup.label} desde el ${new Date(followUpStartedAt).toLocaleDateString('es-AR')})`;
+          dueText = `Follow-up vencido (era ${activeFup.label} desde el ${new Date(followUpStartedAt).toLocaleDateString('es-AR')})`;
         } else if (hoursLeft < 24) {
-          dueText = `🔔 Falta ${Math.round(hoursLeft)}h para el follow-up`;
+          dueText = `Falta ${Math.round(hoursLeft)}h para el follow-up`;
         } else {
-          dueText = `🔔 Falta ${Math.round(hoursLeft/24)}d para el follow-up`;
+          dueText = `Falta ${Math.round(hoursLeft/24)}d para el follow-up`;
         }
       }
 
       // Ficha rica
       const fichaItems = [];
       if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(l.phone)}</span>`);
-      if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">⭐ ${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
+      if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
       if (l.address) fichaItems.push(`<span class="label">Dirección</span><span class="value">${escHtml(l.address)}</span>`);
       // Sprint 37 (VULN-A1): pasar todas las URLs por safeUrl antes de href
       if (l.website) {
@@ -5815,7 +5815,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const dur = entry.duration ? ` · ${entry.duration}s` : '';
             const cost = entry.cost ? ` · $${Number(entry.cost).toFixed(3)}` : '';
             // Sprint 25: si la entry tiene objection tags, mostrarlos como chips
-            const tagLabelMap = { precio: '💸 precio', ya_tiene_sistema: '⚙️ otro sistema', tiempo: '⏳ tiempo', no_es_decisor: '🪑 no decisor', no_entiende_valor: '🤷 no valor', desconfia: '🛑 desconfía', mal_momento: '📆 mal momento', otra: '➕ otra' };
+            const tagLabelMap = { precio: 'precio', ya_tiene_sistema: 'otro sistema', tiempo: 'tiempo', no_es_decisor: 'no decisor', no_entiende_valor: 'no valor', desconfia: 'desconfía', mal_momento: 'mal momento', otra: 'otra' };
             const objTags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
             const objTagsHtml = objTags.length > 0 ? `<div style="grid-column:2; display:flex; gap:4px; flex-wrap:wrap; margin-top:3px;">${objTags.map(t => `<span style="font-size:9.5px; background:rgba(244,114,114,0.12); border:1px solid rgba(244,114,114,0.28); color:#f47272; padding:1px 6px; border-radius:5px;">${tagLabelMap[t] || t}</span>`).join('')}</div>` : '';
             return `<div class="call-history-item">
@@ -5844,43 +5844,43 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<div class="call-detail-panel">
         <!-- Columna izquierda: ficha + histórico -->
         <div class="call-detail-section">
-          <h4 class="call-detail-section-title">📋 Ficha del lead</h4>
+          <h4 class="call-detail-section-title">Ficha del lead</h4>
           <div class="call-detail-grid">${fichaItems.join('')}</div>
 
-          <h4 class="call-detail-section-title" style="margin-top:14px;">📞 Histórico de llamadas (${callLog.length})</h4>
+          <h4 class="call-detail-section-title" style="margin-top:14px;">Histórico de llamadas (${callLog.length})</h4>
           <div class="call-history-timeline">${historyHtml}</div>
 
           <div class="call-action-row">
             ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:#5bb974; font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
-              🔄 Reactivar lead
+              Reactivar lead
             </button>` : ''}
             <button class="call-action-btn is-wsp" onclick="window._callsMarkHasWsp('${escHtml(l.id)}')" title="Si descubrís que el lead SÍ atiende por WhatsApp, mandalo de vuelta a Setteo">
-              💬 Este sí tenía WSP → Setteo
+              Este sí tenía WSP → Setteo
             </button>
             ${(() => {
               const safeEmail = String(l.email || '').trim();
-              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">✉️ Mandar mail</a>` : '';
+              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">Mandar mail</a>` : '';
             })()}
             ${(() => {
               const safeW = safeUrl(l.website || '');
-              return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">🌐 Abrir web</a>` : '';
+              return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Abrir web</a>` : '';
             })()}
           </div>
         </div>
 
         <!-- Columna derecha: pre-call + notas + follow-ups -->
         <div class="call-detail-section">
-          <h4 class="call-detail-section-title">🎯 Nota pre-call (qué decir / contexto)</h4>
+          <h4 class="call-detail-section-title">Nota pre-call (qué decir / contexto)</h4>
           <textarea id="call-precall-note-${escHtml(l.id)}" class="call-note-input" style="min-height:60px; max-height:140px;" placeholder="Antes de discar: contexto del lead, ángulo de apertura, info que vi en su web…" onblur="window._callsSavePrecallNote('${escHtml(l.id)}')">${escHtml(l.precallNote || '')}</textarea>
           <p style="font-size:10px; color:var(--text-tertiary); margin:-4px 0 8px;">Se guarda al hacer click afuera. Aparece también en el panel de llamada activa.</p>
 
-          <h4 class="call-detail-section-title">📅 Follow-up programado</h4>
+          <h4 class="call-detail-section-title">Follow-up programado</h4>
           <div class="call-followups">
             ${fupSteps.map(s => `<button class="call-fup-chip${fups[s.key] ? ' is-on' : ''}" onclick="window._callsToggleFollowup('${escHtml(l.id)}', '${s.key}')">${s.label}</button>`).join('')}
           </div>
           ${dueText ? `<div class="call-fup-due">${dueText}</div>` : ''}
 
-          <h4 class="call-detail-section-title" style="margin-top:14px;">📝 Notas (${notes.length})</h4>
+          <h4 class="call-detail-section-title" style="margin-top:14px;">Notas (${notes.length})</h4>
           <div class="call-notes-list">${notesHtml}</div>
           <div class="call-note-input-row">
             <textarea id="call-note-input-${escHtml(l.id)}" class="call-note-input" placeholder="Nueva nota… (Ctrl+Enter para guardar)" rows="1" onkeydown="if(event.ctrlKey&&event.key==='Enter'){event.preventDefault();window._callsAddNote('${escHtml(l.id)}')}"></textarea>
@@ -6049,8 +6049,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notesCount = Array.isArray(l.notes) ? l.notes.length : 0;
         const fups = l.followUps || {};
         const hasFup = ['24hs','48hs','72hs','7d','15d'].some(k => fups[k]);
-        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:rgba(157,133,242,0.12); padding:2px 7px; border-radius:6px;">📝 ${notesCount}</span>` : '';
-        const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">🔔 follow-up</span>' : '';
+        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:rgba(157,133,242,0.12); padding:2px 7px; border-radius:6px;">${notesCount}</span>` : '';
+        const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">follow-up</span>' : '';
         // Sprint 23: badge de callback programado (si está en el futuro)
         let callbackBadge = '';
         if (l.callbackAt) {
@@ -6059,24 +6059,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (cbTs > Date.now()) {
             const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
             const cbLabel = `${dayNames[cbDate.getDay()]} ${cbDate.getDate()}/${cbDate.getMonth()+1} ${String(cbDate.getHours()).padStart(2,'0')}:${String(cbDate.getMinutes()).padStart(2,'0')}`;
-            callbackBadge = `<span style="font-size:10px; color:var(--info, #5BA3F2); background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">📅 ${cbLabel}</span>`;
+            callbackBadge = `<span style="font-size:10px; color:var(--info, #5BA3F2); background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">${cbLabel}</span>`;
           }
         }
         // Phase 17 Ola 2: indicador de callback compartido.
         if (l.callbackShared && l.callbackAt) {
-          callbackBadge += ` <span style="font-size:10px; color:#7DD3FC; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); padding:2px 7px; border-radius:6px;" title="Callback compartido — cualquier setter lo puede tomar">🔁 compartido</span>`;
+          callbackBadge += ` <span style="font-size:10px; color:#7DD3FC; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); padding:2px 7px; border-radius:6px;" title="Callback compartido — cualquier setter lo puede tomar">compartido</span>`;
         }
         // Phase 17 Ola 3: indicador de auto-reintento (cadencia).
         if (l.cadenceStep > 0 && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()) {
-          callbackBadge += ` <span style="font-size:10px; color:#FFB341; background:rgba(255,179,65,0.10); padding:2px 6px; border-radius:6px;" title="Reintento automático programado por cadencia (no atendió)">🔁 auto #${l.cadenceStep}</span>`;
+          callbackBadge += ` <span style="font-size:10px; color:#FFB341; background:rgba(255,179,65,0.10); padding:2px 6px; border-radius:6px;" title="Reintento automático programado por cadencia (no atendió)">auto #${l.cadenceStep}</span>`;
         }
 
         // Sprint 28: visualizar descartados con UI degradada
         const isDiscarded = l.estado === 'descartado';
         let cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
         if (isDiscarded) cardBorder = 'border-left:4px solid var(--text-tertiary); opacity:0.65;';
-        const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">✅ INTERESADO — agendar con Ignacio</span>' : '';
-        const discardedBadge = isDiscarded ? `<span style="background:rgba(255,255,255,0.05); color:var(--text-tertiary); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">🗑️ DESCARTADO${l.interes === 'no' ? ' (no interesado)' : l.phoneStatus === 'wrong' ? ' (número equivocado)' : l.phoneStatus === 'invalid' ? ' (no existe)' : ''}</span>` : '';
+        const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">INTERESADO — agendar con Ignacio</span>' : '';
+        const discardedBadge = isDiscarded ? `<span style="background:rgba(255,255,255,0.05); color:var(--text-tertiary); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">DESCARTADO${l.interes === 'no' ? ' (no interesado)' : l.phoneStatus === 'wrong' ? ' (número equivocado)' : l.phoneStatus === 'invalid' ? ' (no existe)' : ''}</span>` : '';
 
         const isSelected = _callsSelected.has(l.id);
         const isAdminUser = currentUser?.role === 'admin';
@@ -6095,19 +6095,19 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${discardedBadge}
               ${interesadoBadge}
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
-              ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">📭 buzón</span>' : ''}
-              ${typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED') ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.3); padding:2px 7px; border-radius:6px;" title="Google lo marca cerrado (${escHtml(l.businessStatus)}) — verificar antes de discar">⚠ Cerrado</span>` : ''}
-              ${l.phoneType === 'mobile' ? '<span style="font-size:10px; color:#5BB974; background:rgba(91,185,116,0.1); padding:2px 7px; border-radius:6px;" title="Línea móvil (validada Telnyx)">📱 móvil</span>' : (l.phoneType === 'landline' ? '<span style="font-size:10px; color:var(--text-tertiary); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:6px;" title="Línea fija (validada Telnyx)">☎ fijo</span>' : '')}
-              ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">🚫 No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">↩️ Quitar</button>` : ''}
+              ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">buzón</span>' : ''}
+              ${typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED') ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.3); padding:2px 7px; border-radius:6px;" title="Google lo marca cerrado (${escHtml(l.businessStatus)}) — verificar antes de discar">⚠️ Cerrado</span>` : ''}
+              ${l.phoneType === 'mobile' ? '<span style="font-size:10px; color:#5BB974; background:rgba(91,185,116,0.1); padding:2px 7px; border-radius:6px;" title="Línea móvil (validada Telnyx)">móvil</span>' : (l.phoneType === 'landline' ? '<span style="font-size:10px; color:var(--text-tertiary); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:6px;" title="Línea fija (validada Telnyx)">fijo</span>' : '')}
+              ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Quitar</button>` : ''}
               ${notesBadge}
               ${fupBadge}
               ${callbackBadge}
               ${typeof _signalChips === 'function' ? _signalChips(l) : ''}
-              ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📧 hold</span>` : ''}
-              ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">📤 ver chat</a>` : ''}
-              <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">📅 hold</button>
+              ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">hold</span>` : ''}
+              ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
+              <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">hold</button>
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
-              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">📞 alt</button>` : ''}
+              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">alt</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
@@ -6116,7 +6116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             ${l.openingAngle && l.openingAngle.trim() ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(l.openingAngle)}</div>` : ''}
             ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
-            ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">📝 ${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
+            ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
 
           ${(() => {
@@ -6128,7 +6128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const hoursAgo = (Date.now() - lastCallTs) / (1000 * 60 * 60);
               const daysAgo = Math.floor(hoursAgo / 24);
               if (hoursAgo < 24) {
-                cooldownWarn = `title="⚠ Lo llamaste hace ${Math.round(hoursAgo)}h — esperá 24h+ para no quemar. Click igual si querés." `;
+                cooldownWarn = `title="⚠️ Lo llamaste hace ${Math.round(hoursAgo)}h — esperá 24h+ para no quemar. Click igual si querés." `;
                 lastBadge = `<span style="font-size:9px; color:#FFB341; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.35); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${Math.round(hoursAgo)}h</span>`;
               } else if (daysAgo < 7) {
                 lastBadge = `<span style="font-size:9px; color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${daysAgo}d</span>`;
@@ -6137,27 +6137,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             const btnTitle = cooldownWarn || (_telnyx.configured ? `title="Llamar por Telnyx WebRTC · ${escHtml(l.phone)}"` : `title="${escHtml(l.phone)} · Telnyx no configurado, abre dialer del SO"`);
             return (_telnyx.configured && _telnyx.numbers.length > 0)
               ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" ${btnTitle}>
-                  📞 Llamar${lastBadge}
+                  Llamar${lastBadge}
                 </button>`
               : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" ${btnTitle}>
-                  📞 Llamar${lastBadge}
+                  Llamar${lastBadge}
                 </a>`;
           })()}
 
           <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" title="Atajos numéricos post-llamada: 1=Interesado · 2=No interesado · 3=No atendió · 4=Buzón · 5=Callback · 6=Equivocado · 7=No existe" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:230px; cursor:pointer; font-family:inherit;">
             <option value="">— Resultado (1-7 atajos) —</option>
             <optgroup label="Atendió">
-              ${interesado ? '<option value="scheduled_with_admin">📅 Agendar con Ignacio</option>' : '<option value="answered_interested">✅ 1 — Interesado</option>'}
-              <option value="answered_not_interested">❌ 2 — No interesado</option>
+              ${interesado ? '<option value="scheduled_with_admin">Agendar con Ignacio</option>' : '<option value="answered_interested">1 — Interesado</option>'}
+              <option value="answered_not_interested">2 — No interesado</option>
             </optgroup>
             <optgroup label="No atendió">
-              <option value="no_answer">📵 3 — No atendió / sonó nada</option>
-              <option value="voicemail">📭 4 — Buzón de voz</option>
-              <option value="callback_later">🔄 5 — Volver a llamar después</option>
+              <option value="no_answer">3 — No atendió / sonó nada</option>
+              <option value="voicemail">4 — Buzón de voz</option>
+              <option value="callback_later">5 — Volver a llamar después</option>
             </optgroup>
             <optgroup label="Número no sirve">
-              <option value="wrong_number">🔢 6 — Número equivocado</option>
-              <option value="invalid_number">🚫 7 — No existe / no funciona</option>
+              <option value="wrong_number">6 — Número equivocado</option>
+              <option value="invalid_number">7 — No existe / no funciona</option>
             </optgroup>
           </select>
 
@@ -6171,16 +6171,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function callOutcomeLabel(o) {
       const map = {
-        answered_interested: '✅ Interesado',
-        answered_not_interested: '❌ No interesado',
-        no_answer: '📵 No atendió',
-        voicemail: '📭 Buzón',
-        wrong_number: '🔢 Equivocado',
-        invalid_number: '🚫 No existe',
-        callback_later: '🔄 Postpuesto',
-        scheduled_with_admin: '📅 Agendado',
-        hung_up: '🚪 Me cortó',
-        placeholder_sent: '📧 Hold enviado'
+        answered_interested: 'Interesado',
+        answered_not_interested: 'No interesado',
+        no_answer: 'No atendió',
+        voicemail: 'Buzón',
+        wrong_number: 'Equivocado',
+        invalid_number: 'No existe',
+        callback_later: 'Postpuesto',
+        scheduled_with_admin: 'Agendado',
+        hung_up: 'Me cortó',
+        placeholder_sent: 'Hold enviado'
       };
       return map[o] || o;
     }
@@ -6297,7 +6297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         reader.readAsDataURL(blob);
       });
       try {
-        window.showToast?.('🎤 Transcribiendo llamada (Whisper)…', { type: 'info', duration: 4000 });
+        window.showToast?.('Transcribiendo llamada (Whisper)…', { type: 'info', duration: 4000 });
         const [setterAudioB64, leadAudioB64] = await Promise.all([
           blobToB64(setterBlob),
           blobToB64(leadBlob),
@@ -6394,7 +6394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.classList.remove('tlx-script-open');
       // Reset mute button visual
       const muteBtn = document.getElementById('telnyx-call-mute');
-      if (muteBtn) { muteBtn.classList.remove('tlx-mute-active'); muteBtn.textContent = '🎤 Mute'; }
+      if (muteBtn) { muteBtn.classList.remove('tlx-mute-active'); muteBtn.textContent = 'Mute'; }
       if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
       if (_telnyxCallState.noAnswerTimeout) { clearTimeout(_telnyxCallState.noAnswerTimeout); _telnyxCallState.noAnswerTimeout = null; }
       // Audit fix: liberar tracks del mic si quedaron abiertos (ej. si ensureClient
@@ -6425,7 +6425,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // preparó antes de discar). Si está vacía, no se renderiza.
       if (lead.precallNote && lead.precallNote.trim()) {
         rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
-          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">🎯 Pre-call</div>
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">Pre-call</div>
           <div style="color:#fff; font-size:12px; line-height:1.45; white-space:pre-wrap;">${escHtml(lead.precallNote)}</div>
         </div>`);
       }
@@ -6443,7 +6443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // visible para cargarlo en el momento de la llamada.
       {
         const altCall = lead.altPhone
-          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">📞 Llamar</button></div>`
+          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">Llamar</button></div>`
           : `<div style="font-size:11px; color:rgba(255,255,255,0.6);">Si te pasan otro número (encargado/decisor), cargalo acá.</div>`;
         rows.push(`<div style="background:rgba(121,184,255,0.07); border:1px solid rgba(121,184,255,0.25); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#79B8FF; margin-bottom:5px;">Contacto secundario</div>
@@ -6472,7 +6472,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Notas previas (últimas 2)
       const recentNotes = (lead.notes || []).slice(-2);
       if (recentNotes.length) {
-        const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid rgba(157,133,242,0.3); color:rgba(255,255,255,0.65);">📝 ${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
+        const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid rgba(157,133,242,0.3); color:rgba(255,255,255,0.65);">${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
         rows.push(`<div style="margin-top:6px;">${notesHtml}</div>`);
       }
       if (rows.length === 0) {
@@ -6486,22 +6486,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       const linkBtns = [];
       if (lead.website && !lead.website.includes('N/A')) {
         const safeW = safeUrl(lead.website);
-        if (safeW) linkBtns.push(`<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" title="Abrir sitio web" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">🌐 Web</a>`);
+        if (safeW) linkBtns.push(`<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" title="Abrir sitio web" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); color:#7dd3fc; border-radius:5px; text-decoration:none;">Web</a>`);
       }
       // Google Maps directo desde nombre + ciudad
       if (lead.name) {
         const mapsQuery = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
-        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">🗺 Maps</a>`);
+        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">Maps</a>`);
       }
       if (lead.instagram && !lead.instagram.includes('N/A')) {
         const igRaw = String(lead.instagram).trim();
         const igUrl = igRaw.startsWith('http') ? safeUrl(igRaw) : `https://www.instagram.com/${igRaw.replace(/^@/, '').replace(/[^a-zA-Z0-9_.]/g, '')}/`;
-        if (igUrl) linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Instagram" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">📷 IG</a>`);
+        if (igUrl) linkBtns.push(`<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Instagram" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.3); color:#f85149; border-radius:5px; text-decoration:none;">IG</a>`);
       }
       if (lead.facebook && !lead.facebook.includes('N/A')) {
         const fbRaw = String(lead.facebook).trim();
         const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : `https://www.facebook.com/${fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '')}`;
-        if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">📘 FB</a>`);
+        if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">FB</a>`);
       }
       if (links) links.innerHTML = linkBtns.join('');
     }
@@ -6521,10 +6521,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (events.length === 0) { box.style.display = 'none'; return; }
       events.sort((a, b) => b.ts - a.ts);
       const outcomeMap = {
-        answered_interested: '✅ Interesado', answered_not_interested: '❌ No interesado',
-        no_answer: '📵 No atendió', voicemail: '📭 Buzón', wrong_number: '🔢 Equivocado',
-        invalid_number: '🚫 No existe', callback_later: '🔄 Callback', scheduled_with_admin: '📅 Agendado',
-        hung_up: '🚪 Cortó', placeholder_sent: '📧 Hold',
+        answered_interested: 'Interesado', answered_not_interested: 'No interesado',
+        no_answer: 'No atendió', voicemail: 'Buzón', wrong_number: 'Equivocado',
+        invalid_number: 'No existe', callback_later: 'Callback', scheduled_with_admin: 'Agendado',
+        hung_up: 'Cortó', placeholder_sent: 'Hold',
       };
       const fmtAgo = (ts) => {
         if (!ts) return '';
@@ -6538,7 +6538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const dur = e.duration ? ` · ${Math.floor(e.duration / 60)}:${String(e.duration % 60).padStart(2, '0')}` : '';
           return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">📞 <strong>${o}</strong> <span style="opacity:0.5;">· ${when}${dur}</span>${e.notes ? `<div style="margin-top:2px; font-size:10.5px; color:rgba(255,255,255,0.55); font-style:italic;">"${escHtml(e.notes.substring(0, 100))}${e.notes.length > 100 ? '…' : ''}"</div>` : ''}</div>`;
         }
-        return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">📝 ${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
+        return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
       }).join('');
       content.innerHTML = items + (events.length > 6 ? `<div style="font-size:10px; opacity:0.5; margin-top:4px;">+${events.length - 6} eventos más</div>` : '');
       box.style.display = 'block';
@@ -6889,13 +6889,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         grouped[t].push(s);
       }
       const triggerLabels = {
-        before_call: '✅ Pre-call', gatekeeper: '🚪 Recepción',
-        opener: '🎯 Apertura', pitch: '💡 Pitch',
-        ask_meeting: '📅 Pedir reunión', confirm: '🔒 Confirmar',
-        objection_brushoff: '⚡ Brush-off', objection_real: '🛡️ Real',
-        callback: '🔄 Callback', whatsapp_msg: '💬 WhatsApp', email_template: '📧 Email',
-        first_call: '🎯 Apertura', objection: '🛡️ Objeción',
-        scheduling: '📅 Cerrar', voicemail: '📭 Buzón', general: '📝 General',
+        before_call: 'Pre-call', gatekeeper: 'Recepción',
+        opener: 'Apertura', pitch: 'Pitch',
+        ask_meeting: 'Pedir reunión', confirm: 'Confirmar',
+        objection_brushoff: 'Brush-off', objection_real: 'Real',
+        callback: 'Callback', whatsapp_msg: 'WhatsApp', email_template: 'Email',
+        first_call: 'Apertura', objection: 'Objeción',
+        scheduling: 'Cerrar', voicemail: 'Buzón', general: 'General',
       };
       const triggerColors = {
         before_call: '#7dd3fc',
@@ -7023,7 +7023,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = _telnyxCallState.leadId ? _callsLeadsById.get(_telnyxCallState.leadId) : null;
       const ctx = lead ? `Prospect: ${lead.name || ''}${lead.city ? ', ' + lead.city : ''}${lead.country ? ', ' + lead.country : ''}. Canal: llamada en frío.` : 'Canal: llamada en frío.';
       _mercOut.style.display = 'flex';
-      _mercOut.innerHTML = '<div style="color:rgba(255,255,255,0.6); font-size:11.5px; padding:6px 2px;">⚡ Mercury pensando…</div>';
+      _mercOut.innerHTML = '<div style="color:rgba(255,255,255,0.6); font-size:11.5px; padding:6px 2px;">Mercury pensando…</div>';
       try {
         const r = await fetch(apiUrl('/api/mercury/generate'), {
           method: 'POST',
@@ -7038,7 +7038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _mercOut.innerHTML = blocks.map((b, i) => `
           <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:9px 11px;">
             <div style="color:#fff; font-size:12.5px; line-height:1.5; white-space:pre-wrap;">${escHtml(b)}</div>
-            <button type="button" class="tlx-merc-copy" data-block="${i}" style="margin-top:7px; font-size:10.5px; padding:5px 10px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.35); color:#fff; border-radius:6px; cursor:pointer;">📋 Copiar</button>
+            <button type="button" class="tlx-merc-copy" data-block="${i}" style="margin-top:7px; font-size:10.5px; padding:5px 10px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.35); color:#fff; border-radius:6px; cursor:pointer;">Copiar</button>
           </div>`).join('') +
           (d.usedFallback ? '<div style="color:rgba(255,255,255,0.4); font-size:10px; padding:2px;">respuesta del banco (fallback)</div>' : '');
         _mercOut.querySelectorAll('.tlx-merc-copy').forEach(btn => {
@@ -7073,12 +7073,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_telnyxCallState.muted) {
           if (typeof _telnyx.activeCall.unmuteAudio === 'function') _telnyx.activeCall.unmuteAudio();
           _telnyxCallState.muted = false;
-          btn.textContent = '🎤 Mute';
+          btn.textContent = 'Mute';
           btn.classList.remove('tlx-mute-active');
         } else {
           if (typeof _telnyx.activeCall.muteAudio === 'function') _telnyx.activeCall.muteAudio();
           _telnyxCallState.muted = true;
-          btn.textContent = '🔇 Muteado';
+          btn.textContent = 'Muteado';
           btn.classList.add('tlx-mute-active');
         }
       } catch (e) { console.warn('[telnyx] mute toggle:', e); }
@@ -7160,6 +7160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (pdNote) { body.notes = pdNote.slice(0, 500); if (pdNoteEl) pdNoteEl.value = ''; }
         const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
           method: 'POST',
+          credentials: 'include', // audit 2026-06-20: coherencia con el resto del flujo
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
         });
@@ -7311,14 +7312,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se puede saltar (skip) si el setter no quiere etiquetar. Feed para
     // Mercury IA + analytics de objeciones más comunes.
     const OBJECTION_TAGS = [
-      { key: 'precio',             label: '💸 Precio',           hint: 'Caro / no tiene presupuesto' },
-      { key: 'ya_tiene_sistema',   label: '⚙️ Ya tiene sistema', hint: 'Trabaja con otra agencia/CRM' },
-      { key: 'tiempo',             label: '⏳ Tiempo',           hint: 'No tiene tiempo ahora' },
-      { key: 'no_es_decisor',      label: '🪑 No es decisor',    hint: 'Hay que hablar con otra persona' },
-      { key: 'no_entiende_valor',  label: '🤷 No entiende valor',hint: 'No vio el ROI claro' },
-      { key: 'desconfia',          label: '🛑 Desconfía',        hint: 'No cree / cree que es scam' },
-      { key: 'mal_momento',        label: '📆 Mal momento',      hint: 'Vacaciones, mudanza, etc.' },
-      { key: 'otra',               label: '➕ Otra',             hint: 'Distinta a las anteriores' },
+      { key: 'precio',             label: 'Precio',           hint: 'Caro / no tiene presupuesto' },
+      { key: 'ya_tiene_sistema',   label: 'Ya tiene sistema', hint: 'Trabaja con otra agencia/CRM' },
+      { key: 'tiempo',             label: 'Tiempo',           hint: 'No tiene tiempo ahora' },
+      { key: 'no_es_decisor',      label: 'No es decisor',    hint: 'Hay que hablar con otra persona' },
+      { key: 'no_entiende_valor',  label: 'No entiende valor',hint: 'No vio el ROI claro' },
+      { key: 'desconfia',          label: 'Desconfía',        hint: 'No cree / cree que es scam' },
+      { key: 'mal_momento',        label: 'Mal momento',      hint: 'Vacaciones, mudanza, etc.' },
+      { key: 'otra',               label: 'Otra',             hint: 'Distinta a las anteriores' },
     ];
     // Phase 17: razones de descalificación (Adversus-style). Keys = whitelist del backend.
     const DISQUALIFY_REASONS_UI = [
@@ -7330,7 +7331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       { key: 'ya_tiene_proveedor', label: 'Ya tiene agencia / proveedor' },
       { key: 'cliente_actual', label: 'Ya es cliente' },
       { key: 'mala_experiencia', label: 'Ex-cliente / mala experiencia' },
-      { key: 'no_contactar', label: '🚫 Pidió NO ser contactado (DNC)' },
+      { key: 'no_contactar', label: 'Pidió NO ser contactado (DNC)' },
       { key: 'ya_agendado', label: 'Ya se coordinó por otra vía' },
       { key: 'otro', label: 'Otro' },
     ];
@@ -7344,7 +7345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         modal.style.zIndex = '10000';
         modal.innerHTML = `<div class="modal-card" style="max-width:480px; width:95vw;">
           <div class="modal-header">
-            <h3>❌ ¿Por qué dijo que no?</h3>
+            <h3>¿Por qué dijo que no?</h3>
             <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-objection-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:18px 22px;">
@@ -7353,7 +7354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">Razón de descalificación (para reporting)</label>
             <select id="call-obj-reason" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; margin-bottom:12px; cursor:pointer;"></select>
             <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-bottom:14px; cursor:pointer;">
-              <input type="checkbox" id="call-obj-dnc"> 🚫 No llamar nunca más (lo saca de todas las colas)
+              <input type="checkbox" id="call-obj-dnc"> No llamar nunca más (lo saca de todas las colas)
             </label>
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">Nota libre (opcional)</label>
             <textarea id="call-obj-note" rows="2" placeholder="Ej: dijo que está pensando en cerrar la clínica…" style="width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; resize:vertical;"></textarea>
@@ -7462,12 +7463,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       const fmt = (d) => `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1} · ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       const picks = [
-        { label: '⏰ En 2 horas',     subtitle: fmt(new Date(now.getTime() + 2*3600*1000)), date: new Date(now.getTime() + 2*3600*1000) },
-        { label: '🌞 Mañana 10am',    subtitle: fmt(mkDate(1, 10)),  date: mkDate(1, 10) },
-        { label: '🌇 Mañana 4pm',     subtitle: fmt(mkDate(1, 16)),  date: mkDate(1, 16) },
-        { label: '📆 Pasado 10am',    subtitle: fmt(mkDate(2, 10)),  date: mkDate(2, 10) },
-        { label: '🗓️ Próximo lunes',  subtitle: fmt(nextWeekday(1)), date: nextWeekday(1) },
-        { label: '🗓️ Próximo viernes',subtitle: fmt(nextWeekday(5)), date: nextWeekday(5) },
+        { label: 'En 2 horas',     subtitle: fmt(new Date(now.getTime() + 2*3600*1000)), date: new Date(now.getTime() + 2*3600*1000) },
+        { label: 'Mañana 10am',    subtitle: fmt(mkDate(1, 10)),  date: mkDate(1, 10) },
+        { label: 'Mañana 4pm',     subtitle: fmt(mkDate(1, 16)),  date: mkDate(1, 16) },
+        { label: 'Pasado 10am',    subtitle: fmt(mkDate(2, 10)),  date: mkDate(2, 10) },
+        { label: 'Próximo lunes',  subtitle: fmt(nextWeekday(1)), date: nextWeekday(1) },
+        { label: 'Próximo viernes',subtitle: fmt(nextWeekday(5)), date: nextWeekday(5) },
       ];
       return picks;
     }
@@ -7570,13 +7571,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [leadId], limit: 1, force: true }) });
         const d = await resp.json();
-        if (!resp.ok) { alert('⚠ ' + (d.error || 'error')); }
+        if (!resp.ok) { alert('⚠️ ' + (d.error || 'error')); }
         else if ((d.briefed || 0) > 0) { loadCallsView(); return; }
         else {
           const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : ((d.errors && Object.keys(d.errors).join(', ')) || 'sin reseñas suficientes');
           alert(`No se pudo generar el brief: ${why}.\nProbá con otro lead que sí aparezca en Google Maps.`);
         }
-      } catch (e) { console.error(e); alert('⚠ error de red'); }
+      } catch (e) { console.error(e); alert('⚠️ error de red'); }
       if (btn) { btn.disabled = false; btn.textContent = orig || 'brief IA'; }
     };
     // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
@@ -7601,7 +7602,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!id) return;
       const lead = _callsLeadsById.get(id);
       const btn = document.getElementById('pd-gen-brief-btn');
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando (tarda)…'; }
+      if (btn) { btn.disabled = true; btn.textContent = 'Generando (tarda)…'; }
       try {
         const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id], limit: 1, force: true }) });
         const d = await r.json();
@@ -7712,7 +7713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const phone = document.getElementById('calls-manual-phone').value.trim();
       if (!name) { window.showToast?.('Ingresá al menos el nombre antes de enriquecer', { type: 'warn' }); return; }
       const enrichEl = document.getElementById('calls-manual-enrich-result');
-      btn.disabled = true; const orig = btn.textContent; btn.textContent = '🔍 Buscando…';
+      btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Buscando…';
       enrichEl.style.display = 'block';
       enrichEl.innerHTML = '<div style="color:var(--text-secondary);">Buscando en Google Maps…</div>';
       try {
@@ -7747,7 +7748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="line-height:1.5;">
             <strong>${escHtml(d.best.name)}</strong><br>
             ${d.best.rating ? '★ ' + escHtml(String(d.best.rating)) + ' · ' : ''}${d.best.reviews ? d.best.reviews + ' reseñas' : ''}<br>
-            ${d.best.address ? '📍 ' + escHtml(d.best.address) + '<br>' : ''}
+            ${d.best.address ? '' + escHtml(d.best.address) + '<br>' : ''}
             ${d.best.website ? '🌐 <a href="' + escHtml(d.best.website) + '" target="_blank" rel="noopener" style="color:#7dd3fc;">' + escHtml(d.best.website) + '</a><br>' : ''}
             ${d.found > 1 ? `<small style="color:var(--text-tertiary);">Hay ${d.found} candidatos. Mostrando el mejor match.</small>` : ''}
           </div>
@@ -7987,7 +7988,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     '<button type="button" class="btn-table-action" style="font-size:11px; padding:4px 10px; color:var(--danger);" onclick="window._assignVariantSetter(\'' + v.id + '\', \'\')">Quitar</button>' +
                   '</div>' +
                   '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px dashed var(--border-color);">' +
-                    '<span style="font-size:12px; color:var(--text-secondary);">🔗 Compartir también con:</span>' +
+                    '<span style="font-size:12px; color:var(--text-secondary);">Compartir también con:</span>' +
                     setters.filter(s => s.id !== v.setterId).map(s => {
                       const shared = Array.isArray(v.sharedWith) && v.sharedWith.includes(s.id);
                       return '<label style="display:inline-flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;background:' + (shared ? 'rgba(125,211,252,0.15)' : 'transparent') + ';padding:3px 8px;border-radius:10px;border:1px solid ' + (shared ? '#7dd3fc' : 'var(--border-color)') + ';">' +
@@ -8090,7 +8091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const sname = encodeURIComponent(user.name || '');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button>');
-              acts.push('<button type="button" class="btn-table-action" style="color:#ffc828; font-size:11px;" title="Resetear todos los leads trabajados de este setter a sin_contactar (no toca sin_wsp)" onclick="window._resetSetterWork(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">🧹 Limpiar trabajo</button>');
+              acts.push('<button type="button" class="btn-table-action" style="color:#ffc828; font-size:11px;" title="Resetear todos los leads trabajados de este setter a sin_contactar (no toca sin_wsp)" onclick="window._resetSetterWork(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Limpiar trabajo</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>');
             }
           } else if (user.id !== currentUser.id) {
@@ -8157,7 +8158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bloq = p.bloqueadoHasta && p.bloqueadoHasta > now;
         const bloqStr = bloq ? Math.ceil((p.bloqueadoHasta - now) / 60000) + ' min' : '—';
         const estado = aprobado
-          ? '<span style="color:var(--success); font-weight:600;">✅ Aprobado</span>'
+          ? '<span style="color:var(--success); font-weight:600;">Aprobado</span>'
           : (intentos > 0
             ? '<span style="color:var(--warning); font-weight:600;">⚠️ Falló</span>'
             : '<span style="color:var(--text-tertiary);">— sin intentos</span>');
@@ -8184,8 +8185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
         '</div>' +
         '<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;">' +
-          '<button onclick="window._unlockAllOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(63,185,80,0.15); color:var(--success); border:1px solid rgba(63,185,80,0.3); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">🔓 Marcar 8/8 como aprobado (libre acceso)</button>' +
-          '<button onclick="window._resetOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(248,81,73,0.10); color:var(--danger); border:1px solid rgba(248,81,73,0.25); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">🗑️ Resetear progreso</button>' +
+          '<button onclick="window._unlockAllOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(63,185,80,0.15); color:var(--success); border:1px solid rgba(63,185,80,0.3); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">Marcar 8/8 como aprobado (libre acceso)</button>' +
+          '<button onclick="window._resetOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(248,81,73,0.10); color:var(--danger); border:1px solid rgba(248,81,73,0.25); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">Resetear progreso</button>' +
         '</div>' +
         '<div style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">' + ratioLabel + '</div>' +
         '<table style="width:100%; border-collapse:collapse;"><thead><tr style="background:rgba(167,139,250,0.06);">' +
@@ -8198,7 +8199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '</tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div style="font-size:11px; color:var(--text-tertiary); margin-top:14px; line-height:1.5;">' +
           '🚨 <strong>Señales de alarma:</strong> Más de 3 intentos en un mismo módulo sugiere que está adivinando o no leyó el material. Cero intentos = no abrió el quiz.<br>' +
-          '⏳ El bloqueo se aplica automáticamente al fallar para que tenga que releer.' +
+          'El bloqueo se aplica automáticamente al fallar para que tenga que releer.' +
         '</div>' +
         '</div></div>';
       const wrap = document.createElement('div');
@@ -8420,7 +8421,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${tierChip('3 · A medias', t.medio, '#FFB341')}
             ${tierChip('4 · No interesados', t.no_interesado, '#7E8494')}
           </div>
-          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">🌎 ¿A qué país llamar ahora? <span style="text-transform:none; font-weight:400;">(🟢 horario hábil 9-19h local · 🟡 fuera de hora)</span></div>
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">¿A qué país llamar ahora? <span style="text-transform:none; font-weight:400;">(horario hábil 9-19h local · fuera de hora)</span></div>
           <div style="margin-bottom:20px;">${callNowHtml || '<span class="muted">Sin países con zona horaria.</span>'}</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;">
             <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por setter</div>
@@ -8501,8 +8502,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (resultEl) {
             resultEl.classList.remove('hidden');
             resultEl.textContent = data.removed > 0
-              ? '✅ Se eliminaron ' + data.removed + ' duplicados. Quedan ' + data.remaining + ' leads únicos.'
-              : '✅ No hay duplicados. Los ' + data.remaining + ' leads son todos únicos.';
+              ? 'Se eliminaron ' + data.removed + ' duplicados. Quedan ' + data.remaining + ' leads únicos.'
+              : 'No hay duplicados. Los ' + data.remaining + ' leads son todos únicos.';
             setTimeout(() => resultEl.classList.add('hidden'), 10000);
           }
           loadCommandCenter();
@@ -8702,7 +8703,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const resp = await fetch(apiUrl('/api/setters/dedup'), { method: 'POST' });
           const data = await resp.json();
           const r = document.getElementById('cmd-dedup-result');
-          if (r) { r.classList.remove('hidden'); r.textContent = data.removed > 0 ? '✅ ' + data.removed + ' duplicados eliminados.' : '✅ Sin duplicados.'; setTimeout(() => r.classList.add('hidden'), 10000); }
+          if (r) { r.classList.remove('hidden'); r.textContent = data.removed > 0 ? '' + data.removed + ' duplicados eliminados.' : 'Sin duplicados.'; setTimeout(() => r.classList.add('hidden'), 10000); }
           loadCommandCenter();
         } catch (e) { console.error(e); alert('Error'); }
         cmdDedupBtn.disabled = false; cmdDedupBtn.textContent = 'Limpiar Duplicados de Setters';
@@ -8712,8 +8713,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Auto-loop: un clic barre TODO (es gratis). Segundo clic mientras corre = parar.
     let _enrichLoopStop = false;
     async function _cmdRunEnrich(source, btn, origLabel) {
-      if (btn.dataset.running === '1') { _enrichLoopStop = true; btn.textContent = '⏹ Parando...'; return; }
-      _enrichLoopStop = false; btn.dataset.running = '1'; btn.textContent = '⏹ Parar';
+      if (btn.dataset.running === '1') { _enrichLoopStop = true; btn.textContent = 'Parando...'; return; }
+      _enrichLoopStop = false; btn.dataset.running = '1'; btn.textContent = 'Parar';
       const out = document.getElementById('cmd-enrich-result');
       let emails = 0, ads = 0, npi = 0, social = 0, scanned = 0, rounds = 0, consecErrors = 0;
       const LIM = 12; // lotes chicos → cada request vuelve rápido (no timeout del gateway)
@@ -8721,8 +8722,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         while (!_enrichLoopStop && rounds < 800) {
           rounds++;
           if (out) out.textContent = source === 'npi'
-            ? `⏳ NPI ronda ${rounds}: ${npi} dueños (${scanned} leads US escaneados)...`
-            : `⏳ Email ronda ${rounds}: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios)...`;
+            ? `NPI ronda ${rounds}: ${npi} dueños (${scanned} leads US escaneados)...`
+            : `Email ronda ${rounds}: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios)...`;
           let d = null, ok = false;
           try {
             const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source, limit: LIM }) });
@@ -8731,8 +8732,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!ok || !d) {
             // Error de ronda (timeout/red) → reintentar, no morir.
             consecErrors++;
-            if (consecErrors >= 4) { if (out) out.textContent = `⚠ Corté tras 4 errores seguidos (${scanned} sitios hechos, guardado). Reintentá.`; break; }
-            if (out) out.textContent = `⏳ error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${scanned} sitios.`;
+            if (consecErrors >= 4) { if (out) out.textContent = `⚠️ Corté tras 4 errores seguidos (${scanned} sitios hechos, guardado). Reintentá.`; break; }
+            if (out) out.textContent = `error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${scanned} sitios.`;
             await new Promise((r) => setTimeout(r, 3000));
             continue;
           }
@@ -8740,48 +8741,48 @@ document.addEventListener('DOMContentLoaded', async () => {
           emails += (d.emailsFound || 0); ads += (d.adsFound || 0); npi += (d.npiMatched || 0); social += (d.socialFound || 0); scanned += (d.scanned || 0);
           if ((d.scanned || 0) < LIM) { // no quedan más candidatos → terminó
             if (out) out.textContent = source === 'npi'
-              ? `✅ Listo: ${npi} dueños encontrados de ${scanned} leads US.`
-              : `✅ Listo: ${emails} emails · ${ads} con ads · ${social} con redes, de ${scanned} sitios.`;
+              ? `Listo: ${npi} dueños encontrados de ${scanned} leads US.`
+              : `Listo: ${emails} emails · ${ads} con ads · ${social} con redes, de ${scanned} sitios.`;
             break;
           }
         }
         if (_enrichLoopStop && out) out.textContent = source === 'npi'
-          ? `⏹ Parado: ${npi} dueños (${scanned} escaneados).`
-          : `⏹ Parado: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios).`;
-      } catch (e) { console.error(e); if (out) out.textContent = `⚠ error de red (frené en ${scanned})`; }
+          ? `Parado: ${npi} dueños (${scanned} escaneados).`
+          : `Parado: ${emails} emails · ${ads} ads · ${social} redes (${scanned} sitios).`;
+      } catch (e) { console.error(e); if (out) out.textContent = `⚠️ error de red (frené en ${scanned})`; }
       btn.dataset.running = ''; btn.textContent = origLabel;
     }
     const cmdEnrichBtn = document.getElementById('cmd-enrich-btn');
-    if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, '✨ Enriquecer email + redes (web)'));
+    if (cmdEnrichBtn) cmdEnrichBtn.addEventListener('click', () => _cmdRunEnrich('website', cmdEnrichBtn, 'Enriquecer email + redes (web)'));
     const cmdEnrichNpiBtn = document.getElementById('cmd-enrich-npi-btn');
     if (cmdEnrichNpiBtn) cmdEnrichNpiBtn.addEventListener('click', () => _cmdRunEnrich('npi', cmdEnrichNpiBtn, '🇺🇸 Enriquecer dueño (NPI)'));
     // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.
     const cmdValidateBtn = document.getElementById('cmd-validate-numbers-btn');
     if (cmdValidateBtn) cmdValidateBtn.addEventListener('click', async () => {
       if (!confirm('Validar tipo de línea de hasta 25 números vía Telnyx Number Lookup. Cuesta ~$0.0015 por número. ¿Seguir?')) return;
-      cmdValidateBtn.disabled = true; const lbl = cmdValidateBtn.textContent; cmdValidateBtn.textContent = '⏳ Validando...';
+      cmdValidateBtn.disabled = true; const lbl = cmdValidateBtn.textContent; cmdValidateBtn.textContent = 'Validando...';
       const out = document.getElementById('cmd-enrich-result');
       try {
         const resp = await fetch(apiUrl('/api/admin/validate-numbers'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 25 }) });
         const d = await resp.json();
         if (out) {
-          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
-          else { const bt = d.byType || {}; out.textContent = `✅ ${d.looked || 0} validados de ${d.scanned || 0}: 📱 ${bt.mobile || 0} móvil · ☎ ${bt.landline || 0} fijo · ${bt.voip || 0} voip.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)'); }
+          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
+          else { const bt = d.byType || {}; out.textContent = `${d.looked || 0} validados de ${d.scanned || 0}: ${bt.mobile || 0} móvil · ${bt.landline || 0} fijo · ${bt.voip || 0} voip.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)'); }
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
       cmdValidateBtn.disabled = false; cmdValidateBtn.textContent = lbl;
     });
     // Recon GRATIS: dimensiona la barrida (no gasta SerpApi).
     const cmdReconBtn = document.getElementById('cmd-brief-recon-btn');
     if (cmdReconBtn) cmdReconBtn.addEventListener('click', async () => {
       const out = document.getElementById('cmd-brief-recon-result');
-      cmdReconBtn.disabled = true; const lbl = cmdReconBtn.textContent; cmdReconBtn.textContent = '⏳ Contando...';
+      cmdReconBtn.disabled = true; const lbl = cmdReconBtn.textContent; cmdReconBtn.textContent = 'Contando...';
       if (out) out.textContent = '';
       try {
         const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true }) });
         const d = await resp.json();
         if (out) {
-          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
           else {
             // Costo aprox en plan Starter ($0.025/búsqueda): place_id=1, sin=~2.
             const cheap = d.pendingWithPlaceId || 0, exp = d.pendingWithoutPlaceId || 0;
@@ -8794,21 +8795,21 @@ document.addEventListener('DOMContentLoaded', async () => {
               (byC ? `<span style="color:var(--text-tertiary);">Por país: ${byC}</span>` : '');
           }
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
       cmdReconBtn.disabled = false; cmdReconBtn.textContent = lbl;
     });
     // Barrida brief por país: loop de lotes hasta terminar el país o el tope.
     let _briefSweepStop = false;
     const cmdSweepBtn = document.getElementById('cmd-brief-sweep-btn');
     const cmdSweepStop = document.getElementById('cmd-brief-sweep-stop');
-    if (cmdSweepStop) cmdSweepStop.addEventListener('click', () => { _briefSweepStop = true; cmdSweepStop.textContent = '⏹ Parando...'; });
+    if (cmdSweepStop) cmdSweepStop.addEventListener('click', () => { _briefSweepStop = true; cmdSweepStop.textContent = 'Parando...'; });
     // Al elegir país: contar pendientes (gratis) y pre-llenar el tope con ese número.
     const cmdSweepCountrySel = document.getElementById('cmd-brief-sweep-country');
     if (cmdSweepCountrySel) cmdSweepCountrySel.addEventListener('change', async () => {
       const country = cmdSweepCountrySel.value;
       const prog = document.getElementById('cmd-brief-sweep-progress');
       if (!country) { if (prog) prog.textContent = ''; return; }
-      if (prog) prog.textContent = '⏳ contando pendientes...';
+      if (prog) prog.textContent = 'contando pendientes...';
       try {
         const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true, country }) });
         const d = await r.json();
@@ -8817,14 +8818,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           const maxInput = document.getElementById('cmd-brief-sweep-max');
           if (maxInput) maxInput.value = Math.min(pend, 700) || 1;
           if (prog) prog.innerHTML = `<b>${pend}</b> leads premium sin brief en ${country}. Tope puesto en ${Math.min(pend, 700)} (ajustalo si querés). ~${pend} a ${pend * 2} búsquedas.`;
-        } else if (prog) prog.textContent = '⚠ ' + (d.error || 'error');
-      } catch (e) { if (prog) prog.textContent = '⚠ error contando'; }
+        } else if (prog) prog.textContent = '⚠️ ' + (d.error || 'error');
+      } catch (e) { if (prog) prog.textContent = '⚠️ error contando'; }
     });
     if (cmdSweepBtn) cmdSweepBtn.addEventListener('click', async () => {
       const country = document.getElementById('cmd-brief-sweep-country').value;
       const maxBriefs = Math.max(1, parseInt(document.getElementById('cmd-brief-sweep-max').value, 10) || 150);
       const prog = document.getElementById('cmd-brief-sweep-progress');
-      if (!country) { if (prog) prog.textContent = '⚠ Elegí un país primero.'; return; }
+      if (!country) { if (prog) prog.textContent = '⚠️ Elegí un país primero.'; return; }
       if (!confirm(`Barrer ${country}: generar briefs hasta ${maxBriefs} leads (o hasta terminar el país). Gasta SerpApi + LLM. ¿Seguir?`)) return;
       _briefSweepStop = false;
       cmdSweepBtn.disabled = true; cmdSweepStop.classList.remove('hidden');
@@ -8832,7 +8833,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 200) {
           rounds++;
-          if (prog) prog.innerHTML = `⏳ ${country}: ${totalBriefed} briefs · ${totalSkipped} sin ficha · ronda ${rounds}...`;
+          if (prog) prog.innerHTML = `${country}: ${totalBriefed} briefs · ${totalSkipped} sin ficha · ronda ${rounds}...`;
           let d = null, ok = false;
           try {
             const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 5 }) });
@@ -8841,39 +8842,39 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!ok || !d) {
             // Error de ronda (timeout del gateway, red, etc.) → reintentar, no morir.
             consecErrors++;
-            if (consecErrors >= 4) { if (prog) prog.innerHTML = `⚠ Corté tras 4 errores seguidos. Ya van ${totalBriefed} briefs en ${country} (guardados). Reintentá en un rato.`; break; }
-            if (prog) prog.innerHTML = `⏳ ${country}: error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${totalBriefed} briefs hechos.`;
+            if (consecErrors >= 4) { if (prog) prog.innerHTML = `⚠️ Corté tras 4 errores seguidos. Ya van ${totalBriefed} briefs en ${country} (guardados). Reintentá en un rato.`; break; }
+            if (prog) prog.innerHTML = `${country}: error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${totalBriefed} briefs hechos.`;
             await new Promise((r) => setTimeout(r, 3000));
             continue;
           }
           consecErrors = 0;
           totalBriefed += (d.briefed || 0);
           totalSkipped += (d.skipped || 0);
-          if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
-          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `✅ ${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
+          if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
+          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
         }
-        if (_briefSweepStop && prog) prog.innerHTML = `⏹ Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
+        if (_briefSweepStop && prog) prog.innerHTML = `Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
         else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs en ${country}. Subí el tope para seguir.`;
-      } catch (e) { console.error(e); if (prog) prog.textContent = `⚠ error de red (frené en ${totalBriefed} briefs)`; }
-      cmdSweepBtn.disabled = false; cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = '⏹ Parar';
+      } catch (e) { console.error(e); if (prog) prog.textContent = `⚠️ error de red (frené en ${totalBriefed} briefs)`; }
+      cmdSweepBtn.disabled = false; cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = 'Parar';
     });
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {
       if (!confirm('Generar Lead Brief IA para hasta 8 leads (10+ reseñas), agarrando los de MÁS reseñas primero. Re-fetchea reseñas de Google + corre IA. Cuesta SerpApi + LLM. ¿Seguir?\n\n(Tip: para elegir UN lead puntual, usá el botón "brief IA" en su card de Llamadas.)')) return;
-      cmdBriefBtn.disabled = true; const lbl = cmdBriefBtn.textContent; cmdBriefBtn.textContent = '⏳ Generando (tarda)...';
+      cmdBriefBtn.disabled = true; const lbl = cmdBriefBtn.textContent; cmdBriefBtn.textContent = 'Generando (tarda)...';
       const out = document.getElementById('cmd-enrich-result');
       try {
         const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 8 }) });
         const d = await resp.json();
         if (out) {
-          if (!resp.ok) out.textContent = '⚠ ' + (d.error || 'error');
+          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
           else {
             const names = (d.briefedSample || []).map((b) => `${b.name}${b.fitScore != null ? ` (fit ${b.fitScore})` : ''}`).join(', ');
-            out.innerHTML = `✅ ${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
+            out.innerHTML = `${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
           }
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠ error de red'; }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
       cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
     });
 
@@ -8984,8 +8985,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (resultDiv) {
             resultDiv.classList.remove('hidden');
             resultDiv.innerHTML = data.removed > 0
-              ? '✅ Se eliminaron <strong>' + data.removed + '</strong> duplicados. Quedan <strong>' + data.remaining + '</strong> leads únicos.'
-              : '✅ No se encontraron duplicados. Todos los <strong>' + data.remaining + '</strong> leads son únicos.';
+              ? 'Se eliminaron <strong>' + data.removed + '</strong> duplicados. Quedan <strong>' + data.remaining + '</strong> leads únicos.'
+              : 'No se encontraron duplicados. Todos los <strong>' + data.remaining + '</strong> leads son únicos.';
             setTimeout(() => resultDiv.classList.add('hidden'), 8000);
           }
           loadHistoryPanel(historyPage);
@@ -9159,13 +9160,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (respondieronPendientes > 0) {
           chips.push(`<button class="hoy-action-chip attention" onclick="window._hoyClickFilter('respondio')">💬 <span class="num">${respondieronPendientes}</span> respondieron — atender</button>`);
         }
-        actionsEl.innerHTML = chips.join('') || '<span style="color:var(--text-secondary); font-size:13px;">🎉 No hay urgencias. Buen momento para nuevos contactos.</span>';
+        actionsEl.innerHTML = chips.join('') || '<span style="color:var(--text-secondary); font-size:13px;">No hay urgencias. Buen momento para nuevos contactos.</span>';
       }
 
       const todayEl = document.getElementById('hoy-today');
       if (todayEl) {
         todayEl.innerHTML = `
-          📊 Tu día: <span><strong>${tocadosHoy}</strong> leads tocados</span>
+          Tu día: <span><strong>${tocadosHoy}</strong> leads tocados</span>
           <span>· <strong>${conexionesHoy}</strong> conexiones</span>
           <span>· <strong>${agendadosHoy}</strong> agendados</span>
         `;
@@ -9217,7 +9218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ══════════════════════════════════════════════════════════════
   // ── MÓDULO FAQ / BANCO DE RESPUESTAS ──
   // ══════════════════════════════════════════════════════════════
-  const CAT_LABELS = { precio:'💰 Precio', objecion:'🚫 Objeción', seguimiento:'🔄 Seguimiento', calificacion:'📝 Calificación', general:'💬 General' };
+  const CAT_LABELS = { precio:'Precio', objecion:'Objeción', seguimiento:'Seguimiento', calificacion:'Calificación', general:'General' };
 
   window.loadFaqsModule = async function() {
     const q = document.getElementById('faq-search')?.value || '';
@@ -9257,7 +9258,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cambio 2026-04-29: edit/delete solo para admin y supervisor. Setters NO
     // pueden editar ni borrar entradas del banco aunque las hayan creado.
     const canEdit = isAdmin || isSupervisor;
-    const catLabel = CAT_LABELS[e.categoria] || e.categoria || '💬 General';
+    const catLabel = CAT_LABELS[e.categoria] || e.categoria || 'General';
     const pctFuncionaron = e.usos > 0 ? Math.round((e.funcionaron / e.usos) * 100) : 0;
     const tags = (e.tags || []).map(t => `<span style="background:rgba(88,166,255,0.12);color:var(--info);padding:3px 8px;border-radius:10px;font-size:10px;border:1px solid rgba(88,166,255,0.25);">#${escHtml(t)}</span>`).join(' ');
     const authorBadge = e.createdBy ? `<span style="font-size:10px;color:var(--text-secondary);">· ${escHtml(e.createdBy)}</span>` : '';
@@ -9284,9 +9285,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${e.usos > 0 ? `<strong style="color:var(--text-primary);">${e.usos}</strong> usos · <strong style="color:var(--success);">${pctFuncionaron}%</strong> funcionó` : '<em>Sin usos aún</em>'}
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--success);font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">📋 Copiar</button>
-          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--accent);font-weight:600;" title="Copiar para Pegar como humano (extensión Chrome)" onclick="window._faqCopyAsHuman('${escHtml(e.id)}', this)">👤 Copiar humano</button>
-          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">✅ Funcionó</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--success);font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">Copiar</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--accent);font-weight:600;" title="Copiar para Pegar como humano (extensión Chrome)" onclick="window._faqCopyAsHuman('${escHtml(e.id)}', this)">Copiar humano</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">Funcionó</button>
         </div>
       </div>
     </div>`;
@@ -9317,7 +9318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
       await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + texto) : texto).catch(() => {});
       const orig = btn.textContent;
-      btn.textContent = ext ? '✓ Listo, Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
+      btn.textContent = ext ? '✓ Listo, Ctrl+V en WA' : '⚠️ Sin extensión — copié normal';
       btn.style.color = ext ? 'var(--accent)' : 'var(--warning, #d97706)';
       setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2400);
     }
@@ -9386,7 +9387,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const items = dData.duplicates.map(d =>
               `<li style="margin:4px 0;"><strong>${escHtml(d.pregunta)}</strong> <span style="color:var(--text-secondary);">· ${escHtml(d.categoria || 'general')} · score ${d.score}</span></li>`
             ).join('');
-            warn.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">⚠ Posibles duplicados en el banco:</div>
+            warn.innerHTML = `<div style="font-weight:600;margin-bottom:6px;">⚠️ Posibles duplicados en el banco:</div>
               <ul style="margin:0 0 8px 16px;padding:0;">${items}</ul>
               <div style="display:flex;gap:8px;justify-content:flex-end;">
                 <button class="btn btn-ghost btn-sm" onclick="document.getElementById('faq-dup-warning').classList.add('hidden')">Revisar</button>
@@ -9445,7 +9446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     else body = { text: raw };
 
     const btn = document.getElementById('faq-import-submit-btn');
-    btn.disabled = true; btn.textContent = '⏳ Importando...';
+    btn.disabled = true; btn.textContent = 'Importando...';
     try {
       const resp = await fetch(apiUrl('/api/faqs/import'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -9505,7 +9506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const statusEl = document.getElementById('faq-suggest-status');
     if (!pregunta) { alert('Primero escribí la pregunta/objeción.'); return; }
     const btn = document.getElementById('faq-suggest-btn');
-    btn.textContent = '⏳ Generando...';
+    btn.textContent = 'Generando...';
     btn.disabled = true;
     statusEl.textContent = 'Consultando IA...';
     try {
@@ -9521,10 +9522,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         : '✓ Generado sin ejemplos previos (el banco está vacío).';
       statusEl.style.color = 'var(--success)';
     } catch(err) {
-      statusEl.textContent = '❌ ' + err.message;
+      statusEl.textContent = '' + err.message;
       statusEl.style.color = 'var(--danger)';
     } finally {
-      btn.textContent = '✨ Generar con IA';
+      btn.textContent = 'Generar con IA';
       btn.disabled = false;
     }
   };
@@ -9572,11 +9573,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             '</div>' : '') +
           '</div>' +
           '<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:11px;">' +
-            (hasText ? '<span style="background:rgba(91,185,116,0.15);color:var(--success);padding:2px 8px;border-radius:10px;">🤖 IA lo usa</span>' : '<span style="background:rgba(248,81,73,0.12);color:var(--danger);padding:2px 8px;border-radius:10px;">⚠️ Sin texto IA</span>') +
+            (hasText ? '<span style="background:rgba(91,185,116,0.15);color:var(--success);padding:2px 8px;border-radius:10px;">IA lo usa</span>' : '<span style="background:rgba(248,81,73,0.12);color:var(--danger);padding:2px 8px;border-radius:10px;">⚠️ Sin texto IA</span>') +
             (sizeKb ? '<span style="color:var(--text-secondary);">' + sizeKb + '</span>' : '') +
             (m.createdBy ? '<span style="color:var(--text-secondary);">· ' + escHtml(m.createdBy) + '</span>' : '') +
           '</div>' +
-          (m.hasFile ? '<button type="button" class="btn-table-action" style="text-align:center;color:var(--primary-color);padding:8px;" onclick="window._trainingDownload(\'' + escHtml(m.id) + '\', \'' + escHtml(m.fileName || 'archivo') + '\')">⬇ Descargar archivo</button>' : '') +
+          (m.hasFile ? '<button type="button" class="btn-table-action" style="text-align:center;color:var(--primary-color);padding:8px;" onclick="window._trainingDownload(\'' + escHtml(m.id) + '\', \'' + escHtml(m.fileName || 'archivo') + '\')">Descargar archivo</button>' : '') +
         '</div>';
       }).join('');
     } catch(err) {
@@ -9747,12 +9748,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       let estadoChip;
       if (bloqueado) {
         borderColor = 'var(--border-color)';
-        estadoChip = `<span style="font-size:11px; color:var(--text-tertiary, #7E8494); background:rgba(126,132,148,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">🔒 Bloqueado</span>`;
+        estadoChip = `<span style="font-size:11px; color:var(--text-tertiary, #7E8494); background:rgba(126,132,148,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">Bloqueado</span>`;
       } else if (leido) {
         borderColor = 'rgba(91,185,116,0.4)';
-        estadoChip = `<span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.15); padding:3px 10px; border-radius:10px; font-weight:600;">✅ Leído</span>`;
+        estadoChip = `<span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.15); padding:3px 10px; border-radius:10px; font-weight:600;">Leído</span>`;
       } else {
-        estadoChip = `<span style="font-size:11px; color:var(--info); background:rgba(121,184,255,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">🔵 Sin leer</span>`;
+        estadoChip = `<span style="font-size:11px; color:var(--info); background:rgba(121,184,255,0.12); padding:3px 10px; border-radius:10px; font-weight:600;">Sin leer</span>`;
       }
 
       // Bloqueado: no es <a>, sin click, opacity reducido
@@ -9770,7 +9771,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="color:#B8C2CC; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
           <div style="color:#7E8494; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">Aprobá primero el quiz del módulo ${m.num - 1}</div>
           <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
-            <span style="font-size:11px; color:var(--text-tertiary, #7E8494);">⏱ ~${m.minutes} min</span>
+            <span style="font-size:11px; color:var(--text-tertiary, #7E8494);">~${m.minutes} min</span>
             <span style="color:var(--text-tertiary, #7E8494); font-size:14px;">🔒</span>
           </div>
         </div>`;
@@ -9792,8 +9793,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="color:#E6EDF3; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
         <div style="color:#B8C2CC; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
-          <span style="font-size:11px; color:var(--text-secondary);">⏱ ~${m.minutes} min</span>
-          <span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">🤖 IA lo usa</span>
+          <span style="font-size:11px; color:var(--text-secondary);">~${m.minutes} min</span>
+          <span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">IA lo usa</span>
           <span style="color:var(--accent); font-size:14px;">→</span>
         </div>
       </a>`;
@@ -9822,12 +9823,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!list) return;
     // Feedback visual del boton Refrescar
     const refreshBtns = document.querySelectorAll('button[onclick*="loadOnlineUsers"]');
-    refreshBtns.forEach(b => { b.disabled = true; b.dataset._origText = b.textContent; b.textContent = '⏳ Actualizando...'; });
+    refreshBtns.forEach(b => { b.disabled = true; b.dataset._origText = b.textContent; b.textContent = 'Actualizando...'; });
     try {
       const resp = await fetch(apiUrl('/api/auth/online'), { credentials: 'include' });
       if (!resp.ok) {
         if (resp.status === 401) {
-          list.innerHTML = '<p style="color:var(--warning);">⚠ Tu sesión expiró. Recargá la página (F5) o volvé a entrar.</p>';
+          list.innerHTML = '<p style="color:var(--warning);">⚠️ Tu sesión expiró. Recargá la página (F5) o volvé a entrar.</p>';
           // Cortar el auto-refresh para no spamear 401s
           if (onlineRefreshTimer) { clearInterval(onlineRefreshTimer); onlineRefreshTimer = null; }
         } else {
@@ -9874,7 +9875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       list.innerHTML =
         `<div style="margin-bottom:14px; padding:12px 16px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px;">
-          <strong style="color:var(--success);">🟢 ${onlineCount}</strong> ${onlineCount === 1 ? 'online ahora' : 'online ahora'} · <strong>${todayUsers.length}</strong> conectaron hoy · ${data.users.length} usuarios totales
+          <strong style="color:var(--success);">${onlineCount}</strong> ${onlineCount === 1 ? 'online ahora' : 'online ahora'} · <strong>${todayUsers.length}</strong> conectaron hoy · ${data.users.length} usuarios totales
           <span style="float:right; color:var(--text-secondary); font-size:11px;">Actualizado: ${new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</span>
         </div>` +
         (todayUsers.length === 0
@@ -9940,7 +9941,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if ('Notification' in window) {
           if (Notification.permission === 'granted') {
             const e = newlyOverdue[0];
-            new Notification('📅 Llamada agendada atrasada', {
+            new Notification('Llamada agendada atrasada', {
               body: `${e.nombre || e.lead?.name || 'Lead'} · agendó: ${e.setterName || '?'}`,
               icon: '/favicon.ico',
               tag: 'scm-overdue-' + e.id
@@ -9991,14 +9992,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       badge.style.background = 'var(--danger-soft)';
       badge.style.color = 'var(--danger)';
       badge.title = `${overdue.length} agendamientos atrasados`;
-      document.title = `🔴 (${overdue.length}) ${ORIGINAL_TITLE}`;
+      document.title = `(${overdue.length}) ${ORIGINAL_TITLE}`;
     } else if (upcomingSoon.length > 0) {
       badge.textContent = upcomingSoon.length;
       badge.style.display = 'inline-block';
       badge.style.background = 'var(--warning-soft)';
       badge.style.color = 'var(--warning)';
       badge.title = `${upcomingSoon.length} agendamientos en los próximos 30 min`;
-      document.title = `🟡 (${upcomingSoon.length}) ${ORIGINAL_TITLE}`;
+      document.title = `(${upcomingSoon.length}) ${ORIGINAL_TITLE}`;
     } else if (totalPending > 0) {
       badge.textContent = totalPending;
       badge.style.display = 'inline-block';
@@ -10029,11 +10030,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const stateColors = {
       pendiente: { bg: 'var(--warning-soft)', color: 'var(--warning)', label: 'Pendiente' },
-      realizada: { bg: 'var(--success-soft)', color: 'var(--success)', label: '✅ Realizada' },
-      no_show:   { bg: 'var(--danger-soft)', color: 'var(--danger)', label: '👻 No-show' },
-      cancelada: { bg: 'rgba(126,132,148,0.15)', color: 'var(--text-tertiary)', label: '❌ Cancelada' },
-      reagendada:{ bg: 'var(--info-soft)', color: 'var(--info)', label: '🔄 Reagendada' },
-      ganada:    { bg: 'rgba(255,179,65,0.15)', color: '#FFB341', label: '🏆 Ganada' }
+      realizada: { bg: 'var(--success-soft)', color: 'var(--success)', label: 'Realizada' },
+      no_show:   { bg: 'var(--danger-soft)', color: 'var(--danger)', label: 'No-show' },
+      cancelada: { bg: 'rgba(126,132,148,0.15)', color: 'var(--text-tertiary)', label: 'Cancelada' },
+      reagendada:{ bg: 'var(--info-soft)', color: 'var(--info)', label: 'Reagendada' },
+      ganada:    { bg: 'rgba(255,179,65,0.15)', color: '#FFB341', label: 'Ganada' }
     };
 
     list.innerHTML = entries.map(e => {
@@ -10058,21 +10059,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span style="background:${sc.bg}; color:${sc.color}; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600;">${sc.label}</span>
             ${isPast && e.calendarioEstado === 'pendiente' ? '<span style="background:var(--danger-soft); color:var(--danger); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600;">⚠️ ATRASADA</span>' : ''}
             ${e.sourceCall ? '<span style="background:var(--accent-soft); color:var(--accent); padding:2px 8px; border-radius:6px; font-size:10px;">desde llamada</span>' : ''}
-            ${e.calendarioEstado === 'ganada' && e.valorProyecto ? `<span style="background:rgba(255,179,65,0.15); color:#FFB341; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700;">💵 $${Number(e.valorProyecto).toLocaleString('es-AR')}</span>` : ''}
+            ${e.calendarioEstado === 'ganada' && e.valorProyecto ? `<span style="background:rgba(255,179,65,0.15); color:#FFB341; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700;">$${Number(e.valorProyecto).toLocaleString('es-AR')}</span>` : ''}
           </div>
           <div style="font-size:13px; color:var(--text-secondary); margin-bottom:3px;">📆 <strong>${escHtml(fechaStr)}</strong> · agendó: <strong>${escHtml(e.setterName || e.setterId || '?')}</strong></div>
-          ${lead ? `<div style="font-size:12px; color:var(--text-tertiary);">📞 ${escHtml(lead.phone || '')} · ${escHtml(lead.city || '')}${lead.city && lead.country ? ' / ' : ''}${escHtml(lead.country || '')}${lead.doctor && !String(lead.doctor).includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}${lead.callAttempts ? ` · ${lead.callAttempts} intento${lead.callAttempts>1?'s':''}` : ''}</div>` : ''}
-          ${e.notas ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:6px; padding:8px 10px; background:var(--bg-input); border-radius:6px;">📝 ${escHtml(e.notas)}</div>` : ''}
+          ${lead ? `<div style="font-size:12px; color:var(--text-tertiary);">${escHtml(lead.phone || '')} · ${escHtml(lead.city || '')}${lead.city && lead.country ? ' / ' : ''}${escHtml(lead.country || '')}${lead.doctor && !String(lead.doctor).includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}${lead.callAttempts ? ` · ${lead.callAttempts} intento${lead.callAttempts>1?'s':''}` : ''}</div>` : ''}
+          ${e.notas ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:6px; padding:8px 10px; background:var(--bg-input); border-radius:6px;">${escHtml(e.notas)}</div>` : ''}
         </div>
-        ${telLink ? `<a href="tel:${escHtml(telLink)}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:9px 16px; font-weight:600; font-size:12px;">📞 Llamar</a>` : ''}
+        ${telLink ? `<a href="tel:${escHtml(telLink)}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:9px 16px; font-weight:600; font-size:12px;">Llamar</a>` : ''}
         <select onchange="window._updateScheduledStatus('${escHtml(e.id)}', this.value)" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:160px; cursor:pointer; font-family:inherit;">
           <option value="">— Cambiar estado —</option>
-          <option value="realizada">✅ Marcar realizada</option>
-          <option value="ganada">🏆 GANADA (cierre de venta)</option>
-          <option value="no_show">👻 No-show</option>
-          <option value="cancelada">❌ Cancelar</option>
-          <option value="reagendada">🔄 Reagendar (cambiar fecha)</option>
-          <option value="pendiente">↩️ Volver a pendiente</option>
+          <option value="realizada">Marcar realizada</option>
+          <option value="ganada">GANADA (cierre de venta)</option>
+          <option value="no_show">No-show</option>
+          <option value="cancelada">Cancelar</option>
+          <option value="reagendada">Reagendar (cambiar fecha)</option>
+          <option value="pendiente">Volver a pendiente</option>
         </select>
       </div>`;
     }).join('');
@@ -10083,7 +10084,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let body = { calendarioEstado: status };
     if (status === 'ganada') {
       const val = await window.askText({
-        title: '🏆 Cerrar venta',
+        title: 'Cerrar venta',
         subtitle: 'Valor del proyecto cerrado (USD). Dejá 0 si no aplica.',
         type: 'input',
         placeholder: 'Ej: 1500',
@@ -10155,9 +10156,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebarBadge = document.getElementById('system-health-badge');
     const status = data.status || 'unknown';
     const colors = {
-      healthy: { bg: 'var(--success-soft)', color: 'var(--success)', text: '✅ Sistema saludable' },
+      healthy: { bg: 'var(--success-soft)', color: 'var(--success)', text: 'Sistema saludable' },
       degraded: { bg: 'var(--warning-soft)', color: 'var(--warning)', text: '⚠️ Sistema con warnings' },
-      unhealthy: { bg: 'var(--danger-soft)', color: 'var(--danger)', text: '🔴 Sistema en problemas' }
+      unhealthy: { bg: 'var(--danger-soft)', color: 'var(--danger)', text: 'Sistema en problemas' }
     };
     const c = colors[status] || colors.degraded;
     if (banner) {
@@ -10178,7 +10179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ck = data.checks;
     const card = (title, body, color) => '<div style="background:var(--bg-surface); border:1px solid ' + (color || 'var(--border-subtle)') + '; border-radius:12px; padding:16px 18px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:10px;">' + title + '</div>' + body + '</div>';
     let html = '';
-    html += card('📊 Datos en el sistema', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+    html += card('Datos en el sistema', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
       '<span style="color:var(--text-tertiary);">Leads:</span><span style="color:var(--text-primary); font-weight:600;">' + (ck.counts.leads || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Sin WSP:</span><span>' + (ck.counts.sinWsp || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Interesados:</span><span style="color:var(--success);">' + (ck.counts.interesados || 0) + '</span>' +
@@ -10190,14 +10191,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       '<span style="color:var(--text-tertiary);">Sesiones:</span><span>' + (ck.counts.activeSessions || 0) + '</span>' +
     '</div>');
     const calOverdueColor = (ck.counts.calendarAtrasados || 0) > 0 ? 'var(--danger)' : 'var(--success)';
-    html += card('📅 Calendario', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
+    html += card('Calendario', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
       '<span style="color:var(--text-tertiary);">Pendientes:</span><span style="color:var(--accent); font-weight:600;">' + (ck.counts.calendarPendientes || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Atrasadas:</span><span style="color:' + calOverdueColor + '; font-weight:600;">' + (ck.counts.calendarAtrasados || 0) + '</span>' +
     '</div>', calOverdueColor);
     const aiOk = ck.ai.mercury || ck.ai.qwen;
-    html += card('🤖 IA', '<div style="font-size:13px;">' +
-      '<div>Mercury: <span style="color:' + (ck.ai.mercury ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.mercury ? '✅ activa' : '❌ no configurada') + '</span></div>' +
-      '<div>Qwen (fallback): <span style="color:' + (ck.ai.qwen ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.qwen ? '✅ activa' : '❌ no configurada') + '</span></div>' +
+    html += card('IA', '<div style="font-size:13px;">' +
+      '<div>Mercury: <span style="color:' + (ck.ai.mercury ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.mercury ? 'activa' : 'no configurada') + '</span></div>' +
+      '<div>Qwen (fallback): <span style="color:' + (ck.ai.qwen ? 'var(--success)' : 'var(--danger)') + '; font-weight:600;">' + (ck.ai.qwen ? 'activa' : 'no configurada') + '</span></div>' +
     '</div>', aiOk ? null : 'var(--danger)');
     const bkColor = ck.backups.ok ? null : 'var(--warning)';
     let bkBody = '<div style="font-size:13px;"><div>Total snapshots: <strong>' + (ck.backups.count || 0) + '</strong></div>';
@@ -10208,7 +10209,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       bkBody += '<div style="color:var(--warning);">Sin backups todavía</div>';
     }
     bkBody += '</div>';
-    html += card('💾 Backups', bkBody, bkColor);
+    html += card('Backups', bkBody, bkColor);
     const errCount = ck.errors.last24hCount || 0;
     const errColor = errCount > 50 ? 'var(--danger)' : (errCount > 10 ? 'var(--warning)' : null);
     let errBody = '<div style="font-size:13px;"><div>Últimas 24h: <strong style="color:' + (errColor || 'var(--success)') + ';">' + errCount + ' errores</strong></div>';
@@ -10216,7 +10217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       errBody += '<div style="color:var(--text-tertiary); margin-top:8px; font-size:12px; padding:8px; background:var(--bg-input); border-radius:6px; border-left:3px solid var(--danger);"><div style="color:var(--danger); font-weight:600; margin-bottom:2px;">Último error:</div><div style="word-break:break-word;">' + escHtml((ck.errors.latest.message || '').substring(0, 200)) + '</div>' + (ck.errors.latest.path ? '<div style="color:var(--text-faint); font-size:11px; margin-top:2px;">' + escHtml(ck.errors.latest.path) + '</div>' : '') + '</div>';
     }
     errBody += '</div>';
-    html += card('🐛 Errores', errBody, errColor);
+    html += card('Errores', errBody, errColor);
     let filesBody = '<div style="display:grid; grid-template-columns:1fr auto; gap:4px 12px; font-size:12px;">';
     for (const [name, info] of Object.entries(ck.data.files || {})) {
       if (!info) continue;
@@ -10224,23 +10225,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       filesBody += '<span style="color:var(--text-primary); font-weight:600;">' + info.sizeMb + ' MB</span>';
     }
     filesBody += '</div>';
-    html += card('📁 Archivos del data/', filesBody);
+    html += card('Archivos del data/', filesBody);
     grid.innerHTML = html;
   }
 
   document.getElementById('system-refresh-btn')?.addEventListener('click', () => loadSystemHealth());
   document.getElementById('system-backup-now-btn')?.addEventListener('click', async () => {
     const btn = document.getElementById('system-backup-now-btn');
-    btn.disabled = true; btn.textContent = '💾 Creando...';
+    btn.disabled = true; btn.textContent = 'Creando...';
     try {
       const r = await fetch(apiUrl('/api/admin/backups/now'), { method: 'POST' });
       const d = await r.json();
       if (d.ok) {
-        btn.textContent = '✅ Backup creado';
+        btn.textContent = 'Backup creado';
         await loadSystemHealth();
-        setTimeout(() => { btn.textContent = '💾 Backup ahora'; btn.disabled = false; }, 2500);
-      } else { alert('Error: ' + (d.error || 'desconocido')); btn.textContent = '💾 Backup ahora'; btn.disabled = false; }
-    } catch (e) { btn.textContent = '💾 Backup ahora'; alert('Error: ' + e.message); btn.disabled = false; }
+        setTimeout(() => { btn.textContent = 'Backup ahora'; btn.disabled = false; }, 2500);
+      } else { alert('Error: ' + (d.error || 'desconocido')); btn.textContent = 'Backup ahora'; btn.disabled = false; }
+    } catch (e) { btn.textContent = 'Backup ahora'; alert('Error: ' + e.message); btn.disabled = false; }
   });
   document.getElementById('system-report-preview-btn')?.addEventListener('click', async () => {
     try {
@@ -10263,7 +10264,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     if (!to) return;
     const btn = document.getElementById('system-report-send-btn');
-    btn.disabled = true; btn.textContent = '📨 Enviando...';
+    btn.disabled = true; btn.textContent = 'Enviando...';
     try {
       const r = await fetch(apiUrl('/api/admin/weekly-report/send'), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -10271,10 +10272,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
       const d = await r.json();
       if (d.sent || d.ok) {
-        btn.textContent = '✅ Enviado';
-        setTimeout(() => { btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }, 2500);
-      } else { alert('No se pudo enviar: ' + (d.reason || d.error || 'desconocido')); btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }
-    } catch (e) { alert('Error: ' + e.message); btn.textContent = '📨 Enviar reporte ahora'; btn.disabled = false; }
+        btn.textContent = 'Enviado';
+        setTimeout(() => { btn.textContent = 'Enviar reporte ahora'; btn.disabled = false; }, 2500);
+      } else { alert('No se pudo enviar: ' + (d.reason || d.error || 'desconocido')); btn.textContent = 'Enviar reporte ahora'; btn.disabled = false; }
+    } catch (e) { alert('Error: ' + e.message); btn.textContent = 'Enviar reporte ahora'; btn.disabled = false; }
   });
   document.querySelector('[data-target="view-system"]')?.addEventListener('click', () => {
     setTimeout(() => loadSystemHealth(), 50);
@@ -10383,7 +10384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (driftBanner && drift) {
         if (drift.drift) {
           const top = (drift.topViolations || []).slice(0, 3).map(x => `${x.violation} (${x.count})`).join(', ') || 'sin detalle';
-          driftBanner.innerHTML = `⚠ <strong>Drift detectado</strong> — violations rate subió de ${(drift.previousWeek.violationsRate * 100).toFixed(1)}% (semana pasada) a <strong>${(drift.currentWeek.violationsRate * 100).toFixed(1)}%</strong> (esta semana). Top: ${top}.`;
+          driftBanner.innerHTML = `⚠️ <strong>Drift detectado</strong> — violations rate subió de ${(drift.previousWeek.violationsRate * 100).toFixed(1)}% (semana pasada) a <strong>${(drift.currentWeek.violationsRate * 100).toFixed(1)}%</strong> (esta semana). Top: ${top}.`;
           driftBanner.style.display = 'block';
         } else {
           driftBanner.style.display = 'none';
@@ -10441,7 +10442,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="cand-out" style="font-size:13px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; padding:8px 10px; background:rgba(157,133,242,0.04); border-left:3px solid var(--accent); border-radius:6px;"></div>
           <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end;">
             <button class="btn-secondary cand-skip" style="font-size:11px; padding:5px 10px;">Saltar</button>
-            <button class="btn-primary cand-approve" style="font-size:11px; padding:5px 10px;">⭐ Promover al banco</button>
+            <button class="btn-primary cand-approve" style="font-size:11px; padding:5px 10px;">Promover al banco</button>
           </div>
         `;
         li.querySelector('.cand-msg').textContent = (g.prospectMessage || '').slice(0, 140);
@@ -10457,7 +10458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           } catch (e) {
             window.showToast('Error: ' + e.message, { type: 'error' });
             ev.target.disabled = false;
-            ev.target.textContent = '⭐ Promover al banco';
+            ev.target.textContent = 'Promover al banco';
           }
         });
         li.querySelector('.cand-skip').addEventListener('click', () => { li.remove(); });
@@ -10492,10 +10493,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:11px; font-weight:700; color:${accent}; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">${label}</div>
           <div style="font-size:11px; color:var(--text-primary); line-height:1.7;">
             Total: <strong>${x.total}</strong><br>
-            👍 Buenas: <strong>${(x.goodRate * 100).toFixed(0)}%</strong> (${x.good})<br>
-            👎 Malas: <strong>${(x.badRate * 100).toFixed(0)}%</strong> (${x.bad})<br>
+            Buenas: <strong>${(x.goodRate * 100).toFixed(0)}%</strong> (${x.good})<br>
+            Malas: <strong>${(x.badRate * 100).toFixed(0)}%</strong> (${x.bad})<br>
             ✓ Usadas: <strong>${(x.usedRate * 100).toFixed(0)}%</strong> (${x.used})<br>
-            ⚠ Violations: <strong>${(x.violationsRate * 100).toFixed(0)}%</strong>
+            ⚠️ Violations: <strong>${(x.violationsRate * 100).toFixed(0)}%</strong>
           </div>
         </div>`;
       grid.innerHTML = renderCol('Prompt A (actual)', ab.A, '#5bb974') + renderCol('Prompt B (experimental)', ab.B, 'var(--accent)');
@@ -10652,7 +10653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
           <button class="btn-table-action asst-block-copy" style="font-size:11px;">Copiar</button>
-          <button class="btn-table-action asst-block-copy-human" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:11px; color:var(--accent);">👤 Humano</button>
+          <button class="btn-table-action asst-block-copy-human" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:11px; color:var(--accent);">Humano</button>
         </div>
       `;
       li.querySelector('.asst-block-text').textContent = b;
@@ -10667,8 +10668,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
           await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + b) : b);
-          ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
-          setTimeout(() => { ev.target.textContent = '👤 Humano'; }, 2400);
+          ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠️ Sin extensión — copié normal';
+          setTimeout(() => { ev.target.textContent = 'Humano'; }, 2400);
         } catch (e) { window.showToast('No pude copiar: ' + e.message, { type: 'error' }); }
       });
       ul.appendChild(li);
@@ -10772,15 +10773,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Pill informativa de intención detectada
   const INTENT_LABELS = {
-    pide_asset: { label: '📎 Pide info / asset', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
-    agendamiento: { label: '📅 Quiere agendar', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
-    precio: { label: '💲 Pregunta precio', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
-    objecion: { label: '🛑 Objeción', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
-    duda_tecnica: { label: '❓ Duda técnica', color: 'var(--accent)', bg: 'rgba(157,133,242,0.10)', border: 'rgba(157,133,242,0.4)' },
-    indeciso: { label: '🤔 Indeciso / frío', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
-    saludo: { label: '👋 Saludo', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
-    despedida: { label: '👋 Cierre', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
-    calificacion: { label: '🔍 Da info clínica', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    pide_asset: { label: 'Pide info / asset', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
+    agendamiento: { label: 'Quiere agendar', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    precio: { label: 'Pregunta precio', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
+    objecion: { label: 'Objeción', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
+    duda_tecnica: { label: 'Duda técnica', color: 'var(--accent)', bg: 'rgba(157,133,242,0.10)', border: 'rgba(157,133,242,0.4)' },
+    indeciso: { label: 'Indeciso / frío', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
+    saludo: { label: 'Saludo', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
+    despedida: { label: 'Cierre', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
+    calificacion: { label: 'Da info clínica', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
     otro: null,
   };
   function _asstRenderIntent(intent) {
@@ -10847,14 +10848,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (d.usedFallback) document.getElementById('asst-fallback-pill').style.display = 'inline-block';
       if (Array.isArray(d.violations) && d.violations.length) {
         const pill = document.getElementById('asst-violations-pill');
-        pill.textContent = '⚠ ' + d.violations.join(', ');
+        pill.textContent = '⚠️ ' + d.violations.join(', ');
         pill.style.display = 'inline-block';
       }
       // Pill de variante usada (informativa: confirma al setter que Mercury la consideró)
       const vPill = document.getElementById('asst-variant-pill');
       if (vPill) {
         if (d.variantUsed && d.variantUsed.name) {
-          vPill.textContent = '🎯 ' + d.variantUsed.name;
+          vPill.textContent = '' + d.variantUsed.name;
           vPill.style.display = 'inline-block';
         } else {
           vPill.style.display = 'none';
@@ -10969,7 +10970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div style="font-size:10px; color:var(--text-secondary); flex-shrink:0;">${when}</div>
           </div>`;
-        li.querySelector('.asst-mine-msg').textContent = '💬 ' + prevMsg + (g.prospectMessage.length > 90 ? '…' : '');
+        li.querySelector('.asst-mine-msg').textContent = '' + prevMsg + (g.prospectMessage.length > 90 ? '…' : '');
         li.querySelector('.asst-mine-out').textContent = prevOut + (g.output?.text?.length > 120 ? '…' : '');
         li.addEventListener('click', async () => {
           // Reusar: pegar el mensaje en el campo y popular output con la generación cacheada
@@ -10996,7 +10997,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       await navigator.clipboard.writeText(_asstCurrentGen.blocks.join('\n\n'));
       ev.target.textContent = '✓ Copiado todo';
-      setTimeout(() => { ev.target.textContent = '📋 Copiar todo'; }, 1500);
+      setTimeout(() => { ev.target.textContent = 'Copiar todo'; }, 1500);
     } catch (e) { alert('No pude copiar: ' + e.message); }
   });
 
@@ -11006,8 +11007,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const txt = _asstCurrentGen.blocks.join('\n\n');
       const ext = document.documentElement.getAttribute('data-scm-paste-installed') === '1';
       await navigator.clipboard.writeText(ext ? ('__SCM_TYPE__:' + txt) : txt);
-      ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠ Sin extensión — copié normal';
-      setTimeout(() => { ev.target.textContent = '👤 Copiar todo humano'; }, 2400);
+      ev.target.textContent = ext ? '✓ Ctrl+V en WA' : '⚠️ Sin extensión — copié normal';
+      setTimeout(() => { ev.target.textContent = 'Copiar todo humano'; }, 2400);
     } catch (e) { alert('No pude copiar: ' + e.message); }
   });
 
@@ -11050,7 +11051,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       approved: { text: '✓ Oro', bg: 'rgba(91,185,116,0.12)', color: '#5bb974', border: 'rgba(91,185,116,0.45)' },
       rejected: { text: '✗ Rechazada', bg: 'rgba(248,81,73,0.10)', color: '#f85149', border: 'rgba(248,81,73,0.45)' },
       rewritten: { text: '✎ Reescrita', bg: 'rgba(157,133,242,0.14)', color: '#9D85F2', border: 'rgba(157,133,242,0.50)' },
-      reviewed: { text: '💡 Con nota', bg: 'rgba(255,200,40,0.12)', color: '#ffc828', border: 'rgba(255,200,40,0.45)' },
+      reviewed: { text: 'Con nota', bg: 'rgba(255,200,40,0.12)', color: '#ffc828', border: 'rgba(255,200,40,0.45)' },
     };
     const m = map[g.status] || map.pendiente;
     return `<span class="chip" style="padding:4px 10px; font-size:11px; font-weight:500; background:${m.bg}; color:${m.color}; border:1px solid ${m.border}; border-radius:999px; white-space:nowrap;">${m.text}</span>`;
@@ -11098,10 +11099,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const setterInitial = _mrInitial(g.setterName);
     const variantTag = g.variantUsed?.name
-      ? `<span style="padding:2px 7px; font-size:9px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px; white-space:nowrap;">🎯 ${_mrEscape(g.variantUsed.name)}</span>`
+      ? `<span style="padding:2px 7px; font-size:9px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px; white-space:nowrap;">${_mrEscape(g.variantUsed.name)}</span>`
       : '';
     const violationsTag = (g.violations || []).length
-      ? `<span title="${_mrEscape(g.violations.join(', '))}" style="padding:2px 7px; font-size:9px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px; white-space:nowrap;">⚠</span>`
+      ? `<span title="${_mrEscape(g.violations.join(', '))}" style="padding:2px 7px; font-size:9px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px; white-space:nowrap;">⚠️</span>`
       : '';
 
     // Truncar mensaje del prospecto a 90 chars para preview en card.
@@ -11124,7 +11125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
       <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center; padding-top:8px; border-top:1px solid var(--border-color);">
         ${variantTag}${violationsTag}
-        <span class="muted" style="font-size:10px; margin-left:auto;">💬 ${blockCount} bloque${blockCount === 1 ? '' : 's'}</span>
+        <span class="muted" style="font-size:10px; margin-left:auto;">${blockCount} bloque${blockCount === 1 ? '' : 's'}</span>
         ${_mrSetterActionPill(g) || ''}
       </div>
     `;
@@ -11180,7 +11181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const setterInitial = _mrInitial(g.setterName);
     document.getElementById('mr-detail-avatar').textContent = setterInitial;
     document.getElementById('mr-detail-title').textContent = g.setterName || '—';
-    document.getElementById('mr-detail-meta').innerHTML = `${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}${g.variantUsed?.name ? ' · 🎯 ' + _mrEscape(g.variantUsed.name) : ''}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ' · <span style="color:#f85149;">⚠ ' + _mrEscape(g.violations.join(', ')) + '</span>' : ''}`;
+    document.getElementById('mr-detail-meta').innerHTML = `${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}${g.variantUsed?.name ? ' · ' + _mrEscape(g.variantUsed.name) : ''}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ' · <span style="color:#f85149;">⚠️ ' + _mrEscape(g.violations.join(', ')) + '</span>' : ''}`;
 
     const blocksHtml = (g.output?.blocks || []).map((b, i) => `
       <div style="position:relative; padding:14px 16px 14px 18px; background:rgba(157,133,242,0.05); border-left:3px solid var(--accent); border-radius:10px; font-size:14px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">
@@ -11197,11 +11198,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const adminBlocks = [];
     if (g.adminAction === 'rewritten' && g.adminRewrite) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); border-radius:8px;"><div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div></div>`);
-    if (g.adminAction === 'suggested_improvement' && g.adminNote) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;"><div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">💡 Nota de mejora</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div></div>`);
+    if (g.adminAction === 'suggested_improvement' && g.adminNote) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;"><div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Nota de mejora</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div></div>`);
     if (g.adminAction === 'rejected' && g.adminRejectReason) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); border-radius:8px;"><div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Razón del rechazo</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRejectReason)}</div></div>`);
 
     const ejemplosHtml = (g.ejemplos || []).length
-      ? `<details style="font-size:11px;"><summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0; user-select:none;">📚 Ejemplos del banco usados (${g.ejemplos.length})</summary><ul style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:5px;">${g.ejemplos.map((e) => `<li style="padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; display:flex; gap:8px; align-items:center; font-size:11px;"><span style="flex:1; color:var(--text-primary);">${_mrEscape(e.pregunta)}</span><span style="background:var(--accent-soft); color:var(--accent); padding:1px 8px; border-radius:6px; font-size:10px;">${_mrEscape(e.categoria)}</span><span style="color:var(--text-secondary); font-variant-numeric:tabular-nums;">${e.score}</span></li>`).join('')}</ul></details>` : '';
+      ? `<details style="font-size:11px;"><summary style="cursor:pointer; color:var(--text-secondary); padding:4px 0; user-select:none;">Ejemplos del banco usados (${g.ejemplos.length})</summary><ul style="list-style:none; padding:8px 0 0 0; margin:0; display:flex; flex-direction:column; gap:5px;">${g.ejemplos.map((e) => `<li style="padding:6px 10px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:8px; display:flex; gap:8px; align-items:center; font-size:11px;"><span style="flex:1; color:var(--text-primary);">${_mrEscape(e.pregunta)}</span><span style="background:var(--accent-soft); color:var(--accent); padding:1px 8px; border-radius:6px; font-size:10px;">${_mrEscape(e.categoria)}</span><span style="color:var(--text-secondary); font-variant-numeric:tabular-nums;">${e.score}</span></li>`).join('')}</ul></details>` : '';
 
     const adminFooter = g.adminAction
       ? `<div class="muted" style="font-size:11px; padding:8px 0; border-top:1px dashed var(--border-color);">Revisada por <strong style="color:var(--text-primary);">${_mrEscape(g.adminReviewedBy || '—')}</strong> · ${g.adminReviewedAt ? new Date(g.adminReviewedAt).toLocaleString() : ''}</div>` : '';
@@ -11288,7 +11289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let path = `/api/mercury/generations/${encodeURIComponent(id)}`;
     if (action === 'approve') {
       const ok = await window.askConfirm({
-        title: '🥇 Aprobar como ejemplo de oro',
+        title: 'Aprobar como ejemplo de oro',
         message: 'Esta respuesta se va a promover al Banco de Respuestas con tag "aprobado-admin", para que Mercury la use como ejemplo few-shot en futuras generaciones similares.',
         confirmLabel: 'Promover al banco',
       });
@@ -11320,7 +11321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       body.text = text;
     } else if (action === 'suggest') {
       const note = await window.askText({
-        title: '💡 Sugerir mejora a Mercury',
+        title: 'Sugerir mejora a Mercury',
         subtitle: 'Escribí la sugerencia. Se va a inyectar como nota en futuras generaciones para que Mercury aprenda.',
         type: 'textarea',
         placeholder: 'Ej: cuando preguntan por software ya existente, profundizar antes de pitchear.',
@@ -11641,11 +11642,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = d.lead;
       const c = d.call;
       const outcomeLabel = {
-        answered_interested: '✅ Interesado',
-        answered_not_interested: '❌ No interesado',
-        no_answer: '📵 No atendió', voicemail: '📭 Buzón',
-        callback_later: '🔄 Callback', wrong_number: '🔢 Equivocado',
-        invalid_number: '🚫 No existe', scheduled_with_admin: '📅 Agendado',
+        answered_interested: 'Interesado',
+        answered_not_interested: 'No interesado',
+        no_answer: 'No atendió', voicemail: 'Buzón',
+        callback_later: 'Callback', wrong_number: 'Equivocado',
+        invalid_number: 'No existe', scheduled_with_admin: 'Agendado',
       };
       document.getElementById('chist-d-name').textContent = `${lead.name || lead.phone} ${lead.doctor && !lead.doctor.includes('N/A') ? ' · ' + lead.doctor : ''}`;
       document.getElementById('chist-d-meta').textContent = `${lead.phone}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''} · ${new Date(c.ts).toLocaleString('es-AR')}`;
@@ -11659,8 +11660,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const notesEl = document.getElementById('chist-d-notes');
       // Sprint 11: mostrar quickNote (durante/post-call) Y notes (de disposition)
       const parts = [];
-      if (c.quickNote) parts.push(`<div style="margin-bottom:6px;"><strong style="color:#FFB341; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">📓 Nota del setter (during-call)</strong><div style="margin-top:3px;">${escHtml(c.quickNote)}</div></div>`);
-      if (c.notes) parts.push(`<div><strong style="color:var(--text-secondary); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">📝 Nota disposition</strong><div style="margin-top:3px;">${escHtml(c.notes)}</div></div>`);
+      if (c.quickNote) parts.push(`<div style="margin-bottom:6px;"><strong style="color:#FFB341; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Nota del setter (during-call)</strong><div style="margin-top:3px;">${escHtml(c.quickNote)}</div></div>`);
+      if (c.notes) parts.push(`<div><strong style="color:var(--text-secondary); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Nota disposition</strong><div style="margin-top:3px;">${escHtml(c.notes)}</div></div>`);
       if (parts.length > 0) { notesEl.style.display = 'block'; notesEl.innerHTML = parts.join(''); }
       else { notesEl.style.display = 'none'; }
       // Sprint 10: bloque Mercury IA entre notes y transcript
@@ -11677,8 +11678,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (c.transcript?.segments?.length) {
         analysisBlockEl.innerHTML = `
           <div style="padding:14px; background:rgba(157,133,242,0.05); border:1px dashed rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
-            <div style="font-size:13px; color:var(--text-primary); margin-bottom:8px; font-weight:600;">🧠 Análisis Mercury IA disponible</div>
-            <button onclick="window._chistAnalyzeWithMercury('${escHtml(leadId)}', ${callIdx})" class="btn-primary" style="padding:9px 16px; border-radius:9px; font-size:12.5px;">🧠 Analizar con Mercury IA</button>
+            <div style="font-size:13px; color:var(--text-primary); margin-bottom:8px; font-weight:600;">Análisis Mercury IA disponible</div>
+            <button onclick="window._chistAnalyzeWithMercury('${escHtml(leadId)}', ${callIdx})" class="btn-primary" style="padding:9px 16px; border-radius:9px; font-size:12.5px;">Analizar con Mercury IA</button>
             <div style="font-size:10.5px; color:var(--text-secondary); margin-top:6px;">Evalúa según framework PACE, 3-S, opener 27s, reglas SCM v2</div>
           </div>`;
       } else {
@@ -11692,7 +11693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const searchTerm = (document.getElementById('chist-search')?.value || '').toLowerCase().trim();
         transcriptEl.innerHTML = c.transcript.segments.map(s => {
           const speakerColor = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
-          const speakerLabel = s.speaker === 'setter' ? '👤 Setter' : '🎯 Lead';
+          const speakerLabel = s.speaker === 'setter' ? 'Setter' : 'Lead';
           let text = escHtml(s.text);
           if (searchTerm && text.toLowerCase().includes(searchTerm)) {
             const re = new RegExp('(' + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
@@ -11718,7 +11719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!block) return;
     block.innerHTML = `
       <div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
-        <div style="font-size:13px; color:var(--text-primary); margin-bottom:6px;">🧠 Mercury analizando…</div>
+        <div style="font-size:13px; color:var(--text-primary); margin-bottom:6px;">Mercury analizando…</div>
         <div style="font-size:11px; color:var(--text-secondary);">Esto puede tardar 5-15 seg según largo del transcript.</div>
       </div>`;
     try {
@@ -11759,12 +11760,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:54px; height:54px; border-radius:14px; background:${scoreColor}22; border:2px solid ${scoreColor}; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:${scoreColor};">${score}</div>
             <div>
-              <div style="font-size:12.5px; color:var(--text-primary); font-weight:600;">🧠 Score Mercury IA</div>
+              <div style="font-size:12.5px; color:var(--text-primary); font-weight:600;">Score Mercury IA</div>
               <div style="font-size:11px; color:var(--text-secondary); margin-top:2px; max-width:280px;">${escHtml(a.scoreReason || '')}</div>
             </div>
           </div>
           <div style="flex:1; min-width:120px; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
-            <span style="font-size:10.5px; padding:3px 9px; background:${passedColor}22; color:${passedColor}; border:1px solid ${passedColor}55; border-radius:6px; font-weight:600;">${a.passedOpener ? '✅ Pasó opener' : '❌ No pasó opener'}</span>
+            <span style="font-size:10.5px; padding:3px 9px; background:${passedColor}22; color:${passedColor}; border:1px solid ${passedColor}55; border-radius:6px; font-weight:600;">${a.passedOpener ? 'Pasó opener' : 'No pasó opener'}</span>
             <span style="font-size:10px; color:var(--text-secondary);">PACE: <strong style="color:#5bb974;">${paceOk} ✓</strong> · <strong style="color:#f85149;">${paceFail} ✗</strong></span>
           </div>
         </div>
@@ -11772,24 +11773,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         <!-- Strength + Mistake -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
           ${a.biggestStrength ? `<div style="padding:10px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); border-radius:8px;">
-            <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">✅ Tu fortaleza</div>
+            <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">Tu fortaleza</div>
             <div style="font-size:11.5px; color:var(--text-primary); line-height:1.5;">${escHtml(a.biggestStrength)}</div>
           </div>` : ''}
           ${a.biggestMistake ? `<div style="padding:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.25); border-radius:8px;">
-            <div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">❌ Tu error principal</div>
+            <div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">Tu error principal</div>
             <div style="font-size:11.5px; color:var(--text-primary); line-height:1.5;">${escHtml(a.biggestMistake)}</div>
           </div>` : ''}
         </div>
 
         <!-- Missed opportunities + Rule violations -->
         ${opportunities.length > 0 ? `<div style="margin-bottom:10px;">
-          <div style="font-size:10.5px; color:#FFB341; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">⚠ Oportunidades perdidas</div>
+          <div style="font-size:10.5px; color:#FFB341; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">⚠️ Oportunidades perdidas</div>
           <ul style="margin:0; padding:0 0 0 16px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
             ${opportunities.map(o => `<li>${escHtml(o)}</li>`).join('')}
           </ul>
         </div>` : ''}
         ${violations.length > 0 ? `<div style="margin-bottom:10px;">
-          <div style="font-size:10.5px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">🚫 Reglas violadas</div>
+          <div style="font-size:10.5px; color:#f85149; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">Reglas violadas</div>
           <ul style="margin:0; padding:0 0 0 16px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
             ${violations.map(v => `<li>${escHtml(v)}</li>`).join('')}
           </ul>
@@ -11798,14 +11799,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         <!-- Sugerencias accionables -->
         ${suggestions.length > 0 ? `<div style="padding:11px; background:rgba(125,211,252,0.06); border:1px solid rgba(125,211,252,0.2); border-radius:9px; margin-bottom:10px;">
-          <div style="font-size:11px; color:#7dd3fc; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">💡 Sugerencias específicas</div>
+          <div style="font-size:11px; color:#7dd3fc; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Sugerencias específicas</div>
           <ul style="margin:0; padding:0 0 0 18px; font-size:11.5px; color:var(--text-primary); line-height:1.6;">
             ${suggestions.map(s => `<li>${escHtml(s)}</li>`).join('')}
           </ul>
         </div>` : ''}
 
         ${a.nextCallTip ? `<div style="padding:12px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.35); border-radius:9px; text-align:center;">
-          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">🎯 Cambio #1 para la próxima</div>
+          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">Cambio #1 para la próxima</div>
           <div style="font-size:12.5px; color:#fff; font-weight:600; line-height:1.5;">${escHtml(a.nextCallTip)}</div>
         </div>` : ''}
 
@@ -11819,7 +11820,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._chistReAnalyze = async (leadId, callIdx) => {
     const block = document.getElementById('chist-d-mercury');
     if (!block) return;
-    block.innerHTML = `<div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center; color:var(--text-secondary); font-size:12px;">🧠 Re-analizando con Mercury…</div>`;
+    block.innerHTML = `<div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center; color:var(--text-secondary); font-size:12px;">Re-analizando con Mercury…</div>`;
     try {
       const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/${callIdx}/analyze`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -11901,7 +11902,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>`;
 
     const dealsLabel = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary); font-size:14px;">—</span>`;
-    const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'Marcá citas como 🏆 ganadas';
+    const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'Marcá citas como ganadas';
     // Phase 12 P0-4: indicador vs benchmark 2026 por ratio (▲ en/sobre meta · ◆ cerca · ▼ debajo).
     const bench = (val, ok, good, label) => {
       const v = parseFloat(val) || 0;
@@ -11946,7 +11947,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
 
       <div style="margin-top:14px; padding:10px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.18); border-radius:8px; font-size:11.5px; color:var(--text-secondary); line-height:1.5;">
-        <strong style="color:var(--accent);">💡 Benchmarks:</strong> Connect 15-30% · Conversation 40-60% de connects · Booking 15-25% de convs · Dial→Appt 1-3% (60-150 dials/día = 1-4 appts).
+        <strong style="color:var(--accent);">Benchmarks:</strong> Connect 15-30% · Conversation 40-60% de connects · Booking 15-25% de convs · Dial→Appt 1-3% (60-150 dials/día = 1-4 appts).
       </div>
     `;
   }
@@ -11978,7 +11979,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('myp-setter')?.addEventListener('change', () => _ccmLoad());
   document.getElementById('myp-refresh')?.addEventListener('click', () => _ccmLoad());
 
-  // ─── Vista 📅 Mis programados ──────────────────────────────────
+  // ─── Vista Mis programados ──────────────────────────────────
   let _scheduledTab = 'pending';
   let _scheduledCache = [];
   async function _loadScheduled() {
@@ -12012,11 +12013,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const statusChip = (s) => {
       const map = {
-        pending: ['rgba(157,133,242,0.15)', 'var(--accent)', '⏳ Pendiente'],
+        pending: ['rgba(157,133,242,0.15)', 'var(--accent)', 'Pendiente'],
         sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
         failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
         cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
-        expired: ['rgba(248,81,73,0.10)', 'var(--danger)', '⌛ Expirado'],
+        expired: ['rgba(248,81,73,0.10)', 'var(--danger)', 'Expirado'],
       };
       const [bg, col, label] = map[s] || ['rgba(0,0,0,0.1)', 'var(--text)', s];
       return '<span style="font-size:10px; padding:2px 8px; background:' + bg + '; color:' + col + '; border-radius:6px;">' + label + '</span>';
@@ -12176,7 +12177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ratio = untouched / totalAssigned;
         const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
         const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
-        assignedBadge = ` <span title="Total asignados al setter (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">📥 ${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
+        assignedBadge = ` <span title="Total asignados al setter (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
       }
       const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');
@@ -12274,7 +12275,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
   function _objRender(d) {
-    const tagLabelMap = { precio: '💸 Precio', ya_tiene_sistema: '⚙️ Ya tiene sistema', tiempo: '⏳ Tiempo', no_es_decisor: '🪑 No es decisor', no_entiende_valor: '🤷 No entiende valor', desconfia: '🛑 Desconfía', mal_momento: '📆 Mal momento', otra: '➕ Otra' };
+    const tagLabelMap = { precio: 'Precio', ya_tiene_sistema: 'Ya tiene sistema', tiempo: 'Tiempo', no_es_decisor: 'No es decisor', no_entiende_valor: 'No entiende valor', desconfia: 'Desconfía', mal_momento: 'Mal momento', otra: 'Otra' };
     // Summary cards
     const summary = document.getElementById('obj-summary');
     if (summary) {
@@ -12923,7 +12924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       success: { bg: 'rgba(91,185,116,0.12)', border: 'rgba(91,185,116,0.5)', text: '#5bb974', icon: '✓' },
       error:   { bg: 'rgba(248,81,73,0.12)',  border: 'rgba(248,81,73,0.5)',  text: '#f85149', icon: '✗' },
       info:    { bg: 'rgba(157,133,242,0.12)', border: 'rgba(157,133,242,0.5)', text: 'var(--accent)', icon: 'ℹ' },
-      warn:    { bg: 'rgba(255,200,40,0.12)', border: 'rgba(255,200,40,0.5)', text: '#ffc828', icon: '⚠' },
+      warn:    { bg: 'rgba(255,200,40,0.12)', border: 'rgba(255,200,40,0.5)', text: '#ffc828', icon: '⚠️' },
     };
     const c = colors[type] || colors.info;
     const el = document.createElement('div');
@@ -13105,7 +13106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       alert('Error: ' + e.message);
     } finally {
-      btn.disabled = false; btn.textContent = '↔ Mover leads';
+      btn.disabled = false; btn.textContent = 'Mover leads';
     }
   });
 
@@ -13625,7 +13626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusEl.textContent = '✓ Configurado';
         statusEl.style.background = 'rgba(91,185,116,0.15)'; statusEl.style.color = '#5bb974';
       } else if (_tlxAdminCache.hasApiKey) {
-        statusEl.textContent = '⚠ Falta SIP';
+        statusEl.textContent = '⚠️ Falta SIP';
         statusEl.style.background = 'rgba(255,200,40,0.15)'; statusEl.style.color = '#ffc828';
       } else {
         statusEl.textContent = '○ Sin configurar';
@@ -13651,7 +13652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (isEnv) {
         el.disabled = true;
         el.value = '';
-        el.placeholder = '🔒 Gestionado por env var';
+        el.placeholder = 'Gestionado por env var';
         el.style.opacity = '0.55';
         el.style.cursor = 'not-allowed';
       } else {
@@ -13671,7 +13672,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (connIdInput) {
       if (env.sipConnectionId) {
         connIdInput.disabled = true;
-        connIdInput.value = '🔒 Gestionado por env var';
+        connIdInput.value = 'Gestionado por env var';
         connIdInput.style.opacity = '0.55';
         connIdInput.style.cursor = 'not-allowed';
       } else {
@@ -13999,7 +14000,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('tlx-script-reset-seed-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     const confirmed = await (window.askText
-      ? window.askText({ title: '♻️ Recargar guiones oficiales v2', subtitle: 'Esto REEMPLAZA todos los guiones actuales con la versión oficial (SCM_Cold_Call_v2). Se guarda un backup automático. Escribí REEMPLAZAR para confirmar.', type: 'input', placeholder: 'REEMPLAZAR', confirmLabel: 'Recargar' })
+      ? window.askText({ title: 'Recargar guiones oficiales v2', subtitle: 'Esto REEMPLAZA todos los guiones actuales con la versión oficial (SCM_Cold_Call_v2). Se guarda un backup automático. Escribí REEMPLAZAR para confirmar.', type: 'input', placeholder: 'REEMPLAZAR', confirmLabel: 'Recargar' })
       : Promise.resolve(prompt('Escribí REEMPLAZAR para confirmar:')));
     if (confirmed !== 'REEMPLAZAR') {
       if (confirmed !== null && confirmed !== undefined && confirmed !== '') {
@@ -14028,7 +14029,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('tlx-script-add-btn')?.addEventListener('click', async () => {
-    const label = await window.askText({ title: '📝 Nuevo guion', subtitle: 'Label corto descriptivo. Ej: "Objeción: ya tengo sistema".', type: 'input', placeholder: 'Apertura inicial', confirmLabel: 'Siguiente' });
+    const label = await window.askText({ title: 'Nuevo guion', subtitle: 'Label corto descriptivo. Ej: "Objeción: ya tengo sistema".', type: 'input', placeholder: 'Apertura inicial', confirmLabel: 'Siguiente' });
     if (!label) return;
     const trigger = await window.askText({
       title: 'Trigger', subtitle: 'Cuándo aplica este guion. Valores: before_call, gatekeeper, opener, pitch, ask_meeting, confirm, objection_brushoff, objection_real, callback, whatsapp_msg, email_template, rules, general.',
@@ -14230,7 +14231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Agregar número
   document.getElementById('tlx-num-add-btn')?.addEventListener('click', async () => {
     const phone = await window.askText({
-      title: '📱 Nuevo número Telnyx',
+      title: 'Nuevo número Telnyx',
       subtitle: 'Pegá el número en formato E.164 (con + y código de país).',
       type: 'input',
       placeholder: '+34911234567',
@@ -14381,7 +14382,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: `<p>Para leads sin WSP o para hacer follow-up por voz, usás la <strong>centralita Telnyx</strong> integrada. No abre ningún programa externo — todo desde el browser.</p>
         <ol>
           <li>La primera vez el browser te pide permiso de micrófono. Dale "Permitir".</li>
-          <li>Click en <strong>📞 Llamar</strong> en cualquier lead.</li>
+          <li>Click en <strong>Llamar</strong> en cualquier lead.</li>
           <li>Aparece un panel flotante con timer, mute y colgar. El sistema elige automáticamente el número saliente del país del lead (mejora tasa de atención).</li>
           <li>Tenés un panel lateral de <strong>Guion</strong> con los scripts oficiales SCM v2: opener, pitch, manejo de objeciones, cierre.</li>
           <li>Al colgar, aparece el modal de disposición. Marcá cómo fue (interesado, no interesado, no atendió, agendar más tarde, etc.).</li>
@@ -14519,7 +14520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li>En <strong>Routing por país</strong> elegí qué número usar como caller ID por país destino. Mejora atención dramáticamente.</li>
           <li>En el dashboard Telnyx, configurá webhook URL apuntando a <code>https://tu-app.railway.app/api/telnyx/webhook</code>.</li>
         </ol>
-        <p>Tenés tab <strong>Guiones</strong> donde editás los scripts del cold call. Botón <strong>"♻ Recargar oficial v2"</strong> reemplaza todos con el seed oficial.</p>
+        <p>Tenés tab <strong>Guiones</strong> donde editás los scripts del cold call. Botón <strong>"Recargar oficial v2"</strong> reemplaza todos con el seed oficial.</p>
         <div class="guide-callout">Tabla de tarifas hardcoded en <code>TELNYX_RATES_USD_PER_MIN</code> (index.js). España móvil $0.034, México $0.094, Argentina $0.080, US $0.007. Actualizar manualmente si Telnyx cambia.</div>`,
         goto: { target: 'view-telnyx-config', label: 'Ir a Telnyx' }
       },

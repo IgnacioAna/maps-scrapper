@@ -351,9 +351,9 @@
               <label class="checkbox-label" title="Filtra teléfonos fijos y muestra solo probables celulares (WhatsApp)" style="user-select:none; margin-right:8px; color: #5bb974;">
                 <input type="checkbox" id="hide-landlines" checked> Solo Wsp
               </label>
-              <button id="enrich-btn" class="btn-table-action" disabled data-roles="admin">🔍 Escanear Redes y Sitios Web (IA)</button>
-              <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">📋 Enviar a Setters</button>
-              <button id="download-csv" class="btn-table-action" disabled data-roles="admin">⬇ Exportar Base (CSV)</button>
+              <button id="enrich-btn" class="btn-table-action" disabled data-roles="admin">Escanear Redes y Sitios Web (IA)</button>
+              <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">Enviar a Setters</button>
+              <button id="download-csv" class="btn-table-action" disabled data-roles="admin">Exportar Base (CSV)</button>
             </div>
           </div>
 
@@ -406,7 +406,7 @@
           <div class="filters-row" style="margin-bottom: 20px;">
             <div class="ai-input-group select-pill" style="width: 100%; max-width: 300px;">
               <select id="apify-actor-type">
-                <option value="ig">📷 Instagram Profile Scraper</option>
+                <option value="ig">Instagram Profile Scraper</option>
                 <option value="hashtag">#️⃣ Instagram Hashtag Scraper</option>
               </select>
             </div>
@@ -460,10 +460,10 @@
 
       <!-- VISTA 3: MÓDULO SETTERS v2 -->
       <div id="view-crm" class="module-view hidden">
-        <!-- 👋 Banner de bienvenida (solo primera vez por usuario) -->
+        <!-- Banner de bienvenida (solo primera vez por usuario) -->
         <div id="welcome-banner" class="welcome-banner" style="display:none;">
           <div class="welcome-content">
-            <h3 style="margin:0 0 8px;">👋 Bienvenido/a al SCM</h3>
+            <h3 style="margin:0 0 8px;">Bienvenido/a al SCM</h3>
             <p style="margin:0 0 10px; font-size:14px; line-height:1.5;">
               Cada fila es un lead que tenés que contactar. <strong>Click en cualquiera</strong> para ver su info, marcar estado o programar un mensaje.
             </p>
@@ -483,7 +483,7 @@
             <select id="variable-select" class="setter-select">
               <option value="">Todas las variables</option>
             </select>
-            <button id="export-setters-csv" class="btn-table-action" style="color:#5bb974;">⬇ Exportar CSV</button>
+            <button id="export-setters-csv" class="btn-table-action" style="color:#5bb974;">Exportar CSV</button>
             <button id="manage-variants-btn" class="btn-table-action" style="color:#e3b341;">Variantes</button>
             <button id="session-btn" class="btn-primary pill-btn" disabled>
               <span class="btn-text">Iniciar Sesión</span>
@@ -493,12 +493,12 @@
 
         <!-- Sesión activa banner -->
         <div id="session-banner" class="session-banner hidden">
-          <span>🟢 Sesión activa — <strong id="session-setter-name"></strong></span>
+          <span>Sesión activa — <strong id="session-setter-name"></strong></span>
           <span id="session-timer" class="session-timer">00:00:00</span>
           <button id="end-session-btn" class="btn-table-action" style="background:#f85149; color:white; border:none;">Cerrar Sesión</button>
         </div>
 
-        <!-- 👋 Widget "Hoy" — qué hacer ahora (Phase setter-ux-redesign) -->
+        <!-- Widget "Hoy" — qué hacer ahora (Phase setter-ux-redesign) -->
         <div id="hoy-widget" class="hoy-widget" style="display:none;">
           <div class="hoy-greet">
             <span id="hoy-greet-text">Hola 👋</span>
@@ -509,7 +509,7 @@
         </div>
 
         <!-- KPI Dashboard — aclarado: estos son ACUMULADOS (todo el tiempo) -->
-        <div style="font-size:11px; color:var(--text-secondary); margin:6px 0 4px; letter-spacing:0.3px;">📊 TUS NÚMEROS ACUMULADOS <span style="opacity:0.6;">(todo el tiempo · para ver solo HOY → Mi rendimiento)</span></div>
+        <div style="font-size:11px; color:var(--text-secondary); margin:6px 0 4px; letter-spacing:0.3px;">TUS NÚMEROS ACUMULADOS <span style="opacity:0.6;">(todo el tiempo · para ver solo HOY → Mi rendimiento)</span></div>
         <div class="setter-stats" id="setter-stats">
           <div class="stat-card"><span class="stat-num" id="stat-total">0</span><span class="stat-label">Total</span></div>
           <div class="stat-card"><span class="stat-num" id="stat-conexiones">0</span><span class="stat-pct-sub" id="stat-pct-conexion">0%</span><span class="stat-label">Conexiones</span></div>
@@ -526,10 +526,10 @@
             <span class="variant-active-label">Variante asignada esta semana</span>
           </div>
           <div class="variant-messages">
-            <div class="vmsg"><span class="vmsg-label">1. Apertura:</span> <span id="vmsg-apertura">—</span> <button class="copy-block-btn" data-copy-target="vmsg-apertura">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-apertura" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button></div>
-            <div class="vmsg"><span class="vmsg-label">2. Problema:</span> <span id="vmsg-problema">—</span> <button class="copy-block-btn" data-copy-target="vmsg-problema">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-problema" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button></div>
-            <div class="vmsg"><span class="vmsg-label">3. Prueba social:</span> <span id="vmsg-prueba">—</span> <button class="copy-block-btn" data-copy-target="vmsg-prueba">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-prueba" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button></div>
-            <div class="vmsg"><span class="vmsg-label">4. Cierre:</span> <span id="vmsg-cierre">—</span> <button class="copy-block-btn" data-copy-target="vmsg-cierre">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-cierre" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">👤 Copiar humano</button></div>
+            <div class="vmsg"><span class="vmsg-label">1. Apertura:</span> <span id="vmsg-apertura">—</span> <button class="copy-block-btn" data-copy-target="vmsg-apertura">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-apertura" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button></div>
+            <div class="vmsg"><span class="vmsg-label">2. Problema:</span> <span id="vmsg-problema">—</span> <button class="copy-block-btn" data-copy-target="vmsg-problema">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-problema" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button></div>
+            <div class="vmsg"><span class="vmsg-label">3. Prueba social:</span> <span id="vmsg-prueba">—</span> <button class="copy-block-btn" data-copy-target="vmsg-prueba">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-prueba" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button></div>
+            <div class="vmsg"><span class="vmsg-label">4. Cierre:</span> <span id="vmsg-cierre">—</span> <button class="copy-block-btn" data-copy-target="vmsg-cierre">Copiar</button> <button class="copy-block-btn" data-copy-human-target="vmsg-cierre" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button></div>
           </div>
         </div>
 
@@ -543,8 +543,8 @@
           <button class="pipe-filter" data-status="calificado">Calificados</button>
           <button class="pipe-filter" data-status="interesado">Interesados</button>
           <button class="pipe-filter" data-status="agendado">Agendados</button>
-          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que el setter programó y vencen hoy o vencieron ayer">📅 Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
-          <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups programados vencidos hace más de 1 día">⏰ Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
+          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que el setter programó y vencen hoy o vencieron ayer">Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
+          <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups programados vencidos hace más de 1 día">Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
         </div>
 
         <!-- Retomar último lead -->
@@ -559,10 +559,10 @@
           <input type="text" id="setter-search" autocomplete="off" placeholder="Buscar lead (nombre, teléfono, ciudad, país, doctor...)">
           <button id="setter-search-clear" class="btn btn-ghost btn-sm">Limpiar</button>
           <select id="setter-country-filter" class="btn btn-ghost btn-sm" style="min-width:160px;">
-            <option value="">🌎 Todos los países</option>
+            <option value="">Todos los países</option>
           </select>
           <select id="setter-date-filter" class="btn btn-ghost btn-sm" style="min-width:160px;" title="Filtrar leads por cuándo fueron contactados/importados">
-            <option value="">📅 Todas las fechas</option>
+            <option value="">Todas las fechas</option>
             <option value="today">Hoy</option>
             <option value="yesterday">Ayer</option>
             <option value="7d">Últimos 7 días</option>
@@ -573,13 +573,13 @@
           <button id="setter-date-specific-clear" class="btn btn-ghost btn-sm" style="display:none; padding:4px 8px;" title="Limpiar fecha">✕</button>
           <span style="flex:1;"></span>
           <span id="setter-leads-total-badge" class="setter-total-badge"></span>
-          <button id="setter-table-mode-toggle" class="table-mode-toggle" data-roles="admin" title="Cambiar entre vista simple (7 columnas) y completa (19 columnas)">🔧 Ver tabla completa</button>
+          <button id="setter-table-mode-toggle" class="table-mode-toggle" data-roles="admin" title="Cambiar entre vista simple (7 columnas) y completa (19 columnas)">Ver tabla completa</button>
           <button id="setter-dedup-btn" class="btn btn-secondary btn-sm" data-roles="admin">Limpiar duplicados</button>
           <label class="btn btn-secondary btn-sm" data-roles="admin" style="cursor:pointer;">
             Importar CSV
             <input type="file" id="setter-import-csv" accept=".csv" style="display:none;">
           </label>
-          <button id="setter-reassign-btn" class="btn btn-secondary btn-sm" data-roles="admin" style="border-color:var(--accent); color:var(--accent);">↔ Reasignar leads</button>
+          <button id="setter-reassign-btn" class="btn btn-secondary btn-sm" data-roles="admin" style="border-color:var(--accent); color:var(--accent);">Reasignar leads</button>
           <button id="setter-clear-btn" class="btn btn-danger btn-sm" data-roles="admin">Borrar leads</button>
           <span id="setter-dedup-result" class="hidden" style="font-size:var(--text-xs); color:var(--success);"></span>
         </div>
@@ -616,7 +616,7 @@
                   <td colspan="19" class="empty-state">
                     <div class="empty-state-content">
                       <h3>Sin leads en el pipeline</h3>
-                      <p>Importá leads desde Google Maps con "📋 Enviar a Setters".</p>
+                      <p>Importá leads desde Google Maps con "Enviar a Setters".</p>
                     </div>
                   </td>
                 </tr>
@@ -645,22 +645,22 @@
 
               <!-- Tabs nav -->
               <div class="lead-tabs-nav" role="tablist">
-                <button class="lead-tab-btn active" data-lead-tab="convo" role="tab">💬 Conversación</button>
-                <button class="lead-tab-btn" data-lead-tab="estado" role="tab">🎯 Estado</button>
-                <button class="lead-tab-btn" data-lead-tab="programar" role="tab">📅 Programar</button>
+                <button class="lead-tab-btn active" data-lead-tab="convo" role="tab">Conversación</button>
+                <button class="lead-tab-btn" data-lead-tab="estado" role="tab">Estado</button>
+                <button class="lead-tab-btn" data-lead-tab="programar" role="tab">Programar</button>
               </div>
 
-              <!-- TAB: 🎯 Estado (incluye selectores y followups info) -->
+              <!-- TAB: Estado (incluye selectores y followups info) -->
               <div class="lead-tab-content" data-lead-tab-panel="estado" style="display:none;">
               <div class="lead-modal-status">
                 <label><strong>Estado:</strong></label>
                 <select id="modal-status-select">
-                  <option value="sin_contactar">📋 Sin contactar</option>
-                  <option value="contactado">📤 Contactado</option>
-                  <option value="respondio">💬 Respondió</option>
-                  <option value="interesado">🔥 Interesado</option>
-                  <option value="agendado">📅 Agendado</option>
-                  <option value="cerrado">✅ Cerrado</option>
+                  <option value="sin_contactar">Sin contactar</option>
+                  <option value="contactado">Contactado</option>
+                  <option value="respondio">Respondió</option>
+                  <option value="interesado">Interesado</option>
+                  <option value="agendado">Agendado</option>
+                  <option value="cerrado">Cerrado</option>
                 </select>
                 <label style="margin-left:16px;"><strong>Decisor:</strong></label>
                 <select id="modal-decisor-select">
@@ -668,11 +668,11 @@
                   <option value="SI">SI</option>
                   <option value="NO">NO</option>
                 </select>
-                <button id="modal-agendar-btn" class="btn-primary" style="margin-left:auto; padding:8px 16px; font-size:13px; border-radius:9px;">📅 Agendar reunión</button>
+                <button id="modal-agendar-btn" class="btn-primary" style="margin-left:auto; padding:8px 16px; font-size:13px; border-radius:9px;">Agendar reunión</button>
               </div>
               <!-- Mi número usado: setter elige (o agrega) desde cuál de sus líneas contactó -->
               <div id="modal-wa-account-wrap" style="display:none; margin-top:10px; padding:10px 12px; background:rgba(91,185,116,0.05); border:1px solid rgba(91,185,116,0.28); border-radius:9px; align-items:center; gap:10px; flex-wrap:wrap;">
-                <span style="font-size:12px; color:var(--text-secondary);">📱 Mi número usado:</span>
+                <span style="font-size:12px; color:var(--text-secondary);">Mi número usado:</span>
                 <select id="modal-wa-account-select" style="padding:6px 10px; border-radius:7px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px; flex:1; min-width:200px;">
                   <option value="">— Sin especificar —</option>
                 </select>
@@ -683,7 +683,7 @@
               <div id="modal-followups-info" style="display:none; margin-bottom:16px; padding:12px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.30); border-radius:10px; font-size:13px;"></div>
               </div><!-- /tab-panel estado -->
 
-              <!-- TAB: 💬 Conversación (default activa) -->
+              <!-- TAB: Conversación (default activa) -->
               <div class="lead-tab-content" data-lead-tab-panel="convo">
               <div class="lead-modal-notes">
                 <h4>Conversación / Notas</h4>
@@ -705,11 +705,11 @@
               </div>
               </div><!-- /tab-panel convo -->
 
-              <!-- TAB: 📅 Programar mensaje -->
+              <!-- TAB: Programar mensaje -->
               <div class="lead-tab-content" data-lead-tab-panel="programar" style="display:none;">
               <div class="lead-modal-actions" id="lead-schedule-section" style="margin-top:0; padding-top:0; border-top:none;">
                 <h4 style="display:flex; align-items:center; justify-content:space-between;">
-                  📅 Programar mensaje
+                  Programar mensaje
                   <span id="lead-schedule-count" style="font-size:11px; color:var(--text-secondary); font-weight:400;"></span>
                 </h4>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
@@ -728,7 +728,7 @@
                     <input type="checkbox" id="schedule-cancel-on-reply" checked> Cancelar auto si lead responde
                   </label>
                   <span style="flex:1;"></span>
-                  <button id="schedule-submit-btn" class="btn-primary pill-btn" style="padding:8px 16px;">📅 Programar</button>
+                  <button id="schedule-submit-btn" class="btn-primary pill-btn" style="padding:8px 16px;">Programar</button>
                 </div>
                 <div id="schedule-existing-list" style="margin-top:12px;"></div>
               </div>
@@ -769,7 +769,7 @@
       <!-- VISTA HOY: home del día (Phase 13) — cola priorizada en 4 secciones -->
       <div id="view-hoy" class="module-view hidden" data-roles="admin,supervisor,setter">
         <div class="content-header">
-          <h2>📅 Hoy</h2>
+          <h2>Hoy</h2>
           <div class="header-actions">
             <span id="hoy-greeting" style="font-size:13px; color:var(--text-secondary);"></span>
           </div>
@@ -845,8 +845,8 @@
             <select id="calls-setter-select" class="calls-filter-select" data-roles="admin"><option value="">Todos los setters</option></select>
             <select id="calls-country-filter" class="calls-filter-select" style="min-width:160px;"><option value="">Todos los países</option></select>
             <select id="calls-sort-select" class="calls-filter-select" style="min-width:180px;" title="Orden de la lista">
-              <option value="score">🎯 Prioridad (mejor a llamar)</option>
-              <option value="follow_up">📌 Para seguir (callbacks + cortados)</option>
+              <option value="score">Prioridad (mejor a llamar)</option>
+              <option value="follow_up">Para seguir (callbacks + cortados)</option>
               <option value="never_called" selected>Nunca llamados primero</option>
               <option value="recent">Más recientes</option>
               <option value="oldest">Más viejos</option>
@@ -867,7 +867,7 @@
             </label>
             <label data-roles="admin,supervisor" class="calls-toggle-discarded" title="Ver y deshacer leads marcados No-llamar (DNC)">
               <input type="checkbox" id="calls-show-dnc">
-              <span>🚫 No-llamar</span>
+              <span>No-llamar</span>
             </label>
           </div>
         </section>
@@ -909,7 +909,7 @@
               <!-- Sprint 13: Enriquecer desde Google Maps -->
               <div id="calls-manual-enrich-result" style="display:none; margin-top:14px; padding:11px 13px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.25); border-radius:9px; font-size:11.5px; color:var(--text-primary);"></div>
               <div style="display:flex; gap:10px; margin-top:20px; justify-content:space-between; align-items:center;">
-                <button id="calls-manual-enrich-btn" style="padding:9px 14px; border-radius:8px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.35); color:#5bb974; font-size:12px; font-weight:500; cursor:pointer;" title="Busca en Google Maps por nombre + ciudad y pre-llena rating, reseñas, website automáticamente">🔍 Enriquecer desde Maps</button>
+                <button id="calls-manual-enrich-btn" style="padding:9px 14px; border-radius:8px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.35); color:#5bb974; font-size:12px; font-weight:500; cursor:pointer;" title="Busca en Google Maps por nombre + ciudad y pre-llena rating, reseñas, website automáticamente">Enriquecer desde Maps</button>
                 <div style="display:flex; gap:10px;">
                   <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('calls-manual-modal').classList.add('hidden')">Cancelar</button>
                   <button class="btn-primary pill-btn" id="calls-manual-submit">＋ Crear lead</button>
@@ -932,7 +932,7 @@
                 <div id="calls-quota-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--success) 0%, #3a8e4e 100%); border-radius:4px; transition:width 0.4s, background 0.3s;"></div>
               </div>
             </div>
-            <button id="calls-quota-edit" data-roles="admin" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); padding:6px 11px; border-radius:7px; font-size:11px; cursor:pointer;" title="Cambiar meta diaria del setter">✏️ Editar</button>
+            <button id="calls-quota-edit" data-roles="admin" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); padding:6px 11px; border-radius:7px; font-size:11px; cursor:pointer;" title="Cambiar meta diaria del setter">Editar</button>
           </div>
         </section>
 
@@ -991,10 +991,10 @@
                 <option value="">Asignar a setter…</option>
               </select>
               <button data-bulk-action="assign" class="call-action-btn">Asignar</button>
-              <button data-bulk-action="move_to_setteo" class="call-action-btn">💬 A Setteo</button>
-              <button data-bulk-action="mark_wrong" class="call-action-btn">🔢 Wrong</button>
-              <button data-bulk-action="mark_invalid" class="call-action-btn">🚫 Inválidos</button>
-              <button data-bulk-action="discard" class="call-action-btn" style="border-color:rgba(244,114,114,0.4); color:#f47272;">🗑️ Descartar</button>
+              <button data-bulk-action="move_to_setteo" class="call-action-btn">A Setteo</button>
+              <button data-bulk-action="mark_wrong" class="call-action-btn">Wrong</button>
+              <button data-bulk-action="mark_invalid" class="call-action-btn">Inválidos</button>
+              <button data-bulk-action="discard" class="call-action-btn" style="border-color:rgba(244,114,114,0.4); color:#f47272;">Descartar</button>
             </div>
           </div>
         </section>
@@ -1037,17 +1037,17 @@
           <!-- Columna izquierda: lista de llamadas + filtros -->
           <div class="card" style="padding:16px; border-radius:14px;">
             <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:12px;">
-              <input type="text" id="chist-search" placeholder="🔍 Buscar en transcripciones, notas, nombre..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12.5px;">
+              <input type="text" id="chist-search" placeholder="Buscar en transcripciones, notas, nombre..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12.5px;">
               <select id="chist-outcome" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:12px;">
                 <option value="">Todos los resultados</option>
-                <option value="answered_interested">✅ Interesado</option>
-                <option value="answered_not_interested">❌ No interesado</option>
-                <option value="scheduled_with_admin">📅 Agendado</option>
-                <option value="no_answer">📵 No atendió</option>
-                <option value="voicemail">📭 Buzón</option>
-                <option value="callback_later">🔄 Callback</option>
-                <option value="wrong_number">🔢 Equivocado</option>
-                <option value="invalid_number">🚫 No existe</option>
+                <option value="answered_interested">Interesado</option>
+                <option value="answered_not_interested">No interesado</option>
+                <option value="scheduled_with_admin">Agendado</option>
+                <option value="no_answer">No atendió</option>
+                <option value="voicemail">Buzón</option>
+                <option value="callback_later">Callback</option>
+                <option value="wrong_number">Equivocado</option>
+                <option value="invalid_number">No existe</option>
               </select>
             </div>
             <ul id="chist-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto;"></ul>
@@ -1070,7 +1070,7 @@
               <div id="chist-d-stats" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:8px; margin-bottom:14px;"></div>
               <div id="chist-d-notes" style="display:none; padding:10px 12px; background:rgba(255,179,65,0.08); border:1px solid rgba(255,179,65,0.2); border-radius:9px; margin-bottom:14px; font-size:12px; color:var(--text-primary); line-height:1.5;"></div>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <strong style="font-size:13px; color:var(--text-primary);">🎤 Transcripción</strong>
+                <strong style="font-size:13px; color:var(--text-primary);">Transcripción</strong>
                 <span id="chist-d-transcript-meta" class="muted" style="font-size:10px;"></span>
               </div>
               <div id="chist-d-transcript" style="padding:12px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; max-height:50vh; overflow-y:auto; font-size:12.5px; line-height:1.6;"></div>
@@ -1084,10 +1084,10 @@
         <!-- Header: título + tone chip + cerrar -->
         <div style="padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.06); background:linear-gradient(180deg, rgba(157,133,242,0.1) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <div style="display:flex; align-items:center; gap:10px;">
-            <strong style="font-size:13.5px; color:#fff; font-weight:600;">📝 Guion de llamada</strong>
+            <strong style="font-size:13.5px; color:#fff; font-weight:600;">Guion de llamada</strong>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
-            <span title="3-S del tono: matchea al prospect" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:rgba(157,133,242,0.9); padding:3px 9px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.25); border-radius:6px; font-weight:500; cursor:default;">🐢 Slow · 😊 Smile · 💪 Strong</span>
+            <span title="3-S del tono: matchea al prospect" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:rgba(157,133,242,0.9); padding:3px 9px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.25); border-radius:6px; font-weight:500; cursor:default;">Slow · Smile · Strong</span>
             <button id="telnyx-script-close" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); cursor:pointer; font-size:14px; padding:3px 8px; line-height:1; border-radius:6px;">✕</button>
           </div>
         </div>
@@ -1095,7 +1095,7 @@
         <!-- Sticky: PACE framework (siempre visible para objeciones) -->
         <div id="telnyx-script-pace-card" style="margin:10px 14px 0; padding:9px 12px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.22); border-radius:9px; font-size:10.5px; color:rgba(255,255,255,0.85); line-height:1.5;">
           <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:4px;">
-            <strong style="color:var(--accent); font-size:11px; letter-spacing:0.3px;">🧠 Framework PACE</strong>
+            <strong style="color:var(--accent); font-size:11px; letter-spacing:0.3px;">Framework PACE</strong>
             <span style="font-size:9.5px; color:rgba(255,255,255,0.45); font-style:italic;">solo objeciones reales</span>
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -1105,13 +1105,13 @@
             <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#f85149;">E</strong>ngage (pregunta)</span>
           </div>
           <div style="margin-top:5px; padding-top:5px; border-top:1px solid rgba(255,255,255,0.05); font-size:9.5px; color:rgba(255,255,255,0.55);">
-            ⚡ Brush-off → directo a Engage. Máx 3 intentos por objeción.
+            Brush-off → directo a Engage. Máx 3 intentos por objeción.
           </div>
         </div>
 
         <!-- Buscador interno por keyword -->
         <div style="padding:10px 14px 0;">
-          <input type="text" id="telnyx-script-search" placeholder="🔍 Buscar guion por keyword (ej: precio, sistema, tiempo...)" style="width:100%; padding:8px 11px; border-radius:7px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#fff; font-size:11.5px; box-sizing:border-box;">
+          <input type="text" id="telnyx-script-search" placeholder="Buscar guion por keyword (ej: precio, sistema, tiempo...)" style="width:100%; padding:8px 11px; border-radius:7px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); color:#fff; font-size:11.5px; box-sizing:border-box;">
         </div>
 
         <!-- Botones de scripts (filtrables por buscador, ordenados por flow) -->
@@ -1123,27 +1123,27 @@
         <!-- Mercury en vivo: responde a lo que dijo el prospect, al toque -->
         <div style="margin:10px 14px 0; border:1px solid rgba(157,133,242,0.22); border-radius:10px; overflow:hidden;">
           <button id="telnyx-mercury-toggle" type="button" style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 12px; background:rgba(157,133,242,0.08); border:none; color:#fff; cursor:pointer; font-size:11.5px; font-weight:600; font-family:inherit;">
-            <span>🤖 Mercury en vivo · respuesta a una objeción</span>
+            <span>Mercury en vivo · respuesta a una objeción</span>
             <span id="telnyx-mercury-caret" style="color:var(--accent);">▾</span>
           </button>
           <div id="telnyx-mercury-body" style="display:none; padding:10px 12px; background:rgba(0,0,0,0.15);">
             <div id="telnyx-mercury-chips" style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
-              <button type="button" class="tlx-merc-chip" data-objection="Me parece caro / no tengo presupuesto ahora">💸 Precio</button>
-              <button type="button" class="tlx-merc-chip" data-objection="Ya tengo un sistema / una agencia que me maneja esto">🔁 Ya tiene sistema</button>
-              <button type="button" class="tlx-merc-chip" data-objection="No tengo tiempo ahora">⏱️ Sin tiempo</button>
-              <button type="button" class="tlx-merc-chip" data-objection="Mandame info por mail / WhatsApp y lo veo">📧 Mandá info</button>
-              <button type="button" class="tlx-merc-chip" data-objection="Tengo que pensarlo / consultarlo">🤔 Lo piensa</button>
-              <button type="button" class="tlx-merc-chip" data-objection="¿Quiénes son ustedes? No los conozco">❓ Quién sos</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Me parece caro / no tengo presupuesto ahora">Precio</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Ya tengo un sistema / una agencia que me maneja esto">Ya tiene sistema</button>
+              <button type="button" class="tlx-merc-chip" data-objection="No tengo tiempo ahora">Sin tiempo</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Mandame info por mail / WhatsApp y lo veo">Mandá info</button>
+              <button type="button" class="tlx-merc-chip" data-objection="Tengo que pensarlo / consultarlo">Lo piensa</button>
+              <button type="button" class="tlx-merc-chip" data-objection="¿Quiénes son ustedes? No los conozco">Quién sos</button>
             </div>
             <textarea id="telnyx-mercury-input" rows="2" placeholder="Pegá o escribí lo que dijo el prospect…" style="width:100%; padding:8px 11px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#fff; font-size:12px; resize:vertical; font-family:inherit; box-sizing:border-box;"></textarea>
-            <button id="telnyx-mercury-generate" type="button" class="btn-primary" style="width:100%; margin-top:8px; font-size:11.5px; padding:9px; border-radius:8px;">⚡ Generar respuesta</button>
+            <button id="telnyx-mercury-generate" type="button" class="btn-primary" style="width:100%; margin-top:8px; font-size:11.5px; padding:9px; border-radius:8px;">Generar respuesta</button>
             <div id="telnyx-mercury-output" style="margin-top:9px; display:none; flex-direction:column; gap:7px;"></div>
           </div>
         </div>
 
         <!-- Footer: copiar -->
         <div style="padding:10px 14px; border-top:1px solid rgba(255,255,255,0.06); display:flex; gap:8px; background:rgba(0,0,0,0.2);">
-          <button id="telnyx-script-copy" class="btn-secondary" style="flex:1; font-size:11px; padding:8px; border-radius:8px;">📋 Copiar texto del guion</button>
+          <button id="telnyx-script-copy" class="btn-secondary" style="flex:1; font-size:11px; padding:8px; border-radius:8px;">Copiar texto del guion</button>
         </div>
       </div>
 
@@ -1161,17 +1161,17 @@
         <div style="max-width:1100px; margin:0 auto; padding:32px 28px; min-height:100vh; display:flex; flex-direction:column; gap:24px;">
           <header style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <span style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; padding:5px 12px; background:linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%); color:#0F1115; border-radius:999px;">🚀 Power Dialer</span>
+              <span style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; padding:5px 12px; background:linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%); color:#0F1115; border-radius:999px;">Power Dialer</span>
               <span style="font-size:13px; color:var(--text-secondary);">Modo continuous calling · Esc para salir</span>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
               <button id="pd-today" type="button" onclick="window._pdEditGoal && window._pdEditGoal()" title="Click para fijar tu objetivo de llamadas de hoy" style="display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--text-primary); font-variant-numeric:tabular-nums; padding:5px 13px; background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.35); border-radius:999px; white-space:nowrap; cursor:pointer; font-family:inherit;">
-                <span id="pd-today-label">🎯 0 / 10</span>
+                <span id="pd-today-label">0 / 10</span>
                 <span style="display:inline-block; width:56px; height:5px; background:rgba(255,255,255,0.13); border-radius:999px; overflow:hidden;"><span id="pd-today-bar" style="display:block; height:100%; width:0%; background:var(--accent); border-radius:999px; transition:width 0.3s ease;"></span></span>
-                <span id="pd-today-convos" title="Conversaciones reales hoy: atendieron y hablaste (interesado / no interesado / agendado)" style="font-size:11.5px; color:var(--text-secondary); border-left:1px solid rgba(255,255,255,0.16); padding-left:9px;">💬 0</span>
+                <span id="pd-today-convos" title="Conversaciones reales hoy: atendieron y hablaste (interesado / no interesado / agendado)" style="font-size:11.5px; color:var(--text-secondary); border-left:1px solid rgba(255,255,255,0.16); padding-left:9px;">0</span>
               </button>
               <span id="pd-progress" style="font-size:13px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">0 procesadas</span>
-              <button id="pd-autopilot-toggle" type="button" onclick="window._pdToggleAutopilot && window._pdToggleAutopilot()" style="padding:8px 14px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-secondary); border-radius:999px; font-size:12.5px; cursor:pointer; font-family:inherit; white-space:nowrap;">🚀 Autopiloto: OFF</button>
+              <button id="pd-autopilot-toggle" type="button" onclick="window._pdToggleAutopilot && window._pdToggleAutopilot()" style="padding:8px 14px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-secondary); border-radius:999px; font-size:12.5px; cursor:pointer; font-family:inherit; white-space:nowrap;">Autopiloto: OFF</button>
               <button id="pd-exit-btn" style="padding:8px 14px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:var(--text-primary); border-radius:8px; font-size:13px; cursor:pointer;">✕ Salir</button>
             </div>
           </header>
@@ -1227,7 +1227,7 @@
           <!-- Ficha del lead (info scrapeada) -->
           <div id="telnyx-call-leadfile" style="display:none; margin-bottom:14px; padding:10px 12px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:9px;">
             <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:7px; display:flex; justify-content:space-between; align-items:center;">
-              <span>📋 Ficha del lead</span>
+              <span>Ficha del lead</span>
               <span id="telnyx-call-leadfile-quicklinks" style="display:flex; gap:5px;"></span>
             </div>
             <div id="telnyx-call-leadfile-content" style="font-size:11.5px; color:rgba(255,255,255,0.78); line-height:1.55;"></div>
@@ -1235,7 +1235,7 @@
 
           <!-- Histórico de llamadas previas -->
           <div id="telnyx-call-history" style="display:none; margin-bottom:14px; padding:9px 12px; background:rgba(255,179,65,0.06); border:1px solid rgba(255,179,65,0.18); border-radius:9px; font-size:11px; color:rgba(255,255,255,0.8);">
-            <div style="font-size:9.5px; color:#FFB341; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:5px;">⏱ Último contacto</div>
+            <div style="font-size:9.5px; color:#FFB341; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:5px;">Último contacto</div>
             <div id="telnyx-call-history-content"></div>
           </div>
 
@@ -1245,16 +1245,16 @@
           <!-- Sprint 11: Nota rápida durante la llamada -->
           <div style="margin-bottom:10px;">
             <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:5px; display:flex; align-items:center; gap:5px;">
-              📓 Nota rápida <span style="font-size:9px; opacity:0.65; text-transform:none; letter-spacing:0;">(durante o post-call)</span>
+              Nota rápida <span style="font-size:9px; opacity:0.65; text-transform:none; letter-spacing:0;">(durante o post-call)</span>
             </div>
             <textarea id="telnyx-call-quick-note" placeholder="Tip rápido para vos mismo: qué probaste, qué dijo el lead, qué cambiar la próxima…" rows="2" style="width:100%; padding:8px 11px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#fff; font-size:11.5px; resize:vertical; min-height:50px; font-family:inherit; box-sizing:border-box;"></textarea>
           </div>
 
           <!-- Botones de acción: 3 cols (Guion / Mute / Teclado) + 1 col (Colgar) -->
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
-            <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">📝 Guion</button>
-            <button id="telnyx-call-mute" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">🎤 Mute</button>
-            <button id="telnyx-call-dtmf-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;" title="Teclado para IVRs (marcar opciones durante la llamada)">🔢 Teclado</button>
+            <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">Guion</button>
+            <button id="telnyx-call-mute" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">Mute</button>
+            <button id="telnyx-call-dtmf-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;" title="Teclado para IVRs (marcar opciones durante la llamada)">Teclado</button>
           </div>
           <!-- Phase 13: pad DTMF (para centrales/IVRs durante la llamada) -->
           <div id="telnyx-dtmf-pad" style="display:none; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:8px;">
@@ -1297,7 +1297,7 @@
       <div id="call-schedule-modal" class="modal-overlay hidden" style="z-index:10000;">
         <div class="modal-card" style="max-width:480px; width:95vw;">
           <div class="modal-header">
-            <h3>📅 Agendar llamada de ventas</h3>
+            <h3>Agendar llamada de ventas</h3>
             <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-schedule-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:20px 24px;">
@@ -1318,7 +1318,7 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:22px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-schedule-modal').classList.add('hidden')">Cancelar</button>
-              <button class="btn-primary pill-btn" id="call-sched-confirm">✅ Confirmar agendamiento</button>
+              <button class="btn-primary pill-btn" id="call-sched-confirm">Confirmar agendamiento</button>
             </div>
           </div>
         </div>
@@ -1328,7 +1328,7 @@
       <div id="call-placeholder-modal" class="modal-overlay hidden" style="z-index:10000;">
         <div class="modal-card" style="max-width:520px; width:95vw;">
           <div class="modal-header">
-            <h3>📧 Mandar hold de calendario</h3>
+            <h3>Mandar hold de calendario</h3>
             <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-placeholder-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:20px 24px;">
@@ -1354,7 +1354,7 @@
             </div>
             <div style="display:flex; gap:10px; margin-top:22px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-placeholder-modal').classList.add('hidden')">Cancelar</button>
-              <button class="btn-primary pill-btn" id="call-ph-confirm">📧 Mandar hold</button>
+              <button class="btn-primary pill-btn" id="call-ph-confirm">Mandar hold</button>
             </div>
           </div>
         </div>
@@ -1364,7 +1364,7 @@
       <div id="call-callback-modal" class="modal-overlay hidden" style="z-index:10000;">
         <div class="modal-card" style="max-width:420px; width:95vw;">
           <div class="modal-header">
-            <h3>🔄 Volver a llamar después</h3>
+            <h3>Volver a llamar después</h3>
             <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-callback-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div style="padding:20px 24px;">
@@ -1377,7 +1377,7 @@
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
             <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
             <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-top:14px; cursor:pointer;">
-              <input type="checkbox" id="call-cb-shared"> 🔁 Callback compartido <span style="color:var(--text-tertiary); font-size:11px;">(cualquier setter lo puede tomar)</span>
+              <input type="checkbox" id="call-cb-shared"> Callback compartido <span style="color:var(--text-tertiary); font-size:11px;">(cualquier setter lo puede tomar)</span>
             </label>
             <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
@@ -1551,7 +1551,7 @@
       <!-- VISTA: LLAMADAS AGENDADAS (admin) -->
       <div id="view-scheduled-calls" class="module-view hidden" data-roles="admin,supervisor">
         <div class="content-header">
-          <h2>📅 Llamadas agendadas</h2>
+          <h2>Llamadas agendadas</h2>
           <div class="header-actions">
             <select id="scheduled-filter-status" class="setter-select" style="min-width:160px;">
               <option value="upcoming">Próximas (pendientes)</option>
@@ -1571,12 +1571,12 @@
       <!-- VISTA: SISTEMA (admin) -->
       <div id="view-system" class="module-view hidden" data-roles="admin">
         <div class="content-header">
-          <h2>🖥️ Sistema</h2>
+          <h2>Sistema</h2>
           <div class="header-actions">
             <button id="system-refresh-btn" class="btn-primary pill-btn">↻ Refrescar</button>
-            <button id="system-backup-now-btn" class="pill-btn" style="background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent);">💾 Backup ahora</button>
-            <button id="system-report-preview-btn" class="pill-btn" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border-default);">📊 Preview reporte semanal</button>
-            <button id="system-report-send-btn" class="pill-btn" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border-default);">📨 Enviar reporte ahora</button>
+            <button id="system-backup-now-btn" class="pill-btn" style="background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent);">Backup ahora</button>
+            <button id="system-report-preview-btn" class="pill-btn" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border-default);">Preview reporte semanal</button>
+            <button id="system-report-send-btn" class="pill-btn" style="background:transparent; color:var(--text-secondary); border:1px solid var(--border-default);">Enviar reporte ahora</button>
           </div>
         </div>
         <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Estado del sistema en tiempo real · Auto-refresca cada 30 seg.</p>
@@ -1588,7 +1588,7 @@
       <div id="report-preview-modal" class="modal-overlay hidden" style="z-index:1300;">
         <div class="modal-card" style="max-width:760px; width:95vw; max-height:90vh; display:flex; flex-direction:column;">
           <div class="modal-header">
-            <h3>📊 Preview reporte semanal</h3>
+            <h3>Preview reporte semanal</h3>
             <button type="button" aria-label="Cerrar" onclick="document.getElementById('report-preview-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
           </div>
           <div id="report-preview-iframe-wrap" style="flex:1; overflow:auto; padding:0;">
@@ -1612,7 +1612,7 @@
         <div style="padding:0 32px;">
           <div id="onboarding-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04)); border:1px solid rgba(167,139,250,0.3); border-radius:12px; margin-bottom:14px;">
             <div>
-              <div style="font-size:11px; color:#A78BFA; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">📘 Onboarding oficial del equipo</div>
+              <div style="font-size:11px; color:#A78BFA; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Onboarding oficial del equipo</div>
               <div id="onboarding-subheader" style="font-size:13px; color:var(--text-secondary); margin-top:3px;">8 módulos · ~46 min total · 0 de 8 completados</div>
             </div>
             <div id="onboarding-progress-bar" style="width:140px; height:8px; background:rgba(167,139,250,0.15); border-radius:4px; overflow:hidden;">
@@ -1625,7 +1625,7 @@
         <!-- Material adicional subido por el equipo -->
         <div style="padding:0 32px;">
           <div style="display:flex; align-items:center; gap:10px; margin:8px 0 14px; color:var(--text-secondary); font-size:11px; font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">
-            <span>📂 Material adicional</span>
+            <span>Material adicional</span>
             <div style="flex:1; height:1px; background:var(--border-color);"></div>
           </div>
         </div>
@@ -1657,7 +1657,7 @@
               <div id="training-file-info" style="font-size:11px; color:var(--text-secondary); margin-top:4px;"></div>
             </div>
             <div>
-              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">📖 Contenido para la IA (pegar texto del material para que aprenda)</label>
+              <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block;">Contenido para la IA (pegar texto del material para que aprenda)</label>
               <textarea id="training-extracted" rows="8" placeholder="Pegá acá el texto del PDF/doc, o escribí un resumen. Esto es lo que la IA del Banco de Respuestas va a usar como base de verdad cuando genere respuestas." style="width:100%;padding:10px 14px;border-radius:8px;border:1px solid var(--border-color);background:var(--bg-color);color:var(--text-primary);font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit;"></textarea>
               <div style="font-size:11px; color:var(--text-secondary); margin-top:4px;">Sin este texto la IA no puede usar el material. Los PDFs no se extraen automáticamente.</div>
             </div>
@@ -1746,7 +1746,7 @@
         <!-- EQUIPO: invitaciones (solo admin) + tabla de usuarios (admin y supervisor) -->
         <section class="admin-users-panel" data-roles="admin,supervisor" style="padding:0 32px; margin-bottom:20px;">
           <div style="display:flex; align-items:center; gap:10px; margin:8px 0 12px;">
-            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">👥 Equipo</span>
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">Equipo</span>
             <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
           </div>
           <div class="admin-users-form" data-roles="admin" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
@@ -1794,7 +1794,7 @@
         <!-- Sección de métricas de llamadas (admin) -->
         <div id="cmd-calls-section" style="padding:0 32px; margin-top:8px;">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">📞 Llamadas</span>
+            <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">Llamadas</span>
             <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
           </div>
           <div class="setter-stats" id="cmd-call-stats"></div>
@@ -1820,10 +1820,10 @@
           <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
           <button id="cmd-dedup-btn" data-roles="admin" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de Setters</button>
           <label class="btn-table-action" data-roles="admin" style="color:#a8c7fa; cursor:pointer;">
-            📥 Importar CSV a Setter
+            Importar CSV a Setter
             <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
           </label>
-          <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">🗑 Borrar leads de Setter</button>
+          <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de Setter</button>
           <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
           <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">Enriquecer dueño (NPI)</button>
           <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo) vía Telnyx Number Lookup. Cuesta ~$0.0015 por número (lote de 25).">Validar números ($)</button>
@@ -1900,12 +1900,12 @@
       </div>
 
       <!-- Mi rendimiento (setter + admin + supervisor) — mobile-first -->
-      <!-- 📅 Mis programados (automatizaciones de seguimiento) -->
+      <!-- Mis programados (automatizaciones de seguimiento) -->
       <div id="view-scheduled" class="module-view hidden">
         <header class="page-header">
           <div style="display:flex; justify-content:space-between; align-items:start; flex-wrap:wrap; gap:14px;">
             <div>
-              <h2 class="page-title">📅 Mis programados</h2>
+              <h2 class="page-title">Mis programados</h2>
               <p class="muted" style="margin-top:6px;">Mensajes de seguimiento que el sistema va a mandar solo por vos. Requiere que tengas wa-multi prendido a la hora programada.</p>
             </div>
             <button id="scheduled-refresh-btn" class="btn btn-secondary btn-sm">↻ Refrescar</button>
@@ -2247,8 +2247,8 @@
                 <span id="asst-variant-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(157,133,242,0.14); color:var(--accent); border:1px solid rgba(157,133,242,0.4); border-radius:999px;"></span>
                 <span id="asst-fallback-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border:1px solid rgba(255,200,40,0.4); border-radius:999px;">fallback del banco</span>
                 <span id="asst-violations-pill" class="chip" style="display:none; padding:3px 10px; font-size:10px; background:rgba(248,81,73,0.1); color:#f85149; border:1px solid rgba(248,81,73,0.4); border-radius:999px;"></span>
-                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:7px 12px; border-radius:8px;">📋 Copiar todo</button>
-                <button id="asst-copy-all-human" class="btn-secondary" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:12px; padding:7px 12px; border-radius:8px; color:var(--accent);">👤 Copiar todo humano</button>
+                <button id="asst-copy-all" class="btn-secondary" style="font-size:12px; padding:7px 12px; border-radius:8px;">Copiar todo</button>
+                <button id="asst-copy-all-human" class="btn-secondary" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:12px; padding:7px 12px; border-radius:8px; color:var(--accent);">Copiar todo humano</button>
               </div>
             </div>
 
@@ -2424,7 +2424,7 @@
                 <th data-sort="interesados" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Interesados</th>
                 <th data-sort="agendados" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Agendados</th>
                 <th data-sort="pctShow" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Show rate</th>
-                <th data-sort="followupsToday" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;" title="Follow-ups que vencen hoy o vencieron ayer">📅 FU hoy</th>
+                <th data-sort="followupsToday" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;" title="Follow-ups que vencen hoy o vencieron ayer">FU hoy</th>
                 <th style="padding:13px 10px; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary);">Última actividad</th>
               </tr>
             </thead>
@@ -2521,7 +2521,7 @@
             <div style="padding:14px 24px 18px; display:flex; gap:8px; flex-wrap:wrap; background:rgba(0,0,0,0.18); border-top:1px solid var(--border-color);">
               <button id="mr-detail-approve" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#5bb974; font-weight:500;">✓ Aprobar oro</button>
               <button id="mr-detail-rewrite" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent); font-weight:500;">✎ Reescribir</button>
-              <button id="mr-detail-suggest" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">💡 Sugerir mejora</button>
+              <button id="mr-detail-suggest" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">Sugerir mejora</button>
               <button id="mr-detail-reject" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#f85149; font-weight:500;">✗ Rechazar</button>
             </div>
           </div>
@@ -2629,7 +2629,7 @@
                 <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{setterName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
-                <button id="tlx-script-reset-seed-btn" class="btn-secondary" style="font-size:12.5px; padding:9px 14px;" title="Recarga los guiones desde scripts/seed/call-scripts.json (versión oficial SCM Cold Call v2). Reemplaza TODOS los guiones actuales — guarda backup automático.">♻️ Recargar oficial v2</button>
+                <button id="tlx-script-reset-seed-btn" class="btn-secondary" style="font-size:12.5px; padding:9px 14px;" title="Recarga los guiones desde scripts/seed/call-scripts.json (versión oficial SCM Cold Call v2). Reemplaza TODOS los guiones actuales — guarda backup automático.">Recargar oficial v2</button>
                 <button id="tlx-script-add-btn" class="btn-primary" style="font-size:12.5px; padding:9px 14px;">＋ Agregar guion</button>
               </div>
             </div>
@@ -2776,15 +2776,15 @@
               <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Breakdown por país / hora / día</summary>
               <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
                 <div>
-                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">🌍 Por país</div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por país</div>
                   <ul id="tlx-eff-countries" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
                 </div>
                 <div>
-                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">🕐 Por hora</div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por hora</div>
                   <ul id="tlx-eff-hours" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
                 </div>
                 <div>
-                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">📅 Por día semana</div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por día semana</div>
                   <ul id="tlx-eff-days" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
                 </div>
               </div>
@@ -2824,7 +2824,7 @@
           <div class="card" style="padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
               <div>
-                <strong style="font-size:14px;">📊 Métricas del asistente</strong>
+                <strong style="font-size:14px;">Métricas del asistente</strong>
                 <div class="muted" style="font-size:12px; margin-top:2px;">Uso, calidad, drift y A/B testing del system prompt.</div>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
@@ -2859,7 +2859,7 @@
           <div class="card" style="padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
               <div>
-                <strong style="font-size:14px;">⭐ Candidatos auto-promote</strong>
+                <strong style="font-size:14px;">Candidatos auto-promote</strong>
                 <div class="muted" style="font-size:12px; margin-top:2px;">Generaciones marcadas <em>buena</em> + enviadas <em>literal</em> sin editar. Las podés promover de un click al banco.</div>
               </div>
               <button id="mercury-cands-refresh" class="btn-secondary" style="font-size:12px;">↻ Refrescar</button>
@@ -2872,7 +2872,7 @@
           <div class="card" style="padding:18px;">
             <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
               <div>
-                <strong style="font-size:14px;">🧪 A/B test del system prompt</strong>
+                <strong style="font-size:14px;">A/B test del system prompt</strong>
                 <div class="muted" style="font-size:12px; margin-top:2px;">Probá un prompt experimental contra el actual. Mercury rutea 50/50 cuando está activado.</div>
               </div>
               <label style="display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer;">
@@ -2991,7 +2991,7 @@
   <div id="reassign-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
       <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
-        <h3 style="margin:0; font-size:18px; font-weight:700;">↔ Reasignar leads en bulk</h3>
+        <h3 style="margin:0; font-size:18px; font-weight:700;">Reasignar leads en bulk</h3>
         <p style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Mover leads de un setter a otro. Útil para redistribuir trabajo cuando un setter no puede continuar.</p>
       </div>
       <div style="padding:18px 24px; display:flex; flex-direction:column; gap:14px;">
@@ -3025,7 +3025,7 @@
         </div>
         <!-- Política fija: solo se mueven leads sin trabajar -->
         <div style="padding:11px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.30); border-radius:10px; font-size:12px; line-height:1.55; color:var(--text-secondary);">
-          <strong style="color:#5bb974;">🔒 Solo se mueven leads sin trabajar.</strong>
+          <strong style="color:#5bb974;">Solo se mueven leads sin trabajar.</strong>
           Por política, la reasignación únicamente toma leads que nunca fueron contactados (sin conexión, sin lastContactAt, sin interacciones). Los que algún setter ya trabajó NO se mueven — evita que el setter destino herede conversaciones ajenas.
         </div>
         <input id="reassign-untouched" type="checkbox" checked style="display:none;">
@@ -3050,7 +3050,7 @@
       </div>
       <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.15);">
         <button id="reassign-cancel" class="btn-secondary" style="font-size:13px; padding:9px 16px; border-radius:9px;">Cancelar</button>
-        <button id="reassign-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;" disabled>↔ Mover leads</button>
+        <button id="reassign-confirm" class="btn-primary" style="font-size:13px; padding:9px 18px; border-radius:9px;" disabled>Mover leads</button>
       </div>
     </div>
   </div>
@@ -3101,7 +3101,7 @@
         <p id="setter-picker-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">A qué setter querés asignar estos leads?</p>
       </div>
       <div style="padding:18px 24px;">
-        <input id="setter-picker-search" type="text" placeholder="🔍 Buscar setter…" autocomplete="off" style="width:100%; padding:11px 14px; font-size:13px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); margin-bottom:12px; box-sizing:border-box;">
+        <input id="setter-picker-search" type="text" placeholder="Buscar setter…" autocomplete="off" style="width:100%; padding:11px 14px; font-size:13px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); margin-bottom:12px; box-sizing:border-box;">
         <div id="setter-picker-list" style="max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;"></div>
       </div>
       <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.15);">
@@ -3141,7 +3141,7 @@
   <!-- Timer flotante anti-baneo WSP -->
   <div id="wsp-timer-widget" style="position:fixed; bottom:20px; right:20px; background:#1c2230; border:1px solid #2d3548; border-radius:12px; padding:14px 16px; box-shadow:0 8px 32px rgba(0,0,0,0.6); display:none; flex-direction:column; gap:10px; z-index:900; min-width:240px; backdrop-filter:none;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <strong style="font-size:12px; color:var(--primary-color);">⏱️ Timer anti-baneo</strong>
+      <strong style="font-size:12px; color:var(--primary-color);">Timer anti-baneo</strong>
       <button type="button" aria-label="Cerrar timer" onclick="document.getElementById('wsp-timer-widget').style.display='none'" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:14px;">✕</button>
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
@@ -3150,8 +3150,8 @@
     </div>
     <div id="wsp-timer-display" style="font-size:24px; font-weight:700; text-align:center; color:var(--text-primary); font-variant-numeric:tabular-nums;">--:--</div>
     <div style="display:flex; gap:6px;">
-      <button id="wsp-timer-start" class="btn-table-action" style="flex:1; font-size:11px; color:#5bb974;">▶ Start</button>
-      <button id="wsp-timer-stop" class="btn-table-action" style="flex:1; font-size:11px; color:#f85149;">⏹ Stop</button>
+      <button id="wsp-timer-start" class="btn-table-action" style="flex:1; font-size:11px; color:#5bb974;">Start</button>
+      <button id="wsp-timer-stop" class="btn-table-action" style="flex:1; font-size:11px; color:#f85149;">Stop</button>
     </div>
   </div>
   <button id="wsp-timer-fab" title="Abrir timer anti-baneo" style="position:fixed; bottom:20px; right:20px; width:48px; height:48px; border-radius:50%; background:var(--primary-color); color:#000; border:none; cursor:pointer; font-size:22px; box-shadow:0 4px 12px rgba(0,0,0,0.4); z-index:899;">⏱️</button>
@@ -3160,7 +3160,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260619d"></script>
+  <script type="module" src="/app.js?v=20260620a"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
