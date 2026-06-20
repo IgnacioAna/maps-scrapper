@@ -11801,6 +11801,10 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   const fileType = mimeType || 'audio/webm';
   const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  // Prompt de contexto para Whisper: lo prima con el vocabulario del rubro para que
+  // acierte mejor términos y nombres (mishears de dominio bajan bastante). En español
+  // y conciso a propósito (Whisper puede "alucinar" el prompt en tramos de silencio).
+  const WHISPER_PROMPT = 'Llamada en frío de SCM Dental, agencia de reactivación y retención de pacientes para clínicas y consultorios odontológicos. Términos: reactivar pacientes, agendar una reunión, presupuesto, odontología, ortodoncia, implantes, la doctora, recepción, perfil de Google.';
   const transcribe = async (b64, speakerLabel) => {
     if (!b64) return [];
     try {
@@ -11817,6 +11821,8 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
         file,
         model: 'whisper-1',
         language: 'es',
+        prompt: WHISPER_PROMPT,
+        temperature: 0,
         response_format: 'verbose_json',
         timestamp_granularities: ['segment'],
       });
