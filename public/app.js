@@ -5113,9 +5113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : ''}
         ${lastNote ? `<div>
           <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">Última nota · ${notesCount} total</div>
-          <div style="padding:10px 13px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
-            <div style="color:var(--text-primary); white-space:pre-wrap;">${escHtml(String(lastNote.text || '').substring(0, 300))}</div>
-            <div style="font-size:10px; color:var(--text-tertiary); margin-top:6px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+          <div style="position:relative; padding:11px 34px 11px 13px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
+            <button type="button" onclick="window._pdDeleteNote('${escHtml(lead.id)}', ${notesCount - 1})" title="Borrar esta nota" style="position:absolute; top:8px; right:8px; width:22px; height:22px; line-height:20px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary); cursor:pointer; font-size:14px; font-family:inherit;">×</button>
+            <div style="color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${escHtml(String(lastNote.text || '').substring(0, 300))}</div>
+            <div style="font-size:10px; color:var(--text-tertiary); margin-top:7px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
           </div>
         </div>` : ''}
       </div>` : ''}
@@ -5283,6 +5284,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Re-render del PD si seguimos en este lead, para que aparezca en "Última nota".
         if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
       } catch (e) { window.showToast?.('Error de red guardando la nota', { type: 'error' }); }
+    };
+
+    // Borrar una nota del lead desde el Power Dialer (× en la card "Última nota").
+    window._pdDeleteNote = async function(leadId, idx) {
+      if (!confirm('¿Borrar esta nota?')) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/note/' + idx), { method: 'DELETE', credentials: 'include' });
+        const d = await r.json();
+        if (!r.ok) { window.showToast?.(d.error || 'No se pudo borrar la nota', { type: 'error' }); return; }
+        if (window._leadStoreApply) window._leadStoreApply(leadId, { notes: d.notes });
+        window.showToast?.('Nota borrada', { type: 'success', duration: 1500 });
+        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
+      } catch (e) { window.showToast?.('Error de red borrando la nota', { type: 'error' }); }
     };
 
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
@@ -7620,22 +7634,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btn) { btn.disabled = false; btn.textContent = orig || 'brief IA'; }
     };
     // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
-    window._callsAltContact = async (leadId) => {
+    window._callsAltContact = (leadId) => {
       const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
-      const phone = prompt('Número del contacto secundario (el que te pasó la recepción: encargado/decisor).\nCon código de país y +. Dejalo vacío para borrarlo.', (lead && lead.altPhone) || '');
-      if (phone === null) return; // canceló
-      const label = phone.trim() ? (prompt('¿Quién es? (ej: Encargado, Dra. Pérez, Recepción)', (lead && lead.altPhoneLabel) || '') || '') : '';
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: phone.trim(), label }) });
-        const d = await r.json();
-        if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
-        if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel });
-        window.showToast?.(d.altPhone ? '✓ Contacto guardado' : 'Contacto borrado', { type: 'success' });
-        if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
-        if (typeof renderCallsList === 'function') renderCallsList();
-        // Refrescar el Power Dialer si está activo en este lead (muestra el contacto recién cargado).
-        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
-      } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
+      const curPhone = (lead && lead.altPhone) || '';
+      const curLabel = (lead && lead.altPhoneLabel) || '';
+      const old = document.getElementById('alt-contact-overlay'); if (old) old.remove();
+      const ov = document.createElement('div');
+      ov.id = 'alt-contact-overlay';
+      ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px;';
+      ov.innerHTML = `
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:420px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Contacto secundario</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">El número que te pasó la recepción (encargado / decisor).</div>
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Número (con código de país)</label>
+          <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:14px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:ui-monospace,monospace;">
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién es</label>
+          <input id="alt-contact-label" type="text" value="${escHtml(curLabel)}" placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" id="alt-contact-save" style="flex:1; padding:11px; background:var(--accent); color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;">Guardar</button>
+            ${curPhone ? `<button type="button" id="alt-contact-clear" style="padding:11px 14px; background:transparent; color:#f47272; border:1px solid rgba(244,114,114,0.4); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Borrar</button>` : ''}
+            <button type="button" id="alt-contact-cancel" style="padding:11px 14px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-default); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+      const close = () => ov.remove();
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.getElementById('alt-contact-cancel').onclick = close;
+      const phoneInput = document.getElementById('alt-contact-phone');
+      phoneInput.focus();
+      const doSave = async (phone, label) => {
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label }) });
+          const d = await r.json();
+          if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
+          if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel });
+          window.showToast?.(d.altPhone ? 'Contacto guardado' : 'Contacto borrado', { type: 'success' });
+          if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
+          if (typeof renderCallsList === 'function') renderCallsList();
+          if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
+          close();
+        } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
+      };
+      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').trim(), (document.getElementById('alt-contact-label').value || '').trim());
+      const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '');
+      phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('alt-contact-save').click(); });
     };
     // Generar el brief del lead actual del Power Dialer en el momento (admin).
     window._pdGenBrief = async () => {
