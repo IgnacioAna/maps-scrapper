@@ -14198,6 +14198,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) { window.showToast?.('Error: ' + e.message, { type: 'error' }); }
   };
 
+  // Sacar los Guiones de Centralita: mover la card a su propia vista (view-call-scripts).
+  (function _moveScriptsCard() {
+    const card = document.getElementById('tlx-scripts-card');
+    const body = document.getElementById('call-scripts-body');
+    if (card && body && card.parentElement !== body) body.appendChild(card);
+  })();
+  document.querySelector('[data-target="view-call-scripts"]')?.addEventListener('click', () => {
+    setTimeout(() => {
+      const card = document.getElementById('tlx-scripts-card');
+      const body = document.getElementById('call-scripts-body');
+      if (card && body && card.parentElement !== body) body.appendChild(card);
+      try { _tlxLoadScriptsAdmin(); } catch (e) {}
+    }, 30);
+  });
+
   // Wire eventos de la vista
   document.querySelector('[data-target="view-telnyx-config"]')?.addEventListener('click', () => {
     setTimeout(() => {
