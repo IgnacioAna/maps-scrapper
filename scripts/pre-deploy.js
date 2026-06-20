@@ -164,7 +164,22 @@ async function main() {
     const waResp = await fetch(`${baseUrl}/api/wa/admin/export`, { headers: { Cookie: cookies } });
     if (waResp.ok) {
       const waData = await waResp.json();
-      if (waData.accounts) saveFile("wa_accounts.json", waData.accounts, `${(waData.accounts.accounts || []).length} cuentas`);
+      if (waData.accounts) {
+        // Seguridad: NUNCA commitear proxy.pass al repo (mismo criterio que los
+        // secrets de Telnyx, arriba). El export /api/wa/admin/export lo trae en
+        // claro a propósito (necesario para un restore en vivo vía import), pero
+        // el archivo que se versiona en GitHub se limpia: GitHub Push Protection
+        // NO detecta contraseñas de proxy genéricas, así que se commitearían
+        // silenciosamente. Tras una pérdida total del volumen, las pass de proxy
+        // se vuelven a cargar a mano por cuenta (igual que se re-proveen los
+        // secrets de Telnyx desde env vars). Ver memoria proxy-pass-predeploy-leak-risk.
+        let proxyCleaned = 0;
+        for (const acc of (waData.accounts.accounts || [])) {
+          if (acc && acc.proxy && acc.proxy.pass) { acc.proxy.pass = ""; proxyCleaned++; }
+        }
+        if (proxyCleaned) console.log(`  lock wa_accounts.json: ${proxyCleaned} proxy pass limpiado(s) (re-cargar a mano tras restore)`);
+        saveFile("wa_accounts.json", waData.accounts, `${(waData.accounts.accounts || []).length} cuentas`);
+      }
       if (waData.routines) saveFile("wa_routines.json", waData.routines, `${(waData.routines.routines || []).length} rutinas`);
       if (waData.events) saveFile("wa_events.json", waData.events, `${(waData.events.events || []).length} eventos`);
       if (waData.campaigns) saveFile("wa_campaigns.json", waData.campaigns, `${(waData.campaigns.campaigns || []).length} campañas`);
