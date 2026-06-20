@@ -293,6 +293,14 @@ export function phoneMatches(a, b) {
 //    si Mercury marca handoff (caliente/agendar) → replied_for_setter.
 export async function handleCampaignInbound(deps, { contactPhone, intent, message } = {}) {
   if (!contactPhone) return null;
+  // Honrar el reloj inyectado (deps.now) igual que campaignEngineTick, para que
+  // los timestamps que escribimos (repliedAt/nextActionAt) usen UNA sola fuente
+  // de tiempo. En prod deps.now no viene → Date.now() (comportamiento idéntico).
+  // Sin esto, el tick corre con reloj simulado y el inbound con reloj real, lo
+  // que dejaba nextActionAt en el "futuro" respecto del now del tick y el test
+  // de flujo se volvía dependiente de la fecha real (flaky).
+  const now = deps.now ? deps.now() : Date.now();
+  const nowIso = () => new Date(now).toISOString();
   let settersData = { leads: {} };
   try { settersData = deps.getSettersData ? deps.getSettersData() : settersData; } catch {}
   let leadId = null, lead = null;
@@ -323,12 +331,12 @@ export async function handleCampaignInbound(deps, { contactPhone, intent, messag
         // Respondió el opener → arrancar el pitch (la variante en bloques).
         ls.state = "pitch_sending";
         ls.blockIdx = 0;
-        ls.repliedAt = new Date().toISOString();
-        ls.nextActionAt = new Date().toISOString(); // el engine manda el 1er bloque ya
+        ls.repliedAt = nowIso();
+        ls.nextActionAt = nowIso(); // el engine manda el 1er bloque ya
         result = { campaignId: camp.id, leadId, state: "pitch_sending" };
       } else if (ls.state === "awaiting_pitch_reply") {
         // Respondió tras todo el pitch → Mercury o humano.
-        ls.repliedAt = new Date().toISOString();
+        ls.repliedAt = nowIso();
         if (camp.useMercury !== false) {
           ls.state = "mercury_active";
           pending = { kind: "mercury", campId: camp.id, accountId: ls.accountId };
