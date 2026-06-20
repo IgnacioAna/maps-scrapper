@@ -11623,6 +11623,32 @@ Respuesta:`;
   } catch { return ''; }
 }
 
+// Auto-disposición: la IA lee el transcript y determina el resultado de la llamada
+// (no pisa la disposición manual del setter; queda como lectura paralela de la IA
+// para QA + entrenamiento). Devuelve { outcome, reason } o null.
+const _AUTO_DISP_OUTCOMES = ['answered_interested', 'answered_not_interested', 'no_answer', 'voicemail', 'hung_up', 'callback_later', 'scheduled_with_admin', 'wrong_number', 'invalid_number'];
+async function _autoDispositionLLM(segments) {
+  if (!mercuryKey && !qwenKey) return null;
+  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 5000);
+  if (!dialog.trim()) return null;
+  const prompt = `Analizá esta llamada de venta en frío (reactivación de pacientes para clínicas dentales) y clasificá el RESULTADO. Devolvé SOLO un JSON: {"outcome":"<uno de: ${_AUTO_DISP_OUTCOMES.join(', ')}>","reason":"<una línea explicando por qué>"}.
+
+Transcripción:
+${dialog}
+
+JSON:`;
+  try {
+    const c = await Promise.race([
+      ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.1, max_tokens: 150, response_format: { type: 'json_object' } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 15000)),
+    ]);
+    const raw = (c?.choices?.[0]?.message?.content || '').replace(/```json|```/g, '').trim();
+    const j = JSON.parse(raw);
+    if (j && _AUTO_DISP_OUTCOMES.includes(j.outcome)) return { outcome: j.outcome, reason: String(j.reason || '').slice(0, 200) };
+    return null;
+  } catch { return null; }
+}
+
 // GET /api/training/calls — biblioteca: TODAS las llamadas con transcript (de todo
 // el equipo), anonimizadas. Cualquier setter ve las de sus compañeros para aprender.
 app.get('/api/training/calls', requireAuth, (req, res) => {
@@ -11669,7 +11695,7 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
       await mutateSettersData((d) => { const l = d.leads?.[req.params.leadId]; if (l?.callLog?.[i]) l.callLog[i].trainingSummary = summary; });
     }
   }
-  res.json({ outcome: c.outcome || '', duration: c.duration || 0, segments: anonSegs, summary });
+  res.json({ outcome: c.outcome || '', duration: c.duration || 0, segments: anonSegs, summary, aiSuggestedOutcome: c.aiSuggestedOutcome || '', aiSuggestedReason: c.aiSuggestedReason || '' });
 });
 
 // POST /api/training/ask — coach IA: pregunta libre → respuesta con el banco.
@@ -11824,7 +11850,24 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       continue;
     }
     if (!saved) console.warn('[transcribe] No se pudo persistir transcript (lead/callLog no encontrado tras 30s)');
-    res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length, savedToIdx: lastAttemptIdx });
+    // Auto-disposición: la IA lee el transcript recién guardado y deja su lectura del
+    // resultado en el callLog (no pisa la disposición manual; es señal de QA/entrenamiento).
+    let aiSuggested = null;
+    if (saved && merged.length && typeof lastAttemptIdx === 'number') {
+      try {
+        aiSuggested = await _autoDispositionLLM(merged);
+        if (aiSuggested) {
+          await mutateSettersData((d) => {
+            const l = d.leads?.[leadId];
+            if (l?.callLog?.[lastAttemptIdx]) {
+              l.callLog[lastAttemptIdx].aiSuggestedOutcome = aiSuggested.outcome;
+              l.callLog[lastAttemptIdx].aiSuggestedReason = aiSuggested.reason;
+            }
+          });
+        }
+      } catch (e) { /* best-effort */ }
+    }
+    res.json({ ok: true, transcript: { segments: merged }, segmentCount: merged.length, savedToIdx: lastAttemptIdx, aiSuggested });
   } catch (e) {
     res.status(500).json({ error: 'Error transcribiendo: ' + (e?.message || 'unknown') });
   }
