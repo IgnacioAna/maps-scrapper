@@ -6160,7 +6160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
               <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">hold</button>
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
-              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">alt</button>` : ''}
+              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
@@ -7647,7 +7647,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Contacto secundario</div>
           <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">El número que te pasó la recepción (encargado / decisor).</div>
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Número (con código de país)</label>
-          <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:14px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:ui-monospace,monospace;">
+          <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:8px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:15px; font-family:ui-monospace,monospace; text-align:center; letter-spacing:1px;">
+          <div id="alt-contact-keypad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:16px;">
+            ${['1','2','3','4','5','6','7','8','9','+','0','⌫'].map(k => `<button type="button" data-k="${k}" style="padding:11px 0; background:var(--bg-app); border:1px solid var(--border-default); border-radius:9px; color:var(--text-primary); font-size:16px; font-weight:600; cursor:pointer; font-family:inherit;">${k}</button>`).join('')}
+          </div>
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién es</label>
           <input id="alt-contact-label" type="text" value="${escHtml(curLabel)}" placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
           <div style="display:flex; gap:8px; align-items:center;">
@@ -7662,6 +7665,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('alt-contact-cancel').onclick = close;
       const phoneInput = document.getElementById('alt-contact-phone');
       phoneInput.focus();
+      // Teclado: discar el número como en un teléfono.
+      ov.querySelectorAll('#alt-contact-keypad button').forEach((b) => {
+        b.onclick = () => {
+          const k = b.getAttribute('data-k');
+          if (k === '⌫') phoneInput.value = phoneInput.value.slice(0, -1);
+          else phoneInput.value += k;
+          phoneInput.focus();
+        };
+      });
       const doSave = async (phone, label) => {
         try {
           const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label }) });
