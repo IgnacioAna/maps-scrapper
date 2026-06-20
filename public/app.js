@@ -5101,11 +5101,12 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (!hasTr) {
                 return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">${rowInner}</div>`;
               }
-              // Con transcript: fila expandible inline (details nativo, sin JS)
-              const segsHtml = segs.map(s => {
+              // Con transcript: fila expandible inline (details nativo, sin JS).
+              // Reagrupar en turnos → conversación legible, no frases sueltas picadas.
+              const segsHtml = _mergeTranscriptTurns(segs).map(s => {
                 const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
                 const lbl = s.speaker === 'setter' ? 'Setter' : 'Lead';
-                return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; min-width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="color:var(--text-secondary);">${escHtml(s.text || '')}</span></div>`;
+                return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
               }).join('');
               return `<details style="background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; overflow:hidden;">
                 <summary style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; font-size:11.5px; cursor:pointer; list-style:none;">${rowInner}</summary>
@@ -6224,6 +6225,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>${isExpanded ? _callsRenderExpandedPanel(l) : ''}`;
         return rowHtml;
       }).join('');
+    }
+
+    // Reagrupa los segmentos de Whisper (2 pistas mezcladas por timestamp) en TURNOS:
+    // junta segmentos consecutivos del mismo hablante. No inventa ni reordena (solo
+    // ordena por start, que ya venía así) → la transcripción se lee como conversación
+    // y no como frases sueltas picadas. Mismo helper que el backend (_mergeTranscriptTurns).
+    function _mergeTranscriptTurns(segments) {
+      const sorted = [...(segments || [])].filter(s => s && (s.text || '').trim()).sort((a, b) => (a.start || 0) - (b.start || 0));
+      const out = [];
+      for (const s of sorted) {
+        const last = out[out.length - 1];
+        const txt = (s.text || '').trim();
+        if (last && last.speaker === s.speaker) { last.text = (last.text + ' ' + txt).replace(/\s+/g, ' ').trim(); }
+        else { out.push({ speaker: s.speaker, text: txt, start: s.start }); }
+      }
+      return out;
     }
 
     function callOutcomeLabel(o) {
@@ -11915,7 +11932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         transcriptMetaEl.textContent = `${c.transcript.segments.length} fragmentos · ${c.transcript.whisperModel || 'whisper-1'}`;
         // Renderizar segments con speaker tags. Resaltar el keyword si hay búsqueda activa.
         const searchTerm = (document.getElementById('chist-search')?.value || '').toLowerCase().trim();
-        transcriptEl.innerHTML = c.transcript.segments.map(s => {
+        transcriptEl.innerHTML = _mergeTranscriptTurns(c.transcript.segments).map(s => {
           const speakerColor = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
           const speakerLabel = s.speaker === 'setter' ? 'Setter' : 'Lead';
           let text = escHtml(s.text);

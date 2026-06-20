@@ -11581,6 +11581,31 @@ function _anonymizeForTraining(text, lead = {}) {
   return t;
 }
 
+// Reagrupa los segmentos de Whisper (2 pistas mezcladas por timestamp) en TURNOS:
+// fusiona segmentos consecutivos del mismo hablante en un solo bloque. Whisper parte
+// cada pista en fragmentos cortos por pausa; al mezclar dos pistas por start time el
+// resultado queda picado. Esto NO inventa ni reordena nada — solo junta lo que ya
+// está seguido del mismo speaker, para que se lea como una conversación y no como
+// frases sueltas. La habla solapada (cross-talk) puede seguir partiendo un turno,
+// pero el resultado es muchísimo más legible.
+function _mergeTranscriptTurns(segments) {
+  const sorted = [...(segments || [])]
+    .filter((s) => s && (s.text || '').trim())
+    .sort((a, b) => (a.start || 0) - (b.start || 0));
+  const out = [];
+  for (const s of sorted) {
+    const last = out[out.length - 1];
+    const txt = (s.text || '').trim();
+    if (last && last.speaker === s.speaker) {
+      last.text = (last.text + ' ' + txt).replace(/\s+/g, ' ').trim();
+      if (s.end != null) last.end = s.end;
+    } else {
+      out.push({ speaker: s.speaker, text: txt, start: s.start, end: s.end });
+    }
+  }
+  return out;
+}
+
 // Resumen de entrenamiento de una llamada (qué pasó, qué funcionó, aprendizaje).
 async function _trainingSummaryLLM(segments, outcome) {
   if (!mercuryKey && !qwenKey) return '';
@@ -11690,7 +11715,9 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
   const c = lead.callLog[i];
   const segs = c.transcript?.segments || [];
   if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
-  const anonSegs = segs.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: _anonymizeForTraining(s.text, lead) }));
+  // Reagrupar en turnos ANTES de anonimizar → conversación legible (no frases sueltas).
+  const turns = _mergeTranscriptTurns(segs);
+  const anonSegs = turns.map((s) => ({ speaker: s.speaker === 'setter' ? 'setter' : 'lead', text: _anonymizeForTraining(s.text, lead) }));
   let summary = c.trainingSummary || '';
   // Regenerar si está vacío o si quedó cacheado truncado (versiones viejas con
   // max_tokens bajo: no contienen la sección final "Aprendizaje").
