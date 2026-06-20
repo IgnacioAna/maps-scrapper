@@ -5141,6 +5141,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : `<div style="margin-bottom:12px;">
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar número de contacto que me pasaron</button>
         </div>`}
+        <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:rgba(157,133,242,0.10); border:1px solid rgba(157,133,242,0.35); border-radius:8px; font-size:12.5px;"></div>
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'abre agenda ahora',   color:'success' },
@@ -6369,9 +6370,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await r.json();
         console.log('[transcribe] OK, segments:', d.segmentCount);
         window.showToast?.(`✓ Transcripción lista (${d.segmentCount} fragmentos)`, { type: 'success' });
+        if (d.aiSuggested) _showAiDispHint(leadId, d.aiSuggested);
       } catch (e) {
         console.warn('[transcribe] failed:', e?.message || e);
       }
+    }
+
+    // Hint en vivo: si la IA ya leyó el resultado de la llamada y seguimos en ese
+    // lead en el Power Dialer sin disposición marcada, ofrecer aplicarlo con 1 clic.
+    function _showAiDispHint(leadId, sug) {
+      if (!sug || !sug.outcome) return;
+      if (!(_pd.active && _pd.queue[_pd.currentIdx] === leadId)) return; // solo si seguimos en este lead
+      const el = document.getElementById('pd-ai-disp-hint');
+      if (!el) return;
+      const label = (typeof callOutcomeLabel === 'function') ? callOutcomeLabel(sug.outcome) : sug.outcome;
+      el.innerHTML = `<span style="color:var(--text-secondary);">IA sugiere: <strong style="color:var(--text-primary);">${escHtml(label)}</strong>${sug.reason ? ' — ' + escHtml(sug.reason) : ''}</span>
+        <button type="button" onclick="window._pdHandleDispositionDirect('${escHtml(leadId)}','${escHtml(sug.outcome)}')" style="margin-left:auto; padding:5px 13px; background:var(--accent); color:#fff; border:none; border-radius:7px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit;">Aplicar</button>
+        <button type="button" onclick="this.parentElement.style.display='none'" title="Descartar sugerencia" style="padding:5px 9px; background:transparent; color:var(--text-tertiary); border:1px solid var(--border-subtle); border-radius:7px; font-size:12px; cursor:pointer; font-family:inherit;">✕</button>`;
+      el.style.display = 'flex';
     }
 
     // Ringback tone local (440Hz + 480Hz, patrón US: 2s ON / 4s OFF).
@@ -14550,40 +14566,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: `<ol>
           <li>Logueate con el email y password que te mandó el admin por invitación.</li>
           <li>El sidebar de la izquierda tiene todo lo que necesitás. Si te confunde, usá el menú hamburguesa arriba para esconderlo.</li>
-          <li>Lo primero: andá a <strong>Centro de Entrenamiento</strong> y hacé los 8 módulos cortos (~46 min total). Cada uno tiene un quiz al final que tenés que aprobar (≥4/5).</li>
-          <li>Después volvé a <strong>Setteo</strong> — esa es tu vista principal.</li>
+          <li>Lo primero: andá a <strong>Centro de Entrenamiento</strong> y hacé los 8 módulos cortos. Cada uno tiene un quiz que tenés que aprobar (≥4/5).</li>
+          <li>Después tu vista principal es <strong>Llamadas</strong> (y <strong>Hoy</strong> para ver tu día). Acá vivís: tu trabajo es por teléfono.</li>
+          <li>La primera vez que llames, el navegador te pide <strong>permiso de micrófono</strong> → dale "Permitir" (una sola vez).</li>
         </ol>
-        <div class="guide-callout">Cuando aprobás un módulo del onboarding el pill cambia a "Quiz aprobado" y tu progreso queda guardado.</div>`,
-        goto: { target: 'view-training', label: 'Ir a Entrenamiento' }
+        <div class="guide-callout">Todo se llama desde el navegador (centralita Telnyx) — no abrís ningún programa aparte.</div>`,
+        goto: { target: 'view-calls', label: 'Ir a Llamadas' }
       },
       {
-        id: 'setteo',
-        title: 'Trabajar leads en Setteo',
-        body: `<p>La vista <strong>Setteo</strong> tiene todos los leads que te asignaron. El flow de un lead es:</p>
+        id: 'llamadas',
+        title: 'Llamadas (tu vista principal)',
+        body: `<p>En <strong>Llamadas</strong> tenés tu cola de leads para discar. Dos formas de trabajar:</p>
         <ol>
-          <li><strong>Sin contactar</strong> → abrís WSP con el botón verde.</li>
-          <li><strong>Conexión enviada</strong> → se marca solo al abrir el chat.</li>
-          <li><strong>Respondió</strong> → tildá la casilla cuando el lead te conteste.</li>
-          <li><strong>Calificado</strong> → tildá cuando confirmaste que es perfil real (clínica, dueño, etc).</li>
-          <li><strong>Interesado</strong> → tildá si dice sí a la propuesta.</li>
-          <li><strong>Agendado</strong> → se marca cuando agendás reunión en el calendario.</li>
+          <li><strong>Lista:</strong> cada lead es una card con su info, señales y el ángulo sugerido. Botón <strong>Llamar</strong> en cada una.</li>
+          <li><strong>Power Dialer</strong> (recomendado): modo continuous calling sin distracciones — te va pasando lead por lead. Tiene <strong>autopiloto</strong> y atajos numéricos.</li>
         </ol>
-        <div class="guide-callout"><strong>Cascada bidireccional:</strong> si marcás "Interesado SI", se autocompletan calificado/respondió/conexión. Si destildás conexión, se borra todo lo posterior.</div>
-        <p>Si el lead <strong>no tiene WhatsApp</strong>, marcá "Sin WSP" — sale de tu vista y va a "Llamadas".</p>
-        <p>Tenés filtros arriba (Sin contactar, En proceso, Respondieron, Calificados, Interesados, Agendados, etc.) y un buscador universal que filtra por nombre, teléfono, ciudad, doctor, etc.</p>`,
-        goto: { target: 'view-crm', label: 'Ir a Setteo' }
+        <p>Arriba tenés un selector de orden: <strong>Prioridad</strong> (mejor a llamar primero), Nunca llamados, Para seguir, etc., y un buscador.</p>
+        <div class="guide-callout">El sistema elige solo el número saliente y muestra la <strong>hora local</strong> del lead (no llames fuera de horario hábil).</div>`,
+        goto: { target: 'view-calls', label: 'Ir a Llamadas' }
       },
       {
-        id: 'whatsapp',
-        title: 'Mandar WhatsApps',
-        body: `<p>Cuando le das al botón verde de WSP en un lead:</p>
-        <ol>
-          <li>Se abre WhatsApp Web/Desktop con el mensaje de apertura precargado (según la variante asignada al lead).</li>
-          <li>Mandalo. Volvé al CRM y la conexión se marca sola.</li>
-          <li>Cuando el lead responde, tildá <strong>"Respondió"</strong>.</li>
-          <li>Usá las pestañas dentro del modal del lead para ver historial, notas, follow-ups, etc.</li>
-        </ol>
-        <div class="guide-callout warn">El mensaje de apertura se define por <strong>variante</strong>. Si ves que tu lead no tiene mensaje precargado o sale roto, avisale al admin para revisar la variante.</div>`
+        id: 'durante-llamada',
+        title: 'Durante la llamada',
+        body: `<p>Cuando llamás, se abre el panel con timer, mute, colgar y teclado (para IVRs). Al lado tenés todo lo que necesitás:</p>
+        <ul>
+          <li><strong>Guion</strong>: scripts oficiales (apertura, pitch, objeciones, cierre). Tono <strong>3-S</strong>: Slow, Smile, Strong.</li>
+          <li><strong>Mercury en vivo</strong>: si te tiran una objeción ("ya tengo sistema", "mandame info"), tocá el chip o escribila y la IA te sopla la respuesta al toque.</li>
+          <li><strong>Ficha del lead</strong>: reseñas, señales, <strong>ángulo de apertura</strong> y, si tiene, el <strong>Brief IA</strong> (dolores + gancho sacados de sus reseñas).</li>
+          <li><strong>Contacto secundario</strong>: si la recepción te pasa otro número (el encargado), cargalo ahí y lo llamás sin perder el lead.</li>
+        </ul>`
       },
       {
         id: 'llamadas',
@@ -14600,17 +14611,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="guide-callout warn">Si el botón aparece como <code>tel:</code> tradicional en vez del panel, significa que el admin no configuró Telnyx todavía. Avisale.</div>`
       },
       {
-        id: 'asistente',
-        title: 'Asistente IA (Mercury)',
-        body: `<p>Cuando un lead te tira algo difícil ("¿cuánto sale?", "ya tengo agencia", "no me interesa"), no improvises — usá el Asistente.</p>
-        <ol>
-          <li>Andá a <strong>Asistente IA</strong> en el sidebar.</li>
-          <li>Pegá el mensaje del lead.</li>
-          <li>Mercury te genera una respuesta sanitizada (sin <code>¿¡</code>, sin precios, sin tecnicismos) en 1-2 bloques.</li>
-          <li>Copialo. Marcalo como <strong>buena/mala/edité</strong> para que el sistema aprenda.</li>
-        </ol>
-        <div class="guide-callout">El admin revisa las respuestas malas y mejora el prompt o las promociona al banco. Tu feedback alimenta esto.</div>`,
-        goto: { target: 'view-assistant', label: 'Ir a Asistente' }
+        id: 'resultado',
+        title: 'Marcar el resultado (disposición)',
+        body: `<p>Al colgar, marcá cómo fue con los botones (o los <strong>atajos numéricos 1-8</strong>):</p>
+        <ul>
+          <li><strong>1 Interesado</strong> · <strong>2 No interesado</strong> (te pide la razón) · <strong>3 Me cortó</strong></li>
+          <li><strong>4 No atendió</strong> · <strong>5 Buzón</strong> · <strong>6 Volver a llamar</strong> (agenda callback) · <strong>7 Equivocado</strong> · <strong>8 No existe</strong></li>
+        </ul>
+        <p>Podés escribir una <strong>nota</strong> de la llamada arriba del grid antes de marcar.</p>
+        <div class="guide-callout"><strong>"No atendió" y "Buzón" NO descartan el lead:</strong> reaparece solo para re-llamar a las 24h, hasta 3 intentos. Al 3er no-contacto se descarta automático. Vos no perdés ningún lead.</div>`
       },
       {
         id: 'faqs',
@@ -14625,51 +14634,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         goto: { target: 'view-faqs', label: 'Ir al Banco' }
       },
       {
-        id: 'programar',
-        title: 'Programar mensajes (follow-up automático)',
-        body: `<p>Si un lead te dice "hablame mañana 10am", no lo dejes en tu memoria — programalo:</p>
-        <ol>
-          <li>Abrí el lead → pestaña <strong>"Programar mensaje"</strong>.</li>
-          <li>Elegí preset (en 2h, mañana 10am, en 3 días) o fecha/hora custom.</li>
-          <li>Escribí el mensaje (o usá el del banco).</li>
-          <li>Guardalo. Aparece en <strong>"Follow-ups"</strong> en el sidebar.</li>
-        </ol>
-        <div class="guide-callout danger"><strong>Requiere wa-multi prendido:</strong> el mensaje se envía solo desde la app de escritorio cuando la cuenta WA está online. Si tu PC está apagada a esa hora, el sistema reintenta cada 5 min hasta 24h.</div>`
+        id: 'hoy',
+        title: 'Tu día en "Hoy" + seguimiento',
+        body: `<p>La vista <strong>Hoy</strong> te arma el día en orden de prioridad:</p>
+        <ul>
+          <li><strong>Callbacks:</strong> los que quedaron en volver a llamar (vos los agendaste).</li>
+          <li><strong>Interesados sin agendar:</strong> dijeron que sí — cerrá la reunión.</li>
+          <li><strong>Nuevos priorizados:</strong> nunca contactados, ordenados por prioridad.</li>
+        </ul>
+        <p>Los "no atendió / buzón" no aparecen en Hoy: vuelven solos a la cola de <strong>Llamadas</strong> a las 24h (filtro "Para seguir").</p>
+        <div class="guide-callout">Si un lead dice "llamame el martes", usá la disposición <strong>Volver a llamar</strong> y elegí fecha/hora — reaparece solo ese día.</div>`,
+        goto: { target: 'view-hoy', label: 'Ir a Hoy' }
       },
       {
-        id: 'followups',
-        title: 'Follow-ups y "Mis programados"',
-        body: `<p>En el sidebar tenés <strong>Follow-ups</strong> con todo lo que tenés pendiente: tildados manuales + mensajes programados que aún no salieron.</p>
+        id: 'entrenamiento-ia',
+        title: 'Entrenamiento IA (aprender + preguntar)',
+        body: `<p>En <strong>Entrenamiento IA</strong> tenés dos cosas para mejorar:</p>
         <ul>
-          <li><strong>Pendientes:</strong> esperando hora de envío.</li>
-          <li><strong>Enviados:</strong> ya despachados por wa-multi (con timestamp).</li>
-          <li><strong>Fallidos:</strong> wa-multi offline durante 24h o cuenta caída. Reagendá o mandalos manualmente.</li>
-          <li><strong>Cancelados:</strong> los que vos cancelaste.</li>
+          <li><strong>Biblioteca de llamadas:</strong> escuchá/leé cómo llaman tus compañeros (anonimizado, sin datos del cliente). Mirá las que <strong>agendaron</strong> y copiá lo que funciona. Cada una tiene un resumen de la IA.</li>
+          <li><strong>Preguntale a la IA:</strong> dudas del producto, cómo rebatir una objeción, cómo mejorar — la IA te responde con el conocimiento del equipo.</li>
         </ul>`,
-        goto: { target: 'view-scheduled', label: 'Ir a Follow-ups' }
+        goto: { target: 'view-training', label: 'Ir a Entrenamiento IA' }
       },
       {
         id: 'rendimiento',
         title: 'Mi rendimiento',
-        body: `<p>En <strong>Mi rendimiento</strong> ves tus 7 KPIs con delta vs período anterior:</p>
+        body: `<p>En <strong>Mi rendimiento</strong> tenés tu <strong>funnel de cold call</strong> del día/semana/mes:</p>
         <ul>
-          <li><strong>% Conexión:</strong> mensajes enviados / leads totales.</li>
-          <li><strong>% Apertura:</strong> respondieron / conexiones.</li>
-          <li><strong>% Calificación:</strong> interesados / calificados.</li>
-          <li>+ evolución temporal con selector día / semana / mes.</li>
+          <li><strong>Llamadas (dials)</strong> → <strong>Conectadas</strong> (atendieron) → <strong>Conversaciones</strong> (hablaste ≥30s) → <strong>Agendadas</strong>.</li>
+          <li>Ratios con benchmark 2026 (connect, conversación, booking) — ves si estás por arriba o por abajo del estándar.</li>
         </ul>
-        <div class="guide-callout">Si una variante te convierte mucho menos que otra, avisale al admin — capaz hay que cambiar el copy.</div>`,
+        <div class="guide-callout">El número que más mueve la aguja es el <strong>volumen de llamadas</strong>: más dials = más agendadas. Mantené el ritmo.</div>`,
         goto: { target: 'view-myperf', label: 'Ir a Mi rendimiento' }
       },
       {
         id: 'tips',
         title: 'Tips operativos que suelen ahorrar tiempo',
         body: `<ul>
-          <li>El <strong>modo tabla completa</strong> es el default — ahí ves doctor, notas, follow-ups, etc. No lo cambies a "simple" salvo que sepas qué hacés.</li>
-          <li>Atajos: <code>Esc</code> cierra modales. <code>Ctrl+F</code> (browser) busca en la tabla actual.</li>
-          <li>Si el sidebar te molesta, el menú hamburguesa lo esconde dejando solo iconos.</li>
-          <li>Si tu cuenta WA se cae o desconecta, andá a <strong>Mis WhatsApps</strong> para ver estado y reconectar.</li>
-          <li>El widget <strong>Hoy</strong> arriba muestra tus mensajes/llamadas/agendados del día — útil para auto-checkearte.</li>
+          <li>Usá el <strong>Power Dialer</strong> con autopiloto: maximiza el volumen de llamadas (que es lo que más convierte).</li>
+          <li>Atajos en el dialer: <strong>1-8</strong> marcan el resultado, <strong>C</strong> llama, <strong>S</strong> saltea, <strong>Esc</strong> sale.</li>
+          <li>Antes de discar, leé el <strong>ángulo sugerido</strong> y (si tiene) el <strong>Brief IA</strong> — entrás con contexto y conectás más.</li>
+          <li>Si la recepción te pasa el número del encargado, cargalo como <strong>contacto secundario</strong> y llamalo ahí mismo.</li>
+          <li>Respetá la <strong>hora local</strong> del lead (la ves en la card) — no llames fuera de horario hábil.</li>
+          <li>Cuando algo te cuesta, preguntale al <strong>coach</strong> en Entrenamiento IA o mirá una llamada que salió bien en la biblioteca.</li>
         </ul>`
       },
     ],
