@@ -30,3 +30,5 @@ build_xlsx.js
 .claude/
 # Carpeta de assets del desktop WAMULTI — no pertenece a este repo
 wa-multi/
+# Atajo local de pre-deploy (lleva URL + email, NO contraseña). No commitear.
+pre-deploy.bat
