@@ -6966,8 +6966,9 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
   // Phase 12 P0-1 (persistencia): 6 reintentos antes de agotar — el 95% de los que
   // convierten se alcanzan recién al 6to intento; la mayoría abandona al 4to (error).
-  // Horas hasta el próximo reintento por nº de racha: 3h, 1d, 3d, 4d, 7d, 7d.
-  const CADENCE_HOURS = [3, 24, 72, 96, 168, 168];
+  // Horas hasta el próximo reintento por nº de racha: 1d, 2d, 3d, 4d, 7d, 7d.
+  // El no_answer/voicemail no descarta el lead: reaparece para re-llamar a las 24h.
+  const CADENCE_HOURS = [24, 48, 72, 96, 168, 168];
   if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
     let streak = 0;
     for (let i = lead.callLog.length - 1; i >= 0; i--) {
