@@ -32,3 +32,6 @@ build_xlsx.js
 wa-multi/
 # Atajo local de pre-deploy (lleva URL + email, NO contraseña). No commitear.
 pre-deploy.bat
+
+# Backup viejo de 9MB en la raiz (audit 2026-06-20) — nunca commitear
+paula-old.json

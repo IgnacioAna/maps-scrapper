@@ -66,8 +66,16 @@ describe("recycle-pool", () => {
     expect(pool.body.unassigned.total).toBe(0);
   });
 
-  it("recicla: desasigna todo, resetea, estampa prioridad", async () => {
+  it("sin confirm token rechaza (operación destructiva, audit 2026-06-20)", async () => {
     const r = await request(app).post("/api/admin/recycle-pool").set("Cookie", adminCookie).send({});
+    expect(r.status).toBe(400);
+    // no mutó: el interesado sigue asignado
+    const pool = await request(app).get("/api/setters/pool-summary").set("Cookie", adminCookie);
+    expect(pool.body.unassigned.total).toBe(0);
+  });
+
+  it("recicla: desasigna todo, resetea, estampa prioridad", async () => {
+    const r = await request(app).post("/api/admin/recycle-pool").set("Cookie", adminCookie).send({ confirm: "RECICLAR_TODO" });
     expect(r.body.total).toBe(2);
     expect(r.body.notesKept).toBe(1); // solo el interesado
     const pool = await request(app).get("/api/setters/pool-summary").set("Cookie", adminCookie);

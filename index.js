@@ -2,17 +2,22 @@ import dotenv from "dotenv";
 import { getJson } from "serpapi";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import express from "express";
 import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { mountWa } from "./src/wa/index.js";
-import { enrichFromWebsite, enrichFromNPI } from "./src/enrichment.js";
+import { enrichFromWebsite, enrichFromNPI, isBlockedHost } from "./src/enrichment.js";
 
 dotenv.config();
 const apiKey = process.env.API_KEY;
 
 const app = express();
+// Audit 2026-06-20: Railway pone un proxy adelante. Sin esto, req.ip = IP del proxy
+// (todos los clientes comparten key de rate-limit) y el X-Forwarded-For crudo es
+// spoofeable. Con trust proxy=1, req.ip resuelve a la IP real del cliente (último hop).
+app.set('trust proxy', 1);
 // Performance audit 2026-05-23: compression middleware. Sin esto, app.js (~400KB)
 // + style.css (~100KB) + html viajaban crudos. Con gzip/brotli reduce ~70% wire
 // size → time-to-interactive significativamente mejor en first paint.
@@ -127,10 +132,18 @@ if (process.env.NODE_ENV !== 'test') {
     }
   }, 10 * 60 * 1000);
 }
+const _clientIp = (req) => (req.ip || (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim() || 'unknown');
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 1000 : 5,
-  keyFn: (req) => 'login:' + ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim())
+  keyFn: (req) => 'login:' + _clientIp(req)
+});
+// Audit 2026-06-20: el alta de cuenta (accept-invite) también es un endpoint sin
+// auth → sin límite era fuerza-bruteable. Mismo trato que login.
+const acceptInviteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  keyFn: (req) => 'accept-invite:' + _clientIp(req)
 });
 const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -150,8 +163,19 @@ const enrichLimiter = rateLimit({
   keyFn: (req) => 'enrich:' + (req.auth?.user?.id || ((req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim()))
 });
 
-// AUTH_FILE se define después de DATA_DIR para usar el volume si está montado
-let AUTH_FILE = path.join(process.cwd(), "data", "auth.json");
+// AUTH_FILE se reasigna a path.join(DATA_DIR, ...) más abajo (línea ~3354), PERO
+// ensureAuthSeeds() corre ANTES de esa reasignación (~línea 1274) → su valor inicial
+// importa. Antes era el ./data del REPO hardcodeado → bajo vitest, ensureAuthSeeds
+// sobreescribía data/auth.json del repo con el fixture del test (audit 2026-06-20,
+// pasó 3 veces). Ahora respeta DATA_DIR y NUNCA usa el ./data del repo en tests.
+function _earlyDataDir() {
+  if (process.env.DATA_DIR) return process.env.DATA_DIR;
+  if (process.env.VITEST || process.env.NODE_ENV === 'test') {
+    return path.join(os.tmpdir(), 'scm-test-data-fallback-' + process.pid);
+  }
+  return fs.existsSync('/data') ? '/data' : path.join(process.cwd(), 'data');
+}
+let AUTH_FILE = path.join(_earlyDataDir(), "auth.json");
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 function ensureDataDir() {
@@ -1622,7 +1646,7 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
   res.json({ invite, inviteUrl: relativeUrl, fullInviteUrl: fullUrl, emailSent: emailResult.sent, emailError: emailResult.reason || null });
 });
 
-app.post('/api/auth/accept-invite', (req, res) => {
+app.post('/api/auth/accept-invite', acceptInviteLimiter, (req, res) => {
   const { token, password } = req.body || {};
   // 2026-05-23: tipos + length max para password (anti-DOS scrypt overload).
   if (typeof token !== 'string' || typeof password !== 'string' || !token.trim() || !password) {
@@ -3304,7 +3328,18 @@ app.use(express.static(path.join(process.cwd(), "public"), { maxAge: 0, etag: fa
 
 // ── Historial persistente ──
 // Si hay un volume montado en /data (Railway), usarlo; si no, usar ./data local
-const DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(process.cwd(), "data"));
+let _DATA_DIR = process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(process.cwd(), "data"));
+// Audit 2026-06-20: GUARD anti-clobber. En NODE_ENV=test, si la resolución cae en el
+// ./data del REPO (un test sin DATA_DIR propio), redirigir a un temp dir. Sin esto un
+// test sobreescribe data/auth.json + setters.json con fixtures → riesgo de commitear
+// usuarios de test a producción (nota #15). Pasó dos veces en la auditoría 2026-06-20.
+// VITEST=true lo setea vitest en TODOS sus workers (no depende de que el test haya
+// seteado NODE_ENV antes de importar index.js — que es justo donde fallaba el guard).
+if ((process.env.VITEST || process.env.NODE_ENV === 'test') && _DATA_DIR === path.join(process.cwd(), 'data')) {
+  _DATA_DIR = path.join(os.tmpdir(), 'scm-test-data-fallback-' + process.pid);
+  try { fs.mkdirSync(_DATA_DIR, { recursive: true }); } catch {}
+}
+const DATA_DIR = _DATA_DIR;
 const HISTORY_FILE = path.join(DATA_DIR, "history.json");
 
 // Al arrancar: si el volume está vacío pero hay data en el repo, copiarla al volume
@@ -3410,12 +3445,22 @@ if (process.env.NODE_ENV !== 'test') {
   setInterval(() => makeBackup('cron'), BACKUP_INTERVAL_HOURS * 60 * 60 * 1000);
 }
 
+// Audit 2026-06-20: cache por mtime (igual que loadSettersData). history.json puede
+// pesar varios MB; sin esto se re-parseaba en CADA request (GET /history, scraping,
+// dedup) bloqueando el event loop. Devuelve la MISMA ref cacheada (patrón establecido:
+// los handlers mutan + saveHistory inmediato, atómico por el single-thread de Node).
+let _historyCache = null;
+let _historyCacheMtime = 0;
 function loadHistory() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     if (fs.existsSync(HISTORY_FILE)) {
+      const stat = fs.statSync(HISTORY_FILE);
+      if (_historyCache && stat.mtimeMs === _historyCacheMtime) return _historyCache;
       const data = JSON.parse(fs.readFileSync(HISTORY_FILE, "utf8"));
       if (!data.lastPages) data.lastPages = {};
+      _historyCache = data;
+      _historyCacheMtime = stat.mtimeMs;
       return data;
     }
   } catch (e) {
@@ -3428,6 +3473,8 @@ function saveHistory(history) {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), "utf8");
+    // Mantener el cache fresh post-write (sino el próximo load re-parsea de gusto).
+    try { _historyCache = history; _historyCacheMtime = fs.statSync(HISTORY_FILE).mtimeMs; } catch {}
   } catch (e) {
     console.error("Error guardando historial:", e);
   }
@@ -6044,7 +6091,14 @@ app.post('/api/setters/pool-distribute', requireAuth, requireRole('admin'), (req
 // llamadas (callLog) siempre; conserva notas SOLO de los interesados (contexto).
 // Body: { dryRun?: bool }. Operación destructiva → backup automático.
 app.post('/api/admin/recycle-pool', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = false } = req.body || {};
+  const { dryRun = false, confirm } = req.body || {};
+  // Audit 2026-06-20: este endpoint BORRA el trabajo de TODO el pool (desasigna +
+  // resetea miles de leads). El botón se removió tras el one-shot, pero el endpoint
+  // sigue montado → un POST accidental lo dispara. Exigir token de confirmación
+  // explícito (salvo dryRun, que solo cuenta y no muta).
+  if (!dryRun && confirm !== 'RECICLAR_TODO') {
+    return res.status(400).json({ error: 'Operación destructiva: requiere body { confirm: "RECICLAR_TODO" }. Sin eso solo se permite dryRun.' });
+  }
   const data = loadSettersData();
   const leads = Object.values(data.leads || {});
   const byTier = { interesado: 0, sin_contactar: 0, medio: 0, no_interesado: 0 };
@@ -7316,21 +7370,27 @@ app.post('/api/setters/leads/:id/send-placeholder', requireAuth, async (req, res
     return res.status(502).json({ error: 'No se pudo enviar el mail.', detail: result.reason });
   }
 
-  if (!Array.isArray(lead.callLog)) lead.callLog = [];
   const nowIso = new Date().toISOString();
-  lead.callLog.push({
-    ts: nowIso,
-    outcome: 'placeholder_sent',
-    by: u.id || '',
-    notes: `Hold enviado a ${toEmail} para ${fechaTxt}.${customNote ? ' Nota custom: ' + String(customNote).slice(0, 200) : ''}`,
-    channel: 'email',
-    placeholderWhen: startISO,
+  // Audit 2026-06-20: la mutación va DESPUÉS de un await (envío de email) → re-resolvemos
+  // el lead DENTRO del mutex para no pisar writes concurrentes (regla #19).
+  const updated = await mutateSettersData((fresh) => {
+    const l = fresh.leads?.[req.params.id];
+    if (!l) return null;
+    if (!Array.isArray(l.callLog)) l.callLog = [];
+    l.callLog.push({
+      ts: nowIso,
+      outcome: 'placeholder_sent',
+      by: u.id || '',
+      notes: `Hold enviado a ${toEmail} para ${fechaTxt}.${customNote ? ' Nota custom: ' + String(customNote).slice(0, 200) : ''}`,
+      channel: 'email',
+      placeholderWhen: startISO,
+    });
+    if (l.callLog.length > 500) l.callLog = l.callLog.slice(-500);
+    l.placeholderSentAt = nowIso;
+    l.lastContactAt = nowIso;
+    return l;
   });
-  if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
-  lead.placeholderSentAt = nowIso;
-  lead.lastContactAt = nowIso;
-  saveSettersData(data);
-  res.json({ ok: true, lead, sentTo: toEmail, when: startISO });
+  res.json({ ok: true, lead: updated || lead, sentTo: toEmail, when: startISO });
 });
 
 // ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──
@@ -8653,8 +8713,8 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async 
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
       return res.json({ instagram: "", linkedin: "", facebook: "", email: "", phone: "", owner: "" });
     }
-    const hostname = parsedUrl.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.startsWith('10.') || hostname.startsWith('192.168.') || hostname.startsWith('172.') || hostname === '169.254.169.254' || hostname.endsWith('.internal') || hostname.endsWith('.local')) {
+    // Anti-SSRF: helper compartido (arregla el viejo check de 172.x + cubre IPv6/metadata).
+    if (isBlockedHost(parsedUrl.hostname)) {
       return res.json({ instagram: "", linkedin: "", facebook: "", email: "", phone: "", owner: "" });
     }
 
@@ -12871,6 +12931,7 @@ mountWa(app, server, {
   requireRole,
   getSessionFromRequest,
   verifyCredentials: verifyCredentialsHelper,
+  loginLimiter, // Audit 2026-06-20: para rate-limitear /api/auth/desktop-login
   userIdFromSetterId: userIdFromSetterIdHelper,
   markLeadContacted: markLeadContactedHelper,
   // Phase 7 — el motor de campañas necesita leer leads + variantes (viven acá).

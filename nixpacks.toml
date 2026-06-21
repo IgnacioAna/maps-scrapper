@@ -2,4 +2,7 @@
 nixPkgs = ["nodejs_20"]
 
 [start]
-cmd = "node index.js"
+# Audit 2026-06-20: NODE_ENV=production explícito → activa cookie Secure, webhook
+# fail-closed, JWT fail-fast, no-leak de errores y CORS de Socket.IO en Railway.
+# (Requiere JWT_SECRET seteado en Railway — lo está, 64 chars.)
+cmd = "NODE_ENV=production node index.js"

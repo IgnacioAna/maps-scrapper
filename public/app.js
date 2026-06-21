@@ -5759,10 +5759,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           throw new Error(errData.error || ('HTTP ' + r.status));
         }
         const d = await r.json();
-        // Actualizar cache local con el lead reactivado
+        // _leadStore: sincroniza AMBOS cachés (lista + Map del Power Dialer). Antes
+        // solo tocaba callsLeadsCache → el Power Dialer quedaba stale (audit 2026-06-20).
         const idx = callsLeadsCache.findIndex(l => l.id === leadId);
-        if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...d.lead, id: leadId };
-        else callsLeadsCache.push({ ...d.lead, id: leadId });
+        if (idx >= 0) {
+          _leadStoreApply(leadId, { ...d.lead, id: leadId });
+        } else {
+          callsLeadsCache.push({ ...d.lead, id: leadId });
+          _rebuildCallsLeadsIndex();
+        }
         _callsRenderCountryChips();
         renderCallsList();
         renderCallsStats();

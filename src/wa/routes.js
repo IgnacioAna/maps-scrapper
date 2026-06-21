@@ -173,7 +173,7 @@ export function registerWaRoutes(app, deps) {
 
   // Endpoint para que la desktop obtenga un JWT corto (Bearer) y se conecte al WS.
   // El frontend admin sigue usando cookie; la desktop usa esto.
-  app.post("/api/auth/desktop-login", express_json(app), async (req, res) => {
+  app.post("/api/auth/desktop-login", ...(deps.loginLimiter ? [deps.loginLimiter] : []), express_json(app), async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: "email y password requeridos" });
     // Reusamos las helpers de GoogleSrapper vía deps

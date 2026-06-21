@@ -10,6 +10,7 @@ import {
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
+  isBlockedHost,
 } from "../src/enrichment.js";
 
 // Helper: fabrica un fetchImpl falso que devuelve un body con status dado.
@@ -151,6 +152,14 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
     expect(r.error).toBe("junk_website");
   });
 
+  it("bloquea hosts internos (anti-SSRF) sin hacer fetch", async () => {
+    let fetched = false;
+    const spy = async () => { fetched = true; return { ok: true, status: 200, text: async () => "info@x.com" }; };
+    const r = await enrichFromWebsite("http://169.254.169.254/latest/meta-data/", { fetchImpl: spy });
+    expect(r.error).toBe("blocked_host");
+    expect(fetched).toBe(false); // nunca pegó al host interno
+  });
+
   it("degrada cuando el sitio no tiene email", async () => {
     const r = await enrichFromWebsite("clinica.com", {
       fetchImpl: mockFetch({ body: "<h1>Hola</h1>" }),
@@ -183,6 +192,19 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
     });
     expect(r.email).toBeNull();
     expect(r.error).toBe("timeout");
+  });
+});
+
+describe("isBlockedHost (anti-SSRF)", () => {
+  it("bloquea internos / loopback / metadata / privadas", () => {
+    for (const h of ["localhost", "127.0.0.1", "10.0.0.5", "192.168.1.1", "172.16.0.1", "172.31.255.255", "169.254.169.254", "::1", "fe80::1", "metadata.internal", "foo.local", "0.0.0.0", "100.64.0.1"]) {
+      expect(isBlockedHost(h)).toBe(true);
+    }
+  });
+  it("permite hosts públicos (incluido 172.x fuera de 16-31 — fix del bug viejo)", () => {
+    for (const h of ["arteoral.com", "www.google.com", "8.8.8.8", "172.15.0.1", "172.32.0.1", "example.com.ar"]) {
+      expect(isBlockedHost(h)).toBe(false);
+    }
   });
 });
 

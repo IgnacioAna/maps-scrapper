@@ -1,0 +1,23 @@
+name: Tests
+
+# Audit 2026-06-20: antes nada corría los tests solo. Esto los corre en cada push
+# a main/master y en cada PR → te avisa si algo rompe ANTES de que Railway deploye.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+        env:
+          NODE_ENV: test

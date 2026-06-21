@@ -131,6 +131,35 @@ function hostFromUrl(url) {
 }
 
 /**
+ * PURA. ¿El host apunta a la red interna / loopback / metadata cloud? (anti-SSRF).
+ * true = bloquear el fetch. Cubre localhost, IPv4 privadas/loopback/link-local/CGNAT
+ * (incluido el metadata 169.254.169.254), IPv6 loopback/link-local/unique-local, y
+ * sufijos internos. Arregla el bug del check viejo `startsWith('172.')` que bloqueaba
+ * TODO 172.x (172.16-31 es privado, pero 172.0-15 y 172.32-255 son públicos).
+ */
+export function isBlockedHost(hostname) {
+  if (!hostname || typeof hostname !== "string") return true; // sin host → bloquear
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, ""); // quita brackets IPv6
+  if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".internal") || h.endsWith(".local")) return true;
+  // IPv6 loopback (::1), link-local (fe80::), unique-local (fc00::/7 → fc/fd)
+  if (h === "::1" || h.startsWith("fe80:") || h.startsWith("fc") || h.startsWith("fd")) return true;
+  // IPv4
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const o = m.slice(1).map(Number);
+    if (o.some((x) => x > 255)) return true;
+    const [a, b] = o;
+    if (a === 0 || a === 127) return true;                 // this-network / loopback
+    if (a === 10) return true;                              // privada
+    if (a === 192 && b === 168) return true;               // privada
+    if (a === 172 && b >= 16 && b <= 31) return true;      // privada (FIX: solo 16-31)
+    if (a === 169 && b === 254) return true;               // link-local (metadata 169.254.169.254)
+    if (a === 100 && b >= 64 && b <= 127) return true;     // CGNAT
+  }
+  return false;
+}
+
+/**
  * Puntúa un candidato a email. Mayor = más probable que sea el contacto real.
  * @param {object} c { email, fromMailto:boolean }
  * @param {string} siteHost host del sitio (sin www) para preferir mismo dominio
@@ -360,6 +389,9 @@ export async function enrichFromWebsite(website, opts = {}) {
     // Filtrar websites-basura típicos (wa.me, links de redes que no son sitio).
     const host = hostFromUrl(url);
     if (!host) return { email: null, ads: null, social: {}, age: {}, error: "bad_url" };
+    // Anti-SSRF: el website llega por alta manual/CSV → bloquear hosts internos
+    // antes de hacer fetch (no exfiltrar metadata cloud ni pegarle a la red privada).
+    if (isBlockedHost(host)) return { email: null, ads: null, social: {}, age: {}, error: "blocked_host" };
     if (/^(wa\.me|api\.whatsapp\.com|whatsapp\.com|m\.facebook\.com|facebook\.com|instagram\.com|t\.me|linktr\.ee|goo\.gl|bit\.ly|maps\.google\.)/i.test(host)) {
       return { email: null, ads: null, social: {}, age: {}, error: "junk_website" };
     }
@@ -540,6 +572,7 @@ export default {
   detectAdPixels,
   extractSocialFromHtml,
   extractAgeFromHtml,
+  isBlockedHost,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
