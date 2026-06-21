@@ -1907,43 +1907,6 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 // Estrategia: si la URL tiene > 15 digitos, intentamos truncar al primer
 // numero limpio. Si no se puede, limpiamos whatsappUrl (el setter vera "sin WSP"
 // y puede contactar de otra forma o dropear el lead).
-app.post('/api/admin/backfill-corrupt-phones', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = false } = req.body || {};
-  const data = loadSettersData();
-  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, fixed: 0, cleared: 0, sample: [] });
-  let scanned = 0, fixed = 0, cleared = 0;
-  const sample = [];
-  for (const id of Object.keys(data.leads)) {
-    const lead = data.leads[id];
-    scanned++;
-    const phone = String(lead.phone || '').trim();
-    if (!phone) continue;
-    // 1) Caso "ext.": cortar antes de la extensión
-    let cleanedPhone = phone;
-    const extMatch = cleanedPhone.match(/^(.+?)\s*(?:ext|extn|extension|int)\.?\s*\d+\s*$/i);
-    if (extMatch) cleanedPhone = extMatch[1].trim();
-    const cleanedDigits = cleanedPhone.replace(/\D/g, '');
-    // 2) Caso digits absurdamente largos (>15): no podemos adivinar -> limpiar URL
-    const urlMatch = (lead.whatsappUrl || '').match(/wa\.me\/(\d+)/);
-    const urlDigits = urlMatch ? urlMatch[1] : '';
-    const isCorrupt = urlDigits.length > 15 || cleanedDigits.length > 15;
-    if (extMatch && cleanedDigits.length >= 8 && cleanedDigits.length <= 15) {
-      // Reconstruir URL con phone limpio
-      const newUrl = buildWhatsAppUrl(cleanedPhone, lead.country || '', lead.openMessage || '');
-      if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: newUrl, action: 'cleaned-ext' });
-      if (!dryRun) { lead.phone = cleanedPhone; lead.whatsappUrl = newUrl; }
-      fixed++;
-    } else if (isCorrupt) {
-      // No podemos adivinar — limpiar URL y marcar el lead para revision manual
-      if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: '(removed)', action: 'cleared-corrupt' });
-      if (!dryRun) { lead.whatsappUrl = ''; }
-      cleared++;
-    }
-  }
-  if (!dryRun && (fixed + cleared) > 0) saveSettersData(data);
-  res.json({ scanned, fixed, cleared, dryRun, sample });
-});
-
 // Backfill país desde el prefijo del teléfono (2026-06-17). Rellena lead.country
 // SOLO cuando está vacío, derivándolo del prefijo internacional. NO sobrescribe
 // países existentes. Idempotente. Soporta dryRun para previsualizar. Hace backup.
@@ -2470,61 +2433,10 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
 // prefijo +52 (o cualquier prefijo que no sea +1) y los corrige a +1.
 // Resultado del bug en zona fronteriza Tijuana/Juarez/Reynosa donde clinicas
 // usan numero US pero country=Mexico.
-app.post('/api/admin/backfill-us-borderphones', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = false } = req.body || {};
-  const data = loadSettersData();
-  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, fixed: 0, sample: [] });
-  let scanned = 0, fixed = 0;
-  const sample = [];
-  for (const id of Object.keys(data.leads)) {
-    const lead = data.leads[id];
-    scanned++;
-    const phone = String(lead.phone || '').trim();
-    const looksUS = /^\(\d{3}\)\s?\d{3}[-\s]?\d{4}$/.test(phone);
-    if (!looksUS) continue;
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length !== 10) continue;
-    const newUrl = `https://wa.me/1${digits}${lead.openMessage ? `?text=${encodeURIComponent(lead.openMessage)}` : ''}`;
-    if (lead.whatsappUrl === newUrl) continue;
-    if (sample.length < 10) sample.push({ id, name: lead.name, phone, before: lead.whatsappUrl, after: newUrl });
-    if (!dryRun) lead.whatsappUrl = newUrl;
-    fixed++;
-  }
-  if (!dryRun && fixed > 0) saveSettersData(data);
-  res.json({ scanned, fixed, dryRun, sample });
-});
-
 // Backfill: leads viejos cuyo whatsappUrl quedo SIN ?text= pero tienen openMessage.
 // Resultado del bug historico: el setter abre wa.me/PHONE y el WSP se abre vacio
 // aunque hay openMessage almacenado. Este endpoint repara los whatsappUrl
 // para que incluyan el openMessage encoded.
-app.post('/api/admin/backfill-wa-text', requireAuth, requireRole('admin'), (req, res) => {
-  const { setterId = '', dryRun = false } = req.body || {};
-  const data = loadSettersData();
-  if (!data.leads || typeof data.leads !== 'object') {
-    return res.json({ scanned: 0, fixed: 0, sample: [] });
-  }
-  let scanned = 0, fixed = 0;
-  const sample = [];
-  for (const id of Object.keys(data.leads)) {
-    const lead = data.leads[id];
-    if (setterId && lead.assignedTo !== setterId) continue;
-    scanned++;
-    const url = (lead.whatsappUrl || '').trim();
-    const msg = (lead.openMessage || '').trim();
-    if (!url || !msg) continue;
-    if (!url.includes('wa.me/')) continue;
-    if (url.includes('?text=') || url.includes('&text=')) continue;
-    const sep = url.includes('?') ? '&' : '?';
-    const newUrl = `${url}${sep}text=${encodeURIComponent(msg)}`;
-    if (sample.length < 10) sample.push({ id, name: lead.name, before: url, after: newUrl });
-    if (!dryRun) lead.whatsappUrl = newUrl;
-    fixed++;
-  }
-  if (!dryRun && fixed > 0) saveSettersData(data);
-  res.json({ scanned, fixed, dryRun, sample });
-});
-
 // Backfill del campo lead.doctor extrayendo "Dr./Dra. Nombre" del lead.name.
 // El scraper IA solo puebla el doctor en ~21% de los casos; muchos otros leads
 // tienen el nombre del profesional en el propio name de la ficha (ej.
@@ -2541,31 +2453,6 @@ function _extractDoctorFromName(name) {
   if (!m) return '';
   return 'Dr/a. ' + m[1].trim();
 }
-app.post('/api/admin/backfill-doctor-from-name', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = false } = req.body || {};
-  const data = loadSettersData();
-  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, updated: 0, sample: [] });
-  let scanned = 0, updated = 0, alreadyHad = 0;
-  const sample = [];
-  for (const id of Object.keys(data.leads)) {
-    const lead = data.leads[id];
-    scanned++;
-    const current = (lead.doctor || '').trim();
-    if (current && !current.toUpperCase().includes('N/A')) { alreadyHad++; continue; }
-    const extracted = _extractDoctorFromName(lead.name);
-    if (!extracted) continue;
-    if (sample.length < 15) sample.push({ id, name: lead.name, before: lead.doctor || '', after: extracted });
-    if (!dryRun) {
-      lead.doctor = extracted;
-      lead.doctorSource = 'regex_from_name';
-      lead.doctorBackfilledAt = new Date().toISOString();
-    }
-    updated++;
-  }
-  if (!dryRun && updated > 0) saveSettersData(data);
-  res.json({ scanned, updated, alreadyHad, dryRun, sample });
-});
-
 app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, res) => {
   const { setterId = '', dryRun = false, onlySuspicious = true } = req.body || {};
   const data = loadSettersData();
@@ -4001,51 +3888,6 @@ app.get('/api/history/suggest-page', requireAuth, requireRole('admin'), (req, re
 
 // Admin: purgar entries huerfanas de lastPages que no tienen entries respaldando.
 // Util para limpiar contaminacion de scrapes viejos/cancelados.
-app.post('/api/admin/history/clean-last-pages', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = false } = req.body || {};
-  const history = loadHistory();
-  if (!history.lastPages || typeof history.lastPages !== 'object') {
-    return res.json({ scanned: 0, removed: 0, sample: [] });
-  }
-  // Index entries by (query, baseLoc) para chequeo rapido
-  const realCombos = new Set();
-  for (const k in (history.entries || {})) {
-    const e = history.entries[k];
-    if (!e.query || !e.location) continue;
-    const q = e.query.toLowerCase().trim();
-    const baseLoc = e.location.toLowerCase().trim();
-    realCombos.add(`${q}_${baseLoc}`);
-  }
-  const before = Object.keys(history.lastPages).length;
-  const removed = [];
-  for (const key of Object.keys(history.lastPages)) {
-    // key formato: "${query}_${location}". Si exact match no esta en realCombos,
-    // tampoco fuzzy match. Verificamos si HAY entries que matcheen fuzzy con
-    // esta combinacion.
-    const [keyQ, keyLoc] = key.split('_', 2);
-    let found = false;
-    for (const combo of realCombos) {
-      const [comboQ, comboLoc] = combo.split('_', 2);
-      if (!comboQ || !comboLoc) continue;
-      const qMatch = comboQ.includes(keyQ) || keyQ.includes(comboQ);
-      const lMatch = comboLoc.includes(keyLoc) || keyLoc.includes(comboLoc);
-      if (qMatch && lMatch) { found = true; break; }
-    }
-    if (!found) {
-      removed.push({ key, value: history.lastPages[key] });
-      if (!dryRun) delete history.lastPages[key];
-    }
-  }
-  if (!dryRun && removed.length > 0) saveHistory(history);
-  res.json({
-    scanned: before,
-    removed: removed.length,
-    remaining: before - removed.length,
-    dryRun,
-    sample: removed.slice(0, 15)
-  });
-});
-
 // ══════════════════════════════════════════════════════════════
 // ── MÓDULO SETTERS v2 ──
 // ══════════════════════════════════════════════════════════════
@@ -4866,43 +4708,6 @@ app.delete('/api/setters/team/:id/phones/:phoneId', requireAuth, (req, res) => {
 // como nuevos para reasignar a otro setter sin contaminación.
 // Limpia conexion, respondio, calificado, interes, estado, lastContactAt,
 // fechaContacto, apertura, interactions[], notes[], followUps, decisor.
-app.post('/api/setters/leads/orphans/reset', requireAuth, requireRole('admin'), (req, res) => {
-  const data = loadSettersData();
-  const setterIds = new Set((data.setters || []).map((s) => s.id));
-  let resetCount = 0;
-  for (const id in data.leads) {
-    const lead = data.leads[id];
-    if (lead.assignedTo && setterIds.has(lead.assignedTo)) continue; // tiene dueño válido, saltar
-    // Limpiar todo
-    lead.conexion = '';
-    lead.respondio = false;
-    lead.calificado = false;
-    lead.interes = null;
-    lead.estado = 'sin_contactar';
-    lead.lastContactAt = null;
-    lead.fechaContacto = null;
-    lead.apertura = '';
-    lead.interactions = [];
-    lead.notes = [];
-    lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
-    lead.followUpStartedAt = null;
-    lead.callAttempts = 0;
-    lead.callLog = [];
-    // Bug fix 2026-05-23: ensureLeadDefaults usa '' para callbackAt/phoneStatus.
-    // Antes acá los seteábamos a null, generando shape inconsistente que el frontend
-    // necesitaba coalescer en cada render (null vs '' para strings).
-    lead.callbackAt = '';
-    lead.phoneStatus = '';
-    lead.asistio = null;
-    lead.assignedTo = ''; // normalizar a vacío
-    resetCount++;
-  }
-  const backup = resetCount > 0 ? makeBackup('pre-orphans-reset') : null;
-  saveSettersData(data);
-  console.log(`[orphans:reset] ${resetCount} leads huérfanos reseteados a limpio. Backup: ${backup?.dir || 'none'}`);
-  res.json({ ok: true, resetCount, backup: backup?.dir || null });
-});
-
 // POST /api/setters/team/:id/reset-work — admin: deja todos los leads del
 // setter como sin_contactar. Borra conexion/respondio/calificado/interes/
 // estado avanzado / lastContactAt / fechaContacto / interactions / followUps.
@@ -6811,60 +6616,10 @@ app.post('/api/setters/asistencia/backfill', requireAuth, requireRole('admin'), 
 // Sprint 19: Migración one-shot — normalizar todos los teléfonos a E.164
 // estricto (sin espacios, paréntesis, guiones). Idempotente: solo toca los
 // que cambian. Devuelve diff para audit. Admin only.
-app.post('/api/setters/leads/migrate-phones', requireAuth, requireRole('admin'), (req, res) => {
-  const data = loadSettersData();
-  let updated = 0;
-  let skipped = 0;
-  let invalid = 0;
-  const samples = [];
-  for (const id in data.leads) {
-    const l = data.leads[id];
-    if (!l || !l.phone) { skipped++; continue; }
-    const before = String(l.phone).trim();
-    const after = sanitizePhoneE164(before);
-    if (!after) {
-      invalid++;
-      if (samples.length < 10) samples.push({ id, before, after: null, reason: 'unparseable' });
-      continue;
-    }
-    if (after === before) { skipped++; continue; }
-    if (samples.length < 10) samples.push({ id, before, after, reason: 'normalized' });
-    l.phone = after;
-    updated++;
-  }
-  if (updated > 0) saveSettersData(data);
-  res.json({ ok: true, updated, skipped, invalid, total: Object.keys(data.leads).length, samples });
-});
-
 // Sprint 19: Reclasificar leads existentes — los que tienen teléfono pero
 // ninguna señal de WhatsApp pasan a conexion='sin_wsp' (van a Llamadas).
 // Idempotente: solo toca leads con conexion vacía (no pisa estado del setter).
 // Admin only. Devuelve cuenta + samples para audit.
-app.post('/api/setters/leads/reroute-no-wsp', requireAuth, requireRole('admin'), (req, res) => {
-  const data = loadSettersData();
-  let rerouted = 0;
-  let skipped = 0;
-  const samples = [];
-  for (const id in data.leads) {
-    const l = data.leads[id];
-    if (!l) { skipped++; continue; }
-    // Solo tocar leads sin progreso de setteo
-    if (l.conexion) { skipped++; continue; }
-    if (l.respondio || l.calificado || l.estado !== 'sin_contactar') { skipped++; continue; }
-    const prob = computeWspProbability(l);
-    if (prob === 'low') {
-      l.wspProbability = 'low';
-      l.conexion = 'sin_wsp';
-      rerouted++;
-      if (samples.length < 10) samples.push({ id, name: l.name, phone: l.phone });
-    } else {
-      skipped++;
-    }
-  }
-  if (rerouted > 0) saveSettersData(data);
-  res.json({ ok: true, rerouted, skipped, total: Object.keys(data.leads).length, samples });
-});
-
 app.delete('/api/setters/leads/:id', requireAuth, requireRole('admin'), (req, res) => {
   const data = loadSettersData();
   if (data.leads[req.params.id]) { delete data.leads[req.params.id]; saveSettersData(data); }

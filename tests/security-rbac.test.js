@@ -119,6 +119,17 @@ describe("RBAC admin-only · 403 para setter y supervisor", () => {
     { method: "post", url: "/api/mercury/config/reset-prompt", body: {} },
     { method: "post", url: "/api/setters/asistencia/backfill" },
     { method: "post", url: "/api/scrape", body: { query: "x", location: "y" } },
+    // Audit 2026-06-20: enrich-* / telnyx CRUD / recycle / backfills — admin-only.
+    { method: "post", url: "/api/admin/enrich-leads", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/enrich-brief", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/validate-numbers", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/recycle-pool", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/backfill-country", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/backfill-signals", body: { dryRun: true } },
+    { method: "post", url: "/api/admin/backfill-websites", body: { dryRun: true } },
+    { method: "put", url: "/api/telnyx/config", body: { countryRouting: {} } },
+    { method: "post", url: "/api/telnyx/scripts", body: { label: "x", trigger: "opener", text: "y" } },
+    { method: "post", url: "/api/telnyx/scripts/reset-to-seed", body: {} },
   ];
 
   for (const route of ADMIN_ONLY) {
@@ -160,6 +171,52 @@ describe("RBAC admin+supervisor · setter 403, supervisor OK", () => {
       expect([200, 304]).toContain(r.status);
     });
   }
+});
+
+// ────────────────────────────────────────────────────────────────────────
+// enrich-* / telnyx · funcional SIN RED (audit 2026-06-20). No setea API_KEY
+// ni keys de IA/telnyx → los paths externos cortan en 503; dryRun no llama afuera.
+// ────────────────────────────────────────────────────────────────────────
+describe("enrich-* / telnyx · funcional (admin, sin red)", () => {
+  it("enrich-leads dryRun (admin) → 200 sin llamar afuera", async () => {
+    const r = await request(app).post("/api/admin/enrich-leads").set("Cookie", adminCookie).send({ dryRun: true });
+    expect(r.status).toBe(200);
+    expect(r.body.dryRun).toBe(true);
+  });
+
+  // dryRun (recon) NO llama afuera. Con API_KEY/keys en .env (dev) → 200; sin ellas
+  // (CI) → 503. Lo importante: pasa RBAC y no tira 500. Ambos estados son válidos.
+  it("enrich-brief dryRun (admin) → 200|503, nunca 500", async () => {
+    const r = await request(app).post("/api/admin/enrich-brief").set("Cookie", adminCookie).send({ dryRun: true });
+    expect([200, 503]).toContain(r.status);
+  });
+
+  it("validate-numbers dryRun (admin) → 200|503, nunca 500", async () => {
+    const r = await request(app).post("/api/admin/validate-numbers").set("Cookie", adminCookie).send({ dryRun: true });
+    expect([200, 503]).toContain(r.status);
+  });
+
+  it("serpapi-account: setter 403 (RBAC; no probamos admin para no pegarle a la red)", async () => {
+    const rs = await request(app).get("/api/admin/serpapi-account").set("Cookie", setterACookie);
+    expect(rs.status).toBe(403);
+  });
+
+  it("GET /api/telnyx/config: sin auth 401, setter 200 (config acotada)", async () => {
+    const r401 = await request(app).get("/api/telnyx/config");
+    expect(r401.status).toBe(401);
+    const rs = await request(app).get("/api/telnyx/config").set("Cookie", setterACookie);
+    expect(rs.status).toBe(200);
+  });
+
+  it("GET /api/telnyx/scripts: setter 200 (auth, todos los roles)", async () => {
+    const r = await request(app).get("/api/telnyx/scripts").set("Cookie", setterACookie);
+    expect(r.status).toBe(200);
+  });
+
+  it("GET /api/telnyx/metrics: setter 403 (admin+supervisor)", async () => {
+    const r = await request(app).get("/api/telnyx/metrics").set("Cookie", setterACookie);
+    expect(r.status).toBe(403);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────
