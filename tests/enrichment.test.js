@@ -131,12 +131,14 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
       email: null,
       ads: null,
       social: {},
+      age: {},
       error: "no_website",
     });
     expect(await enrichFromWebsite(null, { fetchImpl: mockFetch() })).toEqual({
       email: null,
       ads: null,
       social: {},
+      age: {},
       error: "no_website",
     });
   });

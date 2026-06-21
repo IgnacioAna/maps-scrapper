@@ -2045,7 +2045,9 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
     // Fetch del sitio UNA vez (si tiene web real y nunca se chequeó). Ese fetch
     // saca email + chequea ads de una. Marcado con adsCheckedAt → no se repite
     // aunque no haya encontrado email (sino la barrida loopea infinito).
-    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && !l.adsCheckedAt;
+    // Re-fetch del sitio si nunca se chequeó (email/ads/social) O si todavía no se
+    // chequeó la antigüedad (leads enriquecidos antes de esta feature). Es HTTP gratis.
+    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && (!l.adsCheckedAt || !l.ageCheckedAt);
     const isUS = String(l.country || '').trim() === 'Estados Unidos';
     // NPI: intentar UNA vez (marcado con npiCheckedAt) — sino loopea en los que no matchean.
     const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim() && !l.npiCheckedAt;
@@ -2060,7 +2062,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   // Fetches con concurrencia limitada, FUERA del mutex.
   const results = {};
   const errors = {};
-  let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0;
+  let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0, agesFound = 0;
   const CONC = 8;
   for (let i = 0; i < candidates.length; i += CONC) {
     const chunk = candidates.slice(i, i + CONC);
@@ -2069,6 +2071,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
       if (c.needsWeb) {
         const w = await enrichFromWebsite(c.website, { timeoutMs: 6000 });
         out.adsChecked = true;
+        out.ageChecked = true;
         if (w.email) { out.email = w.email; emailsFound++; }
         else if (w.error) errors[w.error] = (errors[w.error] || 0) + 1;
         if (w.ads && w.ads.runsAds) {
@@ -2084,6 +2087,12 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
           if (w.social.instagram) out.instagram = w.social.instagram;
           if (w.social.facebook) out.facebook = w.social.facebook;
           socialFound++;
+        }
+        // Antigüedad GRATIS del mismo HTML ("desde XXXX" / "X años de experiencia").
+        if (w.age && (w.age.yearsActive != null || w.age.foundedYear)) {
+          if (w.age.yearsActive != null) out.yearsActive = w.age.yearsActive;
+          if (w.age.foundedYear) out.foundedYear = w.age.foundedYear;
+          agesFound++;
         }
       }
       if (c.needsOwner) {
@@ -2111,6 +2120,10 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.specialty) lead.specialty = r.specialty;
         if (r.npi) lead.npi = r.npi;
         if (r.npiChecked) lead.npiCheckedAt = new Date().toISOString();
+        // Antigüedad del sitio web — no pisa si ya la teníamos.
+        if (r.ageChecked) lead.ageCheckedAt = new Date().toISOString();
+        if (r.yearsActive != null && lead.yearsActive == null) lead.yearsActive = r.yearsActive;
+        if (r.foundedYear && !lead.foundedYear) lead.foundedYear = r.foundedYear;
         if (r.adsChecked) {
           lead.adsCheckedAt = new Date().toISOString();
           lead.runsAds = !!r.runsAds;
@@ -2127,7 +2140,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
     });
   }
 
-  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, errors });
+  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, agesFound, errors });
 });
 
 // Phase 10 B2: validación de número (Telnyx Number Lookup) — opt-in, batch con cap.

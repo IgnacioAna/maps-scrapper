@@ -314,42 +314,66 @@ export function extractSocialFromHtml(html) {
 }
 
 /**
+ * PURA. Extrae la antigüedad de la clínica del HTML del sitio: "desde XXXX",
+ * "fundada en AÑO", "X años de experiencia/trayectoria". Devuelve
+ * { foundedYear:"", yearsActive:null }. Gratis, del mismo fetch del email.
+ */
+export function extractAgeFromHtml(html) {
+  const out = { foundedYear: "", yearsActive: null };
+  if (!html || typeof html !== "string") return out;
+  // Sacar <script> y tags → no matchear años dentro de URLs/JS/copyright.
+  const text = html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const nowY = new Date().getFullYear();
+  const since = text.match(/\b(?:desde(?:\s+el\s+a[ñn]o)?|fundad[oa]s?\s+en|estable?cid[oa]s?\s+en|operando\s+desde|inaugurad[oa]s?\s+en|a[ñn]o\s+de\s+fundaci[oó]n[:\s]*)\s*(19[5-9]\d|20[0-4]\d)\b/i);
+  const exp = text.match(/\b(?:m[aá]s\s+de\s+)?(\d{1,3})\s*a[ñn]os\s+(?:de\s+)?(?:experiencia|trayectoria|en\s+el\s+mercado|atendiendo|brindando|cuidando|al\s+servicio)/i);
+  if (since) {
+    const y = parseInt(since[1], 10); const age = nowY - y;
+    if (age >= 0 && age <= 120) { out.foundedYear = String(y); out.yearsActive = age; }
+  } else if (exp) {
+    const y = parseInt(exp[1], 10);
+    if (y > 0 && y <= 120) { out.yearsActive = y; out.foundedYear = String(nowY - y); }
+  }
+  return out;
+}
+
+/**
  * Hace fetch del website del lead y extrae el email más probable + señales de
- * publicidad (píxeles) + redes (instagram/facebook). Nunca lanza. Degrada a
- * { email:null, ads:null, social:{}, error }.
+ * publicidad (píxeles) + redes (instagram/facebook) + antigüedad. Nunca lanza.
+ * Degrada a { email:null, ads:null, social:{}, age:{}, error }.
  *
  * @param {string} website
  * @param {{ fetchImpl?: Function, timeoutMs?: number }} [opts]
- * @returns {Promise<{ email: string|null, ads: object|null, social: object, error: string|null }>}
+ * @returns {Promise<{ email: string|null, ads: object|null, social: object, age: object, error: string|null }>}
  */
 export async function enrichFromWebsite(website, opts = {}) {
   const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
   const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
   try {
     if (!website || typeof website !== "string" || !website.trim()) {
-      return { email: null, ads: null, social: {}, error: "no_website" };
+      return { email: null, ads: null, social: {}, age: {}, error: "no_website" };
     }
-    if (!fetchImpl) return { email: null, ads: null, social: {}, error: "no_fetch" };
+    if (!fetchImpl) return { email: null, ads: null, social: {}, age: {}, error: "no_fetch" };
 
     let url = website.trim();
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
     // Filtrar websites-basura típicos (wa.me, links de redes que no son sitio).
     const host = hostFromUrl(url);
-    if (!host) return { email: null, ads: null, social: {}, error: "bad_url" };
+    if (!host) return { email: null, ads: null, social: {}, age: {}, error: "bad_url" };
     if (/^(wa\.me|api\.whatsapp\.com|whatsapp\.com|m\.facebook\.com|facebook\.com|instagram\.com|t\.me|linktr\.ee|goo\.gl|bit\.ly|maps\.google\.)/i.test(host)) {
-      return { email: null, ads: null, social: {}, error: "junk_website" };
+      return { email: null, ads: null, social: {}, age: {}, error: "junk_website" };
     }
 
     const r = await safeFetch(url, { fetchImpl, timeoutMs });
-    if (!r.ok) return { email: null, ads: null, social: {}, error: r.error || "fetch_failed" };
+    if (!r.ok) return { email: null, ads: null, social: {}, age: {}, error: r.error || "fetch_failed" };
 
     const email = extractEmailFromHtml(r.text, url);
     const ads = detectAdPixels(r.text);
     const social = extractSocialFromHtml(r.text);
-    return { email: email || null, ads, social, error: email ? null : "no_email_found" };
+    const age = extractAgeFromHtml(r.text);
+    return { email: email || null, ads, social, age, error: email ? null : "no_email_found" };
   } catch {
-    return { email: null, ads: null, social: {}, error: "unexpected" };
+    return { email: null, ads: null, social: {}, age: {}, error: "unexpected" };
   }
 }
 
@@ -515,6 +539,7 @@ export default {
   extractEmailFromHtml,
   detectAdPixels,
   extractSocialFromHtml,
+  extractAgeFromHtml,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
