@@ -2143,6 +2143,41 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, agesFound, errors });
 });
 
+// GET /api/admin/serpapi-account — uso/saldo de SerpApi (como el saldo de Telnyx).
+// Consulta https://serpapi.com/account server-side (la key nunca al browser). El plan
+// tiene 2 límites: searches/MES (total_searches_left) y un throttle de 200/HORA.
+// Cache 60s. ?fresh=1 fuerza.
+let _serpAccountCache = { ts: 0, data: null };
+app.get('/api/admin/serpapi-account', requireAuth, requireRole('admin', 'supervisor'), async (req, res) => {
+  const serpKey = process.env.API_KEY;
+  if (!serpKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada.' });
+  const fresh = req.query.fresh === '1';
+  if (!fresh && _serpAccountCache.data && (Date.now() - _serpAccountCache.ts < 60000)) {
+    return res.json({ ..._serpAccountCache.data, cached: true });
+  }
+  try {
+    const r = await Promise.race([
+      fetch('https://serpapi.com/account?api_key=' + encodeURIComponent(serpKey)),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    ]);
+    if (!r.ok) return res.status(502).json({ error: 'SerpApi devolvió ' + r.status });
+    const j = await r.json();
+    const out = {
+      planName: j.plan_name || j.plan_id || '',
+      searchesPerMonth: j.searches_per_month ?? null,
+      totalSearchesLeft: j.total_searches_left ?? j.plan_searches_left ?? null,
+      thisMonthUsage: j.this_month_usage ?? null,
+      thisHourSearches: j.this_hour_searches ?? null,
+      rateLimitPerHour: j.account_rate_limit_per_hour ?? j.plan_rate_limit_per_hour ?? null,
+      lastHourSearches: j.last_hour_searches ?? null,
+    };
+    _serpAccountCache = { ts: Date.now(), data: out };
+    res.json(out);
+  } catch (e) {
+    res.status(500).json({ error: 'No se pudo consultar SerpApi: ' + (e?.message || 'error') });
+  }
+});
+
 // Phase 10 B2: validación de número (Telnyx Number Lookup) — opt-in, batch con cap.
 // Persiste lead.phoneType (mobile/landline/voip) + carrier. Mata el "38% invalid"
 // antes de discar. Fetches FUERA del mutex; aplica adentro. 💲 cuesta ~$0.0015/lookup.

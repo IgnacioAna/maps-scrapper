@@ -8987,6 +8987,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
       cmdReconBtn.disabled = false; cmdReconBtn.textContent = lbl;
     });
+    // Uso de SerpApi: búsquedas restantes del mes + límite por hora del plan.
+    const cmdSerpUsageBtn = document.getElementById('cmd-serpapi-usage-btn');
+    if (cmdSerpUsageBtn) cmdSerpUsageBtn.addEventListener('click', async () => {
+      const out = document.getElementById('cmd-serpapi-usage-result');
+      cmdSerpUsageBtn.disabled = true; const lbl = cmdSerpUsageBtn.textContent; cmdSerpUsageBtn.textContent = 'Consultando...';
+      if (out) out.textContent = '';
+      try {
+        const r = await fetch(apiUrl('/api/admin/serpapi-account?fresh=1'), { credentials: 'include' });
+        const d = await r.json();
+        if (!r.ok) { if (out) out.innerHTML = '⚠️ ' + escHtml(d.error || 'error'); }
+        else if (out) {
+          const left = d.totalSearchesLeft != null ? d.totalSearchesLeft : '?';
+          const month = d.searchesPerMonth != null ? d.searchesPerMonth : '?';
+          const used = d.thisMonthUsage != null ? d.thisMonthUsage : '?';
+          const rate = d.rateLimitPerHour != null ? d.rateLimitPerHour : 200;
+          const hour = d.thisHourSearches != null ? d.thisHourSearches : (d.lastHourSearches != null ? d.lastHourSearches : null);
+          out.innerHTML = `Plan <b>${escHtml(String(d.planName || '—'))}</b>: <b>${left}</b>/${month} búsquedas restantes este mes (usadas ${used}).<br>` +
+            `Límite por hora del plan: <b>${rate}</b>${hour != null ? ` · esta hora llevás ~<b>${hour}</b>` : ''}.<br>` +
+            `<span style="color:var(--text-tertiary);">Si la barrida se frena, es por el límite de ${rate}/hora (no por falta de cuota). La barrida ya se autorregula para no pasarlo.</span>`;
+        }
+      } catch (e) { if (out) out.textContent = '⚠️ error de red'; }
+      cmdSerpUsageBtn.disabled = false; cmdSerpUsageBtn.textContent = lbl;
+    });
     // Barrida brief por país: loop de lotes hasta terminar el país o el tope.
     let _briefSweepStop = false;
     const cmdSweepBtn = document.getElementById('cmd-brief-sweep-btn');
@@ -9018,7 +9041,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm(`Barrer ${country}: generar briefs hasta ${maxBriefs} leads (o hasta terminar el país). Gasta SerpApi + LLM. ¿Seguir?`)) return;
       _briefSweepStop = false;
       cmdSweepBtn.disabled = true; cmdSweepStop.classList.remove('hidden');
-      let totalBriefed = 0, totalSkipped = 0, rounds = 0, consecErrors = 0;
+      let totalBriefed = 0, totalSkipped = 0, rounds = 0, consecErrors = 0, throttleHits = 0;
+      // Espera con cuenta regresiva (cancelable con Parar). Mantiene la barrida bajo
+      // el límite de 200 búsquedas/hora del plan SerpApi (sino te frena = serp_error).
+      const sweepWait = async (seconds, reason) => {
+        for (let s = seconds; s > 0 && !_briefSweepStop; s--) {
+          if (prog) prog.innerHTML = `${country}: ${totalBriefed} briefs · ${reason} (${s}s)…`;
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      };
       try {
         while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 200) {
           rounds++;
@@ -9042,15 +9073,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           const errs = d.errors || {};
           const serpErr = errs.serp_error || 0;
           if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
-          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) {
-            // Escaneó leads pero no brieféo NI marcó skip → casi seguro SerpApi falló
-            // (cuota agotada o error de API), no es que "no haya nada".
-            if (serpErr > 0) { if (prog) prog.innerHTML = `⚠️ SerpApi falló en ${serpErr} llamadas de esta ronda — probablemente se agotó la cuota mensual o hay un problema con la API key. NO se generaron briefs. Revisá tu cuenta en serpapi.com/dashboard. (Ya hechos antes: ${totalBriefed}.)`; break; }
-            if (prog) prog.innerHTML = `${country}: nada más para procesar (${totalBriefed} briefs).`; break;
+
+          // SerpApi te frenó por el límite de 200 búsquedas/HORA del plan (no es falta
+          // de cuota mensual). Back off largo para que la ventana de 1h se libere, y
+          // seguimos. Si insiste, paramos para no quedar trabados.
+          if (serpErr > 0 && (d.briefed || 0) === 0) {
+            throttleHits++;
+            if (throttleHits >= 3) { if (prog) prog.innerHTML = `⚠️ SerpApi te frenó por el límite de <b>200 búsquedas/hora</b> de tu plan. Pará un rato y reintentá, o subí el plan para que vaya rápido. Ya van ${totalBriefed} briefs en ${country}.`; break; }
+            await sweepWait(300, `⏳ SerpApi te frenó (límite 200/hora). Esperando a que se libere la ventana`);
+            continue;
           }
-          // Si una ronda no brieféo nada pero hubo errores de IA/ficha, lo mostramos.
-          if ((d.briefed || 0) === 0 && (serpErr > 0 || (errs.bad_llm || 0) > 0)) {
-            if (prog) prog.innerHTML = `${country}: ronda ${rounds} sin briefs (SerpApi err: ${serpErr} · IA falló: ${errs.bad_llm || 0} · sin ficha: ${errs.no_place_id || 0}). Sigo... ${totalBriefed} hechos.`;
+          throttleHits = 0;
+
+          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
+
+          // Pausa entre rondas para mantenerse BAJO 200 búsquedas/hora (sino te frena).
+          // ~5 leads cada ~2.5min ≈ 120 leads/hora. Lento pero no te bloquea.
+          if (!_briefSweepStop && totalBriefed < maxBriefs) {
+            await sweepWait(140, `pausa para no exceder el límite de 200/hora de SerpApi`);
           }
         }
         if (_briefSweepStop && prog) prog.innerHTML = `Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
