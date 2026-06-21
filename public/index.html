@@ -1879,15 +1879,24 @@
                 </label>
               </div>
             </div>
-            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-              <input id="history-search" autocomplete="off" type="text" class="setter-input" placeholder="Buscar por nombre, dirección, query..." style="flex:1; min-width:260px;">
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+              <input id="history-search" autocomplete="off" type="text" class="setter-input" placeholder="Buscar por nombre, dirección, query..." style="flex:1; min-width:220px;">
               <button id="history-search-btn" class="btn-table-action">Buscar</button>
+              <select id="history-country-filter" class="setter-input" style="min-width:170px; flex:0 0 auto;">
+                <option value="">Todos los países</option>
+              </select>
+            </div>
+            <div id="history-bulk-bar" style="display:none; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap; padding:8px 12px; background:rgba(244,114,114,0.06); border:1px solid rgba(244,114,114,0.2); border-radius:8px;">
+              <span id="history-selected-count" style="font-size:12px; color:var(--text-secondary);">0 seleccionados</span>
+              <button id="history-bulk-delete-btn" class="btn-table-action" style="color:var(--danger);">Eliminar seleccionados</button>
+              <button id="history-delete-country-btn" class="btn-table-action" style="color:var(--danger); display:none;">Eliminar todos los de este país</button>
             </div>
             <div id="history-dedup-result" class="hidden" style="margin-bottom:12px; padding:10px 14px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.2); border-radius:8px; font-size:13px;"></div>
             <div class="table-container" style="max-height:500px; overflow-y:auto;">
               <table id="history-table">
                 <thead>
                   <tr>
+                    <th style="width:34px; text-align:center;"><input type="checkbox" id="history-select-all" title="Seleccionar todo (esta página)" style="cursor:pointer;"></th>
                     <th>Nombre</th>
                     <th>Dirección</th>
                     <th>Query</th>
@@ -1897,7 +1906,7 @@
                   </tr>
                 </thead>
                 <tbody id="history-table-body">
-                  <tr><td colspan="6" class="empty-state">Cargando historial...</td></tr>
+                  <tr><td colspan="7" class="empty-state">Cargando historial...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -3210,7 +3219,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260620r"></script>
+  <script type="module" src="/app.js?v=20260620s"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

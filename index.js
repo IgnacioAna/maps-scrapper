@@ -2579,13 +2579,25 @@ app.post('/api/apify-scrape', requireAuth, requireRole('admin'), scrapeLimiter, 
     res.status(500).json({ error: error.message || 'Error en actor de Apify' });
   }
 });
-// ── GET /api/admin/history — paginated history with search ──
+// Deriva el país de una entrada del historial. Las entradas guardan `location`
+// ("Ciudad, País"), no un campo country dedicado → tomamos lo que va después de la
+// última coma. Si vino un country explícito (imports), lo preferimos.
+function _deriveHistoryCountry(val = {}) {
+  if (val.country && String(val.country).trim()) return String(val.country).trim();
+  const loc = String(val.location || '').trim();
+  if (!loc) return '';
+  const parts = loc.split(',').map((s) => s.trim()).filter(Boolean);
+  return parts.length > 1 ? parts[parts.length - 1] : loc;
+}
+
+// ── GET /api/admin/history — paginated history with search + country filter ──
 app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
   try {
     const history = loadHistory();
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.max(1, Math.min(500, parseInt(req.query.limit) || 50));
     const search = (req.query.search || '').toLowerCase().trim();
+    const country = (req.query.country || '').trim();
 
     // Convert entries object to array
     let entries = Object.entries(history.entries).map(([key, val]) => ({
@@ -2594,8 +2606,19 @@ app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
       address: val.address || '',
       scrapedAt: val.scrapedAt || val.addedAt || '',
       query: val.query || '',
-      location: val.location || ''
+      location: val.location || '',
+      country: _deriveHistoryCountry(val),
     }));
+
+    // Lista de países (distinct + count) sobre TODO el historial, para el dropdown.
+    const countryCounts = {};
+    for (const e of entries) {
+      const c = e.country || 'Sin país';
+      countryCounts[c] = (countryCounts[c] || 0) + 1;
+    }
+    const countries = Object.entries(countryCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
 
     // Filter by search term
     if (search) {
@@ -2604,6 +2627,11 @@ app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
         e.address.toLowerCase().includes(search) ||
         e.query.toLowerCase().includes(search)
       );
+    }
+    // Filter by country (case-insensitive equality sobre el país derivado)
+    if (country) {
+      const cl = country.toLowerCase();
+      entries = entries.filter(e => (e.country || 'Sin país').toLowerCase() === cl);
     }
 
     // Sort by scrapedAt descending (newest first)
@@ -2614,7 +2642,7 @@ app.get('/api/admin/history', requireAuth, requireRole('admin'), (req, res) => {
     const start = (page - 1) * limit;
     const paged = entries.slice(start, start + limit);
 
-    res.json({ entries: paged, total, page, totalPages });
+    res.json({ entries: paged, total, page, totalPages, countries });
   } catch (error) {
     console.error('Error in /api/admin/history:', error);
     res.status(500).json({ error: error.message });
@@ -2719,6 +2747,37 @@ app.post('/api/admin/history/dedup', requireAuth, requireRole('admin'), (req, re
     res.json({ removed: keysToRemove.size, remaining: Object.keys(history.entries).length });
   } catch (error) {
     console.error('Error in /api/admin/history/dedup:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── POST /api/admin/history/bulk-delete — borrar varias entradas de una ──
+// Body: { keys?: string[] }  → borra esas keys (checkboxes seleccionados)
+//       { country?: string } → borra TODAS las del país (across pages)
+// Si vienen ambas, priorizan las keys. Devuelve { removed, remaining }.
+app.post('/api/admin/history/bulk-delete', requireAuth, requireRole('admin'), (req, res) => {
+  try {
+    const { keys, country } = req.body || {};
+    const history = loadHistory();
+    let removed = 0;
+
+    if (Array.isArray(keys) && keys.length > 0) {
+      for (const k of keys) {
+        if (typeof k === 'string' && history.entries[k]) { delete history.entries[k]; removed++; }
+      }
+    } else if (country && String(country).trim()) {
+      const cl = String(country).trim().toLowerCase();
+      for (const [k, val] of Object.entries(history.entries)) {
+        if ((_deriveHistoryCountry(val) || 'Sin país').toLowerCase() === cl) { delete history.entries[k]; removed++; }
+      }
+    } else {
+      return res.status(400).json({ error: 'Se requiere keys[] o country.' });
+    }
+
+    if (removed > 0) saveHistory(history);
+    res.json({ ok: true, removed, remaining: Object.keys(history.entries).length });
+  } catch (error) {
+    console.error('Error in POST /api/admin/history/bulk-delete:', error);
     res.status(500).json({ error: error.message });
   }
 });

@@ -9045,12 +9045,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     let historyPage = 1;
     const historyLimit = 50;
     let historySearchText = '';
+    let historyCountry = '';
+
+    // Actualiza la barra de acciones masivas según los checkboxes tildados + el país filtrado.
+    function _histUpdateSelected() {
+      const n = document.querySelectorAll('.hist-row-chk:checked').length;
+      const bar = document.getElementById('history-bulk-bar');
+      const cnt = document.getElementById('history-selected-count');
+      const delSel = document.getElementById('history-bulk-delete-btn');
+      const delCountry = document.getElementById('history-delete-country-btn');
+      if (cnt) cnt.textContent = n + (n === 1 ? ' seleccionado' : ' seleccionados');
+      if (delSel) { delSel.textContent = 'Eliminar seleccionados' + (n ? ' (' + n + ')' : ''); delSel.disabled = n === 0; delSel.style.opacity = n === 0 ? '0.45' : '1'; }
+      if (delCountry) delCountry.style.display = historyCountry ? '' : 'none';
+      if (bar) bar.style.display = (n > 0 || historyCountry) ? 'flex' : 'none';
+    }
 
     async function loadHistoryPanel(page = 1) {
       if (currentUser?.role !== 'admin') return;
       historyPage = page;
       const params = new URLSearchParams({ page, limit: historyLimit });
       if (historySearchText) params.set('search', historySearchText);
+      if (historyCountry) params.set('country', historyCountry);
 
       try {
         const resp = await fetch(apiUrl('/api/admin/history?' + params));
@@ -9059,15 +9074,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const badge = document.getElementById('history-total-badge');
         if (badge) badge.textContent = `${data.total.toLocaleString()} leads en base`;
 
+        // Poblar el dropdown de países (preservando la selección actual).
+        const csel = document.getElementById('history-country-filter');
+        if (csel && Array.isArray(data.countries)) {
+          csel.innerHTML = '<option value="">Todos los países</option>' + data.countries.map(c =>
+            '<option value="' + escHtml(c.name) + '"' + (c.name === historyCountry ? ' selected' : '') + '>' + escHtml(c.name) + ' (' + c.count + ')</option>'
+          ).join('');
+          csel.value = historyCountry;
+        }
+
         const tbody = document.getElementById('history-table-body');
         if (!tbody) return;
 
         if (!data.entries || data.entries.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No se encontraron leads.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No se encontraron leads.</td></tr>';
         } else {
           tbody.innerHTML = data.entries.map(e => {
             const date = e.scrapedAt ? new Date(e.scrapedAt).toLocaleDateString('es-AR', { day:'2-digit', month:'short', year:'2-digit' }) : '-';
             return '<tr>' +
+              '<td style="text-align:center;"><input type="checkbox" class="hist-row-chk" data-key="' + escHtml(e.key) + '" style="cursor:pointer;"></td>' +
               '<td style="font-weight:500;">' + escHtml(e.name || '') + '</td>' +
               '<td style="font-size:12px; max-width:200px;">' + escHtml(e.address || '') + '</td>' +
               '<td style="font-size:12px;">' + escHtml(e.query || '') + '</td>' +
@@ -9077,6 +9102,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             '</tr>';
           }).join('');
         }
+
+        // Reset selección + barra al re-renderizar.
+        const selAll = document.getElementById('history-select-all');
+        if (selAll) selAll.checked = false;
+        _histUpdateSelected();
 
         // Paginación
         const pagDiv = document.getElementById('history-pagination');
@@ -9116,6 +9146,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === 'Enter') { historySearchText = histSearchInput.value.trim(); loadHistoryPanel(1); }
       });
     }
+
+    // Filtro por país
+    document.getElementById('history-country-filter')?.addEventListener('change', (e) => {
+      historyCountry = e.target.value || '';
+      loadHistoryPanel(1);
+    });
+
+    // Seleccionar todo (esta página)
+    document.getElementById('history-select-all')?.addEventListener('change', (e) => {
+      document.querySelectorAll('.hist-row-chk').forEach((c) => { c.checked = e.target.checked; });
+      _histUpdateSelected();
+    });
+
+    // Cambios en checkboxes de fila (delegación — el tbody es estático)
+    document.getElementById('history-table-body')?.addEventListener('change', (e) => {
+      if (e.target?.classList?.contains('hist-row-chk')) _histUpdateSelected();
+    });
+
+    // Eliminar seleccionados (keys tildadas)
+    document.getElementById('history-bulk-delete-btn')?.addEventListener('click', async () => {
+      const keys = [...document.querySelectorAll('.hist-row-chk:checked')].map((c) => c.getAttribute('data-key')).filter(Boolean);
+      if (!keys.length) return;
+      if (!confirm('¿Eliminar ' + keys.length + ' leads del historial? Se podrán volver a scrapear.')) return;
+      try {
+        await fetch(apiUrl('/api/admin/history/bulk-delete'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ keys }) });
+        loadHistoryPanel(historyPage);
+      } catch (e) { console.error(e); alert('Error eliminando seleccionados'); }
+    });
+
+    // Eliminar TODOS los del país filtrado (across pages)
+    document.getElementById('history-delete-country-btn')?.addEventListener('click', async () => {
+      if (!historyCountry) return;
+      if (!confirm('¿Eliminar TODOS los leads de "' + historyCountry + '" del historial?\nEsto borra todas las páginas de ese país. Se podrán volver a scrapear.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/admin/history/bulk-delete'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ country: historyCountry }) });
+        const d = await r.json();
+        window.showToast?.('Eliminados ' + (d.removed || 0) + '. Quedan ' + (d.remaining ?? '?') + ' en base.', { type: 'success' });
+        historyCountry = '';
+        const sel = document.getElementById('history-country-filter'); if (sel) sel.value = '';
+        loadHistoryPanel(1);
+      } catch (e) { console.error(e); alert('Error eliminando el país'); }
+    });
 
     // Limpiar duplicados
     const dedupBtn = document.getElementById('history-dedup-btn');
