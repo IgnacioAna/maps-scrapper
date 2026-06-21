@@ -9039,8 +9039,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           consecErrors = 0;
           totalBriefed += (d.briefed || 0);
           totalSkipped += (d.skipped || 0);
+          const errs = d.errors || {};
+          const serpErr = errs.serp_error || 0;
           if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
-          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `${country}: nada más para procesar (${totalBriefed} briefs).`; break; }
+          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) {
+            // Escaneó leads pero no brieféo NI marcó skip → casi seguro SerpApi falló
+            // (cuota agotada o error de API), no es que "no haya nada".
+            if (serpErr > 0) { if (prog) prog.innerHTML = `⚠️ SerpApi falló en ${serpErr} llamadas de esta ronda — probablemente se agotó la cuota mensual o hay un problema con la API key. NO se generaron briefs. Revisá tu cuenta en serpapi.com/dashboard. (Ya hechos antes: ${totalBriefed}.)`; break; }
+            if (prog) prog.innerHTML = `${country}: nada más para procesar (${totalBriefed} briefs).`; break;
+          }
+          // Si una ronda no brieféo nada pero hubo errores de IA/ficha, lo mostramos.
+          if ((d.briefed || 0) === 0 && (serpErr > 0 || (errs.bad_llm || 0) > 0)) {
+            if (prog) prog.innerHTML = `${country}: ronda ${rounds} sin briefs (SerpApi err: ${serpErr} · IA falló: ${errs.bad_llm || 0} · sin ficha: ${errs.no_place_id || 0}). Sigo... ${totalBriefed} hechos.`;
+          }
         }
         if (_briefSweepStop && prog) prog.innerHTML = `Parado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha.`;
         else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs en ${country}. Subí el tope para seguir.`;
@@ -9060,7 +9071,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
           else {
             const names = (d.briefedSample || []).map((b) => `${b.name}${b.fitScore != null ? ` (fit ${b.fitScore})` : ''}`).join(', ');
-            out.innerHTML = `${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${(d.errors && d.errors.no_place_id) || 0} sin ficha de Google). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
+            const e2 = d.errors || {};
+            const serpW = (e2.serp_error || 0) > 0 ? ` · <b style="color:#f85149;">⚠️ SerpApi error: ${e2.serp_error} (¿cuota agotada? revisá serpapi.com)</b>` : '';
+            out.innerHTML = `${d.briefed || 0} briefs generados (escaneó ${d.scanned || 0}; ${e2.no_place_id || 0} sin ficha de Google; IA falló: ${e2.bad_llm || 0})${serpW}. Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
           }
         }
       } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
