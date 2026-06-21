@@ -5127,12 +5127,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             }).join('')}
           </div>
         </div>` : ''}
-        ${lastNote ? `<div>
-          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">Última nota · ${notesCount} total</div>
-          <div style="position:relative; padding:11px 34px 11px 13px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px; font-size:12px; line-height:1.5;">
-            <button type="button" onclick="window._pdDeleteNote('${escHtml(lead.id)}', ${notesCount - 1})" title="Borrar esta nota" style="position:absolute; top:8px; right:8px; width:22px; height:22px; line-height:20px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary); cursor:pointer; font-size:14px; font-family:inherit;">×</button>
-            <div style="color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${escHtml(String(lastNote.text || '').substring(0, 300))}</div>
-            <div style="font-size:10px; color:var(--text-tertiary); margin-top:7px;">${escHtml(lastNote.by || '')} · ${lastNote.date ? new Date(lastNote.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+        ${notesCount > 0 ? `<div>
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px;">Notas · ${notesCount}</div>
+          <div style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
+            ${lead.notes.map((n, i) => ({ n, i })).reverse().map(({ n, i }) => `
+            <div style="position:relative; padding:10px 32px 10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${i === notesCount - 1 ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}; border-radius:8px; font-size:12px; line-height:1.5;">
+              <button type="button" onclick="window._pdDeleteNote('${escHtml(lead.id)}', ${i})" title="Borrar esta nota" style="position:absolute; top:8px; right:8px; width:22px; height:22px; line-height:20px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary); cursor:pointer; font-size:14px; font-family:inherit;">×</button>
+              <div style="color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${escHtml(String(n.text || '').substring(0, 500))}</div>
+              <div style="font-size:10px; color:var(--text-tertiary); margin-top:7px;">${escHtml(n.by || '')} · ${n.date ? new Date(n.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
+            </div>`).join('')}
           </div>
         </div>` : ''}
       </div>` : ''}
