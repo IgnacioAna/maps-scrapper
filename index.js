@@ -7826,12 +7826,20 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   const previous = _perfAggregate(filtered, prevFrom, prevTo);
   const deltas = _perfDelta(totals, previous);
 
+  // Total de leads ASIGNADOS al setter (sin filtro de período) — es el "tiene 500",
+  // distinto de totals.total que es "tocó N en el período". Sin esto el panel solo
+  // mostraba los tocados y parecía que el setter tenía muchos menos leads.
+  const assignedTotal = filtered.length;
+  const assignedSinContactar = filtered.filter((l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0)).length;
+
   res.json({
     period,
     from: new Date(fromTs).toISOString(),
     to: new Date(toTs).toISOString(),
     setter: setterFilter || null,
     setterScope: isSetter ? "self" : (setterFilter ? "individual" : "team"),
+    assignedTotal,
+    assignedSinContactar,
     totals,
     previous: {
       from: new Date(prevFrom).toISOString(),

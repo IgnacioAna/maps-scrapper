@@ -11750,7 +11750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let _mypActiveSeries = ['agendados']; // KPIs visibles en el chart
 
   const MYP_KPI_DEFS = [
-    { key: 'total',        label: 'Total leads',  hint: 'Leads tocados en el período' },
+    { key: 'total',        label: 'Leads trabajados',  hint: 'Leads que tocaste en el período (NO el total asignado — ese va arriba)' },
     { key: 'conexiones',   label: 'Conexiones',   hint: 'WhatsApp enviados' },
     { key: 'respondieron', label: 'Respondieron', hint: 'Leads que contestaron' },
     { key: 'calificados',  label: 'Calificados',  hint: 'Leads que pasaron calificación' },
@@ -11888,6 +11888,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       _mypLastData = d;
       const range = document.getElementById('myp-range');
       if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
+      // Total ASIGNADO (independiente del período) — el "tiene 500", separado de los
+      // leads trabajados en el período. Solo cuando hay un setter individual seleccionado.
+      const asg = document.getElementById('myp-assigned');
+      if (asg) {
+        if (d.setterScope !== 'team' && typeof d.assignedTotal === 'number') {
+          const sinc = typeof d.assignedSinContactar === 'number' ? d.assignedSinContactar : null;
+          asg.innerHTML = `<strong style="font-size:15px;">${d.assignedTotal.toLocaleString()}</strong> leads asignados en total` +
+            (sinc != null ? ` · <strong>${sinc.toLocaleString()}</strong> sin tocar todavía` : '') +
+            `<span class="muted" style="display:block; font-size:11px; margin-top:3px;">Los KPIs de abajo son del período seleccionado (lo trabajado), no el total.</span>`;
+          asg.style.display = 'block';
+        } else {
+          asg.style.display = 'none';
+        }
+      }
       _mypRenderKpis(d);
       _mypRenderChart(d);
 
@@ -14323,6 +14337,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const list = document.getElementById('tlx-scripts-list');
     const empty = document.getElementById('tlx-scripts-empty');
     if (!list || !empty) return;
+    // Solo el admin edita. Los setters ven los guiones read-only (Recursos).
+    const _csAdmin = (currentUser?.realRole === 'admin' || currentUser?.role === 'admin');
+    const _resetBtn = document.getElementById('tlx-script-reset-seed-btn');
+    const _addBtn = document.getElementById('tlx-script-add-btn');
+    if (_resetBtn) _resetBtn.style.display = _csAdmin ? '' : 'none';
+    if (_addBtn) _addBtn.style.display = _csAdmin ? '' : 'none';
     if (_tlxScriptsCache.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
     const triggerColors = {
@@ -14344,8 +14364,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="chip" style="margin-left:6px; padding:1px 7px; font-size:9px; background:${triggerColors[s.trigger] || 'var(--bg-card)'}22; color:${triggerColors[s.trigger] || 'var(--text-secondary)'}; border:1px solid ${triggerColors[s.trigger] || 'var(--border-color)'}; border-radius:5px; font-weight:600;">${escHtml(s.trigger || 'general')}</span>
           </div>
           <div style="display:flex; gap:4px;">
-            <button onclick="window._tlxEditScript('${escHtml(s.id)}')" class="btn-table-action" style="color:var(--info); font-size:10px;">Editar</button>
-            <button onclick="window._tlxDeleteScript('${escHtml(s.id)}', '${escHtml(s.label).replace(/'/g, "\\'")}')" class="btn-table-action" style="color:#f85149; font-size:10px;">Borrar</button>
+            ${_csAdmin ? `<button onclick="window._tlxEditScript('${escHtml(s.id)}')" class="btn-table-action" style="color:var(--info); font-size:10px;">Editar</button>
+            <button onclick="window._tlxDeleteScript('${escHtml(s.id)}', '${escHtml(s.label).replace(/'/g, "\\'")}')" class="btn-table-action" style="color:#f85149; font-size:10px;">Borrar</button>` : ''}
           </div>
         </div>
         <div style="font-size:12px; color:var(--text-secondary); line-height:1.55; max-height:80px; overflow:hidden; text-overflow:ellipsis; white-space:pre-wrap;">${escHtml(s.text)}</div>
