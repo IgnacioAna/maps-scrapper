@@ -78,7 +78,9 @@ describe("pool-distribute · prioridad + reseteo", () => {
     expect(inter).toBeTruthy();
     expect(inter.estado).toBe("sin_contactar");
     expect(inter.interes).toBe(null);
-    expect(inter.conexion).toBe("");
+    // App call-only: el lead distribuido entra al carril de Llamadas (sin_wsp),
+    // no queda en '' (cambio en _resetLeadForRedistribution, 2026-06-20).
+    expect(inter.conexion).toBe("sin_wsp");
     expect(inter.respondio).toBe(false);
     expect(inter.followUps["24hs"]).toBe(false);
   });
