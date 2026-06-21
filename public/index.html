@@ -354,6 +354,9 @@
               <label class="checkbox-label" title="Filtra teléfonos fijos y muestra solo probables celulares (WhatsApp)" style="user-select:none; margin-right:8px; color: #5bb974;">
                 <input type="checkbox" id="hide-landlines" checked> Solo Wsp
               </label>
+              <label class="checkbox-label" title="Enriquece redes/email/dueño con IA automáticamente apenas termina el scrape. Destildá si en este scrape no querés gastar tokens." style="user-select:none; margin-right:8px; color:#9D85F2;">
+                <input type="checkbox" id="auto-enrich-toggle" checked> Auto IA
+              </label>
               <button id="enrich-btn" class="btn-table-action" disabled data-roles="admin">Escanear Redes y Sitios Web (IA)</button>
               <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">Enviar a Setters</button>
               <button id="download-csv" class="btn-table-action" disabled data-roles="admin">Exportar Base (CSV)</button>
@@ -3218,7 +3221,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260620t"></script>
+  <script type="module" src="/app.js?v=20260620u"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

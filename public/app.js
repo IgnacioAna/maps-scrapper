@@ -1484,6 +1484,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           downloadBtn.disabled = false;
           enrichBtn.disabled = false;
           document.getElementById('send-to-setters').disabled = false;
+          // Auto-enriquecer redes/email/dueño con IA apenas termina el scrape
+          // (pedido del user 2026-06-20). Reusa el mismo flujo del botón. El
+          // toggle 'Auto IA' (default ON) permite saltarlo en un scrape puntual.
+          const autoEnrich = document.getElementById('auto-enrich-toggle');
+          if ((!autoEnrich || autoEnrich.checked) && !enrichBtn.disabled) {
+            setTimeout(() => { if (!enrichBtn.disabled) enrichBtn.click(); }, 300);
+          }
         }
 
         loadHistoryStats();
