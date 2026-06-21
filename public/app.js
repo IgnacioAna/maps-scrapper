@@ -5050,8 +5050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <!-- Bloque 1.6: Lead Brief IA (reseñas mineadas: dolor+cita+hook+fit) -->
       ${lead.leadBrief ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">Brief IA${lead.leadBrief.fitScore != null ? ` · fit ${lead.leadBrief.fitScore}/100` : ''}${lead.leadBrief.reviewsMined ? ` · ${lead.leadBrief.reviewsMined} reseñas` : ''}</div>
-        ${lead.leadBrief.brief ? `<div style="color:#fff; font-size:13px; line-height:1.5; margin-bottom:6px;">${escHtml(lead.leadBrief.brief)}</div>` : ''}
-        ${lead.leadBrief.hookPhrase ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:6px; color:rgba(255,255,255,0.92);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(lead.leadBrief.hookPhrase)}</div>` : ''}
+        ${(() => { const _bc = _briefClean(lead); return (_bc.brief ? `<div style="color:#fff; font-size:13px; line-height:1.5; margin-bottom:6px;">${escHtml(_bc.brief)}</div>` : '') + (_bc.hook ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:6px; color:rgba(255,255,255,0.92);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''); })()}
         ${(lead.leadBrief.painPoints || []).slice(0, 2).map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
         ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
       </div>` : (currentUser?.realRole === 'admin' && (parseInt(lead.reviews, 10) || 0) >= 10 ? `<div style="margin-top:16px; background:rgba(255,179,65,0.06); border:1px dashed rgba(255,179,65,0.4); padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -6251,6 +6250,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       return out;
     }
 
+    // Limpia el brief para el render: evita que el resumen/gancho DUPLIQUEN el ángulo
+    // sugerido (que se muestra aparte) y descarta ganchos cortados/basura (briefs
+    // viejos donde la IA truncó). Devuelve { brief, hook } ya filtrados (o '').
+    function _briefClean(lead) {
+      const lb = (lead && lead.leadBrief) || {};
+      const ang = (lead && lead.openingAngle || '').trim();
+      const brief = (lb.brief || '').trim();
+      const hook = (lb.hookPhrase || '').trim();
+      const looksCut = hook && (hook.length < 15 || /\b(de|que|con|y|a|e|o|u|en|para|la|el|los|las|un|una|del|por|se|su|al|lo|le|mi|tu)\s*$/i.test(hook.replace(/[.…!?\s]+$/, '')));
+      return {
+        brief: (brief && brief !== ang) ? brief : '',
+        hook: (hook && hook !== ang && hook !== brief && !looksCut) ? hook : '',
+      };
+    }
+
     function callOutcomeLabel(o) {
       const map = {
         answered_interested: 'Interesado',
@@ -6554,8 +6568,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pains = (lb.painPoints || []).slice(0, 2).map(p => `<div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px;">• ${escHtml(p.dolor || '')}${p.cita ? ` <span style="opacity:0.55; font-style:italic;">"${escHtml(String(p.cita).slice(0, 90))}"</span>` : ''}</div>`).join('');
         rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}</div>
-          ${lb.brief ? `<div style="color:#fff; font-size:11.5px; line-height:1.45; margin-bottom:4px;">${escHtml(lb.brief)}</div>` : ''}
-          ${lb.hookPhrase ? `<div style="font-size:11.5px; line-height:1.4; margin-bottom:4px; color:rgba(255,255,255,0.9);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(lb.hookPhrase)}</div>` : ''}
+          ${(() => { const _bc = _briefClean(lead); return (_bc.brief ? `<div style="color:#fff; font-size:11.5px; line-height:1.45; margin-bottom:4px;">${escHtml(_bc.brief)}</div>` : '') + (_bc.hook ? `<div style="font-size:11.5px; line-height:1.4; margin-bottom:4px; color:rgba(255,255,255,0.9);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''); })()}
           ${pains}
           ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:5px;">${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
         </div>`);
