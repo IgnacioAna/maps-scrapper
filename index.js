@@ -600,6 +600,13 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.businessStatus !== 'string') lead.businessStatus = '';
   // Phase 10 B2: tipo de línea validado vía Telnyx Number Lookup (mobile/landline/voip).
   if (typeof lead.phoneType !== 'string') lead.phoneType = '';
+  // Antigüedad de la clínica. yearsActive = años activos (del sitio web "desde XXXX"
+  // o derivado de la reseña más vieja). foundedYear = año de fundación si se detectó.
+  // onGoogleSince = ISO de la reseña más vieja (proxy "en Google desde ~"). Alimenta
+  // la variable {years} de los guiones y da contexto al brief.
+  if (lead.yearsActive !== null && typeof lead.yearsActive !== 'number') lead.yearsActive = null;
+  if (typeof lead.foundedYear !== 'string') lead.foundedYear = '';
+  if (typeof lead.onGoogleSince !== 'string') lead.onGoogleSince = '';
   // Phase 16: brief/señales derivadas para el SDR. Lazy (si faltan, se computan
   // de rating/reviews/web/instagram). La barrida POST /api/admin/backfill-signals
   // las recomputa para todos; enrich-from-maps y manual-add las refrescan.
@@ -754,7 +761,23 @@ function computeLeadSignals(lead = {}) {
 // ── Lead Brief IA (Phase 10 C3/C4) — review mining + tratamientos + brief ──────
 // Helpers PUROS (sin red) para testear el prompt y el parseo del output del LLM.
 // El LLM recibe el negocio + reseñas y devuelve JSON con la munición para la call.
-function _buildBriefMessages(lead = {}, reviews = []) {
+// Conocimiento del equipo para alimentar el brief: el system prompt de Mercury
+// (qué vendemos, a quién, cómo) + los aprendizajes que el admin fue cargando
+// ("Sugerir mejora" → feedbackNotes). Así el brief no analiza a ciegas: entiende
+// nuestra oferta real y lo que funciona en las llamadas. Capeado para no inflar tokens.
+function _briefKnowledge() {
+  try {
+    const cfg = loadMercuryConfig();
+    let k = String(cfg.systemPrompt || '').trim().slice(0, 2200);
+    const notes = (cfg.feedbackNotes || []).slice(-6)
+      .map((n) => '- ' + String((n && n.text) || n || '').trim())
+      .filter((x) => x.length > 4);
+    if (notes.length) k += '\n\nAPRENDIZAJES RECIENTES DEL EQUIPO:\n' + notes.join('\n');
+    return k.slice(0, 3200);
+  } catch { return ''; }
+}
+
+function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
   const revText = (Array.isArray(reviews) ? reviews : [])
     .map((r) => (typeof r === 'string' ? r : (r && r.snippet) || '')).filter(Boolean)
     .slice(0, 15).map((t) => '- ' + String(t).replace(/\s+/g, ' ').slice(0, 400)).join('\n');
@@ -771,10 +794,13 @@ function _buildBriefMessages(lead = {}, reviews = []) {
     'Ejemplo EXACTO del formato (con valores de muestra):\n' +
     '{"treatments":["implantes","ortodoncia"],"painPoints":["esperas largas en recepción (un paciente: esperé más de una hora)","cuesta sacar turno, no atienden el teléfono"],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas."}\n' +
     'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. fitScore = número 0-100. hookPhrase = una frase COMPLETA y autosuficiente (10-25 palabras) de apertura con un dato real; NUNCA la dejes a medias ni la cortes (nada de terminar en "de", "que", "con"). brief = string de 2-3 líneas, también completo. Todo en español. Respondé SOLO el objeto JSON completo.';
+  const know = knowledge
+    ? `\n\nCONOCIMIENTO DEL EQUIPO SCM (base de verdad — qué vendemos, a quién y qué funciona en las llamadas; usalo para que fitScore, hookPhrase y brief estén alineados con nuestra oferta real, NO lo copies literal):\n${knowledge}`
+    : '';
   const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
   // UN solo mensaje user (Mercury devuelve vacío con system+user en español — el
   // patrón que funciona en prod, ver autoTag, es user único + response_format json).
-  return [{ role: 'user', content: sys + '\n\n' + user }];
+  return [{ role: 'user', content: sys + know + '\n\n' + user }];
 }
 // Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido. null si falla.
 function _parseBriefOutput(text) {
@@ -2228,7 +2254,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (placeId) {
           const rj = await _serp({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' });
           const reviews = (rj?.reviews || []).map((r) => r.snippet).filter(Boolean);
-          const { parsed, raw } = await _briefLLM(_buildBriefMessages(c, reviews));
+          const { parsed, raw } = await _briefLLM(_buildBriefMessages(c, reviews, _briefKnowledge()));
           dbg.resolvedOn = c.name;
           dbg.reviewsFound = reviews.length;
           dbg.rawLLM = (raw || '(vacío)').slice(0, 1800);
@@ -2241,6 +2267,9 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   }
 
   const results = {}; const skips = {}; const errors = {}; let briefed = 0; let attempts = 0;
+  // Conocimiento del equipo (Mercury system prompt + aprendizajes) — se computa UNA
+  // vez y se inyecta en cada brief para que la IA analice con TODO el contexto.
+  const briefKnowledge = _briefKnowledge();
   // Tope de intentos: bound del gasto SerpApi por tanda. En modo explícito hace
   // todos los elegidos; en lote, hasta limit*6 búsquedas aunque no junte los N.
   const maxAttempts = (explicitIds && explicitIds.length) ? candidates.length : limit * 6;
@@ -2293,14 +2322,21 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       ]);
       // Error de reseñas (quota/transitorio) → NO marcar bad_llm; dejar pendiente.
       if (rj && rj.error) { errors.serp_error = (errors.serp_error || 0) + 1; continue; }
+      // Antigüedad (proxy): la reseña MÁS VIEJA → "en Google desde ~X". Es cota
+      // mínima (pueden ser más antiguos), pero sale gratis de la misma llamada.
+      let oldestReviewIso = '';
+      for (const r of (rj?.reviews || [])) {
+        const iso = r && (r.iso_date || r.date_iso || r.iso_date_of_last_edit);
+        if (iso && !isNaN(new Date(iso)) && (!oldestReviewIso || new Date(iso) < new Date(oldestReviewIso))) oldestReviewIso = iso;
+      }
       // Peores reseñas primero (1-2★ = los dolores reales) → mejor munición para el LLM.
       const reviews = (rj?.reviews || [])
         .filter((r) => r && r.snippet)
         .sort((a, b) => ((a.rating == null ? 3 : a.rating) - (b.rating == null ? 3 : b.rating)))
         .map((r) => r.snippet);
-      const { parsed: out } = await _briefLLM(_buildBriefMessages(c, reviews));
+      const { parsed: out } = await _briefLLM(_buildBriefMessages(c, reviews, briefKnowledge));
       if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; skips[c.id] = 'bad_llm'; continue; }
-      results[c.id] = { ...out, placeId, reviewsMined: reviews.length, enriched };
+      results[c.id] = { ...out, placeId, reviewsMined: reviews.length, enriched, oldestReviewIso };
       briefed++;
     } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; }
   }
@@ -2337,6 +2373,15 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
           if (en.website && !String(lead.website || '').trim()) lead.website = en.website;
           if (en.dataId && !lead.dataId) lead.dataId = en.dataId;
           if (en.priceLevel && !lead.priceLevel) lead.priceLevel = en.priceLevel;
+        }
+        // Antigüedad por reseña más vieja (proxy "en Google desde ~"). No pisa
+        // la antigüedad real del sitio web (yearsActive) si ya la tenemos.
+        if (r.oldestReviewIso && !lead.onGoogleSince) {
+          lead.onGoogleSince = r.oldestReviewIso;
+          if (lead.yearsActive == null) {
+            const y = new Date().getFullYear() - new Date(r.oldestReviewIso).getFullYear();
+            if (y >= 0 && y <= 60) lead.yearsActive = y;
+          }
         }
         applied++;
       }
@@ -8584,6 +8629,23 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async 
     const nameMatch = singleLineHtml.match(/(?:Dr\.?|Dra\.?|Doctor|Doctora)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+(?:\s+(?:de\s+)?(?:la\s+)?[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+){0,3})/);
     const foundOwner = nameMatch ? `Dr/a. ${nameMatch[1].trim()}` : "";
 
+    // Antigüedad de la clínica: "desde 19XX/20XX", "fundada en AÑO", "X años de
+    // experiencia/trayectoria". Da munición para el guion ({years}) y el brief.
+    let foundedYear = "", yearsActive = null, antiguedadText = "";
+    {
+      const nowY = new Date().getFullYear();
+      const since = singleLineHtml.match(/\b(?:desde(?:\s+el\s+a[ñn]o)?|fundad[oa]s?\s+en|estable?cid[oa]s?\s+en|operando\s+desde|inaugurad[oa]s?\s+en|a[ñn]o\s+de\s+fundaci[oó]n[:\s]*)\s*(19[5-9]\d|20[0-4]\d)\b/i);
+      const exp = singleLineHtml.match(/\b(?:m[aá]s\s+de\s+)?(\d{1,3})\s*a[ñn]os\s+(?:de\s+)?(?:experiencia|trayectoria|en\s+el\s+mercado|atendiendo|brindando|cuidando|al\s+servicio)/i);
+      if (since) {
+        const y = parseInt(since[1], 10);
+        const age = nowY - y;
+        if (age >= 0 && age <= 120) { foundedYear = String(y); yearsActive = age; antiguedadText = `desde ${y}`; }
+      } else if (exp) {
+        const y = parseInt(exp[1], 10);
+        if (y > 0 && y <= 120) { yearsActive = y; foundedYear = String(nowY - y); antiguedadText = `${y} años`; }
+      }
+    }
+
     let aiRoleDescription = "";
     let parsed = null;
 
@@ -8768,6 +8830,9 @@ Texto: ${textToAnalyze}`;
       city: parsed && parsed.city ? String(parsed.city).trim() : city || '',
       owner: foundOwner,
       aiRole: aiRoleDescription,
+      foundedYear,
+      yearsActive,
+      antiguedadText,
       ownerInstagram: "",
       ownerLinkedin: "",
       ownerFacebook: ""

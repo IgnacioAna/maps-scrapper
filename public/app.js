@@ -1552,6 +1552,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           currentData[idx].email = social.email || '';
           currentData[idx].owner = social.owner || '';
           currentData[idx].aiRole = social.aiRole || '';
+          // Antigüedad detectada en el sitio web ("desde XXXX" / "X años").
+          if (social.yearsActive != null) currentData[idx].yearsActive = social.yearsActive;
+          if (social.foundedYear) currentData[idx].foundedYear = social.foundedYear;
           currentData[idx].webWhatsApp = social.webWhatsApp || '';
           currentData[idx].aiWhatsApp = social.aiWhatsApp || '';
           currentData[idx].openMessage = social.openMessage || '';
@@ -4921,6 +4924,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (lead.doctor && !lead.doctor.includes('N/A')) infoRows.push({ label: 'Doctor', value: escHtml(lead.doctor) });
       if (lead.decisor) infoRows.push({ label: 'Decisor', value: escHtml(lead.decisor) });
       if (lead.address) infoRows.push({ label: 'Dirección', value: escHtml(lead.address) });
+      const _antig = _leadAntiguedad(lead);
+      if (_antig) infoRows.push({ label: 'Antigüedad', value: escHtml(_antig) });
       if (safeW) infoRows.push({ label: 'Web', value: `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(websiteDisplay)}</a>` });
       if (validEmail) infoRows.push({ label: 'Email', value: `<a href="mailto:${escHtml(safeEmail)}" style="color:#7dd3fc; text-decoration:none;">${escHtml(safeEmail)}</a>` });
       if (igUrl) infoRows.push({ label: 'Instagram', value: `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" style="color:#7dd3fc; text-decoration:none;">${escHtml(igRaw)}</a>` });
@@ -5858,6 +5863,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (igUrl) fichaItems.push(`<span class="label">Instagram</span><span class="value"><a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer">${escHtml(igRaw)}</a></span>`);
       }
       if (l.doctor && !l.doctor.includes('N/A')) fichaItems.push(`<span class="label">Doctor</span><span class="value">${escHtml(l.doctor)}</span>`);
+      const _antigF = _leadAntiguedad(l);
+      if (_antigF) fichaItems.push(`<span class="label">Antigüedad</span><span class="value">${escHtml(_antigF)}</span>`);
       if (l.facebook) {
         const fbRaw = String(l.facebook).trim();
         const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : 'https://facebook.com/' + fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '');
@@ -6263,6 +6270,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         brief: (brief && brief !== ang) ? brief : '',
         hook: (hook && hook !== ang && hook !== brief && !looksCut) ? hook : '',
       };
+    }
+
+    // Texto de antigüedad de la clínica para mostrar en la ficha. Prefiere los años
+    // reales (del sitio web), sino el proxy de "en Google desde" (reseña más vieja).
+    function _leadAntiguedad(lead) {
+      if (!lead) return '';
+      if (lead.yearsActive != null && lead.yearsActive >= 0) {
+        return `${lead.yearsActive} año${lead.yearsActive === 1 ? '' : 's'}${lead.foundedYear ? ` (desde ${lead.foundedYear})` : ''}`;
+      }
+      if (lead.onGoogleSince) {
+        const y = new Date(lead.onGoogleSince).getFullYear();
+        if (y > 1990 && y <= new Date().getFullYear()) return `en Google desde ~${y}`;
+      }
+      return '';
     }
 
     function callOutcomeLabel(o) {
