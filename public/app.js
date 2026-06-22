@@ -6309,6 +6309,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       return '';
     }
 
+    // Interpreta el error REAL de SerpApi (errors.serpDetail del backend) en vez de
+    // asumir siempre "throttle 200/hora". Devuelve { msg, isThrottle }.
+    function _serpReason(errs) {
+      const d = (errs && errs.serpDetail) ? String(errs.serpDetail) : '';
+      const low = d.toLowerCase();
+      if (/throttl|rate.?limit|per hour|exceeding 200|too many request/.test(low)) {
+        return { msg: 'SerpApi te frenó por el límite de 200 búsquedas/hora del plan. Esperá ~30-60 min y reintentá.', isThrottle: true };
+      }
+      if (/run out|out of searches|no searches left|plan searches/.test(low)) return { msg: 'Te quedaste sin búsquedas del plan este mes.', isThrottle: false };
+      if (/api.?key|unauthorized|invalid.*key|forbidden/.test(low)) return { msg: 'Problema con la API key de SerpApi (revisá la env var API_KEY en Railway).', isThrottle: false };
+      if (/no results|hasn.?t returned|not found/.test(low)) return { msg: 'Google no devolvió resultados para ese lead (nombre genérico / no está en Maps).', isThrottle: false };
+      if (d) return { msg: 'SerpApi devolvió un error: ' + d, isThrottle: false };
+      return { msg: 'SerpApi devolvió un error (sin detalle). Probá de nuevo en un rato.', isThrottle: false };
+    }
+
     function callOutcomeLabel(o) {
       const map = {
         answered_interested: 'Interesado',
@@ -7732,7 +7747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if ((d.briefed || 0) > 0) { loadCallsView(); return; }
         else {
           const e2 = d.errors || {};
-          const why = e2.serp_error ? 'SerpApi te frenó (límite de 200 búsquedas/hora del plan). Esperá ~30-60 min y reintentá.'
+          const why = e2.serp_error ? _serpReason(e2).msg
             : e2.no_place_id ? 'no tiene ficha en Google (nombre genérico, no resuelve)'
             : (Object.keys(e2).join(', ') || 'sin reseñas suficientes o la IA no devolvió nada');
           alert(`No se pudo generar el brief: ${why}`);
@@ -7822,7 +7837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           const e2 = d.errors || {};
           let why;
-          if (e2.serp_error) why = 'SerpApi te frenó (límite de 200 búsquedas/hora del plan). Esperá ~30-60 min y reintentá.';
+          if (e2.serp_error) why = _serpReason(e2).msg;
           else if (e2.no_place_id) why = 'no tiene ficha en Google (nombre genérico, no resuelve el place_id)';
           else if (r.status === 503) why = 'falta API key (SerpApi o IA) en Railway';
           else why = 'sin reseñas suficientes o la IA no devolvió nada';
@@ -9121,13 +9136,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           const serpErr = errs.serp_error || 0;
           if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `${country} terminado: ${totalBriefed} briefs generados · ${totalSkipped} sin ficha de Google.`; break; }
 
-          // SerpApi te frenó por el límite de 200 búsquedas/HORA del plan (no es falta
-          // de cuota mensual). Back off largo para que la ventana de 1h se libere, y
-          // seguimos. Si insiste, paramos para no quedar trabados.
+          // SerpApi devolvió error en toda la ronda → mirar el MOTIVO REAL (no asumir
+          // throttle). Si es throttle: back off largo. Si es otra cosa (key, sin
+          // resultados, etc.): cortar y mostrar el error real — backoff no ayuda.
           if (serpErr > 0 && (d.briefed || 0) === 0) {
+            const reason = _serpReason(errs);
+            if (!reason.isThrottle) { if (prog) prog.innerHTML = `⚠️ ${reason.msg} (${totalBriefed} briefs hechos en ${country}).`; break; }
             throttleHits++;
-            if (throttleHits >= 3) { if (prog) prog.innerHTML = `⚠️ SerpApi te frenó por el límite de <b>200 búsquedas/hora</b> de tu plan. Pará un rato y reintentá, o subí el plan para que vaya rápido. Ya van ${totalBriefed} briefs en ${country}.`; break; }
-            await sweepWait(300, `⏳ SerpApi te frenó (límite 200/hora). Esperando a que se libere la ventana`);
+            if (throttleHits >= 3) { if (prog) prog.innerHTML = `⚠️ ${reason.msg} Subí el plan para que vaya rápido. Ya van ${totalBriefed} briefs en ${country}.`; break; }
+            await sweepWait(300, `⏳ SerpApi te frenó (200/hora). Esperando a que se libere la ventana`);
             continue;
           }
           throttleHits = 0;

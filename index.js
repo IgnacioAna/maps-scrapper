@@ -2334,9 +2334,9 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
           getJson(sp),
           new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
         ]);
-        // SerpApi devolvió error (ej. quota agotada) → NO marcar skip (sería falso
-        // "sin ficha"). Contar como error transitorio y dejar el lead pendiente.
-        if (sj && sj.error) { errors.serp_error = (errors.serp_error || 0) + 1; continue; }
+        // SerpApi devolvió error → NO marcar skip (sería falso "sin ficha"). Capturamos
+        // el MENSAJE REAL (throttle? quota? sin resultados? key?) para no adivinar.
+        if (sj && sj.error) { errors.serp_error = (errors.serp_error || 0) + 1; if (!errors.serpDetail) errors.serpDetail = 'búsqueda: ' + String(sj.error).slice(0, 200); continue; }
         const lr = sj?.local_results?.[0] || null;
         placeId = lr?.place_id || '';
         // Data GRATIS del response que ya pagamos: capturar para enriquecer el lead.
@@ -2355,8 +2355,8 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         getJson({ engine: 'google_maps_reviews', place_id: placeId, api_key: serpKey, hl: 'es' }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
       ]);
-      // Error de reseñas (quota/transitorio) → NO marcar bad_llm; dejar pendiente.
-      if (rj && rj.error) { errors.serp_error = (errors.serp_error || 0) + 1; continue; }
+      // Error de reseñas → NO marcar bad_llm; dejar pendiente. Capturar mensaje real.
+      if (rj && rj.error) { errors.serp_error = (errors.serp_error || 0) + 1; if (!errors.serpDetail) errors.serpDetail = 'reseñas: ' + String(rj.error).slice(0, 200); continue; }
       // Antigüedad (proxy): la reseña MÁS VIEJA → "en Google desde ~X". Es cota
       // mínima (pueden ser más antiguos), pero sale gratis de la misma llamada.
       let oldestReviewIso = '';
