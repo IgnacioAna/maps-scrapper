@@ -432,7 +432,7 @@ Comandos:
 | `before_call` | Checklist pre-llamada | Antes de marcar |
 | `gatekeeper` | Pasar recepción: con nombre / sin nombre + 3 rutas (A pedir nombre / B mensaje curiosidad / C enganchar recepcionista) | Recepción contesta |
 | `opener` | Apertura con decisor (27 seg + salida fácil + contexto fugas) | Decisor atiende |
-| `pitch` | Pattern interrupt con dato real (`{years}` + `{reviews}`) + caso de éxito (119 pacientes UY) | Después de opener |
+| `pitch` | Pattern interrupt con dato real (`{years}` + `{reviews}`) + casos de éxito UY (147 citas clínica grande / 50 agendas consultorio chico) | Después de opener |
 | `ask_meeting` | 3 variaciones (A/B/C) usando el "no" a favor | Para cerrar reunión |
 | `confirm` | Calificar + pedir email + reconfirmación anti-cancelación | Si dice sí |
 | `objection_brushoff` | Brush-offs (no interesa / email / no tiempo) → directo a Engage | Reacción instantánea |

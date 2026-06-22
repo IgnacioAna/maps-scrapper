@@ -22,7 +22,12 @@ Todo automatizado, sin que el equipo de la clinica tenga que perseguir a nadie m
 
 **Idea central que repetimos:** "Convertimos la base de datos de tu clinica en un flujo constante de pacientes que vuelven."
 
-**Prueba social que tenemos:** Con el cliente activo, en 6 semanas el sistema genero 71 citas (51 agendadas por IA + 20 derivadas al equipo), con tasa de conversion del 3,8%. Pico de 9 citas en un solo dia.
+**Prueba social que tenemos (dos casos reales, ambos en Uruguay):**
+
+- **Clinica grande** (~13.000 pacientes en base, captacion por publicidad): en 11 semanas el sistema confirmo 147 citas agendadas por la IA, con pico de 9 en un solo dia. Mas de 260 acciones de agenda gestionadas en total.
+- **Consultorio chico** (~600 pacientes en base, captacion por referidos): en 5 semanas genero 50 agendas, con 18,5% de conversion sobre las oportunidades creadas.
+
+Lo que muestran los dos juntos: el sistema funciona igual en base masiva que en base reducida. Es el argumento perfecto contra la objecion "tengo pocos pacientes". NUNCA des el nombre del cliente.
 
 ---
 

@@ -11370,7 +11370,7 @@ app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, 
 
 OBJETIVO DE LA LLAMADA: agendar reunión de 20min con el decisor (Doctor) para que Ignacio le muestre el sistema de reactivación de pacientes.
 
-OFERTA SCM: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Caso de éxito: 119 pacientes en Uruguay en 6 semanas. Ya operan en UY, MX, CO.
+OFERTA SCM: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Casos de éxito (Uruguay): clínica grande con base de ~13.000 pacientes generó 147 citas en 11 semanas; consultorio chico de ~600 pacientes generó 50 agendas en 5 semanas (18,5% de conversión). Funciona en base grande y chica.
 
 FRAMEWORK QUE EVALUÁS:
 
@@ -11384,7 +11384,7 @@ FRAMEWORK QUE EVALUÁS:
    - Mencionar dato real de ficha Google (años, reseñas) → credibilidad
    - "Detectar posibles fugas en base de pacientes" → palabra neutra
    - "Le suena eso?" → que él hable, no monólogo
-   - Caso UY 119 pacientes como social proof
+   - Casos UY (147 citas en clínica grande / 50 agendas en consultorio chico) como social proof
 
 3. ASK MEETING (usar NO a favor):
    - "Estaría en contra de tener una conversación?"

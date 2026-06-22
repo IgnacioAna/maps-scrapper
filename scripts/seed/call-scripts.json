@@ -86,9 +86,9 @@
     },
     {
       "id": "pitch_caso_exito",
-      "label": "💡 Caso de éxito · 119 pacientes UY",
+      "label": "💡 Caso de éxito · resultados reales UY",
       "trigger": "pitch",
-      "text": "Si muestra interés:\n\n\"Bien, justamente lo que hacemos es implementar un sistema que reactiva esa base automáticamente. Una clínica en Uruguay recuperó 119 pacientes en 6 semanas sin que el equipo hiciera nada.\"\n\n\"Lo que me gustaría es agendar 20 minutos para que Ignacio, que es quien implementa los sistemas, le muestre cómo funcionaría aplicado a su clínica.\"",
+      "text": "Si muestra interés. Elegí el caso que matchee el tamaño del prospecto:\n\n\"Bien, justamente lo que hacemos es implementar un sistema que reactiva esa base automáticamente.\"\n\n▶ Base grande: \"Una clínica acá en Uruguay generó 147 citas en 11 semanas, sin que el equipo hiciera nada. Pico de 9 agendas en un solo día.\"\n▶ Base chica: \"Un consultorio de unos 600 pacientes sacó 50 agendas en 5 semanas. Funciona igual con base reducida.\"\n\n\"Lo que me gustaría es agendar 20 minutos para que Ignacio, que es quien implementa los sistemas, le muestre cómo funcionaría aplicado a su clínica.\"",
       "tags": ["pitch", "social-proof"]
     },
     {
