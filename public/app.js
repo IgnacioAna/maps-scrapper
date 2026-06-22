@@ -4388,9 +4388,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
         // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
         // al 3er no-contacto se descartan automáticamente (backend).
-        // 3) Vírgenes priorizados (nunca llamados, por score)
-        const virgenes = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0))
-          .sort((a, b) => _callScore(b) - _callScore(a)).slice(0, 40);
+        // 3) Vírgenes priorizados (nunca llamados, por score). Mostramos solo el TOP 40
+        // (shortlist del día); virgenesAll guarda el total real para el contador "40 de N".
+        const virgenesAll = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0))
+          .sort((a, b) => _callScore(b) - _callScore(a));
+        const virgenes = virgenesAll.slice(0, 40);
 
         // KPIs hoy
         if (kpisEl && mResp) {
@@ -4404,18 +4406,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           } catch {}
         }
         const totalPend = callbacks.length + interesados.length;
-        if (greetEl) greetEl.textContent = `${totalPend} para seguir · ${virgenes.length} nuevos en cola`;
+        if (greetEl) greetEl.textContent = `${totalPend} para seguir · ${virgenesAll.length} nuevos en cola`;
 
         secEl.innerHTML =
           _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar') +
           _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar') +
-          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca contactados, por prioridad');
+          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca contactados, por prioridad', virgenesAll.length);
       } catch (e) {
         console.error('[hoy]', e);
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
       }
     }
-    function _hoyRenderSection(title, leads, accent, hint) {
+    function _hoyRenderSection(title, leads, accent, hint, total) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
@@ -4442,7 +4444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="display:flex; align-items:baseline; gap:9px; padding:12px 14px;">
           <span style="width:7px; height:7px; border-radius:50%; background:${accent}; flex-shrink:0; align-self:center;"></span>
           <span style="font-size:13px; font-weight:700; color:var(--text-primary);">${title}</span>
-          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}</span>
+          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}${(total && total > leads.length) ? ` <span style="font-weight:500; font-size:11px;">de ${total}</span>` : ''}</span>
           <span style="font-size:11px; color:var(--text-tertiary); margin-left:auto;">${hint}</span>
         </div>
         ${leads.length ? rows : '<div style="padding:0 14px 14px; color:var(--text-tertiary); font-size:11.5px;">Sin pendientes.</div>'}
