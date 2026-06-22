@@ -851,9 +851,9 @@
             <select id="calls-setter-select" class="calls-filter-select" data-roles="admin"><option value="">Todos los setters</option></select>
             <select id="calls-country-filter" class="calls-filter-select" style="min-width:160px;"><option value="">Todos los países</option></select>
             <select id="calls-sort-select" class="calls-filter-select" style="min-width:180px;" title="Orden de la lista">
-              <option value="score">Prioridad (mejor a llamar)</option>
+              <option value="score" selected>Prioridad (mejor a llamar)</option>
               <option value="follow_up">Para seguir (callbacks + cortados)</option>
-              <option value="never_called" selected>Nunca llamados primero</option>
+              <option value="never_called">Nunca llamados primero</option>
               <option value="recent">Más recientes</option>
               <option value="oldest">Más viejos</option>
               <option value="country">Por país</option>
@@ -3228,7 +3228,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260621b"></script>
+  <script type="module" src="/app.js?v=20260621c"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

@@ -4388,11 +4388,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
         // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
         // al 3er no-contacto se descartan automáticamente (backend).
-        // 3) Vírgenes priorizados (nunca llamados, por score). Mostramos solo el TOP 40
-        // (shortlist del día); virgenesAll guarda el total real para el contador "40 de N".
-        const virgenesAll = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0))
-          .sort((a, b) => _callScore(b) - _callScore(a));
-        const virgenes = virgenesAll.slice(0, 40);
+        // 3) Leads nuevos (nunca llamados): SOLO los contamos para el puntero. El orden
+        // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
+        // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
+        const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
 
         // KPIs hoy
         if (kpisEl && mResp) {
@@ -4406,12 +4405,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           } catch {}
         }
         const totalPend = callbacks.length + interesados.length;
-        if (greetEl) greetEl.textContent = `${totalPend} para seguir · ${virgenesAll.length} nuevos en cola`;
+        if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
 
         secEl.innerHTML =
           _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar') +
           _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar') +
-          _hoyRenderSection('Nuevos priorizados', virgenes, '#9D85F2', 'Nunca contactados, por prioridad', virgenesAll.length);
+          _hoyNewLeadsPointer(virgenesCount);
       } catch (e) {
         console.error('[hoy]', e);
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
@@ -4448,6 +4447,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span style="font-size:11px; color:var(--text-tertiary); margin-left:auto;">${hint}</span>
         </div>
         ${leads.length ? rows : '<div style="padding:0 14px 14px; color:var(--text-tertiary); font-size:11.5px;">Sin pendientes.</div>'}
+      </div>`;
+    }
+    // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
+    // los nuevos se trabajan en Llamadas/Power Dialer, ya ordenados por prioridad.
+    function _hoyNewLeadsPointer(count) {
+      return `<div style="background:var(--bg-card, rgba(255,255,255,0.015)); border:1px solid var(--border-color); border-radius:10px; overflow:hidden;">
+        <div style="display:flex; align-items:center; gap:12px; padding:13px 14px;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#9D85F2; flex-shrink:0;"></span>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Leads nuevos para llamar</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${count ? `<strong>${count}</strong> sin llamar — ya ordenados por prioridad en Llamadas` : 'No quedan leads nuevos sin llamar.'}</div>
+          </div>
+          ${count ? `<button onclick="document.querySelector('[data-target=&quot;view-calls&quot;]')?.click()" style="background:var(--accent); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit;">Ir a Llamadas</button>` : ''}
+        </div>
       </div>`;
     }
     window.loadHoyView = loadHoyView;
@@ -4734,7 +4747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // EXCLUYENDO descartados/agendados/callbacks futuros — esos no se quieren llamar ahora.
       const country = document.getElementById('calls-country-filter')?.value || '';
       const search = (document.getElementById('calls-search')?.value || '').toLowerCase().trim();
-      const sortMode = document.getElementById('calls-sort-select')?.value || 'never_called';
+      const sortMode = document.getElementById('calls-sort-select')?.value || 'score';
       const now = Date.now();
       let leads = callsLeadsCache.slice();
       if (country) leads = leads.filter(l => (l.country || '').trim() === country);
@@ -5976,7 +5989,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const list = document.getElementById('calls-list');
       const country = document.getElementById('calls-country-filter').value;
       const search = (document.getElementById('calls-search')?.value || '').toLowerCase().trim();
-      const sortMode = document.getElementById('calls-sort-select')?.value || 'never_called';
+      const sortMode = document.getElementById('calls-sort-select')?.value || 'score';
       const now = Date.now();
 
       let leads = callsLeadsCache.slice();
