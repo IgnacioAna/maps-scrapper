@@ -2302,6 +2302,11 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   }
 
   const results = {}; const skips = {}; const errors = {}; let briefed = 0; let attempts = 0;
+  // Anti-sangrado: place_ids resueltos por búsqueda (persistir aunque falle reseñas,
+  // así no se re-paga la búsqueda en la próxima barrida). Y detector de throttle real
+  // (si NO es throttle, marcamos skip para no reintentar+recobrar indefinidamente).
+  const resolvedPids = {};
+  const _isThrottleErr = (m) => /throttl|rate.?limit|per hour|exceeding 200|too many|429/i.test(String(m || ''));
   // Conocimiento del equipo (Mercury system prompt + aprendizajes) — se computa UNA
   // vez y se inyecta en cada brief para que la IA analice con TODO el contexto.
   const briefKnowledge = _briefKnowledge();
@@ -2336,9 +2341,16 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         ]);
         // SerpApi devolvió error → NO marcar skip (sería falso "sin ficha"). Capturamos
         // el MENSAJE REAL (throttle? quota? sin resultados? key?) para no adivinar.
-        if (sj && sj.error) { errors.serp_error = (errors.serp_error || 0) + 1; if (!errors.serpDetail) errors.serpDetail = 'búsqueda: ' + String(sj.error).slice(0, 200); continue; }
+        if (sj && sj.error) {
+          errors.serp_error = (errors.serp_error || 0) + 1;
+          if (!errors.serpDetail) errors.serpDetail = 'búsqueda: ' + String(sj.error).slice(0, 200);
+          // Si NO es throttle (error persistente), marcar skip → no reintentar+recobrar.
+          if (!_isThrottleErr(sj.error)) skips[c.id] = 'serp_error';
+          continue;
+        }
         const lr = sj?.local_results?.[0] || null;
         placeId = lr?.place_id || '';
+        if (placeId) resolvedPids[c.id] = placeId; // persistir aunque luego falle reseñas
         // Data GRATIS del response que ya pagamos: capturar para enriquecer el lead.
         if (lr) enriched = {
           coordinates: lr.gps_coordinates ? { lat: lr.gps_coordinates.latitude, lng: lr.gps_coordinates.longitude } : null,
@@ -2356,7 +2368,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
       ]);
       // Error de reseñas → NO marcar bad_llm; dejar pendiente. Capturar mensaje real.
-      if (rj && rj.error) { errors.serp_error = (errors.serp_error || 0) + 1; if (!errors.serpDetail) errors.serpDetail = 'reseñas: ' + String(rj.error).slice(0, 200); continue; }
+      if (rj && rj.error) {
+        errors.serp_error = (errors.serp_error || 0) + 1;
+        if (!errors.serpDetail) errors.serpDetail = 'reseñas: ' + String(rj.error).slice(0, 200);
+        // place_id ya resuelto (registrado arriba); si el error NO es throttle, marcar
+        // skip para no volver a pagar la búsqueda+reseñas de este lead cada barrida.
+        if (!_isThrottleErr(rj.error)) skips[c.id] = 'reviews_error';
+        continue;
+      }
       // Antigüedad (proxy): la reseña MÁS VIEJA → "en Google desde ~X". Es cota
       // mínima (pueden ser más antiguos), pero sale gratis de la misma llamada.
       let oldestReviewIso = '';
@@ -2377,9 +2396,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   }
   let applied = 0;
   const builtBriefs = {}; // para devolver el brief al front (refresco en vivo del dialer)
-  if (Object.keys(results).length || Object.keys(skips).length) {
+  if (Object.keys(results).length || Object.keys(skips).length || Object.keys(resolvedPids).length) {
     makeBackup('pre-enrich-brief');
     await mutateSettersData((d) => {
+      // Persistir place_id resuelto por búsqueda aunque el lead no se haya brieféado
+      // (reseñas fallaron). Así la próxima vez NO se re-paga la búsqueda de la ficha.
+      for (const id of Object.keys(resolvedPids)) {
+        const lead = d.leads && d.leads[id]; if (lead && !lead.placeId) lead.placeId = resolvedPids[id];
+      }
       // Marca los que no resolvieron para no reintentarlos (y quemar quota) en la
       // próxima barrida. force:true (botón por-lead) los puede reintentar igual.
       for (const id of Object.keys(skips)) {
