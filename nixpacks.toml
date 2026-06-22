@@ -2,7 +2,9 @@
 nixPkgs = ["nodejs_20"]
 
 [start]
-# Audit 2026-06-20: NODE_ENV=production explícito → activa cookie Secure, webhook
-# fail-closed, JWT fail-fast, no-leak de errores y CORS de Socket.IO en Railway.
-# (Requiere JWT_SECRET seteado en Railway — lo está, 64 chars.)
-cmd = "NODE_ENV=production node index.js"
+# 2026-06-21: NODE_ENV NO se fuerza acá (revertido por sospecha de que el fail-fast
+# de JWT_SECRET podía crashear el deploy → "Railway andando mal"). Para activar las
+# protecciones prod-only (cookie Secure, webhook fail-closed, JWT fail-fast, no-leak
+# de errores, CORS Socket.IO), setear NODE_ENV=production como VARIABLE en Railway
+# (Settings → Variables) — así es un toggle, no rompe el deploy si algo falta.
+cmd = "node index.js"
