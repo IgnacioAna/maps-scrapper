@@ -7723,16 +7723,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!confirm(`Generar Brief IA para "${name}"?\nRe-fetchea reseñas de Google + corre la IA (dolores, hook, fit). Cuesta SerpApi + LLM.`)) return;
       const orig = btn ? btn.textContent : '';
       if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+      const ctrl = new AbortController();
+      const _to = setTimeout(() => ctrl.abort(), 55000);
       try {
-        const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [leadId], limit: 1, force: true }) });
+        const resp = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [leadId], limit: 1, force: true }), signal: ctrl.signal });
         const d = await resp.json();
         if (!resp.ok) { alert('⚠️ ' + (d.error || 'error')); }
         else if ((d.briefed || 0) > 0) { loadCallsView(); return; }
         else {
-          const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : ((d.errors && Object.keys(d.errors).join(', ')) || 'sin reseñas suficientes');
-          alert(`No se pudo generar el brief: ${why}.\nProbá con otro lead que sí aparezca en Google Maps.`);
+          const e2 = d.errors || {};
+          const why = e2.serp_error ? 'SerpApi te frenó (límite de 200 búsquedas/hora del plan). Esperá ~30-60 min y reintentá.'
+            : e2.no_place_id ? 'no tiene ficha en Google (nombre genérico, no resuelve)'
+            : (Object.keys(e2).join(', ') || 'sin reseñas suficientes o la IA no devolvió nada');
+          alert(`No se pudo generar el brief: ${why}`);
         }
-      } catch (e) { console.error(e); alert('⚠️ error de red'); }
+      } catch (e) {
+        console.error(e);
+        alert(e.name === 'AbortError' ? 'Tardó demasiado (>55s) — puede ser el límite de SerpApi (200/hora). Reintentá en un rato.' : '⚠️ error de red');
+      } finally { clearTimeout(_to); }
       if (btn) { btn.disabled = false; btn.textContent = orig || 'brief IA'; }
     };
     // Contacto secundario: cargar el número que pasó la recepción (encargado/decisor).
@@ -7799,20 +7807,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!id) return;
       const lead = _callsLeadsById.get(id);
       const btn = document.getElementById('pd-gen-brief-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Generando (tarda)…'; }
+      if (btn) { btn.disabled = true; btn.textContent = 'Generando… (10-40s: Google + IA)'; }
+      // Timeout duro en el front: si el backend se cuelga (SerpApi lento/frenado),
+      // el botón no queda "Generando…" para siempre.
+      const ctrl = new AbortController();
+      const _to = setTimeout(() => ctrl.abort(), 55000);
       try {
-        const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id], limit: 1, force: true }) });
+        const r = await fetch(apiUrl('/api/admin/enrich-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id], limit: 1, force: true }), signal: ctrl.signal });
         const d = await r.json();
         if (r.ok && (d.briefed || 0) > 0 && d.leadBriefs && d.leadBriefs[id]) {
           if (lead) { lead.leadBrief = d.leadBriefs[id]; if (window._leadStoreApply) window._leadStoreApply(id, { leadBrief: d.leadBriefs[id] }); }
           _pdRender();
           window.showToast?.('✓ Brief generado', { type: 'success' });
         } else {
-          const why = (d.errors && d.errors.no_place_id) ? 'no tiene ficha en Google (nombre genérico)' : 'no se pudo (sin reseñas o IA caída)';
-          window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 5000 });
+          const e2 = d.errors || {};
+          let why;
+          if (e2.serp_error) why = 'SerpApi te frenó (límite de 200 búsquedas/hora del plan). Esperá ~30-60 min y reintentá.';
+          else if (e2.no_place_id) why = 'no tiene ficha en Google (nombre genérico, no resuelve el place_id)';
+          else if (r.status === 503) why = 'falta API key (SerpApi o IA) en Railway';
+          else why = 'sin reseñas suficientes o la IA no devolvió nada';
+          window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 7000 });
           if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; }
         }
-      } catch (e) { console.error(e); window.showToast?.('Error de red', { type: 'error' }); if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; } }
+      } catch (e) {
+        console.error(e);
+        const msg = e.name === 'AbortError'
+          ? 'Tardó demasiado (>55s) — puede ser el límite de SerpApi (200/hora). Reintentá en un rato.'
+          : 'Error de red';
+        window.showToast?.(msg, { type: 'error', duration: 6000 });
+        if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; }
+      } finally { clearTimeout(_to); }
     };
     // Sprint 31: bulk operations wiring
     document.getElementById('calls-bulk-clear')?.addEventListener('click', () => {
