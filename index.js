@@ -2338,6 +2338,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         variants.push(c.name);
         const qList = (explicitIds && explicitIds.length) ? [...new Set(variants)] : variants.slice(0, 1);
         let serpErrored = null;
+        let lastDiag = '';
         for (const q of qList) {
           if (placeId) break;
           const sp = { engine: 'google_maps', type: 'search', q, api_key: serpKey };
@@ -2348,6 +2349,8 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
             getJson(sp),
             new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
           ]);
+          // Diagnóstico: qué devolvió SerpApi de verdad para esta query.
+          lastDiag = `q="${String(q).slice(0, 50)}" local=${sj?.local_results?.length || 0} place_results=${sj?.place_results?.place_id ? 'sí' : 'no'} keys=[${Object.keys(sj || {}).slice(0, 10).join(',')}]`;
           if (sj && sj.error) { serpErrored = String(sj.error); break; }
           // SerpApi devuelve `place_results` (objeto único) cuando la query matchea UN
           // solo negocio (típico de "nombre, ciudad"), o `local_results` (lista) cuando
@@ -2375,6 +2378,8 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
           if (!_isThrottleErr(serpErrored)) skips[c.id] = 'serp_error';
           continue;
         }
+        // No resolvió place_id (sin error de SerpApi) → guardar QUÉ devolvió, para diagnóstico.
+        if (!placeId && lastDiag && !errors.resolveDetail) errors.resolveDetail = lastDiag;
       }
       if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; skips[c.id] = 'no_place_id'; continue; }
       const rj = await Promise.race([

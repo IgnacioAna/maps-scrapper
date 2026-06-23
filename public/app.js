@@ -7750,7 +7750,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.warn('[brief] respuesta completa:', d);
           const why = e2.serp_error ? _serpReason(e2).msg
             : e2.bad_llm ? ('la IA no devolvió un brief — ' + (e2.llmDetail || 'sin detalle'))
-            : e2.no_place_id ? 'no tiene ficha en Google (nombre genérico, no resuelve)'
+            : e2.no_place_id ? ('no resuelve la ficha en Google. ' + (e2.resolveDetail ? '[SerpApi: ' + e2.resolveDetail + ']' : ''))
             : e2.exDetail ? ('error del sistema: ' + e2.exDetail)
             : (Object.keys(e2).join(', ') || 'sin reseñas suficientes o la IA no devolvió nada');
           alert(`No se pudo generar el brief: ${why}`);
@@ -7842,7 +7842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           let why;
           if (e2.serp_error) why = _serpReason(e2).msg;
           else if (e2.bad_llm) why = 'la IA no devolvió un brief — ' + (e2.llmDetail || 'sin detalle') + (e2.reviewsSeen != null ? ` (vio ${e2.reviewsSeen} reseñas)` : '');
-          else if (e2.no_place_id) why = 'no tiene ficha en Google (nombre genérico, no resuelve el place_id)';
+          else if (e2.no_place_id) why = 'no resuelve la ficha en Google. ' + (e2.resolveDetail ? '[SerpApi: ' + e2.resolveDetail + ']' : '');
           else if (r.status === 503) why = 'falta API key (SerpApi o IA) en Railway';
           else if (e2.exDetail) why = 'error del sistema: ' + e2.exDetail;
           else why = (d.scanned ? `escaneó ${d.scanned} pero no generó nada (mirá la consola)` : 'sin candidatos');
