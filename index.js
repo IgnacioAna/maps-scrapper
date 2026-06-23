@@ -2388,11 +2388,18 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         .filter((r) => r && r.snippet)
         .sort((a, b) => ((a.rating == null ? 3 : a.rating) - (b.rating == null ? 3 : b.rating)))
         .map((r) => r.snippet);
-      const { parsed: out } = await _briefLLM(_buildBriefMessages(c, reviews, briefKnowledge));
-      if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; skips[c.id] = 'bad_llm'; continue; }
+      const { parsed: out, raw: llmRaw } = await _briefLLM(_buildBriefMessages(c, reviews, briefKnowledge));
+      if (!out) {
+        errors.bad_llm = (errors.bad_llm || 0) + 1;
+        // Diagnóstico: QUÉ devolvió la IA (vacío = prompt/modelo; texto = parseo).
+        if (!errors.llmDetail) errors.llmDetail = llmRaw ? ('IA devolvió: ' + String(llmRaw).slice(0, 200)) : 'IA devolvió VACÍO (0 reseñas usables o el modelo no respondió)';
+        errors.reviewsSeen = (errors.reviewsSeen || 0) + reviews.length;
+        skips[c.id] = 'bad_llm';
+        continue;
+      }
       results[c.id] = { ...out, placeId, reviewsMined: reviews.length, enriched, oldestReviewIso };
       briefed++;
-    } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; }
+    } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; if (!errors.exDetail) errors.exDetail = String(e?.message || e).slice(0, 200); }
   }
   let applied = 0;
   const builtBriefs = {}; // para devolver el brief al front (refresco en vivo del dialer)

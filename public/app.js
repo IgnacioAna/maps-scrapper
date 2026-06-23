@@ -7747,8 +7747,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if ((d.briefed || 0) > 0) { loadCallsView(); return; }
         else {
           const e2 = d.errors || {};
+          console.warn('[brief] respuesta completa:', d);
           const why = e2.serp_error ? _serpReason(e2).msg
+            : e2.bad_llm ? ('la IA no devolvió un brief — ' + (e2.llmDetail || 'sin detalle'))
             : e2.no_place_id ? 'no tiene ficha en Google (nombre genérico, no resuelve)'
+            : e2.exDetail ? ('error del sistema: ' + e2.exDetail)
             : (Object.keys(e2).join(', ') || 'sin reseñas suficientes o la IA no devolvió nada');
           alert(`No se pudo generar el brief: ${why}`);
         }
@@ -7838,10 +7841,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           const e2 = d.errors || {};
           let why;
           if (e2.serp_error) why = _serpReason(e2).msg;
+          else if (e2.bad_llm) why = 'la IA no devolvió un brief — ' + (e2.llmDetail || 'sin detalle') + (e2.reviewsSeen != null ? ` (vio ${e2.reviewsSeen} reseñas)` : '');
           else if (e2.no_place_id) why = 'no tiene ficha en Google (nombre genérico, no resuelve el place_id)';
           else if (r.status === 503) why = 'falta API key (SerpApi o IA) en Railway';
-          else why = 'sin reseñas suficientes o la IA no devolvió nada';
-          window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 7000 });
+          else if (e2.exDetail) why = 'error del sistema: ' + e2.exDetail;
+          else why = (d.scanned ? `escaneó ${d.scanned} pero no generó nada (mirá la consola)` : 'sin candidatos');
+          console.warn('[brief] respuesta completa:', d);
+          window.showToast?.('No se pudo: ' + why, { type: 'warn', duration: 9000 });
           if (btn) { btn.disabled = false; btn.textContent = 'Generar brief IA ahora'; }
         }
       } catch (e) {
