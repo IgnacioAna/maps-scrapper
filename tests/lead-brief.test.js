@@ -22,7 +22,7 @@ fs.writeFileSync(path.join(tmpData, "auth.json"), JSON.stringify({ users: [{ id:
 fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2));
 
 await import("../index.js");
-const { _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews } = globalThis.__phase16;
+const { _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise } = globalThis.__phase16;
 
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
@@ -93,12 +93,37 @@ describe("_synthBriefText", () => {
     expect(r.hookPhrase).toContain("no atienden el teléfono");
     expect(r.brief).toContain("64 reseñas");
     expect(r.brief).toContain("implantes");
-    expect(r.brief).toContain("¿cómo te encuentran");
+  });
+  it("NO repite el openingAngle en brief ni hook (ya se muestra arriba)", () => {
+    const lead = { reviews: 17, rating: "4.5", openingAngle: "Sin sitio web → ¿cómo te encuentran?" };
+    const r = _synthBriefText(lead, { painPoints: [], treatments: ["ortodoncia"] });
+    expect(r.brief).not.toContain("¿cómo te encuentran");
+    expect(r.hookPhrase).toBe(""); // sin dolor real, hook vacío (no echa el ángulo)
   });
   it("respeta brief/hook si la IA los dio", () => {
     const r = _synthBriefText({}, { brief: "brief de la IA", hookPhrase: "hook de la IA", painPoints: [], treatments: [] });
     expect(r.brief).toBe("brief de la IA");
     expect(r.hookPhrase).toBe("hook de la IA");
+  });
+});
+
+describe("_looksLikePromptNoise (filtro de ruido del prompt loreado por Mercury)", () => {
+  it("detecta fragmentos de instrucciones/sintaxis JSON", () => {
+    expect(_looksLikePromptNoise("y termina con }. NUNCA un array [")).toBe(true); // bug Andrés Niño
+    expect(_looksLikePromptNoise("un único objeto JSON")).toBe(true);
+    expect(_looksLikePromptNoise('{"treatments":[]}')).toBe(true);
+    expect(_looksLikePromptNoise("")).toBe(true);
+  });
+  it("deja pasar lenguaje natural real", () => {
+    expect(_looksLikePromptNoise("no atienden el teléfono")).toBe(false);
+    expect(_looksLikePromptNoise("esperé más de una hora en la sala")).toBe(false);
+    expect(_looksLikePromptNoise("ortodoncia")).toBe(false);
+  });
+  it("_parseBriefOutput filtra el ruido del prompt de painPoints/treatments", () => {
+    const out = _parseBriefOutput('{"treatments":["ortodoncia","un array []"],"painPoints":["no contestan el teléfono","y termina con }. NUNCA un array ["],"brief":"clínica buena"}');
+    expect(out.treatments).toEqual(["ortodoncia"]);
+    expect(out.painPoints).toHaveLength(1);
+    expect(out.painPoints[0].dolor).toContain("no contestan");
   });
 });
 
@@ -113,9 +138,15 @@ describe("_fallbackBriefFromReviews", () => {
     expect(r.painPoints).toHaveLength(1);
     expect(r.painPoints[0].dolor).toContain("mala experiencia");
   });
-  it("rating alto sin quejas → painPoints vacío (no fabrica dolores de reseñas positivas)", () => {
+  it("rating alto sin quejas ni tratamientos inferibles → null (no card redundante con el ángulo)", () => {
     const r = _fallbackBriefFromReviews({ reviews: 5, rating: "5.0" }, ["Excelente", "Muy buena atención", "Los mejores"]);
+    expect(r).toBeNull();
+  });
+  it("reseñas positivas pero con tratamiento inferible → brief de tratamientos (sin dolores)", () => {
+    const r = _fallbackBriefFromReviews({ reviews: 5, rating: "5.0" }, ["Excelente, me hicieron ortodoncia", "Muy buena atención"]);
+    expect(r).not.toBeNull();
     expect(r.painPoints).toHaveLength(0);
+    expect(r.treatments).toContain("ortodoncia");
   });
   it("0 reseñas → null (no hay con qué armar nada)", () => {
     expect(_fallbackBriefFromReviews({}, [])).toBeNull();

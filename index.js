@@ -814,7 +814,7 @@ function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
   ].filter(Boolean).join('\n');
   const sys = 'Sos un analista SDR para venta de servicios de marketing/sistemas a clínicas dentales y estéticas. ' +
     'A partir de los datos del negocio y sus reseñas de Google, generás MUNICIÓN para una llamada en frío (no un libreto). ' +
-    'Devolvé UN ÚNICO objeto JSON: empieza con { y termina con }. NUNCA un array []. Sin markdown ni texto extra.\n' +
+    'Devolvé SOLAMENTE un objeto JSON válido (un solo objeto, NO una lista). Sin markdown ni texto adicional antes o después. Copiá EXACTAMENTE la estructura del ejemplo, cambiando solo los valores por los de este negocio.\n' +
     'Ejemplo EXACTO del formato (con valores de muestra):\n' +
     '{"treatments":["implantes","ortodoncia"],"painPoints":["esperas largas en recepción (un paciente: esperé más de una hora)","cuesta sacar turno, no atienden el teléfono"],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas."}\n' +
     'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. fitScore = número 0-100. hookPhrase = una frase COMPLETA y autosuficiente (10-25 palabras) de apertura con un dato real; NUNCA la dejes a medias ni la cortes (nada de terminar en "de", "que", "con"). brief = string de 2-3 líneas, también completo. Todo en español. Respondé SOLO el objeto JSON completo.';
@@ -830,6 +830,15 @@ function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
 // p.ej. [["ortodoncia","implantes"],["dolor real (cita textual)"]]. Rescatamos esa
 // data: strings cortos = tratamientos, frases largas = dolores. Así no se pierde lo
 // que la IA SÍ extrajo (y ya se pagó la búsqueda de reseñas de ese lead).
+// Detecta texto que NO es contenido real sino ruido del prompt/sintaxis JSON que
+// Mercury a veces lorea como si fuera output (p.ej. "...y termina con }. NUNCA un
+// array [..."). Lo filtramos de dolores/tratamientos/brief para que no aparezca en la card.
+function _looksLikePromptNoise(s) {
+  const v = String(s || '');
+  if (!v.trim()) return true;
+  if (/[{}\[\]]/.test(v)) return true; // llaves/corchetes = sintaxis JSON, no lenguaje natural
+  return /\b(json|fitscore|painpoints|hookphrase|treatments)\b/i.test(v) || /nunca un array|objeto json|un (único|unico) objeto/i.test(v);
+}
 function _classifyBriefArray(arr) {
   const flat = [];
   for (const el of (Array.isArray(arr) ? arr : [])) {
@@ -838,11 +847,11 @@ function _classifyBriefArray(arr) {
   const treatments = []; const painPoints = [];
   for (const el of flat) {
     if (el && typeof el === 'object' && !Array.isArray(el) && el.dolor) {
-      painPoints.push({ dolor: String(el.dolor).slice(0, 300), cita: String(el.cita || '').slice(0, 300) });
+      if (!_looksLikePromptNoise(el.dolor)) painPoints.push({ dolor: String(el.dolor).slice(0, 300), cita: String(el.cita || '').slice(0, 300) });
       continue;
     }
     if (typeof el !== 'string') continue;
-    const s = el.trim(); if (!s) continue;
+    const s = el.trim(); if (!s || _looksLikePromptNoise(s)) continue;
     const words = s.split(/\s+/).length;
     if (words <= 3 && s.length <= 40 && !/[.()]/.test(s)) treatments.push(s.slice(0, 40));
     else painPoints.push({ dolor: s.slice(0, 300), cita: '' });
@@ -856,17 +865,15 @@ function _synthBriefText(lead = {}, parsed = {}) {
   const pains = Array.isArray(parsed.painPoints) ? parsed.painPoints.filter((p) => p && p.dolor) : [];
   const treats = Array.isArray(parsed.treatments) ? parsed.treatments.filter(Boolean) : [];
   const out = { hookPhrase: String(parsed.hookPhrase || '').trim(), brief: String(parsed.brief || '').trim() };
-  if (!out.hookPhrase) {
-    if (pains.length) out.hookPhrase = ('Varios pacientes mencionan: ' + pains[0].dolor).slice(0, 240);
-    else if (lead.openingAngle) out.hookPhrase = lead.openingAngle;
-  }
+  // Hook SOLO de un dolor real. NO usar openingAngle: ya se muestra arriba en su
+  // propia caja → repetirlo en el brief es ruido redundante (queja del user).
+  if (!out.hookPhrase && pains.length) out.hookPhrase = ('Varios pacientes mencionan: ' + pains[0].dolor).slice(0, 240);
   if (!out.brief) {
     const bits = [];
     const revN = parseInt(lead.reviews, 10) || 0;
     if (revN) bits.push(`${revN} reseñas${lead.rating ? `, rating ${lead.rating}` : ''} en Google.`);
     if (pains.length) bits.push('Dolores detectados: ' + pains.slice(0, 2).map((p) => p.dolor).join('; ') + '.');
     if (treats.length) bits.push('Ofrece: ' + treats.slice(0, 5).join(', ') + '.');
-    if (lead.openingAngle) bits.push(lead.openingAngle); // siempre el ángulo estratégico
     out.brief = bits.join(' ').slice(0, 600);
   }
   return out;
@@ -883,11 +890,14 @@ function _fallbackBriefFromReviews(lead = {}, snippets = []) {
   const revs = (Array.isArray(snippets) ? snippets : [])
     .map((s) => String(s || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
   if (!revs.length) return null;
-  const painPoints = revs.filter((s) => _REVIEW_NEG_HINTS.test(s)).slice(0, 3)
+  const painPoints = revs.filter((s) => _REVIEW_NEG_HINTS.test(s) && !_looksLikePromptNoise(s)).slice(0, 3)
     .map((s) => ({ dolor: s.slice(0, 280), cita: s.slice(0, 280) }));
   const blob = revs.join(' ').toLowerCase();
   const treatments = [];
   for (const t of _DENTAL_TREATMENTS) { if (blob.includes(t) && !treatments.includes(t)) treatments.push(t); }
+  // Sin dolores reales NI tratamientos inferibles → el brief no agregaría nada sobre
+  // el ángulo (que ya se ve arriba). Devolvemos null para NO mostrar una card redundante.
+  if (!painPoints.length && !treatments.length) return null;
   return { treatments: treatments.slice(0, 8), painPoints, fitScore: null, hookPhrase: '', brief: '', fromReviews: true };
 }
 // Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido y el caso
@@ -913,23 +923,20 @@ function _parseBriefOutput(text) {
     }
     return null;
   }
-  const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string').slice(0, 12) : [];
+  const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string' && !_looksLikePromptNoise(x)).slice(0, 12) : [];
   const painPoints = Array.isArray(obj.painPoints)
     ? obj.painPoints.map((p) => {
         if (typeof p === 'string' && p.trim()) return { dolor: p.trim().slice(0, 300), cita: '' };
         if (p && typeof p === 'object' && p.dolor) return { dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) };
         return null;
-      }).filter(Boolean).slice(0, 5)
+      }).filter((p) => p && !_looksLikePromptNoise(p.dolor)).slice(0, 5)
     : [];
   let fitScore = parseInt(obj.fitScore, 10);
   if (!Number.isFinite(fitScore)) fitScore = null; else fitScore = Math.max(0, Math.min(100, fitScore));
-  return {
-    treatments,
-    painPoints,
-    fitScore,
-    hookPhrase: typeof obj.hookPhrase === 'string' ? obj.hookPhrase.slice(0, 300) : '',
-    brief: typeof obj.brief === 'string' ? obj.brief.slice(0, 600) : '',
-  };
+  // Sanitizar brief/hook: si Mercury loreó las instrucciones, blanquear (no mostrar ruido).
+  const hookPhrase = (typeof obj.hookPhrase === 'string' && !_looksLikePromptNoise(obj.hookPhrase)) ? obj.hookPhrase.slice(0, 300) : '';
+  const brief = (typeof obj.brief === 'string' && !_looksLikePromptNoise(obj.brief)) ? obj.brief.slice(0, 600) : '';
+  return { treatments, painPoints, fitScore, hookPhrase, brief };
 }
 // Llama al LLM con RETRY (Mercury es inconsistente para JSON en español: a veces
 // devuelve vacío o []). Hasta 3 intentos, sube temp tras el 1ro. Devuelve {parsed,raw}.
@@ -9699,7 +9706,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
