@@ -2326,41 +2326,51 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       let placeId = c.placeId;
       let enriched = null;
       if (!placeId) {
-        // Palanca de costo: buscar por "nombre, DIRECCIÓN" resuelve mucho mejor
-        // que "nombre, ciudad" (los scrapeos viejos no guardaron place_id).
+        // Resolución del place_id (scrapeos viejos no lo guardaron). En modo EXPLÍCITO
+        // (botón por-lead) probamos varias variantes de query hasta que matchee — un
+        // lead con reseñas EXISTE en Maps, pero "nombre, dirección" a veces no resuelve.
+        // En BARRIDA (bulk) una sola query, para no inflar el gasto.
         const loc = [c.city, c.country].filter(Boolean).join(', ');
-        const q = (c.address && String(c.address).trim()) ? `${c.name}, ${c.address}` : (loc ? `${c.name}, ${loc}` : c.name);
         const lc = localeForCountry(c.country) || {};
-        const sp = { engine: 'google_maps', type: 'search', q, api_key: serpKey };
-        // Desambiguar con coordenadas si el lead las tiene (sube el match rate).
-        if (c.coordinates && c.coordinates.lat != null && c.coordinates.lng != null) sp.ll = `@${c.coordinates.lat},${c.coordinates.lng},14z`;
-        if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
-        const sj = await Promise.race([
-          getJson(sp),
-          new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
-        ]);
-        // SerpApi devolvió error → NO marcar skip (sería falso "sin ficha"). Capturamos
-        // el MENSAJE REAL (throttle? quota? sin resultados? key?) para no adivinar.
-        if (sj && sj.error) {
+        const variants = [];
+        if (c.address && String(c.address).trim()) variants.push(`${c.name}, ${c.address}`);
+        if (loc) variants.push(`${c.name}, ${loc}`);
+        variants.push(c.name);
+        const qList = (explicitIds && explicitIds.length) ? [...new Set(variants)] : variants.slice(0, 1);
+        let serpErrored = null;
+        for (const q of qList) {
+          if (placeId) break;
+          const sp = { engine: 'google_maps', type: 'search', q, api_key: serpKey };
+          if (c.coordinates && c.coordinates.lat != null && c.coordinates.lng != null) sp.ll = `@${c.coordinates.lat},${c.coordinates.lng},14z`;
+          if (lc.hl) sp.hl = lc.hl; if (lc.gl) sp.gl = lc.gl; if (lc.google_domain) sp.google_domain = lc.google_domain;
+          // timeout propaga al catch externo (transitorio, reintentable) — NO se marca skip.
+          const sj = await Promise.race([
+            getJson(sp),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
+          ]);
+          if (sj && sj.error) { serpErrored = String(sj.error); break; }
+          const lr = sj?.local_results?.[0] || null;
+          if (lr && lr.place_id) {
+            placeId = lr.place_id;
+            resolvedPids[c.id] = placeId; // persistir aunque luego falle reseñas
+            enriched = {
+              coordinates: lr.gps_coordinates ? { lat: lr.gps_coordinates.latitude, lng: lr.gps_coordinates.longitude } : null,
+              openingHours: lr.operating_hours || lr.hours || null,
+              businessStatus: lr.business_status || (lr.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
+              category: lr.type || '',
+              website: lr.website || '',
+              dataId: lr.data_id || '',
+              priceLevel: lr.price || '',
+            };
+          }
+        }
+        // SerpApi devolvió error → capturar el real; si NO es throttle, marcar skip.
+        if (!placeId && serpErrored) {
           errors.serp_error = (errors.serp_error || 0) + 1;
-          if (!errors.serpDetail) errors.serpDetail = 'búsqueda: ' + String(sj.error).slice(0, 200);
-          // Si NO es throttle (error persistente), marcar skip → no reintentar+recobrar.
-          if (!_isThrottleErr(sj.error)) skips[c.id] = 'serp_error';
+          if (!errors.serpDetail) errors.serpDetail = 'búsqueda: ' + serpErrored.slice(0, 200);
+          if (!_isThrottleErr(serpErrored)) skips[c.id] = 'serp_error';
           continue;
         }
-        const lr = sj?.local_results?.[0] || null;
-        placeId = lr?.place_id || '';
-        if (placeId) resolvedPids[c.id] = placeId; // persistir aunque luego falle reseñas
-        // Data GRATIS del response que ya pagamos: capturar para enriquecer el lead.
-        if (lr) enriched = {
-          coordinates: lr.gps_coordinates ? { lat: lr.gps_coordinates.latitude, lng: lr.gps_coordinates.longitude } : null,
-          openingHours: lr.operating_hours || lr.hours || null,
-          businessStatus: lr.business_status || (lr.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
-          category: lr.type || '',
-          website: lr.website || '',
-          dataId: lr.data_id || '',
-          priceLevel: lr.price || '',
-        };
       }
       if (!placeId) { errors.no_place_id = (errors.no_place_id || 0) + 1; skips[c.id] = 'no_place_id'; continue; }
       const rj = await Promise.race([
