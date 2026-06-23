@@ -2349,18 +2349,22 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
             new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), 10000)),
           ]);
           if (sj && sj.error) { serpErrored = String(sj.error); break; }
-          const lr = sj?.local_results?.[0] || null;
-          if (lr && lr.place_id) {
-            placeId = lr.place_id;
+          // SerpApi devuelve `place_results` (objeto único) cuando la query matchea UN
+          // solo negocio (típico de "nombre, ciudad"), o `local_results` (lista) cuando
+          // hay varios. Antes solo leíamos local_results → los matches únicos (la mayoría
+          // de los leads viejos) caían como "no_place_id" aunque el negocio existe. Fix.
+          const hit = (sj?.place_results && sj.place_results.place_id) ? sj.place_results : (sj?.local_results?.[0] || null);
+          if (hit && hit.place_id) {
+            placeId = hit.place_id;
             resolvedPids[c.id] = placeId; // persistir aunque luego falle reseñas
             enriched = {
-              coordinates: lr.gps_coordinates ? { lat: lr.gps_coordinates.latitude, lng: lr.gps_coordinates.longitude } : null,
-              openingHours: lr.operating_hours || lr.hours || null,
-              businessStatus: lr.business_status || (lr.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
-              category: lr.type || '',
-              website: lr.website || '',
-              dataId: lr.data_id || '',
-              priceLevel: lr.price || '',
+              coordinates: hit.gps_coordinates ? { lat: hit.gps_coordinates.latitude, lng: hit.gps_coordinates.longitude } : null,
+              openingHours: hit.operating_hours || hit.hours || null,
+              businessStatus: hit.business_status || (hit.permanently_closed ? 'CLOSED_PERMANENTLY' : ''),
+              category: hit.type || (Array.isArray(hit.types) ? hit.types[0] : '') || '',
+              website: hit.website || '',
+              dataId: hit.data_id || '',
+              priceLevel: hit.price || '',
             };
           }
         }
