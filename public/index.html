@@ -1207,9 +1207,9 @@
         </div>
       </div>
 
-      <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-        <!-- Header con avatar + status + timer -->
-        <div style="padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; max-height:94vh; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); flex-direction:column;">
+        <!-- Header con avatar + status + timer (fijo arriba) -->
+        <div style="flex-shrink:0; padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex; align-items:center; gap:14px;">
             <!-- Avatar circular con inicial -->
             <div id="telnyx-call-avatar" style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent) 0%, #7c5ee8 100%); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; box-shadow:0 4px 12px rgba(157,133,242,0.4);">—</div>
@@ -1227,8 +1227,8 @@
           </div>
         </div>
 
-        <!-- Cuerpo: ficha del lead + "Desde tu número" + botones -->
-        <div style="padding:12px 20px 18px;">
+        <!-- Cuerpo scrolleable: ficha + histórico + desde + nota rápida -->
+        <div class="tlx-call-scroll" style="flex:1 1 auto; overflow-y:auto; min-height:0; padding:12px 20px 8px;">
 
           <!-- Ficha del lead (info scrapeada) -->
           <div id="telnyx-call-leadfile" style="display:none; margin-bottom:14px; padding:10px 12px; background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.06); border-radius:9px;">
@@ -1256,6 +1256,9 @@
             <textarea id="telnyx-call-quick-note" placeholder="Tip rápido para vos mismo: qué probaste, qué dijo el lead, qué cambiar la próxima…" rows="2" style="width:100%; padding:8px 11px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; color:#fff; font-size:11.5px; resize:vertical; min-height:50px; font-family:inherit; box-sizing:border-box;"></textarea>
           </div>
 
+        </div>
+        <!-- Footer fijo: acciones + Colgar (siempre visibles, no scrollean con la ficha) -->
+        <div style="flex-shrink:0; padding:10px 20px 14px; border-top:1px solid rgba(255,255,255,0.06); background:#11131A;">
           <!-- Botones de acción: 3 cols (Guion / Mute / Teclado) + 1 col (Colgar) -->
           <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px;">
             <button id="telnyx-call-script-toggle" class="tlx-btn-action" style="padding:11px 6px; border-radius:11px; font-size:12px; font-weight:500; cursor:pointer; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.9); border:1px solid rgba(255,255,255,0.08); transition:all 0.15s;">Guion</button>
@@ -1298,6 +1301,10 @@
           #telnyx-call-hangup:active { transform:translateY(0); }
           /* Cuando el guion está abierto, el panel principal se mueve a la izquierda */
           body.tlx-script-open #telnyx-call-panel { transform:translate(calc(-50% - 240px), -50%) !important; transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+          /* Scrollbar discreto para el cuerpo scrolleable del panel de llamada */
+          .tlx-call-scroll::-webkit-scrollbar { width:7px; }
+          .tlx-call-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.14); border-radius:4px; }
+          .tlx-call-scroll::-webkit-scrollbar-track { background:transparent; }
         </style>
       </div>
 
@@ -3228,7 +3235,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260621h"></script>
+  <script type="module" src="/app.js?v=20260623a"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

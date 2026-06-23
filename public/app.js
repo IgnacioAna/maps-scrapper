@@ -6783,7 +6783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Mostrar backdrop primero, después el panel (orden visual correcto)
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'block';
-      panel.style.display = 'block';
+      panel.style.display = 'flex'; // flex column: header fijo + medio scrolleable + footer fijo
       // Sprint 15: indicador visual en el sidebar logo (pulse) que hay llamada activa
       document.body.classList.add('has-active-call');
       _telnyxCallState.leadId = leadId;
