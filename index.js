@@ -826,15 +826,93 @@ function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
   // patrón que funciona en prod, ver autoTag, es user único + response_format json).
   return [{ role: 'user', content: sys + know + '\n\n' + user }];
 }
-// Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido. null si falla.
+// Mercury a veces devuelve un ARRAY (o array de arrays) en vez del objeto pedido,
+// p.ej. [["ortodoncia","implantes"],["dolor real (cita textual)"]]. Rescatamos esa
+// data: strings cortos = tratamientos, frases largas = dolores. Así no se pierde lo
+// que la IA SÍ extrajo (y ya se pagó la búsqueda de reseñas de ese lead).
+function _classifyBriefArray(arr) {
+  const flat = [];
+  for (const el of (Array.isArray(arr) ? arr : [])) {
+    if (Array.isArray(el)) { for (const x of el) flat.push(x); } else flat.push(el);
+  }
+  const treatments = []; const painPoints = [];
+  for (const el of flat) {
+    if (el && typeof el === 'object' && !Array.isArray(el) && el.dolor) {
+      painPoints.push({ dolor: String(el.dolor).slice(0, 300), cita: String(el.cita || '').slice(0, 300) });
+      continue;
+    }
+    if (typeof el !== 'string') continue;
+    const s = el.trim(); if (!s) continue;
+    const words = s.split(/\s+/).length;
+    if (words <= 3 && s.length <= 40 && !/[.()]/.test(s)) treatments.push(s.slice(0, 40));
+    else painPoints.push({ dolor: s.slice(0, 300), cita: '' });
+  }
+  return { treatments: treatments.slice(0, 12), painPoints: painPoints.slice(0, 5) };
+}
+// Sintetiza brief + hook cuando Mercury dio munición (dolores/tratamientos) pero NO
+// el texto del brief. Arma algo USABLE con la data real de reseñas en vez del ángulo
+// genérico → la card nunca queda vacía si hubo extracción.
+function _synthBriefText(lead = {}, parsed = {}) {
+  const pains = Array.isArray(parsed.painPoints) ? parsed.painPoints.filter((p) => p && p.dolor) : [];
+  const treats = Array.isArray(parsed.treatments) ? parsed.treatments.filter(Boolean) : [];
+  const out = { hookPhrase: String(parsed.hookPhrase || '').trim(), brief: String(parsed.brief || '').trim() };
+  if (!out.hookPhrase) {
+    if (pains.length) out.hookPhrase = ('Varios pacientes mencionan: ' + pains[0].dolor).slice(0, 240);
+    else if (lead.openingAngle) out.hookPhrase = lead.openingAngle;
+  }
+  if (!out.brief) {
+    const bits = [];
+    const revN = parseInt(lead.reviews, 10) || 0;
+    if (revN) bits.push(`${revN} reseñas${lead.rating ? `, rating ${lead.rating}` : ''} en Google.`);
+    if (pains.length) bits.push('Dolores detectados: ' + pains.slice(0, 2).map((p) => p.dolor).join('; ') + '.');
+    if (treats.length) bits.push('Ofrece: ' + treats.slice(0, 5).join(', ') + '.');
+    if (lead.openingAngle) bits.push(lead.openingAngle); // siempre el ángulo estratégico
+    out.brief = bits.join(' ').slice(0, 600);
+  }
+  return out;
+}
+// Tratamientos dentales comunes (ES) para inferir sin LLM por keyword-scan.
+const _DENTAL_TREATMENTS = ['ortodoncia', 'brackets', 'invisalign', 'implantes', 'limpieza', 'blanqueamiento', 'endodoncia', 'extracción', 'extracciones', 'prótesis', 'corona', 'coronas', 'carillas', 'resina', 'conducto', 'periodoncia', 'odontopediatría', 'rehabilitación', 'cirugía', 'estética dental', 'frenos', 'muelas'];
+// Quejas reales: keywords de sentimiento negativo (para no etiquetar reseñas
+// positivas como "dolores" cuando la clínica tiene buen rating).
+const _REVIEW_NEG_HINTS = /mal[ao]s?\b|p[ée]sim|terrible|horrible|esper[aoeéó]|demor|tard[eéó]|no atien|no contest|no respond|grosero|maltrat|car[oa]\b|costos|estaf|enga[ñn]|cero profes|deficiente|lament|nunca volv|jam[áa]s|sucio|incompet|impuntual/i;
+// Fallback SIN IA: cuando Mercury devuelve vacío/[] pero YA pagamos las reseñas,
+// armamos un brief honesto con esa data — quejas reales (por sentimiento) + tratamientos
+// (por keywords) + el ángulo. Nunca fabrica dolores de reseñas positivas. null si 0 reseñas.
+function _fallbackBriefFromReviews(lead = {}, snippets = []) {
+  const revs = (Array.isArray(snippets) ? snippets : [])
+    .map((s) => String(s || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!revs.length) return null;
+  const painPoints = revs.filter((s) => _REVIEW_NEG_HINTS.test(s)).slice(0, 3)
+    .map((s) => ({ dolor: s.slice(0, 280), cita: s.slice(0, 280) }));
+  const blob = revs.join(' ').toLowerCase();
+  const treatments = [];
+  for (const t of _DENTAL_TREATMENTS) { if (blob.includes(t) && !treatments.includes(t)) treatments.push(t); }
+  return { treatments: treatments.slice(0, 8), painPoints, fitScore: null, hookPhrase: '', brief: '', fromReviews: true };
+}
+// Parsea el output del LLM a un brief normalizado. Tolera markdown/ruido y el caso
+// en que Mercury devuelve un array en vez del objeto. null si no hay nada usable.
 function _parseBriefOutput(text) {
   if (!text || typeof text !== 'string') return null;
   let raw = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  let obj = null;
   const a = raw.indexOf('{'); const b = raw.lastIndexOf('}');
-  if (a === -1 || b === -1 || b <= a) return null;
-  let obj;
-  try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { return null; }
-  if (!obj || typeof obj !== 'object') return null;
+  if (a !== -1 && b > a) { try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { obj = null; } }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+    // Fallback: Mercury devolvió un ARRAY → rescatar tratamientos/dolores.
+    const aa = raw.indexOf('['); const ab = raw.lastIndexOf(']');
+    if (aa !== -1 && ab > aa) {
+      let arr = null;
+      try { arr = JSON.parse(raw.slice(aa, ab + 1)); } catch { arr = null; }
+      if (Array.isArray(arr)) {
+        const salv = _classifyBriefArray(arr);
+        if (salv.treatments.length || salv.painPoints.length) {
+          return { treatments: salv.treatments, painPoints: salv.painPoints, fitScore: null, hookPhrase: '', brief: '' };
+        }
+      }
+    }
+    return null;
+  }
   const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string').slice(0, 12) : [];
   const painPoints = Array.isArray(obj.painPoints)
     ? obj.painPoints.map((p) => {
@@ -2408,15 +2486,19 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         .sort((a, b) => ((a.rating == null ? 3 : a.rating) - (b.rating == null ? 3 : b.rating)))
         .map((r) => r.snippet);
       const { parsed: out, raw: llmRaw } = await _briefLLM(_buildBriefMessages(c, reviews, briefKnowledge));
-      if (!out) {
+      // Si la IA falla (vacío/[]) pero YA pagamos las reseñas, armamos el brief sin IA
+      // con esa data (quejas reales + tratamientos + ángulo). Solo si hay 0 reseñas
+      // usables marcamos bad_llm — ahí sí no hay con qué armar nada.
+      const out2 = out || _fallbackBriefFromReviews(c, reviews);
+      if (!out2) {
         errors.bad_llm = (errors.bad_llm || 0) + 1;
-        // Diagnóstico: QUÉ devolvió la IA (vacío = prompt/modelo; texto = parseo).
-        if (!errors.llmDetail) errors.llmDetail = llmRaw ? ('IA devolvió: ' + String(llmRaw).slice(0, 200)) : 'IA devolvió VACÍO (0 reseñas usables o el modelo no respondió)';
+        if (!errors.llmDetail) errors.llmDetail = llmRaw ? ('IA devolvió: ' + String(llmRaw).slice(0, 200) + ' (sin reseñas usables)') : 'IA devolvió VACÍO y 0 reseñas usables';
         errors.reviewsSeen = (errors.reviewsSeen || 0) + reviews.length;
         skips[c.id] = 'bad_llm';
         continue;
       }
-      results[c.id] = { ...out, placeId, reviewsMined: reviews.length, enriched, oldestReviewIso };
+      if (!out && out2.fromReviews) errors.fromReviews = (errors.fromReviews || 0) + 1; // métrica: cuántos cayeron al fallback
+      results[c.id] = { ...out2, placeId, reviewsMined: reviews.length, enriched, oldestReviewIso };
       briefed++;
     } catch (e) { const k = (e?.message || 'error').slice(0, 40); errors[k] = (errors[k] || 0) + 1; if (!errors.exDetail) errors.exDetail = String(e?.message || e).slice(0, 200); }
   }
@@ -2440,10 +2522,12 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         const lead = d.leads && d.leads[id]; if (!lead) continue;
         if (lead.briefSkipped) delete lead.briefSkipped; // resolvió: limpiar marca vieja
         const r = results[id];
-        // Mercury es débil para multi-campo: a veces solo da treatments/painPoints.
-        // El hook/brief caen al openingAngle rule-based (que ya tenemos) si faltan.
-        const angle = lead.openingAngle || '';
-        lead.leadBrief = { brief: r.brief || angle, hookPhrase: r.hookPhrase || angle, painPoints: r.painPoints, treatments: r.treatments, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
+        // Mercury es débil para multi-campo: a veces da solo treatments/painPoints, o
+        // los devuelve como array. Si faltan brief/hook, los SINTETIZAMOS con la munición
+        // real (dolores de reseñas + tratamientos), no con el angle genérico → siempre
+        // hay texto útil en la card cuando hubo extracción.
+        const synth = _synthBriefText(lead, r);
+        lead.leadBrief = { brief: synth.brief, hookPhrase: synth.hookPhrase, painPoints: r.painPoints, treatments: r.treatments, fitScore: r.fitScore, reviewsMined: r.reviewsMined, at: new Date().toISOString() };
         builtBriefs[id] = lead.leadBrief;
         if (Array.isArray(r.treatments) && r.treatments.length) lead.treatments = r.treatments;
         if (r.fitScore != null) lead.fitScore = r.fitScore;
@@ -9615,7 +9699,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");

@@ -22,7 +22,7 @@ fs.writeFileSync(path.join(tmpData, "auth.json"), JSON.stringify({ users: [{ id:
 fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2));
 
 await import("../index.js");
-const { _buildBriefMessages, _parseBriefOutput } = globalThis.__phase16;
+const { _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews } = globalThis.__phase16;
 
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
@@ -64,5 +64,60 @@ describe("_parseBriefOutput", () => {
     expect(_parseBriefOutput("no soy json")).toBeNull();
     expect(_parseBriefOutput("")).toBeNull();
     expect(_parseBriefOutput(null)).toBeNull();
+  });
+  it("Mercury devuelve ARRAY de arrays → rescata tratamientos + dolores (bug Big Dental)", () => {
+    const out = _parseBriefOutput('[["ortodoncia","implantes","limpieza dental"],["el gerente movió mi moto y fue trato cero profesional (un paciente)"]]');
+    expect(out).not.toBeNull();
+    expect(out.treatments).toContain("ortodoncia");
+    expect(out.treatments).toContain("limpieza dental");
+    expect(out.painPoints).toHaveLength(1);
+    expect(out.painPoints[0].dolor).toContain("trato cero profesional");
+  });
+  it("array vacío [] → null (no hay nada que rescatar)", () => {
+    expect(_parseBriefOutput("[]")).toBeNull();
+  });
+});
+
+describe("_classifyBriefArray", () => {
+  it("strings cortos = tratamientos, frases largas = dolores", () => {
+    const r = _classifyBriefArray(["implantes", "ortodoncia", "esperé más de una hora en la sala y nadie me atendió"]);
+    expect(r.treatments).toEqual(["implantes", "ortodoncia"]);
+    expect(r.painPoints).toHaveLength(1);
+  });
+});
+
+describe("_synthBriefText", () => {
+  it("sin brief/hook pero con dolores → sintetiza texto usable (no queda vacía la card)", () => {
+    const lead = { reviews: 64, rating: "4.4", openingAngle: "Sin sitio web → ¿cómo te encuentran?" };
+    const r = _synthBriefText(lead, { painPoints: [{ dolor: "no atienden el teléfono", cita: "" }], treatments: ["implantes", "ortodoncia"] });
+    expect(r.hookPhrase).toContain("no atienden el teléfono");
+    expect(r.brief).toContain("64 reseñas");
+    expect(r.brief).toContain("implantes");
+    expect(r.brief).toContain("¿cómo te encuentran");
+  });
+  it("respeta brief/hook si la IA los dio", () => {
+    const r = _synthBriefText({}, { brief: "brief de la IA", hookPhrase: "hook de la IA", painPoints: [], treatments: [] });
+    expect(r.brief).toBe("brief de la IA");
+    expect(r.hookPhrase).toBe("hook de la IA");
+  });
+});
+
+describe("_fallbackBriefFromReviews", () => {
+  it("IA devolvió [] pero hay reseñas → arma brief de las reseñas (quejas reales + tratamientos)", () => {
+    const lead = { reviews: 11, rating: "4.8", openingAngle: "Buen rating, pocas reseñas" };
+    const r = _fallbackBriefFromReviews(lead, ["Excelente atención, muy recomendable", "Me hicieron implantes y quedé feliz", "Tardaron mucho y fue una mala experiencia"]);
+    expect(r).not.toBeNull();
+    expect(r.fromReviews).toBe(true);
+    expect(r.treatments).toContain("implantes");
+    // solo la queja negativa entra como dolor (no las reseñas positivas)
+    expect(r.painPoints).toHaveLength(1);
+    expect(r.painPoints[0].dolor).toContain("mala experiencia");
+  });
+  it("rating alto sin quejas → painPoints vacío (no fabrica dolores de reseñas positivas)", () => {
+    const r = _fallbackBriefFromReviews({ reviews: 5, rating: "5.0" }, ["Excelente", "Muy buena atención", "Los mejores"]);
+    expect(r.painPoints).toHaveLength(0);
+  });
+  it("0 reseñas → null (no hay con qué armar nada)", () => {
+    expect(_fallbackBriefFromReviews({}, [])).toBeNull();
   });
 });
