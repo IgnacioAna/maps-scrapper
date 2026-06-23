@@ -4374,12 +4374,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const leads = (await leadsResp.json()).leads || [];
         leads.forEach(l => { if (l && l.id) _callsLeadsById.set(l.id, l); });
         const now = Date.now();
+        const _endToday = new Date(); _endToday.setHours(23, 59, 59, 999); const endTodayTs = _endToday.getTime();
         const claimed = new Set();
         const notDnc = (l) => !l.doNotCall;
         const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
         const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
-        // 1) Callbacks MANUALES vencidos (el setter eligió "volver a llamar")
-        const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= now && lastOutcome(l) === 'callback_later')
+        // 1) Callbacks MANUALES que tocan HOY (vencidos + programados para hoy). El
+        // setter eligió "volver a llamar" → aparecen en Hoy el día que toca, no solo
+        // cuando ya se pasaron. (Los reintentos automáticos de no_answer/voicemail NO
+        // entran acá — esos viven solo en la cola de Llamadas/Power Dialer.)
+        const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later')
           .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
         callbacks.forEach(l => claimed.add(l.id));
         // 2) Interesados sin agendar
@@ -4553,8 +4557,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const now = Date.now();
       const horizon = now + (14 * 24 * 3600 * 1000); // próximas 2 semanas
+      // SOLO callbacks MANUALES (el setter eligió "volver a llamar"). Los reintentos
+      // automáticos de no_answer/voicemail (cadencia 24h) NO van acá — reaparecen
+      // solos en la cola de Llamadas/Power Dialer cuando vencen. Distinción por el
+      // último outcome del callLog.
+      const _lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
       const items = callsLeadsCache
-        .filter(l => l.callbackAt && !['descartado','agendado'].includes(l.estado))
+        .filter(l => l.callbackAt && !['descartado','agendado'].includes(l.estado) && _lastOutcome(l) === 'callback_later')
         .map(l => ({ lead: l, ts: new Date(l.callbackAt).getTime() }))
         .filter(x => x.ts > now && x.ts <= horizon)
         .sort((a, b) => a.ts - b.ts);
@@ -5577,10 +5586,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Interesado = máxima prioridad. Vale tanto el estado vivo como el estampado
       // por el reciclaje del pool (recontactPriority 1), que sobrevive al reset.
       if (l.estado === 'interesado' || l.recontactPriority === 1) s += 25;
-      // Callback vencido = subir (toca seguir)
+      // Callback vencido = máxima prioridad operativa: tocá YA, va PRIMERO en la cola
+      // (cubre tanto el callback manual "volver a llamar" como el auto-reintento de
+      // 24h de no_answer/voicemail). +60 base para superar a cualquier lead fresco,
+      // y más atraso = un poco más arriba (cap +20 por horas vencidas).
       if (l.callbackAt) {
         const cb = new Date(l.callbackAt).getTime();
-        if (cb && cb <= Date.now()) s += 15;
+        if (cb && cb <= Date.now()) s += 60 + Math.min(20, (Date.now() - cb) / 3600000);
       }
       // Señales negativas de teléfono
       if (l.phoneStatus === 'voicemail') s -= 6;
@@ -6824,7 +6836,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           destinationNumber: cleanDestination,
           callerNumber: cleanCaller || fromNum.phone,
           callerName: 'SCM',
-          audio: true,
+          // Constraints de mic: mejoran claridad de cómo te escucha el lead (eco,
+          // ruido de fondo, nivel). NO arreglan el "entrecortado" si el problema es
+          // la RED (eso es ancho de banda/jitter de subida → cable, cerrar pestañas).
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
           video: false,
           // CRÍTICO: el SDK lee remoteElement de options del CALL (no solo del
           // client). Sin esto, attachMediaStream() del SDK puede no encontrar

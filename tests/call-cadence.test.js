@@ -1,7 +1,8 @@
 // Phase 17 Ola 3 — cadencia de auto-redial.
 // Cada no_answer/voicemail (sin callback manual) reprograma el próximo intento a
-// +24h, hasta 3 intentos; al 3er no-contacto seguido el lead se DESCARTA solo.
-// Un connect rompe la racha. Reaparece en Llamadas/Power Dialer (no en Hoy).
+// +24h. Reaparece 3 VECES (steps 1-3); al 4to no-contacto seguido el lead se
+// DESCARTA solo. Un connect rompe la racha. Reaparece en Llamadas/Power Dialer
+// (no en "Próximos callbacks" ni en Hoy — eso es solo para callbacks manuales).
 
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import path from "node:path";
@@ -43,7 +44,7 @@ beforeAll(async () => {
 });
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
-describe("cadencia de auto-redial (3 intentos a 24h, luego descarte)", () => {
+describe("cadencia de auto-redial (3 reintentos a 24h, descarte al 4to)", () => {
   it("1er no_answer → callback +24h, step 1, no descartado", async () => {
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(1);
@@ -58,9 +59,16 @@ describe("cadencia de auto-redial (3 intentos a 24h, luego descarte)", () => {
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
     expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
   });
-  it("3er no_answer → DESCARTADO automático, sin callback", async () => {
+  it("3er no_answer → +24h, step 3, TODAVÍA no descartado (3a reaparición)", async () => {
     const r = await disp({ outcome: "no_answer" });
     expect(r.body.lead.cadenceStep).toBe(3);
+    expect(r.body.lead.estado).not.toBe("descartado");
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
+  });
+  it("4to no_answer → DESCARTADO automático, sin callback", async () => {
+    const r = await disp({ outcome: "no_answer" });
+    expect(r.body.lead.cadenceStep).toBe(4);
     expect(r.body.lead.estado).toBe("descartado");
     expect(r.body.lead.autoDiscarded).toBe(true);
     expect(r.body.lead.callbackAt).toBeFalsy();
