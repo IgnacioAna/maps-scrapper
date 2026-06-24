@@ -853,7 +853,7 @@ function _classifyBriefArray(arr) {
   const treatments = []; const painPoints = [];
   for (const el of flat) {
     if (el && typeof el === 'object' && !Array.isArray(el) && el.dolor) {
-      if (!_looksLikePromptNoise(el.dolor)) painPoints.push({ dolor: String(el.dolor).slice(0, 300), cita: String(el.cita || '').slice(0, 300) });
+      if (!_looksLikePromptNoise(el.dolor)) { const _c = String(el.cita || ''); painPoints.push({ dolor: String(el.dolor).slice(0, 300), cita: _looksLikePromptNoise(_c) ? '' : _c.slice(0, 300) }); }
       continue;
     }
     if (typeof el !== 'string') continue;
@@ -886,19 +886,30 @@ function _synthBriefText(lead = {}, parsed = {}) {
 }
 // Tratamientos dentales comunes (ES) para inferir sin LLM por keyword-scan.
 const _DENTAL_TREATMENTS = ['ortodoncia', 'brackets', 'invisalign', 'implantes', 'limpieza', 'blanqueamiento', 'endodoncia', 'extracción', 'extracciones', 'prótesis', 'corona', 'coronas', 'carillas', 'resina', 'conducto', 'periodoncia', 'odontopediatría', 'rehabilitación', 'cirugía', 'estética dental', 'frenos', 'muelas'];
-// Quejas reales: keywords de sentimiento negativo (para no etiquetar reseñas
-// positivas como "dolores" cuando la clínica tiene buen rating).
-const _REVIEW_NEG_HINTS = /mal[ao]s?\b|p[ée]sim|terrible|horrible|esper[aoeéó]|demor|tard[eéó]|no atien|no contest|no respond|grosero|maltrat|car[oa]\b|costos|estaf|enga[ñn]|cero profes|deficiente|lament|nunca volv|jam[áa]s|sucio|incompet|impuntual/i;
+// Quejas reales: keywords de sentimiento negativo ACOTADAS (para no etiquetar reseñas
+// positivas como "dolores"). Se sacaron las ambiguas que daban falsos positivos:
+// "esper[aoeéó]" (matcheaba "espero volver"), "car[oa]\b" ("la cara que me dejaron"),
+// "tard[eéó]" ("atienden hasta tarde, genial"). Igual el path primario usa el RATING.
+const _REVIEW_NEG_HINTS = /mal[ao]s?\b|p[ée]sim|terrible|horrible|mucha espera|esperar (mucho|horas|una hora)|me hicieron esperar|demor|tardaron mucho|no atien|no contest|no respond|grosero|maltrat|car[íi]sim|muy car[oa]|sobreprecio|estaf|enga[ñn]|cero profes|deficiente|lament|nunca volv|jam[áa]s|sucio|incompet|impuntual/i;
 // Fallback SIN IA: cuando Mercury devuelve vacío/[] pero YA pagamos las reseñas,
-// armamos un brief honesto con esa data — quejas reales (por sentimiento) + tratamientos
-// (por keywords) + el ángulo. Nunca fabrica dolores de reseñas positivas. null si 0 reseñas.
-function _fallbackBriefFromReviews(lead = {}, snippets = []) {
-  const revs = (Array.isArray(snippets) ? snippets : [])
-    .map((s) => String(s || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
-  if (!revs.length) return null;
-  const painPoints = revs.filter((s) => _REVIEW_NEG_HINTS.test(s) && !_looksLikePromptNoise(s)).slice(0, 3)
+// armamos un brief honesto con esa data. Acepta strings o {snippet, rating}.
+function _fallbackBriefFromReviews(lead = {}, reviews = []) {
+  const items = (Array.isArray(reviews) ? reviews : [])
+    .map((r) => (typeof r === 'string'
+      ? { text: r.replace(/\s+/g, ' ').trim(), rating: null }
+      : { text: String((r && r.snippet) || '').replace(/\s+/g, ' ').trim(), rating: (r && typeof r.rating === 'number') ? r.rating : null }))
+    .filter((r) => r.text);
+  if (!items.length) return null;
+  // Dolores REALES: si las reseñas traen rating, tomar SOLO las de 1-2★ (queja
+  // inequívoca, sin adivinar por palabras → cero falsos positivos). Si no hay rating,
+  // caer a keywords negativas. NUNCA toma reseñas positivas como dolores.
+  const rated = items.filter((r) => r.rating != null);
+  const painSrc = rated.length
+    ? rated.filter((r) => r.rating <= 2).map((r) => r.text)
+    : items.filter((r) => _REVIEW_NEG_HINTS.test(r.text)).map((r) => r.text);
+  const painPoints = painSrc.filter((s) => !_looksLikePromptNoise(s) && !_briefTooThin(s, 4)).slice(0, 3)
     .map((s) => ({ dolor: s.slice(0, 280), cita: s.slice(0, 280) }));
-  const blob = revs.join(' ').toLowerCase();
+  const blob = items.map((r) => r.text).join(' ').toLowerCase();
   const treatments = [];
   for (const t of _DENTAL_TREATMENTS) { if (blob.includes(t) && !treatments.includes(t)) treatments.push(t); }
   // Sin dolores reales NI tratamientos inferibles → el brief no agregaría nada sobre
@@ -912,8 +923,13 @@ function _parseBriefOutput(text) {
   if (!text || typeof text !== 'string') return null;
   let raw = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
   let obj = null;
-  const a = raw.indexOf('{'); const b = raw.lastIndexOf('}');
-  if (a !== -1 && b > a) { try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { obj = null; } }
+  // Caso feliz (response_format json_object): parsear directo. Robusto si hay texto
+  // basura con llaves DESPUÉS del objeto (lastIndexOf('}') agarraría la llave de más).
+  try { const d = JSON.parse(raw); if (d && typeof d === 'object' && !Array.isArray(d)) obj = d; } catch {}
+  if (!obj) {
+    const a = raw.indexOf('{'); const b = raw.lastIndexOf('}');
+    if (a !== -1 && b > a) { try { obj = JSON.parse(raw.slice(a, b + 1)); } catch { obj = null; } }
+  }
   if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
     // Fallback: Mercury devolvió un ARRAY → rescatar tratamientos/dolores.
     const aa = raw.indexOf('['); const ab = raw.lastIndexOf(']');
@@ -933,7 +949,7 @@ function _parseBriefOutput(text) {
   const painPoints = Array.isArray(obj.painPoints)
     ? obj.painPoints.map((p) => {
         if (typeof p === 'string' && p.trim()) return { dolor: p.trim().slice(0, 300), cita: '' };
-        if (p && typeof p === 'object' && p.dolor) return { dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) };
+        if (p && typeof p === 'object' && p.dolor) { const _c = String(p.cita || ''); return { dolor: String(p.dolor).slice(0, 200), cita: _looksLikePromptNoise(_c) ? '' : _c.slice(0, 300) }; }
         return null;
       }).filter((p) => p && !_looksLikePromptNoise(p.dolor) && !_briefTooThin(p.dolor, 4)).slice(0, 5)
     : [];
@@ -2495,10 +2511,12 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (iso && !isNaN(new Date(iso)) && (!oldestReviewIso || new Date(iso) < new Date(oldestReviewIso))) oldestReviewIso = iso;
       }
       // Peores reseñas primero (1-2★ = los dolores reales) → mejor munición para el LLM.
+      // Conservamos el rating: el fallback sin-IA arma dolores SOLO de reseñas 1-2★
+      // (en vez de adivinar por palabras). _buildBriefMessages tolera {snippet,rating}.
       const reviews = (rj?.reviews || [])
         .filter((r) => r && r.snippet)
         .sort((a, b) => ((a.rating == null ? 3 : a.rating) - (b.rating == null ? 3 : b.rating)))
-        .map((r) => r.snippet);
+        .map((r) => ({ snippet: r.snippet, rating: (typeof r.rating === 'number' ? r.rating : null) }));
       const { parsed: out, raw: llmRaw } = await _briefLLM(_buildBriefMessages(c, reviews, briefKnowledge));
       // Si la IA falla (vacío/[]) pero YA pagamos las reseñas, armamos el brief sin IA
       // con esa data (quejas reales + tratamientos + ángulo). Solo si hay 0 reseñas

@@ -169,4 +169,15 @@ describe("_fallbackBriefFromReviews", () => {
   it("0 reseñas → null (no hay con qué armar nada)", () => {
     expect(_fallbackBriefFromReviews({}, [])).toBeNull();
   });
+  it("con RATING: solo reseñas 1-2★ son dolores (no por palabras → cero falsos positivos)", () => {
+    const r = _fallbackBriefFromReviews({ reviews: 10, rating: "4.5" }, [
+      { snippet: "espero volver pronto, atención de cara excelente", rating: 5 }, // positiva con "espero"/"cara" → NO debe ser dolor
+      { snippet: "me hicieron ortodoncia y quedó perfecto", rating: 5 },
+      { snippet: "no me atendieron a horario y fue un desastre", rating: 1 },    // 1★ → dolor real
+    ]);
+    expect(r).not.toBeNull();
+    expect(r.painPoints).toHaveLength(1);
+    expect(r.painPoints[0].dolor).toContain("desastre");
+    expect(r.treatments).toContain("ortodoncia");
+  });
 });
