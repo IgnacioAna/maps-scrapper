@@ -6326,15 +6326,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lb = (lead && lead.leadBrief) || {};
       const ang = (lead && lead.openingAngle || '').trim();
       const _thin = (s, min) => ((String(s || '').match(/[\p{L}\p{N}]/gu) || []).length) < min;
+      // Razonamiento del modelo / inglés filtrado (Mercury "piensa en voz alta") o sintaxis
+      // JSON. Mismo criterio que el backend, para que briefs YA guardados con basura no se
+      // muestren (sin re-generar/re-gastar).
+      const _noise = (s) => {
+        const v = String(s || '');
+        if (/[{}\[\]]/.test(v)) return true;
+        if (/\b(json|fitscore|painpoints|hookphrase|treatments)\b/i.test(v) || /nunca un array|objeto json|un (único|unico) objeto/i.test(v)) return true;
+        return /\b(we need|we can|i (need|can|should|will|cannot)|the instruction|in reviews|not in reviews|pain points|real data|must be real|infer typical|typical but|maybe not|as an ai|the user|the prompt|based on the)\b/i.test(v);
+      };
       let brief = (lb.brief || '').trim();
       let hook = (lb.hookPhrase || '').trim();
-      if (_thin(brief, 8) || brief === ang) brief = '';
+      if (_thin(brief, 8) || brief === ang || _noise(brief)) brief = '';
       const looksCut = hook && (hook.length < 15 || /\b(de|que|con|y|a|e|o|u|en|para|la|el|los|las|un|una|del|por|se|su|al|lo|le|mi|tu)\s*$/i.test(hook.replace(/[.…!?\s]+$/, '')));
-      if (_thin(hook, 8) || hook === ang || hook === brief || looksCut) hook = '';
+      if (_thin(hook, 8) || hook === ang || hook === brief || looksCut || _noise(hook)) hook = '';
       const pains = (Array.isArray(lb.painPoints) ? lb.painPoints : [])
-        .filter(p => p && p.dolor && !_thin(p.dolor, 4)).slice(0, 2);
+        .filter(p => p && p.dolor && !_thin(p.dolor, 4) && !_noise(p.dolor)).slice(0, 2);
       const treatments = (Array.isArray(lead && lead.treatments) ? lead.treatments : [])
-        .filter(t => t && !_thin(t, 3)).slice(0, 6);
+        .filter(t => t && !_thin(t, 3) && !_noise(t)).slice(0, 6);
       return { brief, hook, pains, treatments, has: !!(brief || hook || pains.length || treatments.length) };
     }
 

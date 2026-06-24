@@ -119,6 +119,13 @@ describe("_looksLikePromptNoise (filtro de ruido del prompt loreado por Mercury)
     expect(_looksLikePromptNoise("esperé más de una hora en la sala")).toBe(false);
     expect(_looksLikePromptNoise("ortodoncia")).toBe(false);
   });
+  it("detecta razonamiento/inglés filtrado por Mercury (bug Duván Monar)", () => {
+    expect(_looksLikePromptNoise('dificultad para conseguir turno (la espera fue larga - maybe not). We need real pain points; if not in reviews... The instruction:')).toBe(true);
+    expect(_looksLikePromptNoise('Ofrece: and, not in reviews, complete, with real data')).toBe(true);
+    expect(_looksLikePromptNoise('As an AI, I cannot infer typical pain points')).toBe(true);
+    // pero NO toca un dolor real en español con cita
+    expect(_looksLikePromptNoise('miedo al dolor o al procedimiento ("fui con mucho miedo por experiencias previas")')).toBe(false);
+  });
   it("_parseBriefOutput filtra el ruido del prompt de painPoints/treatments", () => {
     const out = _parseBriefOutput('{"treatments":["ortodoncia","un array []"],"painPoints":["no contestan el teléfono","y termina con }. NUNCA un array ["],"brief":"clínica buena"}');
     expect(out.treatments).toEqual(["ortodoncia"]);

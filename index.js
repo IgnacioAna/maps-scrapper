@@ -817,7 +817,8 @@ function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
     'Devolvé SOLAMENTE un objeto JSON válido (un solo objeto, NO una lista). Sin markdown ni texto adicional antes o después. Copiá EXACTAMENTE la estructura del ejemplo, cambiando solo los valores por los de este negocio.\n' +
     'Ejemplo EXACTO del formato (con valores de muestra):\n' +
     '{"treatments":["implantes","ortodoncia"],"painPoints":["esperas largas en recepción (un paciente: esperé más de una hora)","cuesta sacar turno, no atienden el teléfono"],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas."}\n' +
-    'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. fitScore = número 0-100. hookPhrase = una frase COMPLETA y autosuficiente (10-25 palabras) de apertura con un dato real; NUNCA la dejes a medias ni la cortes (nada de terminar en "de", "que", "con"). brief = string de 2-3 líneas, también completo. Todo en español. Respondé SOLO el objeto JSON completo.';
+    'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. Si NO hay dolores reales en las reseñas, dejá painPoints como lista vacía []; NO inventes ni expliques por qué. fitScore = número 0-100. hookPhrase = una frase COMPLETA y autosuficiente (10-25 palabras) de apertura con un dato real; NUNCA la dejes a medias ni la cortes (nada de terminar en "de", "que", "con"). brief = string de 2-3 líneas, también completo. ' +
+    'CRÍTICO: TODO el contenido en ESPAÑOL. NO incluyas tu razonamiento, comentarios, dudas, preguntas, ni una sola palabra en inglés dentro de los valores. NADA de "we need", "the instruction", "in reviews", "maybe", etc. Respondé EXCLUSIVAMENTE el objeto JSON, sin texto antes ni después.';
   const know = knowledge
     ? `\n\nCONOCIMIENTO DEL EQUIPO SCM (base de verdad — qué vendemos, a quién y qué funciona en las llamadas; usalo para que fitScore, hookPhrase y brief estén alineados con nuestra oferta real, NO lo copies literal):\n${knowledge}`
     : '';
@@ -837,7 +838,12 @@ function _looksLikePromptNoise(s) {
   const v = String(s || '');
   if (!v.trim()) return true;
   if (/[{}\[\]]/.test(v)) return true; // llaves/corchetes = sintaxis JSON, no lenguaje natural
-  return /\b(json|fitscore|painpoints|hookphrase|treatments)\b/i.test(v) || /nunca un array|objeto json|un (único|unico) objeto/i.test(v);
+  if (/\b(json|fitscore|painpoints|hookphrase|treatments)\b/i.test(v) || /nunca un array|objeto json|un (único|unico) objeto/i.test(v)) return true;
+  // Mercury a veces FILTRA su razonamiento (en inglés) dentro del texto, p.ej.:
+  // "...maybe not). We need real pain points; if not in reviews... The instruction:".
+  // El brief es 100% español; cualquier rastro de meta-razonamiento/inglés = basura.
+  if (/\b(we need|we can|i (need|can|should|will|cannot)|the instruction|in reviews|not in reviews|pain points|real data|must be real|infer typical|typical but|maybe not|as an ai|the user|the prompt|based on the)\b/i.test(v)) return true;
+  return false;
 }
 // True si el string casi no tiene letras/números (placeholders tipo "...", "—",
 // "N/A"): Mercury a veces devuelve "..." en brief/hook. minAlnum = mínimo de
