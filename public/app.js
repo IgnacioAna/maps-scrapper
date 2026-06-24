@@ -2122,14 +2122,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
           const call = notification.call;
           const state = call.state;
-          if (state === 'ringing' || state === 'early' || state === 'recovering') {
-            _setTelnyxCallStatus('Sonando…', 'ringing');
-          } else if (state === 'active') {
-            // ¡Atendió! Detener ringback fake y mostrar estado activo.
+          // "Atendió": corta ringback, muestra activo, attacha el audio del lead y
+          // arranca la grabación. Se dispara en 'active' Y en early-media (estado
+          // 'early'/'ringing' con audio remoto YA fluyendo): algunos gateways PSTN
+          // entregan el audio del lead sin pasar formalmente a 'active', y sin esto
+          // el ringback fake seguía sonando ENCIMA de la voz del lead (bug reportado).
+          const _enterActiveOnce = () => {
+            if (_telnyxCallState.enteredActive) return;
+            _telnyxCallState.enteredActive = true;
             _stopRingbackTone();
             _setTelnyxCallStatus('En llamada', 'active');
-            // Attach manual del remoteStream — el SDK lo hace internamente pero
-            // hay race conditions.
             let attachRetries = 0;
             const tryAttachRemoteStream = () => {
               const audioEl = document.getElementById('telnyx-remote-audio');
@@ -2138,12 +2140,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
                 audioEl.volume = 1.0;
                 audioEl.muted = false;
-                audioEl.play?.().catch(err => {
-                  console.warn('[telnyx] remote audio play() rejected:', err?.message);
-                });
-                // Iniciar grabacion para Whisper transcript (Sprint 7)
-                // local stream para setter, remote stream para lead. Audio in-memory,
-                // se descarta tras transcribir.
+                audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
+                // Grabación para Whisper (Sprint 7): setter local + lead remoto, in-memory.
                 if (!_setterRecorder && _telnyxCallState.localStreamForRec) {
                   _startCallRecording(_telnyxCallState.localStreamForRec, stream);
                 }
@@ -2153,6 +2151,15 @@ document.addEventListener('DOMContentLoaded', async () => {
               else console.warn('[telnyx] remote audio NOT attached after 4s');
             };
             tryAttachRemoteStream();
+          };
+          const _hasRemoteAudio = () => !!(call.remoteStream && call.remoteStream.getAudioTracks?.().length > 0);
+          if (state === 'active') {
+            _enterActiveOnce();
+          } else if (state === 'ringing' || state === 'early' || state === 'recovering') {
+            // Early media: si el audio del lead YA llega, tratar como atendido para
+            // CORTAR el ringback (sino se escucha el tono encima de la voz).
+            if (_hasRemoteAudio()) _enterActiveOnce();
+            else _setTelnyxCallStatus('Sonando…', 'ringing');
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
           } else if (state === 'hangup' || state === 'destroy' || state === 'purge') {
@@ -6540,12 +6547,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function _stopRingbackTone() {
       if (!_ringbackNodes) return;
-      try {
-        _ringbackNodes.osc1.stop(); _ringbackNodes.osc2.stop();
-        _ringbackNodes.osc1.disconnect(); _ringbackNodes.osc2.disconnect();
-        _ringbackNodes.gain.disconnect();
-      } catch {}
-      _ringbackNodes = null;
+      const n = _ringbackNodes;
+      _ringbackNodes = null; // marcar detenido YA (evita reentrancy / doble stop)
+      // Silenciar INSTANTÁNEO: cancelar la automatización agendada y bajar gain a 0,
+      // por si el stop() de un oscilador fallara o quedara audio programado sonando.
+      try { n.gain.gain.cancelScheduledValues(0); n.gain.gain.value = 0; } catch {}
+      // Cada oscilador en su propio try: si uno falla, el otro igual se detiene.
+      try { n.osc1.stop(); } catch {}
+      try { n.osc2.stop(); } catch {}
+      try { n.osc1.disconnect(); n.osc2.disconnect(); n.gain.disconnect(); } catch {}
     }
 
     function _updateTelnyxCallTimer() {
@@ -6850,6 +6860,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         _telnyx.activeCall = call;
         _telnyxCallState.startedAt = Date.now();
+        _telnyxCallState.enteredActive = false; // reset por-llamada (control del ringback/attach)
         _telnyxCallState.timerInterval = setInterval(_updateTelnyxCallTimer, 1000);
         _setTelnyxCallStatus('Sonando…', 'ringing');
         // Audio de ringback local — sin esto el setter no escucha nada mientras
