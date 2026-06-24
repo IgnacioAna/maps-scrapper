@@ -2122,11 +2122,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!notification || notification.type !== 'callUpdate' || !notification.call) return;
           const call = notification.call;
           const state = call.state;
-          // Attach idempotente del audio remoto + corte del ringback fake (para que
-          // NO suene el tono sintetizado encima del audio real del carrier). Se usa
-          // tanto en 'active' como en early-media.
+          // Attach idempotente del audio remoto + corte del tono fake (para que NO suene
+          // el tono sintetizado ENCIMA del audio real del carrier) + arranque de grabación.
+          // Se usa en 'active' y en early-media (este carrier manda ringback/buzón/voz como
+          // early-media). Rellamarlo es seguro (idempotente).
           const _attachRemote = () => {
             _stopRingbackTone();
+            const localStream = call.localStream || _telnyx.activeCall?.localStream || null;
             let tries = 0;
             const go = () => {
               const audioEl = document.getElementById('telnyx-remote-audio');
@@ -2135,44 +2137,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
                 audioEl.volume = 1.0; audioEl.muted = false;
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
+                if (!_setterRecorder) _startCallRecording(localStream, stream); // Whisper (Sprint 7)
                 return;
               }
               if (++tries < 16) setTimeout(go, 250);
             };
             go();
           };
-          // "Conectado de verdad": atendió una persona O el buzón (hay voz sostenida) O
-          // el SDK reportó 'active' (200 OK). Marca "En llamada", fija answeredAt (talk-time),
-          // attacha y arranca la grabación. Una sola vez por llamada.
+          // 'active' (200 OK) = atendió de verdad → "En llamada". OJO: este carrier a
+          // veces NO manda 'active' y todo (ringback/buzón/voz) viene por early-media; en
+          // ese caso el status queda "Sonando" pero el audio se escucha y el timer corre
+          // (ver rama early-media). Una sola vez por llamada.
           const _enterActiveOnce = () => {
             if (_telnyxCallState.enteredActive) return;
             _telnyxCallState.enteredActive = true;
-            _telnyxCallState.answeredAt = Date.now();
-            _stopEarlyMediaClassifier();
             _attachRemote();
             _setTelnyxCallStatus('En llamada', 'active');
-            if (!_setterRecorder) {
-              const localStream = call.localStream || _telnyx.activeCall?.localStream || null;
-              const rstream = call.remoteStream || _telnyx.activeCall?.remoteStream || null;
-              _startCallRecording(localStream, rstream);
-            }
           };
           const _hasRemoteAudio = () => !!(call.remoteStream && call.remoteStream.getAudioTracks?.().length > 0);
           if (state === 'active') {
             _enterActiveOnce();
           } else if (state === 'ringing' || state === 'early' || state === 'recovering') {
-            if (_hasRemoteAudio() && !_telnyxCallState.enteredActive) {
-              // Early media: hay track de audio del carrier. Armamos un TAP silencioso
-              // que clasifica voz-vs-tono. Cuando detecta sonido REAL: corta el tono fake
-              // + attacha (se escucha limpio, sin doble audio sobre el buzón/voz). Si es
-              // VOZ sostenida (buzón/persona) → conectado. Si es solo ringback (ráfagas) o
-              // silencio → sigue "Sonando" con el tono fake hasta atender/colgar.
-              const armed = _armEarlyMediaClassifier(call.remoteStream, _enterActiveOnce, _attachRemote);
-              if (!armed) _attachRemote(); // sin Web Audio: al menos attach + corta tono fake (evita doble audio)
-              if (_telnyxCallState.statusState !== 'active') _setTelnyxCallStatus('Sonando…', 'ringing');
-            } else {
-              _setTelnyxCallStatus('Sonando…', 'ringing');
-            }
+            // Si el carrier YA manda audio (early-media): cortamos el tono fake y attachamos
+            // el stream → se escucha el audio REAL (buzón/voz/ringback del carrier) SIN el
+            // tono fake encima (era el bug: el tono seguía sonando sobre el buzón). El status
+            // queda "Sonando" hasta 'active' (no marcamos "En llamada" en early para no mentir
+            // durante el ringback); el timer corre desde el inicio igual.
+            if (_hasRemoteAudio() && !_telnyxCallState.enteredActive) _attachRemote();
+            if (_telnyxCallState.statusState !== 'active') _setTelnyxCallStatus('Sonando…', 'ringing');
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
           } else if (state === 'hangup' || state === 'destroy' || state === 'purge') {
@@ -6601,52 +6593,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // silencios; la voz/buzón es energía SOSTENIDA. Si detectamos una racha continua de
     // audio > ~2.4s → es voz → conectado. Fail-safe: ante cualquier error, no rompe la
     // llamada (simplemente no auto-conecta y queda el flujo por 'active').
-    let _emCtx = null, _emInterval = null;
-    function _stopEarlyMediaClassifier() {
-      if (_emInterval) { clearInterval(_emInterval); _emInterval = null; }
-      if (_emCtx) { try { _emCtx.close(); } catch {} _emCtx = null; }
-    }
-    // onSound() = se detectó audio real en la early-media (1ra vez) → cortar tono fake
-    // + attachar (que se escuche limpio, sin doble audio). onVoice() = voz sostenida
-    // (buzón/persona) → conectado. Devuelve true si pudo armar el analizador.
-    function _armEarlyMediaClassifier(stream, onVoice, onSound) {
-      if (_emInterval) return true; // ya armado para esta llamada
-      try {
-        const Ctx = window.AudioContext || window.webkitAudioContext;
-        if (!Ctx || !stream || !stream.getAudioTracks?.().length) return false;
-        _emCtx = new Ctx();
-        if (_emCtx.state === 'suspended') _emCtx.resume().catch(() => {}); // autoplay policy
-        const src = _emCtx.createMediaStreamSource(stream); // TAP silencioso (no va a parlantes)
-        const analyser = _emCtx.createAnalyser();
-        analyser.fftSize = 512;
-        src.connect(analyser);
-        const buf = new Uint8Array(analyser.fftSize);
-        let loudMs = 0, soundSeen = false;
-        const STEP = 100, NEED = 2400, THRESH = 0.025; // 2.4s de audio sostenido = voz
-        _emInterval = setInterval(() => {
-          try {
-            analyser.getByteTimeDomainData(buf);
-            let sum = 0;
-            for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
-            const rms = Math.sqrt(sum / buf.length);
-            if (rms > THRESH) {
-              if (!soundSeen) { soundSeen = true; try { onSound && onSound(); } catch {} } // hay audio real → attach + cortar tono fake
-              loudMs += STEP;
-              if (loudMs >= NEED) { console.log('[telnyx] early-media: voz sostenida → conectado'); _stopEarlyMediaClassifier(); try { onVoice(); } catch {} }
-            } else {
-              loudMs = 0; // silencio → cortó la ráfaga (típico del ringback on/off)
-            }
-          } catch { _stopEarlyMediaClassifier(); }
-        }, STEP);
-        return true;
-      } catch { _stopEarlyMediaClassifier(); return false; }
-    }
 
     function _updateTelnyxCallTimer() {
-      // Talk-time real: cuenta desde que ATENDIERON (answeredAt), no desde que arrancó
-      // a sonar. Mientras suena muestra 00:00.
-      const base = _telnyxCallState.answeredAt;
-      const secs = base ? Math.floor((Date.now() - base) / 1000) : 0;
+      // Cuenta desde que arrancó la llamada (incluye el ringing) → SIEMPRE corre, así
+      // ves que la llamada avanza. (Este carrier no señaliza "atendió" de forma fiable,
+      // por eso no contamos talk-time aparte — sería 00:00 fijo y confunde.)
+      if (!_telnyxCallState.startedAt) return;
+      const secs = Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000);
       const mm = String(Math.floor(secs / 60)).padStart(2, '0');
       const ss = String(secs % 60).padStart(2, '0');
       const el = document.getElementById('telnyx-call-timer');
@@ -6675,7 +6628,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (muteBtn) { muteBtn.classList.remove('tlx-mute-active'); muteBtn.textContent = 'Mute'; }
       if (_telnyxCallState.timerInterval) { clearInterval(_telnyxCallState.timerInterval); _telnyxCallState.timerInterval = null; }
       if (_telnyxCallState.noAnswerTimeout) { clearTimeout(_telnyxCallState.noAnswerTimeout); _telnyxCallState.noAnswerTimeout = null; }
-      _stopEarlyMediaClassifier();
       // Audit fix: liberar tracks del mic si quedaron abiertos (ej. si ensureClient
       // falló después de getUserMedia). Sin esto el mic queda tomado hasta refresh.
       if (_telnyxCallState.localStreamForRec) {
@@ -6992,14 +6944,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (_telnyxCallState.ended) return; // anti-doble-disparo (el SDK emite hangup→destroy→purge en secuencia + colgar manual)
       _telnyxCallState.ended = true;
       const leadId = _telnyxCallState.leadId;
-      // attemptedSecs = desde que arrancó la llamada (incluye ringing) → decide si hubo
-      // intento y abre la disposition. durationSecs = TALK-TIME real (desde que atendieron);
-      // si nunca atendieron es 0 → NO cuenta como conversación en las métricas del funnel.
-      const attemptedSecs = _telnyxCallState.startedAt ? Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000) : 0;
-      const durationSecs = _telnyxCallState.answeredAt ? Math.floor((Date.now() - _telnyxCallState.answeredAt) / 1000) : 0;
+      // Duración total de la llamada (incluye ringing). Este carrier no señaliza "atendió"
+      // de forma fiable (todo viene por early-media), así que no separamos talk-time —
+      // sería 0 y rompería transcripción + métricas. attemptedSecs = alias (mismo valor),
+      // usado para el gate de la disposition.
+      const durationSecs = _telnyxCallState.startedAt ? Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000) : 0;
+      const attemptedSecs = durationSecs;
       _setTelnyxCallStatus('Finalizando…', 'ending');
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
-      _stopEarlyMediaClassifier();
       _telnyx.activeCall = null;
       // Sprint 7: detener recording + disparar transcripción Whisper en background.
       // Solo si la llamada llegó a ser activa (durationSecs > 5 — descarta cuelgues
