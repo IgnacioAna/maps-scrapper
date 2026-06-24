@@ -2141,9 +2141,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 audioEl.volume = 1.0;
                 audioEl.muted = false;
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
-                // Grabación para Whisper (Sprint 7): setter local + lead remoto, in-memory.
-                if (!_setterRecorder && _telnyxCallState.localStreamForRec) {
-                  _startCallRecording(_telnyxCallState.localStreamForRec, stream);
+                // Grabación para Whisper (Sprint 7): setter desde el localStream PROPIO
+                // de la llamada (NO un 2do getUserMedia → no degrada el audio) + lead
+                // remoto. In-memory, se descarta tras transcribir.
+                if (!_setterRecorder) {
+                  const localStream = call.localStream || _telnyx.activeCall?.localStream || null;
+                  _startCallRecording(localStream, stream);
                 }
                 return;
               }
@@ -6409,7 +6412,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _startCallRecording(localStream, remoteStream) {
       _setterChunks = [];
       _leadChunks = [];
-      _localStreamForRecording = localStream; // referencia para detener tracks al hangup
+      // localStream ahora es el stream PROPIO de la llamada (call.localStream), NO uno
+      // nuestro. NO guardamos referencia para parar sus tracks — eso lo maneja el SDK
+      // al colgar; si lo paráramos nosotros cortaríamos el mic de la llamada. Solo
+      // grabamos de él (lectura), no lo poseemos.
+      _localStreamForRecording = null;
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
@@ -6817,19 +6824,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (_callScriptsCache.length === 0) _loadCallScripts();
 
       try {
-        // Pedir permisos de mic upfront (mejor UX que esperar a Telnyx)
-        // Guardamos la referencia para grabar tambien (Sprint 7: transcripcion)
-        let localStreamForRec = null;
+        // Pedir permiso de mic upfront (mejor UX que esperar a Telnyx). NO mantenemos
+        // este stream abierto: tener un SEGUNDO getUserMedia del mismo mic mientras la
+        // llamada lo usa degrada el audio de SALIDA (el lead te escucha ininteligible,
+        // bug reportado). Lo soltamos de inmediato; para grabar usamos el localStream
+        // PROPIO de la llamada (call.localStream), sin abrir una segunda captura.
         try {
-          localStreamForRec = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const permStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          permStream.getTracks().forEach(t => t.stop());
         }
         catch (micErr) {
           _closeTelnyxCallPanel();
           window.showToast?.('Necesitamos permiso del micrófono. Habilitalo en el ícono del candado de la URL y reintentá.', { type: 'error', duration: 8000 });
           return;
         }
-        // Guardar para iniciar recording cuando entremos en state='active'
-        _telnyxCallState.localStreamForRec = localStreamForRec;
 
         await _telnyx.ensureClient();
         // Sprint 19: sanitize phone a E.164 estricto antes de pasar a Telnyx.
