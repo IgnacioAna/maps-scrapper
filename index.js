@@ -4659,6 +4659,10 @@ app.patch('/api/setters/team/:id/quota', requireAuth, requireRole('admin'), (req
 // /cold-call-metrics y /telnyx/cold-call-effectiveness usen el MISMO criterio
 // y sus números cuadren entre dashboards (audit 2026-06-20, hallazgo #2).
 const COLD_CALL_CONV_MIN_S = 30;
+// Outcomes a nivel módulo (compartidos por /cold-call-metrics, el panel Equipo y la
+// agregación del funnel). CONNECT = atendieron; APPOINTMENT = agendó reunión.
+const COLD_CALL_CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
+const COLD_CALL_APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
 
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
 // GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
@@ -4690,8 +4694,8 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   else if (period === 'all') fromTs = 0;
   else fromTs = startOfDay - 7 * 86400000;
 
-  const CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
-  const APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
+  const CONNECT_OUTCOMES = COLD_CALL_CONNECT_OUTCOMES;
+  const APPOINTMENT_OUTCOMES = COLD_CALL_APPOINTMENT_OUTCOMES;
   const CONV_MIN_DURATION_S = COLD_CALL_CONV_MIN_S;
 
   const data = loadSettersData();
@@ -7713,34 +7717,19 @@ function _perfTableRange(period) {
 }
 
 function _perfAggregate(leads, fromTs, toTs) {
-  // Un bucket = KPIs de los leads filtrados restringidos a [fromTs, toTs).
-  // Cambio 2026-04-29 (post-feedback): contamos por flags reales del lead +
-  // lastContactAt como anchor temporal. NO contamos interactions[].action='open'
-  // porque casi nadie loggea esos eventos explicitos — el setter cambia el flag
-  // del lead directamente desde la UI.
-  //
-  // Definiciones:
-  //  - total: leads del setter con lastContactAt o importedAt en bucket (lead "tocado" o "recibido" en periodo).
-  //  - conexiones: leads con conexion='enviada' Y lastContactAt en bucket.
-  //  - respondieron: leads con respondio=true Y lastContactAt en bucket.
-  //  - calificados: leads con calificado=true Y lastContactAt en bucket.
-  //  - interesados: leads con interes='si' Y lastContactAt en bucket.
-  //  - agendados: leads con estado='agendado' Y lastContactAt en bucket.
-  //  - shows/noShows: lead.asistioAt en bucket Y asistio === true/false.
+  // Embudo de WhatsApp/setteo. Lo SIGUE usando /api/setters/performance ("Mi
+  // rendimiento", sus 7 KPI cards + chart). El panel Equipo usa _perfCallFunnel.
+  // Definiciones: total=tocados (lastContactAt en bucket); conexiones=conexion
+  // 'enviada'; respondieron=respondio; calificados=calificado; interesados=interes
+  // 'si'; agendados=estado 'agendado'; shows/noShows=asistioAt+asistio.
   let total = 0, recibidos = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
   for (const lead of leads) {
     const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
     const imp = lead.importedAt ? new Date(lead.importedAt).getTime() : 0;
     const touchedInBucket = lc >= fromTs && lc < toTs;
     const importedInBucket = imp >= fromTs && imp < toTs;
-
-    // total = leads efectivamente TOCADOS por el setter en el periodo. Es el
-    // denominador honesto para % conexion / % apertura. Antes contabamos tambien
-    // los importados sin tocar y desvirtuaba todo (Yesxander con 290 "total"
-    // pero 0 conexiones porque no abrio ninguno).
     if (touchedInBucket) total++;
     if (importedInBucket) recibidos++;
-
     if (touchedInBucket) {
       if (lead.conexion === "enviada") conexiones++;
       if (lead.respondio === true) respondieron++;
@@ -7748,7 +7737,6 @@ function _perfAggregate(leads, fromTs, toTs) {
       if (lead.interes === "si") interesados++;
       if (lead.estado === "agendado") agendados++;
     }
-
     const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
     if (ats >= fromTs && ats < toTs) {
       if (lead.asistio === true) shows++;
@@ -7757,15 +7745,7 @@ function _perfAggregate(leads, fromTs, toTs) {
   }
   const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
   return {
-    total,
-    recibidos,            // leads importados/asignados en el periodo (sin tocar o tocados)
-    conexiones,
-    respondieron,
-    calificados,
-    interesados,
-    agendados,
-    shows,
-    noShows,
+    total, recibidos, conexiones, respondieron, calificados, interesados, agendados, shows, noShows,
     pctConexion: pct(conexiones, total),
     pctApertura: pct(respondieron, conexiones),
     pctCalificacion: pct(interesados, calificados),
@@ -7774,9 +7754,60 @@ function _perfAggregate(leads, fromTs, toTs) {
   };
 }
 
-function _perfDelta(curr, prev) {
+// Funnel de LLAMADAS para el panel Equipo (2026-06-24). Desde el callLog en
+// [fromTs, toTs): dials (llamadas) / connects (atendieron) / conversations (atendió
+// + ≥30s o agendó) / appointments (agendó reunión). deals/revenue desde el calendario
+// (citas 'ganada' con closedAt en bucket, por setterId). shows/noShows de asistencia.
+// Reemplaza al embudo de WhatsApp (conexion/respondio/calificado) que las llamadas no
+// setean. `total` queda como alias de dials para compat con alertas/sort/promedios.
+function _perfCallFunnel(leads, fromTs, toTs, calendar, setterId) {
+  let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0, revenue = 0;
+  let shows = 0, noShows = 0, totalDurationS = 0;
+  for (const lead of leads) {
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    for (const entry of log) {
+      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      if (!ts || ts < fromTs || ts >= toTs) continue;
+      dials++;
+      const outcome = String(entry.outcome || "");
+      const duration = Number(entry.duration || 0);
+      if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
+        connects++;
+        totalDurationS += duration;
+        if (duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
+        if (COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
+      }
+    }
+    const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
+    if (ats >= fromTs && ats < toTs) {
+      if (lead.asistio === true) shows++;
+      else if (lead.asistio === false) noShows++;
+    }
+  }
+  for (const entry of (Array.isArray(calendar) ? calendar : [])) {
+    if (entry.calendarioEstado !== "ganada") continue;
+    if (setterId && entry.setterId !== setterId) continue;
+    const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
+    if (!closedTs || closedTs < fromTs || closedTs >= toTs) continue;
+    deals++; revenue += Number(entry.valorProyecto || 0);
+  }
+  const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
+  return {
+    total: dials,
+    dials, connects, conversations, appointments, deals, revenue, shows, noShows,
+    avgConvDurationS: connects > 0 ? Math.round(totalDurationS / connects) : 0,
+    connectRate: pct(connects, dials),
+    conversationRate: pct(conversations, connects),
+    bookingRate: pct(appointments, conversations),
+    dialToAppt: pct(appointments, dials),
+    pctShow: pct(shows, shows + noShows),
+  };
+}
+
+// Delta entre dos buckets. keys opcional (default = embudo setteo, para /performance).
+function _perfDelta(curr, prev, keys) {
   const out = {};
-  for (const key of ["total", "conexiones", "respondieron", "calificados", "interesados", "agendados", "shows", "noShows"]) {
+  for (const key of (keys || ["total", "conexiones", "respondieron", "calificados", "interesados", "agendados", "shows", "noShows"])) {
     const c = Number(curr[key]) || 0;
     const p = Number(prev[key]) || 0;
     out[key] = {
@@ -7958,9 +7989,9 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
 
   const perSetter = (data.setters || []).map((s) => {
     const setterLeads = leadsBySetter.get(s.id) || [];
-    const current = _perfAggregate(setterLeads, fromTs, toTs);
-    const previous = _perfAggregate(setterLeads, prevFrom, prevTo);
-    const deltas = _perfDelta(current, previous);
+    const current = _perfCallFunnel(setterLeads, fromTs, toTs, data.calendar, s.id);
+    const previous = _perfCallFunnel(setterLeads, prevFrom, prevTo, data.calendar, s.id);
+    const deltas = _perfDelta(current, previous, ["total", "dials", "connects", "conversations", "appointments", "deals", "shows", "noShows"]);
 
     // Ultima actividad: max(lastContactAt) entre todos los leads del setter.
     const lastActivity = setterLeads.reduce((max, l) => {
@@ -7985,7 +8016,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     // tiene leads asignados, la alerta es informativa (no es su culpa).
     const alerts = [];
     if (previous.total > 0 && deltas.total.pct <= -cfg.dropPctThreshold) {
-      alerts.push({ type: "drop", severity: "high", message: `Bajó ${Math.abs(deltas.total.pct)}% en leads tocados vs período anterior.` });
+      alerts.push({ type: "drop", severity: "high", message: `Bajó ${Math.abs(deltas.total.pct)}% en llamadas vs período anterior.` });
     }
     if (lastActivity > 0 && lastActivity < inactivityCutoff) {
       const days = Math.floor((Date.now() - lastActivity) / (24 * 60 * 60 * 1000));
@@ -8004,8 +8035,10 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     if (totalAssigned >= cfg.minTotalForAlert && lastActivity > 0 && untouchedAssigned / totalAssigned >= 0.5) {
       alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) sin tocar todavía.` });
     }
-    if (current.total >= cfg.minTotalForAlert && current.pctApertura > 0 && current.pctApertura < cfg.aperturaPctMin) {
-      alerts.push({ type: "low_apertura", severity: "medium", message: `Tasa de respuesta ${current.pctApertura}% (umbral ${cfg.aperturaPctMin}%).` });
+    // Funnel de llamadas: si hizo bastantes llamadas pero atiende muy poco, alerta
+    // (tasa de atención baja vs el umbral configurado, reusado de aperturaPctMin).
+    if (current.dials >= cfg.minTotalForAlert && current.connectRate > 0 && current.connectRate < cfg.aperturaPctMin) {
+      alerts.push({ type: "low_connect", severity: "medium", message: `Tasa de atención ${current.connectRate}% en ${current.dials} llamadas (umbral ${cfg.aperturaPctMin}%).` });
     }
 
     return {
@@ -8028,14 +8061,14 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   const avg = (key) => active.length > 0 ? Number((active.reduce((a, s) => a + (s.current[key] || 0), 0) / active.length).toFixed(1)) : 0;
   const teamAverages = {
     total: avg("total"),
-    conexiones: avg("conexiones"),
-    respondieron: avg("respondieron"),
-    calificados: avg("calificados"),
-    interesados: avg("interesados"),
-    agendados: avg("agendados"),
-    pctConexion: avg("pctConexion"),
-    pctApertura: avg("pctApertura"),
-    pctCalificacion: avg("pctCalificacion"),
+    dials: avg("dials"),
+    connects: avg("connects"),
+    conversations: avg("conversations"),
+    appointments: avg("appointments"),
+    deals: avg("deals"),
+    connectRate: avg("connectRate"),
+    conversationRate: avg("conversationRate"),
+    bookingRate: avg("bookingRate"),
     pctShow: avg("pctShow"),
   };
 

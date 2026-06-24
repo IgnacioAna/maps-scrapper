@@ -1,5 +1,7 @@
 // Tests de /api/setters/team-performance + /api/setters/alert-config.
-// RBAC, alertas (drop/inactivity/low_apertura), promedios, edicion umbrales.
+// RBAC, alertas (drop/inactivity/low_connect), promedios, edicion umbrales.
+// El panel Equipo mide el FUNNEL DE LLAMADAS (callLog): dials/connects/conversations/
+// appointments — no el viejo embudo de WhatsApp (conexion/respondio/calificado).
 
 import { describe, it, beforeAll, afterAll, expect } from "vitest";
 import path from "node:path";
@@ -44,28 +46,33 @@ const t = (offsetDays) => new Date(NOW - offsetDays * ONE_DAY).toISOString();
 // estar dentro de las ultimas 24h.
 const tHours = (offsetHours) => new Date(NOW - offsetHours * 60 * 60 * 1000).toISOString();
 
+// callLog helper: el panel Equipo ahora mide desde el callLog (funnel de llamadas),
+// no desde los flags de setteo. Cada entry = 1 llamada (dial); outcome de connect +
+// duration>=30 = conversación.
+const cl = (tsIso, outcome = "answered_interested", duration = 40) => [{ ts: tsIso, outcome, duration, channel: "telnyx_webrtc" }];
+
 // 3 setters: uno activo, uno con drop, uno inactivo
 const leads = {
-  // setter_a: 5 leads tocados HOY (en las ultimas 24h) + 2 ayer → activo, sin drop
-  l_a1: { num: 1, name: "A1", phone: "+1", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(20), lastContactAt: tHours(2), interactions: [{ id: "i1", action: "open", createdAt: tHours(2), setterId: "setter_a" }, { id: "i2", action: "qualified", createdAt: tHours(2), setterId: "setter_a" }] },
-  l_a2: { num: 2, name: "A2", phone: "+2", assignedTo: "setter_a", estado: "agendado", conexion: "enviada", respondio: true, calificado: true, interes: "si", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(20), lastContactAt: tHours(4), interactions: [{ id: "i3", action: "open", createdAt: tHours(4), setterId: "setter_a" }, { id: "i4", action: "qualified", createdAt: tHours(4), setterId: "setter_a" }, { id: "i5", action: "interest", createdAt: tHours(4), setterId: "setter_a" }] },
-  l_a3: { num: 3, name: "A3", phone: "+3", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(20), lastContactAt: tHours(6), interactions: [{ id: "i6", action: "open", createdAt: tHours(6), setterId: "setter_a" }] },
-  l_a4: { num: 4, name: "A4", phone: "+4", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(20), lastContactAt: tHours(8), interactions: [{ id: "i7", action: "open", createdAt: tHours(8), setterId: "setter_a" }] },
-  l_a5: { num: 5, name: "A5", phone: "+5", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(20), lastContactAt: tHours(10), interactions: [{ id: "i8", action: "open", createdAt: tHours(10), setterId: "setter_a" }] },
+  // setter_a: 5 llamadas HOY (ultimas 24h, todas atendidas) + 2 en periodo previo → activo, sin drop
+  l_a1: { num: 1, name: "A1", phone: "+1", assignedTo: "setter_a", importedAt: t(20), lastContactAt: tHours(2), callLog: cl(tHours(2)) },
+  l_a2: { num: 2, name: "A2", phone: "+2", assignedTo: "setter_a", importedAt: t(20), lastContactAt: tHours(4), callLog: cl(tHours(4), "scheduled_with_admin") },
+  l_a3: { num: 3, name: "A3", phone: "+3", assignedTo: "setter_a", importedAt: t(20), lastContactAt: tHours(6), callLog: cl(tHours(6)) },
+  l_a4: { num: 4, name: "A4", phone: "+4", assignedTo: "setter_a", importedAt: t(20), lastContactAt: tHours(8), callLog: cl(tHours(8)) },
+  l_a5: { num: 5, name: "A5", phone: "+5", assignedTo: "setter_a", importedAt: t(20), lastContactAt: tHours(10), callLog: cl(tHours(10)) },
   // periodo previo (24-48h atras)
-  l_a_prev1: { num: 6, name: "Aprev1", phone: "+6", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(30), interactions: [{ id: "ip1", action: "open", createdAt: tHours(30), setterId: "setter_a" }] },
-  l_a_prev2: { num: 7, name: "Aprev2", phone: "+7", assignedTo: "setter_a", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(40), interactions: [{ id: "ip2", action: "open", createdAt: tHours(40), setterId: "setter_a" }] },
+  l_a_prev1: { num: 6, name: "Aprev1", phone: "+6", assignedTo: "setter_a", importedAt: t(30), lastContactAt: tHours(30), callLog: cl(tHours(30)) },
+  l_a_prev2: { num: 7, name: "Aprev2", phone: "+7", assignedTo: "setter_a", importedAt: t(30), lastContactAt: tHours(40), callLog: cl(tHours(40)) },
 
-  // setter_b: 1 lead actual (ultimas 24h) + 5 en anterior (24-48h) → drop pesado
-  l_b1: { num: 8, name: "B1", phone: "+8", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(2), interactions: [{ id: "ib1", action: "open", createdAt: tHours(2), setterId: "setter_b" }] },
-  l_b_prev1: { num: 9, name: "Bp1", phone: "+9", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(26), interactions: [{ id: "ipb1", action: "open", createdAt: tHours(26), setterId: "setter_b" }] },
-  l_b_prev2: { num: 10, name: "Bp2", phone: "+10", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(28), interactions: [{ id: "ipb2", action: "open", createdAt: tHours(28), setterId: "setter_b" }] },
-  l_b_prev3: { num: 11, name: "Bp3", phone: "+11", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(32), interactions: [{ id: "ipb3", action: "open", createdAt: tHours(32), setterId: "setter_b" }] },
-  l_b_prev4: { num: 12, name: "Bp4", phone: "+12", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(36), interactions: [{ id: "ipb4", action: "open", createdAt: tHours(36), setterId: "setter_b" }] },
-  l_b_prev5: { num: 13, name: "Bp5", phone: "+13", assignedTo: "setter_b", estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(30), lastContactAt: tHours(44), interactions: [{ id: "ipb5", action: "open", createdAt: tHours(44), setterId: "setter_b" }] },
+  // setter_b: 1 llamada actual (ultimas 24h) + 5 en anterior (24-48h) → drop pesado
+  l_b1: { num: 8, name: "B1", phone: "+8", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(2), callLog: cl(tHours(2)) },
+  l_b_prev1: { num: 9, name: "Bp1", phone: "+9", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(26), callLog: cl(tHours(26)) },
+  l_b_prev2: { num: 10, name: "Bp2", phone: "+10", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(28), callLog: cl(tHours(28)) },
+  l_b_prev3: { num: 11, name: "Bp3", phone: "+11", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(32), callLog: cl(tHours(32)) },
+  l_b_prev4: { num: 12, name: "Bp4", phone: "+12", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(36), callLog: cl(tHours(36)) },
+  l_b_prev5: { num: 13, name: "Bp5", phone: "+13", assignedTo: "setter_b", importedAt: t(30), lastContactAt: tHours(44), callLog: cl(tHours(44)) },
 
-  // setter_c: ningun lead activo, ultimo lastContactAt hace 30 dias → inactivo
-  l_c_old: { num: 14, name: "Cold", phone: "+14", assignedTo: "setter_c", estado: "calificado", conexion: "enviada", respondio: false, calificado: false, interes: "no", followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false }, notes: [], importedAt: t(45), lastContactAt: t(30), interactions: [{ id: "ic1", action: "open", createdAt: t(30), setterId: "setter_c" }] },
+  // setter_c: ninguna llamada reciente, ultima hace 30 dias → inactivo
+  l_c_old: { num: 14, name: "Cold", phone: "+14", assignedTo: "setter_c", importedAt: t(45), lastContactAt: t(30), callLog: cl(t(30), "no_answer", 0) },
 };
 
 fs.writeFileSync(

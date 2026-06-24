@@ -12640,7 +12640,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Equipo (admin + supervisor) ──
   let _teamData = null;
-  let _teamSort = { key: 'total', dir: 'desc' };
+  let _teamSort = { key: 'dials', dir: 'desc' };
 
   function _teamFmtDelta(d) {
     if (!d) return '';
@@ -12758,12 +12758,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             <span class="t-name"></span>${alertBadge}${assignedBadge}
           </div>
         </td>
-        ${_teamCell(c.total, _teamFmtDelta(s.deltas.total), vsAvg('total', c.total))}
-        ${_teamCell(c.conexiones, _teamFmtDelta(s.deltas.conexiones), vsAvg('conexiones', c.conexiones))}
-        ${_teamCell(c.respondieron, _teamFmtDelta(s.deltas.respondieron), vsAvg('respondieron', c.respondieron))}
-        ${_teamCell(c.calificados, _teamFmtDelta(s.deltas.calificados), vsAvg('calificados', c.calificados))}
-        ${_teamCell(c.interesados, _teamFmtDelta(s.deltas.interesados), vsAvg('interesados', c.interesados))}
-        ${_teamCell(c.agendados, _teamFmtDelta(s.deltas.agendados), vsAvg('agendados', c.agendados))}
+        ${_teamCell(c.dials, _teamFmtDelta(s.deltas.dials), vsAvg('dials', c.dials))}
+        ${_teamCell(c.connects, _teamFmtDelta(s.deltas.connects), vsAvg('connects', c.connects))}
+        ${_teamCell(c.connectRate + '%', '', vsAvg('connectRate', c.connectRate))}
+        ${_teamCell(c.conversations, _teamFmtDelta(s.deltas.conversations), vsAvg('conversations', c.conversations))}
+        ${_teamCell(c.appointments, _teamFmtDelta(s.deltas.appointments), vsAvg('appointments', c.appointments))}
+        ${_teamCell(c.deals, _teamFmtDelta(s.deltas.deals), vsAvg('deals', c.deals))}
         ${_teamCell(c.pctShow + '%', '', vsAvg('pctShow', c.pctShow))}
         ${_teamFollowupsCell(s)}
         <td style="padding:14px 10px; text-align:right; color:var(--text-secondary); font-size:12px; white-space:nowrap;">${lastAct}</td>
@@ -12780,12 +12780,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     tfoot.innerHTML = `
       <tr style="border-top:2px solid var(--border-color); font-weight:600; color:var(--text-secondary);">
         <td style="padding:10px 8px;">Promedio equipo</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.total}</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.conexiones}</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.respondieron}</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.calificados}</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.interesados}</td>
-        <td style="padding:10px 8px; text-align:right;">${avg.agendados}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.dials}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.connects}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.connectRate}%</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.conversations}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.appointments}</td>
+        <td style="padding:10px 8px; text-align:right;">${avg.deals}</td>
         <td style="padding:10px 8px; text-align:right;">${avg.pctShow}%</td>
         <td style="padding:10px 8px; text-align:right; color:var(--text-primary); font-weight:700;" title="Total del equipo">${totalFuToday}${totalFuOverdue > 0 ? ` <span style="font-size:10px; padding:1px 6px; background:rgba(255,138,61,0.15); color:#ff8a3d; border-radius:6px; margin-left:4px; font-weight:600;">+${totalFuOverdue}</span>` : ''}</td>
         <td></td>
