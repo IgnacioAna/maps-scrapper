@@ -22,7 +22,7 @@ fs.writeFileSync(path.join(tmpData, "auth.json"), JSON.stringify({ users: [{ id:
 fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({ setters: [], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2));
 
 await import("../index.js");
-const { _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise } = globalThis.__phase16;
+const { _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin } = globalThis.__phase16;
 
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
@@ -55,10 +55,10 @@ describe("_parseBriefOutput", () => {
     expect(out.fitScore).toBe(50);
   });
   it("clampea fitScore 0-100 y filtra painPoints sin dolor", () => {
-    const out = _parseBriefOutput('{"fitScore":250,"painPoints":[{"cita":"sin dolor"},{"dolor":"ok"}]}');
+    const out = _parseBriefOutput('{"fitScore":250,"painPoints":[{"cita":"sin dolor"},{"dolor":"esperas largas"}]}');
     expect(out.fitScore).toBe(100);
     expect(out.painPoints).toHaveLength(1);
-    expect(out.painPoints[0].dolor).toBe("ok");
+    expect(out.painPoints[0].dolor).toBe("esperas largas");
   });
   it("basura → null", () => {
     expect(_parseBriefOutput("no soy json")).toBeNull();
@@ -124,6 +124,24 @@ describe("_looksLikePromptNoise (filtro de ruido del prompt loreado por Mercury)
     expect(out.treatments).toEqual(["ortodoncia"]);
     expect(out.painPoints).toHaveLength(1);
     expect(out.painPoints[0].dolor).toContain("no contestan");
+  });
+});
+
+describe("_briefTooThin (placeholders degenerados tipo '...')", () => {
+  it("detecta strings casi sin letras", () => {
+    expect(_briefTooThin("...", 8)).toBe(true);
+    expect(_briefTooThin("…", 8)).toBe(true);
+    expect(_briefTooThin("—", 8)).toBe(true);
+    expect(_briefTooThin("N/A", 8)).toBe(true);
+  });
+  it("deja pasar texto real", () => {
+    expect(_briefTooThin("clínica consolidada con buen volumen", 8)).toBe(false);
+    expect(_briefTooThin("ortodoncia", 3)).toBe(false);
+  });
+  it("Mercury devuelve brief='...' (placeholder) → se blanquea, no se muestra basura", () => {
+    const out = _parseBriefOutput('{"treatments":[],"painPoints":[],"brief":"...","hookPhrase":"..."}');
+    // todo degenerado/vacío → null (nada usable, dispara fallback de reseñas en el endpoint)
+    expect(out === null || (!out.brief && !out.hookPhrase && !out.painPoints.length && !out.treatments.length)).toBe(true);
   });
 });
 

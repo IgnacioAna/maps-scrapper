@@ -839,6 +839,12 @@ function _looksLikePromptNoise(s) {
   if (/[{}\[\]]/.test(v)) return true; // llaves/corchetes = sintaxis JSON, no lenguaje natural
   return /\b(json|fitscore|painpoints|hookphrase|treatments)\b/i.test(v) || /nunca un array|objeto json|un (único|unico) objeto/i.test(v);
 }
+// True si el string casi no tiene letras/números (placeholders tipo "...", "—",
+// "N/A"): Mercury a veces devuelve "..." en brief/hook. minAlnum = mínimo de
+// caracteres alfanuméricos para considerarlo contenido real.
+function _briefTooThin(s, minAlnum) {
+  return ((String(s || '').match(/[\p{L}\p{N}]/gu) || []).length) < (minAlnum || 1);
+}
 function _classifyBriefArray(arr) {
   const flat = [];
   for (const el of (Array.isArray(arr) ? arr : [])) {
@@ -851,7 +857,7 @@ function _classifyBriefArray(arr) {
       continue;
     }
     if (typeof el !== 'string') continue;
-    const s = el.trim(); if (!s || _looksLikePromptNoise(s)) continue;
+    const s = el.trim(); if (!s || _looksLikePromptNoise(s) || _briefTooThin(s, 3)) continue;
     const words = s.split(/\s+/).length;
     if (words <= 3 && s.length <= 40 && !/[.()]/.test(s)) treatments.push(s.slice(0, 40));
     else painPoints.push({ dolor: s.slice(0, 300), cita: '' });
@@ -923,19 +929,20 @@ function _parseBriefOutput(text) {
     }
     return null;
   }
-  const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string' && !_looksLikePromptNoise(x)).slice(0, 12) : [];
+  const treatments = Array.isArray(obj.treatments) ? obj.treatments.filter((x) => typeof x === 'string' && !_looksLikePromptNoise(x) && !_briefTooThin(x, 3)).slice(0, 12) : [];
   const painPoints = Array.isArray(obj.painPoints)
     ? obj.painPoints.map((p) => {
         if (typeof p === 'string' && p.trim()) return { dolor: p.trim().slice(0, 300), cita: '' };
         if (p && typeof p === 'object' && p.dolor) return { dolor: String(p.dolor).slice(0, 200), cita: String(p.cita || '').slice(0, 300) };
         return null;
-      }).filter((p) => p && !_looksLikePromptNoise(p.dolor)).slice(0, 5)
+      }).filter((p) => p && !_looksLikePromptNoise(p.dolor) && !_briefTooThin(p.dolor, 4)).slice(0, 5)
     : [];
   let fitScore = parseInt(obj.fitScore, 10);
   if (!Number.isFinite(fitScore)) fitScore = null; else fitScore = Math.max(0, Math.min(100, fitScore));
-  // Sanitizar brief/hook: si Mercury loreó las instrucciones, blanquear (no mostrar ruido).
-  const hookPhrase = (typeof obj.hookPhrase === 'string' && !_looksLikePromptNoise(obj.hookPhrase)) ? obj.hookPhrase.slice(0, 300) : '';
-  const brief = (typeof obj.brief === 'string' && !_looksLikePromptNoise(obj.brief)) ? obj.brief.slice(0, 600) : '';
+  // Sanitizar brief/hook: blanquear si es ruido del prompt (instrucciones loreadas) o
+  // un placeholder degenerado ("...", casi sin letras — Mercury a veces lo devuelve así).
+  const hookPhrase = (typeof obj.hookPhrase === 'string' && !_looksLikePromptNoise(obj.hookPhrase) && !_briefTooThin(obj.hookPhrase, 8)) ? obj.hookPhrase.slice(0, 300) : '';
+  const brief = (typeof obj.brief === 'string' && !_looksLikePromptNoise(obj.brief) && !_briefTooThin(obj.brief, 8)) ? obj.brief.slice(0, 600) : '';
   return { treatments, painPoints, fitScore, hookPhrase, brief };
 }
 // Llama al LLM con RETRY (Mercury es inconsistente para JSON en español: a veces
@@ -9707,7 +9714,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");

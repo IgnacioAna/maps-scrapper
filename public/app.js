@@ -5087,15 +5087,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>` : ''}
 
       <!-- Bloque 1.6: Lead Brief IA (reseñas mineadas: dolor+cita+hook+fit) -->
-      ${lead.leadBrief ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">Brief IA${lead.leadBrief.fitScore != null ? ` · fit ${lead.leadBrief.fitScore}/100` : ''}${lead.leadBrief.reviewsMined ? ` · ${lead.leadBrief.reviewsMined} reseñas` : ''}</div>
-        ${(() => { const _bc = _briefClean(lead); return (_bc.brief ? `<div style="color:#fff; font-size:13px; line-height:1.5; margin-bottom:6px;">${escHtml(_bc.brief)}</div>` : '') + (_bc.hook ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:6px; color:rgba(255,255,255,0.92);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''); })()}
-        ${(lead.leadBrief.painPoints || []).slice(0, 2).map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
-        ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
-      </div>` : (currentUser?.realRole === 'admin' && (parseInt(lead.reviews, 10) || 0) >= 10 ? `<div style="margin-top:16px; background:rgba(255,179,65,0.06); border:1px dashed rgba(255,179,65,0.4); padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-        <button id="pd-gen-brief-btn" onclick="window._pdGenBrief()" style="font-size:13px; padding:9px 16px; border-radius:9px; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.5); color:#FFB341; font-weight:700; cursor:pointer; font-family:inherit;">Generar brief IA ahora</button>
-        <span style="font-size:11.5px; color:var(--text-tertiary);">Lee las ${escHtml(String(lead.reviews || 0))} reseñas y arma dolores + gancho (~$0.05)</span>
-      </div>` : '')}
+      ${(() => {
+        const _bc = lead.leadBrief ? _briefClean(lead) : null;
+        const lb = lead.leadBrief || {};
+        if (_bc && _bc.has) {
+          return `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
+            <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}${lb.reviewsMined ? ` · ${lb.reviewsMined} reseñas` : ''}</div>
+            ${_bc.brief ? `<div style="color:#fff; font-size:13px; line-height:1.5; margin-bottom:6px;">${escHtml(_bc.brief)}</div>` : ''}
+            ${_bc.hook ? `<div style="font-size:12.5px; line-height:1.45; margin-bottom:6px; color:rgba(255,255,255,0.92);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''}
+            ${_bc.pains.map(p => `<div style="font-size:12px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
+            ${_bc.treatments.length ? `<div style="font-size:11px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${_bc.treatments.map(escHtml).join(' · ')}</div>` : ''}
+          </div>`;
+        }
+        // Sin brief útil (nunca generado o degenerado) → botón generar (admin, reviews>=10)
+        if (currentUser?.realRole === 'admin' && (parseInt(lead.reviews, 10) || 0) >= 10) {
+          return `<div style="margin-top:16px; background:rgba(255,179,65,0.06); border:1px dashed rgba(255,179,65,0.4); padding:12px 14px; border-radius:10px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+            <button id="pd-gen-brief-btn" onclick="window._pdGenBrief()" style="font-size:13px; padding:9px 16px; border-radius:9px; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.5); color:#FFB341; font-weight:700; cursor:pointer; font-family:inherit;">Generar brief IA ahora</button>
+            <span style="font-size:11.5px; color:var(--text-tertiary);">Lee las ${escHtml(String(lead.reviews || 0))} reseñas y arma dolores + gancho (~$0.05)</span>
+          </div>`;
+        }
+        return '';
+      })()}
 
       <!-- Bloque 2: Pre-call note destacada (si existe) — sin emoji, label limpio -->
       ${lead.precallNote && lead.precallNote.trim() ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.32); border-left:3px solid #FFB341; padding:12px 14px; border-radius:10px;">
@@ -6305,16 +6317,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Limpia el brief para el render: evita que el resumen/gancho DUPLIQUEN el ángulo
     // sugerido (que se muestra aparte) y descarta ganchos cortados/basura (briefs
     // viejos donde la IA truncó). Devuelve { brief, hook } ya filtrados (o '').
+    // Limpia el brief para mostrar: descarta eco del ángulo, placeholders degenerados
+    // ("...", casi sin letras) y dolores/tratamientos basura. Devuelve también `has`
+    // (si hay ALGO real que mostrar) para no renderizar una caja de brief vacía.
     function _briefClean(lead) {
       const lb = (lead && lead.leadBrief) || {};
       const ang = (lead && lead.openingAngle || '').trim();
-      const brief = (lb.brief || '').trim();
-      const hook = (lb.hookPhrase || '').trim();
+      const _thin = (s, min) => ((String(s || '').match(/[\p{L}\p{N}]/gu) || []).length) < min;
+      let brief = (lb.brief || '').trim();
+      let hook = (lb.hookPhrase || '').trim();
+      if (_thin(brief, 8) || brief === ang) brief = '';
       const looksCut = hook && (hook.length < 15 || /\b(de|que|con|y|a|e|o|u|en|para|la|el|los|las|un|una|del|por|se|su|al|lo|le|mi|tu)\s*$/i.test(hook.replace(/[.…!?\s]+$/, '')));
-      return {
-        brief: (brief && brief !== ang) ? brief : '',
-        hook: (hook && hook !== ang && hook !== brief && !looksCut) ? hook : '',
-      };
+      if (_thin(hook, 8) || hook === ang || hook === brief || looksCut) hook = '';
+      const pains = (Array.isArray(lb.painPoints) ? lb.painPoints : [])
+        .filter(p => p && p.dolor && !_thin(p.dolor, 4)).slice(0, 2);
+      const treatments = (Array.isArray(lead && lead.treatments) ? lead.treatments : [])
+        .filter(t => t && !_thin(t, 3)).slice(0, 6);
+      return { brief, hook, pains, treatments, has: !!(brief || hook || pains.length || treatments.length) };
     }
 
     // Texto de antigüedad de la clínica para mostrar en la ficha. Prefiere los años
@@ -6651,14 +6670,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`);
       }
       // Brief IA (reseñas mineadas) — visible DURANTE la llamada, no solo en el Power Dialer.
-      if (lead.leadBrief) {
+      const _bcf = lead.leadBrief ? _briefClean(lead) : null;
+      if (_bcf && _bcf.has) {
         const lb = lead.leadBrief;
-        const pains = (lb.painPoints || []).slice(0, 2).map(p => `<div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px;">• ${escHtml(p.dolor || '')}${p.cita ? ` <span style="opacity:0.55; font-style:italic;">"${escHtml(String(p.cita).slice(0, 90))}"</span>` : ''}</div>`).join('');
+        const pains = _bcf.pains.map(p => `<div style="font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px;">• ${escHtml(p.dolor || '')}${p.cita ? ` <span style="opacity:0.55; font-style:italic;">"${escHtml(String(p.cita).slice(0, 90))}"</span>` : ''}</div>`).join('');
         rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#FFB341; margin-bottom:4px;">Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}</div>
-          ${(() => { const _bc = _briefClean(lead); return (_bc.brief ? `<div style="color:#fff; font-size:11.5px; line-height:1.45; margin-bottom:4px;">${escHtml(_bc.brief)}</div>` : '') + (_bc.hook ? `<div style="font-size:11.5px; line-height:1.4; margin-bottom:4px; color:rgba(255,255,255,0.9);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''); })()}
+          ${_bcf.brief ? `<div style="color:#fff; font-size:11.5px; line-height:1.45; margin-bottom:4px;">${escHtml(_bcf.brief)}</div>` : ''}
+          ${_bcf.hook ? `<div style="font-size:11.5px; line-height:1.4; margin-bottom:4px; color:rgba(255,255,255,0.9);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bcf.hook)}</div>` : ''}
           ${pains}
-          ${Array.isArray(lead.treatments) && lead.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:5px;">${lead.treatments.slice(0, 6).map(escHtml).join(' · ')}</div>` : ''}
+          ${_bcf.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:5px;">${_bcf.treatments.map(escHtml).join(' · ')}</div>` : ''}
         </div>`);
       }
       if (lead.doctor && !lead.doctor.includes('N/A')) rows.push(`<div><strong style="color:#fff;">Doctor:</strong> ${escHtml(lead.doctor)}</div>`);
