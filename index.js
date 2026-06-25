@@ -7143,13 +7143,13 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
   // dialer automático (compliance: la llamada siempre la dispara una persona).
   const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
-  // Política: el lead que no atiende / cae a buzón se reintenta CADA 24h. Reaparece
-  // 3 VECES en la cola de Llamadas/Power Dialer (un reintento de 24h por cada
-  // no-contacto), y al 4to no-contacto seguido se DESCARTA automáticamente. NO
-  // aparece en "Próximos callbacks" ni en "Hoy" (eso es solo para callbacks
-  // manuales). Compliance: la llamada siempre la dispara una persona (no hay
-  // dialer automático) — la cadencia solo reordena la cola.
-  const MAX_NO_CONTACT = 4;
+  // Política: el lead que no atiende / cae a buzón se reintenta UNA vez a las 24h, y
+  // al 2do no-contacto seguido se DESCARTA automáticamente. (Se bajó de 3 reintentos
+  // a 1 el 2026-06-25 para reducir la TASA DE ABANDONO de Telnyx: cada reintento a un
+  // número muerto = otra llamada abandonada → riesgo de recargo). NO aparece en
+  // "Próximos callbacks" ni en "Hoy" (eso es solo para callbacks manuales).
+  // Compliance: la llamada siempre la dispara una persona — la cadencia solo reordena.
+  const MAX_NO_CONTACT = 2;
   if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
     let streak = 0;
     for (let i = lead.callLog.length - 1; i >= 0; i--) {
@@ -7157,7 +7157,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     }
     lead.cadenceStep = streak;
     if (streak >= MAX_NO_CONTACT) {
-      // 3er no-contacto seguido → descarte automático (no se llama más).
+      // 2do no-contacto seguido → descarte automático (no se llama más).
       lead.estado = 'descartado';
       lead.callbackAt = '';
       lead.cadenceExhausted = true;
