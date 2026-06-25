@@ -2293,17 +2293,28 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
 
   const data = loadSettersData();
   const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  // Elegible = tiene teléfono válido y (si onlyMissing) NO se le hizo lookup todavía.
+  // Filtramos por lookupAt (no phoneType): un número sin operadora queda phoneType=''
+  // pero CON lookupAt → así no se re-elige infinito en el loop de "validar toda la base".
+  const _eligible = (l) => {
+    if (!l) return false;
+    const phone = String(l.phone || '').trim();
+    if (!phone || phone.replace(/\D/g, '').length < 8) return false;
+    if (onlyMissing && l.lookupAt) return false;
+    return true;
+  };
+  if (dryRun) {
+    // Conteo REAL de pendientes (sin cap) para dimensionar el costo en el front.
+    let pending = 0;
+    for (const id of Object.keys(leadsMap)) if (_eligible(leadsMap[id])) pending++;
+    return res.json({ dryRun: true, pending });
+  }
   const candidates = [];
   for (const id of Object.keys(leadsMap)) {
-    const l = leadsMap[id];
-    if (!l) continue;
-    const phone = String(l.phone || '').trim();
-    if (!phone || phone.replace(/\D/g, '').length < 8) continue;
-    if (onlyMissing && String(l.phoneType || '').trim()) continue;
-    candidates.push({ id, phone });
+    if (!_eligible(leadsMap[id])) continue;
+    candidates.push({ id, phone: String(leadsMap[id].phone || '').trim() });
     if (candidates.length >= limit) break;
   }
-  if (dryRun) return res.json({ dryRun: true, limit, candidates: candidates.length });
 
   const results = {};
   const byType = {};

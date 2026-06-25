@@ -9106,17 +9106,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.
     const cmdValidateBtn = document.getElementById('cmd-validate-numbers-btn');
     if (cmdValidateBtn) cmdValidateBtn.addEventListener('click', async () => {
-      if (!confirm('Validar tipo de línea de hasta 25 números vía Telnyx Number Lookup. Cuesta ~$0.0015 por número. ¿Seguir?')) return;
-      cmdValidateBtn.disabled = true; const lbl = cmdValidateBtn.textContent; cmdValidateBtn.textContent = 'Validando...';
       const out = document.getElementById('cmd-enrich-result');
+      // 1) Dimensionar cuántos faltan (gratis, no gasta lookups).
+      let pending = 0;
       try {
-        const resp = await fetch(apiUrl('/api/admin/validate-numbers'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 25 }) });
-        const d = await resp.json();
-        if (out) {
-          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
-          else { const bt = d.byType || {}; out.textContent = `${d.looked || 0} validados de ${d.scanned || 0}: ${bt.mobile || 0} móvil · ${bt.landline || 0} fijo · ${bt.voip || 0} voip.` + (d.scanned >= 25 ? ' Hay más → clic de nuevo.' : ' (no quedan más)'); }
+        const dr = await fetch(apiUrl('/api/admin/validate-numbers'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true }) });
+        const dd = await dr.json(); pending = dd.pending || 0;
+      } catch {}
+      if (pending === 0) { if (out) out.textContent = 'No hay números pendientes de validar.'; return; }
+      const estCost = (pending * 0.0025).toFixed(2);
+      if (!confirm(`Validar ${pending} números vía Telnyx Number Lookup (~$0.0025 c/u ≈ $${estCost} USD). Va en tandas automáticas, puede tardar varios minutos — dejá la pestaña abierta. ¿Seguir?`)) return;
+      cmdValidateBtn.disabled = true; const lbl = cmdValidateBtn.textContent;
+      let done = 0, stall = 0; const tot = { mobile: 0, landline: 0, voip: 0, otros: 0 };
+      try {
+        // 2) Loop en tandas de 50 hasta que no queden pendientes (scanned < 50).
+        while (true) {
+          const resp = await fetch(apiUrl('/api/admin/validate-numbers'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 50, onlyMissing: true }) });
+          const d = await resp.json();
+          if (!resp.ok) { if (out) out.textContent = `⚠️ ${d.error || 'error'} (validados ${done}/${pending})`; break; }
+          const bt = d.byType || {};
+          tot.mobile += bt.mobile || 0; tot.landline += bt.landline || 0; tot.voip += bt.voip || 0;
+          tot.otros += Math.max(0, (d.looked || 0) - ((bt.mobile || 0) + (bt.landline || 0) + (bt.voip || 0)));
+          done += d.looked || 0;
+          cmdValidateBtn.textContent = `Validando… ${done}/${pending}`;
+          if (out) out.textContent = `Validados ${done}/${pending} · 📱 ${tot.mobile} móvil · ☎ ${tot.landline} fijo · 🌐 ${tot.voip} voip · ❓ ${tot.otros} sin operadora`;
+          if ((d.scanned || 0) < 50) break;            // no quedan más pendientes
+          if ((d.looked || 0) === 0) { if (++stall >= 2) { if (out) out.textContent += ' — frenado (lookups fallando, revisá API key/saldo).'; break; } }
+          else stall = 0;
+          await new Promise(r => setTimeout(r, 400));   // respiro entre tandas (rate limit)
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
+        if (out && !out.textContent.startsWith('⚠️') && !out.textContent.includes('frenado')) {
+          out.textContent = `✅ Listo. Validados ${done}: 📱 ${tot.mobile} móvil · ☎ ${tot.landline} fijo · 🌐 ${tot.voip} voip · ❓ ${tot.otros} sin operadora (probables muertos).`;
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = `⚠️ error de red (validados ${done}/${pending})`; }
       cmdValidateBtn.disabled = false; cmdValidateBtn.textContent = lbl;
     });
     // Recon GRATIS: dimensiona la barrida (no gasta SerpApi).

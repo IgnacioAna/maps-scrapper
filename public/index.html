@@ -1842,7 +1842,7 @@
           <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
           <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
           <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">Enriquecer dueño (NPI)</button>
-          <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo) vía Telnyx Number Lookup. Cuesta ~$0.0015 por número (lote de 25).">Validar números ($)</button>
+          <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo/voip) de TODOS los leads sin validar vía Telnyx Number Lookup. Un clic barre toda la base en tandas automáticas. ~$0.0025 por número (precio verificado en pricing de Telnyx). Sirve para detectar números muertos y bajar la tasa de abandono.">Validar TODA la base ($)</button>
           <button id="cmd-enrich-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Lead Brief IA: agarra los leads de MÁS reseñas primero (10+ reseñas), lote de 8. Re-fetchea reseñas de Google + IA extrae dolores+cita, fit-score y ángulo. Cuesta SerpApi + LLM. Para un lead puntual usá el botón en su card de Llamadas.">Brief IA reseñas ($)</button>
           <button id="cmd-brief-recon-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="GRATIS — no gasta SerpApi. Cuenta cuántos leads (10+ reseñas) quedan por briefear, y de esos cuántos resuelven barato (ya tienen place_id) vs caros. Sirve para dimensionar la barrida antes de gastar.">Recon brief (gratis)</button>
           <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
@@ -3235,7 +3235,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260625a"></script>
+  <script type="module" src="/app.js?v=20260625b"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
