@@ -50,6 +50,10 @@ fs.writeFileSync(
       lead_descartado: { num: 4, name: "Descartado", phone: "+5494444444", assignedTo: "setter_cl", estado: "descartado", conexion: "" },
       // setteo sin teléfono → nunca (no llamable)
       lead_sin_tel: { num: 5, name: "Sin tel", phone: "", assignedTo: "setter_cl", estado: "sin_contactar", conexion: "" },
+      // validado MÓVIL → NO se excluye (se sigue llamando)
+      lead_mobile_ok: { num: 6, name: "Mobile OK", phone: "+5495555555", assignedTo: "setter_cl", estado: "sin_wsp", conexion: "sin_wsp", lookupAt: new Date().toISOString(), phoneType: "mobile" },
+      // validado SIN operadora (muerto) → excluido de TODA cola de discado
+      lead_dead_lookup: { num: 7, name: "Dead lookup", phone: "+5496666666", assignedTo: "setter_cl", estado: "sin_wsp", conexion: "sin_wsp", lookupAt: new Date().toISOString(), phoneType: "" },
     },
     calendar: [], sessions: [],
   }, null, 2)
@@ -68,20 +72,29 @@ beforeAll(async () => {
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
 
 describe("GET /api/setters/leads/sin-wsp · include=callable", () => {
-  it("sin flag: solo conexion=sin_wsp", async () => {
+  it("sin flag: conexion=sin_wsp (incluye validado-móvil, excluye validado-muerto)", async () => {
     const r = await request(app).get("/api/setters/leads/sin-wsp").set("Cookie", adminCookie);
     expect(r.status).toBe(200);
     const ids = r.body.leads.map((l) => l.id);
-    expect(ids).toEqual(["lead_sinwsp"]);
+    expect(ids).toEqual(["lead_sinwsp", "lead_mobile_ok"]); // ordenados por num
+    expect(ids).not.toContain("lead_dead_lookup");
   });
 
-  it("con include=callable: agrega los de Setteo llamables, excluye terminales y sin-tel", async () => {
+  it("con include=callable: agrega los de Setteo llamables, excluye terminales, sin-tel y validado-muerto", async () => {
     const r = await request(app).get("/api/setters/leads/sin-wsp?include=callable").set("Cookie", adminCookie);
     expect(r.status).toBe(200);
     const ids = r.body.leads.map((l) => l.id).sort();
-    expect(ids).toEqual(["lead_setteo_callable", "lead_sinwsp"]);
+    expect(ids).toEqual(["lead_mobile_ok", "lead_setteo_callable", "lead_sinwsp"]);
     expect(ids).not.toContain("lead_agendado");
     expect(ids).not.toContain("lead_descartado");
     expect(ids).not.toContain("lead_sin_tel");
+    expect(ids).not.toContain("lead_dead_lookup");
+  });
+
+  it("validado SIN operadora (lookupAt + phoneType vacío) → fuera de la cola de discado", async () => {
+    const r = await request(app).get("/api/setters/leads/sin-wsp?include=callable").set("Cookie", adminCookie);
+    expect(r.body.leads.find((l) => l.id === "lead_dead_lookup")).toBeUndefined();
+    // pero el validado-móvil SÍ está
+    expect(r.body.leads.find((l) => l.id === "lead_mobile_ok")).toBeTruthy();
   });
 });

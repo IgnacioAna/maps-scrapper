@@ -5275,6 +5275,11 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
       // Phase 17: los DNC (no-llamar) salen de TODA cola de llamada salvo dnc=1.
       if (l.doNotCall && !showDnc) return false;
       if (showDnc) return !!l.doNotCall;
+      // Validado por Telnyx Number Lookup SIN operadora (lookupAt seteado pero phoneType
+      // vacío) = número muerto casi seguro → fuera de la cola de discado. Es el lever
+      // contra la tasa de abandono de Telnyx (no discás números que nunca atienden).
+      // (Si el lookup ERRORÓ, no se setea lookupAt → se sigue ofreciendo para reintentar.)
+      if (l.lookupAt && !String(l.phoneType || '').trim()) return false;
       if (l.conexion === 'sin_wsp') return true;
       if (includeCallable) {
         const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
