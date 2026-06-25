@@ -11465,6 +11465,13 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     reachedPct: v.calls > 0 ? Math.round((v.reached / v.calls) * 100) : 0,
     scheduledPct: v.calls > 0 ? Math.round((v.scheduled / v.calls) * 100) : 0,
   })).sort((a, b) => a.day - b.day);
+  // Tasa de ABANDONO (definición Telnyx: llamada terminada ANTES de que atiendan).
+  // answered = outcomes de conexión real (un humano levantó o la llamada se completó).
+  // abandoned = el resto (no atendió, buzón, inválido, equivocado, sin disposición).
+  // Telnyx aplica recargo si supera ~20% al cierre de mes → lo exponemos para gestionarlo.
+  const answeredCount = calls.filter(c => COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)).length;
+  const abandonedCount = total - answeredCount;
+  const abandonedPct = total > 0 ? Math.round((abandonedCount / total) * 100) : 0;
   res.json({
     range,
     totals: {
@@ -11474,6 +11481,13 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
       avgMinPerCall: total > 0 ? Math.round((totalSecs / 60 / total) * 10) / 10 : 0,
     },
     ratios,
+    abandoned: {
+      answered: answeredCount,
+      abandoned: abandonedCount,
+      pct: abandonedPct,
+      threshold: 20,
+      over: abandonedPct >= 20,
+    },
     breakdown: {
       openerPassedCount, attendedCount, reachedCount, scheduledCount, interestedCount,
     },

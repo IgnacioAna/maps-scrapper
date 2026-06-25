@@ -14492,8 +14492,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:22px; font-weight:700; color:${color}; line-height:1;">${value}</div>
             <div style="font-size:10px; color:var(--text-secondary); margin-top:5px;">${sub}</div>
           </div>`;
+        const ab = d.abandoned || {};
+        const abColor = ab.over ? '#f85149' : (ab.pct >= 12 ? '#FFB341' : '#5bb974');
         kpiCards.innerHTML =
           card('📞', 'Total llamadas', totals.calls || 0, `${totals.minutes || 0} min · $${(totals.costUSD || 0).toFixed(2)}`, 'var(--accent)') +
+          card(ab.over ? '🚨' : '⚖️', 'Tasa de abandono', `${ab.pct || 0}%`, `${ab.abandoned || 0} no atendidas / ${totals.calls || 0} · Telnyx cobra si > ${ab.threshold || 20}%`, abColor, 'Llamadas terminadas antes de que atiendan (no atendió, buzón, inválido). Telnyx aplica recargo si supera 20% al cierre de mes. Bajalo: validá números antes de discar y llamá en horario hábil.') +
           card('🎯', 'Ratio opener (>30s)', `${ratios.openerPassedPct || 0}%`, `Target: 70%+ — ${d.breakdown?.openerPassedCount || 0} pasaron`, openerColor, 'Si está debajo de 70%, hay algo roto en la apertura. Cambiá script.') +
           card('👋', 'Hablaste con humano', `${ratios.reachedHumanPct || 0}%`, `${d.breakdown?.reachedCount || 0} contactados`, '#7dd3fc', 'Llamadas donde realmente hablaste con el decisor o respondieron (excluye buzón, no atendió).') +
           card('📅', 'Agendadas / contactados', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, '#5bb974', 'De los que hablaron con vos, cuántos terminaron agendando.') +
