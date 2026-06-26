@@ -9190,6 +9190,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { if (out) out.textContent = '⚠️ error de red'; }
       cmdSerpUsageBtn.disabled = false; cmdSerpUsageBtn.textContent = lbl;
     });
+
+    // Export LIMPIO para outreach (Nombre/Email/Tel/Web/IG/Doctor/.../Rating). Abre en Excel.
+    const cmdExportLeadsBtn = document.getElementById('cmd-export-leads-btn');
+    if (cmdExportLeadsBtn) cmdExportLeadsBtn.addEventListener('click', () => {
+      const country = prompt('¿Qué país exportar? (dejá VACÍO = todos)\nEj: Canadá · México · Colombia', '');
+      if (country === null) return; // canceló
+      const withEmail = confirm('¿Solo los que TIENEN email?\n\nAceptar = solo con email · Cancelar = todos');
+      const params = new URLSearchParams();
+      if (country.trim()) params.set('country', country.trim());
+      if (withEmail) params.set('withEmail', '1');
+      // GET con cookie → descarga directa del CSV (abre prolijo en Excel).
+      window.open(apiUrl('/api/admin/export-leads' + (params.toString() ? '?' + params.toString() : '')), '_blank');
+    });
     // Barrida brief por país: loop de lotes hasta terminar el país o el tope.
     let _briefSweepStop = false;
     const cmdSweepBtn = document.getElementById('cmd-brief-sweep-btn');

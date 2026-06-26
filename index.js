@@ -8352,6 +8352,38 @@ app.get('/api/setters/export', requireAuth, (req, res) => {
   res.send(csv);
 });
 
+// Export LIMPIO para prospecci\u00F3n/outreach: SOLO los campos \u00FAtiles de una lista de
+// leads, CON el email enriquecido. Filtrable por pa\u00EDs/ciudad/b\u00FAsqueda + onlyWithEmail.
+// admin/supervisor. UTF-8 BOM \u2192 abre prolijo en Excel (acentos OK).
+app.get('/api/admin/export-leads', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const country = String(req.query.country || '').trim().toLowerCase();
+  const city = String(req.query.city || '').trim().toLowerCase();
+  const q = String(req.query.q || '').trim().toLowerCase();
+  const onlyWithEmail = req.query.withEmail === '1';
+  const data = loadSettersData();
+  let leads = Object.values(data.leads || {}).map((l) => ensureLeadDefaults(l));
+  if (country) leads = leads.filter((l) => String(l.country || '').toLowerCase() === country);
+  if (city) leads = leads.filter((l) => String(l.city || '').toLowerCase().includes(city));
+  if (onlyWithEmail) leads = leads.filter((l) => String(l.email || '').includes('@'));
+  if (q) leads = leads.filter((l) => [l.name, l.address, l.doctor, l.category, l.email].some((v) => String(v || '').toLowerCase().includes(q)));
+
+  const esc = (v) => `"${String(v ?? '').replace(/\r?\n/g, ' ').replace(/"/g, '""')}"`;
+  const igUrl = (l) => { const r = String(l.instagram || '').trim(); if (!r) return ''; return r.startsWith('http') ? r : ('https://instagram.com/' + r.replace(/^@/, '')); };
+  const headers = ['Nombre', 'Email', 'Telefono', 'Sitio web', 'Instagram', 'Facebook', 'Doctor/Decisor', 'Categoria', 'Direccion', 'Ciudad', 'Pais', 'Rating', 'Resenas', 'Antiguedad'];
+  const rows = [headers.join(',')];
+  for (const l of leads) {
+    rows.push([
+      esc(l.name), esc(l.email), esc(l.phone), esc(l.website), esc(igUrl(l)), esc(l.facebook),
+      esc(l.doctor || l.decisor || ''), esc(l.category || ''), esc(l.address), esc(l.city), esc(l.country),
+      esc(l.rating || ''), esc(l.reviews || ''), esc(l.yearsActive != null ? l.yearsActive : ''),
+    ].join(','));
+  }
+  const csv = `\uFEFF${rows.join('\n')}`;
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="listado_leads_${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(csv);
+});
+
 // (sin-wsp route moved above :id routes to avoid Express conflict)
 
 // ── Sesiones ──
