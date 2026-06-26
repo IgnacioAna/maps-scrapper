@@ -1614,16 +1614,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     downloadBtn.addEventListener('click', () => {
       if (currentData.length === 0) return;
   
-      const headers = ['Nombre de la clínica', 'País', 'Ciudad', 'WhatsApp (con mensaje)', 'Doctor', 'Instagram (Clínica)', 'Facebook (Clínica)', 'Página web'];
+      const headers = ['Nombre de la clínica', 'Email', 'Teléfono', 'País', 'Ciudad', 'Dirección', 'Doctor', 'Instagram (Clínica)', 'Facebook (Clínica)', 'Página web', 'Rating', 'Reseñas', 'WhatsApp (con mensaje)'];
 
       const csvRows = [headers.join(',')];
       const cleanStr = (str) => `"${(str || '').toString().replace(/[\n\r]+/g, ' ').replace(/"/g, '""')}"`;
 
       let exportData = hideDuplicatesCb.checked ? currentData.filter(d => !d.alreadyScraped) : currentData;
+      // Incluir filas con CUALQUIER vía de contacto: teléfono/WhatsApp O EMAIL. Antes
+      // exigía teléfono → dejaba afuera clínicas con email pero sin tel (clave para el
+      // listado de outreach por mail).
+      const _hasEmail = (d) => d.email && d.email.includes('@');
       if (hideLandlinesCb && hideLandlinesCb.checked) {
-          exportData = exportData.filter(d => (d.phone && isMobilePhone(d.phone, countrySelect.value)) || d.webWhatsApp || d.aiWhatsApp);
+          exportData = exportData.filter(d => (d.phone && isMobilePhone(d.phone, countrySelect.value)) || d.webWhatsApp || d.aiWhatsApp || _hasEmail(d));
       } else {
-          exportData = exportData.filter(d => (d.phone && d.phone.trim() !== '') || d.webWhatsApp || d.aiWhatsApp);
+          exportData = exportData.filter(d => (d.phone && d.phone.trim() !== '') || d.webWhatsApp || d.aiWhatsApp || _hasEmail(d));
       }
 
       if (exportData.length === 0) return;
@@ -1656,13 +1660,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const rowData = [
           cleanStr(row.name),
+          cleanStr(row.email || ''),
+          cleanStr(row.phone || ''),
           cleanStr(row.country || ''),
           cleanStr(row.city || ''),
-          cleanStr(bestWa),
+          cleanStr(row.address || ''),
           cleanStr(doctorInfo),
           cleanStr(row.instagram),
           cleanStr(row.facebook),
-          cleanStr(row.website)
+          cleanStr(row.website),
+          cleanStr(row.rating != null ? row.rating : ''),
+          cleanStr(row.reviews != null ? row.reviews : ''),
+          cleanStr(bestWa)
         ];
         csvRows.push(rowData.join(','));
       });
