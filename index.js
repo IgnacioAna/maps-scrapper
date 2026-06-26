@@ -28,29 +28,43 @@ if (process.env.NODE_ENV !== 'test') {
 }
 const PORT = process.env.PORT || 3000;
 
-// Configurar IA para enriquecimiento: Mercury (Inception Labs) si hay API key, sino Qwen como fallback
+// Configurar IA para enriquecimiento.
+// 2026-06-26: Mercury (Inception Labs, diffusion) quedó DEPRECADO como motor
+// primario — devolvía completions vacías/basura en JSON estructurado y español
+// (brief IA, autoTag, FAQs, asistente). Ahora el primario es ChatGPT (OpenAI),
+// que ya tenemos por OPENAI_API_KEY (Whisper). Prioridad:
+//   1. OPENAI_API_KEY  -> ChatGPT (OPENAI_MODEL, default gpt-4o-mini)  [PRIMARIO]
+//   2. MERCURY_API_KEY -> Mercury 2 (fallback legacy)
+//   3. QWEN_API_KEY    -> OpenRouter free (último recurso)
+const openaiKey = process.env.OPENAI_API_KEY;
 const mercuryKey = process.env.MERCURY_API_KEY;
 const qwenKey = process.env.QWEN_API_KEY;
-const ai = mercuryKey
-  ? new OpenAI({
-      apiKey: mercuryKey,
-      baseURL: "https://api.inceptionlabs.ai/v1"
-    })
-  : new OpenAI({
-      apiKey: qwenKey || "missing_key",
-      baseURL: "https://openrouter.ai/api/v1",
-      defaultHeaders: {
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "GoogleScraper"
-      }
-    });
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const ai = openaiKey
+  ? new OpenAI({ apiKey: openaiKey }) // OpenAI default baseURL (api.openai.com/v1)
+  : (mercuryKey
+      ? new OpenAI({
+          apiKey: mercuryKey,
+          baseURL: "https://api.inceptionlabs.ai/v1"
+        })
+      : new OpenAI({
+          apiKey: qwenKey || "missing_key",
+          baseURL: "https://openrouter.ai/api/v1",
+          defaultHeaders: {
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "GoogleScraper"
+          }
+        }));
 // 2026-05-22: qwen/qwen3-14b:free retornaba 404 en OpenRouter (modelo
 // deprecado/movido). Eso rompio warming entero hace ~3 semanas porque era
 // el fallback default. Permitimos override por env var (OPENROUTER_MODEL)
 // y usamos qwen-2.5-7b-instruct:free como default vigente probado.
 const OPENROUTER_FREE_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.2-3b-instruct:free';
-const AI_MODEL = mercuryKey ? 'mercury-2' : OPENROUTER_FREE_MODEL;
-console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')'}`);
+const AI_MODEL = openaiKey ? OPENAI_MODEL : (mercuryKey ? 'mercury-2' : OPENROUTER_FREE_MODEL);
+// Hay IA disponible si CUALQUIER proveedor tiene key. Reemplaza los viejos
+// chequeos `!mercuryKey && !qwenKey` (que ignoraban OpenAI). 2026-06-26.
+const AI_AVAILABLE = !!(openaiKey || mercuryKey || qwenKey);
+console.log(`🤖 IA configurada: ${openaiKey ? 'ChatGPT (' + OPENAI_MODEL + ')' : (mercuryKey ? 'Mercury 2 (Inception Labs)' : 'OpenRouter (' + OPENROUTER_FREE_MODEL + ')')}`);
 
 // Cliente AI separado para warming network.
 // Historia (2026-05-03): Mercury devolvia completions vacias en roleplay
@@ -67,23 +81,27 @@ console.log(`🤖 IA configurada: ${mercuryKey ? 'Mercury 2 (Inception Labs)' : 
 // Mercury con tier pago es 100x mas estable que el OpenRouter free.
 // Default: si Mercury esta disponible, usarla para warming. Override con
 // WARMING_USE_QWEN=1 para volver al comportamiento viejo (Qwen first).
-const forceMercuryWarming = !!mercuryKey && process.env.WARMING_USE_QWEN !== '1';
-const warmingAi = (mercuryKey && forceMercuryWarming)
-  ? ai // Mercury, mismo cliente que el principal
-  : (qwenKey
-      ? new OpenAI({
-          apiKey: qwenKey,
-          baseURL: "https://openrouter.ai/api/v1",
-          defaultHeaders: {
-            "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "GoogleScraper-Warming"
-          }
-        })
-      : ai);
-const WARMING_AI_MODEL = (mercuryKey && forceMercuryWarming)
-  ? 'mercury-2'
-  : (qwenKey ? OPENROUTER_FREE_MODEL : AI_MODEL);
-console.log(`🔥 Warming IA: ${WARMING_AI_MODEL} (${forceMercuryWarming && mercuryKey ? 'Mercury preferido' : (qwenKey ? 'Qwen/OpenRouter' : 'cliente principal')})`);
+// 2026-06-26: con ChatGPT como primario, warming reusa el cliente principal
+// (OpenAI). Sólo si NO hay OpenAI caemos a la lógica legacy Mercury/Qwen.
+const forceMercuryWarming = !openaiKey && !!mercuryKey && process.env.WARMING_USE_QWEN !== '1';
+const warmingAi = openaiKey
+  ? ai // ChatGPT, mismo cliente que el principal
+  : ((mercuryKey && forceMercuryWarming)
+      ? ai // Mercury, mismo cliente que el principal
+      : (qwenKey
+          ? new OpenAI({
+              apiKey: qwenKey,
+              baseURL: "https://openrouter.ai/api/v1",
+              defaultHeaders: {
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "GoogleScraper-Warming"
+              }
+            })
+          : ai));
+const WARMING_AI_MODEL = openaiKey
+  ? OPENAI_MODEL
+  : ((mercuryKey && forceMercuryWarming) ? 'mercury-2' : (qwenKey ? OPENROUTER_FREE_MODEL : AI_MODEL));
+console.log(`🔥 Warming IA: ${WARMING_AI_MODEL} (${openaiKey ? 'ChatGPT (cliente principal)' : (forceMercuryWarming && mercuryKey ? 'Mercury preferido' : (qwenKey ? 'Qwen/OpenRouter' : 'cliente principal'))})`);
 
 
 // Middleware
@@ -2358,7 +2376,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   const minReviews = Number.isFinite(parseInt(body.minReviews, 10)) ? parseInt(body.minReviews, 10) : 10;
   const serpKey = process.env.API_KEY;
   if (!serpKey) return res.status(503).json({ error: 'SerpAPI API_KEY no configurada.' });
-  if (!mercuryKey && !qwenKey) return res.status(503).json({ error: 'Sin IA disponible (MERCURY/QWEN).' });
+  if (!AI_AVAILABLE) return res.status(503).json({ error: 'Sin IA disponible (MERCURY/QWEN).' });
 
   const data = loadSettersData();
   const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
@@ -8485,7 +8503,7 @@ app.post('/api/setters/sessions/end', requireAuth, async (req, res) => {
   // Resumen narrativo con IA (best-effort, no bloquea si falla)
   active.aiSummary = null;
   try {
-    if (qwenKey || mercuryKey) {
+    if (AI_AVAILABLE) {
       const interactionsList = interactionsSnap.slice(0, 25).map((i) => `- ${new Date(i.at).toLocaleString()}: ${i.action} → ${i.leadName}`).join("\n");
       const prompt = `Sos un coach de un equipo de prospección por WhatsApp. Hacé un mini-resumen (3-5 lineas, español rioplatense, tono cordial pero directo) de la sesión de un setter llamado ${effectiveSetter}.
 Datos:
@@ -8829,7 +8847,7 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async 
     const regexFoundWa = !!webWhatsApp;
     const regexFoundOwner = !!foundOwner;
     const textLength = singleLineHtml.length;
-    const shouldCallAI = (mercuryKey || qwenKey) && textLength > 500 && !(regexFoundWa && regexFoundOwner);
+    const shouldCallAI = (AI_AVAILABLE) && textLength > 500 && !(regexFoundWa && regexFoundOwner);
 
     if (shouldCallAI) {
       try {
@@ -8936,7 +8954,7 @@ Texto: ${textToAnalyze}`;
              aiRoleDescription = "Web no soportada por la IA";
         }
       }
-    } else if (!mercuryKey && !qwenKey) {
+    } else if (!AI_AVAILABLE) {
         aiRoleDescription = "Requiere MERCURY_API_KEY o QWEN_API_KEY en Railway";
     } else if (textLength <= 500) {
         aiRoleDescription = "Página sin contenido útil";
@@ -9093,7 +9111,7 @@ async function _autoTagFaq({ pregunta, respuesta, categoria, tags }) {
   const hasUserTags = userTags.length > 0;
   const hasUserCategoria = categoria && categoria !== 'general';
   if (hasUserTags && hasUserCategoria) return { tags: userTags, categoria };
-  if (!mercuryKey && !qwenKey) return { tags: userTags, categoria: categoria || 'general' };
+  if (!AI_AVAILABLE) return { tags: userTags, categoria: categoria || 'general' };
 
   const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
 Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
@@ -9448,7 +9466,7 @@ app.post('/api/faqs/check-duplicate', requireAuth, (req, res) => {
 app.post('/api/faqs/suggest-tags', requireAuth, async (req, res) => {
   const { pregunta = '', respuesta = '' } = req.body || {};
   if (!pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida' });
-  if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
+  if (!AI_AVAILABLE) return res.status(400).json({ error: 'No hay API de IA configurada' });
 
   const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
 Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
@@ -9493,7 +9511,7 @@ app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
   const { pregunta, variantId, contexto = '', categoria = '' } = req.body || {};
   if (typeof pregunta !== 'string' || !pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida (string).' });
 
-  if (!mercuryKey && !qwenKey) return res.status(400).json({ error: 'No hay API de IA configurada' });
+  if (!AI_AVAILABLE) return res.status(400).json({ error: 'No hay API de IA configurada' });
 
   // Retrieval: scoring por tokens + tags + categoría + efectividad histórica
   const data = loadFaqs();
@@ -10348,7 +10366,7 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
   let aiError = null;
   let promptVariant = "A";
 
-  if (mercuryKey || qwenKey) {
+  if (AI_AVAILABLE) {
     try {
       // A/B: si abEnabled y experimentalPrompt no vacío, 50/50 random.
       const useExperimental = cfg.abEnabled && cfg.experimentalPrompt && cfg.experimentalPrompt.trim() && Math.random() < 0.5;
@@ -10392,7 +10410,7 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
     const extracted = _extractFromReasoning(rawOutput, message);
     if (extracted) {
       rawOutput = extracted;
-    } else if (mercuryKey || qwenKey) {
+    } else if (AI_AVAILABLE) {
       try {
         const clean = await ai.chat.completions.create({
           model: AI_MODEL,
@@ -11632,7 +11650,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
 app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, res) => {
   const role = req.auth?.user?.role;
   if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
-  if (!mercuryKey && !qwenKey) {
+  if (!AI_AVAILABLE) {
     return res.status(503).json({ error: 'Sin IA disponible. Configurá MERCURY_API_KEY o QWEN_API_KEY en Railway.' });
   }
   const { leadId } = req.params;
@@ -11893,7 +11911,7 @@ function _mergeTranscriptTurns(segments) {
 
 // Resumen de entrenamiento de una llamada (qué pasó, qué funcionó, aprendizaje).
 async function _trainingSummaryLLM(segments, outcome) {
-  if (!mercuryKey && !qwenKey) return '';
+  if (!AI_AVAILABLE) return '';
   const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 6000);
   const prompt = `Sos analista de un call center de ventas (reactivación de pacientes para clínicas dentales). Resumí esta llamada para ENTRENAMIENTO de otros setters. Resultado de la llamada: ${outcome || 'desconocido'}.
 
@@ -11916,7 +11934,7 @@ Devolvé en español, claro y breve (sin nombres ni datos sensibles). Usá EXACT
 
 // Coach IA: responde la pregunta del setter con el conocimiento del banco + producto.
 async function _coachAnswerLLM(question, faqs) {
-  if (!mercuryKey && !qwenKey) return '';
+  if (!AI_AVAILABLE) return '';
   const ctx = (faqs || []).slice(0, 12).map((f) => `P: ${f.pregunta}\nR: ${f.respuesta}`).join('\n\n').slice(0, 5000);
   const prompt = `Sos un coach de ventas experto en SCM (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un setter te hace una pregunta para mejorar. Respondé concreto y accionable, en tono argentino/rioplatense natural, SIN precios ni stack técnico, sin signos de apertura ¿¡.
 
@@ -11941,7 +11959,7 @@ Respuesta:`;
 // para QA + entrenamiento). Devuelve { outcome, reason } o null.
 const _AUTO_DISP_OUTCOMES = ['answered_interested', 'answered_not_interested', 'no_answer', 'voicemail', 'hung_up', 'callback_later', 'scheduled_with_admin', 'wrong_number', 'invalid_number'];
 async function _autoDispositionLLM(segments) {
-  if (!mercuryKey && !qwenKey) return null;
+  if (!AI_AVAILABLE) return null;
   const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 5000);
   if (!dialog.trim()) return null;
   const prompt = `Analizá esta llamada de venta en frío (reactivación de pacientes para clínicas dentales) y clasificá el RESULTADO. Devolvé SOLO un JSON: {"outcome":"<uno de: ${_AUTO_DISP_OUTCOMES.join(', ')}>","reason":"<una línea explicando por qué>"}.
@@ -12021,7 +12039,7 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
 app.post('/api/training/ask', requireAuth, async (req, res) => {
   const question = String(req.body?.question || '').trim();
   if (!question) return res.status(400).json({ error: 'Escribí una pregunta.' });
-  if (!mercuryKey && !qwenKey) return res.status(503).json({ error: 'IA no disponible.' });
+  if (!AI_AVAILABLE) return res.status(503).json({ error: 'IA no disponible.' });
   let faqs = [];
   try { faqs = (loadFaqs().entries || []).slice().sort((a, b) => (b.usos || 0) - (a.usos || 0)); } catch {}
   const answer = await _coachAnswerLLM(question, faqs);
@@ -12753,7 +12771,7 @@ app.get('/api/admin/health', requireAuth, requireRole('admin'), (_req, res) => {
     server: { ok: true, uptimeSeconds: Math.round((Date.now() - SERVER_BOOT_TS) / 1000), nodeEnv: process.env.NODE_ENV || 'production' },
     data: { ok: true, dir: DATA_DIR, files: {} },
     counts: {},
-    ai: { mercury: !!process.env.MERCURY_API_KEY, qwen: !!process.env.QWEN_API_KEY },
+    ai: { engine: openaiKey ? 'chatgpt' : (mercuryKey ? 'mercury' : (qwenKey ? 'qwen' : 'none')), model: AI_MODEL, chatgpt: !!process.env.OPENAI_API_KEY, mercury: !!process.env.MERCURY_API_KEY, qwen: !!process.env.QWEN_API_KEY },
     backups: { ok: false, count: 0, latest: null },
     errors: { ok: true, last24hCount: 0, latest: null },
     rateLimit: { activeKeys: rateLimitStore.size }
@@ -12906,7 +12924,7 @@ const _resolvedJwtSecret = (() => {
 async function campaignMercuryReply({ leadId, lead, message }) {
   const msg = String(message || "").trim().slice(0, 2000);
   if (!msg) return null;
-  if (!mercuryKey && !qwenKey) return null;
+  if (!AI_AVAILABLE) return null;
   const cfg = loadMercuryConfig();
   let raw = "";
   let scored = [];

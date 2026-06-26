@@ -19,6 +19,7 @@ process.env.ADMIN_NAME = "AdminMR";
 process.env.JWT_SECRET = "test-secret-mr";
 delete process.env.MERCURY_API_KEY;
 delete process.env.QWEN_API_KEY;
+delete process.env.OPENAI_API_KEY; // ChatGPT ahora es proveedor primario: sin esto AI_AVAILABLE=true y se llama a OpenAI real
 
 function pwd(plain) {
   const salt = crypto.randomBytes(16).toString("hex");

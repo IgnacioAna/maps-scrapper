@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260618a">
+  <link rel="stylesheet" href="/style.css?v=20260626a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -180,7 +180,7 @@
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span>Google Maps</span>
           </a>
-          <a href="#" class="menu-item" data-target="view-scrape-history" data-label="Historial de scrapes" data-roles="parked">
+          <a href="#" class="menu-item" data-target="view-scrape-history" data-label="Historial de scrapes" data-roles="admin">
             <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
             <span>Historial scrapes</span>
           </a>
@@ -805,6 +805,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>Lead manual</span>
             </button>
+            <button id="calls-audio-btn" class="calls-cta-secondary" title="Elegir micrófono, probar cómo te escuchan y ajustar el audio de las llamadas">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              <span>Audio</span>
+            </button>
           </div>
         </div>
 
@@ -842,6 +846,69 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                 Llamar
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración de audio: micrófono, procesamiento, boost, prueba (todo client-side) -->
+        <div id="audio-settings-modal" class="modal-overlay hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:9998;display:flex;align-items:center;justify-content:center;">
+          <div style="width:min(520px,95vw);max-height:92vh;overflow-y:auto;background:var(--surface-color);border:1px solid var(--border-color);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="padding:18px 22px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface-color);z-index:1;">
+              <div>
+                <h3 style="margin:0;font-size:16px;font-weight:600;">Configuración de audio</h3>
+                <p style="margin:3px 0 0;font-size:11.5px;color:var(--text-tertiary);">Elegí el micrófono y probá cómo te escucha el lead. Se aplica a todas tus llamadas.</p>
+              </div>
+              <button id="audio-settings-close" aria-label="Cerrar" type="button" style="background:transparent;border:0;color:var(--text-secondary);font-size:22px;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <div style="padding:20px 22px;display:flex;flex-direction:column;gap:20px;">
+
+              <!-- 1. Micrófono + medidor de nivel -->
+              <section>
+                <label class="audio-cfg-label" for="audio-mic-select">Micrófono</label>
+                <select id="audio-mic-select" class="audio-cfg-select"><option>Pedí permiso para ver tus micrófonos…</option></select>
+                <div class="audio-meter" title="Nivel de entrada en vivo"><div id="audio-mic-meter-fill" class="audio-meter-fill"></div></div>
+                <p class="audio-cfg-help">Hablá a tu distancia habitual: la barra debería llegar al verde. Si casi no se mueve, estás usando el micrófono equivocado o el nivel de Windows está bajo.</p>
+              </section>
+
+              <!-- 2. Prueba grabando -->
+              <section style="background:rgba(255,255,255,0.025);border:1px solid var(--border-color);border-radius:10px;padding:14px 16px;">
+                <label class="audio-cfg-label" style="margin-bottom:8px;">Probá cómo te escuchan</label>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                  <button id="audio-test-record" type="button" class="btn-primary pill-btn" style="white-space:nowrap;">Grabar 5s y escuchar</button>
+                  <span id="audio-test-status" style="font-size:11.5px;color:var(--text-tertiary);flex:1;min-width:140px;">Grabá una frase y escuchá exactamente cómo suena tu voz para el lead.</span>
+                </div>
+                <audio id="audio-test-playback" controls style="display:none;width:100%;margin-top:12px;"></audio>
+              </section>
+
+              <!-- 3. Procesamiento (A/B) -->
+              <section>
+                <label class="audio-cfg-label">Procesamiento del micrófono</label>
+                <label class="audio-cfg-check"><input type="checkbox" id="audio-ec" checked> <span><strong>Cancelación de eco</strong> — dejala activada (evita que el lead se escuche a sí mismo).</span></label>
+                <label class="audio-cfg-check"><input type="checkbox" id="audio-ns" checked> <span><strong>Supresión de ruido</strong> — si te cuesta que te escuchen y tenés voz baja, <em>probá desactivándola</em>: a veces Chrome corta tu voz creyendo que es ruido.</span></label>
+                <label class="audio-cfg-check"><input type="checkbox" id="audio-agc" checked> <span><strong>Ganancia automática</strong> — normalmente conviene dejarla activada: sube tu voz cuando hablás lejos del micrófono.</span></label>
+              </section>
+
+              <!-- 4. Boost por software -->
+              <section>
+                <label class="audio-cfg-label" for="audio-gain">Refuerzo de volumen (boost)</label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <input type="range" id="audio-gain" min="1" max="3" step="0.1" value="1" style="flex:1;">
+                  <span id="audio-gain-val" style="font-family:ui-monospace,monospace;font-size:13px;color:var(--accent);min-width:42px;text-align:right;">1.0×</span>
+                </div>
+                <label class="audio-cfg-check" style="margin-top:8px;"><input type="checkbox" id="audio-gain-live"> <span>Aplicar el boost también en las llamadas reales <em>(experimental — primero probalo con el botón de arriba)</em>.</span></label>
+                <p class="audio-cfg-help">Amplifica tu voz por software. Subí de a poco: si te distorsiona en la prueba, bajalo. Recomendado entre 1.3× y 2×.</p>
+              </section>
+
+              <!-- 5. Salida (auriculares) -->
+              <section>
+                <label class="audio-cfg-label" for="audio-speaker-select">Salida de audio (lo que escuchás vos)</label>
+                <select id="audio-speaker-select" class="audio-cfg-select"><option value="">Predeterminado del sistema</option></select>
+                <p class="audio-cfg-help">No afecta cómo te escucha el lead — solo elige por qué auricular/parlante escuchás vos.</p>
+              </section>
+
+            </div>
+            <div style="padding:14px 22px;border-top:1px solid var(--border-color);display:flex;justify-content:flex-end;background:rgba(0,0,0,0.15);position:sticky;bottom:0;">
+              <button id="audio-settings-done" type="button" class="btn-primary pill-btn">Listo</button>
             </div>
           </div>
         </div>
@@ -3238,7 +3305,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260625f"></script>
+  <script type="module" src="/app.js?v=20260626a"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>
