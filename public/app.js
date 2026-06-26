@@ -2144,6 +2144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (audioEl && stream && stream.getAudioTracks?.().length > 0) {
                 if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
                 audioEl.volume = 1.0; audioEl.muted = false;
+                try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el setter (auriculares)
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
                 if (!_setterRecorder) _startCallRecording(localStream, stream); // Whisper (Sprint 7)
                 return;
@@ -2205,6 +2206,244 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
     };
     window._telnyx = _telnyx; // expone para debug en consola
+
+    // ── Configuración de audio: micrófono, procesamiento, boost, prueba ──────
+    // Todo client-side. Se persiste en localStorage y se aplica a cada llamada
+    // Telnyx vía las constraints de newCall. Los DEFAULTS preservan exactamente
+    // el comportamiento histórico (EC/NS/AGC = true, sin boost), así que si el
+    // setter nunca abre el panel, las llamadas funcionan igual que antes.
+    const _audioCfg = {
+      KEYS: {
+        mic: 'scm_audio_micId', micLabel: 'scm_audio_micLabel', spk: 'scm_audio_spkId',
+        ec: 'scm_audio_ec', ns: 'scm_audio_ns', agc: 'scm_audio_agc',
+        gain: 'scm_audio_gain', gainLive: 'scm_audio_gainLive',
+      },
+      _meterStop: null,     // fn para frenar el medidor de nivel
+      _boostCleanup: null,  // fn para liberar el pipeline de boost al colgar
+
+      // Lee settings con defaults que PRESERVAN el comportamiento actual.
+      get() {
+        const ls = window.localStorage;
+        const bool = (k, def) => { const v = ls.getItem(k); return v === null ? def : v === '1'; };
+        let g = parseFloat(ls.getItem(this.KEYS.gain) || '1'); if (!(g >= 1)) g = 1;
+        return {
+          micId: ls.getItem(this.KEYS.mic) || '',
+          micLabel: ls.getItem(this.KEYS.micLabel) || '',
+          spkId: ls.getItem(this.KEYS.spk) || '',
+          ec: bool(this.KEYS.ec, true),
+          ns: bool(this.KEYS.ns, true),
+          agc: bool(this.KEYS.agc, true),
+          gain: Math.max(1, Math.min(3, g)),
+          gainLive: bool(this.KEYS.gainLive, false),
+        };
+      },
+
+      // MediaTrackConstraints para una llamada o test. deviceId va como {ideal}
+      // a propósito: si el mic elegido se desconectó, la captura cae al default
+      // del sistema en vez de fallar la llamada (recomendación del research).
+      constraints(deviceIdOverride) {
+        const a = this.get();
+        const c = { echoCancellation: a.ec, noiseSuppression: a.ns, autoGainControl: a.agc, channelCount: 1 };
+        const id = deviceIdOverride !== undefined ? deviceIdOverride : a.micId;
+        if (id) c.deviceId = { ideal: id };
+        return c;
+      },
+
+      // Aplica la salida elegida (setSinkId) al audio remoto + al player de prueba.
+      applySpeaker() {
+        const a = this.get();
+        if (!a.spkId) return;
+        ['telnyx-remote-audio', 'audio-test-playback'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && typeof el.setSinkId === 'function') el.setSinkId(a.spkId).catch(() => {});
+        });
+      },
+    };
+    window._audioCfg = _audioCfg;
+
+    // Enumera dispositivos. Pide permiso primero (sin permiso las labels vienen
+    // vacías). Devuelve {mics, spks, denied}.
+    async function _audioListDevices() {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+        s.getTracks().forEach(t => t.stop());
+      } catch (e) {
+        return { mics: [], spks: [], denied: true };
+      }
+      const devs = await navigator.mediaDevices.enumerateDevices();
+      return {
+        mics: devs.filter(d => d.kind === 'audioinput'),
+        spks: devs.filter(d => d.kind === 'audiooutput'),
+        denied: false,
+      };
+    }
+
+    // Medidor de nivel en vivo del micrófono seleccionado (AnalyserNode).
+    async function _audioStartMeter(deviceId) {
+      _audioStopMeter();
+      let stream, ctx;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(deviceId) });
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        await ctx.resume();
+      } catch (e) {
+        console.warn('[audio] meter no pudo abrir el mic:', e.message);
+        return;
+      }
+      const src = ctx.createMediaStreamSource(stream);
+      const an = ctx.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0.7;
+      src.connect(an);
+      const data = new Uint8Array(an.frequencyBinCount);
+      const bar = document.getElementById('audio-mic-meter-fill');
+      let raf = 0;
+      const tick = () => {
+        an.getByteFrequencyData(data);
+        let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+        const rms = Math.sqrt(sum / data.length);             // 0..255
+        const level = Math.min(100, Math.pow(rms / 255, 0.45) * 140);
+        if (bar) {
+          bar.style.width = level.toFixed(0) + '%';
+          bar.style.background = level > 78 ? '#f85149' : level > 28 ? '#5bb974' : '#FFB341';
+        }
+        raf = requestAnimationFrame(tick);
+      };
+      tick();
+      _audioCfg._meterStop = () => {
+        cancelAnimationFrame(raf);
+        try { stream.getTracks().forEach(t => t.stop()); } catch {}
+        try { ctx.close(); } catch {}
+      };
+    }
+    function _audioStopMeter() {
+      if (_audioCfg._meterStop) { try { _audioCfg._meterStop(); } catch {} _audioCfg._meterStop = null; }
+    }
+
+    // Graba ~5s del mic (aplicando el boost si está configurado) y lo reproduce,
+    // para que el setter escuche EXACTAMENTE cómo suena su voz para el lead.
+    async function _audioTestRecord() {
+      const btn = document.getElementById('audio-test-record');
+      const status = document.getElementById('audio-test-status');
+      const pb = document.getElementById('audio-test-playback');
+      if (!btn) return;
+      const a = _audioCfg.get();
+      let rawStream;
+      try {
+        rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints() });
+      } catch (e) {
+        if (status) status.textContent = 'No se pudo acceder al micrófono. Revisá el permiso en el candado de la URL.';
+        return;
+      }
+      // Si hay boost configurado, lo aplicamos a la grabación para que el test sea fiel.
+      let recStream = rawStream, ctx = null;
+      if (a.gain > 1.01) {
+        try {
+          ctx = new (window.AudioContext || window.webkitAudioContext)(); await ctx.resume();
+          const src = ctx.createMediaStreamSource(rawStream);
+          const gn = ctx.createGain(); gn.gain.value = a.gain;
+          const dest = ctx.createMediaStreamDestination();
+          src.connect(gn).connect(dest);
+          recStream = dest.stream;
+        } catch (e) { ctx = null; recStream = rawStream; }
+      }
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
+      let rec;
+      try { rec = new MediaRecorder(recStream, mime ? { mimeType: mime } : undefined); }
+      catch (e) { if (status) status.textContent = 'Tu navegador no soporta la grabación de prueba.'; rawStream.getTracks().forEach(t => t.stop()); return; }
+      const chunks = [];
+      rec.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+      rec.onstop = () => {
+        try { rawStream.getTracks().forEach(t => t.stop()); } catch {}
+        try { if (ctx) ctx.close(); } catch {}
+        const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+        if (pb) {
+          pb.src = URL.createObjectURL(blob);
+          pb.style.display = 'block';
+          _audioCfg.applySpeaker();
+          pb.play().catch(() => {});
+        }
+        if (status) status.textContent = 'Escuchá la grabación: así te oye el lead. ¿Se entiende sin pegarte al micrófono?';
+        btn.disabled = false; btn.textContent = 'Grabar 5s y escuchar';
+      };
+      rec.start();
+      btn.disabled = true;
+      let n = 5;
+      btn.textContent = 'Grabando… ' + n;
+      if (status) status.textContent = 'Hablá normal, a tu distancia habitual del micrófono.';
+      const iv = setInterval(() => { n--; if (n > 0) btn.textContent = 'Grabando… ' + n; }, 1000);
+      setTimeout(() => { clearInterval(iv); try { rec.stop(); } catch {} }, 5000);
+    }
+
+    let _audioInited = false;
+    function _audioInitOnce() {
+      if (_audioInited) return; _audioInited = true;
+      const $ = id => document.getElementById(id);
+      $('audio-mic-select')?.addEventListener('change', (e) => {
+        const sel = e.target;
+        localStorage.setItem(_audioCfg.KEYS.mic, sel.value || '');
+        localStorage.setItem(_audioCfg.KEYS.micLabel, sel.options[sel.selectedIndex]?.text || '');
+        _audioStartMeter(sel.value);
+      });
+      $('audio-speaker-select')?.addEventListener('change', (e) => {
+        localStorage.setItem(_audioCfg.KEYS.spk, e.target.value || '');
+        _audioCfg.applySpeaker();
+      });
+      const bindCheck = (id, key) => $(id)?.addEventListener('change', (e) => localStorage.setItem(key, e.target.checked ? '1' : '0'));
+      bindCheck('audio-ec', _audioCfg.KEYS.ec);
+      bindCheck('audio-ns', _audioCfg.KEYS.ns);
+      bindCheck('audio-agc', _audioCfg.KEYS.agc);
+      bindCheck('audio-gain-live', _audioCfg.KEYS.gainLive);
+      $('audio-gain')?.addEventListener('input', (e) => {
+        let v = parseFloat(e.target.value); if (!(v >= 1)) v = 1;
+        localStorage.setItem(_audioCfg.KEYS.gain, String(v));
+        const lbl = $('audio-gain-val'); if (lbl) lbl.textContent = v.toFixed(1) + '×';
+      });
+      $('audio-test-record')?.addEventListener('click', _audioTestRecord);
+      $('audio-settings-close')?.addEventListener('click', _audioCloseModal);
+      $('audio-settings-done')?.addEventListener('click', _audioCloseModal);
+      $('audio-settings-modal')?.addEventListener('click', (e) => { if (e.target.id === 'audio-settings-modal') _audioCloseModal(); });
+    }
+
+    async function _audioOpenModal() {
+      const modal = document.getElementById('audio-settings-modal');
+      if (!modal) return;
+      _audioInitOnce();
+      modal.classList.remove('hidden');
+      const a = _audioCfg.get();
+      const $ = id => document.getElementById(id);
+      if ($('audio-ec')) $('audio-ec').checked = a.ec;
+      if ($('audio-ns')) $('audio-ns').checked = a.ns;
+      if ($('audio-agc')) $('audio-agc').checked = a.agc;
+      if ($('audio-gain')) $('audio-gain').value = a.gain;
+      if ($('audio-gain-val')) $('audio-gain-val').textContent = a.gain.toFixed(1) + '×';
+      if ($('audio-gain-live')) $('audio-gain-live').checked = a.gainLive;
+      const micSel = $('audio-mic-select'), spkSel = $('audio-speaker-select');
+      const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+      const { mics, spks, denied } = await _audioListDevices();
+      if (denied) {
+        if (micSel) micSel.innerHTML = '<option value="">Permiso de micrófono denegado — habilitalo en el candado de la URL</option>';
+        return;
+      }
+      if (micSel) {
+        micSel.innerHTML = mics.length
+          ? mics.map((m, i) => `<option value="${esc(m.deviceId)}">${esc(m.label || ('Micrófono ' + (i + 1)))}</option>`).join('')
+          : '<option value="">No se detectaron micrófonos</option>';
+        if (a.micId && mics.some(m => m.deviceId === a.micId)) micSel.value = a.micId;
+      }
+      if (spkSel) {
+        spkSel.innerHTML = '<option value="">Predeterminado del sistema</option>' +
+          spks.map((s, i) => `<option value="${esc(s.deviceId)}">${esc(s.label || ('Salida ' + (i + 1)))}</option>`).join('');
+        if (a.spkId && spks.some(s => s.deviceId === a.spkId)) spkSel.value = a.spkId;
+      }
+      _audioStartMeter(micSel ? micSel.value : '');
+    }
+    window._audioOpenModal = _audioOpenModal;
+
+    function _audioCloseModal() {
+      _audioStopMeter();
+      const m = document.getElementById('audio-settings-modal');
+      if (m) m.classList.add('hidden');
+    }
     // Cache de follow-ups del setter actual (refresca al entrar al CRM y cada
     // vez que se tilda un follow-up). Estructura igual a /api/setters/followups/today
     let _followupsCache = null;
@@ -5466,6 +5705,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _manualDialModal?.classList.add('hidden');
     }
     document.getElementById('calls-manual-dial-btn')?.addEventListener('click', _openManualDial);
+    document.getElementById('calls-audio-btn')?.addEventListener('click', _audioOpenModal);
     document.getElementById('manual-dial-close')?.addEventListener('click', _closeManualDial);
     document.getElementById('manual-dial-cancel')?.addEventListener('click', _closeManualDial);
     _manualDialModal?.addEventListener('click', (e) => { if (e.target === _manualDialModal) _closeManualDial(); });
@@ -6680,6 +6920,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try { _telnyxCallState.localStreamForRec.getTracks().forEach(t => t.stop()); } catch {}
         _telnyxCallState.localStreamForRec = null;
       }
+      // Liberar el pipeline de boost por software si se usó en esta llamada.
+      if (_audioCfg._boostCleanup) { try { _audioCfg._boostCleanup(); } catch {} _audioCfg._boostCleanup = null; }
       _telnyxCallState.startedAt = 0;
       _telnyxCallState.answeredAt = 0;
       _telnyxCallState.enteredActive = false;
@@ -6933,14 +7175,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         const cleanCaller = _sanitizePhoneE164(fromNum.phone);
-        const call = _telnyx.client.newCall({
+        // Constraints de mic desde la Config de audio del setter (panel "Audio").
+        // Defaults = EC/NS/AGC true (idéntico al comportamiento histórico). Si eligió
+        // un micrófono, va como deviceId {ideal} (no rompe la llamada si lo desconecta).
+        const _aCfg = _audioCfg.get();
+        const _callOpts = {
           destinationNumber: cleanDestination,
           callerNumber: cleanCaller || fromNum.phone,
           callerName: 'SCM',
-          // Constraints de mic: mejoran claridad de cómo te escucha el lead (eco,
-          // ruido de fondo, nivel). NO arreglan el "entrecortado" si el problema es
-          // la RED (eso es ancho de banda/jitter de subida → cable, cerrar pestañas).
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: _audioCfg.constraints(),
           video: false,
           // CRÍTICO: el SDK lee remoteElement de options del CALL (no solo del
           // client). Sin esto, attachMediaStream() del SDK puede no encontrar
@@ -6948,7 +7191,33 @@ document.addEventListener('DOMContentLoaded', async () => {
           // del source: BaseCall.options.remoteElement es lo que usa el handler
           // 'track' del RTCPeerConnection.
           remoteElement: 'telnyx-remote-audio',
-        });
+        };
+        // Boost por software OPT-IN (experimental): solo si el setter activó
+        // "Aplicar boost en llamadas" Y subió la ganancia. Capturamos nosotros el
+        // mic, lo amplificamos con un GainNode y pasamos ese stream como localStream
+        // del call (el SDK usa el provisto, no abre una segunda captura).
+        _audioCfg._boostCleanup = null;
+        if (_aCfg.gainLive && _aCfg.gain > 1.01) {
+          try {
+            const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints() });
+            const bctx = new (window.AudioContext || window.webkitAudioContext)();
+            await bctx.resume();
+            const bsrc = bctx.createMediaStreamSource(rawStream);
+            const bgain = bctx.createGain(); bgain.gain.value = _aCfg.gain;
+            const bdest = bctx.createMediaStreamDestination();
+            bsrc.connect(bgain).connect(bdest);
+            _callOpts.localStream = bdest.stream;
+            _callOpts.localElement = undefined;
+            _audioCfg._boostCleanup = () => {
+              try { rawStream.getTracks().forEach(t => t.stop()); } catch {}
+              try { bctx.close(); } catch {}
+            };
+          } catch (e) {
+            console.warn('[audio] boost en vivo falló, sigo sin boost:', e.message);
+            delete _callOpts.localStream;
+          }
+        }
+        const call = _telnyx.client.newCall(_callOpts);
         _telnyx.activeCall = call;
         _telnyxCallState.startedAt = Date.now();
         _telnyxCallState.answeredAt = 0;      // se setea al atender (200 OK) → talk-time

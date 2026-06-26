@@ -3921,3 +3921,13 @@ textarea:disabled {
 .dialpad-key:active { transform: scale(0.95); background: rgba(157,133,242,0.15); }
 .dk-sub { font-size: 9px; color: var(--text-tertiary); letter-spacing: 1px; margin-top: 2px; font-weight: 500; }
 
+
+/* ── Configuración de audio (modal de micrófono / llamadas) ───────────── */
+.audio-cfg-label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:8px; }
+.audio-cfg-select { width:100%; padding:10px 12px; background:var(--bg-input,var(--bg-app)); border:1px solid var(--border-default,var(--border-color)); border-radius:9px; color:var(--text-primary); font-size:13px; box-sizing:border-box; }
+.audio-cfg-help { margin:8px 0 0; font-size:11px; color:var(--text-tertiary); line-height:1.5; }
+.audio-cfg-check { display:flex; align-items:flex-start; gap:9px; font-size:12px; color:var(--text-secondary); line-height:1.5; margin-top:9px; cursor:pointer; }
+.audio-cfg-check input { margin-top:2px; flex-shrink:0; accent-color:var(--accent); }
+.audio-cfg-check strong { color:var(--text-primary); font-weight:600; }
+.audio-meter { height:10px; border-radius:6px; background:rgba(255,255,255,0.07); overflow:hidden; margin-top:10px; border:1px solid var(--border-color); }
+.audio-meter-fill { height:100%; width:0%; background:#FFB341; border-radius:6px; transition:width 0.08s linear, background 0.2s; }
