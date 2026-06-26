@@ -2430,6 +2430,8 @@
                 Solo enviar los nuevos (no ya scrapeados antes)
               </label>
               <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a setter</button>
+              <button id="sh-modal-download" class="btn-secondary" style="font-size:12px; padding:8px 16px; color:#5bb974;" title="Enriquece los emails de este batch (baja la web de cada clínica) y descarga el listado prolijo en CSV + Excel: Nombre, Email, Teléfono (con +), Dirección, Ciudad, País, Web, Instagram, Facebook, Rating, Reseñas. Sin link de WhatsApp.">Descargar (CSV + Excel)</button>
+              <span id="sh-modal-download-progress" style="font-size:11px; color:var(--text-secondary);"></span>
               <button id="sh-modal-delete" class="btn-secondary" style="font-size:12px; padding:8px 14px; color:#f85149; margin-left:auto;">Borrar batch</button>
             </div>
 
@@ -3236,7 +3238,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260625e"></script>
+  <script type="module" src="/app.js?v=20260625f"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

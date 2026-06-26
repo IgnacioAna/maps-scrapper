@@ -1614,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     downloadBtn.addEventListener('click', () => {
       if (currentData.length === 0) return;
   
-      const headers = ['Nombre de la clínica', 'Email', 'Teléfono', 'País', 'Ciudad', 'Dirección', 'Doctor', 'Instagram (Clínica)', 'Facebook (Clínica)', 'Página web', 'Rating', 'Reseñas', 'WhatsApp (con mensaje)'];
+      const headers = ['Nombre de la clínica', 'Email', 'Teléfono', 'País', 'Ciudad', 'Dirección', 'Doctor', 'Instagram (Clínica)', 'Facebook (Clínica)', 'Página web', 'Rating', 'Reseñas'];
 
       const csvRows = [headers.join(',')];
       const cleanStr = (str) => `"${(str || '').toString().replace(/[\n\r]+/g, ' ').replace(/"/g, '""')}"`;
@@ -1670,8 +1670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           cleanStr(row.facebook),
           cleanStr(row.website),
           cleanStr(row.rating != null ? row.rating : ''),
-          cleanStr(row.reviews != null ? row.reviews : ''),
-          cleanStr(bestWa)
+          cleanStr(row.reviews != null ? row.reviews : '')
         ];
         csvRows.push(rowData.join(','));
       });
@@ -13202,6 +13201,61 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       btn.disabled = false; btn.textContent = 'Enviar a setter';
     }
+  });
+
+  function _shDownloadFile(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  // Descargar el batch del HISTORIAL como CSV + Excel, prolijo: enriquece los emails
+  // (sin IA → no depende de Mercury), teléfono con +, SIN link de WhatsApp.
+  document.getElementById('sh-modal-download')?.addEventListener('click', async () => {
+    if (!_shCurrentBatch) return;
+    const results = Array.isArray(_shCurrentBatch.results) ? _shCurrentBatch.results : [];
+    if (!results.length) { alert('Este batch no tiene leads.'); return; }
+    const btn = document.getElementById('sh-modal-download');
+    const prog = document.getElementById('sh-modal-download-progress');
+    const lbl = btn.textContent; btn.disabled = true;
+    // 1) Enriquecer emails de las webs (sin IA), en tandas. Map website -> {email, ig, fb}.
+    const sites = [...new Set(results.map(r => String(r.website || '').trim()).filter(Boolean))];
+    const byWeb = {};
+    for (let i = 0; i < sites.length; i += 20) {
+      const chunk = sites.slice(i, i + 20);
+      btn.textContent = `Buscando emails… ${Math.min(i + 20, sites.length)}/${sites.length}`;
+      try {
+        const r = await fetch('/api/admin/emails-for-websites', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ websites: chunk }) });
+        const d = await r.json();
+        for (const it of (d?.results || [])) byWeb[String(it.website || '').trim()] = it;
+      } catch (e) { console.warn('[sh-download] enrich chunk falló', e?.message); }
+    }
+    // 2) Filas limpias (sin wa link; teléfono tal cual viene de Google, que ya trae +).
+    const fmtPhone = (p) => String(p || '').replace(/\s+/g, ' ').trim();
+    const rows = results.map(r => {
+      const e = byWeb[String(r.website || '').trim()] || {};
+      return {
+        Nombre: r.name || '', Email: e.email || r.email || '', 'Teléfono': fmtPhone(r.phone),
+        'Dirección': r.address || '', Ciudad: r.city || r.locationSearched || '', 'País': r.country || '',
+        'Sitio web': r.website || '', Instagram: e.instagram || r.instagram || '', Facebook: e.facebook || r.facebook || '',
+        Rating: (r.rating != null ? r.rating : ''), 'Reseñas': (r.reviews != null ? r.reviews : ''),
+      };
+    });
+    const cols = Object.keys(rows[0]);
+    const emailsCount = rows.filter(r => r.Email && r.Email.includes('@')).length;
+    const base = `scrape_${(_shCurrentBatch.queries || ['batch']).join('_').replace(/[^a-z0-9]+/gi, '_').slice(0, 40)}_${new Date().toISOString().slice(0, 10)}`;
+    // 3) CSV con BOM (acentos OK en Excel)
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = '﻿' + [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
+    _shDownloadFile(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), base + '.csv');
+    // 4) Excel (.xls vía tabla HTML — sin dependencia, abre en Excel)
+    const x = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const tbl = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table border="1"><thead><tr>${cols.map(c => `<th>${x(c)}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${cols.map(c => `<td>${x(r[c])}</td>`).join('')}</tr>`).join('')}</tbody></table></body></html>`;
+    setTimeout(() => _shDownloadFile(new Blob(['﻿' + tbl], { type: 'application/vnd.ms-excel;charset=utf-8;' }), base + '.xls'), 700);
+    if (prog) prog.textContent = `✓ ${rows.length} leads · ${emailsCount} con email · descargando CSV + Excel`;
+    btn.disabled = false; btn.textContent = lbl;
   });
 
   document.getElementById('sh-modal-delete')?.addEventListener('click', async () => {

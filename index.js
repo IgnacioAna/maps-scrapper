@@ -8384,6 +8384,28 @@ app.get('/api/admin/export-leads', requireAuth, requireRole('admin', 'supervisor
   res.send(csv);
 });
 
+// Stateless: dado un array de websites, devuelve email/instagram/facebook por cada una
+// (enrichFromWebsite, SIN IA → no depende de Mercury). Para el export del historial de
+// scrapes (no toca data.leads). Cap 20 por request, concurrencia 5. admin/supervisor.
+app.post('/api/admin/emails-for-websites', requireAuth, requireRole('admin', 'supervisor'), async (req, res) => {
+  const websites = Array.isArray(req.body?.websites) ? req.body.websites.slice(0, 20) : [];
+  const out = [];
+  const CONC = 5;
+  for (let i = 0; i < websites.length; i += CONC) {
+    const chunk = websites.slice(i, i + CONC);
+    const results = await Promise.all(chunk.map(async (w) => {
+      const url = String(w || '').trim();
+      if (!url) return { website: w, email: '', instagram: '', facebook: '' };
+      try {
+        const r = await enrichFromWebsite(url, { timeoutMs: 6000 });
+        return { website: w, email: r.email || '', instagram: (r.social && r.social.instagram) || '', facebook: (r.social && r.social.facebook) || '' };
+      } catch { return { website: w, email: '', instagram: '', facebook: '' }; }
+    }));
+    out.push(...results);
+  }
+  res.json({ results: out });
+});
+
 // (sin-wsp route moved above :id routes to avoid Express conflict)
 
 // ── Sesiones ──
