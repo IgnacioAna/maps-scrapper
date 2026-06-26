@@ -4303,8 +4303,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (result.skipped) summary += '\nYa existían en algún setter: ' + result.skipped;
         if (skippedOld > 0) summary += '\nYa scrapeados antes (no enviados): ' + skippedOld;
         alert(summary);
+        // Auto-enriquecer email + redes de los leads recién importados, en SEGUNDO PLANO.
+        // Antes era manual (botón en Comando); ahora se dispara solo al enviar un scrape
+        // nuevo a setters. Es GRATIS (solo fetches a las webs). El usuario puede seguir
+        // trabajando mientras corre. Reusa /api/admin/enrich-leads (mismo loop probado).
+        if ((result.imported || 0) > 0) {
+          window.showToast?.('Enriqueciendo email + redes en segundo plano… (podés seguir trabajando)', { type: 'info', duration: 6000 });
+          _autoEnrichAfterScrape().catch(() => {});
+        }
       } catch (e) { console.error('Import exception:', e); alert('Error al importar: ' + e.message); }
     });
+
+    // Loop de auto-enriquecimiento (email + redes) en 2do plano tras un scrape. Tandas
+    // chicas para no clavar el gateway; corta solo cuando no quedan candidatos. Gratis.
+    async function _autoEnrichAfterScrape() {
+      let emails = 0, social = 0, scanned = 0, rounds = 0, errs = 0;
+      const LIM = 12;
+      while (rounds < 800) {
+        rounds++;
+        let ok = false, d = null;
+        try {
+          const resp = await fetch(apiUrl('/api/admin/enrich-leads'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ source: 'website', limit: LIM }) });
+          ok = resp.ok; d = await resp.json().catch(() => null);
+        } catch { ok = false; }
+        if (!ok || !d) { if (++errs >= 4) break; await new Promise(r => setTimeout(r, 3000)); continue; }
+        errs = 0;
+        emails += (d.emailsFound || 0); social += (d.socialFound || 0); scanned += (d.scanned || 0);
+        if ((d.scanned || 0) < LIM) break; // no quedan más candidatos → terminó
+        await new Promise(r => setTimeout(r, 300));
+      }
+      if (scanned > 0) window.showToast?.(`✓ Enriquecimiento listo: ${emails} emails · ${social} redes (${scanned} sitios revisados).`, { type: 'success', duration: 8000 });
+    }
 
     // ── Vista Llamadas (Sin WSP) — rediseño con dispositions, click-to-call, agendamiento ──
     let callsLeadsCache = [];
