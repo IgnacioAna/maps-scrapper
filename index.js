@@ -12071,6 +12071,40 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
   });
 });
 
+// Limpia los segmentos crudos de Whisper (verbose_json) sacando alucinaciones
+// de silencio/buzón y colapsando loops de la misma frase. Función pura, testeable.
+// 2026-06-26: el bug era transcripts tipo "Reactivación de pacientes." × 30 en
+// llamadas de buzón. Whisper inventa sobre silencio: esos segmentos tienen
+// no_speech_prob alto + avg_logprob muy bajo, o compression_ratio alto.
+function _cleanWhisperSegments(rawSegments, speakerLabel) {
+  const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+  let segs = (rawSegments || []).map((s) => ({
+    speaker: speakerLabel,
+    start: Math.round((s.start || 0) * 10) / 10,
+    end: Math.round((s.end || 0) * 10) / 10,
+    text: (s.text || '').trim(),
+    _nsp: typeof s.no_speech_prob === 'number' ? s.no_speech_prob : 0,
+    _alp: typeof s.avg_logprob === 'number' ? s.avg_logprob : 0,
+    _cr: typeof s.compression_ratio === 'number' ? s.compression_ratio : 0,
+  })).filter((s) => s.text)
+    .filter((s) => !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación
+    .filter((s) => s._cr < 2.4);                        // segmento repetitivo
+  // Colapsa loops: la misma frase repetida N veces (clásico de Whisper en
+  // silencio) se junta en una sola extendiendo el rango temporal.
+  const deduped = [];
+  for (const s of segs) {
+    const prev = deduped[deduped.length - 1];
+    if (prev && _normSeg(prev.text) === _normSeg(s.text)) { prev.end = s.end; continue; }
+    deduped.push(s);
+  }
+  // Si el canal entero colapsa a una sola frase corta repetida, es alucinación
+  // pura sobre silencio → vacío (no hubo voz real).
+  const uniq = new Set(deduped.map((s) => _normSeg(s.text)).filter(Boolean));
+  if (segs.length >= 3 && uniq.size <= 1) return [];
+  return deduped.map(({ _nsp, _alp, _cr, ...rest }) => rest);
+}
+globalThis.__whisper = { cleanSegments: _cleanWhisperSegments };
+
 // POST /api/telnyx/calls/:leadId/transcribe — transcribe el audio de una
 // llamada usando OpenAI Whisper. Recibe 2 audios separados (setter + lead)
 // como base64 (uno por canal), los transcribe en paralelo y mergea por
@@ -12104,10 +12138,12 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   const fileType = mimeType || 'audio/webm';
   const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  // Prompt de contexto para Whisper: lo prima con el vocabulario del rubro para que
-  // acierte mejor términos y nombres (mishears de dominio bajan bastante). En español
-  // y conciso a propósito (Whisper puede "alucinar" el prompt en tramos de silencio).
-  const WHISPER_PROMPT = 'Llamada en frío de SCM Dental, agencia de reactivación y retención de pacientes para clínicas y consultorios odontológicos. Términos: reactivar pacientes, agendar una reunión, presupuesto, odontología, ortodoncia, implantes, la doctora, recepción, perfil de Google.';
+  // 2026-06-26: SACADO el prompt con vocabulario de dominio ("reactivar pacientes",
+  // etc). En llamadas de buzón/no-atendió (audio casi en silencio) Whisper
+  // "alucina" repitiendo el prompt en loop → el transcript salía "Reactivación de
+  // pacientes." 30 veces seguidas. `language:'es'` ya fuerza español; el prompt
+  // de dominio aportaba poco y causaba el loop. Lo dejamos vacío.
+  const WHISPER_PROMPT = '';
   const transcribe = async (b64, speakerLabel) => {
     if (!b64) return [];
     try {
@@ -12120,21 +12156,21 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       }
       // File global está en Node 20+. Pasamos al SDK.
       const file = new File([buf], `${speakerLabel}.${fileExt}`, { type: fileType });
-      const result = await openaiClient.audio.transcriptions.create({
+      const reqOpts = {
         file,
         model: 'whisper-1',
         language: 'es',
-        prompt: WHISPER_PROMPT,
         temperature: 0,
         response_format: 'verbose_json',
         timestamp_granularities: ['segment'],
-      });
-      return (result.segments || []).map((s) => ({
-        speaker: speakerLabel,
-        start: Math.round(s.start * 10) / 10,
-        end: Math.round(s.end * 10) / 10,
-        text: (s.text || '').trim(),
-      })).filter((s) => s.text);
+      };
+      if (WHISPER_PROMPT) reqOpts.prompt = WHISPER_PROMPT;
+      const result = await openaiClient.audio.transcriptions.create(reqOpts);
+      const cleaned = _cleanWhisperSegments(result.segments, speakerLabel);
+      if ((result.segments || []).length >= 3 && cleaned.length === 0) {
+        console.log(`[transcribe] ${speakerLabel}: descartado por alucinación de silencio/buzón`);
+      }
+      return cleaned;
     } catch (e) {
       console.error(`[transcribe] ${speakerLabel} Whisper error:`, e?.message || e);
       throw e;
