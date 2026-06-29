@@ -6917,12 +6917,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!stream || !(stream.getAudioTracks?.().length > 0)) return;
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return;
+        // GOTCHA Chrome (bug 687574): un MediaStreamSource de un stream remoto de
+        // WebRTC NO entrega audio al AnalyserNode salvo que el stream tambien sea
+        // consumido por un <audio>. Sin esto el analyser leia SILENCIO siempre →
+        // el watcher nunca disparaba → el tono sintetico seguia sonando ENCIMA de
+        // la voz/buzon (el bug que reporto el user). Lo attachamos MUTEADO: el
+        // stream fluye al analyser pero NO se escucha el ringback del carrier;
+        // solo se escucha el tono sintetico. Al conmutar (_attachRemote) se
+        // desmutea y se escucha la voz/buzon real.
+        const audioEl = document.getElementById('telnyx-remote-audio');
+        if (audioEl) {
+          if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
+          audioEl.muted = true;
+          audioEl.play?.().catch(() => {});
+        }
         const ctx = new Ctx();
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         const src = ctx.createMediaStreamSource(stream);
         const an = ctx.createAnalyser(); an.fftSize = 512; an.smoothingTimeConstant = 0.5;
-        src.connect(an); // NO conectar a destination: solo análisis, no se escucha
+        src.connect(an); // NO a destination: el sonido sale por el <audio>, no por aca
         const data = new Uint8Array(an.frequencyBinCount);
-        const STEP = 100, NEED = 2400, THRESH = 14; // rms 0..255; ráfaga de ringback <2.4s no dispara
+        const STEP = 100, NEED = 2400, THRESH = 12; // rms 0..255; ráfaga de ringback <2.4s no dispara
         let loudMs = 0;
         const interval = setInterval(() => {
           an.getByteFrequencyData(data);
