@@ -2165,14 +2165,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           };
           const _hasRemoteAudio = () => !!(call.remoteStream && call.remoteStream.getAudioTracks?.().length > 0);
           if (state === 'active') {
+            _stopRemoteVoiceWatch();
             _enterActiveOnce();
           } else if (state === 'ringing' || state === 'early' || state === 'recovering') {
-            // Si el carrier YA manda audio (early-media): cortamos el tono fake y attachamos
-            // el stream → se escucha el audio REAL (buzón/voz/ringback del carrier) SIN el
-            // tono fake encima (era el bug: el tono seguía sonando sobre el buzón). El status
-            // queda "Sonando" hasta 'active' (no marcamos "En llamada" en early para no mentir
-            // durante el ringback); el timer corre desde el inicio igual.
-            if (_hasRemoteAudio() && !_telnyxCallState.enteredActive) _attachRemote();
+            // Early-media: el carrier puede mandar ringback (ráfagas) o ya el buzón/voz.
+            // NO cortamos el tono sintético por una ráfaga de ringback (eso causaba
+            // "primer tono y después nada"). Arrancamos un watcher: solo cuando hay
+            // energía SOSTENIDA (voz/buzón real) corta el tono sintético y conmuta al
+            // audio del carrier. Mientras tanto seguís escuchando el tono de llamando.
+            // El status queda "Sonando" hasta 'active' (no mentimos "En llamada" en early).
+            if (_hasRemoteAudio() && !_telnyxCallState.enteredActive && !_telnyxCallState.committedRemote) {
+              _startRemoteVoiceWatch(call, () => {
+                _telnyxCallState.committedRemote = true;
+                _attachRemote(); // corta synthetic + attach del stream real
+              });
+            }
             if (_telnyxCallState.statusState !== 'active') _setTelnyxCallStatus('Sonando…', 'ringing');
           } else if (state === 'held') {
             _setTelnyxCallStatus('En espera', 'ending');
@@ -2182,6 +2189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 'done' / 'ended' NO existen como call states — fueron asunción mía
             // mirando grep del bundle minified (eran otros estados, no de Call).
             _stopRingbackTone();
+            _stopRemoteVoiceWatch();
             if (this.activeCall && _telnyxCallState.startedAt) {
               const sameCall = this.activeCall === call || this.activeCall.id === call.id;
               if (sameCall) _onTelnyxCallEnded(state);
@@ -6885,6 +6893,48 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { n.osc1.disconnect(); n.osc2.disconnect(); n.gain.disconnect(); } catch {}
     }
 
+    // ── Detector de voz/buzón sostenido en el audio remoto (early-media) ────────
+    // Por qué: este carrier (+57 y otros) manda el ringback como early-media en
+    // RÁFAGAS cortas (≤2s) y después silencio. Si cortábamos el ringback sintético
+    // apenas llegaba CUALQUIER audio remoto, te quedaba "primer tono y después
+    // nada" (el del carrier no continúa por WebRTC). Solución: mantener el tono
+    // sintético sonando durante el ringing y SOLO conmutar al audio real del
+    // carrier cuando detectamos energía SOSTENIDA (>2.4s continuos) = voz o buzón
+    // real, no una ráfaga de ringback. Fail-safe: ante error no rompe la llamada.
+    let _remoteVoiceWatch = null;
+    function _stopRemoteVoiceWatch() {
+      if (!_remoteVoiceWatch) return;
+      const w = _remoteVoiceWatch;
+      _remoteVoiceWatch = null;
+      try { clearInterval(w.interval); } catch {}
+      try { w.src.disconnect(); } catch {}
+      try { w.ctx.close(); } catch {}
+    }
+    function _startRemoteVoiceWatch(call, onSustainedVoice) {
+      if (_remoteVoiceWatch) return; // ya hay uno corriendo para esta llamada
+      try {
+        const stream = call.remoteStream || _telnyx.activeCall?.remoteStream;
+        if (!stream || !(stream.getAudioTracks?.().length > 0)) return;
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        const src = ctx.createMediaStreamSource(stream);
+        const an = ctx.createAnalyser(); an.fftSize = 512; an.smoothingTimeConstant = 0.5;
+        src.connect(an); // NO conectar a destination: solo análisis, no se escucha
+        const data = new Uint8Array(an.frequencyBinCount);
+        const STEP = 100, NEED = 2400, THRESH = 14; // rms 0..255; ráfaga de ringback <2.4s no dispara
+        let loudMs = 0;
+        const interval = setInterval(() => {
+          an.getByteFrequencyData(data);
+          let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+          const rms = Math.sqrt(sum / data.length);
+          loudMs = rms >= THRESH ? loudMs + STEP : 0;
+          if (loudMs >= NEED) { _stopRemoteVoiceWatch(); try { onSustainedVoice(); } catch {} }
+        }, STEP);
+        _remoteVoiceWatch = { ctx, src, interval };
+      } catch (e) { console.warn('[voicewatch] failed:', e.message); }
+    }
+
     // ── Clasificador voz-vs-tono para early-media ──────────────────────────────
     // Este carrier (+57) manda ringback, buzón y voz como early-media (estado 'early',
     // sin pasar a 'active'). Para distinguir "solo está sonando" de "atendió el buzón o
@@ -7235,7 +7285,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         _telnyxCallState.startedAt = Date.now();
         _telnyxCallState.answeredAt = 0;      // se setea al atender (200 OK) → talk-time
         _telnyxCallState.enteredActive = false; // control del ringback/attach (1 sola vez)
+        _telnyxCallState.committedRemote = false; // ya conmutamos al audio real del carrier?
         _telnyxCallState.ended = false;       // guard anti-doble-disparo de _onTelnyxCallEnded
+        _stopRemoteVoiceWatch();              // por si quedó uno de una llamada anterior
         _telnyxCallState.timerInterval = setInterval(_updateTelnyxCallTimer, 1000);
         _setTelnyxCallStatus('Sonando…', 'ringing');
         // Audio de ringback local — sin esto el setter no escucha nada mientras
