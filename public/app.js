@@ -4655,10 +4655,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!secEl) return;
       secEl.innerHTML = '<div style="color:var(--text-tertiary); padding:20px;">Cargando…</div>';
       try {
-        const [leadsResp, mResp] = await Promise.all([
+        const [leadsResp, mResp, settersResp] = await Promise.all([
           fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable'), { credentials: 'include' }),
           fetch(apiUrl('/api/setters/cold-call-metrics?period=today'), { credentials: 'include' }).catch(() => null),
+          // Mapa setterId→nombre para el chip de dueño. settersList se puebla en
+          // Setteo (parkeada), así que en Hoy puede estar vacío → lo cargamos lazy.
+          (window.__settersList && window.__settersList.length) ? null : fetch(apiUrl('/api/setters'), { credentials: 'include' }).catch(() => null),
         ]);
+        if (settersResp) { try { const sd = await settersResp.json(); if (Array.isArray(sd.setters)) window.__settersList = sd.setters; } catch {} }
         const leads = (await leadsResp.json()).leads || [];
         leads.forEach(l => { if (l && l.id) _callsLeadsById.set(l.id, l); });
         const now = Date.now();
@@ -4708,11 +4712,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
       }
     }
+    // Nombre del setter dueño del lead (para el chip de dueño en cada card).
+    function _hoyOwnerName(l) {
+      const id = l && l.assignedTo;
+      if (!id) return 'Sin asignar';
+      const s = (window.__settersList || []).find(x => x.id === id);
+      return s ? (s.name || id) : id;
+    }
     function _hoyRenderSection(title, leads, accent, hint, total) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
         const sigs = (typeof _signalChips === 'function') ? _signalChips(l) : '';
+        const owner = _hoyOwnerName(l);
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
         const scColor = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
@@ -4723,6 +4735,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
               ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
+              <span title="Setter dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
