@@ -14,8 +14,10 @@
 // inyectable (default = fetch global) para testear sin tocar la red.
 //
 //   extractEmailFromHtml(html, siteUrl?) -> string | null            (PURA)
+//   classifyEmailType(email) -> 'personal'|'generic'|'unknown'       (PURA)
 //   enrichFromWebsite(website, { fetchImpl?, timeoutMs? })
-//        -> Promise<{ email: string|null, error: string|null }>
+//        -> Promise<{ email: string|null, emailType: string,
+//                     ads, social, age, error: string|null }>
 //   parseNpiResults(json, { name? }) -> { npi, ownerName, specialty,
 //        city, state } | null                                        (PURA)
 //   enrichFromNPI({ name, city, state }, { fetchImpl?, timeoutMs? })
@@ -69,6 +71,16 @@ const EMAIL_BLOCKLIST_LOCAL = new Set([
   "noreply",
   "example",
   "sentry",
+]);
+
+// Local-parts GENÉRICOS de la clínica (no del decisor). Antes se PREMIABAN en el
+// scoring (+15); 2026-06-26 se invirtió a -20 porque el vendedor necesita el
+// email de la persona (decisor/profesional), no el info@/contacto@ del negocio.
+const EMAIL_GENERIC_LOCAL = new Set([
+  "info", "contacto", "contact", "citas", "turnos", "recepcion", "reservas",
+  "appointments", "hello", "hola", "admin", "clinic", "clinica", "consultas",
+  "webmaster", "ventas", "sales", "soporte", "support", "atencion", "general",
+  "mail", "correo", "office", "oficina", "secretaria", "hi", "team", "staff",
 ]);
 
 // Regex de email "suelto" en texto plano. Deliberadamente conservador.
@@ -160,6 +172,29 @@ export function isBlockedHost(hostname) {
 }
 
 /**
+ * PURA. Clasifica un email en 'personal' (del decisor/profesional),
+ * 'generic' (info@/contacto@ de la clínica) o 'unknown'. Se usa para el scoring
+ * y se persiste como lead.emailType (llega al export).
+ * @param {string} email
+ * @returns {'personal'|'generic'|'unknown'}
+ */
+export function classifyEmailType(email) {
+  if (!email || typeof email !== "string") return "unknown";
+  const at = email.lastIndexOf("@");
+  if (at <= 0) return "unknown";
+  const local = email.slice(0, at).toLowerCase().trim();
+  const localNoDigits = local.replace(/\d+$/, ""); // maria.perez2 -> maria.perez
+  if (EMAIL_GENERIC_LOCAL.has(local) || EMAIL_GENERIC_LOCAL.has(localNoDigits)) return "generic";
+  // nombre.apellido / nombre_apellido / nombre-apellido (señal fuerte de persona)
+  if (/^[a-z]{2,}[._-][a-z]{2,}$/.test(localNoDigits)) return "personal";
+  // inicial+apellido: j.perez, jperez
+  if (/^[a-z]\.?[a-z]{3,}$/.test(localNoDigits)) return "personal";
+  // token único alfabético (nombre@): 3-15 chars, no genérico
+  if (/^[a-z]{3,15}$/.test(localNoDigits)) return "personal";
+  return "unknown";
+}
+
+/**
  * Puntúa un candidato a email. Mayor = más probable que sea el contacto real.
  * @param {object} c { email, fromMailto:boolean }
  * @param {string} siteHost host del sitio (sin www) para preferir mismo dominio
@@ -172,11 +207,12 @@ function scoreEmail(c, siteHost) {
     if (domain === siteHost) s += 60;
     else if (domain.endsWith("." + siteHost) || siteHost.endsWith("." + domain)) s += 40;
   }
-  // Local-parts típicos de contacto de negocio.
-  const local = c.email.slice(0, c.email.lastIndexOf("@"));
-  if (/^(info|contacto|contact|hello|hola|admin|citas|turnos|recepcion|reservas|appointments|clinic|clinica|consultas)$/.test(local)) {
-    s += 15;
-  }
+  // Tipo de email: 2026-06-26 INVERTIDO. Preferimos el del decisor (nombre propio,
+  // +25) sobre el genérico de la clínica (info@/contacto@, -20). Antes premiaba
+  // los genéricos (+15) → el export salía con el email equivocado.
+  const type = classifyEmailType(c.email);
+  if (type === "personal") s += 25;
+  else if (type === "generic") s -= 20;
   // Dominios de email genéricos (gmail, etc.) son válidos pero menos "oficiales".
   if (/^(gmail|hotmail|outlook|yahoo|live|icloud|aol)\.[a-z.]+$/.test(domain)) s -= 10;
   return s;
@@ -379,33 +415,34 @@ export async function enrichFromWebsite(website, opts = {}) {
   const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
   try {
     if (!website || typeof website !== "string" || !website.trim()) {
-      return { email: null, ads: null, social: {}, age: {}, error: "no_website" };
+      return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "no_website" };
     }
-    if (!fetchImpl) return { email: null, ads: null, social: {}, age: {}, error: "no_fetch" };
+    if (!fetchImpl) return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "no_fetch" };
 
     let url = website.trim();
     if (!/^https?:\/\//i.test(url)) url = "https://" + url;
 
     // Filtrar websites-basura típicos (wa.me, links de redes que no son sitio).
     const host = hostFromUrl(url);
-    if (!host) return { email: null, ads: null, social: {}, age: {}, error: "bad_url" };
+    if (!host) return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "bad_url" };
     // Anti-SSRF: el website llega por alta manual/CSV → bloquear hosts internos
     // antes de hacer fetch (no exfiltrar metadata cloud ni pegarle a la red privada).
-    if (isBlockedHost(host)) return { email: null, ads: null, social: {}, age: {}, error: "blocked_host" };
+    if (isBlockedHost(host)) return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "blocked_host" };
     if (/^(wa\.me|api\.whatsapp\.com|whatsapp\.com|m\.facebook\.com|facebook\.com|instagram\.com|t\.me|linktr\.ee|goo\.gl|bit\.ly|maps\.google\.)/i.test(host)) {
-      return { email: null, ads: null, social: {}, age: {}, error: "junk_website" };
+      return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "junk_website" };
     }
 
     const r = await safeFetch(url, { fetchImpl, timeoutMs });
-    if (!r.ok) return { email: null, ads: null, social: {}, age: {}, error: r.error || "fetch_failed" };
+    if (!r.ok) return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: r.error || "fetch_failed" };
 
     const email = extractEmailFromHtml(r.text, url);
     const ads = detectAdPixels(r.text);
     const social = extractSocialFromHtml(r.text);
     const age = extractAgeFromHtml(r.text);
-    return { email: email || null, ads, social, age, error: email ? null : "no_email_found" };
+    const emailType = email ? classifyEmailType(email) : "unknown";
+    return { email: email || null, emailType, ads, social, age, error: email ? null : "no_email_found" };
   } catch {
-    return { email: null, ads: null, social: {}, age: {}, error: "unexpected" };
+    return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "unexpected" };
   }
 }
 
@@ -569,6 +606,7 @@ export async function enrichFromNPI(q = {}, opts = {}) {
 
 export default {
   extractEmailFromHtml,
+  classifyEmailType,
   detectAdPixels,
   extractSocialFromHtml,
   extractAgeFromHtml,

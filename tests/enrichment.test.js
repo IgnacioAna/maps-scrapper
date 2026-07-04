@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   extractEmailFromHtml,
   extractSocialFromHtml,
+  classifyEmailType,
   enrichFromWebsite,
   parseNpiResults,
   enrichFromNPI,
@@ -106,6 +107,47 @@ describe("extractEmailFromHtml (PURA)", () => {
   });
 });
 
+describe("classifyEmailType (PURA)", () => {
+  it("prefijos genéricos → 'generic'", () => {
+    for (const e of ["info@clinica.com", "contacto@x.com", "citas@odonto.mx", "recepcion@y.com", "webmaster@z.com", "turnos@a.com"]) {
+      expect(classifyEmailType(e)).toBe("generic");
+    }
+  });
+  it("nombre.apellido / inicial+apellido / nombre → 'personal'", () => {
+    expect(classifyEmailType("maria.perez@clinica.com")).toBe("personal");
+    expect(classifyEmailType("jperez@clinica.com")).toBe("personal");
+    expect(classifyEmailType("j.perez@clinica.com")).toBe("personal");
+    expect(classifyEmailType("maria@clinica.com")).toBe("personal");
+    expect(classifyEmailType("maria.perez2@clinica.com")).toBe("personal"); // dígitos finales
+  });
+  it("basura / no-string → 'unknown'", () => {
+    expect(classifyEmailType("")).toBe("unknown");
+    expect(classifyEmailType(null)).toBe("unknown");
+    expect(classifyEmailType("sinarroba")).toBe("unknown");
+  });
+});
+
+describe("scoreEmail INVERTIDO: personal gana al genérico", () => {
+  it("elige el email personal por sobre info@ del mismo dominio", () => {
+    const html = `
+      <a href="mailto:info@clinica.com">info</a>
+      <a href="mailto:maria.perez@clinica.com">Dra. Pérez</a>
+    `;
+    expect(extractEmailFromHtml(html, "https://clinica.com")).toBe("maria.perez@clinica.com");
+  });
+  it("si solo hay genérico, lo devuelve igual (mejor que nada)", () => {
+    const html = `<a href="mailto:info@clinica.com">info</a>`;
+    expect(extractEmailFromHtml(html, "https://clinica.com")).toBe("info@clinica.com");
+  });
+  it("enrichFromWebsite devuelve emailType del email ganador", async () => {
+    const r = await enrichFromWebsite("clinica.com", {
+      fetchImpl: mockFetch({ body: `<a href="mailto:dr.gomez@clinica.com">mail</a>` }),
+    });
+    expect(r.email).toBe("dr.gomez@clinica.com");
+    expect(r.emailType).toBe("personal");
+  });
+});
+
 describe("enrichFromWebsite (fetch MOCKEADO)", () => {
   it("encuentra email en el HTML servido", async () => {
     const f = mockFetch({
@@ -133,6 +175,7 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
       ads: null,
       social: {},
       age: {},
+      emailType: "unknown",
       error: "no_website",
     });
     expect(await enrichFromWebsite(null, { fetchImpl: mockFetch() })).toEqual({
@@ -140,6 +183,7 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
       ads: null,
       social: {},
       age: {},
+      emailType: "unknown",
       error: "no_website",
     });
   });
