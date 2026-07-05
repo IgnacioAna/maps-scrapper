@@ -1,13 +1,38 @@
 # Auditoría integral 2026-07 — Resultados
 
-**Rama:** `audit/limpieza-2026-07` (11 commits sobre `origin/main` = 1fef309).
-**Suite completa:** 662/662 verde tras los fixes (línea base: 621 verde + 16 flaky de Mercury por rate-limit 429 de OpenRouter, no regresiones).
+**Rama:** `audit/limpieza-2026-07` (sobre `origin/main` = 1fef309).
+**Suite completa:** 670/670 verde tras todos los fixes (backend + frontend + módulos). Cero regresiones.
 
 ## Alcance
 
-3 agentes revisores en paralelo (backend `index.js`, frontend `app.js`/`wa.js`, módulos `src/wa/*`+`enrichment.js`+`pre-deploy.js`).
-- **Módulos**: completó → 17 hallazgos (2 crit, 8 warn, 7 info). **15 resueltos, 2 diferidos.**
-- **Backend + Frontend**: los 2 revisores se quedaron sin cuota de sesión antes de escribir su reporte. **Pendiente re-correr** (`gsd-code-review` sobre `index.js` y `public/app.js`+`wa.js`).
+3 revisores (backend `index.js`, frontend `app.js`/`wa.js`, módulos `src/wa/*`+`enrichment.js`+`pre-deploy.js`).
+- **Módulos**: 17 hallazgos (2 crit, 8 warn, 7 info). **15 resueltos, 2 diferidos.**
+- **Backend** (`index.js`): 8 hallazgos (0 crit, 4 warn, 4 info). **7 resueltos, 1 salteado** (IN-02 regex best-effort, nitpick sin bug real).
+- **Frontend** (`app.js`/`wa.js`): 5 hallazgos (0 crit, 3 warn, 2 info). **5 resueltos.**
+
+## Resueltos backend (índice.js)
+
+| ID | Sev | Qué |
+|----|-----|-----|
+| BK-WR-01 | warn | speed-to-lead alert nunca disparaba (snapshot tomado después de mutar respondio) |
+| BK-WR-02 | warn | /mercury/generate y /faqs/suggest-tags sin rate limit (quema de créditos OpenAI) |
+| BK-WR-03 | warn | guard anti-quema de /scrape subcontaba 10× (min(maxPages,10) vs 100 real) |
+| BK-WR-04 | warn | borrado de nota por índice → cap FIFO borraba la nota equivocada. Ahora por id |
+| BK-IN-04 | info | POST /calendar no validaba ownership del leadId (setter) |
+| BK-IN-03 | info | supervisor ve todas las generaciones Mercury — intencional, documentado |
+| BK-IN-01 | info | comentario timeout 20s→15s |
+
+## Resueltos frontend (app.js / wa.js)
+
+| ID | Sev | Qué |
+|----|-----|-----|
+| FE-WR-01 | warn | `_leadStoreApply` rompía la identidad de referencia entre los 2 cachés → lista stale tras disposition+nota |
+| FE-WR-03 | warn | `loadHoyView` sembraba solo el Map → Hoy y Llamadas con objetos distintos por lead |
+| FE-WR-02 | warn | `altPhone` en onclick con escaping de contexto incorrecto (backend ya validaba E.164; limpieza en save como defensa) |
+| FE-IN-01 | info | `summary.byStatus` sin guard → TypeError si falta |
+| FE-IN-02 | info | param muerto `total` en `_hoyRenderSection` |
+
+Cache-buster: app.js + wa.js → `v=20260705a`.
 
 ## Resueltos (15/17) — módulos
 
@@ -38,6 +63,12 @@ Tests nuevos: SSRF redirect x2 (enrichment), CR-01/CR-02 x2 + WR-06 x1 (campaign
 
 ## Pendiente
 
-- Re-correr `gsd-code-review` sobre `index.js` (backend) y `public/app.js`+`public/wa.js` (frontend) — los revisores murieron por cuota.
-- Decisión sobre WR-03 e IN-06.
+- Decisión sobre los 2 diferidos de módulos (WR-03 JWT revocación, IN-06 doble outreach).
 - Merge de `audit/limpieza-2026-07` → `main` + `npm run pre-deploy` + push (cuando el usuario lo apruebe).
+- **Verificación en vivo de los fixes de frontend** (desync de cachés, borrado de notas): requieren auth + data real; se verificó boot limpio en preview pero no el flujo end-to-end.
+
+## Resumen final
+
+- **Total: 30 hallazgos, 27 resueltos** (2 críticos + 14 warnings + 11 info), 3 diferidos/salteados con criterio documentado.
+- Cada fix con test o verificación; **670/670 tests verdes**.
+- Nada pusheado — todo en `audit/limpieza-2026-07`.
