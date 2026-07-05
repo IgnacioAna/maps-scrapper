@@ -308,7 +308,9 @@ export function registerWaRoutes(app, deps) {
   app.get("/api/wa/campaigns", requireAuth, (req, res) => {
     const { user } = req.auth;
     let list = listCampaigns();
-    if (user.role !== "admin") list = list.filter((c) => c.setterId === user.setterId);
+    // IN-07: exigir setterId NO vacío. Un no-admin con setterId="" (el JWT lo
+    // defaultea a "") veía todas las campañas creadas por admin sin setterId.
+    if (user.role !== "admin") list = list.filter((c) => c.setterId && c.setterId === user.setterId);
     // adjuntar resumen de estados para la lista
     res.json(list.map((c) => ({ ...c, leadSummary: leadStateSummary(c.id) })));
   });
@@ -357,6 +359,12 @@ export function registerWaRoutes(app, deps) {
     const { user } = req.auth;
     if (!["admin", "supervisor", "setter"].includes(user.role)) {
       return res.status(403).json({ error: "No autorizado." });
+    }
+    // IN-07: un no-admin sin setterId crearía una campaña con setterId="" que
+    // después no puede gestionar (canActOnCampaign exige setterId no vacío) y que
+    // además sería visible para otros users sin setterId. Rechazar.
+    if (user.role !== "admin" && !user.setterId) {
+      return res.status(400).json({ error: "Tu usuario no tiene setterId." });
     }
     const body = { ...(req.body || {}) };
     // CR-01: no-admin solo puede usar cuentas de salida propias.
