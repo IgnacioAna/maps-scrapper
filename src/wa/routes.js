@@ -138,7 +138,7 @@ function sanitizeProxy(input, existing) {
 }
 
 export function registerWaRoutes(app, deps) {
-  const { requireAuth: cookieRequireAuth, requireRole: cookieRequireRole, jwtSecret } = deps;
+  const { requireAuth: cookieRequireAuth, jwtSecret } = deps;
 
   // Middleware que acepta Bearer JWT (desktop) O cookie (browser).
   // Si hay Bearer válido, popula req.auth como lo hace attachAuth.
@@ -162,7 +162,9 @@ export function registerWaRoutes(app, deps) {
   }
 
   function requireRole(...roles) {
-    const inner = cookieRequireRole(...roles);
+    // IN-01: este check re-implementa el RBAC sobre req.auth (que setea el
+    // requireAuth de Bearer de este módulo). NO delega al requireRole del server
+    // padre (que espera sesión cookie, no el JWT del desktop).
     return (req, res, next) => {
       // si vino por Bearer, req.auth ya está seteado por requireAuth
       if (!req.auth?.user) return res.status(401).json({ error: "No autenticado." });
