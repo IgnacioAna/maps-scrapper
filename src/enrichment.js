@@ -290,16 +290,43 @@ async function safeFetch(url, { fetchImpl, timeoutMs, headers = {} }) {
   try {
     const fetchP = (async () => {
       try {
-        const res = await fetchImpl(url, {
-          signal: controller?.signal,
-          redirect: "follow",
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (compatible; SCM-LeadEnrich/1.0; +https://scm-setting.up.railway.app)",
-            Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
-            ...headers,
-          },
-        });
+        const reqHeaders = {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; SCM-LeadEnrich/1.0; +https://scm-setting.up.railway.app)",
+          Accept: "text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8",
+          ...headers,
+        };
+        // Anti-SSRF (WR-07): el guard `isBlockedHost` del caller solo valida el
+        // host INICIAL. Con `redirect:"follow"` un sitio semi-confiable (website
+        // de scraping/CSV) podía responder 302 → 169.254.169.254 / red interna y
+        // el fetch lo seguía, anulando el guard. Seguimos redirects a mano (cap 4)
+        // revalidando cada hop. Si fetchImpl no soporta redirect:"manual" (algún
+        // polyfill), el status no será 3xx y el loop corta en la 1ra iteración
+        // como antes — sin regresión.
+        const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+        let res = null;
+        let current = url;
+        for (let hop = 0; hop < 5; hop++) {
+          res = await fetchImpl(current, {
+            signal: controller?.signal,
+            redirect: "manual",
+            headers: reqHeaders,
+          });
+          if (!res) return { ok: false, error: "no_response" };
+          const st = typeof res.status === "number" ? res.status : 0;
+          if (!REDIRECT_STATUSES.has(st)) break;
+          const loc = res.headers && typeof res.headers.get === "function" ? res.headers.get("location") : null;
+          if (!loc) break; // 3xx sin Location → tratamos como respuesta final
+          let nextUrl;
+          try {
+            nextUrl = new URL(loc, current).href;
+          } catch {
+            return { ok: false, error: "bad_redirect" };
+          }
+          if (isBlockedHost(hostFromUrl(nextUrl))) return { ok: false, error: "blocked_redirect" };
+          current = nextUrl;
+          if (hop === 4) return { ok: false, error: "too_many_redirects" };
+        }
         if (!res) return { ok: false, error: "no_response" };
         const status = typeof res.status === "number" ? res.status : 0;
         if (res.ok === false || (status && (status < 200 || status >= 400))) {

@@ -204,6 +204,47 @@ describe("enrichFromWebsite (fetch MOCKEADO)", () => {
     expect(fetched).toBe(false); // nunca pegó al host interno
   });
 
+  it("bloquea redirect hacia host interno (anti-SSRF por redirect, WR-07)", async () => {
+    // El host inicial es público, pero responde 302 → metadata cloud interno.
+    // Con redirect:"follow" el fetch lo seguía; ahora se revalida cada hop.
+    let hops = 0;
+    const spy = async (u) => {
+      hops++;
+      if (hops === 1) {
+        return {
+          ok: false,
+          status: 302,
+          headers: { get: (h) => (h.toLowerCase() === "location" ? "http://169.254.169.254/latest/meta-data/" : null) },
+          text: async () => "",
+        };
+      }
+      // No debería llegar acá — el hop interno tiene que cortarse antes del fetch.
+      return { ok: true, status: 200, text: async () => "secreto@interno.com" };
+    };
+    const r = await enrichFromWebsite("http://clinica-publica.com", { fetchImpl: spy });
+    expect(r.error).toBe("blocked_redirect");
+    expect(hops).toBe(1); // solo el fetch inicial; el redirect interno nunca se ejecutó
+  });
+
+  it("sigue un redirect a host público válido", async () => {
+    let hops = 0;
+    const spy = async (u) => {
+      hops++;
+      if (hops === 1) {
+        return {
+          ok: false,
+          status: 301,
+          headers: { get: (h) => (h.toLowerCase() === "location" ? "https://www.clinica.com/home" : null) },
+          text: async () => "",
+        };
+      }
+      return { ok: true, status: 200, text: async () => `<a href="mailto:dr@clinica.com">x</a>` };
+    };
+    const r = await enrichFromWebsite("http://clinica.com", { fetchImpl: spy });
+    expect(r.email).toBe("dr@clinica.com");
+    expect(hops).toBe(2);
+  });
+
   it("degrada cuando el sitio no tiene email", async () => {
     const r = await enrichFromWebsite("clinica.com", {
       fetchImpl: mockFetch({ body: "<h1>Hola</h1>" }),
