@@ -138,7 +138,7 @@ function sanitizeProxy(input, existing) {
 }
 
 export function registerWaRoutes(app, deps) {
-  const { requireAuth: cookieRequireAuth, jwtSecret } = deps;
+  const { requireAuth: cookieRequireAuth, jwtSecret, getUserById } = deps;
 
   // Middleware que acepta Bearer JWT (desktop) O cookie (browser).
   // Si hay Bearer válido, popula req.auth como lo hace attachAuth.
@@ -149,6 +149,21 @@ export function registerWaRoutes(app, deps) {
     if (m) {
       try {
         const payload = jwt.verify(m[1], jwtSecret);
+        // Audit 2026-07 (WR-03): el JWT del desktop dura 30 días. Antes se armaba
+        // req.auth SOLO del payload, sin re-chequear que el user siga existiendo y
+        // activo → un setter dado de baja retenía acceso hasta 30 días (incl.
+        // proxy-credentials + comandos). Ahora revalidamos contra auth.json en cada
+        // request y usamos los datos VIVOS (role/setterId/name pueden haber cambiado).
+        if (getUserById) {
+          const live = getUserById(payload.sub);
+          if (!live) return res.status(401).json({ error: "Usuario inactivo o inexistente" });
+          req.auth = {
+            user: { id: live.id, role: live.role, name: live.name || "", setterId: live.setterId || "" },
+            session: null,
+          };
+          return next();
+        }
+        // Fallback (deps sin getUserById): comportamiento viejo basado en payload.
         req.auth = {
           user: { id: payload.sub, role: payload.role, name: payload.name || "", setterId: payload.setterId || "" },
           session: null,

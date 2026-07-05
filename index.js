@@ -380,6 +380,21 @@ function getSessionFromRequest(req) {
   return { session, user };
 }
 
+// Audit 2026-07 (WR-03): resuelve un user VIVO por id (solo si sigue activo).
+// Lo usa el módulo WA para revalidar los JWT Bearer del desktop en cada request:
+// sin esto, un JWT de 30 días seguía siendo válido aunque el user se desactivara
+// o borrara (el payload no se re-chequea contra auth.json). Devuelve null si el
+// user no existe o no está activo.
+function getUserById(userId) {
+  if (!userId) return null;
+  try {
+    const data = loadAuthData();
+    return data.users.find((u) => u.id === userId && u.status === "active") || null;
+  } catch {
+    return null;
+  }
+}
+
 // Mapa en memoria: userId → { lastSeen, ip, userAgent, name, email, role }
 // El lastSeen se PERSISTE periodicamente a auth.users[].lastSeen via
 // flushOnlinePresence() para que sobreviva redeploys de Railway. Al boot
@@ -13239,6 +13254,7 @@ mountWa(app, server, {
   requireAuth,
   requireRole,
   getSessionFromRequest,
+  getUserById, // Audit 2026-07 (WR-03): revalidar el user vivo en los JWT Bearer del desktop
   verifyCredentials: verifyCredentialsHelper,
   loginLimiter, // Audit 2026-06-20: para rate-limitear /api/auth/desktop-login
   userIdFromSetterId: userIdFromSetterIdHelper,

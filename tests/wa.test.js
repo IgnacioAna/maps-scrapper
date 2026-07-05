@@ -83,6 +83,29 @@ describe("auth", () => {
     const r = await request(app).post("/api/auth/desktop-login").send({});
     expect(r.status).toBe(400);
   });
+
+  it("WR-03: JWT de un user desactivado → 401 (revocación en cada request)", async () => {
+    // Sembramos un user descartable, obtenemos su JWT y después lo desactivamos.
+    const authFile = path.join(tmpData, "auth.json");
+    const auth = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    auth.users.push({ id: "user_wr03", email: "wr03@local.test", name: "WR03", role: "setter", status: "active", setterId: "setter_wr03", password: pwd("wr03pass"), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    fs.writeFileSync(authFile, JSON.stringify(auth, null, 2));
+
+    const login = await loginDesktop("wr03@local.test", "wr03pass");
+    expect(login.token).toBeTruthy();
+    // Con el user activo, el JWT abre.
+    const ok = await api("GET", "/api/wa/accounts", null, login.token);
+    expect(ok.status).toBe(200);
+
+    // Lo desactivamos en disco (baja del sistema).
+    const auth2 = JSON.parse(fs.readFileSync(authFile, "utf8"));
+    auth2.users.find((u) => u.id === "user_wr03").status = "inactive";
+    fs.writeFileSync(authFile, JSON.stringify(auth2, null, 2));
+
+    // El MISMO JWT (aún no expiró) ya NO debe funcionar.
+    const denied = await api("GET", "/api/wa/accounts", null, login.token);
+    expect(denied.status).toBe(401);
+  });
 });
 
 describe("rbac", () => {

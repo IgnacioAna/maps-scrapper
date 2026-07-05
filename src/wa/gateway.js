@@ -37,7 +37,7 @@ function startPresenceCleanup() {
 }
 
 export function initGateway(httpServer, deps) {
-  const { jwtSecret, getSessionFromRequest } = deps;
+  const { jwtSecret, getSessionFromRequest, getUserById } = deps;
   // Security audit 2026-05-23 (C-4): CORS antes era `origin: true` (reflejaba CUALQUIER
   // Origin con credentials habilitadas). Sitios maliciosos podian conectar al socket
   // como un admin loggeado y robar todos los eventos en vivo.
@@ -70,13 +70,15 @@ export function initGateway(httpServer, deps) {
     if (token) {
       try {
         const payload = jwt.verify(token, jwtSecret);
-        socket.data.user = {
-          id: payload.sub,
-          role: payload.role,
-          name: payload.name || "",
-          setterId: payload.setterId || "",
-          source: "desktop",
-        };
+        // Audit 2026-07 (WR-03): revalidar el user vivo (espejo del requireAuth
+        // HTTP). Un JWT de 30 días de un setter desactivado ya no abre el socket.
+        let u = { id: payload.sub, role: payload.role, name: payload.name || "", setterId: payload.setterId || "" };
+        if (getUserById) {
+          const live = getUserById(payload.sub);
+          if (!live) return next(new Error("inactive user"));
+          u = { id: live.id, role: live.role, name: live.name || "", setterId: live.setterId || "" };
+        }
+        socket.data.user = { ...u, source: "desktop" };
         return next();
       } catch (e) {
         return next(new Error("bad token"));
