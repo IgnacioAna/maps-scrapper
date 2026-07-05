@@ -3827,10 +3827,14 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
 
     // Clamp anti-quema-creditos: total de llamadas SerpAPI no puede pasar 50 por request.
     // Esto previene un click accidental con 5 keywords x 10 ciudades x 5 paginas = 250 llamadas.
-    const totalCalls = queries.length * locations.length * Math.min(maxPages, 10);
+    // Audit 2026-07 (WR-03): el guard usaba Math.min(maxPages, 10) mientras
+    // searchLocation pagina hasta 100 (l.3669) → subcontaba hasta 10x (maxPages=100
+    // pasaba como 10). Usamos el MISMO clamp efectivo que searchLocation.
+    const effectivePages = Math.min(Math.max(1, parseInt(maxPages) || 1), 100);
+    const totalCalls = queries.length * locations.length * effectivePages;
     if (totalCalls > 50) {
       return res.status(400).json({
-        error: `Demasiado trabajo: ${queries.length} keywords x ${locations.length} ubicaciones x ${maxPages} paginas = ${totalCalls} llamadas. Maximo 50 por request. Reduci alguna dimension.`
+        error: `Demasiado trabajo: ${queries.length} keywords x ${locations.length} ubicaciones x ${effectivePages} paginas = ${totalCalls} llamadas. Maximo 50 por request. Reduci alguna dimension.`
       });
     }
 
@@ -9638,7 +9642,7 @@ app.post('/api/faqs/check-duplicate', requireAuth, (req, res) => {
 
 // POST /api/faqs/suggest-tags — IA sugiere categoria + tags para una FAQ
 // Body: { pregunta, respuesta }
-app.post('/api/faqs/suggest-tags', requireAuth, async (req, res) => {
+app.post('/api/faqs/suggest-tags', requireAuth, aiLimiter, async (req, res) => {
   const { pregunta = '', respuesta = '' } = req.body || {};
   if (!pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida' });
   if (!AI_AVAILABLE) return res.status(400).json({ error: 'No hay API de IA configurada' });
@@ -10450,7 +10454,7 @@ async function mutateMercuryGenerations(mutator) {
 // prompt configurable + ultimas 10 feedbackNotes. Sanitiza output con las reglas
 // de estilo SCM. Si la IA falla o no hay key, fallback al top match del banco.
 // Persiste TODA la generacion para revision admin (Fase 4).
-app.post("/api/mercury/generate", requireAuth, async (req, res) => {
+app.post("/api/mercury/generate", requireAuth, aiLimiter, async (req, res) => {
   const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "", tone = "", conversationHistory = "" } = req.body || {};
   if (!prospectMessage || !String(prospectMessage).trim()) {
     return res.status(400).json({ error: "prospectMessage requerido." });
