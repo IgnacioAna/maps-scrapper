@@ -112,7 +112,13 @@ function resolveRecipient(deps, account, campSetterId) {
   }
   if (campSetterId && deps.userIdFromSetterId) {
     const uid = deps.userIdFromSetterId(campSetterId);
-    if (uid) return uid;
+    // WR-04: exigir online también acá. Antes devolvía el uid aunque estuviera
+    // desconectado → sendToUser emitía a una room vacía (mensaje perdido pero
+    // send() devolvía true), el lead avanzaba a awaiting_opener_reply esperando
+    // una respuesta a un mensaje que nunca recibió, y quedaba perdido para
+    // siempre. Si nadie está online → null → send() false → requeue al próximo
+    // tick (el diseño explícito de "nadie online → requeue").
+    if (uid && (!deps.isUserOnline || deps.isUserOnline(uid))) return uid;
   }
   return null;
 }
