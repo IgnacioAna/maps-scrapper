@@ -13,24 +13,37 @@ export function initCampaignsData(dataDir) {
   }
 }
 
+// WR-06: igual que data.js — un archivo corrupto se pone en cuarentena y se
+// lanza, en vez de devolver el fallback vacío que el próximo save persistiría
+// (wipe silencioso de TODAS las campañas + leadStates). "No existe" (primer
+// boot) sigue devolviendo el default.
 function load() {
+  if (!fs.existsSync(CAMPAIGNS_FILE)) return { campaigns: [], leadStates: {} };
+  const text = fs.readFileSync(CAMPAIGNS_FILE, "utf8");
+  let raw;
   try {
-    if (!fs.existsSync(CAMPAIGNS_FILE)) return { campaigns: [], leadStates: {} };
-    const raw = JSON.parse(fs.readFileSync(CAMPAIGNS_FILE, "utf8"));
-    if (!Array.isArray(raw.campaigns)) raw.campaigns = [];
-    if (!raw.leadStates || typeof raw.leadStates !== "object") raw.leadStates = {};
-    return raw;
+    raw = JSON.parse(text);
   } catch (e) {
-    console.error("[campaigns] load error:", e.message);
-    return { campaigns: [], leadStates: {} };
+    let quarantine = `${CAMPAIGNS_FILE}.corrupt-${Date.now()}`;
+    try { fs.renameSync(CAMPAIGNS_FILE, quarantine); } catch { quarantine = "(no se pudo mover)"; }
+    console.error(`[campaigns] ${CAMPAIGNS_FILE} CORRUPTO — movido a ${quarantine}, restaurar de backup. NO se sobrescribe con vacío.`);
+    throw new Error(`[campaigns] wa_campaigns.json corrupto (movido a ${quarantine})`);
   }
+  if (!Array.isArray(raw.campaigns)) raw.campaigns = [];
+  if (!raw.leadStates || typeof raw.leadStates !== "object") raw.leadStates = {};
+  return raw;
 }
 
+// WR-06: write atómico (tmp + rename) para no dejar el archivo truncado ante un
+// crash a mitad de escritura.
 function save(data) {
+  const tmp = `${CAMPAIGNS_FILE}.tmp-${process.pid}-${Date.now()}`;
   try {
-    fs.writeFileSync(CAMPAIGNS_FILE, JSON.stringify(data, null, 2), "utf8");
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+    fs.renameSync(tmp, CAMPAIGNS_FILE);
   } catch (e) {
     console.error("[campaigns] save error:", e.message);
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
   }
 }
 

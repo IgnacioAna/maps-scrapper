@@ -24,21 +24,38 @@ export function initWaData(dataDir) {
   }
 }
 
+// WR-06: distinguir "no existe" (fallback OK, primer boot) de "existe pero no
+// parsea" (corrupto). El comportamiento viejo devolvía el fallback vacío ante
+// CUALQUIER error → el próximo save persistía ese vacío y WIPEABA todo el dataset
+// (cuentas con sus proxies/warming, o campañas). Ahora un archivo corrupto se
+// pone en cuarentena (.corrupt-<ts>) y se lanza, para que NUNCA se sobrescriba
+// en su lugar con datos vacíos. El error corta la operación (request 500 / tick
+// abortado por el mutex) en vez de destruir datos en silencio.
 function loadJson(file, fallback) {
+  if (!fs.existsSync(file)) return fallback;
+  const raw = fs.readFileSync(file, "utf8");
   try {
-    if (!fs.existsSync(file)) return fallback;
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    return JSON.parse(raw);
   } catch (e) {
-    console.error(`[wa] error leyendo ${file}:`, e);
-    return fallback;
+    let quarantine = `${file}.corrupt-${Date.now()}`;
+    try { fs.renameSync(file, quarantine); } catch { quarantine = "(no se pudo mover)"; }
+    console.error(`[wa] ${file} CORRUPTO — movido a ${quarantine}, restaurar de backup. NO se sobrescribe con vacío.`);
+    throw new Error(`[wa] ${file} corrupto (movido a ${quarantine})`);
   }
 }
 
+// WR-06: write atómico (tmp + rename). Sin esto, un crash/OOM/kill de Railway a
+// mitad de writeFileSync dejaba el archivo truncado (JSON inválido) → corrupción.
+// rename es atómico en el mismo filesystem: o queda el archivo viejo entero o el
+// nuevo entero, nunca a medias.
 function saveJson(file, data) {
+  const tmp = `${file}.tmp-${process.pid}-${Date.now()}`;
   try {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2), "utf8");
+    fs.renameSync(tmp, file);
   } catch (e) {
     console.error(`[wa] error guardando ${file}:`, e);
+    try { if (fs.existsSync(tmp)) fs.unlinkSync(tmp); } catch {}
   }
 }
 

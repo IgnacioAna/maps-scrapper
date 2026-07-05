@@ -273,6 +273,29 @@ describe("countryMatches", () => {
   });
 });
 
+describe("WR-06: persistencia resistente a corrupción", () => {
+  it("un wa_campaigns.json corrupto se pone en cuarentena y NO se sobrescribe con vacío", () => {
+    // Sembramos una campaña real y confirmamos que está.
+    const [, c] = camp.createCampaign({ name: "PreCorrupt", accountIds: ["wa_1"], variantSplit: [{ variantId: "v", weight: 1 }] });
+    expect(camp.getCampaign(c.id)).toBeTruthy();
+
+    // Truncamos el archivo (simula crash a mitad de write).
+    const file = path.join(tmpData, "wa_campaigns.json");
+    fs.writeFileSync(file, '{"campaigns":[{"id":"trunc', "utf8");
+
+    // El load ahora LANZA en vez de devolver {} (que borraría todo al próximo save).
+    expect(() => camp.listCampaigns()).toThrow(/corrupto/i);
+
+    // El archivo corrupto quedó preservado en cuarentena (.corrupt-<ts>).
+    const quarantined = fs.readdirSync(tmpData).filter((f) => f.startsWith("wa_campaigns.json.corrupt-"));
+    expect(quarantined.length).toBeGreaterThan(0);
+
+    // Restauramos un archivo válido para no romper los tests siguientes.
+    fs.writeFileSync(file, JSON.stringify({ campaigns: [], leadStates: {} }, null, 2), "utf8");
+    expect(camp.listCampaigns()).toEqual([]);
+  });
+});
+
 describe("randomBlockDelay", () => {
   it("queda dentro del rango", () => {
     for (let i = 0; i < 20; i++) {
