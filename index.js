@@ -6356,6 +6356,11 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   // (true=respondió) para no romper los 15+ checks truthy que existen. El "NO"
   // del dropdown setea respondioNo=true + respondio=false.
   const allowed = ['conexion', 'apertura', 'respondio', 'respondioNo', 'calificado', 'interes', 'doctor', 'decisor', 'estado', 'varianteId', 'setterPhoneId'];
+  // Audit 2026-07 (WR-01): capturar respondio ANTES del mass-assign. `respondio`
+  // está en allowed[], así que el loop de abajo lo pisa a true antes de que el
+  // bloque de cascada (6379) tome el snapshot wasAlreadyResponded → siempre daba
+  // true → _registerLeadResponse (toast "🔥 respondió, llamá YA") nunca disparaba.
+  const prevRespondio = lead.respondio === true;
   if (req.auth?.user?.role === 'admin' && typeof req.body.assignedTo === 'string') {
     lead.assignedTo = req.body.assignedTo;
   }
@@ -6376,7 +6381,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
     lead.interes = null;
   }
   if (req.body.respondio === true) {
-    const wasAlreadyResponded = lead.respondio === true;
+    const wasAlreadyResponded = prevRespondio;
     lead.respondioNo = false; // si respondió, ya no es "no respondió"
     if (!lead.conexion) lead.conexion = 'enviada';
     lead.estado = 'respondio';

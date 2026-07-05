@@ -94,6 +94,26 @@ describe("Cascada forward — poner un campo activa los anteriores", () => {
     expect(r.body.lead.estado).toBe("respondio");
   });
 
+  it("WR-01: pasar de no-respondió → respondió registra la speed-to-lead alert", async () => {
+    // lead_fresh_1 arranca sin respondio. Al marcarlo respondió, debe aparecer en
+    // recent-responses (antes wasAlreadyResponded salía true por el orden del
+    // mass-assign y _registerLeadResponse nunca disparaba).
+    const since = new Date(Date.now() - 1000).toISOString();
+    const p = await request(app).patch("/api/setters/leads/lead_fresh_1").set("Cookie", cookie).send({ respondio: true });
+    expect(p.status).toBe(200);
+    const r = await request(app).get(`/api/setters/recent-responses?since=${encodeURIComponent(since)}`).set("Cookie", cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.responses.some((x) => x.leadId === "lead_fresh_1")).toBe(true);
+  });
+
+  it("WR-01: marcar respondió en un lead que YA respondió NO re-registra", async () => {
+    // lead_full_1 ya tiene respondio:true. Re-marcarlo no debe generar una alerta nueva.
+    const since = new Date(Date.now() - 1000).toISOString();
+    await request(app).patch("/api/setters/leads/lead_full_1").set("Cookie", cookie).send({ respondio: true });
+    const r = await request(app).get(`/api/setters/recent-responses?since=${encodeURIComponent(since)}`).set("Cookie", cookie);
+    expect(r.body.responses.some((x) => x.leadId === "lead_full_1")).toBe(false);
+  });
+
   it("calificado=true → conexion=enviada, respondio=true, estado=calificado", async () => {
     const r = await request(app).patch("/api/setters/leads/lead_fresh_3").set("Cookie", cookie).send({ calificado: true });
     expect(r.status).toBe(200);
