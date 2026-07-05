@@ -440,7 +440,16 @@ export async function enrichFromWebsite(website, opts = {}) {
     const social = extractSocialFromHtml(r.text);
     const age = extractAgeFromHtml(r.text);
     const emailType = email ? classifyEmailType(email) : "unknown";
-    return { email: email || null, emailType, ads, social, age, error: email ? null : "no_email_found" };
+    // Texto plano del sitio (sin scripts/tags) capado a 8000 chars — lo consume
+    // la extracción IA de owner en index.js (para no re-fetchear el sitio).
+    const text = r.text
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 8000);
+    return { email: email || null, emailType, ads, social, age, text, error: email ? null : "no_email_found" };
   } catch {
     return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "unexpected" };
   }
