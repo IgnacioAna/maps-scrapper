@@ -61,14 +61,18 @@ Tests nuevos: SSRF redirect x2 (enrichment), CR-01/CR-02 x2 + WR-06 x1 (campaign
 - **WR-03** (JWT desktop de 30 días sin revocación): un setter desactivado retiene acceso hasta 30 días. Fix real pero requiere exponer `getUserById` por las deps de `mountWa` + leer `auth.json` en cada request (perf) + tocar auth en 2 lugares (requireAuth HTTP + middleware del socket). No hacerlo a ciegas sobre un módulo parkeado — hacer con el usuario. Mitigación actual: rotar `JWT_SECRET`.
 - **IN-06** (doble outreach: el launch no excluye leads ya activos en otra campaña running): moderado, requiere lookup cross-campaña de leadStates al lanzar. Bajo impacto con el módulo parkeado.
 
+## Diferidos completados (2026-07-05)
+
+- **Módulos WR-03** ✅ — revocación de JWT: helper `getUserById` (user vivo+activo) por deps de `mountWa`; `requireAuth` (routes) y middleware del socket (gateway) revalidan en cada request. +1 test.
+- **Módulos IN-06** ✅ — el launch excluye leads ya activos en otra campaña running (`skippedBusy` en la respuesta). +1 test.
+
 ## Pendiente
 
-- Decisión sobre los 2 diferidos de módulos (WR-03 JWT revocación, IN-06 doble outreach).
+- **Verificación en vivo** antes del deploy: (1) scrape grande → confirmar el nuevo corte del guard de créditos; (2) flujo de notas en Llamadas → confirmar que aparecen al toque (fix `_leadStoreApply`).
 - Merge de `audit/limpieza-2026-07` → `main` + `npm run pre-deploy` + push (cuando el usuario lo apruebe).
-- **Verificación en vivo de los fixes de frontend** (desync de cachés, borrado de notas): requieren auth + data real; se verificó boot limpio en preview pero no el flujo end-to-end.
 
 ## Resumen final
 
-- **Total: 30 hallazgos, 27 resueltos** (2 críticos + 14 warnings + 11 info), 3 diferidos/salteados con criterio documentado.
-- Cada fix con test o verificación; **670/670 tests verdes**.
+- **Total: 30 hallazgos, 29 resueltos** (2 críticos + 15 warnings + 12 info), 1 salteado con criterio (backend IN-02, nitpick de regex sin bug real).
+- Cada fix con test o verificación; **672/672 tests verdes**.
 - Nada pusheado — todo en `audit/limpieza-2026-07`.
