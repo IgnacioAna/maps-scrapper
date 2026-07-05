@@ -447,6 +447,93 @@ export async function enrichFromWebsite(website, opts = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Meta Ad Library (¿la clínica corre anuncios AHORA en Facebook/Instagram?)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// País (nombre ES como viene en lead.country) → ISO2 para ad_reached_countries.
+const META_COUNTRY_ISO = {
+  "argentina": "AR", "uruguay": "UY", "brasil": "BR", "brazil": "BR",
+  "méxico": "MX", "mexico": "MX", "colombia": "CO", "chile": "CL",
+  "españa": "ES", "espana": "ES", "spain": "ES", "perú": "PE", "peru": "PE",
+  "ecuador": "EC",
+};
+
+/** PURA. Extrae el handle/id de página de un URL de Facebook. "" si no parsea. */
+function fbHandleFromUrl(fb) {
+  if (!fb || typeof fb !== "string") return "";
+  const m = fb.match(/facebook\.com\/(?:profile\.php\?id=)?([A-Za-z0-9_.\-]+)/i);
+  if (!m) return "";
+  const h = m[1];
+  if (/^(sharer|plugins|dialog|tr|login|help|events|groups|watch)$/i.test(h)) return "";
+  return h;
+}
+
+let _metaTokenWarned = false;
+
+/**
+ * ¿La clínica corre anuncios activos en Meta (Facebook/Instagram)? Consulta la
+ * Meta Ad Library. Nunca lanza: degrada a { metaAdsActive:false, skipped|error }.
+ *
+ * CAVEAT IMPORTANTE: la API `ads_archive` expone anuncios COMERCIALES solo en la
+ * UE (España ✅ por DSA). En LatAm suele devolver únicamente anuncios políticos/
+ * de temas sociales → `metaAdsActive` puede dar false aunque la clínica paute.
+ * Para LatAm, la detección de pixel (detectAdPixels) sigue siendo el proxy.
+ *
+ * Cómo obtener META_AD_LIBRARY_TOKEN:
+ *   1. developers.facebook.com → crear una App (tipo Business).
+ *   2. Agregar el producto "Meta Ad Library API".
+ *   3. Completar la verificación de identidad si la pide.
+ *   4. Generar un access token y setearlo en Railway como META_AD_LIBRARY_TOKEN.
+ *
+ * @param {{ facebook?:string, country?:string }} lead
+ * @param {{ fetchImpl?:Function, timeoutMs?:number, token?:string }} [opts]
+ * @returns {Promise<{ metaAdsActive:boolean, metaAdsCount:number, metaAdsLastCreated:string, skipped?:string, error?:string }>}
+ */
+export async function enrichFromMetaAdLibrary(lead = {}, opts = {}) {
+  const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
+  const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
+  const token = opts.token !== undefined ? opts.token : (typeof process !== "undefined" ? process.env.META_AD_LIBRARY_TOKEN : "");
+  const base = { metaAdsActive: false, metaAdsCount: 0, metaAdsLastCreated: "" };
+  try {
+    const fb = String(lead.facebook || "").trim();
+    if (!fb) return { ...base, skipped: "no_facebook" };
+    const handle = fbHandleFromUrl(fb);
+    if (!handle) return { ...base, skipped: "no_handle" };
+    if (!token) {
+      if (!_metaTokenWarned) {
+        console.warn("[meta-ad-library] META_AD_LIBRARY_TOKEN no configurado — se saltea el chequeo de ads (setealo en Railway).");
+        _metaTokenWarned = true;
+      }
+      return { ...base, skipped: "no_token" };
+    }
+    if (!fetchImpl) return { ...base, skipped: "no_fetch" };
+    const iso = META_COUNTRY_ISO[String(lead.country || "").trim().toLowerCase()] || "";
+    if (!iso) return { ...base, skipped: "unsupported_country" };
+
+    const params = new URLSearchParams();
+    params.set("access_token", token);
+    params.set("ad_reached_countries", `["${iso}"]`);
+    params.set("search_terms", handle);
+    params.set("ad_active_status", "ACTIVE");
+    params.set("fields", "id,ad_creation_time,ad_creative_link_titles");
+    params.set("limit", "50");
+    const url = "https://graph.facebook.com/v21.0/ads_archive?" + params.toString();
+
+    const r = await safeFetch(url, { fetchImpl, timeoutMs, headers: { Accept: "application/json" } });
+    if (!r.ok) return { ...base, error: r.error || "fetch_failed" };
+    let json = null;
+    try { json = JSON.parse(r.text); } catch { return { ...base, error: "bad_json" }; }
+    if (json && json.error) return { ...base, error: "api_" + (json.error.code || "error") };
+    const ads = Array.isArray(json && json.data) ? json.data : [];
+    let last = "";
+    for (const a of ads) { const t = a && a.ad_creation_time; if (t && String(t) > last) last = String(t); }
+    return { metaAdsActive: ads.length > 0, metaAdsCount: ads.length, metaAdsLastCreated: last };
+  } catch {
+    return { ...base, error: "unexpected" };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // NPI Registry (USA)
 // API pública gratis de CMS: https://npiregistry.cms.hhs.gov/api/?version=2.1&...
 // Devuelve { result_count, results:[ { number, basic:{...},
@@ -612,6 +699,7 @@ export default {
   extractAgeFromHtml,
   isBlockedHost,
   enrichFromWebsite,
+  enrichFromMetaAdLibrary,
   parseNpiResults,
   enrichFromNPI,
 };
