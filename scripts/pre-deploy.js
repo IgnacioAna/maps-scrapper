@@ -107,8 +107,17 @@ async function main() {
   if (data.auth) {
     const users = (data.auth.users || []).length;
     const invites = (data.auth.invites || []).length;
-    const sessions = (data.auth.sessions || []).length;
-    saveFile("auth.json", data.auth, `${users} users, ${invites} invites, ${sessions} sessions`);
+    // Seguridad: NUNCA commitear las sesiones vivas al repo. El `id` de cada
+    // sesion ES el valor del cookie `gs_session` (index.js:1461 lo setea,
+    // index.js:369 lo lee) — o sea, cada sesion guardada es un bearer token
+    // valido hasta su expiresAt. Commiteadas quedan en el historial de git y
+    // cualquiera con acceso de lectura puede secuestrar la sesion. A diferencia
+    // de los proxies/Telnyx, limpiarlas no tiene costo de restore: los users
+    // simplemente vuelven a loguear. Mismo criterio que los otros strippers.
+    const strippedSessions = Array.isArray(data.auth.sessions) ? data.auth.sessions.length : 0;
+    data.auth.sessions = [];
+    if (strippedSessions) console.log(`  lock auth.json: ${strippedSessions} session token(s) limpiado(s) (los users re-loguean)`);
+    saveFile("auth.json", data.auth, `${users} users, ${invites} invites, 0 sessions`);
   } else { results.skipped.push("auth.json (no en payload)"); }
 
   if (data.setters) {
