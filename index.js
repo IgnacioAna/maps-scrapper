@@ -6795,7 +6795,10 @@ app.post('/api/setters/leads/:id/note', requireAuth, (req, res) => {
   // mandar {by:"Otra Persona"} y spoofear la autoria de la nota — audit trail comprometido.
   // Siempre usamos el nombre del user autenticado.
   const cleanBy = req.auth?.user?.name || req.auth?.user?.email || 'Sistema';
-  data.leads[req.params.id].notes.push({ text: cleanText, by: cleanBy, date: new Date().toISOString() });
+  // Audit 2026-07 (WR-04): cada nota lleva un id estable para poder borrarla sin
+  // depender del índice posicional (que el cap FIFO de abajo desplaza).
+  const noteId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  data.leads[req.params.id].notes.push({ id: noteId, text: cleanText, by: cleanBy, date: new Date().toISOString() });
   // Performance audit 2026-05-23: cap a 100 notas por lead. Antes unbounded.
   if (data.leads[req.params.id].notes.length > 100) {
     data.leads[req.params.id].notes = data.leads[req.params.id].notes.slice(-100);
@@ -6812,11 +6815,26 @@ app.delete('/api/setters/leads/:id/note/:noteIndex', requireAuth, (req, res) => 
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
-  const idx = parseInt(req.params.noteIndex, 10);
-  if (isNaN(idx) || idx < 0 || idx >= (lead.notes || []).length) {
-    return res.status(400).json({ error: "Índice de nota inválido." });
+  // Audit 2026-07 (WR-04): preferir borrado por id estable. El param puede ser
+  // un id (`note_...`, race-free) o —para notas viejas sin id / frontend legacy—
+  // un índice numérico. Sin el id, borrar por índice puede pegarle a la nota
+  // equivocada si el cap FIFO (.slice(-100)) desplazó el array entre el render y
+  // el click.
+  const param = req.params.noteIndex;
+  lead.notes = Array.isArray(lead.notes) ? lead.notes : [];
+  if (/^\d+$/.test(param)) {
+    const idx = parseInt(param, 10);
+    if (idx < 0 || idx >= lead.notes.length) {
+      return res.status(400).json({ error: "Índice de nota inválido." });
+    }
+    lead.notes.splice(idx, 1);
+  } else {
+    const before = lead.notes.length;
+    lead.notes = lead.notes.filter((n) => n && n.id !== param);
+    if (lead.notes.length === before) {
+      return res.status(404).json({ error: "Nota no encontrada." });
+    }
   }
-  lead.notes.splice(idx, 1);
   saveSettersData(data);
   res.json({ ok: true, notes: lead.notes });
 });

@@ -206,6 +206,41 @@ describe("Cascada · calificado='no' (descalifica explícitamente)", () => {
   });
 });
 
+describe("WR-04: notas se borran por id estable (no por índice frágil)", () => {
+  const L = "lead_fresh_3";
+  it("POST asigna un id a cada nota", async () => {
+    const r = await request(app).post(`/api/setters/leads/${L}/note`).set("Cookie", cookie).send({ text: "nota A" });
+    expect(r.status).toBe(200);
+    expect(r.body.notes[r.body.notes.length - 1].id).toMatch(/^note_/);
+  });
+
+  it("DELETE por id borra EXACTAMENTE esa nota (aunque cambie el orden)", async () => {
+    await request(app).post(`/api/setters/leads/${L}/note`).set("Cookie", cookie).send({ text: "nota B" });
+    const r3 = await request(app).post(`/api/setters/leads/${L}/note`).set("Cookie", cookie).send({ text: "nota C" });
+    const notes = r3.body.notes;
+    const target = notes.find((n) => n.text === "nota B");
+    expect(target.id).toBeTruthy();
+    const del = await request(app).delete(`/api/setters/leads/${L}/note/${target.id}`).set("Cookie", cookie);
+    expect(del.status).toBe(200);
+    expect(del.body.notes.some((n) => n.text === "nota B")).toBe(false);
+    expect(del.body.notes.some((n) => n.text === "nota A")).toBe(true);
+    expect(del.body.notes.some((n) => n.text === "nota C")).toBe(true);
+  });
+
+  it("DELETE por id inexistente → 404", async () => {
+    const r = await request(app).delete(`/api/setters/leads/${L}/note/note_no_existe`).set("Cookie", cookie);
+    expect(r.status).toBe(404);
+  });
+
+  it("DELETE por índice numérico sigue funcionando (compat frontend legacy)", async () => {
+    const before = await request(app).post(`/api/setters/leads/${L}/note`).set("Cookie", cookie).send({ text: "nota D" });
+    const n = before.body.notes.length;
+    const del = await request(app).delete(`/api/setters/leads/${L}/note/0`).set("Cookie", cookie);
+    expect(del.status).toBe(200);
+    expect(del.body.notes.length).toBe(n - 1);
+  });
+});
+
 describe("Idempotencia de cascada (mismo PATCH dos veces no cambia nada)", () => {
   it("PATCH interes=si dos veces deja el lead igual", async () => {
     const settersFile = path.join(tmpData, "setters.json");
