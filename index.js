@@ -8443,13 +8443,34 @@ app.get('/api/admin/export-leads', requireAuth, requireRole('admin', 'supervisor
 
   const esc = (v) => `"${String(v ?? '').replace(/\r?\n/g, ' ').replace(/"/g, '""')}"`;
   const igUrl = (l) => { const r = String(l.instagram || '').trim(); if (!r) return ''; return r.startsWith('http') ? r : ('https://instagram.com/' + r.replace(/^@/, '')); };
-  const headers = ['Nombre', 'Email', 'Telefono', 'Sitio web', 'Instagram', 'Facebook', 'Doctor/Decisor', 'Categoria', 'Direccion', 'Ciudad', 'Pais', 'Rating', 'Resenas', 'Antiguedad'];
+  const phoneTypeES = (t) => ({ mobile: 'Móvil', landline: 'Fija', voip: 'VoIP' }[String(t || '').toLowerCase()] || '');
+  // PASO 4: orden y columnas de la spec. Email se separa en Personal vs Genérico
+  // según emailType (personal → Personal; generic/unknown/legacy → Genérico).
+  const headers = ['Nombre', 'Decisor', 'Cargo', 'Email Personal', 'Email Generico', 'Telefono', 'Tipo Telefono', 'WhatsApp', 'Meta Ads Activo', 'Meta Ads Cantidad', 'Web', 'Instagram', 'Facebook', 'Rating', 'Resenas', 'Categoria', 'Direccion', 'Ciudad', 'Pais'];
   const rows = [headers.join(',')];
   for (const l of leads) {
+    const email = String(l.email || '').trim();
+    const isPersonal = l.emailType === 'personal';
     rows.push([
-      esc(l.name), esc(l.email), esc(l.phone), esc(l.website), esc(igUrl(l)), esc(l.facebook),
-      esc(l.doctor || l.decisor || ''), esc(l.category || ''), esc(l.address), esc(l.city), esc(l.country),
-      esc(l.rating || ''), esc(l.reviews || ''), esc(l.yearsActive != null ? l.yearsActive : ''),
+      esc(l.name),
+      esc(l.doctor || l.decisor || ''),
+      esc(l.specialty || l.aiRole || ''),
+      esc(isPersonal ? email : ''),
+      esc(email && !isPersonal ? email : ''),
+      esc(l.phone),
+      esc(phoneTypeES(l.phoneType)),
+      esc(l.webWhatsApp || l.aiWhatsApp || ''),
+      esc(l.metaAdsActive ? 'Sí' : 'No'),
+      esc(l.metaAdsCount || 0),
+      esc(l.website),
+      esc(igUrl(l)),
+      esc(l.facebook),
+      esc(l.rating || ''),
+      esc(l.reviews || ''),
+      esc(l.category || ''),
+      esc(l.address),
+      esc(l.city),
+      esc(l.country),
     ].join(','));
   }
   const csv = `\uFEFF${rows.join('\n')}`;
