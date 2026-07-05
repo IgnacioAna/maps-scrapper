@@ -448,15 +448,15 @@ export function registerWaRoutes(app, deps) {
     // Si createAccount no aplicó el assignment (depende de su impl), forzarlo.
     if (user.role !== "admin" && account && (!account.assignment || account.assignment.refId !== user.setterId)) {
       const updated = setAssignment(account.id, { kind: "setter", refId: user.setterId });
-      return res.json(updated || account);
+      return res.json(publicAccount(updated || account));
     }
-    res.json(account);
+    res.json(publicAccount(account));
   });
 
   app.patch("/api/wa/accounts/:id", requireAuth, requireRole("admin"), (req, res) => {
     const updated = updateAccount(req.params.id, req.body || {});
     if (!updated) return res.status(404).json({ error: "no encontrado" });
-    res.json(updated);
+    res.json(publicAccount(updated));
   });
 
   app.delete("/api/wa/accounts/:id", requireAuth, requireRole("admin"), (req, res) => {
@@ -472,7 +472,7 @@ export function registerWaRoutes(app, deps) {
     }
     const updated = setAssignment(req.params.id, kind ? { kind, refId } : null);
     if (!updated) return res.status(404).json({ error: "no encontrado" });
-    res.json(updated);
+    res.json(publicAccount(updated));
   });
 
   // ── ROUTINES ─────────────────────────────────────────────────────────────
@@ -504,7 +504,7 @@ export function registerWaRoutes(app, deps) {
     if (!accountId) return res.status(400).json({ error: "accountId requerido" });
     const updated = attachRoutine(accountId, routineId);
     if (!updated) return res.status(404).json({ error: "cuenta no encontrada" });
-    res.json(updated);
+    res.json(publicAccount(updated));
   });
 
   // ── COMMANDS (admin → setter desktop vía WS) ─────────────────────────────
@@ -735,7 +735,7 @@ export function registerWaRoutes(app, deps) {
     const acc = resetWarming(req.params.id);
     if (!acc) return res.status(404).json({ error: "cuenta no encontrada" });
     appendEvent({ accountId: acc.id, userId: req.auth.user.id, type: "warming-reset" });
-    res.json(acc);
+    res.json(publicAccount(acc));
   });
 
   app.post("/api/wa/accounts/:id/mark-banned", requireAuth, requireRole("admin"), (req, res) => {
@@ -747,7 +747,7 @@ export function registerWaRoutes(app, deps) {
     // notif al setter dueño
     const userId = ownerUserIdOfAccount(acc);
     if (userId) sendToUser(userId, "routine:stop", { accountId: acc.id });
-    res.json(updated);
+    res.json(publicAccount(updated));
   });
 
   app.post("/api/wa/commands/stop-routine", requireAuth, requireRole("admin"), (req, res) => {
