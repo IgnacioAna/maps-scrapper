@@ -861,13 +861,18 @@ export function registerWaRoutes(app, deps) {
     // Audit 2026-05-23: ownership check antes de permitir update de status.
     // Sin esto un setter podía pisar el status/phone de cualquier cuenta
     // ajena vía este endpoint HTTP (espejo del fix en gateway.js socket).
-    if (accountId && status) {
+    // Audit 2026-07 (WR-02): el gate era `accountId && status`. Sin `status`
+    // un setter podía forjar cualquier evento (type/payload) atribuido a una
+    // cuenta ajena — polución del log por cuenta, inflado de métricas del
+    // dashboard y ruido en ban-detection. Ahora se valida para CUALQUIER
+    // evento con accountId, igual que el espejo del socket (gateway.js:182).
+    if (accountId) {
       const { user } = req.auth;
       if (user.role !== "admin") {
         const acc = getAccount(accountId);
         const isOwner = acc?.assignment?.kind === "setter" && acc?.assignment?.refId === user.setterId;
         if (!isOwner) {
-          return res.status(403).json({ error: "no autorizado a actualizar estado de esta cuenta" });
+          return res.status(403).json({ error: "no autorizado sobre esta cuenta" });
         }
       }
     }
