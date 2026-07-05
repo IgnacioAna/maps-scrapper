@@ -461,10 +461,30 @@ export function registerWaRoutes(app, deps) {
     // guardado no puede targetear leads ajenos aunque haya sido manipulado).
     const launchFilter = { ...(c.leadFilter || {}) };
     if (user.role !== "admin") launchFilter.setterId = user.setterId;
-    const leadIds = selectLeadsFromMap(leadsMap, launchFilter);
+    let leadIds = selectLeadsFromMap(leadsMap, launchFilter);
     if (leadIds.length === 0) {
       return res.status(400).json({ error: "El filtro no matcheó ningún lead con teléfono." });
     }
+
+    // IN-06: excluir leads que YA están activos en otra campaña running. Sin esto,
+    // dos campañas con filtros solapados le mandan openers/pitches en paralelo al
+    // mismo teléfono (posiblemente desde dos cuentas distintas) → quemadura de lead
+    // + señal de spam para WhatsApp, y handleCampaignInbound corta en la primera
+    // campaña que matchea (la otra queda desincronizada). Terminal = ya no molesta.
+    const TERMINAL = new Set(["no_reply", "disqualified", "replied_for_setter", "orphaned"]);
+    const busy = new Set();
+    for (const other of listCampaigns()) {
+      if (other.id === c.id || other.status !== "running") continue;
+      for (const [lid, ls] of Object.entries(listLeadStates(other.id))) {
+        if (!TERMINAL.has(ls.state)) busy.add(lid);
+      }
+    }
+    const skipped = leadIds.length;
+    leadIds = leadIds.filter((id) => !busy.has(id));
+    if (leadIds.length === 0) {
+      return res.status(400).json({ error: "Todos los leads del filtro ya están activos en otra campaña running." });
+    }
+    const busySkipped = skipped - leadIds.length;
 
     // Asignar variante (split ponderado) + cuenta (distribución configurable
     // por peso, o round-robin si no se configuró).
@@ -482,7 +502,7 @@ export function registerWaRoutes(app, deps) {
       lastDripAt: null,
       stats: { ...(c.stats || {}), queued: entries.length },
     });
-    res.json({ ...updated, launched: entries.length, leadSummary: leadStateSummary(c.id) });
+    res.json({ ...updated, launched: entries.length, skippedBusy: busySkipped, leadSummary: leadStateSummary(c.id) });
   });
 
   // Transiciones de estado simples.

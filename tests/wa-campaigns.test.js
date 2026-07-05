@@ -404,4 +404,19 @@ describe("endpoints REST (Wave 2)", () => {
     expect(Array.isArray(r.body.campaigns.campaigns)).toBe(true);
     expect(r.body.campaigns.leadStates).toBeTruthy();
   });
+
+  it("IN-06: no relanza leads ya activos en otra campaña running", async () => {
+    // El test anterior dejó "ConLeads" running con L1+L2 (MX) activos. Una campaña
+    // nueva con el mismo filtro MX debe saltear esos leads → 400 (todos activos).
+    const crMx = await api("POST", "/api/wa/campaigns", { ...draft, name: "MX dup" }, setterTok);
+    const rMx = await api("POST", `/api/wa/campaigns/${crMx.body.id}/launch`, {}, setterTok);
+    expect(rMx.status).toBe(400);
+    expect(rMx.body.error).toMatch(/ya están activos/i);
+
+    // Pero un lead libre (L3, AR) SÍ se puede lanzar.
+    const crAr = await api("POST", "/api/wa/campaigns", { ...draft, name: "AR libre", leadFilter: { country: "AR", limit: 100 } }, setterTok);
+    const rAr = await api("POST", `/api/wa/campaigns/${crAr.body.id}/launch`, {}, setterTok);
+    expect(rAr.status).toBe(200);
+    expect(rAr.body.launched).toBe(1); // L3
+  });
 });
