@@ -195,12 +195,18 @@ export function initGateway(httpServer, deps) {
           // Audit 2026-05-23: `listAccounts` ya está importado top-level — no
           // hace falta dynamic import dentro del handler.
           const accountsOfPool = wnStore.listPool().map((m) => m.accountId);
-          const senderAccount = listAccounts().find(
-            (a) =>
-              accountsOfPool.includes(a.id) &&
-              a.phone &&
-              a.phone.replace(/\D/g, "").endsWith(String(payload.contactPhone).replace(/\D/g, "").slice(-8)),
-          );
+          // IN-02: extraer el sufijo ANTES del find. Si contactPhone no tiene
+          // dígitos, el sufijo es "" y endsWith("") matchea la PRIMERA cuenta con
+          // phone → inbound atribuido a una cuenta arbitraria.
+          const contactSuffix = String(payload.contactPhone || "").replace(/\D/g, "").slice(-8);
+          const senderAccount = contactSuffix
+            ? listAccounts().find(
+                (a) =>
+                  accountsOfPool.includes(a.id) &&
+                  a.phone &&
+                  a.phone.replace(/\D/g, "").endsWith(contactSuffix),
+              )
+            : null;
           if (senderAccount) {
             // Es warming inbound — actualizar par + NO emitir como lead
             const pairs = wnStore.listPairsForAccount(accountId);

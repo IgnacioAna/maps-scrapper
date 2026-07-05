@@ -119,9 +119,14 @@ export function sanitizeCampaign(input, { forUpdate = false } = {}) {
   if (input.window !== undefined || !forUpdate) {
     const w = input.window || {};
     const days = Array.isArray(w.days) ? w.days.map((x) => clampInt(x, 0, 6, 0)).filter((x, i, a) => a.indexOf(x) === i) : [1, 2, 3, 4, 5];
+    const hourStart = clampInt(w.hourStart, 0, 23, 10);
+    const hourEnd = clampInt(w.hourEnd, 0, 23, 19);
+    // IN-03: hourStart === hourEnd deja isWithinWindow siempre en false (la
+    // campaña queda running sin mandar nada, sin feedback). Rechazar.
+    if (hourStart === hourEnd) return ["window: hourStart y hourEnd no pueden ser iguales"];
     out.window = {
-      hourStart: clampInt(w.hourStart, 0, 23, 10),
-      hourEnd: clampInt(w.hourEnd, 0, 23, 19),
+      hourStart,
+      hourEnd,
       days: days.length ? days : [1, 2, 3, 4, 5],
       timezone: typeof w.timezone === "string" && w.timezone ? w.timezone : "America/Argentina/Buenos_Aires",
     };

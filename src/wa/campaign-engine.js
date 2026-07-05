@@ -216,7 +216,14 @@ export async function campaignEngineTick(deps) {
       // A los que NO responden el opener NO se les manda nada (sin bumps).
       for (const [leadId, ls] of Object.entries(states)) {
         const lead = settersData.leads?.[leadId];
-        if (!lead) continue;
+        // IN-04: el lead ya no existe (borrado por dedupe/limpieza). Antes hacía
+        // `continue` y su estado quedaba queued/opener_sending para siempre → la
+        // campaña nunca llegaba a `done` (y el drip lo seguía "liberando",
+        // quemando batch en leads muertos). Lo marcamos terminal.
+        if (!lead) {
+          if (ls.state !== "orphaned") { ls.state = "orphaned"; ls.nextActionAt = null; }
+          continue;
+        }
         if (ls.state !== "opener_sending" && ls.state !== "pitch_sending") continue;
         if (!ls.nextActionAt || new Date(ls.nextActionAt).getTime() > now) continue;
         const accId = ls.accountId;
@@ -271,7 +278,7 @@ export async function campaignEngineTick(deps) {
       // cuenta como activo a efectos de "cerrar" (puede quedar esperando para
       // siempre), pero tampoco cerramos la campaña mientras haya esperas o
       // conversaciones Mercury en curso. Cerramos solo si TODO es terminal.
-      const terminal = (summary.no_reply || 0) + (summary.disqualified || 0) + (summary.replied_for_setter || 0);
+      const terminal = (summary.no_reply || 0) + (summary.disqualified || 0) + (summary.replied_for_setter || 0) + (summary.orphaned || 0);
       if (terminal === Object.keys(states).length && Object.keys(states).length > 0) camp.status = "done";
     }
   });

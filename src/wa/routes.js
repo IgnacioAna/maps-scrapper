@@ -501,7 +501,14 @@ export function registerWaRoutes(app, deps) {
   });
 
   app.patch("/api/wa/accounts/:id", requireAuth, requireRole("admin"), (req, res) => {
-    const updated = updateAccount(req.params.id, req.body || {});
+    // IN-05: whitelist de campos editables. Antes se mergeaba el body crudo, así
+    // que un typo/body malformado podía pisar id (rompe routing/pares de warming),
+    // proxy (sin pasar por sanitizeProxy → rompe publicAccount), o los counters.
+    const ALLOWED = ["label", "notes", "status", "phone", "minSendGapMinutes"];
+    const patch = Object.fromEntries(
+      Object.entries(req.body || {}).filter(([k]) => ALLOWED.includes(k)),
+    );
+    const updated = updateAccount(req.params.id, patch);
     if (!updated) return res.status(404).json({ error: "no encontrado" });
     res.json(publicAccount(updated));
   });
@@ -1237,7 +1244,11 @@ export function registerWaRoutes(app, deps) {
     // Como en wa-multi solo conocemos el teléfono que vino, necesitamos resolver
     // a accountId. Simplificación: si fromPhone matchea con el phone de alguna
     // cuenta del pool, esa es la sender.
-    const senderAccount = listAccounts().find((a) => a.phone && a.phone.replace(/\D/g, "").endsWith(String(fromPhone).replace(/\D/g, "").slice(-8)));
+    // IN-02: extraer el sufijo primero y cortar si queda vacío. endsWith("")
+    // matchea la primera cuenta con phone → sender incorrecto.
+    const fromSuffix = String(fromPhone || "").replace(/\D/g, "").slice(-8);
+    if (!fromSuffix) return res.json({ ok: false, reason: "fromPhone inválido" });
+    const senderAccount = listAccounts().find((a) => a.phone && a.phone.replace(/\D/g, "").endsWith(fromSuffix));
     if (!senderAccount) {
       return res.json({ ok: false, reason: "sender no encontrado en accounts" });
     }
