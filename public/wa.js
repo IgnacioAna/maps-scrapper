@@ -186,9 +186,14 @@ async function renderDashboard() {
     view.innerHTML = `<div style="padding:24px;color:var(--danger);">Error: ${escHtml(err.message)}</div>`;
     return;
   }
+  // Audit 2026-07 (frontend IN-01): guard defensivo. Si el summary llega sin
+  // byStatus (fallo parcial / drift de schema), byStatus.CONNECTED tiraba
+  // TypeError y clavaba todo el render del dashboard (el try/catch de arriba solo
+  // envuelve el fetch, no esta seccion).
+  const byStatus = summary.byStatus || {};
   const cards = [
     { num: summary.totalAccounts, lbl: "Cuentas totales" },
-    { num: summary.byStatus.CONNECTED || 0, lbl: "Conectadas" },
+    { num: byStatus.CONNECTED || 0, lbl: "Conectadas" },
     { num: `${summary.onlineSetters} / ${summary.totalSetters}`, lbl: "Setters online" },
     { num: summary.msgsLast24h, lbl: "Mensajes 24h" },
     { num: summary.eventsLast24h, lbl: "Eventos 24h" },

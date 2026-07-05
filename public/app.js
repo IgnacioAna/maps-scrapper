@@ -3732,7 +3732,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notesList.innerHTML = lead.notes.map((n, idx) =>
           '<div class="note-item"><div class="note-item-header"><span>' + escHtml(n.by) + '</span><span>' +
           new Date(n.date).toLocaleString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) +
-          ' <button class="note-delete-btn" data-note-idx="' + idx + '" title="Borrar nota" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 4px;">✕</button>' +
+          ' <button class="note-delete-btn" data-note-idx="' + (n.id || idx) + '" title="Borrar nota" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 4px;">✕</button>' +
           '</span></div><div>' + escHtml(n.text) + '</div></div>'
         ).join('');
         notesList.querySelectorAll('.note-delete-btn').forEach(btn => {
@@ -4606,11 +4606,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // patch = objeto parcial a mergear (ej. {estado, callbackAt, doNotCall}).
     function _leadStoreApply(id, patch) {
       if (!id || !patch || typeof patch !== 'object') return;
-      // 1) Map (Power Dialer + _startTelnyxCall lo leen)
-      try { if (_callsLeadsById?.has?.(id)) Object.assign(_callsLeadsById.get(id), patch); } catch {}
-      // 2) Array (renderCallsList lo lee)
+      // Audit 2026-07 (frontend WR-01): mutar IN-PLACE en ambos lados y mantener
+      // la MISMA referencia compartida entre el array y el Map. Antes el array se
+      // reemplazaba con un objeto nuevo (spread) mientras el Map se mutaba in-place
+      // → tras una escritura las dos referencias divergían y los handlers que
+      // mutan sólo el Map (_callsAddNote/DeleteNote/ToggleFollowup/SavePrecallNote)
+      // no se reflejaban en la LISTA hasta un re-fetch completo. Invariante que
+      // asume el diseño: _callsLeadsById.get(id) === callsLeadsCache[idx].
       const idx = (callsLeadsCache || []).findIndex(l => l && l.id === id);
-      if (idx >= 0) callsLeadsCache[idx] = { ...callsLeadsCache[idx], ...patch, id };
+      if (idx >= 0) {
+        Object.assign(callsLeadsCache[idx], patch, { id }); // muta, conserva la ref
+        try { if (_callsLeadsById?.set) _callsLeadsById.set(id, callsLeadsCache[idx]); } catch {}
+      } else {
+        // No está en el array (ej. sólo en el Map): mutar el objeto del Map.
+        try { if (_callsLeadsById?.has?.(id)) Object.assign(_callsLeadsById.get(id), patch); } catch {}
+      }
     }
     window._leadStoreApply = _leadStoreApply;
 
@@ -4672,7 +4682,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
         if (settersResp) { try { const sd = await settersResp.json(); if (Array.isArray(sd.setters)) window.__settersList = sd.setters; } catch {} }
         const leads = (await leadsResp.json()).leads || [];
-        leads.forEach(l => { if (l && l.id) _callsLeadsById.set(l.id, l); });
+        // Audit 2026-07 (frontend WR-03): antes Hoy sembraba SÓLO el Map, dejando
+        // callsLeadsCache (la lista) con objetos distintos para el mismo lead →
+        // Hoy y Llamadas podían mostrar dos verdades. Upsert en el array + rebuild
+        // del índice para que ambos cachés compartan referencias (como loadCallsView).
+        leads.forEach(l => {
+          if (!l || !l.id) return;
+          const idx = callsLeadsCache.findIndex(x => x && x.id === l.id);
+          if (idx >= 0) callsLeadsCache[idx] = l; else callsLeadsCache.push(l);
+        });
+        _rebuildCallsLeadsIndex();
         const now = Date.now();
         const _endToday = new Date(); _endToday.setHours(23, 59, 59, 999); const endTodayTs = _endToday.getTime();
         const claimed = new Set();
@@ -4727,7 +4746,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const s = (window.__settersList || []).find(x => x.id === id);
       return s ? (s.name || id) : id;
     }
-    function _hoyRenderSection(title, leads, accent, hint, total) {
+    function _hoyRenderSection(title, leads, accent, hint) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
@@ -4756,7 +4775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="display:flex; align-items:baseline; gap:9px; padding:12px 14px;">
           <span style="width:7px; height:7px; border-radius:50%; background:${accent}; flex-shrink:0; align-self:center;"></span>
           <span style="font-size:13px; font-weight:700; color:var(--text-primary);">${title}</span>
-          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}${(total && total > leads.length) ? ` <span style="font-weight:500; font-size:11px;">de ${total}</span>` : ''}</span>
+          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}</span>
           <span style="font-size:11px; color:var(--text-tertiary); margin-left:auto;">${hint}</span>
         </div>
         ${leads.length ? rows : '<div style="padding:0 14px 14px; color:var(--text-tertiary); font-size:11.5px;">Sin pendientes.</div>'}
@@ -5479,7 +5498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;">
             ${lead.notes.map((n, i) => ({ n, i })).reverse().map(({ n, i }) => `
             <div style="position:relative; padding:10px 32px 10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${i === notesCount - 1 ? 'var(--accent)' : 'rgba(255,255,255,0.12)'}; border-radius:8px; font-size:12px; line-height:1.5;">
-              <button type="button" onclick="window._pdDeleteNote('${escHtml(lead.id)}', ${i})" title="Borrar esta nota" style="position:absolute; top:8px; right:8px; width:22px; height:22px; line-height:20px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary); cursor:pointer; font-size:14px; font-family:inherit;">×</button>
+              <button type="button" onclick="window._pdDeleteNote('${escHtml(lead.id)}', '${n.id || i}')" title="Borrar esta nota" style="position:absolute; top:8px; right:8px; width:22px; height:22px; line-height:20px; text-align:center; padding:0; background:transparent; border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-tertiary); cursor:pointer; font-size:14px; font-family:inherit;">×</button>
               <div style="color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${escHtml(String(n.text || '').substring(0, 500))}</div>
               <div style="font-size:10px; color:var(--text-tertiary); margin-top:7px;">${escHtml(n.by || '')} · ${n.date ? new Date(n.date).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : ''}</div>
             </div>`).join('')}
@@ -6267,7 +6286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${escHtml(n.text)}
               <div class="call-note-meta">
                 <span>${escHtml(n.by || '')} · ${when}</span>
-                <button class="call-note-delete" onclick="window._callsDeleteNote('${escHtml(l.id)}', ${realIdx})" title="Borrar nota">✕</button>
+                <button class="call-note-delete" onclick="window._callsDeleteNote('${escHtml(l.id)}', '${n.id || realIdx}')" title="Borrar nota">✕</button>
               </div>
             </div>`;
           }).join('');
@@ -8308,7 +8327,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           close();
         } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
       };
-      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').trim(), (document.getElementById('alt-contact-label').value || '').trim());
+      // Audit 2026-07 (frontend WR-02): limpiar el teléfono a [\d+] antes de
+      // guardar. altPhone se interpola dentro de un onclick="...('${...}')" (string
+      // JS dentro de atributo HTML); escHtml NO protege ese contexto (el parser
+      // HTML decodifica &#39;→' antes de que el JS lo lea), así que una comilla
+      // rompería el handler / permitiría inyección. Un teléfono sólo tiene dígitos
+      // y '+', así que el whitelist es inocuo y cierra el vector en el origen.
+      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').replace(/[^\d+]/g, '').trim(), (document.getElementById('alt-contact-label').value || '').trim());
       const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '');
       phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('alt-contact-save').click(); });
     };
