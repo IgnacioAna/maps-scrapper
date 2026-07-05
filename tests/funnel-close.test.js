@@ -59,6 +59,7 @@ fs.writeFileSync(
 const { app } = await import("../index.js");
 
 let adminCookie = "";
+let setterCookie = "";
 
 async function loginCookie(email, password) {
   const r = await request(app).post("/api/auth/login").send({ email, password });
@@ -70,6 +71,12 @@ async function loginCookie(email, password) {
 
 beforeAll(async () => {
   adminCookie = await loginCookie("admin-fc@local.test", "fcpass1234");
+  setterCookie = await loginCookie("setter-fc@local.test", "setterpass");
+  // IN-04: sembramos un lead asignado a OTRO setter para el test de ownership.
+  const settersFile = path.join(tmpData, "setters.json");
+  const sd = JSON.parse(fs.readFileSync(settersFile, "utf8"));
+  sd.leads.lead_ajeno = { num: 2, name: "Ajeno", phone: "+5492222", assignedTo: "setter_otro", estado: "agendado" };
+  fs.writeFileSync(settersFile, JSON.stringify(sd, null, 2));
 });
 
 afterAll(() => {
@@ -118,5 +125,24 @@ describe("Cierre del funnel · marcar cita 'ganada'", () => {
       .set("Cookie", adminCookie)
       .send({ calendarioEstado: "inventado" });
     expect(r.status).toBe(400);
+  });
+});
+
+describe("IN-04 · POST /calendar valida ownership del leadId (setter)", () => {
+  it("setter puede crear entry para SU lead", async () => {
+    const r = await request(app)
+      .post("/api/setters/calendar")
+      .set("Cookie", setterCookie)
+      .send({ leadId: "lead_won", nombre: "Cita propia", calendarioEstado: "pendiente" });
+    expect(r.status).toBe(200);
+    expect(r.body.entry.setterId).toBe("setter_fc");
+  });
+
+  it("setter NO puede crear entry para un lead ajeno → 403", async () => {
+    const r = await request(app)
+      .post("/api/setters/calendar")
+      .set("Cookie", setterCookie)
+      .send({ leadId: "lead_ajeno", nombre: "Cita ajena", calendarioEstado: "pendiente" });
+    expect(r.status).toBe(403);
   });
 });

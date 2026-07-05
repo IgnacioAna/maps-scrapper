@@ -1003,7 +1003,7 @@ async function _briefLLM(messages) {
   for (let i = 0; i < 3; i++) {
     try {
       // Timeout duro: sin esto, si el LLM (Mercury) se cuelga generando el JSON,
-      // la llamada espera para siempre y clava toda la barrida. 20s por intento.
+      // la llamada espera para siempre y clava toda la barrida. 15s por intento.
       const c = await Promise.race([
         ai.chat.completions.create({ model: AI_MODEL, messages, temperature: i === 0 ? 0.1 : 0.6, max_tokens: 700, response_format: { type: 'json_object' } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 15000)),
@@ -8682,6 +8682,15 @@ app.post('/api/setters/calendar', requireAuth, (req, res) => {
   }
   const data = loadSettersData();
   const effectiveSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (setterId || '');
+  // Audit 2026-07 (IN-04): un setter no puede crear una entry de calendario
+  // referenciando un lead ajeno. Mismo criterio que POST /scheduled-messages y
+  // que disposition/note/followup (validan lead.assignedTo).
+  if (req.auth?.user?.role === 'setter' && typeof leadId === 'string' && leadId) {
+    const lead = data.leads?.[leadId];
+    if (lead && lead.assignedTo !== req.auth.user.setterId) {
+      return res.status(403).json({ error: 'No autorizado para este lead.' });
+    }
+  }
   if (!Array.isArray(data.calendar)) data.calendar = [];
   const entry = {
     id: `cal_${Date.now()}`,
@@ -12632,6 +12641,10 @@ app.get("/api/mercury/generations", requireAuth, (req, res) => {
   const isSetter = req.auth?.user?.role === "setter";
   const userId = req.auth?.user?.id || "";
 
+  // Audit 2026-07 (IN-03): el setter ve SOLO las suyas; admin ve todo (con filtro
+  // opcional por setterId); supervisor cae acá SIN filtro → ve todas las
+  // generaciones del equipo. Es INTENCIONAL: el supervisor es gestión-con-
+  // visibilidad (igual que team-performance y recent-responses, admin+supervisor).
   if (isSetter) {
     list = list.filter((g) => g.userId === userId || (g.setterId && g.setterId === req.auth.user.setterId));
   } else if (isAdmin && req.query.setterId) {
