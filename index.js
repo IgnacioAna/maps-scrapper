@@ -2333,6 +2333,22 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, agesFound, metaAdsFound, ownersAiFound, errors });
 });
 
+// GET /api/admin/meta-ad-probe (admin) — diagnóstico del token de Meta Ad Library.
+// Sin ?fb: reporta solo si META_AD_LIBRARY_TOKEN está seteado. Con ?fb=<url facebook>
+// &country=<país>: hace un test EN VIVO (read-only, NO persiste) → ves tokenPresent
+// + el result crudo (metaAdsActive/count o skipped/error). Sirve para verificar el
+// token end-to-end sin correr toda la barrida.
+app.get('/api/admin/meta-ad-probe', requireAuth, requireRole('admin'), async (req, res) => {
+  const tokenPresent = !!(process.env.META_AD_LIBRARY_TOKEN && String(process.env.META_AD_LIBRARY_TOKEN).trim());
+  const fb = String(req.query.fb || '').trim();
+  const country = String(req.query.country || 'España').trim();
+  if (!fb) {
+    return res.json({ tokenPresent, hint: 'Pasá ?fb=https://facebook.com/PAGINA&country=España para un test en vivo.' });
+  }
+  const result = await enrichFromMetaAdLibrary({ facebook: fb, country }, { timeoutMs: 9000 });
+  res.json({ tokenPresent, query: { fb, country }, result });
+});
+
 // GET /api/admin/serpapi-account — uso/saldo de SerpApi (como el saldo de Telnyx).
 // Consulta https://serpapi.com/account server-side (la key nunca al browser). El plan
 // tiene 2 límites: searches/MES (total_searches_left) y un throttle de 200/HORA.
