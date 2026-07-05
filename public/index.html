@@ -942,6 +942,10 @@
               <input type="checkbox" id="calls-show-dnc">
               <span>No-llamar</span>
             </label>
+            <label data-roles="setter,admin,supervisor" class="calls-toggle-discarded" title="Solo leads con señal de inversión en marketing: España usa anuncios activos en Meta; el resto (LatAm) usa el pixel de Facebook/Google detectado en su web.">
+              <input type="checkbox" id="calls-ads-filter">
+              <span>Pauta en ads</span>
+            </label>
           </div>
         </section>
 
@@ -3305,7 +3309,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260626d"></script>
+  <script type="module" src="/app.js?v=20260626e"></script>
   <script type="module" src="/wa.js?v=20260610g"></script>
 </body>
 </html>

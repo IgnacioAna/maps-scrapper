@@ -5081,6 +5081,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         (l.email || '').toLowerCase().includes(search) ||
         (l.website || '').toLowerCase().includes(search)
       ));
+      // Toggle "Pauta en ads": solo leads con señal de inversión en marketing.
+      if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
       leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
       // Sort: usar el actual de Llamadas para consistencia
@@ -6319,6 +6321,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>`;
     }
 
+    // Filtro "Pauta en ads" (PASO 5): señal de inversión en marketing. España usa
+    // metaAdsActive (Meta Ad Library, autoritativo) como señal primaria pero cae al
+    // pixel si no lo tiene (ej. sin Facebook); el resto (LatAm) usa el pixel FB/Google
+    // de detectAdPixels. Persistidos por /api/admin/enrich-leads.
+    function _leadRunsAdsSignal(l) {
+      const isSpain = /espa|spain/i.test(String(l.country || ''));
+      if (isSpain && l.metaAdsActive === true) return true;
+      return l.adPixelFB === true || l.adPixelGoogle === true;
+    }
+    window._leadRunsAdsSignal = _leadRunsAdsSignal;
+
     function renderCallsList() {
       const list = document.getElementById('calls-list');
       const country = document.getElementById('calls-country-filter').value;
@@ -6340,6 +6353,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         (l.email || '').toLowerCase().includes(search) ||
         (l.website || '').toLowerCase().includes(search)
       ));
+      // Toggle "Pauta en ads": solo leads con señal de inversión en marketing.
+      if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
 
       // Ocultar leads con callbackAt en el futuro (excepto los que el user
       // forzó a mostrar clickeando su callback en la agenda).
@@ -8198,6 +8213,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calls-show-discarded')?.addEventListener('change', () => { _callsCurrentPage = 1; _callsRenderCountryChips(); renderCallsList(); });
     // Phase 17: la vista DNC requiere REFETCH (data distinta), no solo re-render.
     document.getElementById('calls-show-dnc')?.addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
+    // PASO 5: toggle "Pauta en ads" — solo re-render (los campos ya vienen en el lead).
+    document.getElementById('calls-ads-filter')?.addEventListener('change', () => { _callsCurrentPage = 1; _callsRenderCountryChips?.(); renderCallsList(); });
     // Quitar DNC de un lead (bulk clear_dnc) y refrescar.
     window._callsClearDnc = async (leadId) => {
       try {
