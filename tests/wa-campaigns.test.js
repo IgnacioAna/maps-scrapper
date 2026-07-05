@@ -39,6 +39,14 @@ fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({
   },
   calendar: [], sessions: [],
 }, null, 2));
+// Audit 2026-07 (CR-01): los endpoints de campaña ahora exigen que el setter sea
+// dueño de las cuentas de salida. Sembramos una cuenta asignada a setter_a para
+// que los tests REST (que crean campañas como setter) reflejen el modelo seguro.
+fs.writeFileSync(path.join(tmpData, "wa_accounts.json"), JSON.stringify({
+  accounts: [
+    { id: "wa_owned_a", label: "Cuenta de A", status: "CONNECTED", assignment: { kind: "setter", refId: "setter_a" } },
+  ],
+}, null, 2));
 
 const camp = await import("../src/wa/campaigns.js");
 const { app } = await import("../index.js");
@@ -279,7 +287,7 @@ describe("endpoints REST (Wave 2)", () => {
   let campId;
   const draft = {
     name: "MX lote",
-    accountIds: ["wa_x"],
+    accountIds: ["wa_owned_a"], // cuenta asignada a setter_a (CR-01)
     variantSplit: [{ variantId: "var_a", weight: 1 }],
     drip: { batchSize: 1, intervalMinutes: 5 },
     leadFilter: { country: "MX", limit: 100 },
@@ -296,6 +304,19 @@ describe("endpoints REST (Wave 2)", () => {
   it("crear sin variantes → 400", async () => {
     const r = await api("POST", "/api/wa/campaigns", { ...draft, variantSplit: [] }, setterTok);
     expect(r.status).toBe(400);
+  });
+
+  it("CR-01: setter no puede crear campaña con cuenta ajena/inexistente → 403", async () => {
+    const r = await api("POST", "/api/wa/campaigns", { ...draft, accountIds: ["wa_de_otro"] }, setterTok);
+    expect(r.status).toBe(403);
+    expect(r.body.error).toMatch(/no asignadas/i);
+  });
+
+  it("CR-02: el setter queda scopeado a SUS leads aunque mande setterId ajeno en el filtro", async () => {
+    // intenta targetear leads de otro setter — el backend fuerza su propio setterId
+    const r = await api("POST", "/api/wa/campaigns", { ...draft, leadFilter: { country: "MX", setterId: "setter_otro", limit: 100 } }, setterTok);
+    expect(r.status).toBe(200);
+    expect(r.body.leadFilter.setterId).toBe("setter_a");
   });
 
   it("lanzar snapshotea leads MX (2) y pasa a running", async () => {

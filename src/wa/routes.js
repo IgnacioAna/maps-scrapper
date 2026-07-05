@@ -287,6 +287,22 @@ export function registerWaRoutes(app, deps) {
     return campaign.setterId && campaign.setterId === user.setterId;
   }
 
+  // Audit 2026-07 (CR-01): los endpoints de campaña validaban ownership de la
+  // CAMPAÑA pero no de las CUENTAS de salida. Un setter podía crear/lanzar una
+  // campaña con accountIds de otro setter y el motor mandaba WhatsApps escritos
+  // por él desde el número ajeno. Devuelve la lista de cuentas NO propias (vacía
+  // = todo OK). Admin nunca tiene restricción.
+  function accountsNotOwnedBy(user, accountIds) {
+    if (!user || user.role === "admin") return [];
+    return (Array.isArray(accountIds) ? accountIds : [])
+      .filter(Boolean)
+      .map(String)
+      .filter((aid) => {
+        const acc = getAccount(aid);
+        return !acc || !canActOnAccount(user, acc);
+      });
+  }
+
   app.get("/api/wa/campaigns", requireAuth, (req, res) => {
     const { user } = req.auth;
     let list = listCampaigns();
@@ -314,18 +330,24 @@ export function registerWaRoutes(app, deps) {
     let leadsMap = {};
     try { leadsMap = deps.getSettersData ? (deps.getSettersData().leads || {}) : {}; } catch {}
     const states = listLeadStates(c.id);
-    const out = Object.entries(states).map(([leadId, ls]) => {
-      const lead = leadsMap[leadId] || {};
-      return {
-        leadId,
-        name: lead.name || lead.nombre || "—",
-        phone: lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "—",
-        country: lead.country || lead.pais || "",
-        state: ls.state,
-        lastSentAt: ls.lastSentAt || null,
-        repliedAt: ls.repliedAt || null,
-      };
-    });
+    const out = Object.entries(states)
+      .map(([leadId, ls]) => {
+        const lead = leadsMap[leadId] || {};
+        return {
+          leadId,
+          _assignedTo: lead.assignedTo || "",
+          name: lead.name || lead.nombre || "—",
+          phone: lead.phone || lead.webWhatsApp || lead.aiWhatsApp || "—",
+          country: lead.country || lead.pais || "",
+          state: ls.state,
+          lastSentAt: ls.lastSentAt || null,
+          repliedAt: ls.repliedAt || null,
+        };
+      })
+      // CR-02: no-admin solo ve los leads propios (no exfiltrar nombre/teléfono
+      // de leads de otros setters vía este endpoint).
+      .filter((row) => user.role === "admin" || row._assignedTo === user.setterId)
+      .map(({ _assignedTo, ...row }) => row);
     res.json({ leads: out, total: out.length });
   });
 
@@ -334,9 +356,17 @@ export function registerWaRoutes(app, deps) {
     if (!["admin", "supervisor", "setter"].includes(user.role)) {
       return res.status(403).json({ error: "No autorizado." });
     }
+    const body = { ...(req.body || {}) };
+    // CR-01: no-admin solo puede usar cuentas de salida propias.
+    const ajenas = accountsNotOwnedBy(user, body.accountIds);
+    if (ajenas.length) return res.status(403).json({ error: `Cuentas no asignadas a vos: ${ajenas.join(", ")}` });
+    // CR-02: no-admin queda scopeado a SUS leads (no puede targetear la base entera).
+    if (user.role !== "admin") {
+      body.leadFilter = { ...(body.leadFilter || {}), setterId: user.setterId };
+    }
     // setter: la campaña queda a su nombre; admin puede pasar setterId explícito.
-    const setterId = user.role === "admin" ? (req.body?.setterId || "") : user.setterId;
-    const [err, campaign] = createCampaign(req.body || {}, setterId);
+    const setterId = user.role === "admin" ? (body.setterId || "") : user.setterId;
+    const [err, campaign] = createCampaign(body, setterId);
     if (err) return res.status(400).json({ error: err });
     res.json(campaign);
   });
@@ -351,6 +381,14 @@ export function registerWaRoutes(app, deps) {
     }
     const [verr, clean] = sanitizeCampaign(req.body || {}, { forUpdate: true });
     if (verr) return res.status(400).json({ error: verr });
+    // CR-01/CR-02: el PATCH puede cambiar accountIds y leadFilter — revalidar.
+    if (clean.accountIds !== undefined) {
+      const ajenas = accountsNotOwnedBy(user, clean.accountIds);
+      if (ajenas.length) return res.status(403).json({ error: `Cuentas no asignadas a vos: ${ajenas.join(", ")}` });
+    }
+    if (user.role !== "admin" && clean.leadFilter !== undefined) {
+      clean.leadFilter.setterId = user.setterId;
+    }
     res.json(updateCampaign(req.params.id, clean));
   });
 
@@ -372,6 +410,11 @@ export function registerWaRoutes(app, deps) {
     if (!canActOnCampaign(user, c)) return res.status(403).json({ error: "No autorizado." });
     if (c.status !== "draft") return res.status(409).json({ error: "Solo se lanza una campaña en borrador." });
 
+    // CR-01: defensa en profundidad — revalidar ownership de las cuentas al
+    // lanzar (la campaña pudo crearse/editarse por otro camino).
+    const ajenas = accountsNotOwnedBy(user, c.accountIds);
+    if (ajenas.length) return res.status(403).json({ error: `Cuentas no asignadas a vos: ${ajenas.join(", ")}` });
+
     // Policy de Phase 8: si requireProxyForCampaigns, toda cuenta de salida debe
     // tener proxy. Evita mandar volumen por la IP cruda.
     if (getWaPolicy().requireProxyForCampaigns) {
@@ -389,7 +432,11 @@ export function registerWaRoutes(app, deps) {
     // Resolver leads frescos del filtro guardado.
     let leadsMap = {};
     try { leadsMap = deps.getSettersData ? (deps.getSettersData().leads || {}) : {}; } catch { leadsMap = {}; }
-    const leadIds = selectLeadsFromMap(leadsMap, c.leadFilter || {});
+    // CR-02: re-forzar el scope de leads del no-admin al lanzar (el filtro
+    // guardado no puede targetear leads ajenos aunque haya sido manipulado).
+    const launchFilter = { ...(c.leadFilter || {}) };
+    if (user.role !== "admin") launchFilter.setterId = user.setterId;
+    const leadIds = selectLeadsFromMap(leadsMap, launchFilter);
     if (leadIds.length === 0) {
       return res.status(400).json({ error: "El filtro no matcheó ningún lead con teléfono." });
     }
