@@ -237,6 +237,41 @@ describe("anti-ráfaga + routing", () => {
     expect(sent[0].uid).toBe("user_dueño");
   });
 
+  it("WR-05: dos campañas sobre la misma cuenta comparten el cap diario", async () => {
+    // Cada campaña targetea un lead distinto en la MISMA cuenta wa1, cap 1/día.
+    // Con el contador compartido, entre las dos solo puede salir 1 mensaje/día.
+    // (Con el bug per-campaña saldrían 2: cada una con su contador en 0.)
+    // Cuenta dedicada: el contador diario es persistido+compartido, así que
+    // aislamos de lo que otros tests enviaron por wa1 el mismo día.
+    const ACCT_ID = "wa_cap5";
+    const mkCamp = (name, leadId) => {
+      const [, c] = camp.createCampaign({
+        name, accountIds: [ACCT_ID], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],
+        drip: { batchSize: 1, intervalMinutes: 1 }, window: win, dailyCapPerAccount: 1,
+      }, "s1");
+      camp.updateCampaign(c.id, { status: "running" });
+      camp.bulkInitLeadStates(c.id, [{ leadId, variantId: "v1", accountId: ACCT_ID }]);
+      const past = new Date(Date.now() - 600000).toISOString();
+      camp.setLeadState(c.id, leadId, { state: "opener_sending", nextActionAt: past });
+      return c;
+    };
+    mkCamp("Cap1", "A");
+    mkCamp("Cap2", "B");
+    const acct = { id: ACCT_ID, status: "CONNECTED", minSendGapMinutes: 1, assignment: { kind: "setter", refId: "s1" } };
+    const mkDeps = (nowMs) => ({
+      now: () => nowMs,
+      getSettersData: () => ({ leads, variants: [variant] }),
+      listAccounts: () => [acct],
+      userIdFromSetterId: (sid) => (sid === "s1" ? "user1" : null),
+      isUserOnline: () => true,
+      sendToUser: (uid, evt, payload) => sent.push(payload.leadId),
+    });
+    const T0 = Date.now();
+    await eng.campaignEngineTick(mkDeps(T0));           // 1er mensaje (counter=1, gap seteado)
+    await eng.campaignEngineTick(mkDeps(T0 + 120000));  // +2min: gap OK, pero cap 1 alcanzado → bloqueado
+    expect(sent.length).toBe(1); // shared cap: solo 1 entre las dos campañas
+  });
+
   it("dueño offline → fallback admin online", async () => {
     const [, c] = camp.createCampaign({
       name: "Route2", accountIds: ["wa1"], openers: ["Hola"], variantSplit: [{ variantId: "v1", weight: 1 }],

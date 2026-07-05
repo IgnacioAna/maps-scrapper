@@ -148,16 +148,22 @@ export async function campaignEngineTick(deps) {
     const accounts = (deps.listAccounts ? deps.listAccounts() : []) || [];
     const accountsById = Object.fromEntries(accounts.map((a) => [a.id, a]));
 
+    // WR-05: el contador diario anti-ban vive a nivel MÓDULO (sibling de
+    // campaigns/leadStates en wa_campaigns.json), COMPARTIDO entre todas las
+    // campañas y persistido (sobrevive restarts). Antes vivía en camp._dailySends
+    // (por-campaña): N campañas sobre la misma cuenta enviaban N × el cap de
+    // warming → derrotaba la curva anti-ban justo en el escenario de más riesgo.
+    const dayK = todayKey(nowDate);
+    if (!data.dailySends || data.dailySends.key !== dayK) {
+      data.dailySends = { key: dayK, byAccount: {} };
+    }
+    const sentToday = (accId) => data.dailySends.byAccount[accId] || 0;
+
     for (const camp of running) {
       const states = data.leadStates[camp.id] || {};
       if (Object.keys(states).length === 0) continue;
       if (!isWithinWindow(camp.window, nowDate)) continue; // fuera de horario → no enviar
 
-      // Contador diario por cuenta (reset al cambiar de día).
-      if (!camp._dailySends || camp._dailySends.key !== todayKey(nowDate)) {
-        camp._dailySends = { key: todayKey(nowDate), byAccount: {} };
-      }
-      const sentToday = (accId) => camp._dailySends.byAccount[accId] || 0;
       const capOf = (accId) => effectiveDailyCap(camp, accountsById[accId], null);
       // ANTI-RÁFAGA: gap mínimo entre dos mensajes de la misma cuenta (derivado
       // del warming o configurable por cuenta). Sin esto, un backlog (leads
@@ -187,7 +193,7 @@ export async function campaignEngineTick(deps) {
           accountId: accId, targetPhone: phone, text, leadId,
           campaignId: camp.id, blockKind: kind, ...extra,
         });
-        camp._dailySends.byAccount[accId] = sentToday(accId) + 1;
+        data.dailySends.byAccount[accId] = sentToday(accId) + 1; // WR-05: contador compartido por cuenta
         _accountLastSend.set(accId, now); // registrar para el gap anti-ráfaga
         return true;
       };
