@@ -7445,9 +7445,23 @@ document.addEventListener('DOMContentLoaded', async () => {
           };
           _pendingTelnyxCallMetadata[leadId] = _metaObj;
           if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
-          // Scroll + flash + open al dropdown de disposition
+          // Scroll + flash + open al dropdown de disposition.
+          // Audit 2026-07-06: si la llamada se hizo desde HOY, saltamos a Llamadas —
+          // antes el toast decía "marcá el resultado abajo" pero el dropdown vivía en
+          // la vista Llamadas OCULTA (la row existe en el DOM pero no se ve) y la
+          // llamada quedaba sin disposition (métricas rotas). OJO: no alcanza con
+          // chequear que la row exista — hay que chequear qué vista está VISIBLE.
+          if (document.querySelector('#view-hoy:not(.hidden)')) {
+            // forceShow: si el callback del lead es para más tarde hoy, el filtro de
+            // Llamadas lo escondería y la row nunca aparecería para marcar resultado.
+            try { _callsForceShow.add(leadId); } catch {}
+            document.querySelector('[data-target="view-calls"]')?.click();
+          }
+          let _rowTries = 0;
+          const _focusDispositionRow = () => {
           const callRow = document.querySelector(`.call-row[data-id="${leadId}"]`);
-          const dispositionSel = callRow?.querySelector('select');
+          if (!callRow) { if (++_rowTries < 12) setTimeout(_focusDispositionRow, 400); return; }
+          const dispositionSel = callRow.querySelector('select');
           if (callRow) {
             callRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
             // Flash visual para destacar (3 pulsos)
@@ -7496,6 +7510,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (window._activeDispositionShortcut === keyHandler) window._activeDispositionShortcut = null;
             }, 30000);
           }
+          };
+          _focusDispositionRow();
         }
       }, 500);
     }
