@@ -145,6 +145,30 @@ describe("POST /api/mercury/generate · validacion + fallback", () => {
     expect(r.body.text).not.toContain("¡");
   });
 
+  it("channel:'call' (Mercury en vivo) funciona y persiste el canal en la generación", async () => {
+    const r = await request(app)
+      .post("/api/mercury/generate")
+      .set("Cookie", setterCookie)
+      .send({ prospectMessage: "Cuanto cuesta esto?", channel: "call" });
+    expect(r.status).toBe(200);
+    expect(r.body.id).toMatch(/^mg_/);
+    // El canal queda en la generación persistida (para revisión admin)
+    const gens = JSON.parse(fs.readFileSync(path.join(tmpData, "mercury_generations.json"), "utf8"));
+    const gen = gens.generations.find((g) => g.id === r.body.id);
+    expect(gen.channel).toBe("call");
+  });
+
+  it("sin channel → canal 'wa' (default WhatsApp)", async () => {
+    const r = await request(app)
+      .post("/api/mercury/generate")
+      .set("Cookie", setterCookie)
+      .send({ prospectMessage: "Cuanto cuesta esto?" });
+    expect(r.status).toBe(200);
+    const gens = JSON.parse(fs.readFileSync(path.join(tmpData, "mercury_generations.json"), "utf8"));
+    const gen = gens.generations.find((g) => g.id === r.body.id);
+    expect(gen.channel).toBe("wa");
+  });
+
   it("503 si no hay match suficiente en banco y no hay IA", async () => {
     const r = await request(app)
       .post("/api/mercury/generate")

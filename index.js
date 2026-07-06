@@ -10518,7 +10518,12 @@ async function mutateMercuryGenerations(mutator) {
 // de estilo SCM. Si la IA falla o no hay key, fallback al top match del banco.
 // Persiste TODA la generacion para revision admin (Fase 4).
 app.post("/api/mercury/generate", requireAuth, aiLimiter, async (req, res) => {
-  const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "", tone = "", conversationHistory = "" } = req.body || {};
+  const { prospectMessage, context = "", leadId = "", categoria = "", variantId = "", tone = "", conversationHistory = "", channel = "" } = req.body || {};
+  // 2026-07-06: modo LLAMADA. El panel "Mercury en vivo" (durante la llamada
+  // Telnyx) siempre mandó channel:'call' pero el backend lo ignoraba → la IA
+  // respondía objeciones telefónicas con formato de mensajes de WhatsApp.
+  // En modo llamada el output es lo que el setter DICE en voz alta.
+  const isCallMode = String(channel).toLowerCase() === 'call';
   if (!prospectMessage || !String(prospectMessage).trim()) {
     return res.status(400).json({ error: "prospectMessage requerido." });
   }
@@ -10592,16 +10597,22 @@ app.post("/api/mercury/generate", requireAuth, aiLimiter, async (req, res) => {
   const userPrompt = `${notesBlock}${variantBlock}${historyBlock}EJEMPLOS DEL BANCO DE RESPUESTAS (usalos como base de tono y estructura, no copies textual salvo match exacto):
 ${ejemplosTexto}
 
-${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}MENSAJE DEL PROSPECTO A RESPONDER:
+${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}${isCallMode ? 'LO QUE EL PROSPECTO ACABA DE DECIR EN LA LLAMADA (objeción/frase a responder YA):' : 'MENSAJE DEL PROSPECTO A RESPONDER:'}
 ${message}
 
-${toneInstruction ? toneInstruction + "\n\n" : ""}Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}
+${toneInstruction ? toneInstruction + "\n\n" : ""}${isCallMode
+    ? `Generá lo que el setter va a DECIR en voz alta, ahora mismo. Reglas del modo llamada (pisan cualquier regla de formato WhatsApp):
+- UNA sola respuesta hablada y corta: 1 a 3 frases, máximo ~50 palabras. Sin bloques, sin listas.
+- Lenguaje HABLADO natural, ritmo de conversación telefónica — que no suene leído ni escrito.
+- Manejo de objeción tipo PACE: reconocé lo que dijo en una frase corta, reencuadrá con el dolor o beneficio concreto, y cerrá con una pregunta o con el pedido de la reunión de 15 minutos.
+- Prohibido: emojis, precios, tecnicismos, "te mando info", despedidas. El objetivo es AGENDAR la reunión, no vender por teléfono.`
+    : `Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`}
 
 CRÍTICO — FORMATO DE TU RESPUESTA:
-- Respondé ÚNICAMENTE con el mensaje final en ESPAÑOL, listo para pegar en WhatsApp.
+- Respondé ÚNICAMENTE con ${isCallMode ? 'la frase final en ESPAÑOL que el setter dice en voz alta' : 'el mensaje final en ESPAÑOL, listo para pegar en WhatsApp'}.
 - NO escribas tu razonamiento, ni análisis, ni explicaciones, ni conteo de palabras.
 - NO uses inglés. NO uses frases tipo "We need to", "Let's", "Maybe", "Block 1".
-- Tu output es SOLO el texto que el setter copia y pega. Nada antes, nada después.`;
+- Tu output es SOLO el texto que el setter ${isCallMode ? 'dice' : 'copia y pega'}. Nada antes, nada después.`;
 
   let rawOutput = "";
   let usedFallback = false;
@@ -10613,7 +10624,10 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
       // A/B: si abEnabled y experimentalPrompt no vacío, 50/50 random.
       const useExperimental = cfg.abEnabled && cfg.experimentalPrompt && cfg.experimentalPrompt.trim() && Math.random() < 0.5;
       promptVariant = useExperimental ? "B" : "A";
-      const basePrompt = useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt());
+      let basePrompt = useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt());
+      if (isCallMode) {
+        basePrompt += `\n\n---\nMODO LLAMADA EN VIVO (OVERRIDE): en esta generación el setter NO está chateando por WhatsApp — está EN una llamada telefónica en frío y el prospecto acaba de decir algo. Todo lo que este prompt dice sobre "mensajes de WhatsApp", "bloques" y formato de chat NO aplica acá. Tu output es la frase que el setter va a decir en voz alta a continuación. Las reglas de contenido (sin precios, sin stack técnico, el closer maneja la venta, objetivo = agendar reunión de 15 minutos) siguen valiendo igual.`;
+      }
       // 2026-05-04: removido MERCURY_OUTPUT_FORMAT_INSTRUCTIONS del system. La
       // IA todavía no está estabilizada y el formato dual sumaba fricción al
       // setter. Vuelve a respuesta plana. parseMercuryOutput sigue siendo
@@ -10694,6 +10708,7 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
     conversationHistory: history || null,
     tone: tone || null,
     intent: intent || null,
+    channel: isCallMode ? 'call' : 'wa',
     promptVariant,
     categoriaHint: categoria || null,
     variantUsed,
