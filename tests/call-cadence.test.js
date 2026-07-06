@@ -72,4 +72,9 @@ describe("cadencia de auto-redial (1 reintento a 24h, descarte al 2do — anti-a
     const r = await disp({ outcome: "callback_later", callbackAt: manual });
     expect(new Date(r.body.lead.callbackAt).toISOString()).toBe(manual);
   });
+  it("un connect resetea cadenceStep a 0 (audit 2026-07-06 C2)", async () => {
+    await disp({ outcome: "no_answer" }); // deja step >= 1
+    const r = await disp({ outcome: "answered_interested" });
+    expect(r.body.lead.cadenceStep).toBe(0);
+  });
 });

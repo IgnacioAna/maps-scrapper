@@ -7291,6 +7291,11 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
   // dialer automático (compliance: la llamada siempre la dispara una persona).
   const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
+  // Cualquier resultado que NO sea no-contacto rompe la racha → el contador de
+  // cadencia vuelve a 0 (el chip "auto #N" del frontend deja de mostrar un número
+  // viejo). La racha real siempre se recomputa del callLog, esto es consistencia
+  // del campo persistido.
+  if (!_NO_CONTACT.has(outcome)) lead.cadenceStep = 0;
   // Política: el lead que no atiende / cae a buzón se reintenta UNA vez a las 24h, y
   // al 2do no-contacto seguido se DESCARTA automáticamente. (Se bajó de 3 reintentos
   // a 1 el 2026-06-25 para reducir la TASA DE ABANDONO de Telnyx: cada reintento a un
@@ -12313,7 +12318,7 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // 2026-06-26: el bug era transcripts tipo "Reactivación de pacientes." × 30 en
 // llamadas de buzón. Whisper inventa sobre silencio: esos segmentos tienen
 // no_speech_prob alto + avg_logprob muy bajo, o compression_ratio alto.
-function _cleanWhisperSegments(rawSegments, speakerLabel) {
+function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
   const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
   let segs = (rawSegments || []).map((s) => ({
     speaker: speakerLabel,
@@ -12334,10 +12339,23 @@ function _cleanWhisperSegments(rawSegments, speakerLabel) {
     if (prev && _normSeg(prev.text) === _normSeg(s.text)) { prev.end = s.end; continue; }
     deduped.push(s);
   }
-  // Si el canal entero colapsa a una sola frase corta repetida, es alucinación
-  // pura sobre silencio → vacío (no hubo voz real).
+  // Si el canal entero colapsa a una sola frase corta repetida, PUEDE ser
+  // alucinación sobre silencio — pero "¿Aló? ¿Aló? ¿Aló?" real también colapsa.
+  // Audit 2026-07-06: antes se vaciaba SIEMPRE (falsos negativos en llamadas
+  // cortas legítimas). Ahora solo se vacía si además hay señal de alucinación:
+  //  (a) la frase es eco del prompt de Whisper (el bug histórico del loop), o
+  //  (b) las métricas promedio del canal indican silencio (no_speech_prob alto
+  //      o avg_logprob bajo). Con métricas de voz real, se conserva el dedupe.
   const uniq = new Set(deduped.map((s) => _normSeg(s.text)).filter(Boolean));
-  if (segs.length >= 3 && uniq.size <= 1) return [];
+  if (segs.length >= 3 && uniq.size <= 1) {
+    const phrase = _normSeg(deduped[0]?.text);
+    const normPrompt = _normSeg(promptText);
+    const isPromptEcho = !!(phrase && normPrompt && normPrompt.includes(phrase));
+    const avgNsp = segs.reduce((a, s) => a + s._nsp, 0) / segs.length;
+    const avgAlp = segs.reduce((a, s) => a + s._alp, 0) / segs.length;
+    const looksLikeSilence = avgNsp >= 0.35 || avgAlp <= -0.55;
+    if (isPromptEcho || looksLikeSilence) return [];
+  }
   return deduped.map(({ _nsp, _alp, _cr, ...rest }) => rest);
 }
 globalThis.__whisper = { cleanSegments: _cleanWhisperSegments };
@@ -12375,12 +12393,14 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   const fileType = mimeType || 'audio/webm';
   const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  // 2026-06-26: SACADO el prompt con vocabulario de dominio ("reactivar pacientes",
-  // etc). En llamadas de buzón/no-atendió (audio casi en silencio) Whisper
-  // "alucina" repitiendo el prompt en loop → el transcript salía "Reactivación de
-  // pacientes." 30 veces seguidas. `language:'es'` ya fuerza español; el prompt
-  // de dominio aportaba poco y causaba el loop. Lo dejamos vacío.
-  const WHISPER_PROMPT = '';
+  // Historia del prompt: se sacó el 2026-06-26 porque en llamadas de buzón (audio
+  // casi en silencio) Whisper "alucinaba" repitiendo el prompt en loop
+  // ("Reactivación de pacientes." × 30). Reintroducido el 2026-07-06: ahora
+  // _cleanWhisperSegments filtra esos loops por métricas (no_speech_prob /
+  // avg_logprob / compression_ratio) Y descarta específicamente el canal cuyo
+  // texto colapsa a un eco del prompt (se le pasa promptText). El prompt corto
+  // mejora la transcripción de términos del rubro y nombres.
+  const WHISPER_PROMPT = 'Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google, SCM.';
   const transcribe = async (b64, speakerLabel) => {
     if (!b64) return [];
     try {
@@ -12402,8 +12422,18 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
         timestamp_granularities: ['segment'],
       };
       if (WHISPER_PROMPT) reqOpts.prompt = WHISPER_PROMPT;
-      const result = await openaiClient.audio.transcriptions.create(reqOpts);
-      const cleaned = _cleanWhisperSegments(result.segments, speakerLabel);
+      // Retry 1x ante error transitorio (network/5xx/timeout). El audio NO se
+      // persiste en disco (decisión de diseño), así que este reintento inmediato
+      // es la única ventana para no perder la transcripción.
+      let result;
+      try {
+        result = await openaiClient.audio.transcriptions.create(reqOpts);
+      } catch (firstErr) {
+        console.warn(`[transcribe] ${speakerLabel} intento 1 falló (${firstErr?.message || firstErr}), reintentando en 2s…`);
+        await new Promise((r) => setTimeout(r, 2000));
+        result = await openaiClient.audio.transcriptions.create(reqOpts);
+      }
+      const cleaned = _cleanWhisperSegments(result.segments, speakerLabel, WHISPER_PROMPT);
       if ((result.segments || []).length >= 3 && cleaned.length === 0) {
         console.log(`[transcribe] ${speakerLabel}: descartado por alucinación de silencio/buzón`);
       }

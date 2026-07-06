@@ -2104,17 +2104,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Connect (returns promise resolvable cuando registra)
         await new Promise((resolve, reject) => {
-          const onReady = () => { resolve(); cleanup(); };
-          const onError = (err) => { reject(err); cleanup(); };
+          let timeoutId = null;
+          const onReady = () => { clearTimeout(timeoutId); resolve(); cleanup(); };
+          const onError = (err) => { clearTimeout(timeoutId); reject(err); cleanup(); };
           const cleanup = () => {
-            this.client.off?.('telnyx.ready', onReady);
-            this.client.off?.('telnyx.error', onError);
+            this.client?.off?.('telnyx.ready', onReady);
+            this.client?.off?.('telnyx.error', onError);
           };
           this.client.on?.('telnyx.ready', onReady);
           this.client.on?.('telnyx.error', onError);
           this.client.connect();
-          // Timeout 15s
-          setTimeout(() => reject(new Error('Timeout conectando con Telnyx (15s)')), 15000);
+          // Timeout 15s. Audit 2026-07-06 (B3): al vencer, además de rechazar,
+          // desarmamos listeners y tiramos el client a medio registrar — antes
+          // quedaba seteado y el próximo _startTelnyxCall reusaba un client roto.
+          timeoutId = setTimeout(() => {
+            cleanup();
+            try { this.client?.disconnect?.(); } catch {}
+            this.client = null;
+            reject(new Error('Timeout conectando con Telnyx (15s)'));
+          }, 15000);
         });
 
         // Notification pattern de Telnyx WebRTC v2: TODOS los state changes
@@ -2174,6 +2182,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             // energía SOSTENIDA (voz/buzón real) corta el tono sintético y conmuta al
             // audio del carrier. Mientras tanto seguís escuchando el tono de llamando.
             // El status queda "Sonando" hasta 'active' (no mentimos "En llamada" en early).
+            // Audit 2026-07-06 (Whisper A1): la grabación arranca APENAS hay audio remoto,
+            // sin esperar el commit de voz sostenida ni 'active'. Antes se perdían los
+            // primeros ~2.4s de cada llamada early-media y los buzones cortos enteros →
+            // transcripts truncados/vacíos. Grabar no afecta lo que escucha el setter
+            // (el tono sintético sigue su lógica); si solo se grabó ringback, el filtro
+            // anti-alucinación del backend lo descarta.
+            if (_hasRemoteAudio() && !_setterRecorder && !_leadRecorder) {
+              _startCallRecording(call.localStream || _telnyx.activeCall?.localStream || null, call.remoteStream);
+            }
             if (_hasRemoteAudio() && !_telnyxCallState.enteredActive && !_telnyxCallState.committedRemote) {
               _startRemoteVoiceWatch(call, () => {
                 _telnyxCallState.committedRemote = true;
@@ -5034,6 +5051,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdCancelAutopilot();
       const panel = document.getElementById('telnyx-call-panel');
       if (panel && panel.style.display !== 'none' && panel.style.display !== '') return; // ya hay llamada
+      if (_telnyx?.activeCall) return; // audit 2026-07-06 (B4): defensa extra, el panel puede no reflejar aún la llamada
       const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
       if (!lead) return;
       let secs = 3;
@@ -5049,7 +5067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         secs--;
         if (secs <= 0) {
           _pdCancelAutopilot();
-          window._startTelnyxCall?.(lead.id);
+          if (!_telnyx?.activeCall) window._startTelnyxCall?.(lead.id); // B4: no discar sobre llamada activa
         } else { render(); }
       }, 1000);
     }
@@ -5626,9 +5644,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const data = await r.json();
-        // Refrescar lead en cache local con la respuesta del server
+        // Refrescar lead en cache local con la respuesta del server.
+        // Audit 2026-07-06 (B1): vía _leadStoreApply — un set() directo al Map
+        // reemplazaba la referencia y la divorciaba de callsLeadsCache (invariante
+        // Map.get(id) === cache[idx] roto → la LISTA mostraba datos viejos).
         if (data && data.lead) {
-          _callsLeadsById.set(leadId, data.lead);
+          _leadStoreApply(leadId, data.lead);
         } else {
           lead.followUps = next;
         }
@@ -6826,6 +6847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
       if (totalBytes < 5000) {
         console.log('[transcribe] Audio muy corto (<5KB), saltando');
+        window.showToast?.('Llamada muy corta — no se transcribe', { type: 'info', duration: 3000 });
         return;
       }
       // Convertir a base64
@@ -7407,14 +7429,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
           // Capturar la nota rápida ANTES de cerrar el panel
           const quickNoteText = document.getElementById('telnyx-call-quick-note')?.value?.trim() || '';
-          // Guardar metadata pendiente para que el próximo handleCallDisposition la incluya
-          _pendingTelnyxCallMetadata[leadId] = {
+          // Guardar metadata pendiente para que el próximo handleCallDisposition la incluya.
+          // Audit 2026-07-06 (B2): además de la clave simple (última llamada gana — es la
+          // que el disposition va a describir), se guarda bajo clave compuesta
+          // leadId:startedAt para que dos llamadas seguidas al mismo lead no pisen el
+          // registro y el backend pueda matchear por callStartedAt.
+          const _metaStartedAt = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
+          const _metaObj = {
             durationSecs,
             fromNumber: _telnyxCallState.fromNumber,
+            startedAt: _metaStartedAt,
             endedAt: new Date().toISOString(),
             quickNote: quickNoteText || null,
             scriptIdsUsed: _telnyxCallState.scriptIdsUsed.slice(), // Sprint 12: A/B tracking
           };
+          _pendingTelnyxCallMetadata[leadId] = _metaObj;
+          if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
           // Scroll + flash + open al dropdown de disposition
           const callRow = document.querySelector(`.call-row[data-id="${leadId}"]`);
           const dispositionSel = callRow?.querySelector('select');
@@ -7474,6 +7504,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se popula en _onTelnyxCallEnded y se consume en _handleCallDisposition
     // para enriquecer el callLog con datos reales de la llamada Telnyx.
     const _pendingTelnyxCallMetadata = {};
+    // Consume la metadata pendiente de un lead: devuelve la de la última llamada y
+    // limpia TODAS las entradas de ese lead (simple + compuestas leadId:startedAt).
+    function _consumeTelnyxMeta(leadId) {
+      const meta = _pendingTelnyxCallMetadata[leadId] || null;
+      for (const k of Object.keys(_pendingTelnyxCallMetadata)) {
+        if (k === leadId || k.startsWith(leadId + ':')) delete _pendingTelnyxCallMetadata[k];
+      }
+      return meta;
+    }
 
     // ── Script panel (banco de guiones durante la llamada) ──
     let _callScriptsCache = [];
@@ -7827,12 +7866,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // Outcomes directos. Si hay metadata pendiente de una llamada Telnyx,
         // adjuntarla al payload para que el backend la persista en callLog.
-        const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
+        const telnyxMeta = _consumeTelnyxMeta(leadId);
         const body = { outcome };
-        if (telnyxMeta) {
-          body.telnyxCallMeta = telnyxMeta;
-          delete _pendingTelnyxCallMetadata[leadId];
-        }
+        if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
         // Nota rápida del Power Dialer (input pd-call-note). Solo existe en el
         // dialer; en la vista normal de Llamadas no está y queda vacío.
         const pdNoteEl = document.getElementById('pd-call-note');
@@ -7846,6 +7882,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
+        // Audit 2026-07-06 (C1): si ESTE resultado disparó el descarte automático por
+        // cadencia (2 no-contactos seguidos), avisarle al setter — antes el lead
+        // desaparecía de la cola sin explicación.
+        const _wasAutoDiscarded = !!_callsLeadsById.get(leadId)?.autoDiscarded;
+        if (data.lead?.autoDiscarded && !_wasAutoDiscarded) {
+          window.showToast?.('Lead descartado automáticamente: 2 intentos sin contacto', { type: 'warn', duration: 6000 });
+        }
         // _leadStore: escritura única → sincroniza lista + Power Dialer.
         if (data.lead) _leadStoreApply(leadId, data.lead);
         renderCallsList();
@@ -8104,11 +8147,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             doNotCall: !!document.getElementById('call-obj-dnc')?.checked
           };
           // Adjuntar telnyxMeta si hay
-          const telnyxMeta = _pendingTelnyxCallMetadata[leadId];
-          if (telnyxMeta) {
-            body.telnyxCallMeta = telnyxMeta;
-            delete _pendingTelnyxCallMetadata[leadId];
-          }
+          const telnyxMeta = _consumeTelnyxMeta(leadId);
+          if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)

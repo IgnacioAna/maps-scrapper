@@ -99,4 +99,37 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     expect(clean(null, "setter")).toEqual([]);
     expect(clean(undefined, "lead")).toEqual([]);
   });
+
+  // Audit 2026-07-06: el colapso a una sola frase ya NO vacía siempre el canal.
+  it("'¿Aló?' x3 con métricas de voz real se CONSERVA (colapsado)", () => {
+    const raw = [
+      seg({ start: 0, end: 1, text: "¿Aló?", no_speech_prob: 0.1, avg_logprob: -0.2 }),
+      seg({ start: 1, end: 2, text: "¿Aló?", no_speech_prob: 0.12, avg_logprob: -0.25 }),
+      seg({ start: 2, end: 3, text: "¿Aló?", no_speech_prob: 0.08, avg_logprob: -0.18 }),
+    ];
+    const out = clean(raw, "lead");
+    expect(out.length).toBe(1); // colapsado a un segmento
+    expect(out[0].text).toBe("¿Aló?");
+    expect(out[0].end).toBe(3);
+  });
+
+  it("frase repetida con métricas de silencio (avg) -> vacío aunque pase el filtro por-segmento", () => {
+    // nsp 0.4 no llega al corte por-segmento (0.6) pero el promedio delata silencio
+    const raw = Array.from({ length: 4 }, (_, i) => seg({
+      start: i, end: i + 1, text: "Gracias por llamar.",
+      no_speech_prob: 0.4, avg_logprob: -0.3,
+    }));
+    expect(clean(raw, "lead")).toEqual([]);
+  });
+
+  it("eco del prompt de Whisper repetido -> vacío aunque tenga buenas métricas", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google, SCM.";
+    const raw = Array.from({ length: 3 }, (_, i) => seg({
+      start: i, end: i + 1, text: "reactivación de pacientes",
+      no_speech_prob: 0.1, avg_logprob: -0.2,
+    }));
+    expect(clean(raw, "lead", prompt)).toEqual([]);
+    // La misma frase SIN prompt (y con buenas métricas) se conserva
+    expect(clean(raw, "lead").length).toBe(1);
+  });
 });
