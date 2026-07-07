@@ -14587,7 +14587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       { id: 'v-myperf', target: 'view-myperf', label: 'Ir a Mi rendimiento', icon: '📊', roles: ['admin','setter','supervisor'] },
       { id: 'v-assistant', target: 'view-assistant', label: 'Ir a Asistente IA', icon: '🤖', roles: ['admin','setter'] },
       { id: 'v-faqs', target: 'view-faqs', label: 'Ir a Banco de Respuestas', icon: '📚', roles: ['admin','setter','supervisor'] },
-      { id: 'v-training', target: 'view-training', label: 'Ir a Centro de Entrenamiento', icon: '🎓', roles: ['admin','setter','supervisor'] },
+      { id: 'v-training', target: 'view-training', label: 'Ir a Centro de Entrenamiento', icon: '🎓', roles: ['admin','supervisor'] },
       { id: 'v-team', target: 'view-team', label: 'Ir a Equipo', icon: '👥', roles: ['admin','supervisor'] },
       { id: 'v-command', target: 'view-command', label: 'Ir a Centro de Comando', icon: '🎛️', roles: ['admin'] },
       { id: 'v-mercury-review', target: 'view-mercury-review', label: 'Ir a Revisión IA', icon: '⭐', roles: ['admin'] },
