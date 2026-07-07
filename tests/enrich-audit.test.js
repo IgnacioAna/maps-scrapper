@@ -34,7 +34,7 @@ fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({
     // con el skip 24h global viejo NO era candidato web; ahora sí.
     lead_npi_then_web: { id: "lead_npi_then_web", name: "Smile Dental", phone: "+13055550001", website: "https://smiledental-test.com", country: "Estados Unidos", npiCheckedAt: now, enrichedAt: now, assignedTo: "setter_test", estado: "sin_contactar" },
     // Todos los markers web seteados → solo elegible con force:true.
-    lead_fully_checked: { id: "lead_fully_checked", name: "Clinica Lista", phone: "+5215512340002", website: "https://clinicalista-test.com", country: "México", adsCheckedAt: now, ageCheckedAt: now, metaAdsCheckedAt: now, ownerAiCheckedAt: now, enrichedAt: now, assignedTo: "setter_test", estado: "sin_contactar" },
+    lead_fully_checked: { id: "lead_fully_checked", name: "Clinica Lista", phone: "+5215512340002", website: "https://clinicalista-test.com", country: "México", adsCheckedAt: now, ageCheckedAt: now, metaAdsCheckedAt: now, ownerAiCheckedAt: now, domainCheckedAt: now, enrichedAt: now, assignedTo: "setter_test", estado: "sin_contactar" },
     // Para validate-numbers: teléfono válido, sin lookup previo.
     lead_phone_fail: { id: "lead_phone_fail", name: "Tel Fail", phone: "+5215512340003", assignedTo: "setter_test", estado: "sin_contactar" },
   },
