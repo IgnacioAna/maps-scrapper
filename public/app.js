@@ -11983,6 +11983,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   document.querySelector('[data-target="view-training-ai"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });
 
+  // Vaciar biblioteca (admin): borra transcripts viejos para que los vendedores
+  // nuevos arranquen limpio. Confirmación por texto + backup server-side.
+  document.getElementById('training-clear-btn')?.addEventListener('click', async () => {
+    const ok = prompt('Esto BORRA todos los transcripts y resúmenes IA de la biblioteca (las llamadas quedan, solo se limpia la transcripción). Las llamadas nuevas se transcriben solas.\n\nEscribí VACIAR para confirmar:');
+    if (ok !== 'VACIAR') { if (ok !== null) window.showToast?.('Cancelado (tenés que escribir VACIAR exacto)', { type: 'info' }); return; }
+    const btn = document.getElementById('training-clear-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Vaciando…'; }
+    try {
+      const r = await fetch(apiUrl('/api/training/calls/clear'), { method: 'POST', credentials: 'include' });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      window.showToast?.(`Biblioteca vaciada: ${d.cleared} transcripts borrados`, { type: 'success', duration: 4000 });
+      _trainingLoadLibrary();
+    } catch (e) {
+      window.showToast?.('Error: ' + e.message, { type: 'error' });
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Vaciar biblioteca'; }
+    }
+  });
+
   document.getElementById('asst-generate-btn')?.addEventListener('click', () => _asstGenerate());
 
   // Botones de tono → re-generan con el mismo input + modificador

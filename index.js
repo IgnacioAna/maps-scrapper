@@ -12294,6 +12294,51 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
   res.json({ outcome: c.outcome || '', duration: c.duration || 0, segments: anonSegs, summary, aiSuggestedOutcome: c.aiSuggestedOutcome || '', aiSuggestedReason: c.aiSuggestedReason || '' });
 });
 
+// POST /api/training/calls/clear — vacía la biblioteca de llamadas. Borra los
+// transcripts + resúmenes IA + sugerencias de outcome de TODOS los callLog.
+// admin only. Backup de setters.json antes de tocar nada (recuperable).
+// Uso pensado: reset one-time tras el fix de Whisper 2026-07-06 (los transcripts
+// viejos eran de mala calidad y confunden a los vendedores nuevos). Las llamadas
+// NUEVAS se vuelven a transcribir solas → la biblioteca se repuebla con material bueno.
+// NOTA: NO borra las llamadas del callLog (historial/costos/dispositions quedan),
+// solo el material de transcripción. `POST /api/telnyx/calls/:leadId/transcribe`
+// sigue funcionando para las próximas.
+app.post('/api/training/calls/clear', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    // Backup antes de tocar (setters.json es grande — .bak gitignored).
+    let backupPath = null;
+    if (fs.existsSync(SETTERS_FILE)) {
+      const ts = new Date().toISOString().replace(/[:.]/g, '-');
+      backupPath = path.join(DATA_DIR, `setters.json.bak-pre-training-clear-${ts}`);
+      try { fs.copyFileSync(SETTERS_FILE, backupPath); }
+      catch (e) { console.warn('[training/clear] backup fallido:', e.message); backupPath = null; }
+    }
+    let cleared = 0, leadsTouched = 0;
+    await mutateSettersData((d) => {
+      for (const lead of Object.values(d.leads || {})) {
+        if (!Array.isArray(lead.callLog)) continue;
+        let touched = false;
+        for (const c of lead.callLog) {
+          if (c.transcript || c.trainingSummary || c.aiSuggestedOutcome || c.aiSuggestedReason) {
+            if (c.transcript) cleared++;
+            delete c.transcript;
+            delete c.trainingSummary;
+            delete c.aiSuggestedOutcome;
+            delete c.aiSuggestedReason;
+            touched = true;
+          }
+        }
+        if (touched) leadsTouched++;
+      }
+    });
+    console.log(`[training/clear] biblioteca vaciada: ${cleared} transcripts en ${leadsTouched} leads (admin ${req.auth?.user?.email})`);
+    res.json({ ok: true, cleared, leadsTouched, backup: backupPath ? path.basename(backupPath) : null });
+  } catch (e) {
+    console.error('[training/clear]', e);
+    res.status(500).json({ error: 'Error vaciando la biblioteca: ' + (e?.message || 'unknown') });
+  }
+});
+
 // POST /api/training/ask — coach IA: pregunta libre → respuesta con el banco.
 app.post('/api/training/ask', requireAuth, async (req, res) => {
   const question = String(req.body?.question || '').trim();
