@@ -3716,6 +3716,87 @@ function makeKey(item) {
   return `${(item.name || '').toLowerCase().trim()}_${(item.address || '').toLowerCase().trim()}`;
 }
 
+// SerpAPI con timeout 15s (mismo patrón que _serp del enrich-brief, l.2567).
+function _serpWithTimeout(params, ms = 15000) {
+  return Promise.race([
+    getJson(params),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('serp_timeout')), ms))
+  ]);
+}
+
+// ── Dedup contra history con normalización ──
+// El check exacto por makeKey (nombre+dirección lowercase) daba falsos negativos:
+// el mismo negocio con la dirección reformateada ("Av." vs "Avenida") se marcaba
+// como nuevo. Índice normalizado construido UNA vez por request de scrape.
+// Nota: las entries históricas no guardan phone (se empezó a guardar 2026-07-07),
+// así que el índice de teléfonos solo cubre entries nuevas.
+function _buildHistoryDedupIndex(history) {
+  const normKeys = new Set();
+  const phones = new Set();
+  for (const entry of Object.values(history.entries || {})) {
+    const normName = normalizeNameForDedup(entry.name);
+    const normAddr = normalizeAddressForDedup(entry.address);
+    if (normName && normAddr) normKeys.add(`${normName}_${normAddr}`);
+    const normPhone = normalizePhoneForDedup(entry.phone);
+    if (normPhone) phones.add(normPhone);
+  }
+  return { normKeys, phones };
+}
+
+function _isAlreadyScraped(history, idx, item) {
+  if (history.entries[makeKey(item)]) return true;
+  const normName = normalizeNameForDedup(item.name);
+  const normAddr = normalizeAddressForDedup(item.address);
+  if (normName && normAddr && idx.normKeys.has(`${normName}_${normAddr}`)) return true;
+  const normPhone = normalizePhoneForDedup(item.phone);
+  if (normPhone && idx.phones.has(normPhone)) return true;
+  return false;
+}
+
+// ── Mutex para history y scrape_batches (regla #19: mismo patrón que
+// mutateSettersData). El endpoint /api/scrape tiene awaits largos (SerpAPI)
+// entre load y save → dos scrapes concurrentes se pisaban el archivo.
+let _historyMutex = Promise.resolve();
+async function mutateHistory(mutator) {
+  const next = _historyMutex.then(async () => {
+    const data = loadHistory();
+    const result = await Promise.resolve(mutator(data));
+    saveHistory(data);
+    return result;
+  });
+  _historyMutex = next.catch(() => {});
+  return next;
+}
+
+let _scrapeBatchesMutex = Promise.resolve();
+async function mutateScrapeBatches(mutator) {
+  const next = _scrapeBatchesMutex.then(async () => {
+    const data = loadScrapeBatches();
+    const result = await Promise.resolve(mutator(data));
+    saveScrapeBatches(data);
+    return result;
+  });
+  _scrapeBatchesMutex = next.catch(() => {});
+  return next;
+}
+
+// Pool de concurrencia simple para paralelizar combos query×ubicación del
+// scrape (3 a la vez). tasks = array de funciones async; conserva el orden
+// de resultados aunque terminen desordenados.
+async function _runPool(tasks, concurrency = 3) {
+  const results = new Array(tasks.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < tasks.length) {
+      const i = cursor++;
+      results[i] = await tasks[i]();
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, worker);
+  await Promise.all(workers);
+  return results;
+}
+
 // Normalizar nombre para detectar duplicados con diferente orden de palabras
 // "Clínica Dental Sonrisa" y "Sonrisa - Clínica Dental" → mismas palabras
 function normalizeNameForDedup(name) {
@@ -3798,7 +3879,22 @@ async function searchLocation(query, location, maxPages, startPage = 1) {
 
     searchParams.q = searchQuery;
 
-    const json = await getJson(searchParams);
+    // Timeout 15s (mismo patrón que el enrich, l.2567) + 1 retry con backoff.
+    // Sin esto, un SerpAPI colgado bloqueaba el request completo (hasta 50
+    // llamadas secuenciales) y el fetch del front moría por gateway timeout.
+    let json;
+    try {
+      json = await _serpWithTimeout(searchParams);
+    } catch (e1) {
+      console.warn(`   ⚠️ SerpAPI falló ("${e1.message}"), reintentando en 2s...`);
+      await new Promise(r => setTimeout(r, 2000));
+      try {
+        json = await _serpWithTimeout(searchParams);
+      } catch (e2) {
+        console.warn(`   🛑 SerpAPI falló el retry ("${e2.message}"). Conservando lo acumulado.`);
+        break; // igual que json.error: conservar results ya juntados
+      }
+    }
 
     if (json.error) {
       if (results.length > 0) break;
@@ -3935,58 +4031,67 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     let totalHasMore = false;
     let dedupCount = 0;
 
-    // Cargar historial existente
+    // Snapshot del historial SOLO para lecturas de dedup. Las escrituras van
+    // al final vía mutateHistory (los awaits de SerpAPI entre load y save
+    // hacían que dos scrapes concurrentes se pisaran el archivo).
     const history = loadHistory();
+    const historyIdx = _buildHistoryDedupIndex(history);
 
+    // Combos query×ubicación en paralelo (pool de 3): mismo gasto de créditos
+    // (el clamp de 50 llamadas ya corrió arriba), ~3x menos espera total.
+    const combos = [];
     for (const currentQuery of queries) {
-      console.log(`\n🔎 Keyword: "${currentQuery}"`);
+      for (const loc of locations) combos.push({ currentQuery, loc });
+    }
+    const lastPagesUpdates = {}; // pageKey → maxPageReached (se aplican en el mutex)
+    const comboResults = await _runPool(combos.map(({ currentQuery, loc }) => async () => {
+      console.log(`🔎 "${currentQuery}" en "${loc || 'Sin ubicación'}" (Desde Pág ${startPage})`);
+      return searchLocation(currentQuery, loc, maxPages, startPage);
+    }), 3);
 
-      for (let locIndex = 0; locIndex < locations.length; locIndex++) {
-        const loc = locations[locIndex];
-        console.log(`── Ubicación ${locIndex + 1}/${locations.length}: "${loc || 'Sin ubicación'}" (Desde Pág ${startPage}) ──`);
+    // Post-proceso secuencial en orden determinístico (el dedup comparte Sets,
+    // no debe correr dentro del pool).
+    for (let ci = 0; ci < combos.length; ci++) {
+      const { currentQuery, loc } = combos[ci];
+      const { results: locationResults, hasMoreResults } = comboResults[ci];
+      if (hasMoreResults) totalHasMore = true;
 
-        const { results: locationResults, hasMoreResults } = await searchLocation(currentQuery, loc, maxPages, startPage);
-        if (hasMoreResults) totalHasMore = true;
-
-        // Actualizar la última página scrapeada de esta ciudad
-        if (!history.lastPages) history.lastPages = {};
-        const pageKey = `${currentQuery.toLowerCase().trim()}_${(loc || '').toLowerCase().trim()}`;
-        const maxPageReached = parseInt(startPage) + parseInt(maxPages) - 1;
-        const previousEnd = history.lastPages[pageKey] || 0;
-        if (maxPageReached > previousEnd) {
-          history.lastPages[pageKey] = maxPageReached;
-        }
-
-        for (const item of locationResults) {
-          const key = makeKey(item);
-          const normPhone = normalizePhoneForDedup(item.phone);
-          const normName = normalizeNameForDedup(item.name);
-          const normAddr = normalizeAddressForDedup(item.address);
-          // Clave compuesta: mismo nombre normalizado + misma dirección normalizada
-          const normNameAddrKey = normName && normAddr ? `${normName}_${normAddr}` : '';
-
-          // Duplicado si:
-          // 1. Exacto nombre+dirección ya existe
-          // 2. Mismo teléfono (últimos 8 dígitos)
-          // 3. Mismo nombre normalizado + misma dirección normalizada
-          const isDup = seenKeys.has(key)
-            || (normPhone && seenPhones.has(normPhone))
-            || (normNameAddrKey && seenNormNames.has(normNameAddrKey));
-
-          if (!isDup) {
-            seenKeys.add(key);
-            if (normPhone) seenPhones.add(normPhone);
-            if (normNameAddrKey) seenNormNames.add(normNameAddrKey);
-            // Marcar si ya fue scrapeado antes
-            item.alreadyScraped = !!history.entries[key];
-            allResults.push(item);
-          } else {
-            dedupCount++;
-          }
-        }
-
-        console.log(`   → ${locationResults.length} encontrados, ${allResults.length} únicos, ${dedupCount} duplicados removidos`);
+      // Anotar la última página scrapeada de esta ciudad (se persiste al final)
+      const pageKey = `${currentQuery.toLowerCase().trim()}_${(loc || '').toLowerCase().trim()}`;
+      const maxPageReached = parseInt(startPage) + parseInt(maxPages) - 1;
+      if (maxPageReached > (lastPagesUpdates[pageKey] || 0)) {
+        lastPagesUpdates[pageKey] = maxPageReached;
       }
+
+      for (const item of locationResults) {
+        const key = makeKey(item);
+        const normPhone = normalizePhoneForDedup(item.phone);
+        const normName = normalizeNameForDedup(item.name);
+        const normAddr = normalizeAddressForDedup(item.address);
+        // Clave compuesta: mismo nombre normalizado + misma dirección normalizada
+        const normNameAddrKey = normName && normAddr ? `${normName}_${normAddr}` : '';
+
+        // Duplicado si:
+        // 1. Exacto nombre+dirección ya existe
+        // 2. Mismo teléfono (últimos 8 dígitos)
+        // 3. Mismo nombre normalizado + misma dirección normalizada
+        const isDup = seenKeys.has(key)
+          || (normPhone && seenPhones.has(normPhone))
+          || (normNameAddrKey && seenNormNames.has(normNameAddrKey));
+
+        if (!isDup) {
+          seenKeys.add(key);
+          if (normPhone) seenPhones.add(normPhone);
+          if (normNameAddrKey) seenNormNames.add(normNameAddrKey);
+          // Marcar si ya fue scrapeado antes (exacto O normalizado O por teléfono)
+          item.alreadyScraped = _isAlreadyScraped(history, historyIdx, item);
+          allResults.push(item);
+        } else {
+          dedupCount++;
+        }
+      }
+
+      console.log(`   → "${currentQuery}" / "${loc || 'Sin ubicación'}": ${locationResults.length} encontrados, ${allResults.length} únicos, ${dedupCount} duplicados removidos`);
     }
 
     // ── Filtro de relevancia: descartar resultados que no matchean la búsqueda ──
@@ -4027,31 +4132,34 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     const newResults = contactableResults.filter(item => !item.alreadyScraped);
     const oldResults = contactableResults.filter(item => item.alreadyScraped);
 
-    // Guardar los nuevos en el historial
+    // Guardar los nuevos en el historial (dentro del mutex: re-carga fresh,
+    // aplica y persiste — un scrape concurrente ya no pisa las entries)
     const searchTimestamp = new Date().toISOString();
-    for (const item of newResults) {
-      const key = makeKey(item);
-      history.entries[key] = {
-        name: item.name,
-        address: item.address,
-        scrapedAt: searchTimestamp,
-        query: query,
-        location: item.locationSearched
-      };
-    }
-
-    // Registrar esta búsqueda
-    history.searches.push({
-      query: queries.join(' | '),
-      locations: locations.filter(Boolean),
-      timestamp: searchTimestamp,
-      newFound: newResults.length,
-      duplicatesSkipped: oldResults.length
+    const totalInHistory = await mutateHistory(h => {
+      if (!h.lastPages) h.lastPages = {};
+      for (const [pageKey, maxPage] of Object.entries(lastPagesUpdates)) {
+        if (maxPage > (h.lastPages[pageKey] || 0)) h.lastPages[pageKey] = maxPage;
+      }
+      for (const item of newResults) {
+        const key = makeKey(item);
+        h.entries[key] = {
+          name: item.name,
+          address: item.address,
+          phone: item.phone || '', // 2026-07-07: permite dedup por teléfono en scrapes futuros
+          scrapedAt: searchTimestamp,
+          query: query,
+          location: item.locationSearched
+        };
+      }
+      h.searches.push({
+        query: queries.join(' | '),
+        locations: locations.filter(Boolean),
+        timestamp: searchTimestamp,
+        newFound: newResults.length,
+        duplicatesSkipped: oldResults.length
+      });
+      return Object.keys(h.entries).length;
     });
-
-    saveHistory(history);
-
-    const totalInHistory = Object.keys(history.entries).length;
 
     if (removed > 0) {
       console.log(`Se removieron ${removed} resultados sin teléfono ni sitio web.`);
@@ -4066,7 +4174,7 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     // tener los results en memoria.
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     try {
-      const batchesData = loadScrapeBatches();
+      await mutateScrapeBatches(batchesData => {
       batchesData.batches = Array.isArray(batchesData.batches) ? batchesData.batches : [];
       batchesData.batches.push({
         id: batchId,
@@ -4092,7 +4200,7 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
       if (batchesData.batches.length > 50) {
         batchesData.batches = batchesData.batches.slice(-50);
       }
-      saveScrapeBatches(batchesData);
+      });
     } catch (e) {
       console.warn("[scrape] No pude persistir batch:", e.message);
     }
@@ -5850,6 +5958,14 @@ function _importLeadsCore(data, incoming, assignTo) {
       country: finalCountry,
       rating: lead.rating || '',
       reviews: lead.reviews || 0,
+      // Phase 10 A3 fix: estos 5 campos ya venían del scrape pero el literal
+      // no los copiaba → llegaban vacíos al lead y el enrich re-pagaba SerpAPI
+      // para recuperar placeId/coordinates que ya teníamos.
+      placeId: lead.placeId || '',
+      coordinates: lead.coordinates || null,
+      openingHours: lead.openingHours || null,
+      businessStatus: lead.businessStatus || '',
+      category: lead.category || lead.type || '',
       instagram: lead.instagram || '',
       facebook: lead.facebook || '',
       linkedin: lead.linkedin || '',
@@ -10163,7 +10279,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _runPool };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
