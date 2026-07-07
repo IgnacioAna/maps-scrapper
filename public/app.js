@@ -4824,7 +4824,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span title="Setter dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _h = (l.leadBrief ? _briefClean(l).hook : '') || (l.openingAngle || '').trim(); return _h ? ' · ' + escHtml(_h) : ''; })()}
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
@@ -5476,7 +5476,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (regla). Se OCULTA si el Brief IA
            ya trae un gancho personalizado (sino se repite el mismo ángulo genérico en
            todos los leads que corren ads). -->
-      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).hook) ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.03) 100%); border:1px solid rgba(157,133,242,0.32); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
+      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has) ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.03) 100%); border:1px solid rgba(157,133,242,0.32); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">Ángulo sugerido</div>
         <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
       </div>` : ''}
@@ -6661,7 +6661,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
-            ${(() => { const _h = (l.leadBrief ? _briefClean(l).hook : '') || (l.openingAngle || '').trim(); return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
+            ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
             ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
@@ -7183,7 +7183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Phase 16: ángulo sugerido (regla) + chips. Se OCULTA si el Brief IA ya trae
       // gancho personalizado (sino repite el mismo ángulo genérico en todos los ads-leads).
-      if (lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).hook)) {
+      if (lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has)) {
         rows.push(`<div style="background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.04) 100%); border:1px solid rgba(157,133,242,0.35); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">Ángulo sugerido</div>
           <div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
