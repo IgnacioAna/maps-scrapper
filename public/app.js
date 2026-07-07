@@ -11937,8 +11937,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dur = c.duration ? Math.round(c.duration) + 's' : '';
     const t = c.ts ? new Date(c.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
     const win = (c.outcome === 'scheduled_with_admin' || c.outcome === 'answered_interested');
-    return `<div style="background:var(--bg-card, rgba(255,255,255,0.02)); border:1px solid var(--border-color); ${win ? 'border-left:3px solid #5BB974;' : ''} border-radius:10px; min-width:0; max-width:100%; overflow:hidden; box-sizing:border-box;">
-      <div style="display:flex; align-items:center; gap:12px; padding:11px 14px; min-width:0; flex-wrap:wrap;">
+    return `<div class="train-call-card${win ? ' win' : ''}">
+      <div style="display:flex; align-items:center; gap:12px; padding:12px 15px; min-width:0; flex-wrap:wrap;">
         <span style="font-size:12.5px; font-weight:600; color:${win ? '#5BB974' : 'var(--text-primary)'};">${escHtml(oc)}</span>
         <span style="font-size:11.5px; color:var(--text-secondary); min-width:0; overflow-wrap:anywhere;">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}${dur ? ' · ' + dur : ''}</span>
         <span style="margin-left:auto; font-size:11px; color:var(--text-tertiary); white-space:nowrap;">${t} · ${c.segCount} frases</span>
