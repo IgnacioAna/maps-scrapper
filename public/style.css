@@ -1934,6 +1934,61 @@ td.empty-state .empty-state-content::before {
 }
 .train-call-card.win { border-left: 3px solid #5BB974; }
 
+/* ════════════════════════════════════════════════════════════════
+   Mi rendimiento — controles, secciones y banner premium (2026-07-07)
+═════════════════════════════════════════════════════════════════ */
+#view-myperf select {
+  background: rgba(17, 20, 27, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  padding: 9px 13px !important;
+  color: var(--text-primary);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  cursor: pointer;
+}
+#view-myperf select:hover { border-color: rgba(255, 255, 255, 0.16) !important; }
+#view-myperf select:focus {
+  outline: none;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-medium);
+}
+.myp-section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-tertiary);
+  font-weight: 700;
+  margin: 26px 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.myp-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.07), transparent);
+}
+.myp-assigned-strip {
+  margin-top: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background:
+    radial-gradient(130% 120% at 0% 0%, rgba(157, 133, 242, 0.08) 0%, transparent 44%),
+    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  color: var(--text-primary);
+}
+/* Cold Call Funnel — botones de período como control segmentado */
+.ccm-period-btn {
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  font-size: 11.5px !important;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
 /* Highlight metric (e.g. agendados) */
 .stat-card.is-highlight,
 .stat-card-highlight {
@@ -3301,22 +3356,25 @@ body.has-active-call .sidebar .logo-mark {
   color: var(--text-primary);
 }
 .menu-item:hover .menu-icon { opacity: 1; transform: translateX(1px); }
+/* Activo refinado (2026-07-07): tinte que se desvanece a la derecha (no caja
+   dura), texto/ícono en acento, barra fina redondeada con glow sutil. */
 .menu-item.active {
-  background: linear-gradient(90deg, var(--accent-medium), rgba(157, 133, 242, 0.03));
-  color: var(--text-primary);
+  background: linear-gradient(90deg, rgba(157, 133, 242, 0.15) 0%, rgba(157, 133, 242, 0.04) 62%, transparent 100%);
+  color: var(--accent-hover);
   font-weight: 600;
 }
-.menu-item.active .menu-icon { color: var(--accent); opacity: 1; }
+.menu-item.active .menu-icon { color: var(--accent-hover); opacity: 1; }
 .menu-item.active::before {
-  height: 55%;
+  height: 18px;
   width: 3px;
-  background: linear-gradient(180deg, var(--accent), var(--accent-hover));
-  box-shadow: 0 0 8px rgba(157, 133, 242, 0.5);
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 0 8px rgba(157, 133, 242, 0.35);
 }
-/* Colapsado: el ítem activo se ve como chip de acento, no barra lateral */
+/* Colapsado: el ítem activo se ve como chip de acento suave, no barra lateral */
 .sidebar.collapsed .menu-item.active {
-  background: var(--accent-medium);
-  box-shadow: inset 0 0 0 1px var(--accent-strong);
+  background: rgba(157, 133, 242, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(157, 133, 242, 0.22);
 }
 .sidebar.collapsed .menu-item.active::before { display: none; }
 

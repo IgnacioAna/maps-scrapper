@@ -12869,9 +12869,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (asg) {
         if (d.setterScope !== 'team' && typeof d.assignedTotal === 'number') {
           const sinc = typeof d.assignedSinContactar === 'number' ? d.assignedSinContactar : null;
-          asg.innerHTML = `<strong style="font-size:15px;">${d.assignedTotal.toLocaleString()}</strong> leads asignados en total` +
-            (sinc != null ? ` · <strong>${sinc.toLocaleString()}</strong> sin tocar todavía` : '') +
-            `<span class="muted" style="display:block; font-size:11px; margin-top:3px;">Los KPIs de abajo son del período seleccionado (lo trabajado), no el total.</span>`;
+          const total = d.assignedTotal;
+          const trabajados = sinc != null ? Math.max(0, total - sinc) : null;
+          const pctTrab = (sinc != null && total > 0) ? Math.round(trabajados / total * 100) : null;
+          asg.innerHTML = `
+            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+              <div>
+                <div style="font-size:26px; font-weight:700; color:var(--text-primary); line-height:1; letter-spacing:-0.5px; font-variant-numeric:tabular-nums;">${total.toLocaleString()}</div>
+                <div style="font-size:10px; color:var(--text-tertiary); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">leads asignados</div>
+              </div>
+              ${sinc != null ? `
+              <div style="flex:1; min-width:200px;">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
+                  <span style="color:var(--success); font-weight:600;">${trabajados.toLocaleString()} trabajados</span>
+                  <span style="color:var(--text-tertiary);">${sinc.toLocaleString()} sin tocar</span>
+                </div>
+                <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
+                  <div style="height:100%; width:${pctTrab}%; border-radius:999px; background:linear-gradient(90deg, rgba(74,222,128,0.55), var(--success)); transition:width 0.7s cubic-bezier(0.22,1,0.36,1);"></div>
+                </div>
+              </div>` : ''}
+            </div>
+            <div class="muted" style="font-size:11px; margin-top:11px;">Los KPIs de abajo son del período seleccionado (lo trabajado), no el total.</div>`;
           asg.style.display = 'block';
         } else {
           asg.style.display = 'none';
