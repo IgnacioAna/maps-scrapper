@@ -1,39 +1,6 @@
 {
   "setters": [
     {
-      "id": "setter_paula",
-      "name": "Paula",
-      "activeVariantId": "",
-      "createdAt": "2026-04-07T01:42:09.526Z",
-      "myPhones": [
-        {
-          "id": "sphone_1778723347163_jg9e",
-          "label": "ag",
-          "phone": "",
-          "createdAt": "2026-05-14T01:49:07.163Z"
-        },
-        {
-          "id": "sphone_1778724013391_6xr6",
-          "label": "1",
-          "phone": "",
-          "createdAt": "2026-05-14T02:00:13.391Z"
-        },
-        {
-          "id": "sphone_1778726880992_f0ml",
-          "label": "ig",
-          "phone": "",
-          "createdAt": "2026-05-14T02:48:00.992Z"
-        }
-      ]
-    },
-    {
-      "id": "setter_maximiliano_escalera",
-      "name": "Maximiliano Escalera",
-      "activeVariantId": "",
-      "createdAt": "2026-04-29T21:28:03.337Z",
-      "myPhones": []
-    },
-    {
       "id": "setter_ignacio",
       "name": "Ignacio",
       "createdAt": "2026-05-26T14:58:53.527Z",
@@ -47,10 +14,7 @@
       "weekLabel": "Semana 2",
       "active": true,
       "setterId": "",
-      "sharedWith": [
-        "setter_paula",
-        "setter_maximiliano_escalera"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -105,10 +69,7 @@
       "weekLabel": "Semana 2",
       "active": true,
       "setterId": "",
-      "sharedWith": [
-        "setter_maximiliano_escalera",
-        "setter_paula"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -162,10 +123,8 @@
       "name": "Var III",
       "weekLabel": "Semana 2",
       "active": true,
-      "setterId": "setter_maximiliano_escalera",
-      "sharedWith": [
-        "setter_paula"
-      ],
+      "setterId": "",
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -220,10 +179,7 @@
       "weekLabel": "Semana 2",
       "active": true,
       "setterId": "",
-      "sharedWith": [
-        "setter_paula",
-        "setter_maximiliano_escalera"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -277,10 +233,8 @@
       "name": "Var V — Hipótesis: el activo que nadie toca",
       "weekLabel": "Semana III",
       "active": true,
-      "setterId": "setter_maximiliano_escalera",
-      "sharedWith": [
-        "setter_paula"
-      ],
+      "setterId": "",
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -335,10 +289,7 @@
       "weekLabel": "",
       "active": true,
       "setterId": "",
-      "sharedWith": [
-        "setter_paula",
-        "setter_maximiliano_escalera"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -393,10 +344,7 @@
       "weekLabel": "",
       "active": true,
       "setterId": "",
-      "sharedWith": [
-        "setter_paula",
-        "setter_maximiliano_escalera"
-      ],
+      "sharedWith": [],
       "usedCount": 0,
       "blocks": [
         {
@@ -502365,14 +502313,10 @@
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-07-05T17:33:34.627Z",
       "enrichedAt": "2026-07-05T17:33:34.627Z",
-      "briefSkipped": {
-        "reason": "no_place_id",
-        "at": "2026-06-19T19:13:00.004Z"
-      },
       "adPlatforms": [],
-      "yearsActive": null,
+      "yearsActive": 2,
       "foundedYear": "",
-      "onGoogleSince": "",
+      "onGoogleSince": "2024-04-06T14:13:24Z",
       "ageCheckedAt": "2026-07-05T17:33:34.627Z",
       "lookupCarrier": "Entel Perú S.A.",
       "lookupAt": "2026-06-25T14:35:40.482Z",
@@ -502384,7 +502328,64 @@
       "metaAdsLastCreated": "",
       "metaAdsCheckedAt": "2026-07-05T17:33:34.627Z",
       "ownerAiCheckedAt": "2026-07-05T17:33:34.627Z",
-      "aiRole": ""
+      "aiRole": "",
+      "placeId": "ChIJhYEfU19KQpERGs682_oE7o8",
+      "leadBrief": {
+        "brief": "Spa Odontológico Internacional tiene una buena calificación y un equipo profesional destacado, pero enfrenta problemas en la atención al cliente y demoras. Ideal para un sistema que mejore la gestión de turnos y la atención al paciente.",
+        "hookPhrase": "varios pacientes mencionan que la atención en recepción no es la mejor y que hay demoras para nuevos pacientes",
+        "painPoints": [
+          {
+            "dolor": "pésima atención en recepción, muy poca paciencia con pacientes nuevos (un paciente: pésima atención en recepción)",
+            "cita": ""
+          },
+          {
+            "dolor": "demoras en la atención, especialmente para pacientes nuevos (un paciente: muy poca paciencia con pacientes nuevos)",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "profilaxis",
+          "extracciones",
+          "tratamientos de ortodoncia"
+        ],
+        "fitScore": 75,
+        "reviewsMined": 8,
+        "at": "2026-07-07T13:46:21.138Z"
+      },
+      "treatments": [
+        "profilaxis",
+        "extracciones",
+        "tratamientos de ortodoncia"
+      ],
+      "fitScore": 75,
+      "coordinates": {
+        "lat": -16.404111999999998,
+        "lng": -71.54294569999999
+      },
+      "openingHours": [
+        {
+          "tuesday": "8 AM–8 PM"
+        },
+        {
+          "wednesday": "8 AM–8 PM"
+        },
+        {
+          "thursday": "8 AM–8 PM"
+        },
+        {
+          "friday": "8 AM–8 PM"
+        },
+        {
+          "saturday": "8 AM–4 PM"
+        },
+        {
+          "sunday": "9 AM–2 PM"
+        },
+        {
+          "monday": "8 AM–8 PM"
+        }
+      ],
+      "dataId": "0x91424a5f531f8185:0x8fee04fadbbcce1a"
     },
     "l_centroodontologicoodontosonris_51987396851": {
       "num": 6157,
@@ -520295,14 +520296,10 @@
       "altPhoneLabel": "",
       "adsCheckedAt": "2026-07-05T17:34:06.341Z",
       "enrichedAt": "2026-07-05T17:34:06.341Z",
-      "briefSkipped": {
-        "reason": "no_place_id",
-        "at": "2026-06-19T19:13:00.005Z"
-      },
       "adPlatforms": [],
       "yearsActive": 10,
       "foundedYear": "2016",
-      "onGoogleSince": "",
+      "onGoogleSince": "2025-12-11T21:54:16Z",
       "ageCheckedAt": "2026-07-05T17:34:06.340Z",
       "lookupCarrier": "América Móvil Perú",
       "lookupAt": "2026-06-25T14:35:46.741Z",
@@ -520314,7 +520311,62 @@
       "metaAdsLastCreated": "",
       "metaAdsCheckedAt": "2026-07-05T17:34:06.341Z",
       "ownerAiCheckedAt": "2026-07-05T17:34:06.340Z",
-      "aiRole": ""
+      "aiRole": "",
+      "placeId": "ChIJz233FYpKQpERg7B6ZeEh6E8",
+      "leadBrief": {
+        "brief": "Clínica con excelente reputación y alta calificación; los pacientes destacan la calidad del servicio, pero hay quejas sobre precios y expectativas. Buen fit para un sistema que reactive pacientes y mejore la comunicación.",
+        "hookPhrase": "varios pacientes mencionan que el precio es elevado en comparación con otros y que esperaban más resultados",
+        "painPoints": [
+          {
+            "dolor": "resultado deficiente, por el precio elevado en comparación con otros, esperaba más",
+            "cita": ""
+          },
+          {
+            "dolor": "no pude escuchar bien y me asusté, pero gracias a Dios pude acercarme al doctor y recuperé mi audición casi por completo",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "rinoplastía",
+          "otorrinolaringología"
+        ],
+        "fitScore": 75,
+        "reviewsMined": 8,
+        "at": "2026-07-07T13:45:15.107Z"
+      },
+      "treatments": [
+        "rinoplastía",
+        "otorrinolaringología"
+      ],
+      "fitScore": 75,
+      "coordinates": {
+        "lat": -16.4275532,
+        "lng": -71.5328742
+      },
+      "openingHours": [
+        {
+          "tuesday": "10 AM–6 PM"
+        },
+        {
+          "wednesday": "10 AM–6 PM"
+        },
+        {
+          "thursday": "10 AM–6 PM"
+        },
+        {
+          "friday": "10 AM–6 PM"
+        },
+        {
+          "saturday": "10 AM–2:30 PM"
+        },
+        {
+          "sunday": "Closed"
+        },
+        {
+          "monday": "10 AM–6 PM"
+        }
+      ],
+      "dataId": "0x91424a8a15f76dcf:0x4fe821e1657ab083"
     },
     "l_clinicadrromero_51981533492": {
       "num": 6317,
@@ -562883,9 +562935,9 @@
       "adPlatforms": [
         "Meta"
       ],
-      "yearsActive": null,
+      "yearsActive": 1,
       "foundedYear": "",
-      "onGoogleSince": "",
+      "onGoogleSince": "2025-03-20T22:26:16Z",
       "ageCheckedAt": "2026-07-05T17:36:53.574Z",
       "lookupCarrier": "Xfera Moviles SA",
       "lookupAt": "2026-06-25T14:36:08.365Z",
@@ -562897,7 +562949,68 @@
       "metaAdsLastCreated": "",
       "metaAdsCheckedAt": "2026-07-05T17:36:53.574Z",
       "ownerAiCheckedAt": "2026-07-05T17:36:53.574Z",
-      "aiRole": "Estética Dental y Odontopediatría"
+      "aiRole": "Estética Dental y Odontopediatría",
+      "placeId": "ChIJfXtNnWQvQg0Re-hr1x9-jas",
+      "leadBrief": {
+        "brief": "Clínica dental con excelente reputación y un alto volumen de reseñas positivas; los pacientes destacan la atención personalizada y la gestión de turnos. Gran fit para un sistema que reactive su base de datos y optimice la atención.",
+        "hookPhrase": "varios pacientes mencionan que les costó conseguir una cita y que el trato les hizo perder el miedo al dentista",
+        "painPoints": [
+          {
+            "dolor": "no atienden el teléfono para sacar turno (un paciente: me costó mucho conseguir una cita)",
+            "cita": ""
+          },
+          {
+            "dolor": "miedo al dentista que desapareció gracias a su atención (un paciente: gracias a ellos ese miedo desaparece)",
+            "cita": ""
+          },
+          {
+            "dolor": "no me enteré del tratamiento (un paciente: ni me enteré cuando me sacaron una muela del juicio)",
+            "cita": ""
+          }
+        ],
+        "treatments": [
+          "implantes",
+          "estética dental",
+          "ortodoncia"
+        ],
+        "fitScore": 85,
+        "reviewsMined": 8,
+        "at": "2026-07-07T13:54:49.738Z"
+      },
+      "treatments": [
+        "implantes",
+        "estética dental",
+        "ortodoncia"
+      ],
+      "fitScore": 85,
+      "coordinates": {
+        "lat": 40.4322751,
+        "lng": -3.6575637
+      },
+      "openingHours": [
+        {
+          "tuesday": "10 AM–2 PM, 4–8 PM"
+        },
+        {
+          "wednesday": "10 AM–2 PM, 4–8 PM"
+        },
+        {
+          "thursday": "10 AM–2 PM, 4–8 PM"
+        },
+        {
+          "friday": "10 AM–2 PM, 4–8 PM"
+        },
+        {
+          "saturday": "Closed"
+        },
+        {
+          "sunday": "Closed"
+        },
+        {
+          "monday": "10 AM–2 PM, 4–8 PM"
+        }
+      ],
+      "dataId": "0xd422f649d4d7b7d:0xab8d7e1fd76be87b"
     },
     "l_luxemedicalcenter_34687261618": {
       "num": 6731,
@@ -586535,120 +586648,6 @@
       "setter": "setter_evelio",
       "startedAt": "2026-04-13T02:34:31.637Z",
       "endedAt": "2026-04-13T02:34:34.878Z"
-    },
-    {
-      "id": "s_1777488500762",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-29T18:48:20.762Z",
-      "endedAt": "2026-04-30T03:38:58.532Z",
-      "summary": {
-        "durationMin": 531,
-        "connections": 0,
-        "replies": 129,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 0,
-        "notesAdded": 26,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": null
-    },
-    {
-      "id": "s_1777559069037",
-      "setter": "setter_paula",
-      "startedAt": "2026-04-30T14:24:29.037Z",
-      "endedAt": "2026-05-02T22:37:48.739Z",
-      "summary": {
-        "durationMin": 3373,
-        "connections": 0,
-        "replies": 315,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 1,
-        "notesAdded": 12,
-        "sinWsp": 3,
-        "totalInteractions": 0
-      },
-      "aiSummary": null
-    },
-    {
-      "id": "s_1777761479653",
-      "setter": "setter_paula",
-      "startedAt": "2026-05-02T22:37:59.653Z",
-      "endedAt": "2026-05-02T22:38:01.708Z",
-      "summary": {
-        "durationMin": 1,
-        "connections": 0,
-        "replies": 0,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 0,
-        "notesAdded": 0,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": null
-    },
-    {
-      "id": "s_1777900896781",
-      "setter": "setter_paula",
-      "startedAt": "2026-05-04T13:21:36.781Z",
-      "endedAt": "2026-05-05T02:06:48.814Z",
-      "summary": {
-        "durationMin": 765,
-        "connections": 0,
-        "replies": 3,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 2,
-        "notesAdded": 2,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": "1) En la sesión de 12 h 45 min, Paula no envió nuevas conexiones, pero recibió 3 respuestas y logró agendar 2 reuniones, anotando 2 observaciones.  \n2) Positivo: supo convertir esas escasas respuestas en citas concret"
-    },
-    {
-      "id": "s_1778006263451",
-      "setter": "setter_paula",
-      "startedAt": "2026-05-05T18:37:43.451Z",
-      "endedAt": "2026-05-06T03:22:29.773Z",
-      "summary": {
-        "durationMin": 525,
-        "connections": 0,
-        "replies": 0,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 0,
-        "notesAdded": 0,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": null
-    },
-    {
-      "id": "s_1778086405555",
-      "setter": "setter_paula",
-      "startedAt": "2026-05-06T16:53:25.555Z",
-      "endedAt": "2026-05-09T22:21:55.952Z",
-      "summary": {
-        "durationMin": 4649,
-        "connections": 0,
-        "replies": 693,
-        "qualified": 0,
-        "interested": 0,
-        "scheduled": 8,
-        "notesAdded": 800,
-        "sinWsp": 0,
-        "totalInteractions": 0
-      },
-      "aiSummary": "1) En la sesión de 4 649 min, setter_paula no envió conexiones, pero recibió 693 respuestas y agendó 8 reuniones, añadiendo 800 notas.  \n2) Lo positivo: logró generar una buena cantidad"
-    },
-    {
-      "id": "s_1778365338120",
-      "setter": "setter_paula",
-      "startedAt": "2026-05-09T22:22:18.120Z",
-      "endedAt": null
     }
   ],
   "__wspClassified": true
