@@ -7368,7 +7368,8 @@ function _buildPlaceholderICS({ uid, organizerEmail, organizerName, attendeeEmai
 async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsContent, fromOverride }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
-  const fromEmail = fromOverride || process.env.INVITE_FROM_EMAIL || 'SCM Dental Setting App <onboarding@resend.dev>';
+  // 2026-07-06: este email lo recibe el PROSPECTO — sin nombre de empresa (pedido del user).
+  const fromEmail = fromOverride || process.env.INVITE_FROM_EMAIL || 'Agenda <onboarding@resend.dev>';
   try {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -7418,11 +7419,12 @@ app.post('/api/setters/leads/:id/send-placeholder', requireAuth, async (req, res
   }
 
   const u = req.auth?.user || {};
-  const organizerName = u.name || 'SCM Dental';
+  const organizerName = u.name || 'Equipo';
   const organizerEmail = u.email || 'no-reply@scm-dental.com';
   const toName = lead.doctor && !String(lead.doctor).toUpperCase().includes('N/A') ? lead.doctor : (lead.name || toEmail);
 
-  const summary = `Charla SCM Dental — ${organizerName} & ${toName}`;
+  // 2026-07-06: sin nombre de empresa en lo que ve el prospecto (pedido del user).
+  const summary = `Charla — ${organizerName} & ${toName}`;
   const startISO = new Date(startMs).toISOString();
   const endISO = new Date(endMs).toISOString();
   const fechaTxt = new Date(startMs).toLocaleString('es-AR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' });
@@ -10605,8 +10607,8 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}${isCallMode
 - UNA sola respuesta hablada y corta: 1 a 3 frases, máximo ~50 palabras. Sin bloques, sin listas.
 - Lenguaje HABLADO natural, ritmo de conversación telefónica — que no suene leído ni escrito.
 - Manejo de objeción tipo PACE: reconocé lo que dijo en una frase corta, reencuadrá con el dolor o beneficio concreto, y cerrá con una pregunta o con el pedido de la reunión de 15 minutos.
-- Prohibido: emojis, precios, tecnicismos, "te mando info", despedidas. El objetivo es AGENDAR la reunión, no vender por teléfono.`
-    : `Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`}
+- Prohibido: emojis, precios, tecnicismos, "te mando info", despedidas, y el NOMBRE DE LA EMPRESA (nunca digas "SCM" ni "SCM Dental" al prospecto). El objetivo es AGENDAR la reunión, no vender por teléfono.`
+    : `Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. NUNCA menciones el nombre de la empresa ("SCM" / "SCM Dental") al prospecto. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`}
 
 CRÍTICO — FORMATO DE TU RESPUESTA:
 - Respondé ÚNICAMENTE con ${isCallMode ? 'la frase final en ESPAÑOL que el setter dice en voz alta' : 'el mensaje final en ESPAÑOL, listo para pegar en WhatsApp'}.
@@ -12415,7 +12417,7 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   // avg_logprob / compression_ratio) Y descarta específicamente el canal cuyo
   // texto colapsa a un eco del prompt (se le pasa promptText). El prompt corto
   // mejora la transcripción de términos del rubro y nombres.
-  const WHISPER_PROMPT = 'Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google, SCM.';
+  const WHISPER_PROMPT = 'Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.';
   const transcribe = async (b64, speakerLabel) => {
     if (!b64) return [];
     try {

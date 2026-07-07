@@ -40,6 +40,7 @@ Estas cosas las maneja el closer en la llamada, no el setter en WhatsApp. Si las
 - **Detalles tecnicos del stack** (GHL, n8n, WhatsApp API, AI agents, OpenAI, etc.). Nunca.
 - **Procesos internos** (que tenemos setters, que tenemos closer aparte, que somos un equipo, que estamos en LATAM). Nunca.
 - **Nombre de clientes activos** ni datos identificables.
+- **El nombre de la empresa (SCM Dental)**. Nunca lo digas al prospecto — ni en mensajes ni en frases para la llamada. Presentate por el nombre del setter y "trabajo con clinicas dentales" si hace falta contexto.
 - **Bonus de Google Reviews** — eso lo decide el closer en la llamada segun como vaya.
 - **Tiempos de implementacion concretos** (20 dias, 3 meses, etc.). Nunca.
 

@@ -32,7 +32,7 @@
       "id": "gatekeeper_pasame_con_decisor",
       "label": "🚪 Con nombre · pedir al decisor",
       "trigger": "gatekeeper",
-      "text": "Tono familiar, como si ya lo conocieras:\n\n\"Hola, qué tal... me pasa con {name} por favor?\"\n\nSi pregunta de parte de quién:\n\"De {setterName}, de SCM Dental. Él ya sabe.\"\n\nSi dice que no está:\n\"A qué hora lo puedo encontrar? Lo vuelvo a llamar.\"\n\n▶ NO dejes mensaje. NO expliques nada. Volvé a llamar.",
+      "text": "Tono familiar, como si ya lo conocieras:\n\n\"Hola, qué tal... me pasa con {name} por favor?\"\n\nSi pregunta de parte de quién:\n\"De {setterName}. Él ya sabe.\"\n\nSi dice que no está:\n\"A qué hora lo puedo encontrar? Lo vuelvo a llamar.\"\n\n▶ NO dejes mensaje. NO expliques nada. Volvé a llamar.",
       "tags": ["recepcion", "con-nombre"]
     },
     {
@@ -53,7 +53,7 @@
       "id": "gatekeeper_ruta_b_mensaje_curiosidad",
       "label": "🚪 Ruta B · mensaje con curiosidad",
       "trigger": "gatekeeper",
-      "text": "Si no te pasa, segunda ruta — dejar mensaje pero con anzuelo:\n\n\"Entiendo, no hay problema. Le puede decir que llamó {setterName} de SCM Dental, que trabajamos con clínicas dentales y detecté una oportunidad en su base de pacientes que le podría interesar? Que me devuelva la llamada a este número cuando pueda.\"\n\n▶ \"Detecté una oportunidad en su base de pacientes\" genera curiosidad. NO suena a venta genérica.",
+      "text": "Si no te pasa, segunda ruta — dejar mensaje pero con anzuelo:\n\n\"Entiendo, no hay problema. Le puede decir que llamó {setterName}, que trabajo con clínicas dentales y detecté una oportunidad en su base de pacientes que le podría interesar? Que me devuelva la llamada a este número cuando pueda.\"\n\n▶ \"Detecté una oportunidad en su base de pacientes\" genera curiosidad. NO suena a venta genérica.",
       "tags": ["recepcion", "ruta-b", "mensaje"]
     },
     {
@@ -67,7 +67,7 @@
       "id": "opener_decisor",
       "label": "🎯 Apertura con decisor",
       "trigger": "opener",
-      "text": "Pausa corta entre nombre y nombre. Como si ya te conociera. Shuffleá papeles.\n\n\"Hola... Doctor {name}?\"\n\n\"Sí, qué tal, soy {setterName}... {setterName} de SCM Dental. Estuve revisando la presencia online de la clínica y quería comentarle algo. Le tomo 27 segundos, si no le hace sentido no lo molesto más.\"\n\n▶ \"27 segundos\" rompe el patrón. Nadie dice 27.\n▶ \"Si no le hace sentido no lo molesto más\" = darle la salida. Baja la guardia.",
+      "text": "Pausa corta entre nombre y nombre. Como si ya te conociera. Shuffleá papeles.\n\n\"Hola... Doctor {name}?\"\n\n\"Sí, qué tal, soy {setterName}... {setterName}. Estuve revisando la presencia online de la clínica y quería comentarle algo. Le tomo 27 segundos, si no le hace sentido no lo molesto más.\"\n\n▶ \"27 segundos\" rompe el patrón. Nadie dice 27.\n▶ \"Si no le hace sentido no lo molesto más\" = darle la salida. Baja la guardia.",
       "tags": ["apertura", "decisor"]
     },
     {
@@ -200,7 +200,7 @@
       "id": "email_confirm_agendada",
       "label": "📧 Email · confirmación de reunión",
       "trigger": "email_template",
-      "text": "Asunto: Reunión confirmada · SCM Dental + {name}\n\nDoctor {name},\n\nLe confirmo la reunión del {date} a las {time} con Ignacio de SCM Dental.\n\nLe envío el enlace de la videollamada:\n[LINK]\n\nCualquier cambio me avisa.\n\nSaludos,\n{setterName}\nSCM Dental",
+      "text": "Asunto: Reunión confirmada · Doctor {name}\n\nDoctor {name},\n\nLe confirmo la reunión del {date} a las {time} con Ignacio.\n\nLe envío el enlace de la videollamada:\n[LINK]\n\nCualquier cambio me avisa.\n\nSaludos,\n{setterName}",
       "tags": ["email", "confirm"]
     },
     {
