@@ -358,7 +358,7 @@
                 <input type="checkbox" id="auto-enrich-toggle" checked> Auto IA
               </label>
               <button id="enrich-btn" class="btn-table-action" disabled data-roles="admin">Escanear Redes y Sitios Web (IA)</button>
-              <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">Enviar a Setters</button>
+              <button id="send-to-setters" class="btn-table-action" disabled style="color:#a8c7fa;" data-roles="admin">Enviar a SDRs</button>
               <button id="download-csv" class="btn-table-action" disabled data-roles="admin">Exportar Base (CSV)</button>
             </div>
           </div>
@@ -481,10 +481,10 @@
         </div>
 
         <div class="content-header">
-          <h2>Centro de Setters</h2>
+          <h2>Centro de SDRs</h2>
           <div class="header-actions">
             <select id="setter-select" class="setter-select">
-              <option value="">Todos los setters</option>
+              <option value="">Todos los SDRs</option>
             </select>
             <select id="variable-select" class="setter-select">
               <option value="">Todas las variables</option>
@@ -549,7 +549,7 @@
           <button class="pipe-filter" data-status="calificado">Calificados</button>
           <button class="pipe-filter" data-status="interesado">Interesados</button>
           <button class="pipe-filter" data-status="agendado">Agendados</button>
-          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que el setter programó y vencen hoy o vencieron ayer">Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
+          <button class="pipe-filter pipe-filter-urgent" data-status="hacer_hoy" title="Follow-ups que el SDR programó y vencen hoy o vencieron ayer">Hacer hoy <span id="filter-badge-hacer-hoy" class="filter-badge" style="display:none;">0</span></button>
           <button class="pipe-filter pipe-filter-overdue" data-status="atrasados" title="Follow-ups programados vencidos hace más de 1 día">Atrasados <span id="filter-badge-atrasados" class="filter-badge" style="display:none;">0</span></button>
         </div>
 
@@ -622,7 +622,7 @@
                   <td colspan="19" class="empty-state">
                     <div class="empty-state-content">
                       <h3>Sin leads en el pipeline</h3>
-                      <p>Importá leads desde Google Maps con "Enviar a Setters".</p>
+                      <p>Importá leads desde Google Maps con "Enviar a SDRs".</p>
                     </div>
                   </td>
                 </tr>
@@ -758,7 +758,7 @@
                 <input type="text" id="new-var-name" placeholder="Nombre (ej: V1)" class="setter-input">
                 <input type="text" id="new-var-week" placeholder="Semana (ej: Semana 1)" class="setter-input">
                 <select id="new-var-setter" class="setter-input" style="grid-column:1/-1;">
-                  <option value="">Asignar a setter</option>
+                  <option value="">Asignar a SDR</option>
                 </select>
               </div>
               <div id="variant-block-editor"></div>
@@ -915,7 +915,7 @@
         <!-- Sub-header: filtros -->
         <section class="calls-filters-bar">
           <div class="calls-filters-left">
-            <select id="calls-setter-select" class="calls-filter-select" data-roles="admin"><option value="">Todos los setters</option></select>
+            <select id="calls-setter-select" class="calls-filter-select" data-roles="admin"><option value="">Todos los SDRs</option></select>
             <select id="calls-country-filter" class="calls-filter-select" style="min-width:160px;"><option value="">Todos los países</option></select>
             <select id="calls-sort-select" class="calls-filter-select" style="min-width:180px;" title="Orden de la lista">
               <option value="score" selected>Prioridad (mejor a llamar)</option>
@@ -1009,7 +1009,7 @@
                 <div id="calls-quota-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--success) 0%, #3a8e4e 100%); border-radius:4px; transition:width 0.4s, background 0.3s;"></div>
               </div>
             </div>
-            <button id="calls-quota-edit" data-roles="admin" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); padding:6px 11px; border-radius:7px; font-size:11px; cursor:pointer;" title="Cambiar meta diaria del setter">Editar</button>
+            <button id="calls-quota-edit" data-roles="admin" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); padding:6px 11px; border-radius:7px; font-size:11px; cursor:pointer;" title="Cambiar meta diaria del SDR">Editar</button>
           </div>
         </section>
 
@@ -1065,7 +1065,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <select id="calls-bulk-assign-setter" style="padding:6px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:140px;">
-                <option value="">Asignar a setter…</option>
+                <option value="">Asignar a SDR…</option>
               </select>
               <button data-bulk-action="assign" class="call-action-btn">Asignar</button>
               <button data-bulk-action="move_to_setteo" class="call-action-btn">A Setteo</button>
@@ -1463,7 +1463,7 @@
             <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
             <input type="datetime-local" id="call-cb-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
             <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-top:14px; cursor:pointer;">
-              <input type="checkbox" id="call-cb-shared"> Callback compartido <span style="color:var(--text-tertiary); font-size:11px;">(cualquier setter lo puede tomar)</span>
+              <input type="checkbox" id="call-cb-shared"> Callback compartido <span style="color:var(--text-tertiary); font-size:11px;">(cualquier SDR lo puede tomar)</span>
             </label>
             <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
               <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-callback-modal').classList.add('hidden')">Cancelar</button>
@@ -1597,7 +1597,7 @@
           </div>
         </div>
         <section style="padding:0 32px 14px;">
-          <p style="color:var(--text-secondary); font-size:13px; margin:0 0 18px; max-width:680px; line-height:1.55;">Análisis de objeciones taggeadas cuando un lead dice "No interesado" (Sprint 25). Sirve para identificar qué objeciones son más comunes por país, por setter, y refinar el guion de cold calling.</p>
+          <p style="color:var(--text-secondary); font-size:13px; margin:0 0 18px; max-width:680px; line-height:1.55;">Análisis de objeciones taggeadas cuando un lead dice "No interesado" (Sprint 25). Sirve para identificar qué objeciones son más comunes por país, por SDR, y refinar el guion de cold calling.</p>
 
           <div id="obj-summary" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:22px;"></div>
 
@@ -1611,7 +1611,7 @@
               <div id="obj-by-country"></div>
             </div>
             <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
-              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Por setter</h3>
+              <h3 style="font-size:13px; font-weight:700; margin:0 0 14px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary);">Por SDR</h3>
               <div id="obj-by-setter"></div>
             </div>
             <div class="card" style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:16px;">
@@ -1650,7 +1650,7 @@
             <button class="btn-primary pill-btn" onclick="window.loadScheduledCalls && loadScheduledCalls()">↻ Refrescar</button>
           </div>
         </div>
-        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Cola de llamadas de ventas agendadas por los setters. Marcá cada una al cerrar para mantener métricas reales.</p>
+        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Cola de llamadas de ventas agendadas por los SDRs. Marcá cada una al cerrar para mantener métricas reales.</p>
         <div id="scheduled-calls-list" style="padding:0 32px 32px; display:flex; flex-direction:column; gap:10px;"></div>
       </div>
 
@@ -1692,7 +1692,7 @@
             <button class="btn-primary pill-btn" data-roles="admin" onclick="window._trainingOpenModal()">+ Subir material</button>
           </div>
         </div>
-        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Material de referencia para setters. PDFs, docs, videos, guiones. El contenido descriptivo/texto se usa como base de verdad por la IA del Banco de Respuestas.</p>
+        <p style="padding:0 32px; color:var(--text-secondary); font-size:13px; margin:8px 0 16px;">Material de referencia para SDRs. PDFs, docs, videos, guiones. El contenido descriptivo/texto se usa como base de verdad por la IA del Banco de Respuestas.</p>
 
         <!-- Onboarding oficial (hardcoded) -->
         <div style="padding:0 32px;">
@@ -1778,15 +1778,15 @@
       <div id="view-pool" class="module-view hidden" data-roles="admin,supervisor">
         <div class="content-header">
           <h2>Distribución de leads</h2>
-          <span class="calls-header-subtitle">Todos los leads del sistema — repartilos a cada setter</span>
+          <span class="calls-header-subtitle">Todos los leads del sistema — repartilos a cada SDR</span>
         </div>
         <div style="padding:0 32px 40px;">
           <div id="pool-summary" style="margin-bottom:22px;">
             <p class="muted" style="padding:20px 0;">Cargando pool…</p>
           </div>
           <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:14px; padding:20px 22px; max-width:820px;">
-            <h3 style="margin:0 0 4px; font-size:15px;">Repartir leads a un setter</h3>
-            <p class="muted" style="margin:0 0 16px; font-size:12.5px;">Reparte en orden de prioridad (interesados primero). El lead llega <strong>limpio</strong> al setter (se resetea para re-contacto), conservando el historial de llamadas. Backup automático.</p>
+            <h3 style="margin:0 0 4px; font-size:15px;">Repartir leads a un SDR</h3>
+            <p class="muted" style="margin:0 0 16px; font-size:12.5px;">Reparte en orden de prioridad (interesados primero). El lead llega <strong>limpio</strong> al SDR (se resetea para re-contacto), conservando el historial de llamadas. Backup automático.</p>
             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px;">
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Origen</span>
@@ -1804,7 +1804,7 @@
               </label>
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Destino *</span>
-                <select id="pool-to" class="calls-filter-select"><option value="">Elegí setter…</option></select>
+                <select id="pool-to" class="calls-filter-select"><option value="">Elegí SDR…</option></select>
               </label>
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">País (opcional)</span>
@@ -1836,10 +1836,10 @@
             <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
           </div>
           <div class="admin-users-form" data-roles="admin" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;">
-            <input id="invite-name" type="text" placeholder="Nombre del setter" class="setter-input" style="min-width:180px;">
-            <input id="invite-email" type="email" placeholder="Email del setter" class="setter-input" style="min-width:220px;">
+            <input id="invite-name" type="text" placeholder="Nombre del SDR" class="setter-input" style="min-width:180px;">
+            <input id="invite-email" type="email" placeholder="Email del SDR" class="setter-input" style="min-width:220px;">
             <select id="invite-role" class="setter-input" style="min-width:120px;">
-              <option value="setter">Setter</option>
+              <option value="setter">SDR</option>
               <option value="supervisor">Supervisor</option>
               <option value="admin">Admin</option>
             </select>
@@ -1888,7 +1888,7 @@
             <table style="width:100%; border-collapse:collapse; font-size:13px;" id="cmd-calls-per-setter-table">
               <thead>
                 <tr style="text-align:left; border-bottom:1px solid var(--border-subtle); color:var(--text-tertiary); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
-                  <th style="padding:8px 10px;">Setter</th>
+                  <th style="padding:8px 10px;">SDR</th>
                   <th style="padding:8px 10px;">Leads en Llamadas</th>
                   <th style="padding:8px 10px;">Total llamadas</th>
                   <th style="padding:8px 10px;">Hoy</th>
@@ -1904,12 +1904,12 @@
 
         <div style="padding:4px 32px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px;">
           <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
-          <button id="cmd-dedup-btn" data-roles="admin" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de Setters</button>
+          <button id="cmd-dedup-btn" data-roles="admin" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de SDRs</button>
           <label class="btn-table-action" data-roles="admin" style="color:#a8c7fa; cursor:pointer;">
-            Importar CSV a Setter
+            Importar CSV a SDR
             <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
           </label>
-          <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de Setter</button>
+          <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de SDR</button>
           <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
           <button id="cmd-cleanup-emails-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Borra emails basura guardados por el scraper viejo (tracking tipo sentry/wixpress, placeholders, assets). Primero muestra cuántos encontró y pide confirmación. Idempotente + backup.">Limpiar emails basura</button>
           <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
@@ -2040,7 +2040,7 @@
             </select>
           </div>
           <div id="myp-setter-wrap" style="display:none;">
-            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Setter</label>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">SDR</label>
             <select id="myp-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
               <option value="">Equipo completo</option>
             </select>
@@ -2455,7 +2455,7 @@
       <div id="view-scrape-history" class="module-view hidden" data-roles="admin">
         <header class="page-header">
           <h2 class="page-title">Historial de scrapes</h2>
-          <p class="muted" style="margin-top:6px;">Cada scrape se guarda completo (con phones, webs, etc.). Si te olvidaste de enviar a un setter, podés re-importar acá sin gastar créditos de SerpAPI.</p>
+          <p class="muted" style="margin-top:6px;">Cada scrape se guarda completo (con phones, webs, etc.). Si te olvidaste de enviar a un SDR, podés re-importar acá sin gastar créditos de SerpAPI.</p>
         </header>
 
         <section style="margin-top:18px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -2500,14 +2500,14 @@
               <div>
                 <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Asignar a</label>
                 <select id="sh-modal-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
-                  <option value="">— Elegir setter —</option>
+                  <option value="">— Elegir SDR —</option>
                 </select>
               </div>
               <label style="display:flex; gap:6px; align-items:center; font-size:12px; color:var(--text-secondary);">
                 <input id="sh-modal-onlynew" type="checkbox" checked>
                 Solo enviar los nuevos (no ya scrapeados antes)
               </label>
-              <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a setter</button>
+              <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a SDR</button>
               <button id="sh-modal-download" class="btn-secondary" style="font-size:12px; padding:8px 16px; color:#5bb974;" title="Enriquece los emails de este batch (baja la web de cada clínica) y descarga el listado prolijo en CSV + Excel: Nombre, Email, Teléfono (con +), Dirección, Ciudad, País, Web, Instagram, Facebook, Rating, Reseñas. Sin link de WhatsApp.">Descargar (CSV + Excel)</button>
               <span id="sh-modal-download-progress" style="font-size:11px; color:var(--text-secondary);"></span>
               <button id="sh-modal-delete" class="btn-secondary" style="font-size:12px; padding:8px 14px; color:#f85149; margin-left:auto;">Borrar batch</button>
@@ -2535,7 +2535,7 @@
       <div id="view-team" class="module-view hidden" data-roles="admin,supervisor">
         <header class="page-header">
           <h2 class="page-title">Equipo</h2>
-          <p class="muted" style="margin-top:6px;">Tabla comparativa del equipo con alertas automáticas y drilldown por setter.</p>
+          <p class="muted" style="margin-top:6px;">Tabla comparativa del equipo con alertas automáticas y drilldown por SDR.</p>
         </header>
 
         <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
@@ -2563,8 +2563,8 @@
           <table id="team-table" style="width:100%; border-collapse:collapse; font-size:13px;">
             <thead>
               <tr style="text-align:left; border-bottom:2px solid var(--accent); background:rgba(157,133,242,0.04);">
-                <th data-sort="name" style="padding:13px 10px; cursor:pointer; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Setter</th>
-                <th data-sort="dials" title="Llamadas logueadas por el setter en el período (cualquier resultado)" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Llamadas</th>
+                <th data-sort="name" style="padding:13px 10px; cursor:pointer; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">SDR</th>
+                <th data-sort="dials" title="Llamadas logueadas por el SDR en el período (cualquier resultado)" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Llamadas</th>
                 <th data-sort="connects" title="Atendieron (el lead levantó el teléfono)" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Atendidas</th>
                 <th data-sort="connectRate" title="Atendidas / Llamadas (tasa de atención)" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">% Atención</th>
                 <th data-sort="conversations" title="Atendió y duró ≥30s o terminó en agendamiento (conversación real)" style="padding:13px 10px; cursor:pointer; text-align:right; font-size:11px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-secondary); user-select:none;">Conversaciones</th>
@@ -2580,7 +2580,7 @@
           </table>
         </section>
 
-        <div id="team-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">No hay setters con actividad en el período.</div>
+        <div id="team-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">No hay SDRs con actividad en el período.</div>
 
         <!-- Modal config umbrales (admin only) -->
         <div id="team-config-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
@@ -2621,7 +2621,7 @@
 
         <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
           <div>
-            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Setter</label>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">SDR</label>
             <select id="mr-filter-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
               <option value="">Todos</option>
             </select>
@@ -2638,7 +2638,7 @@
             </select>
           </div>
           <div>
-            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Acción del setter</label>
+            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Acción del SDR</label>
             <select id="mr-filter-setteraction" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
               <option value="">Todas</option>
               <option value="good">Buena</option>
@@ -2659,7 +2659,7 @@
             <div style="padding:18px 24px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%); display:flex; gap:12px; align-items:flex-start;">
               <div id="mr-detail-avatar" style="width:38px; height:38px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:15px;">?</div>
               <div style="flex:1; min-width:0;">
-                <h3 id="mr-detail-title" style="margin:0; font-size:16px; font-weight:700; letter-spacing:-0.2px;">Setter</h3>
+                <h3 id="mr-detail-title" style="margin:0; font-size:16px; font-weight:700; letter-spacing:-0.2px;">SDR</h3>
                 <div id="mr-detail-meta" class="muted" style="font-size:11px; margin-top:3px;">—</div>
               </div>
               <button id="mr-detail-close" class="btn-secondary" style="font-size:13px; padding:6px 12px; border-radius:8px;">✕</button>
@@ -2782,7 +2782,7 @@
                   <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(255,179,65,0.15); border-radius:7px;">📝</span>
                   Guiones de llamada
                 </strong>
-                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El setter los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{setterName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El SDR los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{SDRName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
                 <button id="tlx-script-reset-seed-btn" class="btn-secondary" style="font-size:12.5px; padding:9px 14px;" title="Recarga los guiones desde scripts/seed/call-scripts.json (versión oficial SCM Cold Call v2). Reemplaza TODOS los guiones actuales — guarda backup automático.">Recargar oficial v2</button>
@@ -2890,10 +2890,10 @@
             </div>
             <div id="tlx-metrics-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-bottom:18px;"></div>
             <details>
-              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por setter / por país / por tarifa</summary>
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por SDR / por país / por tarifa</summary>
               <div style="margin-top:12px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
                 <div>
-                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por setter</div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por SDR</div>
                   <ul id="tlx-metrics-setters" style="list-style:none; padding:0; margin:0; font-size:11px; display:flex; flex-direction:column; gap:4px;"></ul>
                 </div>
                 <div>
@@ -2995,10 +2995,10 @@
             <div id="mercury-metrics-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:14px;"></div>
             <div id="mercury-drift-banner" style="display:none; margin-bottom:14px; padding:12px 14px; border-radius:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.4); color:#f85149; font-size:12px; line-height:1.5;"></div>
             <details>
-              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por setter / por intención / por tono</summary>
+              <summary style="cursor:pointer; font-size:12px; color:var(--text-secondary); padding:6px 0;">Por SDR / por intención / por tono</summary>
               <div style="margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:14px;">
                 <div>
-                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por setter</div>
+                  <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Por SDR</div>
                   <ul id="mercury-metrics-setters" style="list-style:none; padding:0; margin:0; font-size:12px; display:flex; flex-direction:column; gap:4px;"></ul>
                 </div>
                 <div>
@@ -3116,7 +3116,7 @@
     <div style="width:min(640px, 96vw); background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; overflow:hidden; box-shadow:0 24px 70px rgba(0,0,0,0.7);">
       <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:10px; background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent); flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="cmdk-input" type="text" placeholder="Buscar leads, setters, acciones… (Esc para cerrar)" autocomplete="off" spellcheck="false" style="flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text-primary); font-family:inherit;">
+        <input id="cmdk-input" type="text" placeholder="Buscar leads, SDRs, acciones… (Esc para cerrar)" autocomplete="off" spellcheck="false" style="flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text-primary); font-family:inherit;">
         <kbd style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); border-radius:4px; color:var(--text-secondary); font-family:ui-monospace,monospace;">Esc</kbd>
       </div>
       <ul id="cmdk-results" style="list-style:none; padding:6px; margin:0; max-height:400px; overflow-y:auto;"></ul>
@@ -3148,18 +3148,18 @@
     <div class="card" style="width:min(560px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
       <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
         <h3 style="margin:0; font-size:18px; font-weight:700;">Reasignar leads en bulk</h3>
-        <p style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Mover leads de un setter a otro. Útil para redistribuir trabajo cuando un setter no puede continuar.</p>
+        <p style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Mover leads de un SDR a otro. Útil para redistribuir trabajo cuando un SDR no puede continuar.</p>
       </div>
       <div style="padding:18px 24px; display:flex; flex-direction:column; gap:14px;">
         <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
-          <span class="muted">Setter origen (de quién sacar leads)</span>
+          <span class="muted">SDR origen (de quién sacar leads)</span>
           <select id="reassign-from" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
             <option value="">— Elegir —</option>
           </select>
           <span id="reassign-from-info" class="muted" style="font-size:11px;"></span>
         </label>
         <label style="display:flex; flex-direction:column; gap:5px; font-size:12px;">
-          <span class="muted">Setter destino (a quién pasarle)</span>
+          <span class="muted">SDR destino (a quién pasarle)</span>
           <select id="reassign-to" style="padding:10px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
             <option value="">— Elegir —</option>
           </select>
@@ -3182,7 +3182,7 @@
         <!-- Política fija: solo se mueven leads sin trabajar -->
         <div style="padding:11px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.30); border-radius:10px; font-size:12px; line-height:1.55; color:var(--text-secondary);">
           <strong style="color:#5bb974;">Solo se mueven leads sin trabajar.</strong>
-          Por política, la reasignación únicamente toma leads que nunca fueron contactados (sin conexión, sin lastContactAt, sin interacciones). Los que algún setter ya trabajó NO se mueven — evita que el setter destino herede conversaciones ajenas.
+          Por política, la reasignación únicamente toma leads que nunca fueron contactados (sin conexión, sin lastContactAt, sin interacciones). Los que algún SDR ya trabajó NO se mueven — evita que el SDR destino herede conversaciones ajenas.
         </div>
         <input id="reassign-untouched" type="checkbox" checked style="display:none;">
         <details style="font-size:12px;">
@@ -3253,11 +3253,11 @@
   <div id="setter-picker-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(520px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
       <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
-        <h3 id="setter-picker-title" style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px;">Elegir setter</h3>
-        <p id="setter-picker-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">A qué setter querés asignar estos leads?</p>
+        <h3 id="setter-picker-title" style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px;">Elegir SDR</h3>
+        <p id="setter-picker-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">A qué SDR querés asignar estos leads?</p>
       </div>
       <div style="padding:18px 24px;">
-        <input id="setter-picker-search" type="text" placeholder="Buscar setter…" autocomplete="off" style="width:100%; padding:11px 14px; font-size:13px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); margin-bottom:12px; box-sizing:border-box;">
+        <input id="setter-picker-search" type="text" placeholder="Buscar SDR…" autocomplete="off" style="width:100%; padding:11px 14px; font-size:13px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); margin-bottom:12px; box-sizing:border-box;">
         <div id="setter-picker-list" style="max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; padding-right:4px;"></div>
       </div>
       <div style="padding:14px 24px 20px; display:flex; gap:8px; justify-content:flex-end; background:rgba(0,0,0,0.15);">
@@ -3271,8 +3271,8 @@
   <div id="setter-distribute-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:2001; align-items:center; justify-content:center; padding:20px;">
     <div class="card" style="width:min(640px, 96vw); padding:0; border-radius:18px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.6);">
       <div style="padding:22px 24px 18px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, rgba(157,133,242,0.06) 0%, transparent 100%);">
-        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px;">Enviar a Setters</h3>
-        <p id="setter-distribute-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Asigná cuántos leads va a recibir cada setter.</p>
+        <h3 style="margin:0; font-size:18px; font-weight:700; color:var(--text-primary); letter-spacing:-0.3px;">Enviar a SDRs</h3>
+        <p id="setter-distribute-subtitle" style="margin:6px 0 0; font-size:13px; color:var(--text-secondary); line-height:1.5;">Asigná cuántos leads va a recibir cada SDR.</p>
       </div>
       <div style="padding:18px 24px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
@@ -3316,7 +3316,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260707m"></script>
+  <script type="module" src="/app.js?v=20260707n"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

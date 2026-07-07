@@ -231,7 +231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Cuando hay invite: ocultamos el formulario de login (causa de mucha confusion)
         // y validamos el token contra el server. Si invalido -> panel de error con
         // boton para volver al login normal. Si valido -> panel de invite con nombre/email
-        // visible para que el setter NO se confunda.
+        // visible para que el SDR NO se confunda.
         authForm.classList.add('hidden');
         inviteTokenInput.value = inviteToken;
         try {
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'No se pudo activar la invitación.');
           // El server ya seteo la cookie de sesion. Redirect limpio (sin ?invite=)
-          // para que el frontend cargue el dashboard normal del setter.
+          // para que el frontend cargue el dashboard normal del SDR.
           authMessage.className = 'auth-message success';
           authMessage.textContent = '¡Listo! Entrando al sistema...';
           window.location.href = window.location.pathname;
@@ -327,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Heartbeat de presencia: mientras la pestaña esté visible y autenticada,
     // pingear /api/auth/me cada 60s para que attachAuth actualice lastSeen.
-    // Antes los setters mostraban 'hace 3 días' aunque tenían la pestaña abierta
+    // Antes los SDRs mostraban 'hace 3 días' aunque tenían la pestaña abierta
     // porque sin acción del usuario no había request al server. Ahora siempre
     // sabe quién está realmente activo.
     if (!window.__presence_heartbeat) {
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const viewAsLabel = document.getElementById('view-as-label');
       const viewAsExit = document.getElementById('view-as-exit');
 
-      // Poblar setters disponibles (uno por setter)
+      // Poblar setters disponibles (uno por SDR)
       try {
         const r = await fetch(apiUrl('/api/setters'));
         if (r.ok) {
@@ -402,7 +402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           (sd.setters || []).forEach(s => {
             const opt = document.createElement('option');
             opt.value = 'setter:' + s.id;
-            opt.textContent = 'Setter · ' + s.name;
+            opt.textContent = 'SDR · ' + s.name;
             viewAsSelect.appendChild(opt);
           });
         }
@@ -419,7 +419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           viewAsBanner.classList.remove('hidden');
           if (_vaState.role === 'setter') {
             const opt = viewAsSelect.options[viewAsSelect.selectedIndex];
-            viewAsLabel.textContent = opt ? opt.textContent : 'Setter';
+            viewAsLabel.textContent = opt ? opt.textContent : 'SDR';
           } else {
             viewAsLabel.textContent = _vaState.role.charAt(0).toUpperCase() + _vaState.role.slice(1);
           }
@@ -977,8 +977,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         return url;
     };
 
-    // 2026-05-24: TODOS los setters acceden a TODAS las variantes (pedido del user).
-    // Antes filtraba por setterId — cada setter solo veia las suyas o globales.
+    // 2026-05-24: TODOS los SDRs acceden a TODAS las variantes (pedido del user).
+    // Antes filtraba por setterId — cada SDR solo veia las suyas o globales.
     // Ahora todas son visibles. El campo `setterId` queda como info de ownership
     // pero ya no restringe visibilidad.
     const getVisibleVariables = () => {
@@ -1177,7 +1177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (stage === 'apertura' && lead?.whatsappUrl && lead.whatsappUrl.includes('wa.me/')) {
         // BUGFIX: muchos leads viejos tenian whatsappUrl SIN ?text= (solo wa.me/NUMERO)
         // y openMessage por separado, pero nunca se mergearon. Si falta el text y
-        // hay openMessage, lo agregamos al vuelo asi el setter abre WSP con el
+        // hay openMessage, lo agregamos al vuelo asi el SDR abre WSP con el
         // mensaje pre-cargado.
         if (lead.whatsappUrl.includes('?text=') || lead.whatsappUrl.includes('&text=')) {
           return lead.whatsappUrl;
@@ -1446,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Guardar el batchId para poder marcarlo como sentToSetter cuando
-        // se haga "Enviar a Setters". Asi el panel Historial deja de
+        // se haga "Enviar a SDRs". Asi el panel Historial deja de
         // decir "NO ENVIADO" cuando en realidad se envio.
         window._lastScrapeBatchId = data.batchId || null;
 
@@ -1956,9 +1956,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeSession = null;
     let sessionTimerInterval = null;
     let setterLeads = [];
-    // Cache de los "mis números" del setter actual (lista propia que él
+    // Cache de los "mis números" del SDR actual (lista propia que él
     // mantiene). Setters ven solo los suyos. Admin: vacío hasta que
-    // seleccione un setter específico (en este caso no aplica el dropdown).
+    // seleccione un SDR específico (en este caso no aplica el dropdown).
     let _myPhones = [];
     async function _loadMyPhones() {
       const setterId = currentUser?.setterId;
@@ -1977,7 +1977,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Phase 6: Telnyx Calls module ──────────────────────────────────
     // Manejo de llamadas WebRTC desde el browser. API key del lado server,
     // browser solo recibe ephemeral creds. Lazy init: client se crea solo
-    // cuando el setter inicia la primera llamada.
+    // cuando el SDR inicia la primera llamada.
     const _telnyx = {
       configured: false,
       client: null,                  // instancia TelnyxRTC
@@ -2152,7 +2152,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               if (audioEl && stream && stream.getAudioTracks?.().length > 0) {
                 if (audioEl.srcObject !== stream) audioEl.srcObject = stream;
                 audioEl.volume = 1.0; audioEl.muted = false;
-                try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el setter (auriculares)
+                try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el SDR (auriculares)
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
                 if (!_setterRecorder) _startCallRecording(localStream, stream); // Whisper (Sprint 7)
                 return;
@@ -2185,7 +2185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Audit 2026-07-06 (Whisper A1): la grabación arranca APENAS hay audio remoto,
             // sin esperar el commit de voz sostenida ni 'active'. Antes se perdían los
             // primeros ~2.4s de cada llamada early-media y los buzones cortos enteros →
-            // transcripts truncados/vacíos. Grabar no afecta lo que escucha el setter
+            // transcripts truncados/vacíos. Grabar no afecta lo que escucha el SDR
             // (el tono sintético sigue su lógica); si solo se grabó ringback, el filtro
             // anti-alucinación del backend lo descarta.
             if (_hasRemoteAudio() && !_setterRecorder && !_leadRecorder) {
@@ -2344,7 +2344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Graba ~5s del mic (aplicando el boost si está configurado) y lo reproduce,
-    // para que el setter escuche EXACTAMENTE cómo suena su voz para el lead.
+    // para que el SDR escuche EXACTAMENTE cómo suena su voz para el lead.
     async function _audioTestRecord() {
       const btn = document.getElementById('audio-test-record');
       const status = document.getElementById('audio-test-status');
@@ -2469,7 +2469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const m = document.getElementById('audio-settings-modal');
       if (m) m.classList.add('hidden');
     }
-    // Cache de follow-ups del setter actual (refresca al entrar al CRM y cada
+    // Cache de follow-ups del SDR actual (refresca al entrar al CRM y cada
     // vez que se tilda un follow-up). Estructura igual a /api/setters/followups/today
     let _followupsCache = null;
     // Mapa rápido leadId → { step, label, status, note } para mostrar el chip
@@ -2524,7 +2524,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Muestra los 5 steps (24h/48h/72h/7d/15d) con: estado, fecha, nota,
     // botones marcar hecho / reprogramar.
     // Render simplificado: solo info del follow-up activo (si lo hay).
-    // Los checkboxes 24h/48h/72h/7d/15d en la TABLA del CRM son los que el setter
+    // Los checkboxes 24h/48h/72h/7d/15d en la TABLA del CRM son los que el SDR
     // tilda. Tildar = "voy a hacer follow-up en X desde este momento". Solo uno
     // activo a la vez. El backend destila los otros automáticamente.
     function _renderModalFollowups(lead) {
@@ -2650,11 +2650,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // que necesiten acceso al cache desde scope externo.
         window.__setterLeads = setterLeads;
         window.__settersList = settersList;
-        // Cargar "mis números" del setter (para el selector en el modal de lead)
+        // Cargar "mis números" del SDR (para el selector en el modal de lead)
         _loadMyPhones();
         // Phase 6: cargar config Telnyx para saber si el botón "Llamar" se habilita
         _telnyx.fetchConfig().catch(() => {});
-        // Cargar follow-ups del setter (se usa para chips, badges y filtros)
+        // Cargar follow-ups del SDR (se usa para chips, badges y filtros)
         loadFollowups();
 
         // Repopular filtro de país con los leads cargados
@@ -2662,12 +2662,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           window._populateSetterCountryFilter();
         }
 
-        // Poblar selector de setters (preservar selección).
-        // 2026-05-24: filtrar setters con flag `hidden:true` — ej Paula que es
+        // Poblar selector de SDRs (preservar selección).
+        // 2026-05-24: filtrar SDRs con flag `hidden:true` — ej Paula que es
         // supervisora no debe aparecer como setter seleccionable, aunque tenga
         // leads asignados a su setterId (eso lo maneja su propio login).
         const currentVal = setterSelect.value;
-        setterSelect.innerHTML = '<option value="">Todos los setters</option>';
+        setterSelect.innerHTML = '<option value="">Todos los SDRs</option>';
         settersList.filter(s => !s.hidden).forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.id;
@@ -2707,7 +2707,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('stat-interesado').textContent = stats.interesados || 0;
         document.getElementById('stat-agendado').textContent = stats.agendados || 0;
 
-        // Variante activa del setter seleccionado
+        // Variante activa del SDR seleccionado
         const activeVariantBox = document.getElementById('active-variant-box');
         const activeVar = getVariantById(variableSelect?.value || currentVariableId);
         if (activeVar) {
@@ -2775,7 +2775,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Calcula y muestra el contador de cada filtro en su chip. Sirve para que
-    // el setter sepa cuántos hay ANTES de hacer click — antes pasaba que
+    // el SDR sepa cuántos hay ANTES de hacer click — antes pasaba que
     // hacían click en "Sin contactar" y veían vacío sin entender por qué.
     function _updatePipeFilterCounts() {
       // Counts acumulativos en línea con los filtros: un lead que avanzó por
@@ -2929,7 +2929,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<span class="chip-semantic" style="background:rgba(126,132,148,0.12); color:#9CA3AF; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Sin contactar</span>`;
     }
 
-    // Helper: inferir "próximo paso" sugerido al setter
+    // Helper: inferir "próximo paso" sugerido al SDR
     function _nextStepFor(lead) {
       if (lead.estado === 'agendado') return ['Esperar reunión', '#5bb974'];
       if (lead.estado === 'cerrado' || lead.estado === 'descartado') return ['Listo', '#7E8494'];
@@ -2995,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _updatePipeFilterCounts();
       let filtered = [...setterLeads];
       if (currentPipeFilter === 'hacer_hoy') {
-        // dueToday + dueYesterday: el setter tiene que hacerlos.
+        // dueToday + dueYesterday: el SDR tiene que hacerlos.
         const ids = new Set([
           ...(_followupsCache?.dueToday || []).map(f => f.leadId),
           ...(_followupsCache?.dueYesterday || []).map(f => f.leadId),
@@ -3032,7 +3032,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         filtered = filtered.filter(l => l.estado === currentPipeFilter);
       }
 
-      // Filtro por país (preferencia local del setter)
+      // Filtro por país (preferencia local del SDR)
       const countryFilter = (document.getElementById('setter-country-filter')?.value || '').trim();
       if (countryFilter) {
         filtered = filtered.filter(l => (l.country || '').trim() === countryFilter);
@@ -3243,7 +3243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fecha: mostrar fecha de contacto si existe, sino fecha de import
         const displayDate = lead.fechaContacto || (lead.fecha || '').substring(5);
 
-        // Chip pequeño con el número propio del setter usado (si está seteado)
+        // Chip pequeño con el número propio del SDR usado (si está seteado)
         const myPh = lead.setterPhoneId ? (_myPhones || []).find(p => p.id === lead.setterPhoneId) : null;
         const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
 
@@ -3386,7 +3386,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const idx = setterLeads.findIndex(l => l.id === id);
       if (idx >= 0 && serverLead) {
         Object.assign(setterLeads[idx], serverLead);
-        // Si es sin_wsp, sacarlo de la lista del setter (va a llamadas)
+        // Si es sin_wsp, sacarlo de la lista del SDR (va a llamadas)
         if (serverLead.conexion === 'sin_wsp') {
           if (currentModalLeadId === id) {
             document.getElementById('lead-modal')?.classList.add('hidden');
@@ -3432,7 +3432,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Inline field update (conexion, interes)
     // Helper: hace PATCH a un lead, valida la respuesta y devuelve el lead o lanza error.
-    // Antes los handlers ignoraban silently 401/403/500 — el setter veía "no queda"
+    // Antes los handlers ignoraban silently 401/403/500 — el SDR veía "no queda"
     // sin saber por qué. Ahora cualquier error sale como toast.
     async function _patchLead(id, body) {
       const resp = await fetch(apiUrl('/api/setters/leads/' + id), {
@@ -3615,7 +3615,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('modal-status-select').value = lead.estado || 'sin_contactar';
       document.getElementById('modal-decisor-select').value = lead.decisor || '';
 
-      // Mi número usado — populate select con teléfonos propios del setter
+      // Mi número usado — populate select con teléfonos propios del SDR
       const waWrap = document.getElementById('modal-wa-account-wrap');
       const waSel = document.getElementById('modal-wa-account-select');
       if (waWrap && waSel) {
@@ -4146,7 +4146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Sesiones ──
     sessionBtn.addEventListener('click', async () => {
       const setter = currentUser?.role === 'setter' ? currentUser.setterId : setterSelect.value;
-      if (!setter) { alert('Seleccioná un setter primero.'); return; }
+      if (!setter) { alert('Seleccioná un SDR primero.'); return; }
       try {
         const resp = await fetch(apiUrl('/api/setters/sessions/start'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ setter }) });
         const data = await resp.json();
@@ -4231,7 +4231,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       let allVariants = data.variants || [];
       const isAdmin = currentUser?.role === 'admin';
       const mySetterId = currentUser?.setterId || '';
-      // 2026-05-24: TODOS los setters acceden a TODAS las variantes (pedido del user).
+      // 2026-05-24: TODOS los SDRs acceden a TODAS las variantes (pedido del user).
       // Antes solo veian propias o las que un admin compartio. Ahora todas.
       variantsList = allVariants;
       const list = document.getElementById('variants-list');
@@ -4270,11 +4270,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           '</div>' +
           (isAdmin ? '<div class="variant-card-assign" style="display:flex; flex-direction:column; gap:10px;">' +
             '<div>' +
-              '<span class="variant-card-assign-label">Setters con esta variante:</span>' +
+              '<span class="variant-card-assign-label">SDRs con esta variante:</span>' +
               ' <strong class="variant-card-assign-value" style="color:var(--accent);">' + (assignedNames || 'Ninguno') + '</strong>' +
             '</div>' +
             '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 10px; background:rgba(157,133,242,0.04); border:1px solid var(--border-color); border-radius:8px;">' +
-              '<span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Tildá los setters que la van a usar:</span>' +
+              '<span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Tildá los SDRs que la van a usar:</span>' +
               settersList.map(s => {
                 const isAssigned = allAssignedIds.includes(s.id);
                 return '<label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:4px 10px; border-radius:8px; background:' + (isAssigned ? 'rgba(157,133,242,0.15)' : 'transparent') + '; border:1px solid ' + (isAssigned ? 'var(--accent)' : 'var(--border-color)') + '; transition:all 0.15s;">' +
@@ -4288,7 +4288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
     }
 
-    // Tildar/destildar un setter para una variante. Maneja owner principal +
+    // Tildar/destildar un SDR para una variante. Maneja owner principal +
     // sharedWith de forma transparente para el admin: se ven todos los tildados
     // como "asignados", sin distinción de owner vs shared.
     window._toggleVariantSetter = async (variantId, setterId, checked) => {
@@ -4374,9 +4374,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadCommandCenter();
     };
 
-    // Limpia el trabajo de un setter — deja todos sus leads como sin_contactar
+    // Limpia el trabajo de un SDR — deja todos sus leads como sin_contactar
     // (excepto los sin_wsp que siguen en Llamadas). Útil antes de redistribuir
-    // sus leads para que el setter destino los reciba frescos.
+    // sus leads para que el SDR destino los reciba frescos.
     window._resetSetterWork = async (setterId, setterName) => {
       const ok = await window.askConfirm({
         title: 'Limpiar trabajo de ' + setterName,
@@ -4410,7 +4410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window._deleteSetter = async (setterId) => {
       if (!setterId) return;
-      const msg = '¿Eliminar este setter por completo?\n\nEsto va a:\n' +
+      const msg = '¿Eliminar este SDR por completo?\n\nEsto va a:\n' +
                   '• Sacarlo del equipo\n' +
                   '• Liberar sus leads (quedan sin asignar, NO se borran)\n' +
                   '• Liberar sus variables\n' +
@@ -4459,7 +4459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     window._editSetter = async (setterId, currentName) => {
       if (!setterId) return;
-      const newName = prompt('Nuevo nombre del setter:', currentName || '');
+      const newName = prompt('Nuevo nombre del SDR:', currentName || '');
       if (!newName || !newName.trim() || newName.trim() === currentName) return;
       try {
         const resp = await fetch(apiUrl('/api/setters/team/' + setterId), {
@@ -4517,7 +4517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadVariantsModal();
     });
 
-    // ── Enviar leads a setters desde Maps ──
+    // ── Enviar leads a SDRs desde Maps ──
     sendToSettersBtn.addEventListener('click', async () => {
       if (currentData.length === 0) return;
 
@@ -4546,7 +4546,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const subtitleParts = [`${newLeads.length} leads para repartir`];
       if (skippedOld > 0) subtitleParts.push(`${skippedOld} ya scrapeados descartados`);
       if (skippedByWspFilter > 0) subtitleParts.push(`${skippedByWspFilter} sin Wsp filtrados (porque "Solo Wsp" está tildado)`);
-      const subtitle = subtitleParts.join(' · ') + '. Tildá los setters destino y poné cuántos a cada uno.';
+      const subtitle = subtitleParts.join(' · ') + '. Tildá los SDRs destino y poné cuántos a cada uno.';
 
       const distribution = await window.pickSettersDistribution({
         totalLeads: newLeads.length,
@@ -4572,12 +4572,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           summary += '\nDistribucion:\n';
           result.perSetter.forEach(p => { summary += '  • ' + (p.setterName || p.setterId) + ': ' + p.imported + (p.skipped ? ' (+' + p.skipped + ' duplicados)' : '') + '\n'; });
         }
-        if (result.skipped) summary += '\nYa existían en algún setter: ' + result.skipped;
+        if (result.skipped) summary += '\nYa existían en algún SDR: ' + result.skipped;
         if (skippedOld > 0) summary += '\nYa scrapeados antes (no enviados): ' + skippedOld;
         alert(summary);
         // Auto-enriquecer email + redes de los leads recién importados, en SEGUNDO PLANO.
         // Antes era manual (botón en Comando); ahora se dispara solo al enviar un scrape
-        // nuevo a setters. Es GRATIS (solo fetches a las webs). El usuario puede seguir
+        // nuevo a SDRs. Es GRATIS (solo fetches a las webs). El usuario puede seguir
         // trabajando mientras corre. Reusa /api/admin/enrich-leads (mismo loop probado).
         if ((result.imported || 0) > 0) {
           window.showToast?.('Enriqueciendo email + redes + brief de web en segundo plano… (podés seguir trabajando)', { type: 'info', duration: 6000 });
@@ -4798,7 +4798,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
       }
     }
-    // Nombre del setter dueño del lead (para el chip de dueño en cada card).
+    // Nombre del SDR dueño del lead (para el chip de dueño en cada card).
     function _hoyOwnerName(l) {
       const id = l && l.assignedTo;
       if (!id) return 'Sin asignar';
@@ -4821,7 +4821,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
               ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
-              <span title="Setter dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
+              <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}
@@ -4873,7 +4873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const qs = params.toString();
       const url = '/api/setters/leads/sin-wsp' + (qs ? '?' + qs : '');
       try {
-        // Poblar select de setters (solo admin lo ve)
+        // Poblar select de SDRs (solo admin lo ve)
         const infoResp = await fetch(apiUrl('/api/setters'));
         const info = await infoResp.json();
         const callsSelect = document.getElementById('calls-setter-select');
@@ -4889,7 +4889,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bulkAssign = document.getElementById('calls-bulk-assign-setter');
         if (bulkAssign) {
           const curBulk = bulkAssign.value;
-          bulkAssign.innerHTML = '<option value="">Asignar a setter…</option>';
+          bulkAssign.innerHTML = '<option value="">Asignar a SDR…</option>';
           (info.setters || []).forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.id; opt.textContent = s.name;
@@ -4944,7 +4944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const now = Date.now();
       const horizon = now + (14 * 24 * 3600 * 1000); // próximas 2 semanas
-      // SOLO callbacks MANUALES (el setter eligió "volver a llamar"). Los reintentos
+      // SOLO callbacks MANUALES (el SDR eligió "volver a llamar"). Los reintentos
       // automáticos de no_answer/voicemail (cadencia 24h) NO van acá — reaparecen
       // solos en la cola de Llamadas/Power Dialer cuando vencen. Distinción por el
       // último outcome del callLog.
@@ -5542,7 +5542,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)', hung_up:'#F47272', placeholder_sent:'#7DD3FC' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
               // Costo: real (reconciliado de CDR) si existe, sino estimado.
-              // Solo admin/supervisor — al setter el costo por llamada no le aporta.
+              // Solo admin/supervisor — al SDR el costo por llamada no le aporta.
               const _canSeeCost = ['admin', 'supervisor'].includes(currentUser?.realRole || currentUser?.role);
               let costStr = '';
               if (_canSeeCost && typeof entry.realCost === 'number') costStr = `<span title="costo real facturado por Telnyx" style="color:#ffc828;">$${entry.realCost.toFixed(4)} real</span>`;
@@ -5653,7 +5653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (badge && lead.phone) {
         _pdFetchRate(lead.phone).then(r => {
           // Solo actualizar si el badge sigue apuntando a este mismo número
-          // (puede haber cambiado el lead activo si el setter avanzó rapido)
+          // (puede haber cambiado el lead activo si el SDR avanzó rapido)
           if (!badge.isConnected || badge.dataset.phone !== lead.phone) return;
           if (r && r.found) {
             const moneda = '$' + r.ratePerMin.toFixed(4);
@@ -5691,7 +5691,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Power Dialer 2026-05-23: marca un follow-up como hecho desde el dialer.
     // PATCH al lead destildando el step + actualiza cache local + re-renderea.
-    // NO avanza automaticamente — el setter puede querer llamar igual despues
+    // NO avanza automaticamente — el SDR puede querer llamar igual despues
     // de marcar el follow-up como hecho.
     window._pdMarkFollowupDone = async function(leadId, stepKey) {
       const lead = _callsLeadsById.get(leadId);
@@ -5783,7 +5783,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
       if (selectEl) { selectEl.disabled = false; selectEl.value = ''; }
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
-      // hasta 30s. Si el setter cierra sin guardar (cancel), no avanza.
+      // hasta 30s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
         const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal'];
         // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
@@ -5799,7 +5799,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
           }
           // Avanzar solo si el lead realmente cambió de estado (la disposition
-          // fue confirmada). Si el setter canceló, el lead sigue accionable.
+          // fue confirmada). Si el SDR canceló, el lead sigue accionable.
           const lead = _callsLeadsById.get(leadId);
           if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
           const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
@@ -5954,25 +5954,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('calls-quota-pct').textContent = pct + '%';
         const bar = document.getElementById('calls-quota-bar');
         bar.style.width = pct + '%';
-        // Color: verde si >=75%, amarillo si >=40%, rojo si <40% (asumiendo que el setter ya arrancó el día)
+        // Color: verde si >=75%, amarillo si >=40%, rojo si <40% (asumiendo que el SDR ya arrancó el día)
         let grad = 'linear-gradient(90deg, var(--success) 0%, #3a8e4e 100%)';
         if (pct < 40) grad = 'linear-gradient(90deg, #f47272 0%, #c44141 100%)';
         else if (pct < 75) grad = 'linear-gradient(90deg, #FFB341 0%, #d88f1c 100%)';
         bar.style.background = grad;
       } catch (e) { wrap.style.display = 'none'; }
     }
-    // Sprint 33: admin edita quota del setter
+    // Sprint 33: admin edita quota del SDR
     document.addEventListener('click', (e) => {
       const btn = e.target?.closest?.('#calls-quota-edit');
       if (!btn) return;
       const selectedSetter = document.getElementById('calls-setter-select')?.value || '';
       if (!selectedSetter) {
-        window.showToast?.('Elegí un setter del dropdown primero', { type: 'warning' });
+        window.showToast?.('Elegí un SDR del dropdown primero', { type: 'warning' });
         return;
       }
       const current = (document.getElementById('calls-quota-text')?.textContent || '').match(/\d+/g);
       const currentVal = current && current.length > 1 ? current[1] : '50';
-      const nuevo = prompt('Meta diaria de llamadas para este setter (0-999):', currentVal);
+      const nuevo = prompt('Meta diaria de llamadas para este SDR (0-999):', currentVal);
       if (nuevo === null) return;
       const n = parseInt(nuevo, 10);
       if (!Number.isFinite(n) || n < 0 || n > 999) {
@@ -6036,7 +6036,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Hora local del lead según su país (pedido del user: "saber qué hora es para el lead").
     // Mapa país (nombre español, como usa la data) → zona horaria IANA. Devuelve
     // { time:'HH:MM', tz, ok } donde ok = está en horario hábil (9-19h) del lead.
-    // El navegador ya sabe la hora del setter; esto calcula la del lead sin IP.
+    // El navegador ya sabe la hora del SDR; esto calcula la del lead sin IP.
     const _LEAD_TZ = {
       'Argentina':'America/Argentina/Buenos_Aires', 'México':'America/Mexico_City', 'Mexico':'America/Mexico_City',
       'Colombia':'America/Bogota', 'Chile':'America/Santiago', 'Perú':'America/Lima', 'Peru':'America/Lima',
@@ -6887,7 +6887,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    // 2026-07-07: la llamada cuelga ANTES de que el setter marque el resultado,
+    // 2026-07-07: la llamada cuelga ANTES de que el SDR marque el resultado,
     // así que ya no subimos a Whisper al colgar (transcribía buzones al pedo).
     // Al colgar solo BUFFEREAMOS los blobs; el upload real lo dispara la
     // disposition (_flushPendingTranscription) y solo si hubo conversación.
@@ -6924,7 +6924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       _discardPendingTranscription();
-      // Auto-descarte a los 10 min: si el setter nunca marca disposition, no
+      // Auto-descarte a los 10 min: si el SDR nunca marca disposition, no
       // retener los blobs en memoria indefinidamente.
       const timer = setTimeout(() => {
         if (_pendingTranscribe?.leadId === leadId) _discardPendingTranscription();
@@ -6999,7 +6999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Ringback tone local (440Hz + 480Hz, patrón US: 2s ON / 4s OFF).
     // Telnyx WebRTC v2 NO reproduce el ringback del carrier automáticamente
-    // — el setter no escucharía nada mientras suena en el destino. Sintetizamos
+    // — el SDR no escucharía nada mientras suena en el destino. Sintetizamos
     // el tono localmente con Web Audio API. Se inicia en 'ringing' y se detiene
     // en 'answered' / hangup / error / destroy.
     let _ringbackCtx = null;
@@ -7173,7 +7173,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!box || !content) return;
       if (!lead) { box.style.display = 'none'; return; }
       const rows = [];
-      // Sprint 24: Nota pre-call — destacada al tope (lo que el setter
+      // Sprint 24: Nota pre-call — destacada al tope (lo que el SDR
       // preparó antes de discar). Si está vacía, no se renderiza.
       if (lead.precallNote && lead.precallNote.trim()) {
         rows.push(`<div style="background:linear-gradient(135deg, rgba(255,179,65,0.12) 0%, rgba(255,179,65,0.04) 100%); border:1px solid rgba(255,179,65,0.35); border-left:3px solid #FFB341; padding:8px 11px; border-radius:8px; margin-bottom:8px;">
@@ -7262,7 +7262,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Phase 17 Ola 4: timeline unificada del lead (llamadas + notas, más reciente
-    // primero). Reemplaza el "solo último intento" — el setter ve TODO el historial
+    // primero). Reemplaza el "solo último intento" — el SDR ve TODO el historial
     // del lead de un vistazo durante la llamada (idea Adversus: Activity timeline).
     function _renderCallHistory(lead) {
       const box = document.getElementById('telnyx-call-history');
@@ -7406,7 +7406,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         const cleanCaller = _sanitizePhoneE164(fromNum.phone);
-        // Constraints de mic desde la Config de audio del setter (panel "Audio").
+        // Constraints de mic desde la Config de audio del SDR (panel "Audio").
         // Defaults = EC/NS/AGC true (idéntico al comportamiento histórico). Si eligió
         // un micrófono, va como deviceId {ideal} (no rompe la llamada si lo desconecta).
         const _aCfg = _audioCfg.get();
@@ -7423,7 +7423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // 'track' del RTCPeerConnection.
           remoteElement: 'telnyx-remote-audio',
         };
-        // Boost por software OPT-IN (experimental): solo si el setter activó
+        // Boost por software OPT-IN (experimental): solo si el SDR activó
         // "Aplicar boost en llamadas" Y subió la ganancia. Capturamos nosotros el
         // mic, lo amplificamos con un GainNode y pasamos ese stream como localStream
         // del call (el SDK usa el provisto, no abre una segunda captura).
@@ -7458,7 +7458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _stopRemoteVoiceWatch();              // por si quedó uno de una llamada anterior
         _telnyxCallState.timerInterval = setInterval(_updateTelnyxCallTimer, 1000);
         _setTelnyxCallStatus('Sonando…', 'ringing');
-        // Audio de ringback local — sin esto el setter no escucha nada mientras
+        // Audio de ringback local — sin esto el SDR no escucha nada mientras
         // suena en el destino y cree que se rompió la llamada.
         _startRingbackTone();
         // Los eventos del call vienen por 'telnyx.notification' en el CLIENT
@@ -7502,7 +7502,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
       // Sprint 7 (rework 2026-07-07): detener recording y BUFFEREAR el audio.
-      // La transcripción Whisper ya no se dispara acá — recién cuando el setter
+      // La transcripción Whisper ya no se dispara acá — recién cuando el SDR
       // marca la disposition y confirma que hubo conversación (buzón no se paga).
       if (leadId && durationSecs >= 5 && (_setterRecorder || _leadRecorder)) {
         // No bloquear el cierre del panel por esperar el stop de los recorders.
@@ -7520,7 +7520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => {
         _closeTelnyxCallPanel();
         // Disparar disposition automática si hubo INTENTO (sonó al menos 1s), aunque
-        // no atiendan — el setter igual tiene que marcar No atendió/Buzón. (Antes
+        // no atiendan — el SDR igual tiene que marcar No atendió/Buzón. (Antes
         // usaba durationSecs, que ahora es talk-time y sería 0 en no-contacto.)
         if (leadId && attemptedSecs >= 1) {
           window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
@@ -7960,7 +7960,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
-        // 2026-05-30: cuando un solo usuario hace de setter+admin, "Interesado"
+        // 2026-05-30: cuando un solo usuario hace de SDR+admin, "Interesado"
         // ya implica "agendar ahora". Abrimos el modal de agenda directo. Si
         // cancela, igual queda logueado como answered_interested (fallback).
         if (outcome === 'answered_interested') {
@@ -7970,7 +7970,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
-        // El popover deja saltear (skip) si el setter no quiere taggear.
+        // El popover deja saltear (skip) si el SDR no quiere taggear.
         if (outcome === 'answered_not_interested') {
           openObjectionModal(leadId);
           selectEl.value = '';
@@ -7999,7 +7999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _flushPendingTranscription(leadId, outcome).catch(e => console.warn('[transcribe]', e?.message));
         const data = await resp.json();
         // Audit 2026-07-06 (C1): si ESTE resultado disparó el descarte automático por
-        // cadencia (2 no-contactos seguidos), avisarle al setter — antes el lead
+        // cadencia (2 no-contactos seguidos), avisarle al SDR — antes el lead
         // desaparecía de la cola sin explicación.
         const _wasAutoDiscarded = !!_callsLeadsById.get(leadId)?.autoDiscarded;
         if (data.lead?.autoDiscarded && !_wasAutoDiscarded) {
@@ -8149,7 +8149,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Sprint 25: modal para taggear objeción al marcar "No interesado".
-    // Se puede saltar (skip) si el setter no quiere etiquetar. Feed para
+    // Se puede saltar (skip) si el SDR no quiere etiquetar. Feed para
     // Mercury IA + analytics de objeciones más comunes.
     const OBJECTION_TAGS = [
       { key: 'precio',             label: 'Precio',           hint: 'Caro / no tiene presupuesto' },
@@ -8356,7 +8356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Si el modal se abrió desde "Interesado", monitoreamos el cierre sin
       // confirmar para postear el answered_interested como fallback (no perder
-      // el signal "atendió + interesado" si el setter no llegó a agendar).
+      // el signal "atendió + interesado" si el SDR no llegó a agendar).
       if (fallbackOnCancel) {
         observer = new MutationObserver(async () => {
           if (modal.classList.contains('hidden') && !confirmed) {
@@ -8403,7 +8403,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { alert('Error quitando DNC: ' + e.message); }
     };
     // Brief IA por-lead (admin only). Elegís exactamente sobre quién, sin pasar
-    // por el lote. El endpoint ya es admin-only → los setters no pueden gastarte.
+    // por el lote. El endpoint ya es admin-only → los SDRs no pueden gastarte.
     window._genLeadBrief = async (leadId, btn) => {
       const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
       const name = (lead && lead.name) || leadId;
@@ -8569,7 +8569,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let assignTo = '';
         if (action === 'assign') {
           assignTo = document.getElementById('calls-bulk-assign-setter')?.value || '';
-          if (!assignTo) { window.showToast?.('Elegí un setter primero', { type: 'warning' }); return; }
+          if (!assignTo) { window.showToast?.('Elegí un SDR primero', { type: 'warning' }); return; }
         }
         if (!confirm(`¿${labels[action]} ${_callsSelected.size} lead(s)? Esta acción se loguea en cada lead.`)) return;
         try {
@@ -8757,7 +8757,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<div class="stat-card"><span class="stat-num" style="color:var(--danger);">' + (ct.numerosMuertos || 0) + '</span><span class="stat-pct-sub">' + (ct.pctNumerosMuertos || '0.0') + '%</span><span class="stat-label">Números muertos</span></div>';
         }
 
-        // Tabla por setter (calls)
+        // Tabla por SDR (calls)
         const callsBody = document.getElementById('cmd-calls-per-setter-body');
         if (callsBody) {
           const callsPerSetter = data.callsPerSetter || [];
@@ -8782,7 +8782,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalBadge = document.getElementById('setter-leads-total-badge');
         if (totalBadge) totalBadge.textContent = t.total + ' leads totales en setters';
 
-        // Tabla por setter
+        // Tabla por SDR
         const _cmdSetterBody = document.getElementById('cmd-table-body');
         if (_cmdSetterBody) _cmdSetterBody.innerHTML = data.perSetter.map(s =>
           '<tr>' +
@@ -8802,14 +8802,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         ).join('');
 
         // Codigo muerto removido: el panel "admin-setters-list" se elimino del HTML.
-        // Las acciones por setter (Editar/Duplicar/Eliminar) ahora viven en la
+        // Las acciones por SDR (Editar/Duplicar/Eliminar) ahora viven en la
         // tabla "Equipo" arriba (users-table-body), que se popula via loadUsersPanel().
 
         // Tabla por variante
         const settersForFilter = data.setters || [];
         if (cmdVariableSetterFilter) {
           const prev = commandVariableSetterFilterValue;
-          cmdVariableSetterFilter.innerHTML = '<option value="">Todos los setters</option>' + settersForFilter.map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
+          cmdVariableSetterFilter.innerHTML = '<option value="">Todos los SDRs</option>' + settersForFilter.map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
           cmdVariableSetterFilter.value = prev && settersForFilter.some(s => s.id === prev) ? prev : '';
           commandVariableSetterFilterValue = cmdVariableSetterFilter.value || '';
         }
@@ -8880,7 +8880,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (pctB !== pctA) return pctB - pctA;
                 return (Number(b.usedCount) || 0) - (Number(a.usedCount) || 0);
               });
-              const setterName = setters.find(s => s.id === v.setterId)?.name || 'Sin setter';
+              const setterName = setters.find(s => s.id === v.setterId)?.name || 'Sin SDR';
               return '<div class="variant-card" style="margin-top:10px;">' +
                 '<div class="variant-card-header"><span class="variant-card-name">' + escHtml(v.name) + '</span>' +
                 '<div style="display:flex; gap:6px; flex-wrap:wrap;">' +
@@ -8889,7 +8889,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 '</div></div>' +
                 '<div style="display:grid; gap:8px; margin-top:8px; font-size:12px; color:var(--text-secondary);">' +
                   '<div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">' +
-                    '<span>Setter asignado: <strong style="color:var(--text-main);">' + escHtml(setterName) + '</strong></span>' +
+                    '<span>SDR asignado: <strong style="color:var(--text-main);">' + escHtml(setterName) + '</strong></span>' +
                     '<span>' + (v.total || 0) + ' leads</span>' +
                     '<span>' + (v.mensajes || 0) + ' msgs</span>' +
                     '<span>' + (v.usedCount || 0) + ' veces enviada</span>' +
@@ -8897,7 +8897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   '</div>' +
                   '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
                     '<select id="variant-setter-' + v.id + '" class="setter-input" style="min-width:220px;">' +
-                    '<option value="">Sin setter</option>' + setterOptions +
+                    '<option value="">Sin SDR</option>' + setterOptions +
                     '</select>' +
                     '<button type="button" class="btn-primary pill-btn" style="padding:8px 14px;" onclick="window._assignVariantSetterFromCard(\'' + v.id + '\')">Asignar</button>' +
                     '<span style="color:var(--text-secondary); font-size:12px;">' + (Array.isArray(v.blocks) ? v.blocks.length : 0) + ' bloques</span>' +
@@ -8945,7 +8945,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (inlineVarSetter) {
-          inlineVarSetter.innerHTML = '<option value="">Asignar a setter</option>' + (data.setters || []).map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
+          inlineVarSetter.innerHTML = '<option value="">Asignar a SDR</option>' + (data.setters || []).map(s => '<option value="' + escHtml(s.id) + '">' + escHtml(s.name) + '</option>').join('');
         }
 
         if (!inlineDraftBlocks.length) {
@@ -9000,7 +9000,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (user.id !== currentUser.id) {
             acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
           }
-          // Acciones especificas de setter
+          // Acciones especificas de SDR
           if (user.role === 'setter') {
             const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
             if (isOrphan) {
@@ -9011,7 +9011,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const sname = encodeURIComponent(user.name || '');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" onclick="window._editSetter(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Editar</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--warning); font-size:11px;" onclick="window._duplicateSetter(\'' + sid + '\')">Duplicar</button>');
-              acts.push('<button type="button" class="btn-table-action" style="color:#ffc828; font-size:11px;" title="Resetear todos los leads trabajados de este setter a sin_contactar (no toca sin_wsp)" onclick="window._resetSetterWork(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Limpiar trabajo</button>');
+              acts.push('<button type="button" class="btn-table-action" style="color:#ffc828; font-size:11px;" title="Resetear todos los leads trabajados de este SDR a sin_contactar (no toca sin_wsp)" onclick="window._resetSetterWork(\'' + sid + '\', decodeURIComponent(\'' + sname + '\'))">Limpiar trabajo</button>');
               acts.push('<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._deleteSetter(\'' + sid + '\')">Eliminar</button>');
             }
           } else if (user.id !== currentUser.id) {
@@ -9020,7 +9020,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           if (acts.length) actions = acts.join(' ');
         }
-        // Onboarding cell: solo aplica a setters (admin/supervisor no hacen quiz)
+        // Onboarding cell: solo aplica a SDRs (admin/supervisor no hacen quiz)
         // Click en la celda abre detalle por modulo (intentos, fechas, bloqueado)
         let onboardingCell = '—';
         if (user.role === 'setter') {
@@ -9127,7 +9127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.appendChild(wrap.firstChild);
     };
 
-    // Marca los 8 modulos como aprobados para "darle libre" a un setter
+    // Marca los 8 modulos como aprobados para "darle libre" a un SDR
     // que ya hizo el curso antes del tracking server-side.
     window._unlockAllOnboarding = async (userId, userName) => {
       if (!confirm('¿Marcar los 8 módulos del onboarding como aprobados para "' + userName + '"?\n\n' +
@@ -9169,8 +9169,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Cambiar el rol de un user (admin -> supervisor -> setter o viceversa).
-    // El backend libera el setter profile + leads si pasa de setter a otro rol,
-    // y crea un setter profile nuevo si pasa a setter desde otro rol.
+    // El backend libera el SDR profile + leads si pasa de SDR a otro rol,
+    // y crea un SDR profile nuevo si pasa a SDR desde otro rol.
     window._changeUserRole = async (userId, currentRole, email) => {
       if (!userId) return;
       const next = prompt(
@@ -9199,12 +9199,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadCommandCenter();
     };
 
-    // Borra un user directo (huerfanos sin setter o con setter inexistente).
+    // Borra un user directo (huerfanos sin SDR o con SDR inexistente).
     // El backend tiene guards: no permite borrarse a uno mismo ni al ultimo admin.
     window._deleteUser = async (userId, email) => {
       if (!userId) return;
       const msg = '¿Borrar el usuario "' + (email || userId) + '"?\n\n' +
-                  'Este usuario es huérfano (sin setter activo asociado). Esto va a:\n' +
+                  'Este usuario es huérfano (sin SDR activo asociado). Esto va a:\n' +
                   '• Borrarlo del sistema\n' +
                   '• Cerrar sus sesiones\n' +
                   '• Invalidar sus invites pendientes\n\n' +
@@ -9313,7 +9313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!sumEl) return;
       try {
         const d = await (await fetch(apiUrl('/api/setters/pool-summary'), { credentials: 'include' })).json();
-        // KPIs + tabla por setter + top países
+        // KPIs + tabla por SDR + top países
         const kpi = (label, val, sub) => `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 16px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div><div style="font-size:26px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; margin-top:3px;">${val}</div>${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${sub}</div>` : ''}</div>`;
         const setterRows = (d.bySetter || []).map(s => `<tr><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.total}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched} sin tocar</td></tr>`).join('');
         // ¿A qué país llamar AHORA? — hora local de cada país + flag horario hábil.
@@ -9332,7 +9332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:16px;">
             ${kpi('Total leads', d.total)}
             ${kpi('Sin asignar (pool)', d.unassigned.total, d.unassigned.untouched + ' sin tocar')}
-            ${kpi('Setters con leads', (d.bySetter || []).length)}
+            ${kpi('SDRs con leads', (d.bySetter || []).length)}
           </div>
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Prioridad de re-contacto (orden en que conviene distribuir)</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
@@ -9344,8 +9344,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">¿A qué país llamar ahora? <span style="text-transform:none; font-weight:400;">(horario hábil 9-19h local · fuera de hora)</span></div>
           <div style="margin-bottom:20px;">${callNowHtml || '<span class="muted">Sin países con zona horaria.</span>'}</div>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start;">
-            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por setter</div>
-              <table style="width:100%; border-collapse:collapse; font-size:13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">${setterRows || '<tr><td style="padding:10px;" class="muted">Sin setters con leads</td></tr>'}</table></div>
+            <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por SDR</div>
+              <table style="width:100%; border-collapse:collapse; font-size:13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">${setterRows || '<tr><td style="padding:10px;" class="muted">Sin SDRs con leads</td></tr>'}</table></div>
             <div><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Por país (todos)</div><div>${(d.byCountry || []).slice(0, 10).map(c => `<span style="font-size:11.5px; background:var(--bg-input); padding:3px 9px; border-radius:6px; margin:0 4px 4px 0; display:inline-block;">${escHtml(c.country)}: <strong>${c.count}</strong></span>`).join('')}</div></div>
           </div>`;
         // poblar selects
@@ -9354,10 +9354,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const countrySel = document.getElementById('pool-country');
         const setterOpts = (d.bySetter || []).map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${s.total})</option>`).join('');
         fromSel.innerHTML = `<option value="__unassigned__">Sin asignar / pool (${d.unassigned.total})</option><option value="__all__">Todo el pool (${d.total})</option>` + setterOpts;
-        // Destino: SIEMPRE todos los setters (allSetters del backend), aunque tengan 0 leads.
+        // Destino: SIEMPRE todos los SDRs (allSetters del backend), aunque tengan 0 leads.
         const toSetters = (d.allSetters && d.allSetters.length) ? d.allSetters
           : (settersList && settersList.length) ? settersList.filter(s => !s.hidden) : (d.bySetter || []);
-        toSel.innerHTML = `<option value="">Elegí setter…</option>` + toSetters.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
+        toSel.innerHTML = `<option value="">Elegí SDR…</option>` + toSetters.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)}</option>`).join('');
         countrySel.innerHTML = '<option value="">Todos</option>' + (d.byCountry || []).map(c => `<option value="${escHtml(c.country)}">${escHtml(c.country)} (${c.count})</option>`).join('');
       } catch (e) {
         sumEl.innerHTML = `<p style="color:var(--danger);">Error cargando pool: ${escHtml(e.message)}</p>`;
@@ -9373,7 +9373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const tier = document.getElementById('pool-tier').value;
       const country = document.getElementById('pool-country').value;
       const countRaw = document.getElementById('pool-count').value;
-      if (!toSetterId) { resEl.innerHTML = '<span style="color:var(--danger);">Elegí un setter destino.</span>'; return; }
+      if (!toSetterId) { resEl.innerHTML = '<span style="color:var(--danger);">Elegí un SDR destino.</span>'; return; }
       if (fromSetterId === toSetterId) { resEl.innerHTML = '<span style="color:var(--danger);">Origen y destino no pueden ser el mismo.</span>'; return; }
       const body = { fromSetterId, toSetterId };
       if (tier && tier !== 'all') body.tier = tier;
@@ -9408,11 +9408,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const faqMenuItem = document.querySelector('[data-target="view-faqs"]');
     if (faqMenuItem) faqMenuItem.addEventListener('click', () => { loadFaqsModule(); });
 
-    // Botón dedup de leads de setters
+    // Botón dedup de leads de SDRs
     const setterDedupBtn = document.getElementById('setter-dedup-btn');
     if (setterDedupBtn) {
       setterDedupBtn.addEventListener('click', async () => {
-        if (!confirm('¿Buscar y eliminar leads duplicados de los setters?\n\nSe conserva el más antiguo o el que tenga más trabajo (interacciones, notas, etc). Los más recientes se eliminan.')) return;
+        if (!confirm('¿Buscar y eliminar leads duplicados de los SDRs?\n\nSe conserva el más antiguo o el que tenga más trabajo (interacciones, notas, etc). Los más recientes se eliminan.')) return;
         setterDedupBtn.disabled = true;
         setterDedupBtn.textContent = 'Limpiando...';
         try {
@@ -9427,18 +9427,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => resultEl.classList.add('hidden'), 10000);
           }
           loadCommandCenter();
-        } catch (e) { console.error(e); alert('Error limpiando duplicados de setters'); }
+        } catch (e) { console.error(e); alert('Error limpiando duplicados de SDRs'); }
         setterDedupBtn.disabled = false;
-        setterDedupBtn.textContent = 'Limpiar Duplicados de Setters';
+        setterDedupBtn.textContent = 'Limpiar Duplicados de SDRs';
       });
     }
 
-    // ── Borrar leads de un setter ──
+    // ── Borrar leads de un SDR ──
     const setterClearBtn = document.getElementById('setter-clear-btn');
     if (setterClearBtn) {
       setterClearBtn.addEventListener('click', async () => {
         const setterId = await window.pickSetter({
-          title: 'Borrar leads de un setter',
+          title: 'Borrar leads de un SDR',
           subtitle: '⚠️ Vas a borrar leads. Elegí de qué setter.',
           allowEmpty: false,
         });
@@ -9448,7 +9448,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sData = await sResp.json();
         const settersList = sData.setters || [];
         const found = settersList.find(s => s.id === setterId);
-        if (!found) { alert('Setter no encontrado: ' + setterId); return; }
+        if (!found) { alert('SDR no encontrado: ' + setterId); return; }
 
         const countryFilter = prompt('¿Filtrar por país? (ej: Uruguay, Bolivia)\n\nDejá vacío para borrar TODOS los leads de ' + found.name + ':');
 
@@ -9475,7 +9475,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    // ── Importar CSV a Setter ──
+    // ── Importar CSV a SDR ──
     const setterImportCsv = document.getElementById('setter-import-csv');
     if (setterImportCsv) {
       setterImportCsv.addEventListener('change', async (e) => {
@@ -9483,7 +9483,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!file) return;
 
         const assignTo = await window.pickSetter({
-          title: 'Importar CSV a setter',
+          title: 'Importar CSV a SDR',
           subtitle: 'A qué setter querés asignar los leads del CSV?',
           allowEmpty: true,
         });
@@ -9589,7 +9589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (leads.length === 0) { alert('No se encontraron leads en el CSV.'); setterImportCsv.value = ''; return; }
-        if (!confirm('Se importarán ' + leads.length + ' leads' + (assignTo ? ' al setter seleccionado' : '') + '.\nLos duplicados serán ignorados automáticamente.\n\n¿Continuar?')) {
+        if (!confirm('Se importarán ' + leads.length + ' leads' + (assignTo ? ' al SDR seleccionado' : '') + '.\nLos duplicados serán ignorados automáticamente.\n\n¿Continuar?')) {
           setterImportCsv.value = ''; return;
         }
 
@@ -9617,7 +9617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdDedupBtn = document.getElementById('cmd-dedup-btn');
     if (cmdDedupBtn) {
       cmdDedupBtn.addEventListener('click', async () => {
-        if (!confirm('¿Buscar y eliminar leads duplicados de los setters?')) return;
+        if (!confirm('¿Buscar y eliminar leads duplicados de los SDRs?')) return;
         cmdDedupBtn.disabled = true; cmdDedupBtn.textContent = 'Limpiando...';
         try {
           const resp = await fetch(apiUrl('/api/setters/dedup'), { method: 'POST' });
@@ -9626,7 +9626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (r) { r.classList.remove('hidden'); r.textContent = data.removed > 0 ? '' + data.removed + ' duplicados eliminados.' : 'Sin duplicados.'; setTimeout(() => r.classList.add('hidden'), 10000); }
           loadCommandCenter();
         } catch (e) { console.error(e); alert('Error'); }
-        cmdDedupBtn.disabled = false; cmdDedupBtn.textContent = 'Limpiar Duplicados de Setters';
+        cmdDedupBtn.disabled = false; cmdDedupBtn.textContent = 'Limpiar Duplicados de SDRs';
       });
     }
     // Phase 16 Ola C: enriquecimiento por API (email web / dueño NPI). 1 lote de 25 por clic.
@@ -10308,8 +10308,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (leads.length === 0) { widget.style.display = 'none'; return; }
 
       // 2026-05-24: si admin esta en modo "Ver como setter", mostrar el nombre
-      // del setter impersonado, no el nombre real del admin. Antes decia
-      // "Hola Ignacio" para todos los setters porque el admin queda con su nombre.
+      // del SDR impersonado, no el nombre real del admin. Antes decia
+      // "Hola Ignacio" para todos los SDRs porque el admin queda con su nombre.
       let name = currentUser?.name || 'Setter';
       const isImpersonating = currentUser?.realRole === 'admin' && currentUser?.role === 'setter';
       if (isImpersonating && currentUser?.setterId) {
@@ -10747,7 +10747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-secondary);">' +
           '<div style="font-size:40px;margin-bottom:12px;">🎓</div>' +
           '<p style="font-size:15px;">No hay materiales cargados aún.</p>' +
-          (isAdmin ? '<p style="font-size:13px;">Subí PDFs, docs o guiones para que los setters aprendan y la IA los use como base de verdad.</p>' : '') +
+          (isAdmin ? '<p style="font-size:13px;">Subí PDFs, docs o guiones para que los SDRs aprendan y la IA los use como base de verdad.</p>' : '') +
           '</div>';
         return;
       }
@@ -10890,7 +10890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Trae el progreso del server (respeta "Ver como" en backend) y lo devuelve
   // como objeto { N: true, ... } para usar en el render.
   // En modo "Ver como", NO toca el localStorage del admin (no le pisamos su progreso).
-  // En modo normal, sincroniza el localStorage para que el setter no pierda
+  // En modo normal, sincroniza el localStorage para que el SDR no pierda
   // su progreso si cambia de browser.
   async function fetchOnboardingProgressForView() {
     const impersonating = !!getViewAs && getViewAs();
@@ -10918,7 +10918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const subEl = document.getElementById('onboarding-subheader');
     const fillEl = document.getElementById('onboarding-progress-fill');
     if (!cardsEl) return;
-    // Trae el progreso real (server o, si impersonando, del setter target)
+    // Trae el progreso real (server o, si impersonando, del SDR target)
     const progressView = await fetchOnboardingProgressForView();
     let modules = [];
     try {
@@ -11384,7 +11384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       '<span style="color:var(--text-tertiary);">Interesados:</span><span style="color:var(--success);">' + (ck.counts.interesados || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Agendados:</span><span style="color:var(--success);">' + (ck.counts.agendados || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">History:</span><span>' + (ck.counts.historyEntries || 0) + '</span>' +
-      '<span style="color:var(--text-tertiary);">Setters:</span><span>' + (ck.counts.setters || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">SDRs:</span><span>' + (ck.counts.setters || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Variantes:</span><span>' + (ck.counts.variants || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Usuarios:</span><span>' + (ck.counts.users || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Sesiones:</span><span>' + (ck.counts.activeSessions || 0) + '</span>' +
@@ -12050,7 +12050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         pill.textContent = '⚠️ ' + d.violations.join(', ');
         pill.style.display = 'inline-block';
       }
-      // Pill de variante usada (informativa: confirma al setter que Mercury la consideró)
+      // Pill de variante usada (informativa: confirma al SDR que Mercury la consideró)
       const vPill = document.getElementById('asst-variant-pill');
       if (vPill) {
         if (d.variantUsed && d.variantUsed.name) {
@@ -12153,7 +12153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const summary = (aiRead) + (d.summary ? `<div style="background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; box-sizing:border-box;"><div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:7px;">Resumen IA</div>${_trainingFmt(d.summary)}</div>` : '');
       const dialog = (d.segments || []).map(s => {
         const isS = s.speaker === 'setter';
-        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SETTER' : 'CLIENTE'}</span><span style="flex:1 1 auto; min-width:0; font-size:12px; color:var(--text-secondary); line-height:1.5; overflow-wrap:anywhere;">${escHtml(s.text)}</span></div>`;
+        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SDR' : 'CLIENTE'}</span><span style="flex:1 1 auto; min-width:0; font-size:12px; color:var(--text-secondary); line-height:1.5; overflow-wrap:anywhere;">${escHtml(s.text)}</span></div>`;
       }).join('');
       body.innerHTML = summary + `<div style="max-height:340px; overflow-y:auto; overflow-x:hidden; border-top:1px solid var(--border-subtle); padding-top:10px;">${dialog || '<span style="color:var(--text-tertiary);">Sin contenido.</span>'}</div>`;
     } catch (e) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">Error de red.</div>'; }
@@ -12506,7 +12506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const finalSentHtml = g.finalSent
       ? `<div style="padding:12px 14px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); border-radius:8px;">
-          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Versión final que envió el setter</div>
+          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Versión final que envió el SDR</div>
           <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.finalSent)}</div>
         </div>` : '';
 
@@ -12572,7 +12572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!d.generations.length) { empty.style.display = 'block'; return; }
       empty.style.display = 'none';
 
-      // Popular filtro de setters (solo en primer carga, dedup por id)
+      // Popular filtro de SDRs (solo en primer carga, dedup por id)
       const sel = document.getElementById('mr-filter-setter');
       if (sel && _mrSetters.length === 0) {
         const seen = new Set();
@@ -12851,7 +12851,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams();
     params.set('period', period);
     // En modo "Ver como" (admin impersonando setter), el backend ve admin via cookie y no
-    // fuerza el setter. Tenemos que pasarlo explicito desde el frontend.
+    // fuerza el SDR. Tenemos que pasarlo explicito desde el frontend.
     const u = window.__CURRENT_USER__;
     const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
     const effectiveSetter = setterFilter || (isViewAsSetter ? u.setterId : '');
@@ -12864,7 +12864,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const range = document.getElementById('myp-range');
       if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
       // Total ASIGNADO (independiente del período) — el "tiene 500", separado de los
-      // leads trabajados en el período. Solo cuando hay un setter individual seleccionado.
+      // leads trabajados en el período. Solo cuando hay un SDR individual seleccionado.
       const asg = document.getElementById('myp-assigned');
       if (asg) {
         if (d.setterScope !== 'team' && typeof d.assignedTotal === 'number') {
@@ -12882,7 +12882,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 2026-07-06: Mi pipeline — cartera personal por etapa. No bloquea los KPIs.
       _mypLoadPipeline(effectiveSetter).catch((e) => console.warn('[myp-pipeline]', e?.message));
 
-      // Popular selector de setters si admin/supervisor (primer carga)
+      // Popular selector de SDRs si admin/supervisor (primer carga)
       const wrap = document.getElementById('myp-setter-wrap');
       const sel = document.getElementById('myp-setter');
       const role = window.__CURRENT_USER__?.role;
@@ -12903,7 +12903,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── Mi pipeline (dentro de view-myperf) ──────────────────────────────
   // Cartera personal por etapa: Sin contactar → En seguimiento → Interesados →
-  // Agendadas → Ganadas. El setter ve SOLO lo suyo (el backend ya filtra tanto
+  // Agendadas → Ganadas. El SDR ve SOLO lo suyo (el backend ya filtra tanto
   // sin-wsp como calendar por setterId); admin/supervisor ven el equipo o el
   // setter elegido en el selector de arriba.
   async function _mypLoadPipeline(effectiveSetter) {
@@ -12920,7 +12920,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!leadsR.ok || !calR.ok) { el.innerHTML = ''; return; }
     const leads = (await leadsR.json()).leads || [];
     let calendar = (await calR.json()).calendar || [];
-    // Para admin/supervisor con setter elegido, el calendar viene completo → filtrar acá.
+    // Para admin/supervisor con SDR elegido, el calendar viene completo → filtrar acá.
     if (effectiveSetter && (role === 'admin' || role === 'supervisor')) {
       calendar = calendar.filter((c) => c.setterId === effectiveSetter);
     }
@@ -13084,7 +13084,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const notesEl = document.getElementById('chist-d-notes');
       // Sprint 11: mostrar quickNote (durante/post-call) Y notes (de disposition)
       const parts = [];
-      if (c.quickNote) parts.push(`<div style="margin-bottom:6px;"><strong style="color:#FFB341; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Nota del setter (during-call)</strong><div style="margin-top:3px;">${escHtml(c.quickNote)}</div></div>`);
+      if (c.quickNote) parts.push(`<div style="margin-bottom:6px;"><strong style="color:#FFB341; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Nota del SDR (during-call)</strong><div style="margin-top:3px;">${escHtml(c.quickNote)}</div></div>`);
       if (c.notes) parts.push(`<div><strong style="color:var(--text-secondary); font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">Nota disposition</strong><div style="margin-top:3px;">${escHtml(c.notes)}</div></div>`);
       if (parts.length > 0) { notesEl.style.display = 'block'; notesEl.innerHTML = parts.join(''); }
       else { notesEl.style.display = 'none'; }
@@ -13280,7 +13280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cont = document.getElementById('ccm-content');
     if (!cont) return;
     // Setter scope: si admin/supervisor + dropdown setter elegido, usar ese.
-    // Si setter, backend filtra solo. Si admin sin setter → equipo completo.
+    // Si setter, backend filtra solo. Si admin sin SDR → equipo completo.
     const setterSel = document.getElementById('myp-setter')?.value || '';
     const qs = new URLSearchParams({ period: _ccmPeriod });
     if (setterSel) qs.set('setter', setterSel);
@@ -13587,7 +13587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const c = s.current;
       const lastAct = s.lastActivity ? new Date(s.lastActivity).toLocaleDateString() : '—';
       const alertCount = (s.alerts || []).length;
-      // Severidad mas alta del setter para colorear el badge
+      // Severidad mas alta del SDR para colorear el badge
       const sevs = (s.alerts || []).map(a => a.severity);
       const topSev = sevs.includes('high') ? 'high' : sevs.includes('medium') ? 'medium' : 'low';
       const sevBg = { high: 'rgba(248,81,73,0.20)', medium: 'rgba(255,200,40,0.18)', low: 'rgba(170,170,170,0.18)' }[topSev];
@@ -13601,7 +13601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ratio = untouched / totalAssigned;
         const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
         const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
-        assignedBadge = ` <span title="Total asignados al setter (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
+        assignedBadge = ` <span title="Total asignados al SDR (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
       }
       const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');
@@ -13653,7 +13653,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function _teamDrilldown(setterId) {
-    // Navegar a Mi rendimiento con setter pre-seleccionado.
+    // Navegar a Mi rendimiento con SDR pre-seleccionado.
     const item = document.querySelector('[data-target="view-myperf"]');
     if (!item) return;
     item.click();
@@ -13901,7 +13901,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         already.style.display = 'none';
       }
 
-      // Popular selector con setters reales (vía /api/setters)
+      // Popular selector con SDRs reales (vía /api/setters)
       if (setterSel.children.length <= 1) {
         try {
           const sr = await fetch('/api/setters', { credentials: 'include' });
@@ -13948,9 +13948,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('sh-modal-send')?.addEventListener('click', async () => {
     if (!_shCurrentBatch) return;
     const setterId = document.getElementById('sh-modal-setter').value;
-    if (!setterId) { alert('Elegí un setter primero.'); return; }
+    if (!setterId) { alert('Elegí un SDR primero.'); return; }
     const onlyNew = document.getElementById('sh-modal-onlynew').checked;
-    if (!confirm(`Enviar ${onlyNew ? 'los nuevos' : 'TODOS'} los leads de este batch al setter seleccionado? Los ya importados se van a saltar por dedup.`)) return;
+    if (!confirm(`Enviar ${onlyNew ? 'los nuevos' : 'TODOS'} los leads de este batch al SDR seleccionado? Los ya importados se van a saltar por dedup.`)) return;
     const btn = document.getElementById('sh-modal-send');
     btn.disabled = true; btn.textContent = 'Enviando…';
     try {
@@ -13968,7 +13968,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       alert('Error: ' + e.message);
     } finally {
-      btn.disabled = false; btn.textContent = 'Enviar a setter';
+      btn.disabled = false; btn.textContent = 'Enviar a SDR';
     }
   });
 
@@ -14043,7 +14043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ── Modal reusable: elegir setter (reemplaza prompt() nativo) ──
   // Uso: const setterId = await window.pickSetter({ title?, subtitle?, allowEmpty? });
-  // Devuelve el setter.id elegido, '' si "sin asignar" (allowEmpty=true), o null si cancela.
+  // Devuelve el SDR.id elegido, '' si "sin asignar" (allowEmpty=true), o null si cancela.
   let _pickSetterCurrent = null;
   let _pickSetterResolve = null;
 
@@ -14067,7 +14067,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       item.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-secondary); cursor:pointer; text-align:left; font-size:13px; transition:all 0.15s;';
       item.innerHTML = `
         <div style="width:32px; height:32px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px dashed var(--border-color); display:flex; align-items:center; justify-content:center; font-size:14px;">∅</div>
-        <div style="flex:1;"><strong>Sin asignar</strong><div style="font-size:11px; opacity:0.7;">Importar sin setter (queda sin dueño)</div></div>
+        <div style="flex:1;"><strong>Sin asignar</strong><div style="font-size:11px; opacity:0.7;">Importar sin SDR (queda sin dueño)</div></div>
       `;
       item.onmouseover = () => { item.style.borderColor = 'var(--accent)'; item.style.background = 'rgba(157,133,242,0.06)'; };
       item.onmouseout = () => { _pickSetterUpdateActive(); };
@@ -14233,7 +14233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!list) return;
     const checked = Array.from(list.querySelectorAll('[data-dist-check]:checked'));
     if (checked.length === 0) {
-      alert('Tildá al menos un setter para repartir parejo.');
+      alert('Tildá al menos un SDR para repartir parejo.');
       return;
     }
     const each = Math.floor(_distTotalLeads / checked.length);
@@ -14430,7 +14430,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const r = await fetch(apiUrl('/api/setters'));
       const d = await r.json();
       _reassignSetters = d.setters || [];
-      // Contar leads por setter via /api/setters/command
+      // Contar leads por SDR via /api/setters/command
       try {
         const c = await fetch(apiUrl('/api/setters/command'));
         const cd = await c.json();
@@ -14824,7 +14824,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isSupervisor = role === 'supervisor';
     const views = [
       { id: 'v-crm', target: 'view-crm', label: 'Ir a Setteo (WhatsApp)', icon: '💬', roles: ['admin','setter','supervisor'] },
-      // 2026-06-17: el modelo cambió a "todos llaman" — los setters ahora SÍ acceden
+      // 2026-06-17: el modelo cambió a "todos llaman" — los SDRs ahora SÍ acceden
       // a Llamadas (antes solo WhatsApp). Alineado con el nav.
       { id: 'v-calls', target: 'view-calls', label: 'Ir a Llamadas', icon: '📞', roles: ['admin','supervisor','setter'] },
       { id: 'v-myperf', target: 'view-myperf', label: 'Ir a Mi rendimiento', icon: '📊', roles: ['admin','setter','supervisor'] },
@@ -14843,7 +14843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!v.roles.includes(role)) continue;
       items.push({ type: 'view', label: v.label, sublabel: 'Vista', icon: v.icon, action: () => document.querySelector('[data-target="' + v.target + '"]')?.click() });
     }
-    // Leads del setter actual (vía window — el closure interno los expone)
+    // Leads del SDR actual (vía window — el closure interno los expone)
     for (const l of (window.__setterLeads || []).slice(0, 500)) {
       items.push({
         type: 'lead',
@@ -14990,7 +14990,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── Notificaciones nativas del browser ───────────────────────────────
   // Pide permiso si nunca se decidió. Hace polling de eventos relevantes
   // (follow-ups que pasan a overdue, badge que sube) y dispara una
-  // Notification para que el setter se entere aunque tenga otra pestaña.
+  // Notification para que el SDR se entere aunque tenga otra pestaña.
   const NOTIF_DISMISSED_KEY = 'notif_perm_dismissed_until';
   function _showNotifBannerIfNeeded() {
     if (!('Notification' in window)) return;
@@ -15526,7 +15526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!trigger) return;
     const text = await window.askText({
       title: 'Texto del guion',
-      subtitle: 'Lo que el setter va a leer. Podés usar variables: {name}, {city}, {setterName}, {date}, {time}.',
+      subtitle: 'Lo que el SDR va a leer. Podés usar variables: {name}, {city}, {setterName}, {date}, {time}.',
       type: 'textarea', placeholder: 'Hola Dr/a {name}, soy {setterName}…', confirmLabel: 'Crear',
     });
     if (!text) return;
@@ -15999,7 +15999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Invitar usuarios (setters / supervisores)',
         body: `<ol>
           <li>Andá a <strong>Configuración → Usuarios</strong> (o equivalente según tu menú).</li>
-          <li>Generá invitación con email + rol (setter / supervisor / admin).</li>
+          <li>Generá invitación con email + rol (SDR / supervisor / admin).</li>
           <li>El sistema manda email vía Resend con link de activación.</li>
           <li>El user setea password al hacer click y queda activo.</li>
         </ol>
@@ -16024,10 +16024,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Cuentas WhatsApp + warmeo',
         body: `<ol>
           <li>Andá a <strong>Cuentas WA</strong>.</li>
-          <li>Agregá cuenta con nombre + número + setter asignado.</li>
-          <li>El estado arranca como <strong>"nueva"</strong> → setter conecta desde wa-multi.</li>
+          <li>Agregá cuenta con nombre + número + SDR asignado.</li>
+          <li>El estado arranca como <strong>"nueva"</strong> → SDR conecta desde wa-multi.</li>
           <li>Asignale una <strong>rutina de warmeo</strong> desde <strong>Rutinas Warming</strong> — define cuántos mensajes/día va escalando.</li>
-          <li>Si querés warmeo automático entre tus propias cuentas (cross-setter), inscribilas en <strong>Red de Warming</strong>.</li>
+          <li>Si querés warmeo automático entre tus propias cuentas (cross-SDR), inscribilas en <strong>Red de Warming</strong>.</li>
           <li>Si una cuenta cae como baneada, marcala desde el panel para sacarla del pool.</li>
         </ol>
         <p>Boost mode: durante los primeros 3 días una cuenta nueva usa <code>replySpeed=rápido</code> para que la red arranque rápido.</p>`,
@@ -16039,7 +16039,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: `<p>Hay 2 views admin para Mercury:</p>
         <ul>
           <li><strong>Config Mercury:</strong> editás el system prompt y administrás las notas de feedback. Las últimas 10 notas se inyectan automáticamente en cada generación nueva.</li>
-          <li><strong>Revisión IA:</strong> ves cada generación con el setter que la pidió, el prospect message, el output y los ejemplos del banco usados. Acciones:
+          <li><strong>Revisión IA:</strong> ves cada generación con el SDR que la pidió, el prospect message, el output y los ejemplos del banco usados. Acciones:
             <ul>
               <li><strong>Aprobar oro</strong> → promueve al banco con tag <code>aprobado-admin</code>.</li>
               <li><strong>Rechazar.</strong></li>
@@ -16053,26 +16053,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       {
         id: 'banco',
         title: 'Banco de Respuestas (FAQs)',
-        body: `<p>El banco es la base de verdad de respuestas pre-aprobadas. Setters lo usan + alimenta el retrieval del Asistente IA.</p>
+        body: `<p>El banco es la base de verdad de respuestas pre-aprobadas. SDRs lo usan + alimenta el retrieval del Asistente IA.</p>
         <ul>
           <li><strong>Seed inicial:</strong> <code>node scripts/seed-faqs.mjs</code> (18 FAQs del Módulo 7 onboarding).</li>
           <li><strong>Import bulk:</strong> botón "+ Importar" acepta JSON, CSV o texto plano (formato <code>P:</code> / <code>R:</code> / <code>C:</code> / <code>T:</code>).</li>
           <li><strong>Variantes:</strong> cada FAQ puede tener hasta 10 formas alternas de la misma pregunta (max 200 chars c/u). Mejora el retrieval.</li>
-          <li><strong>Edición/borrado:</strong> solo admin/supervisor (setters NO editan banco oficial).</li>
+          <li><strong>Edición/borrado:</strong> solo admin/supervisor (SDRs NO editan banco oficial).</li>
         </ul>`,
         goto: { target: 'view-faqs', label: 'Ir al Banco' }
       },
       {
         id: 'equipo',
         title: 'Equipo, alertas y umbrales',
-        body: `<p>La view <strong>Equipo</strong> es tabla comparativa de todos los setters, sortable por cualquier KPI, con alertas automáticas:</p>
+        body: `<p>La view <strong>Equipo</strong> es tabla comparativa de todos los SDRs, sortable por cualquier KPI, con alertas automáticas:</p>
         <ul>
           <li><strong>Drop %</strong> vs período anterior.</li>
           <li><strong>Días sin actividad.</strong></li>
           <li><strong>% apertura mínimo.</strong></li>
           <li><strong>Total leads mínimo</strong> trabajados.</li>
         </ul>
-        <p>Modal <strong>"Umbrales de alerta"</strong> (admin only) edita los valores. Highlight ±10% del promedio del equipo. Click en row → drilldown al view-myperf con setter pre-seleccionado.</p>`,
+        <p>Modal <strong>"Umbrales de alerta"</strong> (admin only) edita los valores. Highlight ±10% del promedio del equipo. Click en row → drilldown al view-myperf con SDR pre-seleccionado.</p>`,
         goto: { target: 'view-team', label: 'Ir a Equipo' }
       },
       {
@@ -16094,11 +16094,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li>Elegí país + ciudades + keyword. Hay <strong>keywords sugeridas por país</strong> (en el idioma local): clic para agregarlas.</li>
           <li>Backend usa SerpAPI con dedup estricta contra <code>history.json</code> (por nombre+dirección normalizados y teléfono) — leads ya scrapeados NO se vuelven a scrapear.</li>
           <li>Resultados con indicador <span style="color:#5bb974">verde</span> (nuevo) o gris (ya scrapeado).</li>
-          <li><strong>Enviar a Setters</strong> permite asignar a varios setters a la vez con cantidad por cada uno.</li>
+          <li><strong>Enviar a SDRs</strong> permite asignar a varios SDRs a la vez con cantidad por cada uno.</li>
         </ol>
         <p><strong>Multi-país:</strong> además de LatAm/España, el scraper soporta EE.UU., Canadá, Reino Unido, Alemania, Francia, Italia y Brasil (query e idioma localizados). Cada lead nuevo ya captura <code>placeId</code>, coordenadas, horarios, categoría y si el negocio está <strong>cerrado</strong> (chip ⚠).</p>
-        <p><strong>Import CSV directo a setter:</strong> dedup solo contra leads existentes en setters (NO contra history) — permite importar leads ya scrapeados pero sin asignar.</p>
-        <div class="guide-callout">Al <strong>Enviar a Setters</strong>, arranca solo en segundo plano el <strong>enriquecimiento web + brief de web</strong> de los leads nuevos (ver secciones siguientes). No tenés que apretar nada.</div>`,
+        <p><strong>Import CSV directo a SDR:</strong> dedup solo contra leads existentes en SDRs (NO contra history) — permite importar leads ya scrapeados pero sin asignar.</p>
+        <div class="guide-callout">Al <strong>Enviar a SDRs</strong>, arranca solo en segundo plano el <strong>enriquecimiento web + brief de web</strong> de los leads nuevos (ver secciones siguientes). No tenés que apretar nada.</div>`,
         goto: { target: 'view-maps', label: 'Ir a Google Maps' }
       },
       {
@@ -16111,12 +16111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li><strong>Validar TODA la base ($):</strong> valida tipo de línea (móvil/fijo/voip) vía Telnyx (~$0.0025 c/u). Detecta números muertos y baja la tasa de abandono.</li>
           <li><strong>Limpiar emails/websites basura:</strong> limpieza única de datos que dejó el scraper viejo (tracking, wa.me guardado como web). Idempotente + backup.</li>
         </ul>
-        <div class="guide-callout">El enriquecimiento web <strong>corre solo</strong> después de cada scrape que mandás a setters — los leads nuevos ya llegan con email/redes/ads/antigüedad. Cada barrida marca cada lead para no re-cobrar ni re-trabajar.</div>`
+        <div class="guide-callout">El enriquecimiento web <strong>corre solo</strong> después de cada scrape que mandás a SDRs — los leads nuevos ya llegan con email/redes/ads/antigüedad. Cada barrida marca cada lead para no re-cobrar ni re-trabajar.</div>`
       },
       {
         id: 'brief-ia',
         title: 'Brief IA (munición para la llamada)',
-        body: `<p>El <strong>Brief IA</strong> le arma al setter munición real para abrir: un <strong>gancho</strong>, el <strong>fit</strong> (0-100, orientado a <strong>reactivación/retención</strong> de pacientes), dolores y tratamientos. Todo se dispara desde <strong>Centro de Comando</strong>:</p>
+        body: `<p>El <strong>Brief IA</strong> le arma al SDR munición real para abrir: un <strong>gancho</strong>, el <strong>fit</strong> (0-100, orientado a <strong>reactivación/retención</strong> de pacientes), dolores y tratamientos. Todo se dispara desde <strong>Centro de Comando</strong>:</p>
         <ul>
           <li><strong>Brief IA reseñas ($):</strong> baja las reseñas reales de Google (SerpApi) y la IA extrae dolores + citas. El más jugoso. Cuesta SerpApi + LLM. Arranca por los de más reseñas.</li>
           <li><strong>Brief IA desde web:</strong> usa el texto del sitio del lead (sin SerpApi, solo LLM = centavos). Para los que tienen web propia pero pocas reseñas.</li>
@@ -16144,9 +16144,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Troubleshooting común',
         body: `<ul>
           <li><strong>"El fix no aparece después de deploy"</strong> → bumpeaste el cache-buster en <code>index.html</code>? Sin eso, browsers cachean app.js/style.css viejo.</li>
-          <li><strong>"Setter no puede entrar"</strong> → ¿la invitación venció? Regenerala desde Usuarios.</li>
+          <li><strong>"SDR no puede entrar"</strong> → ¿la invitación venció? Regenerala desde Usuarios.</li>
           <li><strong>"Llamadas Telnyx fallan"</strong> → verificá env vars Telnyx + signature public key + webhook URL apuntando a tu Railway domain.</li>
-          <li><strong>"WA accounts caídas"</strong> → setter abre wa-multi y reconecta. Si persiste, marcar como banned y reemplazar.</li>
+          <li><strong>"WA accounts caídas"</strong> → SDR abre wa-multi y reconecta. Si persiste, marcar como banned y reemplazar.</li>
           <li><strong>"Mercury no responde"</strong> → ¿MERCURY_API_KEY válida? Hay fallback a Qwen. Si ambos fallan, fallback a top match del banco.</li>
           <li><strong>"Tests fallan en npm test"</strong> → desde el último audit, <code>seedVolumeFromRepo()</code> hace skip en NODE_ENV=test. Si todavía falla, revisar que <code>tests/onboarding.test.js</code> pre-cree <code>setters.json</code>.</li>
         </ul>`
@@ -16158,7 +16158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   window._guideSwitchTab = function (tab) {
     if (tab !== 'setter' && tab !== 'admin') tab = 'setter';
-    // 2026-05-23: setter no puede ver el tab admin ni por error ni por consola.
+    // 2026-05-23: SDR no puede ver el tab admin ni por error ni por consola.
     const role = window.currentUser?.role || 'setter';
     if (tab === 'admin' && role !== 'admin' && role !== 'supervisor') {
       tab = 'setter';
