@@ -15852,7 +15852,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <ul>
           <li><strong>Guion</strong>: scripts oficiales (apertura, pitch, objeciones, cierre). Tono <strong>3-S</strong>: Slow, Smile, Strong.</li>
           <li><strong>Mercury en vivo</strong>: si te tiran una objeción ("ya tengo sistema", "mandame info"), tocá el chip o escribila y la IA te sopla la respuesta al toque.</li>
-          <li><strong>Ficha del lead</strong>: reseñas, señales, <strong>ángulo de apertura</strong> y, si tiene, el <strong>Brief IA</strong> (dolores + gancho sacados de sus reseñas).</li>
+          <li><strong>Ficha del lead</strong>: reseñas, señales, <strong>ángulo de apertura</strong> y, si tiene, el <strong>Brief IA</strong> (gancho + dolores + tratamientos). El brief puede venir de las <strong>reseñas de Google</strong> o del <strong>sitio web</strong> del lead (lo dice la etiqueta). Cuando hay Brief IA, su gancho reemplaza al ángulo genérico.</li>
           <li><strong>Contacto secundario</strong>: si la recepción te pasa otro número (el encargado), cargalo ahí y lo llamás sin perder el lead.</li>
         </ul>
         <div class="guide-callout"><strong>Usá auriculares.</strong> La llamada se graba y transcribe sola para el Entrenamiento IA. Sin auriculares, la voz del cliente entra por tu micrófono y la transcripción sale mezclada. Con auriculares queda mucho más limpia — y el resto del equipo aprende de tus llamadas.</div>`
@@ -16073,13 +16073,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Scraping (Google Maps + Instagram)',
         body: `<ol>
           <li>Andá a <strong>Google Maps</strong>.</li>
-          <li>Elegí país + ciudades + keyword (default "dental clinic").</li>
-          <li>Backend usa SerpAPI con dedup estricta contra <code>history.json</code> — leads ya scrapeados NO se vuelven a scrapear.</li>
+          <li>Elegí país + ciudades + keyword. Hay <strong>keywords sugeridas por país</strong> (en el idioma local): clic para agregarlas.</li>
+          <li>Backend usa SerpAPI con dedup estricta contra <code>history.json</code> (por nombre+dirección normalizados y teléfono) — leads ya scrapeados NO se vuelven a scrapear.</li>
           <li>Resultados con indicador <span style="color:#5bb974">verde</span> (nuevo) o gris (ya scrapeado).</li>
           <li><strong>Enviar a Setters</strong> permite asignar a varios setters a la vez con cantidad por cada uno.</li>
         </ol>
-        <p><strong>Import CSV directo a setter:</strong> dedup solo contra leads existentes en setters (NO contra history) — permite importar leads ya scrapeados pero sin asignar.</p>`,
+        <p><strong>Multi-país:</strong> además de LatAm/España, el scraper soporta EE.UU., Canadá, Reino Unido, Alemania, Francia, Italia y Brasil (query e idioma localizados). Cada lead nuevo ya captura <code>placeId</code>, coordenadas, horarios, categoría y si el negocio está <strong>cerrado</strong> (chip ⚠).</p>
+        <p><strong>Import CSV directo a setter:</strong> dedup solo contra leads existentes en setters (NO contra history) — permite importar leads ya scrapeados pero sin asignar.</p>
+        <div class="guide-callout">Al <strong>Enviar a Setters</strong>, arranca solo en segundo plano el <strong>enriquecimiento web + brief de web</strong> de los leads nuevos (ver secciones siguientes). No tenés que apretar nada.</div>`,
         goto: { target: 'view-maps', label: 'Ir a Google Maps' }
+      },
+      {
+        id: 'enrichment',
+        title: 'Enriquecer leads (datos extra, casi todo gratis)',
+        body: `<p>Desde <strong>Centro de Comando</strong> (fila de botones) enriquecés los leads con datos que ayudan a llamar. Casi todo es <strong>gratis</strong> (no gasta SerpApi):</p>
+        <ul>
+          <li><strong>Enriquecer email + redes (web):</strong> baja el sitio de cada lead y saca email, Instagram/Facebook, si <strong>pauta anuncios</strong> (pixel Meta/Google) y la <strong>antigüedad</strong> (del texto del sitio + fecha de registro del dominio vía RDAP). Gratis. Un clic barre toda la base en tandas.</li>
+          <li><strong>Enriquecer dueño (NPI):</strong> solo leads de EE.UU. — dueño + especialidad del registro público NPI. Gratis.</li>
+          <li><strong>Validar TODA la base ($):</strong> valida tipo de línea (móvil/fijo/voip) vía Telnyx (~$0.0025 c/u). Detecta números muertos y baja la tasa de abandono.</li>
+          <li><strong>Limpiar emails/websites basura:</strong> limpieza única de datos que dejó el scraper viejo (tracking, wa.me guardado como web). Idempotente + backup.</li>
+        </ul>
+        <div class="guide-callout">El enriquecimiento web <strong>corre solo</strong> después de cada scrape que mandás a setters — los leads nuevos ya llegan con email/redes/ads/antigüedad. Cada barrida marca cada lead para no re-cobrar ni re-trabajar.</div>`
+      },
+      {
+        id: 'brief-ia',
+        title: 'Brief IA (munición para la llamada)',
+        body: `<p>El <strong>Brief IA</strong> le arma al setter munición real para abrir: un <strong>gancho</strong>, el <strong>fit</strong> (0-100, orientado a <strong>reactivación/retención</strong> de pacientes), dolores y tratamientos. Todo se dispara desde <strong>Centro de Comando</strong>:</p>
+        <ul>
+          <li><strong>Brief IA reseñas ($):</strong> baja las reseñas reales de Google (SerpApi) y la IA extrae dolores + citas. El más jugoso. Cuesta SerpApi + LLM. Arranca por los de más reseñas.</li>
+          <li><strong>Brief IA desde web:</strong> usa el texto del sitio del lead (sin SerpApi, solo LLM = centavos). Para los que tienen web propia pero pocas reseñas.</li>
+          <li><strong>Barrer país (reseñas $ / web):</strong> elegís país en el dropdown y barre solo ese. La de reseñas se autolimita bajo el tope de 200 búsquedas/hora de SerpApi.</li>
+          <li><strong>Recon brief (gratis):</strong> cuenta cuántos quedan por briefear y estima el costo, sin gastar. Usalo antes de barrer.</li>
+        </ul>
+        <p>En la card del lead el brief muestra su origen: <strong>"desde web"</strong> (gratis) o <strong>"N reseñas"</strong> (pago).</p>
+        <div class="guide-callout">El brief <strong>de web corre solo</strong> tras cada scrape (junto al enriquecimiento). El de <strong>reseñas es manual</strong> — vos decidís cuándo y qué país (gasta SerpApi).</div>
+        <div class="guide-callout warn">El brief apunta a la oferta real (reactivar/retener pacientes de la base) y <strong>nunca nombra la empresa</strong>. Revisá el texto de los primeros; si algo suena genérico, ajustá el prompt <code>_briefSystemPrompt</code> en <code>index.js</code>.</div>`,
+        goto: { target: 'view-command', label: 'Ir a Centro de Comando' }
       },
       {
         id: 'backup',
