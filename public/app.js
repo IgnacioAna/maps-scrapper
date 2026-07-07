@@ -4580,7 +4580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // nuevo a setters. Es GRATIS (solo fetches a las webs). El usuario puede seguir
         // trabajando mientras corre. Reusa /api/admin/enrich-leads (mismo loop probado).
         if ((result.imported || 0) > 0) {
-          window.showToast?.('Enriqueciendo email + redes en segundo plano… (podés seguir trabajando)', { type: 'info', duration: 6000 });
+          window.showToast?.('Enriqueciendo email + redes + brief de web en segundo plano… (podés seguir trabajando)', { type: 'info', duration: 6000 });
           _autoEnrichAfterScrape().catch(() => {});
         }
       } catch (e) { console.error('Import exception:', e); alert('Error al importar: ' + e.message); }
@@ -4605,6 +4605,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         await new Promise(r => setTimeout(r, 300));
       }
       if (scanned > 0) window.showToast?.(`✓ Enriquecimiento listo: ${emails} emails · ${social} redes (${scanned} sitios revisados).`, { type: 'success', duration: 8000 });
+      // Encadenar el Brief IA desde WEB (sin SerpApi, solo LLM = centavos). Corre DESPUÉS
+      // del enriquecimiento para que el brief tenga ads/antigüedad ya cargados. Barre los
+      // leads con web propia sin brief: la 1ra vez limpia el backlog viejo, después solo
+      // los nuevos de cada scrape. Best-effort en 2do plano.
+      await _autoWebBriefAfterScrape();
+    }
+
+    // Loop del Brief IA desde web en 2do plano. Mismo patrón que el enrich: tandas chicas,
+    // corta cuando no quedan candidatos. NO usa SerpApi. Silencioso si el endpoint no está
+    // deployado todavía (404) o no hay IA (503).
+    async function _autoWebBriefAfterScrape() {
+      let briefed = 0, scanned = 0, rounds = 0, errs = 0;
+      const LIM = 12;
+      while (rounds < 800) {
+        rounds++;
+        let ok = false, d = null, st = 0;
+        try {
+          const resp = await fetch(apiUrl('/api/admin/enrich-web-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: LIM }) });
+          ok = resp.ok; st = resp.status; d = await resp.json().catch(() => null);
+        } catch { ok = false; }
+        if (st === 404 || st === 503) break; // endpoint no deployado / sin IA → salir sin ruido
+        if (!ok || !d) { if (++errs >= 4) break; await new Promise(r => setTimeout(r, 3000)); continue; }
+        errs = 0;
+        briefed += (d.briefed || 0); scanned += (d.scanned || 0);
+        if ((d.scanned || 0) < LIM) break; // no quedan más candidatos → terminó
+        await new Promise(r => setTimeout(r, 500));
+      }
+      if (briefed > 0) window.showToast?.(`✓ Briefs de web listos: ${briefed} generados (${scanned} sitios analizados).`, { type: 'success', duration: 8000 });
     }
 
     // ── Vista Llamadas (Sin WSP) — rediseño con dispositions, click-to-call, agendamiento ──
