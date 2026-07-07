@@ -1937,7 +1937,8 @@
             <option value="Perú">Perú</option>
           </select>
           <label style="font-size:12px; color:var(--text-secondary);">tope briefs: <input id="cmd-brief-sweep-max" type="number" value="150" min="1" max="700" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit;"></label>
-          <button id="cmd-brief-sweep-btn" class="btn-table-action" style="color:#FFB341; border-color:rgba(255,179,65,0.4);">Barrer país</button>
+          <button id="cmd-brief-sweep-btn" class="btn-table-action" style="color:#FFB341; border-color:rgba(255,179,65,0.4);" title="Brief desde RESEÑAS de Google del país elegido. Los mejores prospectos (más reseñas) primero. Cuesta SerpApi + LLM. Se autorregula bajo el límite de 200 búsquedas/hora.">Barrer país (reseñas $)</button>
+          <button id="cmd-brief-websweep-btn" class="btn-table-action" style="color:#79B8FF; border-color:rgba(121,184,255,0.4);" title="Brief desde el SITIO WEB de los leads del país elegido (sin SerpApi). Para los que tienen web propia y no califican para el brief de reseñas. Solo cuesta el LLM (centavos).">Barrer país (web)</button>
           <button id="cmd-brief-sweep-stop" class="btn-table-action hidden" style="color:#f85149; border-color:rgba(248,81,73,0.4);">Parar</button>
           <span id="cmd-brief-sweep-progress" style="font-size:12.5px; color:var(--accent); line-height:1.5;"></span>
         </div>
@@ -3315,7 +3316,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260707f"></script>
+  <script type="module" src="/app.js?v=20260707h"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

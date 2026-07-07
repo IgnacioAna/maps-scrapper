@@ -9870,6 +9870,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.error(e); if (prog) prog.textContent = `⚠️ error de red (frené en ${totalBriefed} briefs)`; }
       cmdSweepBtn.disabled = false; cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = 'Parar';
     });
+    // Barrida brief WEB por país (sin SerpApi): loop de lotes hasta terminar el país
+    // o el tope. No hay límite de 200/hora que respetar (no toca SerpApi), solo una
+    // pausa corta entre lotes. Reusa el dropdown de país y el flag/botón de Parar.
+    const cmdWebSweepBtn = document.getElementById('cmd-brief-websweep-btn');
+    if (cmdWebSweepBtn) cmdWebSweepBtn.addEventListener('click', async () => {
+      const country = document.getElementById('cmd-brief-sweep-country').value;
+      const maxBriefs = Math.max(1, parseInt(document.getElementById('cmd-brief-sweep-max').value, 10) || 150);
+      const prog = document.getElementById('cmd-brief-sweep-progress');
+      if (!country) { if (prog) prog.textContent = '⚠️ Elegí un país primero.'; return; }
+      if (!confirm(`Barrer ${country} desde la WEB: generar briefs para hasta ${maxBriefs} leads con sitio propio (o hasta terminar el país). NO usa SerpApi — solo baja el sitio + LLM (centavos). ¿Seguir?`)) return;
+      _briefSweepStop = false;
+      cmdWebSweepBtn.disabled = true; cmdSweepBtn && (cmdSweepBtn.disabled = true); cmdSweepStop.classList.remove('hidden');
+      let totalBriefed = 0, rounds = 0, consecErrors = 0, notLive = false;
+      try {
+        while (!_briefSweepStop && totalBriefed < maxBriefs && rounds < 200) {
+          rounds++;
+          if (prog) prog.innerHTML = `${country} (web): ${totalBriefed} briefs · ronda ${rounds}...`;
+          let d = null, ok = false, st = 0;
+          try {
+            const resp = await fetch(apiUrl('/api/admin/enrich-web-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country, limit: 12 }) });
+            ok = resp.ok; st = resp.status; d = await resp.json().catch(() => null);
+          } catch (e) { ok = false; }
+          if (st === 404) { notLive = true; break; }
+          if (!ok || !d) {
+            consecErrors++;
+            if (consecErrors >= 4) { if (prog) prog.innerHTML = `⚠️ Corté tras 4 errores seguidos. Ya van ${totalBriefed} briefs web en ${country}. Reintentá en un rato.`; break; }
+            if (prog) prog.innerHTML = `${country} (web): error en ronda ${rounds}, reintentando (${consecErrors}/4)... ${totalBriefed} hechos.`;
+            await new Promise((r) => setTimeout(r, 2500));
+            continue;
+          }
+          consecErrors = 0;
+          totalBriefed += (d.briefed || 0);
+          if ((d.scanned || 0) === 0) { if (prog) prog.innerHTML = `${country} (web) terminado: ${totalBriefed} briefs desde sitio.`; break; }
+          if ((d.briefed || 0) === 0 && (d.skipped || 0) === 0) { if (prog) prog.innerHTML = `${country} (web): nada más para procesar (${totalBriefed} briefs).`; break; }
+          // Pausa corta entre lotes (cortesía con el LLM/gateway; no hay throttle de SerpApi).
+          if (!_briefSweepStop && totalBriefed < maxBriefs) { for (let s = 8; s > 0 && !_briefSweepStop; s--) { if (prog) prog.innerHTML = `${country} (web): ${totalBriefed} briefs · pausa (${s}s)…`; await new Promise((r) => setTimeout(r, 1000)); } }
+        }
+        if (notLive && prog) prog.innerHTML = '⚠️ El brief web todavía no está disponible en el server (deploy en curso). Reintentá en unos minutos.';
+        else if (_briefSweepStop && prog) prog.innerHTML = `Parado: ${totalBriefed} briefs web en ${country}.`;
+        else if (totalBriefed >= maxBriefs && prog) prog.innerHTML = `Tope alcanzado (${maxBriefs}): ${totalBriefed} briefs web en ${country}. Subí el tope para seguir.`;
+      } catch (e) { console.error(e); if (prog) prog.textContent = `⚠️ error de red (frené en ${totalBriefed} briefs web)`; }
+      cmdWebSweepBtn.disabled = false; cmdSweepBtn && (cmdSweepBtn.disabled = false); cmdSweepStop.classList.add('hidden'); cmdSweepStop.textContent = 'Parar';
+    });
+
     // Phase 10 C3/C4: Lead Brief IA (reseñas → dolores+ángulo). Lote de 8, premium.
     const cmdBriefBtn = document.getElementById('cmd-enrich-brief-btn');
     if (cmdBriefBtn) cmdBriefBtn.addEventListener('click', async () => {
