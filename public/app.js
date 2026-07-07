@@ -12515,18 +12515,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!d) return '';
     const abs = d.abs || 0;
     const pct = d.pct || 0;
-    if (abs === 0 && pct === 0) return '<span class="muted" style="font-size:11px;">sin cambios</span>';
-    const arrow = abs > 0 ? '▲' : '▼';
-    const color = abs > 0 ? '#5bb974' : '#f85149';
-    return `<span style="color:${color}; font-size:12px; font-weight:600;">${arrow} ${Math.abs(abs)} <span style="font-size:10px; opacity:0.85;">(${pct > 0 ? '+' : ''}${pct}%)</span></span>`;
+    if (abs === 0 && pct === 0) return '<span class="myp-delta flat">sin cambios</span>';
+    const up = abs > 0;
+    return `<span class="myp-delta ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(abs)} <span style="opacity:0.8; font-weight:500;">${pct > 0 ? '+' : ''}${pct}%</span></span>`;
   }
+  // Acento por métrica: rampa violeta que progresa hacia el verde (la meta =
+  // agendados). Sequential-hacia-el-objetivo, no rainbow → lectura premium.
+  const MYP_KPI_ACCENTS = {
+    total: '#8892A6', conexiones: '#6E8BF0', respondieron: '#8A83F0',
+    calificados: '#A97DEE', interesados: '#C77BE0', agendados: '#4ADE80', shows: '#4DABF7',
+  };
 
   function _mypRenderKpis(d) {
     const el = document.getElementById('myp-kpis');
     if (!el) return;
     el.innerHTML = '';
+    // Base del funnel = leads trabajados. Cada tile muestra su conversión sobre
+    // esa base con un medidor, para que las 7 cajas cuenten una historia (embudo)
+    // en vez de ser 7 números sueltos.
+    const base = Math.max(1, Number(d.totals.total) || 0);
     for (const def of MYP_KPI_DEFS) {
-      let value, deltaHtml = '';
+      let value, deltaHtml = '', meterPct = null, convLabel = '', isAccentNum = false;
       if (def.isShowRate) {
         const shows = d.totals.shows || 0;
         const noShows = d.totals.noShows || 0;
@@ -12537,23 +12546,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         const curr = denom > 0 ? d.totals.pctShow : 0;
         const abs = Number((curr - prevPct).toFixed(1));
         const pctRel = prevPct > 0 ? Number((((curr - prevPct) / prevPct) * 100).toFixed(1)) : (curr > 0 ? 100 : 0);
-        deltaHtml = denom > 0 ? _mypFmtDelta({ abs, pct: pctRel }) : '<span class="muted" style="font-size:11px;">sin agendados</span>';
+        deltaHtml = denom > 0 ? _mypFmtDelta({ abs, pct: pctRel }) : '<span class="myp-delta flat">sin agendados</span>';
+        meterPct = denom > 0 ? Math.min(100, Math.round(curr)) : 0;
+        convLabel = denom > 0 ? 'asistencia' : '';
       } else {
         value = d.totals[def.key];
         deltaHtml = _mypFmtDelta(d.deltas[def.key]);
+        if (def.key === 'total') { meterPct = 100; convLabel = 'trabajados'; }
+        else {
+          meterPct = Math.min(100, Math.round((Number(value) || 0) / base * 100));
+          convLabel = meterPct + '% del total';
+        }
+        if (def.key === 'agendados') isAccentNum = true;
       }
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.style.cssText = 'padding:18px 20px; display:flex; flex-direction:column; gap:10px; min-height:120px; border-radius:14px; transition:border-color 0.18s, transform 0.18s ease-out, box-shadow 0.18s; cursor:default;';
-      card.onmouseover = () => { card.style.borderColor = 'var(--accent)'; card.style.transform = 'translateY(-2px)'; card.style.boxShadow = '0 8px 24px rgba(157,133,242,0.10)'; };
-      card.onmouseout = () => { card.style.borderColor = 'var(--border-color)'; card.style.transform = ''; card.style.boxShadow = ''; };
-      card.innerHTML = `
-        <div class="muted" style="font-size:10px; text-transform:uppercase; letter-spacing:0.7px; font-weight:600;">${def.label}</div>
-        <div style="font-size:32px; font-weight:700; color:var(--text-primary); line-height:1; letter-spacing:-1px; font-variant-numeric:tabular-nums;">${value}</div>
-        <div style="margin-top:auto;">${deltaHtml}</div>
+      const accent = MYP_KPI_ACCENTS[def.key] || 'var(--accent)';
+      const tile = document.createElement('div');
+      tile.className = 'myp-tile';
+      tile.style.setProperty('--tile-accent', accent);
+      tile.title = def.hint;
+      tile.innerHTML = `
+        <div class="myp-tile-label">${def.label}</div>
+        <div class="myp-tile-num${isAccentNum ? ' is-accent' : ''}">${value}</div>
+        <div class="myp-tile-foot">${deltaHtml}${convLabel ? `<span class="myp-conv">${convLabel}</span>` : ''}</div>
+        ${meterPct != null ? `<div class="myp-meter"><i style="width:${meterPct}%"></i></div>` : ''}
       `;
-      card.title = def.hint;
-      el.appendChild(card);
+      el.appendChild(tile);
     }
   }
 
@@ -12716,10 +12733,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const ganadas = calendar.filter((c) => c.calendarioEstado === 'ganada');
     const ganadasValor = ganadas.reduce((a, c) => a + (Number(c.valorProyecto) || 0), 0);
     const stage = (label, count, color, extra) => `
-      <div style="flex:1; min-width:118px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; padding:11px 13px; border-top:3px solid ${color};">
-        <div style="font-size:22px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${count}</div>
-        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${label}</div>
-        ${extra ? `<div style="font-size:10.5px; color:${color}; margin-top:3px; font-weight:600;">${extra}</div>` : ''}
+      <div class="myp-tile" style="--tile-accent:${color}; min-height:100px; gap:6px; padding:15px 16px 13px;">
+        <div class="myp-tile-num" style="font-size:27px;">${count}</div>
+        <div class="myp-tile-label" style="text-transform:none; letter-spacing:0.2px; font-size:11.5px; color:var(--text-secondary);">${label}</div>
+        ${extra ? `<div style="font-size:11px; color:${color}; font-weight:600;">${extra}</div>` : ''}
       </div>`;
     const fmtFecha = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
     const meetingRows = proximas.slice(0, 5).map((c) => `
@@ -12734,8 +12751,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           <strong style="font-size:14px;">Mi pipeline</strong>
           <span class="muted" style="font-size:11.5px;">Tu cartera completa por etapa — no depende del período de arriba.</span>
         </div>
-        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-          ${stage('Sin contactar', sinContactar.length, '#7E8494')}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px;">
+          ${stage('Sin contactar', sinContactar.length, '#8892A6')}
           ${stage('En seguimiento', enSeguimiento.length, '#5BA3F2')}
           ${stage('Interesados', interesados.length, '#5BB974')}
           ${stage('Reuniones próximas', proximas.length, '#9D85F2')}

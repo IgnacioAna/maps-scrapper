@@ -1737,6 +1737,99 @@ td.empty-state .empty-state-content::before {
   font-variant-numeric: tabular-nums;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Mi rendimiento — tiles premium (2026-07-07)
+   Reemplazan las cajas planas por tiles con acento por métrica,
+   medidor de conversión y chip de delta. --tile-accent se setea inline.
+═════════════════════════════════════════════════════════════════ */
+.myp-tile {
+  --tile-accent: var(--accent);
+  position: relative;
+  padding: 17px 19px 15px;
+  border-radius: 16px;
+  background:
+    radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--tile-accent) 9%, transparent) 0%, transparent 46%),
+    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-height: 126px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.myp-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--tile-accent), transparent 78%);
+  opacity: 0.9;
+}
+.myp-tile:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--tile-accent) 42%, transparent);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.30), 0 0 0 1px color-mix(in srgb, var(--tile-accent) 22%, transparent);
+}
+.myp-tile-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+}
+.myp-tile-num {
+  font-size: 33px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+}
+.myp-tile-num.is-accent { color: var(--tile-accent); }
+.myp-tile-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.myp-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.myp-delta.up { color: #6ee7a0; background: rgba(74, 222, 128, 0.13); }
+.myp-delta.down { color: #ff9089; background: rgba(248, 81, 73, 0.13); }
+.myp-delta.flat { color: var(--text-tertiary); background: rgba(255, 255, 255, 0.05); }
+.myp-conv {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.myp-meter {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.myp-meter > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tile-accent) 50%, transparent), var(--tile-accent));
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Highlight metric (e.g. agendados) */
 .stat-card.is-highlight,
 .stat-card-highlight {
