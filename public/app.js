@@ -12636,6 +12636,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       _mypRenderKpis(d);
       _mypRenderChart(d);
+      // 2026-07-06: Mi pipeline — cartera personal por etapa. No bloquea los KPIs.
+      _mypLoadPipeline(effectiveSetter).catch((e) => console.warn('[myp-pipeline]', e?.message));
 
       // Popular selector de setters si admin/supervisor (primer carga)
       const wrap = document.getElementById('myp-setter-wrap');
@@ -12654,6 +12656,83 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (e) {
       alert('Error cargando rendimiento: ' + e.message);
     }
+  }
+
+  // ─── Mi pipeline (dentro de view-myperf) ──────────────────────────────
+  // Cartera personal por etapa: Sin contactar → En seguimiento → Interesados →
+  // Agendadas → Ganadas. El setter ve SOLO lo suyo (el backend ya filtra tanto
+  // sin-wsp como calendar por setterId); admin/supervisor ven el equipo o el
+  // setter elegido en el selector de arriba.
+  async function _mypLoadPipeline(effectiveSetter) {
+    const el = document.getElementById('myp-pipeline');
+    if (!el) return;
+    const role = window.__CURRENT_USER__?.role;
+    const leadsParams = new URLSearchParams();
+    leadsParams.set('include', 'callable');
+    if (effectiveSetter && (role === 'admin' || role === 'supervisor')) leadsParams.set('setter', effectiveSetter);
+    const [leadsR, calR] = await Promise.all([
+      fetch(apiUrl('/api/setters/leads/sin-wsp?' + leadsParams.toString()), { credentials: 'include' }),
+      fetch(apiUrl('/api/setters/calendar'), { credentials: 'include' }),
+    ]);
+    if (!leadsR.ok || !calR.ok) { el.innerHTML = ''; return; }
+    const leads = (await leadsR.json()).leads || [];
+    let calendar = (await calR.json()).calendar || [];
+    // Para admin/supervisor con setter elegido, el calendar viene completo → filtrar acá.
+    if (effectiveSetter && (role === 'admin' || role === 'supervisor')) {
+      calendar = calendar.filter((c) => c.setterId === effectiveSetter);
+    }
+    const now = Date.now();
+    const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado' || l.estado === 'cerrado';
+    const interesados = leads.filter((l) => l.estado === 'interesado');
+    const enSeguimiento = leads.filter((l) => !terminal(l) && l.estado !== 'interesado'
+      && (l.callbackAt || (Array.isArray(l.callLog) && l.callLog.length > 0)));
+    const sinContactar = leads.filter((l) => !terminal(l) && l.estado !== 'interesado'
+      && !l.callbackAt && !(Array.isArray(l.callLog) && l.callLog.length > 0));
+    const proximas = calendar
+      .filter((c) => (c.calendarioEstado === 'pendiente' || c.calendarioEstado === 'reagendada')
+        && c.fecha && new Date(c.fecha).getTime() >= now - 12 * 3600000)
+      .sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+    const realizadas = calendar.filter((c) => c.calendarioEstado === 'realizada').length;
+    const ganadas = calendar.filter((c) => c.calendarioEstado === 'ganada');
+    const ganadasValor = ganadas.reduce((a, c) => a + (Number(c.valorProyecto) || 0), 0);
+    const stage = (label, count, color, extra) => `
+      <div style="flex:1; min-width:118px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; padding:11px 13px; border-top:3px solid ${color};">
+        <div style="font-size:22px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${count}</div>
+        <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${label}</div>
+        ${extra ? `<div style="font-size:10.5px; color:${color}; margin-top:3px; font-weight:600;">${extra}</div>` : ''}
+      </div>`;
+    const fmtFecha = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+    const meetingRows = proximas.slice(0, 5).map((c) => `
+      <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--border-subtle); font-size:12.5px;">
+        <span style="color:var(--accent); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;">${fmtFecha(c.fecha)}</span>
+        <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(c.nombre || '(sin nombre)')}</span>
+        ${new Date(c.fecha).getTime() < now ? '<span style="font-size:10px; color:#FFB341; margin-left:auto; white-space:nowrap;">vencida — actualizar</span>' : ''}
+      </div>`).join('');
+    el.innerHTML = `
+      <div class="card" style="padding:18px 20px;">
+        <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+          <strong style="font-size:14px;">Mi pipeline</strong>
+          <span class="muted" style="font-size:11.5px;">Tu cartera completa por etapa — no depende del período de arriba.</span>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          ${stage('Sin contactar', sinContactar.length, '#7E8494')}
+          ${stage('En seguimiento', enSeguimiento.length, '#5BA3F2')}
+          ${stage('Interesados', interesados.length, '#5BB974')}
+          ${stage('Reuniones próximas', proximas.length, '#9D85F2')}
+          ${stage('Ganadas', ganadas.length, '#FFB341', ganadasValor > 0 ? '$' + ganadasValor.toLocaleString() : (realizadas ? realizadas + ' realizadas' : ''))}
+        </div>
+        ${proximas.length ? `
+        <div style="margin-top:14px;">
+          <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Próximas reuniones</div>
+          ${meetingRows}
+          ${proximas.length > 5 ? `<div class="muted" style="font-size:11px; padding-top:6px;">+${proximas.length - 5} más</div>` : ''}
+        </div>` : ''}
+        ${interesados.length ? `
+        <div style="margin-top:12px; display:flex; align-items:center; gap:10px; padding:10px 12px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.3); border-radius:9px;">
+          <span style="font-size:12.5px; color:var(--text-primary);"><strong>${interesados.length}</strong> interesado${interesados.length > 1 ? 's' : ''} esperando que ${effectiveSetter || role === 'setter' ? 'los agendes' : 'se agenden'}</span>
+          <button onclick="document.querySelector('[data-target=&quot;view-hoy&quot;]')?.click()" style="margin-left:auto; background:var(--success); color:#0F1115; border:none; padding:6px 13px; border-radius:7px; font-weight:600; font-size:11.5px; cursor:pointer; font-family:inherit;">Ir a Hoy</button>
+        </div>` : ''}
+      </div>`;
   }
 
   document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
