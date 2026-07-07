@@ -9967,24 +9967,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
     });
 
+    // Brief IA desde web: un clic barre TODO el sistema en tandas automáticas (segundo
+    // plano). No usa SerpApi (solo LLM = centavos). Segundo clic mientras corre = parar.
+    let _webBriefLoopStop = false;
     const cmdWebBriefBtn = document.getElementById('cmd-web-brief-btn');
     if (cmdWebBriefBtn) cmdWebBriefBtn.addEventListener('click', async () => {
-      if (!confirm('Generar Brief IA desde el SITIO WEB para hasta 12 leads con web propia (sin brief todavía). NO usa SerpApi — solo baja el sitio (gratis) + LLM (centavos). Orientado a reactivación de pacientes. ¿Seguir?')) return;
-      cmdWebBriefBtn.disabled = true; const lbl = cmdWebBriefBtn.textContent; cmdWebBriefBtn.textContent = 'Generando (tarda)...';
+      if (cmdWebBriefBtn.dataset.running === '1') { _webBriefLoopStop = true; cmdWebBriefBtn.textContent = 'Parando...'; return; }
+      if (!confirm('Generar Brief IA desde el SITIO WEB para TODOS los leads con web propia y sin brief. Corre en tandas automáticas hasta terminar. NO usa SerpApi — solo LLM (centavos). ¿Seguir?')) return;
+      _webBriefLoopStop = false; cmdWebBriefBtn.dataset.running = '1'; const lbl = 'Brief IA desde web'; cmdWebBriefBtn.textContent = 'Parar';
       const out = document.getElementById('cmd-enrich-result');
+      let briefed = 0, scanned = 0, rounds = 0, consecErrors = 0, notLive = false;
+      const LIM = 12;
       try {
-        const resp = await fetch(apiUrl('/api/admin/enrich-web-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 12 }) });
-        const d = await resp.json();
-        if (out) {
-          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
-          else {
-            const names = (d.briefedSample || []).map((b) => `${b.name}${b.fitScore != null ? ` (fit ${b.fitScore})` : ''}`).join(', ');
-            const e2 = d.errors || {};
-            out.innerHTML = `${d.briefed || 0} briefs de web generados (escaneó ${d.scanned || 0}; sin texto útil: ${e2.no_site_text || 0}; IA falló: ${e2.bad_llm || 0}). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
+        while (!_webBriefLoopStop && rounds < 2000) {
+          rounds++;
+          if (out) out.textContent = `Brief web ronda ${rounds}: ${briefed} generados (${scanned} sitios analizados)... [clic en el botón para parar]`;
+          let d = null, ok = false, st = 0;
+          try {
+            const resp = await fetch(apiUrl('/api/admin/enrich-web-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: LIM }) });
+            ok = resp.ok; st = resp.status; d = await resp.json().catch(() => null);
+          } catch (e) { ok = false; }
+          if (st === 404 || st === 503) { notLive = true; break; }
+          if (!ok || !d) {
+            consecErrors++;
+            if (consecErrors >= 4) { if (out) out.innerHTML = `⚠️ Corté tras 4 errores seguidos. Ya van <b>${briefed}</b> briefs de web. Clic de nuevo para seguir.`; break; }
+            await new Promise((r) => setTimeout(r, 3000));
+            continue;
           }
+          consecErrors = 0;
+          briefed += (d.briefed || 0); scanned += (d.scanned || 0);
+          if ((d.scanned || 0) < LIM) { if (out) out.innerHTML = `Listo: <b>${briefed}</b> briefs de web generados (${scanned} sitios analizados). No quedan más leads con web sin brief.`; break; }
+          await new Promise((r) => setTimeout(r, 500));
         }
-      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
-      cmdWebBriefBtn.disabled = false; cmdWebBriefBtn.textContent = lbl;
+        if (notLive && out) out.textContent = '⚠️ El brief de web no está disponible en el server (deploy en curso). Reintentá en unos minutos.';
+        else if (_webBriefLoopStop && out) out.innerHTML = `Parado: <b>${briefed}</b> briefs de web generados (${scanned} sitios). Clic de nuevo para seguir.`;
+      } catch (e) { console.error(e); if (out) out.textContent = `⚠️ error de red (frené en ${briefed} briefs de web)`; }
+      cmdWebBriefBtn.dataset.running = '0'; cmdWebBriefBtn.textContent = lbl;
     });
 
     const cmdClearBtn = document.getElementById('cmd-clear-btn');

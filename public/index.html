@@ -1917,7 +1917,7 @@
           <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo/voip) de TODOS los leads sin validar vía Telnyx Number Lookup. Un clic barre toda la base en tandas automáticas. ~$0.0025 por número (precio verificado en pricing de Telnyx). Sirve para detectar números muertos y bajar la tasa de abandono.">Validar TODA la base ($)</button>
           <button id="cmd-enrich-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Lead Brief IA: agarra los leads de MÁS reseñas primero (10+ reseñas), lote de 8. Re-fetchea reseñas de Google + IA extrae dolores+cita, fit-score y ángulo. Cuesta SerpApi + LLM. Para un lead puntual usá el botón en su card de Llamadas.">Brief IA reseñas ($)</button>
           <button id="cmd-brief-recon-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="GRATIS — no gasta SerpApi. Cuenta cuántos leads (10+ reseñas) quedan por briefear, y de esos cuántos resuelven barato (ya tienen place_id) vs caros. Sirve para dimensionar la barrida antes de gastar.">Recon brief (gratis)</button>
-          <button id="cmd-web-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Brief IA desde el SITIO WEB del lead (SIN SerpApi). Para leads con web propia que no califican para el brief de reseñas. Baja el sitio (gratis) + IA arma el brief orientado a reactivación de pacientes. Solo cuesta el LLM (centavos). Un clic barre en tandas (clic de nuevo para seguir).">Brief IA desde web</button>
+          <button id="cmd-web-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Brief IA desde el SITIO WEB (SIN SerpApi, solo LLM = centavos). Un clic barre TODOS los leads con web propia y sin brief, en tandas automáticas hasta terminar. Clic de nuevo mientras corre = parar. Orientado a reactivación de pacientes.">Brief IA desde web (todos)</button>
           <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
           <button id="cmd-export-leads-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Exporta un listado LIMPIO para prospección/outreach (Nombre, Email, Teléfono, Web, Instagram, Doctor, Categoría, Dirección, Ciudad, País, Rating, Reseñas). Abre prolijo en Excel. Podés filtrar por país y solo los que tienen email.">Exportar listado (Excel)</button>
           <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
@@ -3316,7 +3316,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260707l"></script>
+  <script type="module" src="/app.js?v=20260707m"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
