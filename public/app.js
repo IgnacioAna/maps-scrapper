@@ -9892,6 +9892,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       cmdBriefBtn.disabled = false; cmdBriefBtn.textContent = lbl;
     });
 
+    const cmdWebBriefBtn = document.getElementById('cmd-web-brief-btn');
+    if (cmdWebBriefBtn) cmdWebBriefBtn.addEventListener('click', async () => {
+      if (!confirm('Generar Brief IA desde el SITIO WEB para hasta 12 leads con web propia (sin brief todavía). NO usa SerpApi — solo baja el sitio (gratis) + LLM (centavos). Orientado a reactivación de pacientes. ¿Seguir?')) return;
+      cmdWebBriefBtn.disabled = true; const lbl = cmdWebBriefBtn.textContent; cmdWebBriefBtn.textContent = 'Generando (tarda)...';
+      const out = document.getElementById('cmd-enrich-result');
+      try {
+        const resp = await fetch(apiUrl('/api/admin/enrich-web-brief'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: 12 }) });
+        const d = await resp.json();
+        if (out) {
+          if (!resp.ok) out.textContent = '⚠️ ' + (d.error || 'error');
+          else {
+            const names = (d.briefedSample || []).map((b) => `${b.name}${b.fitScore != null ? ` (fit ${b.fitScore})` : ''}`).join(', ');
+            const e2 = d.errors || {};
+            out.innerHTML = `${d.briefed || 0} briefs de web generados (escaneó ${d.scanned || 0}; sin texto útil: ${e2.no_site_text || 0}; IA falló: ${e2.bad_llm || 0}). Clic de nuevo para seguir.${names ? `<br><span style="color:var(--text-secondary);">Leads: ${escHtml(names)}</span>` : ''}`;
+          }
+        }
+      } catch (e) { console.error(e); if (out) out.textContent = '⚠️ error de red'; }
+      cmdWebBriefBtn.disabled = false; cmdWebBriefBtn.textContent = lbl;
+    });
+
     const cmdClearBtn = document.getElementById('cmd-clear-btn');
     if (cmdClearBtn) {
       cmdClearBtn.addEventListener('click', () => {

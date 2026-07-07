@@ -8,7 +8,7 @@ import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { mountWa } from "./src/wa/index.js";
-import { enrichFromWebsite, enrichFromNPI, enrichFromMetaAdLibrary, classifyEmailType, isBlockedHost, extractEmailFromHtml, normalizeEmailCandidate } from "./src/enrichment.js";
+import { enrichFromWebsite, enrichFromNPI, enrichFromMetaAdLibrary, enrichDomainAge, classifyEmailType, isBlockedHost, extractEmailFromHtml, normalizeEmailCandidate } from "./src/enrichment.js";
 
 dotenv.config();
 const apiKey = process.env.API_KEY;
@@ -876,31 +876,66 @@ function _briefKnowledge() {
   } catch { return ''; }
 }
 
+// Oferta de SCM (SIN marca): describe la SOLUCIÓN, nunca el nombre de la empresa.
+// Alineación 2026-07-07 (pedido del user): el brief debe vender REACTIVACIÓN/
+// RETENCIÓN de pacientes, no un "sistema de reservas" genérico como decía antes.
+const _BRIEF_OFFER = 'La solución que se ofrece es un sistema automatizado de reactivación, seguimiento y fidelización de pacientes que trabaja sobre la base de pacientes que la clínica YA tiene: reactiva pacientes que dejaron de ir, hace seguimiento a presupuestos y consultas que no cerraron, recupera leads de publicidad que no convirtieron, gestiona no-shows y sostiene el vínculo post-turno (recordatorios, controles). Todo automatizado, sin que el equipo persiga a nadie a mano. NO es una agencia de publicidad ni un simple sistema de turnos: el foco es exprimir la base de pacientes existente.';
+
+// System prompt compartido por el brief de reseñas y el de sitio web. Orienta el
+// fitScore a las 4 señales de reactivación que el user marcó como prioritarias.
+function _briefSystemPrompt() {
+  return 'Sos un analista SDR que prepara MUNICIÓN (no un libreto) para una llamada en frío a una clínica dental/estética. ' +
+    _BRIEF_OFFER + '\n' +
+    'El fitScore (0-100) mide qué tan buen prospecto es PARA REACTIVACIÓN/RETENCIÓN de pacientes. Sube con estas señales: ' +
+    '(1) base grande y consolidada — muchas reseñas y varios años activa = muchos pacientes históricos dormidos para reactivar (la señal MÁS fuerte); ' +
+    '(2) invierte en publicidad (corre ads) — capta pacientes nuevos pero probablemente no los reactiva ni retiene; ' +
+    '(3) no tiene agenda ni seguimiento online visible — gestión manual, terreno fértil para automatizar; ' +
+    '(4) quejas de seguimiento/atención — reseñas donde dicen que no los llamaron, no atienden el teléfono o no hubo seguimiento post-consulta. ' +
+    'Orientá hookPhrase y brief a la oportunidad de reactivar/retener pacientes de SU base, NO a "mejorá tu marketing" genérico. ' +
+    'Devolvé SOLAMENTE un objeto JSON válido (un solo objeto, NO una lista). Sin markdown ni texto adicional. Copiá EXACTAMENTE la estructura del ejemplo, cambiando solo los valores.\n' +
+    'Ejemplo EXACTO del formato (valores de muestra):\n' +
+    '{"treatments":["implantes","ortodoncia"],"painPoints":["varios pacientes dicen que nunca los llamaron para el control (un paciente: me hicieron el tratamiento y no supe más de ellos)"],"fitScore":82,"hookPhrase":"con todos los pacientes que pasaron por la clínica estos años, seguro hay muchos que no volvieron y se pueden recuperar","brief":"Clínica consolidada, con años de trayectoria y buen volumen de pacientes. Invierte en captar pero se ve poco seguimiento post-turno: base ideal para reactivar pacientes dormidos y recuperar presupuestos que no cerraron."}\n' +
+    'Reglas: treatments = servicios inferidos (strings). painPoints = hasta 3 dolores REALES de seguimiento/retención como frases (string), con cita textual entre paréntesis si hay reseña; si no hay dolores reales, dejá []. fitScore = número 0-100. hookPhrase = frase COMPLETA y autosuficiente (10-25 palabras) de apertura orientada a reactivación, con un dato real; NUNCA la cortes (nada de terminar en "de", "que", "con"). brief = 2-3 líneas completas. ' +
+    'CRÍTICO: TODO en ESPAÑOL. NUNCA nombres una empresa, marca ni producto — describí la solución. NO incluyas tu razonamiento, comentarios, dudas ni una sola palabra en inglés dentro de los valores (nada de "we need", "the instruction", "maybe"). Respondé EXCLUSIVAMENTE el objeto JSON, sin texto antes ni después.';
+}
+
+// Contexto del negocio con las señales que el fitScore debe pesar (base/años/ads/web).
+function _briefCtx(lead = {}) {
+  const revN = parseInt(lead.reviews, 10) || 0;
+  return [
+    `Negocio: ${lead.name || ''}`,
+    lead.category ? `Rubro: ${lead.category}` : '',
+    (lead.city || lead.country) ? `Ubicación: ${[lead.city, lead.country].filter(Boolean).join(', ')}` : '',
+    lead.rating ? `Rating Google: ${lead.rating} (${revN} reseñas)` : (revN ? `Reseñas Google: ${revN}` : ''),
+    (lead.yearsActive != null) ? `Años activa (aprox): ${lead.yearsActive}` : '',
+    lead.runsAds ? `Corre publicidad: sí${Array.isArray(lead.adPlatforms) && lead.adPlatforms.length ? ' (' + lead.adPlatforms.join(', ') + ')' : ''}` : '',
+    lead.website ? `Web: ${lead.website}` : 'Sin sitio web propio',
+  ].filter(Boolean).join('\n');
+}
+
+function _briefKnowledgeBlock(knowledge) {
+  return knowledge
+    ? `\n\nCONOCIMIENTO DEL EQUIPO (base de verdad — a quién le vendemos y qué funciona en las llamadas; usalo para alinear fitScore, hookPhrase y brief con la oferta real, NO lo copies literal ni nombres marcas):\n${knowledge}`
+    : '';
+}
+
 function _buildBriefMessages(lead = {}, reviews = [], knowledge = '') {
   const revText = (Array.isArray(reviews) ? reviews : [])
     .map((r) => (typeof r === 'string' ? r : (r && r.snippet) || '')).filter(Boolean)
     .slice(0, 15).map((t) => '- ' + String(t).replace(/\s+/g, ' ').slice(0, 400)).join('\n');
-  const ctx = [
-    `Negocio: ${lead.name || ''}`,
-    lead.category ? `Rubro: ${lead.category}` : '',
-    (lead.city || lead.country) ? `Ubicación: ${[lead.city, lead.country].filter(Boolean).join(', ')}` : '',
-    lead.rating ? `Rating Google: ${lead.rating} (${lead.reviews || 0} reseñas)` : '',
-    lead.website ? `Web: ${lead.website}` : '',
-  ].filter(Boolean).join('\n');
-  const sys = 'Sos un analista SDR para venta de servicios de marketing/sistemas a clínicas dentales y estéticas. ' +
-    'A partir de los datos del negocio y sus reseñas de Google, generás MUNICIÓN para una llamada en frío (no un libreto). ' +
-    'Devolvé SOLAMENTE un objeto JSON válido (un solo objeto, NO una lista). Sin markdown ni texto adicional antes o después. Copiá EXACTAMENTE la estructura del ejemplo, cambiando solo los valores por los de este negocio.\n' +
-    'Ejemplo EXACTO del formato (con valores de muestra):\n' +
-    '{"treatments":["implantes","ortodoncia"],"painPoints":["esperas largas en recepción (un paciente: esperé más de una hora)","cuesta sacar turno, no atienden el teléfono"],"fitScore":78,"hookPhrase":"varios pacientes mencionan que cuesta conseguir turno y que no atienden el teléfono","brief":"Clínica consolidada con buen volumen de reseñas; el dolor recurrente es la gestión de turnos y la atención telefónica. Buen fit para un sistema de reservas."}\n' +
-    'Reglas: treatments = lista de servicios inferidos (strings). painPoints = lista de hasta 3 dolores REALES como frases (string), incluí una cita textual entre paréntesis si hay reseña. Si NO hay dolores reales en las reseñas, dejá painPoints como lista vacía []; NO inventes ni expliques por qué. fitScore = número 0-100. hookPhrase = una frase COMPLETA y autosuficiente (10-25 palabras) de apertura con un dato real; NUNCA la dejes a medias ni la cortes (nada de terminar en "de", "que", "con"). brief = string de 2-3 líneas, también completo. ' +
-    'CRÍTICO: TODO el contenido en ESPAÑOL. NO incluyas tu razonamiento, comentarios, dudas, preguntas, ni una sola palabra en inglés dentro de los valores. NADA de "we need", "the instruction", "in reviews", "maybe", etc. Respondé EXCLUSIVAMENTE el objeto JSON, sin texto antes ni después.';
-  const know = knowledge
-    ? `\n\nCONOCIMIENTO DEL EQUIPO SCM (base de verdad — qué vendemos, a quién y qué funciona en las llamadas; usalo para que fitScore, hookPhrase y brief estén alineados con nuestra oferta real, NO lo copies literal):\n${knowledge}`
-    : '';
-  const user = `DATOS DEL NEGOCIO:\n${ctx}\n\nRESEÑAS:\n${revText || '(sin reseñas disponibles)'}`;
+  const user = `DATOS DEL NEGOCIO:\n${_briefCtx(lead)}\n\nRESEÑAS DE GOOGLE (peores primero — buscá quejas de seguimiento/atención):\n${revText || '(sin reseñas disponibles)'}`;
   // UN solo mensaje user (Mercury devuelve vacío con system+user en español — el
   // patrón que funciona en prod, ver autoTag, es user único + response_format json).
-  return [{ role: 'user', content: sys + know + '\n\n' + user }];
+  return [{ role: 'user', content: _briefSystemPrompt() + _briefKnowledgeBlock(knowledge) + '\n\n' + user }];
+}
+
+// Brief desde el TEXTO del sitio web (sin SerpApi): reutiliza el fetch gratis del
+// enrichment. De la propia comunicación de la clínica infiere tratamientos, si tiene
+// agenda/seguimiento online y qué tan consolidada es. No habrá quejas reales acá.
+function _buildWebsiteBriefMessages(lead = {}, websiteText = '', knowledge = '') {
+  const site = String(websiteText || '').replace(/\s+/g, ' ').trim().slice(0, 4000);
+  const user = `DATOS DEL NEGOCIO:\n${_briefCtx(lead)}\n\nTEXTO DEL SITIO WEB DE LA CLÍNICA (su propia comunicación). De acá inferí: qué tratamientos ofrece, si tiene agenda/reserva online o algún sistema de seguimiento visible, y qué tan consolidada es (años, sedes, equipo). NO vas a encontrar quejas de pacientes acá — dejá painPoints como [] salvo que el texto revele un hueco real de seguimiento. Basá el fitScore en las señales de reactivación:\n${site || '(sin texto del sitio)'}`;
+  return [{ role: 'user', content: _briefSystemPrompt() + _briefKnowledgeBlock(knowledge) + '\n\n' + user }];
 }
 // Mercury a veces devuelve un ARRAY (o array de arrays) en vez del objeto pedido,
 // p.ej. [["ortodoncia","implantes"],["dolor real (cita textual)"]]. Rescatamos esa
@@ -2259,7 +2294,10 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
     const isUS = String(l.country || '').trim() === 'Estados Unidos';
     // NPI: intentar UNA vez (marcado con npiCheckedAt) — sino loopea en los que no matchean.
     const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim() && (force || !l.npiCheckedAt);
-    if (needsWeb || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, country: l.country, facebook: l.facebook, doctor: l.doctor, needsWeb, needsOwner });
+    // Antigüedad del dominio (RDAP, gratis) — solo si tiene web propia y NO sabemos
+    // la antigüedad todavía. Marcado con domainCheckedAt para no re-consultar.
+    const needsAge = wantsWeb && _leadHasRealWebsite(l) && (force || (!l.domainCheckedAt && l.yearsActive == null && !l.foundedYear));
+    if (needsWeb || needsOwner || needsAge) candidates.push({ id, name: l.name, website: l.website, city: l.city, country: l.country, facebook: l.facebook, doctor: l.doctor, needsWeb, needsOwner, needsAge });
     if (candidates.length >= limit) break;
   }
 
@@ -2270,7 +2308,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   // Fetches con concurrencia limitada, FUERA del mutex.
   const results = {};
   const errors = {};
-  let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0, agesFound = 0, metaAdsFound = 0, ownersAiFound = 0;
+  let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0, agesFound = 0, metaAdsFound = 0, ownersAiFound = 0, domainAgesFound = 0;
   // _runPool en vez de chunks con Promise.all: un lead lento ya no frena a los
   // otros 7 de su tanda (head-of-line blocking).
   await _runPool(candidates.map((c) => async () => {
@@ -2334,6 +2372,15 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
         else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
       }
+      if (c.needsAge) {
+        out.domainChecked = true; // marcar el intento (RDAP a veces no tiene fecha)
+        const da = await enrichDomainAge(c.website, { timeoutMs: 6000 });
+        if (da && da.registeredAt && !da.error) {
+          out.domainCreatedAt = da.registeredAt;
+          if (da.years != null) out.domainYears = da.years;
+          domainAgesFound++;
+        } else if (da && da.error) errors['rdap_' + da.error] = (errors['rdap_' + da.error] || 0) + 1;
+      }
       if (Object.keys(out).length) results[c.id] = out;
   }), 8);
 
@@ -2362,6 +2409,12 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.ageChecked) lead.ageCheckedAt = new Date().toISOString();
         if (r.yearsActive != null && lead.yearsActive == null) lead.yearsActive = r.yearsActive;
         if (r.foundedYear && !lead.foundedYear) lead.foundedYear = r.foundedYear;
+        // Antigüedad del dominio (RDAP). domainCreatedAt es dato propio; además
+        // rellena yearsActive/foundedYear si el sitio no los tenía en texto.
+        if (r.domainChecked) lead.domainCheckedAt = new Date().toISOString();
+        if (r.domainCreatedAt && !lead.domainCreatedAt) lead.domainCreatedAt = r.domainCreatedAt;
+        if (r.domainYears != null && lead.yearsActive == null) lead.yearsActive = r.domainYears;
+        if (r.domainCreatedAt && !lead.foundedYear) { const y = new Date(r.domainCreatedAt).getFullYear(); if (y >= 1980 && y <= new Date().getFullYear()) lead.foundedYear = String(y); }
         if (r.adsChecked) {
           lead.adsCheckedAt = new Date().toISOString();
           lead.runsAds = !!r.runsAds;
@@ -2388,7 +2441,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
     });
   }
 
-  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, agesFound, metaAdsFound, ownersAiFound, errors });
+  res.json({ ok: true, source, scanned: candidates.length, applied, emailsFound, npiMatched, adsFound, socialFound, agesFound, domainAgesFound, metaAdsFound, ownersAiFound, errors });
 });
 
 // GET /api/admin/meta-ad-probe (admin) — diagnóstico del token de Meta Ad Library.
@@ -2544,12 +2597,14 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   for (const id of idIter) {
     const l = leadsMap[id];
     if (!l) continue;
-    if ((l.leadBrief || l.briefSkipped) && !body.force) continue; // ya tiene brief o ya falló (no reintentar en la barrida)
+    // Ya tiene brief de RESEÑAS o ya falló → no reintentar (salvo force). Un brief de
+    // WEB (source='website') sí se puede mejorar con el de reseñas (más rico).
+    if (((l.leadBrief && l.leadBrief.source !== 'website') || l.briefSkipped) && !body.force) continue;
     if (!explicitIds) {
       if ((parseInt(l.reviews, 10) || 0) < minReviews) continue;                          // selectivo premium
       if (countryFilter && String(l.country || '').toLowerCase() !== countryFilter) continue; // filtro país opcional
     }
-    candidates.push({ id, name: l.name, address: l.address, city: l.city, country: l.country, placeId: l.placeId, coordinates: l.coordinates, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website });
+    candidates.push({ id, name: l.name, address: l.address, city: l.city, country: l.country, placeId: l.placeId, coordinates: l.coordinates, rating: l.rating, reviews: l.reviews, category: l.category, website: l.website, runsAds: l.runsAds, adPlatforms: l.adPlatforms, yearsActive: l.yearsActive });
   }
   // MEJOR PRIMERO: más reseñas arriba; a igualdad, los que ya tienen place_id
   // (resuelven seguro + barato). Así el gasto va a los mejores prospectos.
@@ -2747,6 +2802,7 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
       for (const id of Object.keys(results)) {
         const lead = d.leads && d.leads[id]; if (!lead) continue;
         if (lead.briefSkipped) delete lead.briefSkipped; // resolvió: limpiar marca vieja
+        if (lead.webBriefSkipped) delete lead.webBriefSkipped;
         const r = results[id];
         // Mercury es débil para multi-campo: a veces da solo treatments/painPoints, o
         // los devuelve como array. Si faltan brief/hook, los SINTETIZAMOS con la munición
@@ -2785,6 +2841,97 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
   const briefedSample = Object.keys(results).map((id) => {
     const c = candidates.find((x) => x.id === id);
     return { id, name: (c && c.name) || id, fitScore: results[id].fitScore != null ? results[id].fitScore : null, reviewsMined: results[id].reviewsMined || 0 };
+  });
+  res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample, leadBriefs: builtBriefs });
+});
+
+// Brief IA desde el SITIO WEB (sin SerpApi) — 2026-07-07. Reutiliza el fetch gratis
+// del sitio (enrichFromWebsite) y arma el brief con el LLM. Pensado para leads que
+// NO califican para el brief premium de reseñas (pocas reseñas / sin place_id) pero
+// SÍ tienen web propia. Solo cuesta el LLM (centavos), cero SerpApi. Opt-in, admin.
+app.post('/api/admin/enrich-web-brief', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  const dryRun = !!body.dryRun;
+  const force = body.force === true;
+  const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 10), 40);
+  if (!AI_AVAILABLE) return res.status(503).json({ error: 'Sin IA disponible.' });
+
+  const data = loadSettersData();
+  const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  const explicitIds = Array.isArray(body.ids) ? body.ids.filter((x) => leadsMap[x]) : null;
+  const countryFilter = body.country ? String(body.country).trim().toLowerCase() : '';
+  const candidates = [];
+  const idIter = (explicitIds && explicitIds.length) ? explicitIds : Object.keys(leadsMap);
+  for (const id of idIter) {
+    const l = leadsMap[id];
+    if (!l) continue;
+    if (!_leadHasRealWebsite(l)) continue; // necesita web propia (no wa.me/redes)
+    // Skip si ya tiene brief (de reseñas o web) o ya falló el web-brief, salvo force.
+    if (!force && (l.leadBrief || l.webBriefSkipped)) continue;
+    if (!explicitIds && countryFilter && String(l.country || '').toLowerCase() !== countryFilter) continue;
+    candidates.push({ id, name: l.name, website: l.website, city: l.city, country: l.country, category: l.category, rating: l.rating, reviews: l.reviews, runsAds: l.runsAds, adPlatforms: l.adPlatforms, yearsActive: l.yearsActive });
+    if (candidates.length >= (explicitIds ? candidates.length + 1 : limit)) break;
+  }
+  if (dryRun) {
+    const byCountry = {};
+    for (const c of candidates) { const k = c.country || '—'; byCountry[k] = (byCountry[k] || 0) + 1; }
+    return res.json({ dryRun: true, pending: candidates.length, byCountry });
+  }
+
+  const knowledge = _briefKnowledge();
+  const results = {};
+  const skips = {};
+  const errors = {};
+  let briefed = 0;
+  // Fetch del sitio (HTTP, gratis) + LLM, FUERA del mutex. Pool chico: el cuello es
+  // el LLM, no hay rate limit de SerpApi que respetar acá.
+  await _runPool(candidates.map((c) => async () => {
+    try {
+      const w = await enrichFromWebsite(c.website, { timeoutMs: 7000 });
+      if (!w || !w.text || w.text.replace(/\s+/g, '').length < 120) {
+        errors.no_site_text = (errors.no_site_text || 0) + 1;
+        skips[c.id] = 'no_site_text';
+        return;
+      }
+      const { parsed: out } = await _briefLLM(_buildWebsiteBriefMessages(c, w.text, knowledge));
+      if (!out) { errors.bad_llm = (errors.bad_llm || 0) + 1; skips[c.id] = 'bad_llm'; return; }
+      results[c.id] = { ...out, webEmail: w.email || '', webEmailType: w.emailType || '' };
+      briefed++;
+    } catch (e) {
+      const k = (e?.message || 'error').slice(0, 40);
+      errors[k] = (errors[k] || 0) + 1;
+    }
+  }), 4);
+
+  let applied = 0;
+  const builtBriefs = {};
+  if (Object.keys(results).length || Object.keys(skips).length) {
+    makeBackup('pre-enrich-web-brief');
+    await mutateSettersData((d) => {
+      for (const id of Object.keys(skips)) {
+        const lead = d.leads && d.leads[id]; if (!lead || lead.leadBrief) continue;
+        lead.webBriefSkipped = { reason: skips[id], at: new Date().toISOString() };
+      }
+      for (const id of Object.keys(results)) {
+        const lead = d.leads && d.leads[id]; if (!lead) continue;
+        if (lead.webBriefSkipped) delete lead.webBriefSkipped;
+        // NO pisar un brief de reseñas ya existente (es más rico). force igual respeta esto.
+        if (lead.leadBrief && lead.leadBrief.source !== 'website') { applied++; continue; }
+        const r = results[id];
+        const synth = _synthBriefText(lead, r);
+        lead.leadBrief = { brief: synth.brief, hookPhrase: synth.hookPhrase, painPoints: r.painPoints, treatments: r.treatments, fitScore: r.fitScore, reviewsMined: 0, source: 'website', at: new Date().toISOString() };
+        builtBriefs[id] = lead.leadBrief;
+        if (Array.isArray(r.treatments) && r.treatments.length && !(Array.isArray(lead.treatments) && lead.treatments.length)) lead.treatments = r.treatments;
+        if (r.fitScore != null && lead.fitScore == null) lead.fitScore = r.fitScore;
+        // Email GRATIS del mismo fetch (si el lead no tenía).
+        if (r.webEmail && !String(lead.email || '').trim()) { lead.email = r.webEmail; lead.emailType = r.webEmailType || 'unknown'; }
+        applied++;
+      }
+    });
+  }
+  const briefedSample = Object.keys(results).map((id) => {
+    const c = candidates.find((x) => x.id === id);
+    return { id, name: (c && c.name) || id, fitScore: results[id].fitScore != null ? results[id].fitScore : null };
   });
   res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample, leadBriefs: builtBriefs });
 });
@@ -10294,7 +10441,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _runPool };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _runPool };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");

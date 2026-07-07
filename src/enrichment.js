@@ -494,6 +494,69 @@ export async function enrichFromWebsite(website, opts = {}) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Antigüedad del dominio (RDAP) — 2026-07-07. Gratis, sin API key. RDAP es el
+// reemplazo moderno de WHOIS: JSON sobre HTTPS. rdap.org bootstrapea al registro
+// correcto. Da la fecha de registro del dominio → proxy de antigüedad de la clínica
+// (refuerza yearsActive/foundedYear cuando el sitio no lo dice en texto).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// PURA. Dominio registrable desde una URL/host. Maneja TLDs de 2 niveles comunes
+// (com.mx, com.ar, com.br, co.uk, com.co, gob.mx, etc.). "" si no parsea.
+export function registrableDomain(website) {
+  const host = hostFromUrl(website);
+  if (!host) return "";
+  const labels = host.split(".").filter(Boolean);
+  if (labels.length < 2) return "";
+  const SECOND_LEVEL = new Set(["com", "net", "org", "gob", "gov", "edu", "co", "ac", "mil"]);
+  if (labels.length >= 3 && SECOND_LEVEL.has(labels[labels.length - 2])) {
+    return labels.slice(-3).join(".");
+  }
+  return labels.slice(-2).join(".");
+}
+
+// PURA. Extrae la fecha de registro del JSON RDAP (events[].eventAction='registration').
+export function parseRdapRegistration(json) {
+  if (!json || typeof json !== "object") return null;
+  const events = Array.isArray(json.events) ? json.events : [];
+  const reg = events.find((e) => e && String(e.eventAction || "").toLowerCase() === "registration" && e.eventDate);
+  if (!reg) return null;
+  const d = new Date(reg.eventDate);
+  if (isNaN(d.getTime())) return null;
+  const years = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+  if (years < 0 || years > 120) return { registeredAt: d.toISOString(), years: null };
+  return { registeredAt: d.toISOString(), years };
+}
+
+/**
+ * Antigüedad del dominio vía RDAP. Nunca lanza: degrada a { error }.
+ * -> Promise<{ registeredAt: ISO, years: number|null } | { error: string }>
+ */
+export async function enrichDomainAge(website, opts = {}) {
+  const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
+  const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
+  try {
+    if (!fetchImpl) return { error: "no_fetch" };
+    const domain = registrableDomain(website);
+    if (!domain) return { error: "bad_domain" };
+    // rdap.org bootstrapea al registro correcto (redirige). safeFetch sigue los
+    // redirects revalidando cada host (anti-SSRF), y todos los registros son públicos.
+    const r = await safeFetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+      fetchImpl,
+      timeoutMs,
+      headers: { Accept: "application/rdap+json, application/json;q=0.9" },
+    });
+    if (!r.ok) return { error: r.error || "rdap_failed" };
+    let json = null;
+    try { json = JSON.parse(r.text); } catch { return { error: "rdap_parse" }; }
+    const parsed = parseRdapRegistration(json);
+    if (!parsed) return { error: "no_registration_date" };
+    return parsed;
+  } catch {
+    return { error: "unexpected" };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Meta Ad Library (¿la clínica corre anuncios AHORA en Facebook/Instagram?)
 // ─────────────────────────────────────────────────────────────────────────────
 
