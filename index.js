@@ -12239,20 +12239,34 @@ JSON:`;
   } catch { return null; }
 }
 
+// Setters cuyas llamadas NO aparecen en la biblioteca de entrenamiento (son
+// llamadas de prueba del dueño, no material de aprendizaje para vendedores).
+const TRAINING_EXCLUDED_SETTERS = new Set(['setter_ignacio']);
+
 // GET /api/training/calls — biblioteca: TODAS las llamadas con transcript (de todo
 // el equipo), anonimizadas. Cualquier setter ve las de sus compañeros para aprender.
+// Excepción: las llamadas de Ignacio (dueño, pruebas) se ocultan.
 app.get('/api/training/calls', requireAuth, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 60, 300);
   const outcomeFilter = (req.query.outcome || '').toString().trim();
   const data = loadSettersData();
   const setterName = {}; (data.setters || []).forEach((s) => { setterName[s.id] = s.name; });
+  // userId → setterId, para excluir también las llamadas que Ignacio haya hecho
+  // sobre leads de OTROS setters (el logEntry.by guarda el user que llamó).
+  const userSetterId = {};
+  try { (loadAuthData().users || []).forEach((u) => { if (u.id) userSetterId[u.id] = u.setterId || ''; }); } catch {}
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
+    // Excluir la cartera de los setters ocultos (sus leads asignados).
+    if (TRAINING_EXCLUDED_SETTERS.has(lead.assignedTo)) continue;
     for (let i = 0; i < lead.callLog.length; i++) {
       const c = lead.callLog[i];
       if (!c.transcript?.segments?.length) continue; // solo material con transcripción
       if (outcomeFilter && c.outcome !== outcomeFilter) continue;
+      // Excluir también si el que HIZO la llamada es un setter oculto (aunque el
+      // lead sea de otro): Ignacio test-llamando cualquier lead.
+      if (c.by && TRAINING_EXCLUDED_SETTERS.has(userSetterId[c.by])) continue;
       calls.push({
         leadId, callIdx: i, ts: c.ts, duration: c.duration || 0,
         outcome: c.outcome || '',
