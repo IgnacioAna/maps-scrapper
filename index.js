@@ -2243,20 +2243,22 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
   const candidates = [];
   const force = body.force === true;
-  const DAY_MS = 24 * 60 * 60 * 1000;
   for (const id of Object.keys(leadsMap)) {
     const l = leadsMap[id];
     if (!l) continue;
-    // Skip 24h (PASO 3): no re-enriquecir un lead tocado hace <24hs (evita re-trabajo
-    // al apretar el botón dos veces). force:true lo ignora.
-    if (!force && l.enrichedAt && (Date.now() - new Date(l.enrichedAt).getTime()) < DAY_MS) continue;
+    // Auditoría 2026-07-07: el skip 24h por `enrichedAt` global era AGNÓSTICO de la
+    // fuente — correr NPI bloqueaba el enrich web 24h (y viceversa) aunque ese chequeo
+    // nunca se hubiera hecho. Los markers *CheckedAt por-fuente ya evitan el re-trabajo
+    // (se setean en cada pasada, incluso si el fetch falla), así que el skip global se
+    // eliminó. force:true ahora bypassa los markers (antes solo bypasseaba el skip 24h
+    // → no podía re-chequear nada ya marcado).
     // Fetch del sitio UNA vez: saca email/emailType + ads + redes + antigüedad +
     // Meta Ads + owner IA. Se re-fetchea si falta CUALQUIER chequeo (ads/age/meta/
     // owner) — HTTP gratis, marcado con *CheckedAt para no loopear.
-    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && (!l.adsCheckedAt || !l.ageCheckedAt || !l.metaAdsCheckedAt || !l.ownerAiCheckedAt);
+    const needsWeb = wantsWeb && _leadHasRealWebsite(l) && (force || !l.adsCheckedAt || !l.ageCheckedAt || !l.metaAdsCheckedAt || !l.ownerAiCheckedAt);
     const isUS = String(l.country || '').trim() === 'Estados Unidos';
     // NPI: intentar UNA vez (marcado con npiCheckedAt) — sino loopea en los que no matchean.
-    const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim() && !l.npiCheckedAt;
+    const needsOwner = wantsNpi && isUS && String(l.name || '').trim().length >= 3 && !String(l.doctor || '').trim() && (force || !l.npiCheckedAt);
     if (needsWeb || needsOwner) candidates.push({ id, name: l.name, website: l.website, city: l.city, country: l.country, facebook: l.facebook, doctor: l.doctor, needsWeb, needsOwner });
     if (candidates.length >= limit) break;
   }
@@ -2269,10 +2271,9 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
   const results = {};
   const errors = {};
   let emailsFound = 0, npiMatched = 0, adsFound = 0, socialFound = 0, agesFound = 0, metaAdsFound = 0, ownersAiFound = 0;
-  const CONC = 8;
-  for (let i = 0; i < candidates.length; i += CONC) {
-    const chunk = candidates.slice(i, i + CONC);
-    await Promise.all(chunk.map(async (c) => {
+  // _runPool en vez de chunks con Promise.all: un lead lento ya no frena a los
+  // otros 7 de su tanda (head-of-line blocking).
+  await _runPool(candidates.map((c) => async () => {
       const out = {};
       if (c.needsWeb) {
         const w = await enrichFromWebsite(c.website, { timeoutMs: 6000 });
@@ -2334,8 +2335,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
       }
       if (Object.keys(out).length) results[c.id] = out;
-    }));
-  }
+  }), 8);
 
   let applied = 0;
   if (Object.keys(results).length) {
@@ -2353,8 +2353,9 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
         if (r.aiRole && !String(lead.aiRole || '').trim()) lead.aiRole = r.aiRole;
         if (r.aiWhatsApp && !String(lead.aiWhatsApp || '').trim()) lead.aiWhatsApp = r.aiWhatsApp;
-        if (r.specialty) lead.specialty = r.specialty;
-        if (r.npi) lead.npi = r.npi;
+        // Igual que el resto: solo si el campo estaba vacío (NPI no pisa lo cargado a mano).
+        if (r.specialty && !String(lead.specialty || '').trim()) lead.specialty = r.specialty;
+        if (r.npi && !String(lead.npi || '').trim()) lead.npi = r.npi;
         if (r.npiChecked) lead.npiCheckedAt = new Date().toISOString();
         if (r.ownerAiChecked) lead.ownerAiCheckedAt = new Date().toISOString();
         // Antigüedad del sitio web — no pisa si ya la teníamos.
@@ -2479,21 +2480,24 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
   }
 
   const results = {};
+  const fails = {};
   const byType = {};
   const errors = {};
   let looked = 0;
-  const CONC = 5;
-  for (let i = 0; i < candidates.length; i += CONC) {
-    const chunk = candidates.slice(i, i + CONC);
-    await Promise.all(chunk.map(async (c) => {
+  await _runPool(candidates.map((c) => async () => {
       const e164 = c.phone.startsWith('+') ? c.phone : ('+' + c.phone.replace(/\D/g, ''));
       const r = await _telnyxNumberLookup(apiKey, e164, { timeoutMs: 8000 });
       if (r.ok) { results[c.id] = { phoneType: r.phoneType, carrier: r.carrier }; byType[r.phoneType || 'unknown'] = (byType[r.phoneType || 'unknown'] || 0) + 1; looked++; }
-      else errors[r.error || 'error'] = (errors[r.error || 'error'] || 0) + 1;
-    }));
-  }
+      else {
+        errors[r.error || 'error'] = (errors[r.error || 'error'] || 0) + 1;
+        // Auditoría 2026-07-07: los fallidos NO marcaban lookupAt → quedaban
+        // elegibles y se re-cobraban en CADA tanda de la barrida. Ahora se marcan
+        // (con el error visible); onlyMissing:false o borrar lookupAt reintenta.
+        fails[c.id] = String(r.error || 'error').slice(0, 120);
+      }
+  }), 5);
   let applied = 0;
-  if (Object.keys(results).length) {
+  if (Object.keys(results).length || Object.keys(fails).length) {
     makeBackup('pre-validate-numbers');
     await mutateSettersData((d) => {
       for (const id of Object.keys(results)) {
@@ -2502,7 +2506,14 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
         lead.phoneType = results[id].phoneType || '';
         if (results[id].carrier) lead.lookupCarrier = results[id].carrier;
         lead.lookupAt = new Date().toISOString();
+        delete lead.lookupError;
         applied++;
+      }
+      for (const id of Object.keys(fails)) {
+        const lead = d.leads && d.leads[id];
+        if (!lead) continue;
+        lead.lookupAt = new Date().toISOString();
+        lead.lookupError = fails[id];
       }
     });
   }
@@ -2623,7 +2634,11 @@ app.post('/api/admin/enrich-brief', requireAuth, requireRole('admin'), async (re
         if (c.address && String(c.address).trim()) variants.push(`${c.name}, ${c.address}`);
         if (loc) variants.push(`${c.name}, ${loc}`);
         variants.push(c.name);
-        const qList = (explicitIds && explicitIds.length) ? [...new Set(variants)] : variants.slice(0, 1);
+        // Auditoría 2026-07-07: la barrida probaba UNA sola variante y si no resolvía
+        // marcaba briefSkipped='no_place_id' PERMANENTE — leads reales quedaban quemados
+        // aunque "nombre, ciudad" sí hubiera matcheado. Ahora prueba 2 (+1 search solo
+        // en los que fallan la primera). El modo explícito sigue probando las 3.
+        const qList = (explicitIds && explicitIds.length) ? [...new Set(variants)] : [...new Set(variants)].slice(0, 2);
         let serpErrored = null;
         let lastDiag = '';
         for (const q of qList) {
