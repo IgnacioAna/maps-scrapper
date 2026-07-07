@@ -53,6 +53,15 @@ const EMAIL_BLOCKLIST_DOMAINS = new Set([
   "company.com",
   "test.com",
   "mail.com",
+  // Infra / tracking / CDNs que aparecen en el HTML pero nunca son el contacto
+  "cloudflare.com",
+  "cloudflareinsights.com",
+  "googleapis.com",
+  "gstatic.com",
+  "newrelic.com",
+  "bugsnag.com",
+  "rollbar.com",
+  "datadoghq.com",
 ]);
 
 // Extensiones de archivo: si un "email" termina así, es un asset (img@2x.png, etc.)
@@ -90,8 +99,10 @@ const EMAIL_TEXT_RE =
 /**
  * Normaliza un candidato a email (lowercase + trim de basura común).
  * Devuelve null si no parece un email válido / es un falso positivo.
+ * Exportada: el cleanup retroactivo de emails basura (index.js) la usa como
+ * "¿este email guardado pasaría el filtro hoy?" — null = borrar.
  */
-function normalizeEmailCandidate(raw) {
+export function normalizeEmailCandidate(raw) {
   if (!raw || typeof raw !== "string") return null;
   let e = raw.trim().toLowerCase();
   // Limpiar prefijos de mailto: y query params (?subject=...)

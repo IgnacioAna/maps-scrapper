@@ -5136,6 +5136,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
       leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
+      // 2026-07-07: los "no interesado" reciclados NO entran al dialer. El reciclaje
+      // del pool los reseteó a sin_contactar conservando el callLog, así que se
+      // colaban con su última llamada diciendo "No interesado". Se detectan por
+      // recontactPriority=4 (tier estampado al reciclar) o por la última entry del
+      // callLog. Excepción: si alguien los re-trabajó (interesado / callback vencido),
+      // vuelven a ser elegibles. En la LISTA de Llamadas siguen visibles.
+      leads = leads.filter(l => {
+        if (l.estado === 'interesado') return true;
+        if (l.callbackAt && new Date(l.callbackAt).getTime() <= now) return true;
+        if (l.recontactPriority === 4) return false;
+        const lastCall = Array.isArray(l.callLog) && l.callLog.length ? l.callLog[l.callLog.length - 1] : null;
+        return lastCall?.outcome !== 'answered_not_interested';
+      });
       // Sort: usar el actual de Llamadas para consistencia
       switch (sortMode) {
         case 'score':        leads.sort((a, b) => _callScore(b) - _callScore(a) || new Date(a.importedAt || 0) - new Date(b.importedAt || 0)); break;
@@ -5499,11 +5512,17 @@ document.addEventListener('DOMContentLoaded', async () => {
               const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)', hung_up:'#F47272', placeholder_sent:'#7DD3FC' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
               // Costo: real (reconciliado de CDR) si existe, sino estimado.
+              // Solo admin/supervisor — al setter el costo por llamada no le aporta.
+              const _canSeeCost = ['admin', 'supervisor'].includes(currentUser?.realRole || currentUser?.role);
               let costStr = '';
-              if (typeof entry.realCost === 'number') costStr = `<span title="costo real facturado por Telnyx" style="color:#ffc828;">$${entry.realCost.toFixed(4)} real</span>`;
-              else if (typeof entry.cost === 'number' && entry.cost > 0) costStr = `<span title="costo estimado (tabla local)" style="color:var(--text-tertiary);">~$${entry.cost.toFixed(4)}</span>`;
+              if (_canSeeCost && typeof entry.realCost === 'number') costStr = `<span title="costo real facturado por Telnyx" style="color:#ffc828;">$${entry.realCost.toFixed(4)} real</span>`;
+              else if (_canSeeCost && typeof entry.cost === 'number' && entry.cost > 0) costStr = `<span title="costo estimado (tabla local)" style="color:var(--text-tertiary);">~$${entry.cost.toFixed(4)}</span>`;
               const segs = entry.transcript?.segments;
-              const hasTr = Array.isArray(segs) && segs.length > 0;
+              // Transcript visible solo si la llamada tuvo conversación real —
+              // el "transcript" de un buzón/no-atendió es el mensaje de la operadora
+              // (o alucinación de Whisper) y no aporta nada en la card.
+              const _convOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up'];
+              const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
               const rowInner = `
                 <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
                 <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:#9D85F2;">🎤</span>' : ''}</span>
@@ -6838,7 +6857,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    async function _stopCallRecordingAndTranscribe(leadId, callStartedAtIso) {
+    // 2026-07-07: la llamada cuelga ANTES de que el setter marque el resultado,
+    // así que ya no subimos a Whisper al colgar (transcribía buzones al pedo).
+    // Al colgar solo BUFFEREAMOS los blobs; el upload real lo dispara la
+    // disposition (_flushPendingTranscription) y solo si hubo conversación.
+    let _pendingTranscribe = null; // { leadId, setterBlob, leadBlob, callStartedAtIso, timer }
+
+    function _discardPendingTranscription() {
+      if (_pendingTranscribe?.timer) clearTimeout(_pendingTranscribe.timer);
+      _pendingTranscribe = null;
+    }
+
+    async function _stopCallRecordingAndBuffer(leadId, callStartedAtIso) {
       // Detener recorders. Esperamos un poco para que el último chunk caiga.
       const stopRecorder = (rec) => new Promise((resolve) => {
         if (!rec || rec.state === 'inactive') { resolve(); return; }
@@ -6857,13 +6887,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       const leadBlob = _leadChunks.length ? new Blob(_leadChunks, { type: 'audio/webm' }) : null;
       _setterChunks = [];
       _leadChunks = [];
-      // Si no hay audio o llamada muy corta, no transcribir
+      // Si no hay audio o llamada muy corta, no guardar nada
       const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
       if (totalBytes < 5000) {
         console.log('[transcribe] Audio muy corto (<5KB), saltando');
-        window.showToast?.('Llamada muy corta — no se transcribe', { type: 'info', duration: 3000 });
         return;
       }
+      _discardPendingTranscription();
+      // Auto-descarte a los 10 min: si el setter nunca marca disposition, no
+      // retener los blobs en memoria indefinidamente.
+      const timer = setTimeout(() => {
+        if (_pendingTranscribe?.leadId === leadId) _discardPendingTranscription();
+      }, 10 * 60 * 1000);
+      _pendingTranscribe = { leadId, setterBlob, leadBlob, callStartedAtIso, timer };
+      console.log('[transcribe] Audio buffereado (' + Math.round(totalBytes / 1024) + 'KB) — se transcribe al marcar resultado');
+    }
+
+    // Outcomes donde tiene sentido gastar Whisper: alguien atendió y habló.
+    // Buzón / no atendió / número malo → se descarta el audio sin subir.
+    const _TRANSCRIBE_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
+
+    async function _flushPendingTranscription(leadId, outcome) {
+      const pending = _pendingTranscribe;
+      if (!pending || pending.leadId !== leadId) return;
+      _discardPendingTranscription(); // consumir el buffer pase lo que pase
+      if (!_TRANSCRIBE_OUTCOMES.has(outcome)) {
+        console.log('[transcribe] Outcome "' + outcome + '" sin conversación — audio descartado, no se gasta Whisper');
+        return;
+      }
+      const { setterBlob, leadBlob, callStartedAtIso } = pending;
       // Convertir a base64
       const blobToB64 = (blob) => new Promise((resolve) => {
         if (!blob) { resolve(null); return; }
@@ -7418,14 +7470,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       _setTelnyxCallStatus('Finalizando…', 'ending');
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
-      // Sprint 7: detener recording + disparar transcripción Whisper en background.
-      // Solo si la llamada llegó a ser activa (durationSecs > 5 — descarta cuelgues
-      // rápidos sin audio significativo).
+      // Sprint 7 (rework 2026-07-07): detener recording y BUFFEREAR el audio.
+      // La transcripción Whisper ya no se dispara acá — recién cuando el setter
+      // marca la disposition y confirma que hubo conversación (buzón no se paga).
       if (leadId && durationSecs >= 5 && (_setterRecorder || _leadRecorder)) {
-        // No bloquear el cierre del panel por esperar transcripción.
+        // No bloquear el cierre del panel por esperar el stop de los recorders.
         // Pasar el callStartedAt para que el backend matchee el callLog correcto
         const callStartedAtIso = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
-        _stopCallRecordingAndTranscribe(leadId, callStartedAtIso).catch(e => console.warn('[transcribe] fire-and-forget failed:', e?.message));
+        _stopCallRecordingAndBuffer(leadId, callStartedAtIso).catch(e => console.warn('[transcribe] buffer failed:', e?.message));
       } else {
         // Limpieza si no transcribimos
         try { _setterRecorder?.stop(); } catch {}
@@ -7911,6 +7963,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify(body)
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        // Transcripción diferida: recién acá sabemos el outcome. Buzón/no atendió
+        // descartan el audio; conversaciones reales suben a Whisper (fire-and-forget).
+        _flushPendingTranscription(leadId, outcome).catch(e => console.warn('[transcribe]', e?.message));
         const data = await resp.json();
         // Audit 2026-07-06 (C1): si ESTE resultado disparó el descarte automático por
         // cadencia (2 no-contactos seguidos), avisarle al setter — antes el lead
@@ -8041,6 +8096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _flushPendingTranscription(leadId, 'callback_later').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista del cache ANTES de cerrar el modal. El poller del
           // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
           // avanza; sin esto hay un race con loadCallsView() (reconstruye el índice
@@ -8184,6 +8240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _flushPendingTranscription(leadId, 'answered_not_interested').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista: 'No interesado' descarta el lead en el backend; el
           // poller del Power Dialer mira lead.estado para avanzar al siguiente.
           _leadStoreApply(leadId, { estado: 'descartado', interes: 'no', doNotCall: !!body.doNotCall });
@@ -8256,6 +8313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _flushPendingTranscription(leadId, 'scheduled_with_admin').catch(e => console.warn('[transcribe]', e?.message));
           confirmed = true;
           observer?.disconnect();
           // Update optimista: el poller del Power Dialer mira lead.estado para avanzar.
@@ -8278,6 +8336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ outcome: fallbackOnCancel })
               });
+              _flushPendingTranscription(leadId, fallbackOnCancel).catch(err => console.warn('[transcribe]', err?.message));
               await loadCallsView();
             } catch (e) { console.warn('[schedule-fallback]', e.message); }
           }
@@ -9600,6 +9659,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           : '⚠ ' + (d.error || 'error');
       } catch (e) { if (out) out.textContent = '⚠ error de red'; }
       cmdBackfillWebBtn.disabled = false; cmdBackfillWebBtn.textContent = lbl;
+    });
+    // 2026-07-07: limpieza de emails basura (tracking sentry/wixpress del scraper viejo).
+    const cmdCleanEmailsBtn = document.getElementById('cmd-cleanup-emails-btn');
+    if (cmdCleanEmailsBtn) cmdCleanEmailsBtn.addEventListener('click', async () => {
+      const out = document.getElementById('cmd-enrich-result');
+      cmdCleanEmailsBtn.disabled = true; const lbl = cmdCleanEmailsBtn.textContent; cmdCleanEmailsBtn.textContent = 'Revisando...';
+      try {
+        // 1) Dry-run: dimensionar antes de tocar nada.
+        const dr = await fetch(apiUrl('/api/admin/cleanup-bad-emails'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dryRun: true }) });
+        const dd = await dr.json();
+        if (!dr.ok) { if (out) out.textContent = '⚠ ' + (dd.error || 'error'); return; }
+        if (!dd.cleaned) { if (out) out.textContent = `Sin emails basura (${dd.scanned} leads con email revisados).`; return; }
+        const ejemplos = (dd.sample || []).slice(0, 3).map(s => s.email).join(' · ');
+        if (!confirm(`Se encontraron ${dd.cleaned} emails basura de ${dd.scanned} leads con email.\nEjemplos: ${ejemplos}\n\n¿Borrarlos? (backup automático)`)) return;
+        cmdCleanEmailsBtn.textContent = 'Limpiando...';
+        const r = await fetch(apiUrl('/api/admin/cleanup-bad-emails'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+        const d = await r.json();
+        if (out) out.textContent = r.ok ? `✓ Listo: ${d.cleaned} emails basura borrados de ${d.scanned} leads con email.` : '⚠ ' + (d.error || 'error');
+      } catch (e) { if (out) out.textContent = '⚠ error de red'; }
+      finally { cmdCleanEmailsBtn.disabled = false; cmdCleanEmailsBtn.textContent = lbl; }
     });
     // Phase 10 B2: validación de número (Telnyx Lookup), lote de 25 por clic.
     const cmdValidateBtn = document.getElementById('cmd-validate-numbers-btn');

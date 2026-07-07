@@ -8,7 +8,7 @@ import compression from "compression";
 import OpenAI from "openai";
 import crypto from "crypto";
 import { mountWa } from "./src/wa/index.js";
-import { enrichFromWebsite, enrichFromNPI, enrichFromMetaAdLibrary, classifyEmailType, isBlockedHost } from "./src/enrichment.js";
+import { enrichFromWebsite, enrichFromNPI, enrichFromMetaAdLibrary, classifyEmailType, isBlockedHost, extractEmailFromHtml, normalizeEmailCandidate } from "./src/enrichment.js";
 
 dotenv.config();
 const apiKey = process.env.API_KEY;
@@ -770,29 +770,59 @@ function _leadHasRealWebsite(lead = {}) {
   return w.includes('.');
 }
 // Cue corto (1 línea) que el SDR lee al discar. Munición, no libreto.
+// Cada señal tiene VARIANTES (misma intención, distinta redacción) elegidas de
+// forma determinística por lead — así dos leads con la misma señal no repiten
+// texto idéntico, pero el mismo lead siempre muestra la misma frase.
+function _angleSeed(str = '') {
+  const s = String(str);
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
 function _openingAngleFor(signal, ctx = {}) {
   const rating = ctx.rating != null ? String(ctx.rating) : '';
   const reviews = ctx.reviews || 0;
-  switch (signal) {
-    case 'muchas_reviews_sin_web':
-      return `${reviews} reseñas y ${rating}★ pero SIN web → "¿toda esa gente que te busca cómo agenda?"`;
-    case 'sin_web':
-      return `Sin sitio web → "¿cómo te encuentran y reservan los pacientes nuevos?"`;
-    case 'rating_bajo':
-      return `Rating ${rating}★ (bajo) → "abajo de 4.7 muchos pacientes llaman al de al lado, ¿lo tenés medido?"`;
-    case 'pocas_reviews':
-      return `Buen rating, solo ${reviews} reseñas → "con pocas reseñas no aparecés en el top del mapa, ahí está la fuga"`;
-    case 'ig_sin_web':
-      return `Instagram sin web → "¿cuántos de tus seguidores terminan agendando una consulta?"`;
-    case 'sin_contacto_digital':
-      return `Sin web ni redes visibles → oportunidad digital total, casi seguro depende del boca a boca`;
-    case 'ads_activos': {
-      const plats = (Array.isArray(ctx.platforms) && ctx.platforms.length) ? ctx.platforms.join('/') : 'Meta/Google';
-      return `Corre anuncios (${plats}) → "esos leads que entran, ¿los sigue alguien o se enfrían?"`;
-    }
-    default:
-      return '';
-  }
+  const plats = (Array.isArray(ctx.platforms) && ctx.platforms.length) ? ctx.platforms.join('/') : 'Meta/Google';
+  const VARIANTS = {
+    muchas_reviews_sin_web: [
+      `${reviews} reseñas y ${rating}★ pero SIN web → "¿toda esa gente que te busca cómo agenda?"`,
+      `${reviews} reseñas sin web → "te busca un montón de gente y no tiene dónde reservar, ¿cuántos se pierden?"`,
+      `Sin web con ${reviews} reseñas → "el que te googlea de noche no puede agendar; llama al que sí tiene turno online"`,
+    ],
+    sin_web: [
+      `Sin sitio web → "¿cómo te encuentran y reservan los pacientes nuevos?"`,
+      `Sin web → "cuando alguien te busca en Google y no hay página, ¿a dónde va ese paciente?"`,
+      `No tiene web → "el paciente que quiere sacar turno fuera de horario, ¿cómo hace?"`,
+    ],
+    rating_bajo: [
+      `Rating ${rating}★ (bajo) → "abajo de 4.7 muchos pacientes llaman al de al lado, ¿lo tenés medido?"`,
+      `Rating ${rating}★ → "el paciente compara estrellas antes de llamar; con ${rating} arrancás perdiendo"`,
+      `${rating}★ de rating → "¿sabés cuántas consultas se van por las reseñas antes de que suene el teléfono?"`,
+    ],
+    pocas_reviews: [
+      `Buen rating, solo ${reviews} reseñas → "con pocas reseñas no aparecés en el top del mapa, ahí está la fuga"`,
+      `${rating}★ pero ${reviews} reseñas → "atendés bien pero Google no lo muestra; el de más reseñas se lleva tus pacientes"`,
+      `Solo ${reviews} reseñas → "con ese rating deberías estar arriba en el mapa, te falta volumen de reseñas"`,
+    ],
+    ig_sin_web: [
+      `Instagram sin web → "¿cuántos de tus seguidores terminan agendando una consulta?"`,
+      `Tiene IG pero no web → "del que te escribe por Instagram al que se sienta en el sillón, ¿cuántos se caen?"`,
+      `Instagram sin web → "likes tenés; ¿turnos agendados desde ahí, cuántos por semana?"`,
+    ],
+    sin_contacto_digital: [
+      `Sin web ni redes visibles → oportunidad digital total, casi seguro depende del boca a boca`,
+      `Sin presencia digital → vive del boca a boca; "¿qué pasa el mes que no te recomiendan?"`,
+      `Sin web ni redes → el paciente nuevo no lo encuentra; todo lo que entra es referido`,
+    ],
+    ads_activos: [
+      `Corre anuncios (${plats}) → "esos leads que entran, ¿los sigue alguien o se enfrían?"`,
+      `Paga ads (${plats}) → "cada consulta que no se cierra es plata de pauta tirada, ¿lo medís?"`,
+      `Invierte en ${plats} → "¿cuántos de esos leads pagados terminan sentados en el sillón?"`,
+    ],
+  };
+  const arr = VARIANTS[signal];
+  if (!arr) return '';
+  return arr[_angleSeed(ctx.seed) % arr.length];
 }
 // Devuelve { signals[], reputationTier, ratingNum, hasWebsite, openingAngle }.
 // `signals` ordenadas por prioridad (la primera = dominante → openingAngle).
@@ -823,7 +853,7 @@ function computeLeadSignals(lead = {}) {
     else reputationTier = 'fuerte';
   }
 
-  const openingAngle = signals.length ? _openingAngleFor(signals[0], { rating, reviews, platforms: lead.adPlatforms }) : '';
+  const openingAngle = signals.length ? _openingAngleFor(signals[0], { rating, reviews, platforms: lead.adPlatforms, seed: lead.id || lead.name || '' }) : '';
   return { signals, reputationTier, ratingNum: rating, hasWebsite, openingAngle };
 }
 
@@ -2165,6 +2195,33 @@ app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req,
   // Determinístico → idempotente en efecto (recorrer dos veces da el mismo resultado).
   if (!dryRun && scanned > 0) { makeBackup('pre-backfill-signals'); saveSettersData(data); }
   res.json({ scanned, updated: dryRun ? 0 : scanned, withAngle, dryRun, byTier, bySignal, sample });
+});
+
+// Limpieza retroactiva de emails basura (2026-07-07). El scraper legacy agarraba
+// el PRIMER email del HTML sin blocklist → leads con emails de tracking tipo
+// 605a...@sentry-next.wixpress.com. Borra los emails guardados que HOY no pasan
+// el filtro de enrichment (normalizeEmailCandidate === null). Idempotente.
+app.post('/api/admin/cleanup-bad-emails', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const data = loadSettersData();
+  if (!data.leads || typeof data.leads !== 'object') return res.json({ scanned: 0, cleaned: 0, dryRun, sample: [] });
+  let scanned = 0, cleaned = 0;
+  const sample = [];
+  for (const id of Object.keys(data.leads)) {
+    const lead = data.leads[id];
+    const email = String(lead.email || '').trim();
+    if (!email) continue;
+    scanned++;
+    if (normalizeEmailCandidate(email) !== null) continue; // pasa el filtro → se queda
+    cleaned++;
+    if (sample.length < 15) sample.push({ id, name: lead.name, email });
+    if (!dryRun) {
+      lead.email = '';
+      if (lead.emailType) lead.emailType = '';
+    }
+  }
+  if (!dryRun && cleaned > 0) { makeBackup('pre-cleanup-bad-emails'); saveSettersData(data); }
+  res.json({ scanned, cleaned, dryRun, sample });
 });
 
 // Phase 16 Ola C: enriquecimiento por API GRATIS (opt-in, batch con cap).
@@ -9030,7 +9087,10 @@ app.post('/api/enrich', requireAuth, requireRole('admin'), enrichLimiter, async 
     const igMatch = html.match(/https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+/i);
     const liMatch = html.match(/https?:\/\/(www\.)?linkedin\.com\/(?:company|in)\/[a-zA-Z0-9_-]+/i);
     const fbMatch = html.match(/https?:\/\/(www\.)?facebook\.com\/[a-zA-Z0-9_.]+/i);
-    const emailMatch = html.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    // Extracción con blocklist + scoring (src/enrichment.js). El regex crudo que
+    // había acá agarraba el PRIMER email del HTML — incluidos los de tracking
+    // (sentry-next.wixpress.com, etc.) que Wix inyecta en el <head>.
+    const foundEmail = extractEmailFromHtml(html, url) || "";
 
     // Búsqueda de un posible doctor responsable en el texto limpio sin saltos de línea
     const cleanHtml = html.replace(/<[^>]*>?/gm, ' ');
@@ -9230,7 +9290,7 @@ Texto: ${textToAnalyze}`;
       instagram: igMatch ? igMatch[0] : "",
       linkedin: liMatch ? liMatch[0] : "",
       facebook: fbMatch ? fbMatch[0] : "",
-      email: emailMatch ? emailMatch[0] : "",
+      email: foundEmail,
       phone: foundPhone,
       webWhatsApp: webWhatsApp,
       aiWhatsApp: aiWhatsApp,
