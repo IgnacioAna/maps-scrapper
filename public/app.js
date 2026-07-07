@@ -4733,15 +4733,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
         const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
 
-        // KPIs hoy
+        // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
+        // mini-funnel del día: llamadas → conectadas → conversaciones → agendadas,
+        // cada una con su medidor de conversión sobre el total de llamadas.
         if (kpisEl && mResp) {
           try {
             const d = await mResp.json(); const m = d.metrics || {};
+            const dials = m.dials || 0, connects = m.connects || 0, convs = m.conversations || 0, appts = m.appointments || 0;
+            const base = Math.max(1, dials);
+            const pct = (n) => Math.min(100, Math.round((n / base) * 100));
+            const tile = (label, val, accent, meterPct, conv, accentNum) => `
+              <div class="myp-tile" style="--tile-accent:${accent};">
+                <div class="myp-tile-label">${label}</div>
+                <div class="myp-tile-num${accentNum ? ' is-accent' : ''}">${val}</div>
+                <div class="myp-tile-foot">${conv ? `<span class="myp-conv">${conv}</span>` : '<span></span>'}</div>
+                <div class="myp-meter"><i style="width:${meterPct}%"></i></div>
+              </div>`;
             kpisEl.innerHTML =
-              `<div class="stat-card"><span class="stat-num">${m.dials || 0}</span><span class="stat-label">Llamadas hoy</span></div>` +
-              `<div class="stat-card"><span class="stat-num">${m.connects || 0}</span><span class="stat-label">Conectadas</span></div>` +
-              `<div class="stat-card"><span class="stat-num">${m.conversations || 0}</span><span class="stat-label">Conversaciones</span></div>` +
-              `<div class="stat-card stat-card-accent"><span class="stat-num">${m.appointments || 0}</span><span class="stat-label">Agendadas</span></div>`;
+              '<div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">' +
+              tile('Llamadas hoy', dials, '#8892A6', 100, 'del día') +
+              tile('Conectadas', connects, '#6E8BF0', pct(connects), dials ? pct(connects) + '% de llamadas' : '') +
+              tile('Conversaciones', convs, '#A97DEE', pct(convs), dials ? pct(convs) + '% de llamadas' : '') +
+              tile('Agendadas', appts, '#4ADE80', pct(appts), dials ? pct(appts) + '% de llamadas' : '', true) +
+              '</div>';
           } catch {}
         }
         const totalPend = callbacks.length + interesados.length;
@@ -4772,7 +4786,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
         const scColor = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
-        return `<div style="display:flex; align-items:center; gap:12px; padding:9px 14px; border-top:1px solid var(--border-subtle);">
+        return `<div class="hoy-row">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
@@ -4784,31 +4798,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${l.openingAngle ? ' · ' + escHtml(l.openingAngle) : ''}</div>
           </div>
-          <span title="Prioridad" style="font-size:11px; color:${scColor}; font-weight:700; font-variant-numeric:tabular-nums; min-width:22px; text-align:right;">${sc}</span>
-          <button onclick="window._startTelnyxCall('${escHtml(l.id)}')" style="background:var(--success); color:#0F1115; border:none; padding:7px 15px; border-radius:7px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit;">Llamar</button>
+          <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
+          <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
         </div>`;
       }).join('');
-      return `<div style="background:var(--bg-card, rgba(255,255,255,0.015)); border:1px solid var(--border-color); border-radius:10px; overflow:hidden;">
-        <div style="display:flex; align-items:baseline; gap:9px; padding:12px 14px;">
-          <span style="width:7px; height:7px; border-radius:50%; background:${accent}; flex-shrink:0; align-self:center;"></span>
-          <span style="font-size:13px; font-weight:700; color:var(--text-primary);">${title}</span>
-          <span style="font-size:13px; font-weight:700; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${leads.length}</span>
-          <span style="font-size:11px; color:var(--text-tertiary); margin-left:auto;">${hint}</span>
+      return `<div class="hoy-section" style="--sec-accent:${accent};">
+        <div class="hoy-section-head">
+          <span class="hoy-section-dot"></span>
+          <span class="hoy-section-title">${title}</span>
+          <span class="hoy-section-count">${leads.length}</span>
+          <span class="hoy-section-hint">${hint}</span>
         </div>
-        ${leads.length ? rows : '<div style="padding:0 14px 14px; color:var(--text-tertiary); font-size:11.5px;">Sin pendientes.</div>'}
+        ${leads.length ? rows : '<div class="hoy-empty">Sin pendientes.</div>'}
       </div>`;
     }
     // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
     // los nuevos se trabajan en Llamadas/Power Dialer, ya ordenados por prioridad.
     function _hoyNewLeadsPointer(count) {
-      return `<div style="background:var(--bg-card, rgba(255,255,255,0.015)); border:1px solid var(--border-color); border-radius:10px; overflow:hidden;">
-        <div style="display:flex; align-items:center; gap:12px; padding:13px 14px;">
-          <span style="width:7px; height:7px; border-radius:50%; background:#9D85F2; flex-shrink:0;"></span>
+      return `<div class="hoy-section" style="--sec-accent:#9D85F2;">
+        <div style="display:flex; align-items:center; gap:12px; padding:15px 16px 15px 18px;">
+          <span class="hoy-section-dot"></span>
           <div style="flex:1; min-width:0;">
-            <div style="font-size:13px; font-weight:700; color:var(--text-primary);">Leads nuevos para llamar</div>
+            <div style="font-size:13.5px; font-weight:700; color:var(--text-primary);">Leads nuevos para llamar</div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">${count ? `<strong>${count}</strong> sin llamar — ya ordenados por prioridad en Llamadas` : 'No quedan leads nuevos sin llamar.'}</div>
           </div>
-          ${count ? `<button onclick="document.querySelector('[data-target=&quot;view-calls&quot;]')?.click()" style="background:var(--accent); color:#fff; border:none; padding:8px 16px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit;">Ir a Llamadas</button>` : ''}
+          ${count ? `<button onclick="document.querySelector('[data-target=&quot;view-calls&quot;]')?.click()" style="background:var(--accent); color:#fff; border:none; padding:8px 16px; border-radius:9px; font-weight:600; font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit;">Ir a Llamadas</button>` : ''}
         </div>
       </div>`;
     }
