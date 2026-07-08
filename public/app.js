@@ -12808,9 +12808,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (def.isShowRate) continue;
       const active = _mypActiveSeries.includes(def.key);
       const btn = document.createElement('button');
-      btn.className = 'btn-secondary';
+      btn.className = 'seg-btn' + (active ? ' active' : '');
       btn.textContent = def.label;
-      btn.style.cssText = `font-size:11px; padding:4px 10px; ${active ? 'background:var(--accent-soft); color:var(--accent); border-color:var(--accent);' : ''}`;
       btn.addEventListener('click', () => {
         if (active) {
           _mypActiveSeries = _mypActiveSeries.filter((k) => k !== def.key);
@@ -12830,17 +12829,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const canvas = document.getElementById('myp-chart');
     if (!canvas) return;
     const labels = d.buckets.map((b) => b.label);
-    const palette = { total:'#9D85F2', conexiones:'#5bb974', respondieron:'#4dabf7', calificados:'#ffc828', interesados:'#ff8a3d', agendados:'#9D85F2' };
+    // 2026-07-08: paleta alineada a MYP_KPI_ACCENTS (misma rampa que los tiles)
+    // + área con degradé sutil, puntos solo en hover, grilla casi invisible.
     const datasets = _mypActiveSeries.map((k) => {
       const def = MYP_KPI_DEFS.find((x) => x.key === k);
+      const color = MYP_KPI_ACCENTS[k] || '#9D85F2';
       return {
         label: def?.label || k,
         data: d.buckets.map((b) => b[k] || 0),
-        borderColor: palette[k] || '#9D85F2',
-        backgroundColor: (palette[k] || '#9D85F2') + '22',
-        tension: 0.3,
-        fill: false,
+        borderColor: color,
+        backgroundColor: (ctx) => {
+          const { chartArea, ctx: c } = ctx.chart;
+          if (!chartArea) return color + '14';
+          const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          g.addColorStop(0, color + '2E');
+          g.addColorStop(1, color + '00');
+          return g;
+        },
+        tension: 0.35,
+        fill: _mypActiveSeries.length === 1, // área solo con 1 serie (con varias ensucia)
         borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: color,
+        pointHoverBorderColor: '#0F1115',
+        pointHoverBorderWidth: 2,
       };
     });
     if (_mypChart) _mypChart.destroy();
@@ -12850,12 +12863,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: true, labels: { color: '#aaa', font: { size: 11 } } },
+          legend: { display: _mypActiveSeries.length > 1, labels: { color: '#B4B8C2', font: { size: 11 }, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: {
+            backgroundColor: 'rgba(17, 20, 27, 0.96)',
+            borderColor: 'rgba(157, 133, 242, 0.25)',
+            borderWidth: 1,
+            titleColor: '#E5E7E2',
+            bodyColor: '#B4B8C2',
+            padding: 10,
+            cornerRadius: 9,
+            displayColors: true,
+            boxWidth: 8, boxHeight: 8, usePointStyle: true,
+          },
         },
         scales: {
-          x: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#222' } },
-          y: { ticks: { color: '#888', font: { size: 10 } }, grid: { color: '#222' }, beginAtZero: true },
+          x: { ticks: { color: '#7E8494', font: { size: 10 }, maxRotation: 0 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' } },
+          y: { ticks: { color: '#7E8494', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, beginAtZero: true },
         },
       },
     });
@@ -13344,92 +13369,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       const sec = s % 60;
       return min > 0 ? `${min}m ${sec}s` : `${sec}s`;
     };
-    // Funnel visual: barras con ancho proporcional al máximo (dials).
+    // Rediseño 2026-07-08: mismo lenguaje visual que los .myp-tile (sin emojis,
+    // acento por etapa, medidor proporcional al tope del funnel) + el salto de
+    // conversión entre etapas como chip. Escala log-ish no: proporcional simple.
     const maxV = Math.max(m.dials || 1, 1);
-    const bar = (v, color) => {
-      const pct = Math.min(100, (v / maxV) * 100);
-      return `<div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; margin-top:6px;"><div style="height:100%; width:${pct}%; background:${color}; transition:width 0.3s;"></div></div>`;
-    };
-    const stage = (icon, label, value, sublabel, color) => `
-      <div style="padding:14px 16px; background:rgba(255,255,255,0.025); border:1px solid var(--border-soft); border-left:3px solid ${color}; border-radius:10px;">
-        <div style="display:flex; align-items:baseline; gap:10px;">
-          <span style="font-size:16px;">${icon}</span>
-          <div style="flex:1; min-width:0;">
-            <div style="font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div>
-            <div style="font-size:24px; font-weight:700; color:var(--text-primary); line-height:1.1; margin-top:2px; font-variant-numeric:tabular-nums;">${value || 0}</div>
-            ${sublabel ? `<div style="font-size:10.5px; color:var(--text-tertiary); margin-top:3px;">${sublabel}</div>` : ''}
-          </div>
-        </div>
-        ${bar(value, color)}
+    const stage = (label, sub, value, color, meterV, jump) => {
+      const pct = Math.min(100, Math.round(((Number(meterV) || 0) / maxV) * 100));
+      return `
+      <div class="myp-tile ccm-stage" style="--tile-accent:${color};">
+        <div class="myp-tile-label">${label}</div>
+        <div class="myp-tile-num" style="font-size:28px;">${value}</div>
+        <div class="ccm-stage-sub">${sub || '&nbsp;'}</div>
+        <div class="myp-meter"><i style="width:${pct}%"></i></div>
+        ${jump ? `<div class="ccm-jump" title="Conversión desde la etapa anterior">${jump}</div>` : ''}
       </div>`;
+    };
 
-    const dealsLabel = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary); font-size:14px;">—</span>`;
-    const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'Marcá citas como ganadas';
-    // Phase 12 P0-4: indicador vs benchmark 2026 por ratio (▲ en/sobre meta · ◆ cerca · ▼ debajo).
+    const dealsVal = m.deals > 0 ? `${m.deals}` : `<span style="color:var(--text-tertiary);">—</span>`;
+    const revenueStr = m.revenue > 0 ? `$${Number(m.revenue).toLocaleString('es-AR')} cerrados` : 'marcá citas como ganadas';
+    // Phase 12 P0-4: indicador vs benchmark 2026 por ratio.
     const bench = (val, ok, good, label) => {
       const v = parseFloat(val) || 0;
-      const col = v >= good ? '#5BB974' : v >= ok ? '#FFB341' : '#F47272';
+      const cls = v >= good ? 'ok' : v >= ok ? 'mid' : 'low';
       const icon = v >= good ? '▲' : v >= ok ? '◆' : '▼';
-      return `<div style="font-size:9px; color:${col}; margin-top:3px; font-weight:600;" title="Benchmark SDR 2026">${icon} meta ${label}</div>`;
+      return `<span class="ccm-bench ${cls}" title="Benchmark SDR 2026: ${label}">${icon} ${label}</span>`;
     };
+    const ratio = (value, label, benchHtml, accent) => `
+      <div class="ccm-ratio">
+        <div class="ccm-ratio-num${accent ? ' is-accent' : ''}">${value}</div>
+        <div class="ccm-ratio-label">${label}</div>
+        ${benchHtml || ''}
+      </div>`;
+
     cont.innerHTML = `
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-bottom:18px;">
-        ${stage('📞', 'Dials Made', m.dials, 'Llamadas marcadas', '#7E8494')}
-        ${stage('📲', 'Connects', m.connects, fmtPct(r.connectRate) + ' rate', '#79B8FF')}
-        ${stage('💬', 'Conversations', m.conversations, fmtPct(r.conversationRate) + ' de connects', '#9D85F2')}
-        ${stage('📅', 'Appointments', m.appointments, fmtPct(r.bookingRate) + ' de convs', '#5BB974')}
-        ${stage('💰', 'Deals Closed', dealsLabel, m.deals > 0 ? fmtPct(r.closeRate) + ' rate · ' + revenueStr : revenueStr, '#FFB341')}
+      <div class="ccm-funnel">
+        ${stage('Dials', 'llamadas marcadas', m.dials || 0, '#8892A6', m.dials)}
+        ${stage('Connects', 'atendieron', m.connects || 0, '#6E8BF0', m.connects, fmtPct(r.connectRate))}
+        ${stage('Conversations', '&ge;30s de charla', m.conversations || 0, '#A97DEE', m.conversations, fmtPct(r.conversationRate))}
+        ${stage('Appointments', 'reuniones agendadas', m.appointments || 0, '#4ADE80', m.appointments, fmtPct(r.bookingRate))}
+        ${stage('Deals', revenueStr, dealsVal, '#FFB341', m.deals, m.deals > 0 ? fmtPct(r.closeRate) : '')}
       </div>
 
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px; padding-top:14px; border-top:1px solid var(--border-soft);">
-        <div style="text-align:center; padding:8px;">
-          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.connectRate)}</div>
-          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Connect Rate</div>
-          ${bench(r.connectRate, 8, 15, '15-25%')}
-        </div>
-        <div style="text-align:center; padding:8px;">
-          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.conversationRate)}</div>
-          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Conversation Rate</div>
-          ${bench(r.conversationRate, 40, 50, '50-60%')}
-        </div>
-        <div style="text-align:center; padding:8px;">
-          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtPct(r.bookingRate)}</div>
-          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Booking Rate</div>
-          ${bench(r.bookingRate, 10, 15, '15-25%')}
-        </div>
-        <div style="text-align:center; padding:8px;">
-          <div style="font-size:18px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums;">${fmtPct(r.dialToAppointment)}</div>
-          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Dial → Appointment</div>
-          ${bench(r.dialToAppointment, 1, 2, '1-3%')}
-        </div>
-        <div style="text-align:center; padding:8px;">
-          <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${fmtDur(d.avgConvDurationS)}</div>
-          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px;">Avg Duration</div>
-        </div>
-      </div>
-
-      <div style="margin-top:14px; padding:10px 14px; background:rgba(157,133,242,0.06); border:1px solid rgba(157,133,242,0.18); border-radius:8px; font-size:11.5px; color:var(--text-secondary); line-height:1.5;">
-        <strong style="color:var(--accent);">Benchmarks:</strong> Connect 15-30% · Conversation 40-60% de connects · Booking 15-25% de convs · Dial→Appt 1-3% (60-150 dials/día = 1-4 appts).
+      <div class="ccm-ratios">
+        ${ratio(fmtPct(r.connectRate), 'Connect rate', bench(r.connectRate, 8, 15, '15-25%'))}
+        ${ratio(fmtPct(r.conversationRate), 'Conversation rate', bench(r.conversationRate, 40, 50, '50-60%'))}
+        ${ratio(fmtPct(r.bookingRate), 'Booking rate', bench(r.bookingRate, 10, 15, '15-25%'))}
+        ${ratio(fmtPct(r.dialToAppointment), 'Dial &rarr; appointment', bench(r.dialToAppointment, 1, 2, '1-3%'), true)}
+        ${ratio(fmtDur(d.avgConvDurationS), 'Duración promedio', '')}
       </div>
     `;
   }
 
-  // Wire period buttons
+  // Wire period buttons (estado activo por clase .seg-btn.active, sin inline styles)
   document.querySelectorAll('.ccm-period-btn').forEach((b) => {
     b.addEventListener('click', () => {
       _ccmPeriod = b.getAttribute('data-period') || 'week';
-      document.querySelectorAll('.ccm-period-btn').forEach((x) => {
-        x.classList.remove('active');
-        x.style.background = 'var(--bg-app)';
-        x.style.borderColor = 'var(--border-color)';
-        x.style.color = 'var(--text-primary)';
-        x.style.fontWeight = '';
-      });
+      document.querySelectorAll('.ccm-period-btn').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
-      b.style.background = 'rgba(157,133,242,0.18)';
-      b.style.borderColor = 'var(--accent)';
-      b.style.color = 'var(--accent)';
-      b.style.fontWeight = '600';
       _ccmLoad();
     });
   });

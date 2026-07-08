@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260708c">
+  <link rel="stylesheet" href="/style.css?v=20260708d">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -2031,23 +2031,23 @@
           <p class="muted" style="margin-top:6px;">Tu evolución en el tiempo. Cada KPI compara con el mismo período anterior.</p>
         </header>
 
-        <section style="margin-top:18px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
-          <div>
-            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Período</label>
-            <select id="myp-period" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+        <section class="myp-toolbar">
+          <div class="myp-toolbar-field">
+            <label>Período</label>
+            <select id="myp-period">
               <option value="day">Día (últimos 14)</option>
               <option value="week" selected>Semana (últimas 8)</option>
               <option value="month">Mes (últimos 6)</option>
             </select>
           </div>
-          <div id="myp-setter-wrap" style="display:none;">
-            <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">SDR</label>
-            <select id="myp-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
+          <div id="myp-setter-wrap" class="myp-toolbar-field" style="display:none;">
+            <label>SDR</label>
+            <select id="myp-setter">
               <option value="">Equipo completo</option>
             </select>
           </div>
           <button id="myp-refresh" class="btn-secondary" style="font-size:12px; padding:8px 14px;">Actualizar</button>
-          <span id="myp-range" class="muted" style="font-size:12px; margin-left:auto;">—</span>
+          <span id="myp-range" class="myp-range-chip">—</span>
         </section>
 
         <div id="myp-assigned" class="myp-assigned-strip" style="display:none;"></div>
@@ -2056,22 +2056,22 @@
         <div class="myp-section-label">Mi cartera</div>
         <section id="myp-pipeline" style="margin-top:4px;"></section>
 
-        <div class="myp-section-label">Rendimiento del período</div>
-        <section id="myp-kpis" style="margin-top:4px; display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px;"></section>
-
-        <!-- 2026-05-25: Cold Call Funnel — pedido del user (curso de cold calling) -->
-        <section style="margin-top:24px;">
-          <div class="card" style="padding:20px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+        <!-- 2026-05-25: Cold Call Funnel — pedido del user (curso de cold calling).
+             2026-07-08: promovido arriba del embudo del período (la operación es
+             llamadas-primero) + rediseño premium sin emojis. -->
+        <div class="myp-section-label">Llamadas del período</div>
+        <section style="margin-top:4px;">
+          <div class="card ccm-card">
+            <div class="ccm-head">
               <div>
-                <strong style="font-size:14px;">&#128222; Cold Call Funnel</strong>
-                <p class="muted" style="font-size:11.5px; margin:3px 0 0;">Las 5 m&eacute;tricas cl&aacute;sicas del SDR. Filtr&aacute; per&iacute;odo arriba.</p>
+                <strong style="font-size:14px; letter-spacing:-0.2px;">Cold Call Funnel</strong>
+                <p class="muted" style="font-size:11.5px; margin:3px 0 0;">Las 5 m&eacute;tricas cl&aacute;sicas del SDR, con tu conversi&oacute;n en cada salto.</p>
               </div>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button class="ccm-period-btn" data-period="today" style="padding:5px 10px; font-size:11px; border-radius:6px; background:var(--bg-app); border:1px solid var(--border-color); color:var(--text-primary); cursor:pointer;">Hoy</button>
-                <button class="ccm-period-btn active" data-period="week" style="padding:5px 10px; font-size:11px; border-radius:6px; background:rgba(157,133,242,0.18); border:1px solid var(--accent); color:var(--accent); cursor:pointer; font-weight:600;">7 d&iacute;as</button>
-                <button class="ccm-period-btn" data-period="month" style="padding:5px 10px; font-size:11px; border-radius:6px; background:var(--bg-app); border:1px solid var(--border-color); color:var(--text-primary); cursor:pointer;">30 d&iacute;as</button>
-                <button class="ccm-period-btn" data-period="all" style="padding:5px 10px; font-size:11px; border-radius:6px; background:var(--bg-app); border:1px solid var(--border-color); color:var(--text-primary); cursor:pointer;">Todo</button>
+              <div class="seg-control">
+                <button class="ccm-period-btn seg-btn" data-period="today">Hoy</button>
+                <button class="ccm-period-btn seg-btn active" data-period="week">7 d&iacute;as</button>
+                <button class="ccm-period-btn seg-btn" data-period="month">30 d&iacute;as</button>
+                <button class="ccm-period-btn seg-btn" data-period="all">Todo</button>
               </div>
             </div>
             <div id="ccm-content">
@@ -2080,11 +2080,15 @@
           </div>
         </section>
 
-        <section style="margin-top:18px;">
-          <div class="card" style="padding:16px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <strong style="font-size:14px;">Evolución temporal</strong>
-              <div style="display:flex; gap:6px; flex-wrap:wrap;" id="myp-chart-toggle"></div>
+        <div class="myp-section-label">Embudo del período</div>
+        <section id="myp-kpis" style="margin-top:4px; display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:12px;"></section>
+
+        <div class="myp-section-label">Evolución</div>
+        <section style="margin-top:4px;">
+          <div class="card" style="padding:18px 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+              <span class="muted" style="font-size:11.5px;">Eleg&iacute; qu&eacute; series ver en el tiempo.</span>
+              <div class="seg-control" id="myp-chart-toggle"></div>
             </div>
             <div style="position:relative; height:280px;">
               <canvas id="myp-chart"></canvas>
@@ -3319,7 +3323,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260708c"></script>
+  <script type="module" src="/app.js?v=20260708d"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

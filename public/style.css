@@ -1830,6 +1830,151 @@ td.empty-state .empty-state-content::before {
   transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* ── Mi rendimiento: toolbar + segmented control (2026-07-08) ── */
+.myp-toolbar {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.myp-toolbar-field label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  margin-bottom: 5px;
+}
+.myp-toolbar-field select {
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.myp-toolbar-field select:hover { border-color: rgba(157, 133, 242, 0.4); }
+.myp-range-chip {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  font-variant-numeric: tabular-nums;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+}
+.seg-control {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  flex-wrap: wrap;
+}
+.seg-btn {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.seg-btn:hover { color: var(--text-primary); }
+.seg-btn.active {
+  background: rgba(157, 133, 242, 0.16);
+  border-color: rgba(157, 133, 242, 0.35);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Cold Call Funnel (rediseño 2026-07-08) ── */
+.ccm-card { padding: 20px 22px; }
+.ccm-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.ccm-funnel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ccm-stage {
+  min-height: 108px;
+  gap: 5px;
+  padding: 15px 16px 13px;
+}
+/* el chip de conversión vive arriba a la derecha — que el label no lo pise */
+.ccm-stage .myp-tile-label { padding-right: 54px; }
+.ccm-stage-sub {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  line-height: 1.35;
+}
+.ccm-jump {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--tile-accent);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tile-accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tile-accent) 22%, transparent);
+}
+.ccm-ratios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+.ccm-ratio { text-align: center; padding: 8px 6px; }
+.ccm-ratio-num {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.4px;
+}
+.ccm-ratio-num.is-accent { color: var(--accent); }
+.ccm-ratio-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+}
+.ccm-bench {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.ccm-bench.ok  { color: #6ee7a0; background: rgba(74, 222, 128, 0.10); }
+.ccm-bench.mid { color: #FFB341; background: rgba(255, 179, 65, 0.10); }
+.ccm-bench.low { color: #ff9089; background: rgba(248, 81, 73, 0.10); }
+
 /* ════════════════════════════════════════════════════════════════
    Vista Hoy — secciones y filas premium (2026-07-07)
    Mismo lenguaje que los tiles de Mi rendimiento (acento por sección,
