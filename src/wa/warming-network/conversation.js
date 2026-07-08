@@ -46,6 +46,7 @@ function buildSystemPrompt(senderPersona, receiverPersona) {
     "8. Emojis: usalos con moderación, solo cuando aporten algo real.",
     "9. NO uses signos de puntuación al inicio (¿¡). En chats reales, mucha gente los omite.",
     "10. Errores tipográficos ocasionales son OK (te hacen más humano), pero no exageres.",
+    "11. NUNCA mandes links, URLs, números de teléfono, direcciones ni datos de contacto (son triggers de spam de WhatsApp). Tampoco hables de ventas, promociones ni negocios: es un chat entre conocidos.",
   ].join("\n");
 }
 

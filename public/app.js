@@ -5528,8 +5528,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
         ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link" onclick="return window._waBtnClick(this, event, '${escHtml(lead.id)}');">WhatsApp</a>` : ''}
-        <button type="button" onclick="window.openPlaceholderModal('${escHtml(lead.id)}')" class="pd-quick-link" style="cursor:pointer; background:transparent; font-family:inherit;" title="Mandar invitación tentativa de calendario por mail">Hold</button>
-        ${lead.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; padding:3px 8px; border:1px solid rgba(91,185,116,0.25); border-radius:6px;">hold enviado</span>` : ''}
       </div>` : ''}
 
       <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
@@ -5610,14 +5608,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:rgba(157,133,242,0.10); border:1px solid rgba(157,133,242,0.35); border-radius:8px; font-size:12.5px;"></div>
         <div class="pd-disposition-grid">
           ${[
-            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'abre agenda ahora',   color:'success' },
-            { v:'answered_not_interested', k:'2', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
-            { v:'hung_up',                 k:'3', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
-            { v:'no_answer',               k:'4', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
-            { v:'voicemail',               k:'5', label:'Buzón',           sub:'voice mail',          color:'warning' },
-            { v:'callback_later',          k:'6', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
-            { v:'wrong_number',            k:'7', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
-            { v:'invalid_number',          k:'8', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
+            { v:'answered_interested',     k:'1', label:'Interesado',      sub:'marca interés',       color:'success' },
+            { v:'scheduled_with_admin',    k:'2', label:'Agendar',         sub:'reserva la reunión',  color:'accent'  },
+            { v:'answered_not_interested', k:'3', label:'No interesado',   sub:'escuchó y dijo no',   color:'danger'  },
+            { v:'hung_up',                 k:'4', label:'Me cortó',        sub:'atendió y colgó',     color:'danger'  },
+            { v:'no_answer',               k:'5', label:'No atendió',      sub:'sonó, sin respuesta', color:'neutral' },
+            { v:'voicemail',               k:'6', label:'Buzón',           sub:'voice mail',          color:'warning' },
+            { v:'callback_later',          k:'7', label:'Volver a llamar', sub:'agenda callback',     color:'info'    },
+            { v:'wrong_number',            k:'8', label:'Equivocado',      sub:'no es este número',   color:'neutral' },
+            { v:'invalid_number',          k:'9', label:'No existe',       sub:'inválido / desact.',  color:'neutral' }
           ].map(d => `<button type="button" class="pd-disp-btn pd-disp-${d.color}" onclick="window._pdHandleDispositionDirect('${escHtml(lead.id)}', '${d.v}')">
             <div class="pd-disp-key">${d.k}</div>
             <div class="pd-disp-text">
@@ -5777,7 +5776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     window._pdHandleDisposition = async function(leadId, selectEl) {
       const outcome = selectEl?.value;
       if (!outcome) return;
-      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested','answered_interested'].includes(outcome);
+      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
       await window._handleCallDisposition(leadId, selectEl);
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
@@ -5891,7 +5890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Mapa de teclas numéricas → outcomes (mismo orden que el grid de disposition).
-    const _pdKeyOutcomes = ['answered_interested','answered_not_interested','hung_up','no_answer','voicemail','callback_later','wrong_number','invalid_number'];
+    const _pdKeyOutcomes = ['answered_interested','scheduled_with_admin','answered_not_interested','hung_up','no_answer','voicemail','callback_later','wrong_number','invalid_number'];
 
     // Shortcuts globales para power dialer
     document.addEventListener('keydown', (e) => {
@@ -5911,7 +5910,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       else if (e.key === 'a' || e.key === 'A') { window._pdToggleAutopilot(); }
       else if (e.key === 'p' || e.key === 'P') { _pdCancelAutopilot(); }
       else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); document.getElementById('pd-call-note')?.focus(); }
-      else if (e.key >= '1' && e.key <= '8') {
+      else if (e.key >= '1' && e.key <= '9') {
         const outcome = _pdKeyOutcomes[parseInt(e.key, 10) - 1];
         const lead = _callsLeadsById.get(_pd.queue[_pd.currentIdx]);
         if (lead && outcome) { _pdCancelAutopilot(); window._pdHandleDispositionDirect(lead.id, outcome); }
@@ -6650,9 +6649,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${fupBadge}
               ${callbackBadge}
               ${typeof _signalChips === 'function' ? _signalChips(l) : ''}
-              ${l.placeholderSentAt ? `<span style="font-size:10px; color:#5bb974; background:rgba(91,185,116,0.10); padding:2px 7px; border-radius:6px;" title="Hold de calendario enviado ${new Date(l.placeholderSentAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">hold</span>` : ''}
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
-              <button type="button" onclick="event.stopPropagation(); window.openPlaceholderModal('${escHtml(l.id)}')" title="Mandar hold de calendario por mail" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">hold</button>
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
               ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
@@ -6691,20 +6688,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </a>`;
           })()}
 
-          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" title="Atajos numéricos post-llamada: 1=Interesado · 2=No interesado · 3=No atendió · 4=Buzón · 5=Callback · 6=Equivocado · 7=No existe" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:230px; cursor:pointer; font-family:inherit;">
-            <option value="">— Resultado (1-7 atajos) —</option>
+          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" title="Resultado de la llamada. Interesado marca el interés; Agendar reserva la reunión (son acciones separadas)." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:230px; cursor:pointer; font-family:inherit;">
+            <option value="">— Resultado —</option>
             <optgroup label="Atendió">
-              ${interesado ? '<option value="scheduled_with_admin">Agendar con Ignacio</option>' : '<option value="answered_interested">1 — Interesado</option>'}
-              <option value="answered_not_interested">2 — No interesado</option>
+              <option value="answered_interested">Interesado (sin agendar)</option>
+              <option value="scheduled_with_admin">Agendar reunión</option>
+              <option value="answered_not_interested">No interesado</option>
             </optgroup>
             <optgroup label="No atendió">
-              <option value="no_answer">3 — No atendió / sonó nada</option>
-              <option value="voicemail">4 — Buzón de voz</option>
-              <option value="callback_later">5 — Volver a llamar después</option>
+              <option value="no_answer">No atendió / sonó nada</option>
+              <option value="voicemail">Buzón de voz</option>
+              <option value="callback_later">Volver a llamar después</option>
             </optgroup>
             <optgroup label="Número no sirve">
-              <option value="wrong_number">6 — Número equivocado</option>
-              <option value="invalid_number">7 — No existe / no funciona</option>
+              <option value="wrong_number">Número equivocado</option>
+              <option value="invalid_number">No existe / no funciona</option>
             </optgroup>
           </select>
 
@@ -7166,12 +7164,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // (rating, reseñas, dirección, sitio, instagram, fb, doctor) + quick-links
     // para abrir website / Google Maps / Instagram en pestaña nueva sin perder
     // el contexto de la llamada.
-    function _renderLeadFile(lead) {
-      const box = document.getElementById('telnyx-call-leadfile');
-      const content = document.getElementById('telnyx-call-leadfile-content');
-      const links = document.getElementById('telnyx-call-leadfile-quicklinks');
-      if (!box || !content) return;
-      if (!lead) { box.style.display = 'none'; return; }
+    // Builder puro de la ficha del lead (mismo contenido que muestra el Power
+    // Dialer durante la llamada). Devuelve { body, links } como strings HTML para
+    // poder reutilizarlo fuera del panel de llamada (ej: Reuniones agendadas).
+    // opts.interactive (default true): incluye el bloque "Contacto secundario"
+    // con botones de llamada, que solo tiene sentido cuando el lead está cargado
+    // en el dialer (_callsLeadsById). En vistas de solo-lectura pasar false.
+    window._leadFileHtml = function(lead, opts = {}) {
+      if (!lead) return { body: '', links: '' };
+      const interactive = opts.interactive !== false;
       const rows = [];
       // Sprint 24: Nota pre-call — destacada al tope (lo que el SDR
       // preparó antes de discar). Si está vacía, no se renderiza.
@@ -7194,7 +7195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Contacto secundario (encargado/decisor que te pasa la recepción). Siempre
       // visible para cargarlo en el momento de la llamada.
-      {
+      if (interactive) {
         const altCall = lead.altPhone
           ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">Llamar</button></div>`
           : `<div style="font-size:11px; color:rgba(255,255,255,0.6);">Si te pasan otro número (encargado/decisor), cargalo acá.</div>`;
@@ -7230,12 +7231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid rgba(157,133,242,0.3); color:rgba(255,255,255,0.65);">${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
         rows.push(`<div style="margin-top:6px;">${notesHtml}</div>`);
       }
-      if (rows.length === 0) {
-        box.style.display = 'none';
-        return;
-      }
-      box.style.display = 'block';
-      content.innerHTML = rows.join('');
       // Quick-links: abrir website / Google Maps / Instagram / Facebook en pestaña nueva
       // Sprint 37 (VULN-A1): todos los href pasan por safeUrl
       const linkBtns = [];
@@ -7258,7 +7253,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : `https://www.facebook.com/${fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '')}`;
         if (fbUrl) linkBtns.push(`<a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer" title="Abrir Facebook" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.3); color:#3b82f6; border-radius:5px; text-decoration:none;">FB</a>`);
       }
-      if (links) links.innerHTML = linkBtns.join('');
+      return { body: rows.join(''), links: linkBtns.join('') };
+    };
+
+    // Ficha del lead en el panel de llamada activa. Thin wrapper sobre el builder
+    // puro window._leadFileHtml.
+    function _renderLeadFile(lead) {
+      const box = document.getElementById('telnyx-call-leadfile');
+      const content = document.getElementById('telnyx-call-leadfile-content');
+      const links = document.getElementById('telnyx-call-leadfile-quicklinks');
+      if (!box || !content) return;
+      if (!lead) { box.style.display = 'none'; return; }
+      const { body, links: linksHtml } = window._leadFileHtml(lead, { interactive: true });
+      if (!body) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      content.innerHTML = body;
+      if (links) links.innerHTML = linksHtml;
     }
 
     // Phase 17 Ola 4: timeline unificada del lead (llamadas + notas, más reciente
@@ -7573,9 +7583,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Shortcut numérico 1-7 para elegir disposition rápido sin tocar mouse
             // Solo activo durante 30s post-cuelgue mientras el dropdown está en foco.
             const shortcutMap = {
-              '1': 'answered_interested', '2': 'answered_not_interested',
-              '3': 'no_answer', '4': 'voicemail', '5': 'callback_later',
-              '6': 'wrong_number', '7': 'invalid_number',
+              '1': 'answered_interested', '2': 'scheduled_with_admin',
+              '3': 'answered_not_interested', '4': 'no_answer', '5': 'voicemail',
+              '6': 'callback_later', '7': 'wrong_number', '8': 'invalid_number',
             };
             // Audit fix: limpiar handler anterior si quedó colgado de una llamada previa
             // (sino se acumulan listeners si haces 2-3 llamadas en <30s).
@@ -7960,15 +7970,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
-        // 2026-05-30: cuando un solo usuario hace de SDR+admin, "Interesado"
-        // ya implica "agendar ahora". Abrimos el modal de agenda directo. Si
-        // cancela, igual queda logueado como answered_interested (fallback).
-        if (outcome === 'answered_interested') {
-          openScheduleModal(leadId, { fallbackOnCancel: 'answered_interested' });
-          selectEl.value = '';
-          selectEl.disabled = false;
-          return;
-        }
+        // "Interesado" (answered_interested) NO abre la agenda: solo marca el
+        // interés y deja el lead con chip verde esperando agendamiento. Agendar
+        // es una acción aparte (botón/opción "Agendar" → scheduled_with_admin).
+        // Cae al flujo directo de abajo (POST call-disposition).
         // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
         // El popover deja saltear (skip) si el SDR no quiere taggear.
         if (outcome === 'answered_not_interested') {
@@ -11082,8 +11087,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           : `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px;">${todayUsers.map(renderCard).join('')}</div>`
         ) +
         (inactiveUsers.length > 0
-          ? `<details style="margin-top:18px;">
-              <summary style="cursor:pointer; padding:10px 14px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px; color:var(--text-secondary);">Ver inactivos (${inactiveUsers.length} — sin actividad hoy)</summary>
+          ? `<details open style="margin-top:18px;">
+              <summary style="cursor:pointer; padding:10px 14px; background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; font-size:13px; color:var(--text-secondary);">Inactivos (${inactiveUsers.length} — sin actividad hoy)</summary>
               <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; margin-top:12px;">${inactiveUsers.map(renderCard).join('')}</div>
             </details>`
           : '');
@@ -11251,7 +11256,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (d.length >= 7 && d.length <= 10 && m[k]) d = m[k] + d;
         telLink = '+' + d;
       }
-      return `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${overdueStyle} border-radius:12px; padding:16px 20px; display:grid; grid-template-columns: 1fr auto auto; gap:14px; align-items:center;">
+      // Ficha completa del lead (misma que el Power Dialer), expandible por card.
+      let ficha = { body: '', links: '' };
+      if (lead && typeof window._leadFileHtml === 'function') {
+        ficha = window._leadFileHtml(lead, { interactive: false });
+      }
+      const fichaDetails = (ficha.body || ficha.links)
+        ? `<details style="grid-column:1/-1; margin-top:4px;">
+            <summary style="cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px; padding:6px 12px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:8px; font-size:12px; color:var(--text-secondary); user-select:none;">Ver ficha del lead</summary>
+            <div style="margin-top:10px; background:var(--bg-app, #0F1115); border:1px solid var(--border-subtle); border-radius:10px; padding:14px;">
+              ${ficha.links ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${ficha.links}</div>` : ''}
+              <div style="font-size:12.5px; line-height:1.5; color:rgba(255,255,255,0.85); display:flex; flex-direction:column; gap:4px;">${ficha.body}</div>
+            </div>
+          </details>`
+        : '';
+      return `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); ${overdueStyle} border-radius:12px; padding:16px 20px; display:grid; grid-template-columns: 1fr auto auto; gap:14px 14px; align-items:center;">
         <div style="min-width:0;">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:4px;">
             <strong style="color:var(--text-primary); font-size:15px;">${escHtml(e.nombre || lead?.name || '(sin nombre)')}</strong>
@@ -11274,6 +11293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <option value="reagendada">Reagendar (cambiar fecha)</option>
           <option value="pendiente">Volver a pendiente</option>
         </select>
+        ${fichaDetails}
       </div>`;
     }).join('');
   }

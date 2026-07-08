@@ -4291,6 +4291,11 @@ textarea:disabled {
 .pd-disp-neutral:hover .pd-disp-label { color: var(--text-primary); }
 .pd-disp-neutral:hover .pd-disp-key { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
+.pd-disp-accent { color: #9D85F2; border-color: rgba(157,133,242,0.4); }
+.pd-disp-accent:hover { background: rgba(157,133,242,0.09); border-color: rgba(157,133,242,0.55); }
+.pd-disp-accent:hover .pd-disp-label { color: #9D85F2; }
+.pd-disp-accent:hover .pd-disp-key { background: rgba(157,133,242,0.22); color: #9D85F2; border-color: rgba(157,133,242,0.4); }
+
 /* Quick-links: outline limpio sin emojis */
 .pd-quick-link {
   display: inline-flex;
