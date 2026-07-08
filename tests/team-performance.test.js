@@ -41,10 +41,12 @@ fs.writeFileSync(
 const NOW = Date.now();
 const ONE_DAY = 24 * 60 * 60 * 1000;
 const t = (offsetDays) => new Date(NOW - offsetDays * ONE_DAY).toISOString();
-// Helper para ofsets sub-dia (en horas) — necesario porque /team-performance
-// usa period=day → ventana de 24h, asi que los leads del periodo actual deben
-// estar dentro de las ultimas 24h.
+// Helper para ofsets sub-dia (en horas).
 const tHours = (offsetHours) => new Date(NOW - offsetHours * 60 * 60 * 1000).toISOString();
+// Audit 2026-07-08: period=day default ahora es "HOY desde la medianoche" (TZ
+// de negocio) → depende de la hora a la que corra el test. Para los asserts de
+// CONTEOS usamos from/to explícitos (ventana fija de 24h, como el fixture).
+const DAY_RANGE = `period=day&from=${encodeURIComponent(new Date(NOW - ONE_DAY).toISOString())}&to=${encodeURIComponent(new Date(NOW).toISOString())}`;
 
 // callLog helper: el panel Equipo ahora mide desde el callLog (funnel de llamadas),
 // no desde los flags de setteo. Cada entry = 1 llamada (dial); outcome de connect +
@@ -143,7 +145,7 @@ describe("Shape y agregaciones", () => {
   });
 
   it("teamAverages calcula promedios solo de setters activos (total > 0)", async () => {
-    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    const r = await request(app).get(`/api/setters/team-performance?${DAY_RANGE}`).set("Cookie", adminCookie);
     expect(r.body.teamAverages).toHaveProperty("total");
     // setter_a (5) + setter_b (1) = 6 / 2 setters activos = 3
     expect(r.body.teamAverages.total).toBe(3);
@@ -168,7 +170,7 @@ describe("Shape y agregaciones", () => {
 
 describe("Alertas automáticas", () => {
   it("setter_b genera alerta drop (1 vs 5 = -80%, umbral default 30%)", async () => {
-    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    const r = await request(app).get(`/api/setters/team-performance?${DAY_RANGE}`).set("Cookie", adminCookie);
     const alerts = r.body.alerts.filter((a) => a.setterId === "setter_b");
     const drop = alerts.find((a) => a.type === "drop");
     expect(drop).toBeTruthy();
@@ -183,7 +185,7 @@ describe("Alertas automáticas", () => {
   });
 
   it("setter_a sin alertas (total estable, actividad reciente)", async () => {
-    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    const r = await request(app).get(`/api/setters/team-performance?${DAY_RANGE}`).set("Cookie", adminCookie);
     const alerts = r.body.alerts.filter((a) => a.setterId === "setter_a");
     expect(alerts.length).toBe(0);
   });
@@ -227,7 +229,7 @@ describe("Alert config", () => {
 
   it("subir umbral drop a 90% → setter_b ya no genera alerta drop", async () => {
     await request(app).put("/api/setters/alert-config").set("Cookie", adminCookie).send({ dropPctThreshold: 90 });
-    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    const r = await request(app).get(`/api/setters/team-performance?${DAY_RANGE}`).set("Cookie", adminCookie);
     const dropB = r.body.alerts.find((a) => a.setterId === "setter_b" && a.type === "drop");
     // 1 vs 5 = -80%, ahora umbral 90% → ya NO alerta
     expect(dropB).toBeUndefined();

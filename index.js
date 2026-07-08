@@ -1690,14 +1690,15 @@ function buildWeeklyReportData() {
   const settersData = loadSettersData();
   const allLeads = Object.values(settersData.leads || {});
   const calendar = settersData.calendar || [];
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const dayOfWeek = today.getDay() || 7;
-  const thisMonday = new Date(today.getTime() - (dayOfWeek - 1) * 24 * 60 * 60 * 1000);
-  const lastMonday = new Date(thisMonday.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const lastSunday = new Date(thisMonday.getTime() - 1);
-  const fromTs = lastMonday.getTime();
-  const toTs = thisMonday.getTime();
+  // Audit 2026-07-08: semana en TZ de negocio (antes cortaba en la medianoche
+  // UTC del server → la semana arrancaba el domingo 21:00 local).
+  const nowTs = Date.now();
+  const todayStart = _bizStartOfDay(nowTs);
+  const dayOfWeek = _bizDayOfWeek(todayStart) || 7;
+  const thisMonday = todayStart - (dayOfWeek - 1) * 24 * 60 * 60 * 1000;
+  const lastMondayTs = thisMonday - 7 * 24 * 60 * 60 * 1000;
+  const fromTs = lastMondayTs;
+  const toTs = thisMonday;
   const conexionesNew = allLeads.filter(l => {
     const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
     return l.conexion === 'enviada' && t >= fromTs && t < toTs;
@@ -1720,25 +1721,30 @@ function buildWeeklyReportData() {
   const calNoShow = calendar.filter(e => { const t = e.fecha ? new Date(e.fecha).getTime() : 0; return e.calendarioEstado === 'no_show' && t >= fromTs && t < toTs; }).length;
   const calPendingNow = calendar.filter(e => e.calendarioEstado === 'pendiente').length;
   const calOverdueNow = calendar.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < Date.now()).length;
+  // Llamadas por setter atribuidas por quién LLAMÓ (entry.by), no dueño actual.
+  const _wkUserMap = _buildUserSetterMap();
+  const _wkCalls = new Map(); // setterId → { llamadas, agendadas }
+  for (const l of allLeads) {
+    if (!Array.isArray(l.callLog)) continue;
+    for (const c of l.callLog) {
+      const t = c.ts ? new Date(c.ts).getTime() : 0;
+      if (t < fromTs || t >= toTs) continue;
+      const sid = _callSetterId(c, l, _wkUserMap);
+      if (!sid) continue;
+      let w = _wkCalls.get(sid);
+      if (!w) { w = { llamadas: 0, agendadas: 0 }; _wkCalls.set(sid, w); }
+      w.llamadas++;
+      if (c.outcome === 'scheduled_with_admin') w.agendadas++;
+    }
+  }
   const perSetter = (settersData.setters || []).map(s => {
     const myLeads = allLeads.filter(l => l.assignedTo === s.id);
     const conexionesSetter = myLeads.filter(l => { const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0; return l.conexion === 'enviada' && t >= fromTs && t < toTs; }).length;
-    let llamadas = 0, agendadosLlamada = 0;
-    for (const l of myLeads) {
-      if (Array.isArray(l.callLog)) {
-        for (const c of l.callLog) {
-          const t = c.ts ? new Date(c.ts).getTime() : 0;
-          if (t >= fromTs && t < toTs) {
-            llamadas++;
-            if (c.outcome === 'scheduled_with_admin') agendadosLlamada++;
-          }
-        }
-      }
-    }
-    return { name: s.name, leadsAsignados: myLeads.length, conexiones: conexionesSetter, llamadas, agendadosLlamada };
+    const w = _wkCalls.get(s.id) || { llamadas: 0, agendadas: 0 };
+    return { name: s.name, leadsAsignados: myLeads.length, conexiones: conexionesSetter, llamadas: w.llamadas, agendadosLlamada: w.agendadas };
   }).filter(s => s.conexiones > 0 || s.llamadas > 0);
   return {
-    period: { from: lastMonday.toISOString().substring(0, 10), to: lastSunday.toISOString().substring(0, 10) },
+    period: { from: _bizDayStr(lastMondayTs), to: _bizDayStr(thisMonday - 1) },
     wsp: { conexionesNew, respondieronTotal: allLeads.filter(l => l.respondio).length, interesadosTotal: allLeads.filter(l => l.interes === 'si').length, agendadosTotal: allLeads.filter(l => l.estado === 'agendado').length },
     calls: { totalWeek: callsWeek, answeredWeek: callsAnsweredWeek, scheduledWeek: callsScheduledWeek, deadWeek: callsDeadWeek, pctAtendidas: callsWeek > 0 ? ((callsAnsweredWeek / callsWeek) * 100).toFixed(1) : '0.0' },
     calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
@@ -1774,8 +1780,9 @@ async function sendWeeklyReport(toEmail, dataOverride = null) {
 }
 
 function maybeRunWeeklyReportCron() {
-  const now = new Date();
-  if (now.getDay() !== 1 || now.getHours() < 8) return;
+  // Lunes 8am en TZ de negocio (antes era TZ del server = UTC → 5am AR).
+  const nowTs = Date.now();
+  if (_bizDayOfWeek(nowTs) !== 1 || _bizHour(nowTs) < 8) return;
   const state = loadReportsState();
   const last = state.lastWeeklyReportAt ? new Date(state.lastWeeklyReportAt) : null;
   if (last && (now.getTime() - last.getTime()) < 6 * 24 * 60 * 60 * 1000) return;
@@ -5118,6 +5125,58 @@ const COLD_CALL_CONV_MIN_S = 30;
 const COLD_CALL_CONNECT_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
 const COLD_CALL_APPOINTMENT_OUTCOMES = new Set(['scheduled_with_admin']);
 
+// ── Timezone de negocio para métricas (audit 2026-07-08) ──
+// Railway corre en UTC: `setHours(0,0,0,0)` marcaba la medianoche UTC, que en
+// AR/UY son las 21:00 del día ANTERIOR → "hoy" incluía llamadas de ayer a la
+// noche y los gráficos por día/hora salían corridos 3 horas. Todos los cortes
+// de día / hora / día-de-semana de las métricas usan esta TZ (env BUSINESS_TZ).
+const BUSINESS_TZ = process.env.BUSINESS_TZ || 'America/Argentina/Buenos_Aires';
+const _bizDtf = (() => {
+  const opts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+  try {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: BUSINESS_TZ, ...opts });
+  } catch {
+    console.error(`[metrics] BUSINESS_TZ inválida ("${BUSINESS_TZ}") — fallback a America/Argentina/Buenos_Aires`);
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', ...opts });
+  }
+})();
+// Offset (ms) de la TZ de negocio respecto de UTC en el instante ts.
+function _bizOffsetMs(ts = Date.now()) {
+  const parts = {};
+  for (const p of _bizDtf.formatToParts(new Date(ts))) parts[p.type] = p.value;
+  const asUTC = Date.UTC(+parts.year, +parts.month - 1, +parts.day,
+    parts.hour === '24' ? 0 : +parts.hour, +parts.minute, +parts.second);
+  return asUTC - Math.floor(ts / 1000) * 1000;
+}
+// Timestamp (ms UTC) de la medianoche del día de negocio que contiene ts.
+function _bizStartOfDay(ts = Date.now()) {
+  const off = _bizOffsetMs(ts);
+  const shifted = new Date(ts + off);
+  return Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate()) - off;
+}
+// YYYY-MM-DD / hora 0-23 / día de semana 0-6 (domingo=0) en la TZ de negocio.
+function _bizDayStr(ts) { return new Date(ts + _bizOffsetMs(ts)).toISOString().slice(0, 10); }
+function _bizHour(ts) { return new Date(ts + _bizOffsetMs(ts)).getUTCHours(); }
+function _bizDayOfWeek(ts) { return new Date(ts + _bizOffsetMs(ts)).getUTCDay(); }
+
+// ── Atribución de llamadas por quién LLAMÓ (audit 2026-07-08) ──
+// logEntry.by guarda el user que hizo la llamada, pero las métricas por setter
+// atribuían por lead.assignedTo (dueño ACTUAL del lead): tras cada
+// redistribución/reciclaje del pool las llamadas históricas de un setter se le
+// acreditaban a quien tuviera el lead hoy. Se atribuye por entry.by mapeado a
+// setterId, con fallback a assignedTo para entries sin `by` o de users sin
+// setter vinculado.
+function _buildUserSetterMap() {
+  const m = {};
+  try { (loadAuthData().users || []).forEach((u) => { if (u.id && u.setterId) m[u.id] = u.setterId; }); } catch {}
+  return m;
+}
+function _callSetterId(entry, lead, userMap) {
+  return (entry.by && userMap[entry.by]) || lead.assignedTo || '';
+}
+// Expuestos para tests puros (patrón globalThis.__phase16 / __mercury).
+globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour, _bizDayOfWeek, _buildUserSetterMap, _callSetterId };
+
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
 // GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
 // Funnel de cold call basado en callLog: Dials → Connects → Conversations → Appointments.
@@ -5139,8 +5198,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   }
 
   const period = String(req.query.period || 'week').toLowerCase();
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const startOfDay = _bizStartOfDay(); // medianoche en TZ de negocio, no del server
   let fromTs;
   if (period === 'today') fromTs = startOfDay;
   else if (period === 'week') fromTs = startOfDay - 7 * 86400000;
@@ -5156,12 +5214,15 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
   let totalDurationS = 0, revenue = 0;
   const byReason = {}; // Phase 17: razones de descalificación (answered_not_interested)
+  // Atribución por quién LLAMÓ (entry.by), no por dueño actual del lead — las
+  // redistribuciones del pool no deben mover las llamadas históricas de setter.
+  const userMap = setterId ? _buildUserSetterMap() : null;
 
   for (const id in data.leads) {
     const lead = data.leads[id];
-    if (setterId && lead.assignedTo !== setterId) continue;
     const log = Array.isArray(lead.callLog) ? lead.callLog : [];
     for (const entry of log) {
+      if (setterId && _callSetterId(entry, lead, userMap) !== setterId) continue;
       const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
       if (!ts || ts < fromTs) continue;
       dials++;
@@ -5225,22 +5286,23 @@ app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'No autorizado.' });
   }
   const data = loadSettersData();
-  // Sprint 37 (BUG-A5): usar timezone local del servidor, no UTC.
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  // Audit 2026-07-08: "hoy" en TZ de negocio (el server corre en UTC en Railway)
+  // + atribución por quién llamó (entry.by) con fallback al dueño del lead.
+  const startOfDay = _bizStartOfDay();
   const endOfDay = startOfDay + 86400000;
+  const userMap = _buildUserSetterMap();
   let count = 0;
   for (const id in data.leads) {
     const lead = data.leads[id];
-    if (lead.assignedTo !== setterId) continue;
     const log = Array.isArray(lead.callLog) ? lead.callLog : [];
     for (const entry of log) {
+      if (_callSetterId(entry, lead, userMap) !== setterId) continue;
       const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
       if (!ts || isNaN(ts)) continue;
       if (ts >= startOfDay && ts < endOfDay) count++;
     }
   }
-  res.json({ count, date: now.toISOString().substring(0, 10) });
+  res.json({ count, date: _bizDayStr(Date.now()) });
 });
 
 app.get('/api/setters/team/:id/phones', requireAuth, (req, res) => {
@@ -5747,7 +5809,9 @@ app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 's
   const range = (req.query.range || 'month').toString();
   const now = Date.now();
   let cutoff = 0;
-  if (range === 'today') cutoff = now - 24 * 3600 * 1000;
+  // Audit 2026-07-08: 'today' era una ventana móvil de 24hs (incluía ayer);
+  // ahora es "desde la medianoche" en la TZ de negocio, como el resto.
+  if (range === 'today') cutoff = _bizStartOfDay(now);
   else if (range === 'week') cutoff = now - 7 * 24 * 3600 * 1000;
   else if (range === 'month') cutoff = now - 30 * 24 * 3600 * 1000;
   // 'all' → cutoff = 0
@@ -5759,6 +5823,7 @@ app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 's
   const tagByCountry = {}; // {country: {tag: count}}
   let totalRejected = 0;
   let totalWithTags = 0;
+  const userMap = _buildUserSetterMap(); // atribución por quién llamó
 
   for (const id in data.leads) {
     const lead = data.leads[id];
@@ -5774,7 +5839,7 @@ app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 's
       const tags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
       if (tags.length > 0) totalWithTags++;
       const country = (lead.country || 'Sin país').trim();
-      const setterId = lead.assignedTo || 'Sin setter';
+      const setterId = _callSetterId(entry, lead, userMap) || 'Sin setter';
       for (const tag of tags) {
         byTag[tag] = (byTag[tag] || 0) + 1;
         if (!tagByCountry[country]) tagByCountry[country] = {};
@@ -5977,7 +6042,7 @@ app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (re
   const id = `lead_manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   const newLead = ensureLeadDefaults({
     num: maxNum,
-    fecha: now.toISOString().substring(0, 10),
+    fecha: _bizDayStr(Date.now()),
     name: name.trim().substring(0, 120),
     phone: cleanPhone,
     country: String(country || '').trim().substring(0, 60),
@@ -6112,7 +6177,7 @@ function _importLeadsCore(data, incoming, assignTo) {
     const finalOpenMsg = importedOpenMsg || lead.openMessage || makeOpeningMessage({ country: finalCountry, city: finalCity });
     const baseLead = ensureLeadDefaults({
       num: maxNum,
-      fecha: now.toISOString().substring(0, 10),
+      fecha: _bizDayStr(Date.now()),
       name: lead.name || 'Sin nombre',
       phone: cleanPhone,
       website: lead.website || '',
@@ -6741,7 +6806,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
 
   // ── Cascada hacia adelante ──
   if (req.body.conexion === 'enviada') {
-    if (!lead.fechaContacto) lead.fechaContacto = new Date().toISOString().substring(0, 10);
+    if (!lead.fechaContacto) lead.fechaContacto = _bizDayStr(Date.now());
     if (!lead.estado || lead.estado === 'sin_contactar') lead.estado = 'contactado';
     lead.lastContactAt = new Date().toISOString();
   }
@@ -8002,15 +8067,15 @@ function _computeFollowupsDue(lead, now = Date.now()) {
     : (lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0);
   if (!baseTs) return out;
 
-  const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
-  const startOfTomorrow = startOfToday.getTime() + 24 * 60 * 60 * 1000;
-  const startOfYesterday = startOfToday.getTime() - 24 * 60 * 60 * 1000;
+  const startOfToday = _bizStartOfDay(now); // medianoche en TZ de negocio
+  const startOfTomorrow = startOfToday + 24 * 60 * 60 * 1000;
+  const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
 
   const dueTs = baseTs + activeStep.deltaMs;
   let status;
   if (dueTs >= startOfTomorrow) status = 'future';
-  else if (dueTs >= startOfToday.getTime() && dueTs < startOfTomorrow) status = 'dueToday';
-  else if (dueTs >= startOfYesterday && dueTs < startOfToday.getTime()) status = 'dueYesterday';
+  else if (dueTs >= startOfToday && dueTs < startOfTomorrow) status = 'dueToday';
+  else if (dueTs >= startOfYesterday && dueTs < startOfToday) status = 'dueYesterday';
   else status = 'overdue';
 
   out.push({
@@ -8142,45 +8207,40 @@ app.get('/api/setters/followups/badge', requireAuth, (req, res) => {
 
 function _perfBucketsForPeriod(period, fromTs, toTs) {
   // Devuelve array de { from, to, label } orden cronologico ascendente.
+  // Audit 2026-07-08: límites y labels en la TZ de negocio — antes usaban la
+  // TZ del server (UTC en Railway): los buckets cortaban a las 21:00 locales
+  // y una llamada de la noche caía en el día siguiente del chart.
   const buckets = [];
   const oneDay = 24 * 60 * 60 * 1000;
   if (period === "day") {
-    let cur = new Date(fromTs);
-    cur.setHours(0, 0, 0, 0);
-    while (cur.getTime() < toTs) {
-      const next = new Date(cur.getTime() + oneDay);
-      buckets.push({
-        from: cur.getTime(),
-        to: Math.min(next.getTime(), toTs),
-        label: cur.toISOString().substring(0, 10),
-      });
+    let cur = _bizStartOfDay(fromTs);
+    while (cur < toTs) {
+      const next = cur + oneDay;
+      buckets.push({ from: cur, to: Math.min(next, toTs), label: _bizDayStr(cur) });
       cur = next;
     }
   } else if (period === "month") {
-    let cur = new Date(fromTs);
-    cur.setDate(1); cur.setHours(0, 0, 0, 0);
-    while (cur.getTime() < toTs) {
-      const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const off = _bizOffsetMs(fromTs);
+    const s = new Date(fromTs + off);
+    let cur = Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), 1) - off;
+    while (cur < toTs) {
+      const d = new Date(cur + off);
+      const next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) - off;
       buckets.push({
-        from: cur.getTime(),
-        to: Math.min(next.getTime(), toTs),
-        label: `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`,
+        from: cur,
+        to: Math.min(next, toTs),
+        label: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
       });
       cur = next;
     }
   } else {
     // week — buckets de lunes a domingo
-    let cur = new Date(fromTs);
-    cur.setHours(0, 0, 0, 0);
-    const dayOfWeek = (cur.getDay() + 6) % 7; // lunes = 0
-    cur = new Date(cur.getTime() - dayOfWeek * oneDay);
-    while (cur.getTime() < toTs) {
-      const next = new Date(cur.getTime() + 7 * oneDay);
-      buckets.push({
-        from: cur.getTime(),
-        to: Math.min(next.getTime(), toTs),
-        label: `Sem ${cur.toISOString().substring(0, 10)}`,
-      });
+    let cur = _bizStartOfDay(fromTs);
+    const dayOfWeek = (_bizDayOfWeek(cur) + 6) % 7; // lunes = 0
+    cur -= dayOfWeek * oneDay;
+    while (cur < toTs) {
+      const next = cur + 7 * oneDay;
+      buckets.push({ from: cur, to: Math.min(next, toTs), label: `Sem ${_bizDayStr(cur)}` });
       cur = next;
     }
   }
@@ -8207,7 +8267,10 @@ function _perfTableRange(period) {
   const oneDay = 24 * 60 * 60 * 1000;
   const to = now;
   let from;
-  if (period === "day") from = now - oneDay;
+  // Audit 2026-07-08: "day" = HOY desde la medianoche (TZ de negocio). Antes
+  // era una ventana móvil de 24hs → a media mañana la tabla del Equipo mostraba
+  // también las llamadas de ayer.
+  if (period === "day") from = _bizStartOfDay(now);
   else if (period === "month") from = now - 30 * oneDay;
   else from = now - 7 * oneDay; // week (default)
   return { from, to };
@@ -8257,24 +8320,34 @@ function _perfAggregate(leads, fromTs, toTs) {
 // (citas 'ganada' con closedAt en bucket, por setterId). shows/noShows de asistencia.
 // Reemplaza al embudo de WhatsApp (conexion/respondio/calificado) que las llamadas no
 // setean. `total` queda como alias de dials para compat con alertas/sort/promedios.
-function _perfCallFunnel(leads, fromTs, toTs, calendar, setterId) {
+// callEntries (opcional): array de { ts, outcome, duration } PRE-ATRIBUIDAS al
+// setter por quién llamó (_callSetterId) — audit 2026-07-08. Si viene, las
+// llamadas se cuentan desde ahí (independiente de a quién esté asignado el lead
+// hoy); `leads` queda solo para shows/noShows (que sí son del dueño del lead).
+function _perfCallFunnel(leads, fromTs, toTs, calendar, setterId, callEntries) {
   let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0, revenue = 0;
   let shows = 0, noShows = 0, totalDurationS = 0;
-  for (const lead of leads) {
-    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
-    for (const entry of log) {
-      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
-      if (!ts || ts < fromTs || ts >= toTs) continue;
-      dials++;
-      const outcome = String(entry.outcome || "");
-      const duration = Number(entry.duration || 0);
-      if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
-        connects++;
-        totalDurationS += duration;
-        if (duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
-        if (COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
+  const countEntry = (ts, outcome, duration) => {
+    if (!ts || ts < fromTs || ts >= toTs) return;
+    dials++;
+    if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
+      connects++;
+      totalDurationS += duration;
+      if (duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
+      if (COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
+    }
+  };
+  if (Array.isArray(callEntries)) {
+    for (const e of callEntries) countEntry(e.ts, e.outcome, e.duration);
+  } else {
+    for (const lead of leads) {
+      const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+      for (const entry of log) {
+        countEntry(entry.ts ? new Date(entry.ts).getTime() : 0, String(entry.outcome || ""), Number(entry.duration || 0));
       }
     }
+  }
+  for (const lead of leads) {
     const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
     if (ats >= fromTs && ats < toTs) {
       if (lead.asistio === true) shows++;
@@ -8469,8 +8542,16 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   const data = loadSettersData();
   const allLeads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
   const periodMs = toTs - fromTs;
-  const prevTo = fromTs;
-  const prevFrom = fromTs - periodMs;
+  // Período anterior. Para "day" con rango default (hoy desde la medianoche),
+  // comparar contra "ayer hasta esta misma hora" — comparar contra la franja
+  // nocturna previa a la medianoche daba deltas sin sentido (audit 2026-07-08).
+  let prevTo = fromTs;
+  let prevFrom = fromTs - periodMs;
+  if (period === "day" && !req.query.from && !req.query.to) {
+    const oneDay = 24 * 60 * 60 * 1000;
+    prevFrom = fromTs - oneDay;
+    prevTo = toTs - oneDay;
+  }
 
   const cfg = loadAlertConfig();
   const inactivityCutoff = Date.now() - cfg.inactivityDays * 24 * 60 * 60 * 1000;
@@ -8484,10 +8565,29 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     leadsBySetter.get(aid).push(l);
   }
 
+  // Audit 2026-07-08: llamadas atribuidas por quién LLAMÓ (entry.by → setter),
+  // no por dueño actual del lead. Una pasada sobre todos los callLog cubriendo
+  // período actual + anterior; _perfCallFunnel filtra por [from, to) adentro.
+  const userMap = _buildUserSetterMap();
+  const callsBySetter = new Map();
+  for (const l of allLeads) {
+    const log = Array.isArray(l.callLog) ? l.callLog : [];
+    for (const e of log) {
+      const ts = e.ts ? new Date(e.ts).getTime() : 0;
+      if (!ts || ts < prevFrom || ts >= toTs) continue;
+      const sid = _callSetterId(e, l, userMap);
+      if (!sid) continue;
+      let arr = callsBySetter.get(sid);
+      if (!arr) { arr = []; callsBySetter.set(sid, arr); }
+      arr.push({ ts, outcome: String(e.outcome || ""), duration: Number(e.duration || 0) });
+    }
+  }
+
   const perSetter = (data.setters || []).map((s) => {
     const setterLeads = leadsBySetter.get(s.id) || [];
-    const current = _perfCallFunnel(setterLeads, fromTs, toTs, data.calendar, s.id);
-    const previous = _perfCallFunnel(setterLeads, prevFrom, prevTo, data.calendar, s.id);
+    const setterCalls = callsBySetter.get(s.id) || [];
+    const current = _perfCallFunnel(setterLeads, fromTs, toTs, data.calendar, s.id, setterCalls);
+    const previous = _perfCallFunnel(setterLeads, prevFrom, prevTo, data.calendar, s.id, setterCalls);
     const deltas = _perfDelta(current, previous, ["total", "dials", "connects", "conversations", "appointments", "deals", "shows", "noShows"]);
 
     // Ultima actividad: max(lastContactAt) entre todos los leads del setter.
@@ -8685,24 +8785,39 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const sinWsp = allLeads.filter(l => l.conexion === 'sin_wsp').length;
 
   // ── Métricas de llamadas (cross-cuts con WSP, agregado separado) ──
-  const today = new Date().toISOString().substring(0, 10);
-  const callLeads = allLeads.filter(l => l.conexion === 'sin_wsp');
-  const totalCalls = callLeads.reduce((s, l) => s + (Array.isArray(l.callLog) ? l.callLog.length : 0), 0);
-  let callsToday = 0, answeredToday = 0;
+  // Audit 2026-07-08: (1) las llamadas se cuentan sobre TODOS los leads con
+  // callLog — desde include=callable el dialer también disca leads en flujo
+  // Setteo y esas llamadas no se contaban acá; (2) "hoy" en TZ de negocio, no
+  // fecha UTC; (3) atribución por setter por quién LLAMÓ (entry.by).
+  const todayStart = _bizStartOfDay();
+  const todayEnd = todayStart + 86400000;
+  const callLeads = allLeads.filter(l => l.conexion === 'sin_wsp'); // cola "Llamadas" (para leadsEnLlamadas/números muertos)
+  const cmdUserMap = _buildUserSetterMap();
+  let totalCalls = 0, callsToday = 0, answeredToday = 0;
   let callsWithAnswered = 0, callsWithInterested = 0, callsScheduledWithAdmin = 0;
   let phoneDead = 0;
-  for (const l of callLeads) {
+  const _callAgg = new Map(); // setterId (quién llamó) → { total, hoy, interesados, agendados }
+  for (const l of allLeads) {
     if (Array.isArray(l.callLog)) {
       for (const c of l.callLog) {
-        if ((c.ts || '').substring(0, 10) === today) {
+        totalCalls++;
+        const sid = _callSetterId(c, l, cmdUserMap);
+        let agg = _callAgg.get(sid);
+        if (!agg) { agg = { total: 0, hoy: 0, interesados: 0, agendados: 0 }; _callAgg.set(sid, agg); }
+        agg.total++;
+        const cts = c.ts ? new Date(c.ts).getTime() : 0;
+        if (cts >= todayStart && cts < todayEnd) {
           callsToday++;
+          agg.hoy++;
           if (['answered_interested', 'answered_not_interested', 'scheduled_with_admin'].includes(c.outcome)) answeredToday++;
         }
-        if (c.outcome === 'answered_interested') callsWithInterested++;
+        if (c.outcome === 'answered_interested') { callsWithInterested++; agg.interesados++; }
         if (['answered_interested', 'answered_not_interested'].includes(c.outcome)) callsWithAnswered++;
-        if (c.outcome === 'scheduled_with_admin') callsScheduledWithAdmin++;
+        if (c.outcome === 'scheduled_with_admin') { callsScheduledWithAdmin++; agg.agendados++; }
       }
     }
+  }
+  for (const l of callLeads) {
     if (['wrong', 'invalid'].includes(l.phoneStatus)) phoneDead++;
   }
   const calendarEntries = Array.isArray(data.calendar) ? data.calendar : [];
@@ -8710,8 +8825,8 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const callScheduledRealized = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'realizada').length;
   const callScheduledNoShow = calendarEntries.filter(e => e.sourceCall && e.calendarioEstado === 'no_show').length;
 
-  // Métricas de llamadas por setter
-  // Audit fix: group call leads por setter una sola vez (era O(S×callLeads)).
+  // Métricas de llamadas por setter — atribuidas por quién LLAMÓ (agregadas
+  // arriba en _callAgg). leadsAsignados sigue siendo la cola actual del setter.
   const _callLeadsBySetter = new Map();
   for (const l of callLeads) {
     const sid = l.assignedTo || '__none__';
@@ -8720,25 +8835,15 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   }
   const callsPerSetter = data.setters.map(s => {
     const leads = _callLeadsBySetter.get(s.id) || [];
-    const totalLogs = leads.reduce((sum, l) => sum + (Array.isArray(l.callLog) ? l.callLog.length : 0), 0);
-    let callsTodaySetter = 0, interesadosSetter = 0, agendadosSetter = 0;
-    for (const l of leads) {
-      if (Array.isArray(l.callLog)) {
-        for (const c of l.callLog) {
-          if ((c.ts || '').substring(0, 10) === today) callsTodaySetter++;
-          if (c.outcome === 'answered_interested') interesadosSetter++;
-          if (c.outcome === 'scheduled_with_admin') agendadosSetter++;
-        }
-      }
-    }
+    const agg = _callAgg.get(s.id) || { total: 0, hoy: 0, interesados: 0, agendados: 0 };
     return {
       id: s.id, name: s.name,
       leadsAsignados: leads.length,
-      totalLlamadas: totalLogs,
-      llamadasHoy: callsTodaySetter,
-      interesados: interesadosSetter,
-      agendados: agendadosSetter,
-      pctConversion: totalLogs > 0 ? ((agendadosSetter / totalLogs) * 100).toFixed(1) : '0.0'
+      totalLlamadas: agg.total,
+      llamadasHoy: agg.hoy,
+      interesados: agg.interesados,
+      agendados: agg.agendados,
+      pctConversion: agg.total > 0 ? ((agg.agendados / agg.total) * 100).toFixed(1) : '0.0'
     };
   }).filter(s => s.leadsAsignados > 0 || s.totalLlamadas > 0);
 
@@ -12103,11 +12208,12 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   const range = (req.query.range || 'month').toString();
   const now = Date.now();
   let fromTs = 0;
-  if (range === 'today') fromTs = new Date().setHours(0, 0, 0, 0);
+  if (range === 'today') fromTs = _bizStartOfDay(now); // medianoche TZ de negocio
   else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
   else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
   const data = loadSettersData();
   // Recolectar todas las calls Telnyx en rango
+  const _effUserMap = _buildUserSetterMap(); // atribución por quién llamó
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog)) continue;
@@ -12115,7 +12221,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
       if (c.channel !== 'telnyx_webrtc') continue;
       const ts = new Date(c.ts).getTime();
       if (fromTs > 0 && ts < fromTs) continue;
-      calls.push({ ...c, leadId, leadCountry: lead.country || '', leadCity: lead.city || '', setterId: lead.assignedTo || '' });
+      calls.push({ ...c, leadId, leadCountry: lead.country || '', leadCity: lead.city || '', setterId: _callSetterId(c, lead, _effUserMap) });
     }
   }
   // Totales generales
@@ -12167,10 +12273,11 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     scheduledPct: v.calls > 0 ? Math.round((v.scheduled / v.calls) * 100) : 0,
     scheduledFromReachedPct: v.reached > 0 ? Math.round((v.scheduled / v.reached) * 100) : 0,
   })).sort((a, b) => b.calls - a.calls);
-  // Por hora del día (mejor momento para llamar)
+  // Por hora del día (mejor momento para llamar) — hora en TZ de negocio
+  // (antes getHours() del server = UTC en Railway → corrido 3hs).
   const byHour = {};
   for (const c of calls) {
-    const h = new Date(c.ts).getHours();
+    const h = _bizHour(new Date(c.ts).getTime());
     if (!byHour[h]) byHour[h] = { calls: 0, reached: 0, scheduled: 0 };
     byHour[h].calls++;
     if (reachedOutcomes.includes(c.outcome)) byHour[h].reached++;
@@ -12185,7 +12292,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   const dayLabels = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const byDayOfWeek = {};
   for (const c of calls) {
-    const d = new Date(c.ts).getDay();
+    const d = _bizDayOfWeek(new Date(c.ts).getTime());
     if (!byDayOfWeek[d]) byDayOfWeek[d] = { calls: 0, reached: 0, scheduled: 0 };
     byDayOfWeek[d].calls++;
     if (reachedOutcomes.includes(c.outcome)) byDayOfWeek[d].reached++;
@@ -12239,7 +12346,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
   const range = (req.query.range || 'month').toString();
   const now = Date.now();
   let fromTs = 0;
-  if (range === 'today') fromTs = new Date().setHours(0, 0, 0, 0);
+  if (range === 'today') fromTs = _bizStartOfDay(now); // medianoche TZ de negocio
   else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
   else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
   const settersData = loadSettersData();
@@ -13062,7 +13169,7 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
   const now = Date.now();
   let sinceTs = 0;
   if (range === 'today') {
-    const d = new Date(); d.setHours(0, 0, 0, 0); sinceTs = d.getTime();
+    sinceTs = _bizStartOfDay(); // medianoche en TZ de negocio, no del server
   } else if (range === 'week') {
     sinceTs = now - 7 * 24 * 60 * 60 * 1000;
   } else if (range === 'month') {
@@ -13073,6 +13180,7 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
 
   const data = loadSettersData();
   const settersById = new Map((data.setters || []).map((s) => [s.id, s]));
+  const userMap = _buildUserSetterMap(); // atribución por quién llamó
   let totalCalls = 0;
   let totalMinutes = 0;
   let totalCostUSD = 0;
@@ -13084,10 +13192,10 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
   for (const id in data.leads) {
     const lead = data.leads[id];
     if (!Array.isArray(lead.callLog)) continue;
-    const setterId = lead.assignedTo || '';
-    const setterName = settersById.get(setterId)?.name || '(sin setter)';
     for (const entry of lead.callLog) {
       if (entry.channel !== 'telnyx_webrtc') continue;
+      const setterId = _callSetterId(entry, lead, userMap);
+      const setterName = settersById.get(setterId)?.name || '(sin setter)';
       const ts = new Date(entry.ts).getTime();
       if (!isFinite(ts) || ts < sinceTs) continue;
       const durSecs = entry.duration || 0;
@@ -13114,8 +13222,9 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
       byTariff[tk].calls++;
       byTariff[tk].minutes += minutes;
       byTariff[tk].costUSD += cost;
-      // byDay (para gráfico de evolución)
-      const day = new Date(entry.ts).toISOString().slice(0, 10);
+      // byDay (para gráfico de evolución) — día en TZ de negocio, no UTC
+      // (una llamada de las 21:30 caía en el día siguiente del gráfico).
+      const day = _bizDayStr(ts);
       if (!byDay[day]) byDay[day] = { day, calls: 0, minutes: 0, costUSD: 0 };
       byDay[day].calls++;
       byDay[day].minutes += minutes;
