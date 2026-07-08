@@ -12144,19 +12144,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       list.innerHTML = calls.map(_trainingCallRow).join('');
     } catch (e) { list.innerHTML = '<div style="color:var(--danger); padding:16px;">Error cargando. Reintentá.</div>'; }
   }
+  // Color del badge por familia de resultado: verde=ganada, ámbar=re-llamar,
+  // rojo=rechazo, gris=sin contacto real.
+  function _trainingOutcomeClass(o) {
+    if (o === 'scheduled_with_admin' || o === 'answered_interested') return 'win';
+    if (o === 'callback_later') return 'mid';
+    if (o === 'answered_not_interested' || o === 'hung_up') return 'lost';
+    return 'flat';
+  }
   function _trainingCallRow(c) {
     const oc = (typeof callOutcomeLabel === 'function') ? callOutcomeLabel(c.outcome) : c.outcome;
-    const dur = c.duration ? Math.round(c.duration) + 's' : '';
+    const dur = c.duration ? (c.duration >= 60 ? `${Math.floor(c.duration / 60)}m ${Math.round(c.duration % 60)}s` : Math.round(c.duration) + 's') : '';
     const t = c.ts ? new Date(c.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
     const win = (c.outcome === 'scheduled_with_admin' || c.outcome === 'answered_interested');
     return `<div class="train-call-card${win ? ' win' : ''}">
-      <div style="display:flex; align-items:center; gap:12px; padding:12px 15px; min-width:0; flex-wrap:wrap;">
-        <span style="font-size:12.5px; font-weight:600; color:${win ? '#5BB974' : 'var(--text-primary)'};">${escHtml(oc)}</span>
-        <span style="font-size:11.5px; color:var(--text-secondary); min-width:0; overflow-wrap:anywhere;">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}${dur ? ' · ' + dur : ''}</span>
-        <span style="margin-left:auto; font-size:11px; color:var(--text-tertiary); white-space:nowrap;">${t} · ${c.segCount} frases</span>
-        <button type="button" onclick="window._trainingOpenCall('${escHtml(c.leadId)}', ${c.callIdx}, this)" style="font-size:11px; padding:5px 12px; border-radius:7px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.4); color:var(--accent); cursor:pointer; font-family:inherit; white-space:nowrap;">Ver llamada</button>
+      <div class="tr-row">
+        <span class="tr-outcome ${_trainingOutcomeClass(c.outcome)}">${escHtml(oc)}</span>
+        <span class="tr-meta">${escHtml(c.setter || '')}${c.country ? ' · ' + escHtml(c.country) : ''}</span>
+        <span class="tr-meta-right">${dur ? `<span class="tr-dur">${dur}</span>` : ''}${t} · ${c.segCount} frases</span>
+        <button type="button" class="tr-open-btn" onclick="window._trainingOpenCall('${escHtml(c.leadId)}', ${c.callIdx}, this)">Ver llamada</button>
       </div>
-      <div class="training-call-body" style="display:none; padding:0 14px 14px;"></div>
+      <div class="training-call-body" style="display:none;"></div>
     </div>`;
   }
   window._trainingOpenCall = async (leadId, idx, btn) => {
@@ -12164,30 +12172,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!body) return;
     if (body.style.display === 'block') { body.style.display = 'none'; btn.textContent = 'Ver llamada'; return; }
     body.style.display = 'block'; btn.textContent = 'Ocultar'; btn.disabled = true;
-    body.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px; padding:6px 0;">Cargando + resumiendo con IA (tarda unos segundos la 1ra vez)…</div>';
+    body.innerHTML = '<div style="color:var(--text-tertiary); font-size:12px; padding:10px 0;">Cargando + resumiendo con IA (tarda unos segundos la 1ra vez)…</div>';
     try {
       const r = await fetch(apiUrl('/api/training/calls/' + encodeURIComponent(leadId) + '/' + idx), { credentials: 'include' });
       const d = await r.json();
       if (!r.ok) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">' + escHtml(d.error || 'error') + '</div>'; btn.disabled = false; return; }
-      const aiRead = d.aiSuggestedOutcome ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:8px;"><span style="color:var(--text-tertiary);">IA leyó el resultado como:</span> <strong style="color:var(--text-primary);">${escHtml((typeof callOutcomeLabel === 'function') ? callOutcomeLabel(d.aiSuggestedOutcome) : d.aiSuggestedOutcome)}</strong>${d.aiSuggestedReason ? ` — ${escHtml(d.aiSuggestedReason)}` : ''}</div>` : '';
-      const summary = (aiRead) + (d.summary ? `<div style="background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:12px 14px; margin-bottom:10px; font-size:12.5px; line-height:1.6; color:var(--text-secondary); white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; box-sizing:border-box;"><div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:7px;">Resumen IA</div>${_trainingFmt(d.summary)}</div>` : '');
-      const dialog = (d.segments || []).map(s => {
+      const aiRead = d.aiSuggestedOutcome ? `<div class="tr-airead"><span>IA leyó el resultado como</span> <span class="tr-outcome ${_trainingOutcomeClass(d.aiSuggestedOutcome)}">${escHtml((typeof callOutcomeLabel === 'function') ? callOutcomeLabel(d.aiSuggestedOutcome) : d.aiSuggestedOutcome)}</span>${d.aiSuggestedReason ? `<span class="tr-airead-reason">${escHtml(d.aiSuggestedReason)}</span>` : ''}</div>` : '';
+      const summary = (aiRead) + (d.summary ? `<div class="tr-summary"><div class="tr-summary-title">Resumen IA</div>${_trainingFmt(d.summary)}</div>` : '');
+      // Transcripción como conversación: burbujas SDR (derecha, violeta) vs
+      // cliente (izquierda, neutra) — lectura tipo chat, óptima para repasar.
+      const segs = d.segments || [];
+      const dialog = segs.map(s => {
         const isS = s.speaker === 'setter';
-        return `<div style="display:flex; gap:8px; margin-bottom:5px;"><span style="flex-shrink:0; width:54px; font-size:10px; font-weight:700; color:${isS ? '#5bb974' : '#FFB341'};">${isS ? 'SDR' : 'CLIENTE'}</span><span style="flex:1 1 auto; min-width:0; font-size:12px; color:var(--text-secondary); line-height:1.5; overflow-wrap:anywhere;">${escHtml(s.text)}</span></div>`;
+        return `<div class="tr-msg ${isS ? 'setter' : 'lead'}">
+          <span class="tr-speaker">${isS ? 'SDR' : 'Cliente'}</span>
+          <div class="tr-bubble">${escHtml(s.text)}</div>
+        </div>`;
       }).join('');
-      body.innerHTML = summary + `<div style="max-height:340px; overflow-y:auto; overflow-x:hidden; border-top:1px solid var(--border-subtle); padding-top:10px;">${dialog || '<span style="color:var(--text-tertiary);">Sin contenido.</span>'}</div>`;
+      // Copiar transcripción completa en texto plano (para pegar en notas/IA).
+      const plain = segs.map(s => `${s.speaker === 'setter' ? 'SDR' : 'CLIENTE'}: ${s.text}`).join('\n');
+      body._trPlain = plain;
+      body.innerHTML = summary + `
+        <div class="tr-dialog-head">
+          <span class="muted" style="font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">Transcripción · ${segs.length} turnos</span>
+          <button type="button" class="tr-copy-btn" onclick="navigator.clipboard.writeText(this.closest('.training-call-body')._trPlain || ''); window.showToast?.('Transcripción copiada', { type: 'success', duration: 1500 });">Copiar</button>
+        </div>
+        <div class="tr-dialog">${dialog || '<span style="color:var(--text-tertiary); font-size:12px;">Sin contenido.</span>'}</div>`;
     } catch (e) { body.innerHTML = '<div style="color:var(--danger); font-size:12px;">Error de red.</div>'; }
     btn.disabled = false;
   };
   document.querySelectorAll('.training-tab').forEach((b) => {
     b.addEventListener('click', () => {
       const tab = b.getAttribute('data-tab');
-      document.querySelectorAll('.training-tab').forEach((x) => {
-        const on = x === b;
-        x.classList.toggle('active', on);
-        x.style.borderBottomColor = on ? 'var(--accent)' : 'transparent';
-        x.style.color = on ? 'var(--text-primary)' : 'var(--text-secondary)';
-      });
+      document.querySelectorAll('.training-tab').forEach((x) => x.classList.toggle('active', x === b));
       const lib = document.getElementById('training-pane-library');
       const coach = document.getElementById('training-pane-coach');
       if (lib) lib.style.display = tab === 'library' ? 'block' : 'none';
@@ -12204,7 +12221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const r = await fetch(apiUrl('/api/training/ask'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) });
       const d = await r.json();
       if (!r.ok) { ans.innerHTML = '<div style="color:var(--danger);">⚠ ' + escHtml(d.error || 'error') + '</div>'; return; }
-      ans.innerHTML = `<div style="background:var(--bg-card, rgba(255,255,255,0.03)); border:1px solid var(--border-color); border-left:3px solid var(--accent); border-radius:10px; padding:14px 16px; color:var(--text-secondary); font-size:13.5px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; max-width:100%; box-sizing:border-box;">${_trainingFmt(d.answer)}</div>`;
+      ans.innerHTML = `<div class="tr-coach-answer"><div class="tr-summary-title">Respuesta del coach</div>${_trainingFmt(d.answer)}</div>`;
     } catch (e) { ans.innerHTML = '<div style="color:var(--danger);">⚠ error de red</div>'; }
   });
   document.querySelector('[data-target="view-training-ai"]')?.addEventListener('click', () => { setTimeout(loadTrainingView, 60); });

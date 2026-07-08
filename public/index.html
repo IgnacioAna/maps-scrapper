@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260708d">
+  <link rel="stylesheet" href="/style.css?v=20260708e">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -2099,40 +2099,49 @@
         <div id="myp-empty" class="muted" style="text-align:center; padding:30px 0; font-size:13px; display:none;">Sin datos en el período seleccionado.</div>
       </div>
 
-      <!-- Entrenamiento IA: biblioteca de llamadas anonimizada + coach IA -->
+      <!-- Entrenamiento IA: biblioteca de llamadas anonimizada + coach IA.
+           2026-07-08: rediseño premium — tabs como seg-control, cards con badge
+           por resultado, transcripción estilo conversación. -->
       <div id="view-training-ai" class="module-view hidden" data-roles="admin,supervisor,setter">
         <div class="content-header">
           <h2>Entrenamiento IA</h2>
-          <span style="font-size:13px; color:var(--text-secondary);">Aprendé de las llamadas del equipo y preguntale a la IA</span>
+          <span style="font-size:13px; color:var(--text-secondary);">Aprendé de las llamadas reales del equipo y preguntale a la IA</span>
         </div>
         <div style="padding:0 32px 32px;">
-          <div style="display:flex; gap:6px; margin-bottom:18px; border-bottom:1px solid var(--border-subtle);">
-            <button class="training-tab active" data-tab="library" style="background:none; border:none; border-bottom:2px solid var(--accent); color:var(--text-primary); font-weight:600; font-size:13px; padding:9px 4px; margin-right:14px; cursor:pointer; font-family:inherit;">Biblioteca de llamadas</button>
-            <button class="training-tab" data-tab="coach" style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-secondary); font-weight:600; font-size:13px; padding:9px 4px; cursor:pointer; font-family:inherit;">Preguntale a la IA</button>
+          <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+            <div class="seg-control">
+              <button class="training-tab seg-btn active" data-tab="library">Biblioteca de llamadas</button>
+              <button class="training-tab seg-btn" data-tab="coach">Preguntale a la IA</button>
+            </div>
+            <span id="training-library-count" class="myp-range-chip" style="margin-left:auto;"></span>
           </div>
           <div id="training-pane-library">
-            <div style="display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
-              <span style="font-size:12px; color:var(--text-secondary);">Resultado:</span>
-              <select id="training-outcome-filter" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit; cursor:pointer;">
-                <option value="">Todas</option>
-                <option value="scheduled_with_admin">Agendó</option>
-                <option value="answered_interested">Interesado</option>
-                <option value="answered_not_interested">No interesado</option>
-                <option value="hung_up">Me cortó</option>
-                <option value="no_answer">No atendió</option>
-                <option value="voicemail">Buzón</option>
-              </select>
-              <span id="training-library-count" style="font-size:12px; color:var(--text-tertiary);"></span>
-              <button id="training-clear-btn" data-roles="admin" class="btn-secondary" style="margin-left:auto; font-size:12px; padding:7px 13px;" title="Borra todos los transcripts y resúmenes IA de la biblioteca. Las llamadas nuevas se vuelven a transcribir solas. Hace backup antes.">Vaciar biblioteca</button>
+            <div class="tr-toolbar">
+              <div class="myp-toolbar-field">
+                <label>Resultado</label>
+                <select id="training-outcome-filter">
+                  <option value="">Todas</option>
+                  <option value="scheduled_with_admin">Agendó</option>
+                  <option value="answered_interested">Interesado</option>
+                  <option value="answered_not_interested">No interesado</option>
+                  <option value="hung_up">Me cortó</option>
+                  <option value="no_answer">No atendió</option>
+                  <option value="voicemail">Buzón</option>
+                </select>
+              </div>
+              <span class="muted" style="font-size:11.5px; line-height:1.5; flex:1; min-width:220px;">Llamadas anonimizadas (sin nombres ni teléfonos del cliente). Mirá cómo hablan tus compañeros y aprendé de las que salieron bien.</span>
+              <button id="training-clear-btn" data-roles="admin" class="btn-secondary" style="font-size:12px; padding:7px 13px;" title="Borra todos los transcripts y resúmenes IA de la biblioteca. Las llamadas nuevas se vuelven a transcribir solas. Hace backup antes.">Vaciar biblioteca</button>
             </div>
-            <div style="font-size:11.5px; color:var(--text-tertiary); margin-bottom:12px; line-height:1.5;">Llamadas reales del equipo, anonimizadas (sin nombres ni teléfonos del cliente). Mirá cómo hablan tus compañeros y aprendé de las que salieron bien.</div>
             <div id="training-library-list" style="display:flex; flex-direction:column; gap:10px;"></div>
           </div>
           <div id="training-pane-coach" style="display:none; max-width:760px;">
-            <div style="font-size:13px; color:var(--text-secondary); margin-bottom:12px; line-height:1.5;">Preguntale a la IA sobre el producto, cómo rebatir objeciones, cómo vender mejor. Responde con el conocimiento del equipo (Banco de Respuestas).</div>
-            <textarea id="training-coach-q" rows="3" placeholder="Ej: cómo respondo cuando me dicen que ya tienen un sistema?" style="width:100%; box-sizing:border-box; padding:12px 14px; border-radius:10px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px; font-family:inherit; resize:vertical;"></textarea>
-            <button id="training-coach-ask" style="margin-top:10px; padding:11px 20px; background:var(--accent); color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;">Preguntar</button>
-            <div id="training-coach-answer" style="margin-top:16px;"></div>
+            <div class="card" style="padding:20px 22px;">
+              <strong style="font-size:14px; letter-spacing:-0.2px;">Coach de ventas</strong>
+              <p class="muted" style="font-size:11.5px; margin:3px 0 14px;">Preguntá sobre el producto, cómo rebatir objeciones, cómo vender mejor. Responde con el conocimiento del equipo (Banco de Respuestas).</p>
+              <textarea id="training-coach-q" rows="3" placeholder="Ej: ¿cómo respondo cuando me dicen que ya tienen un sistema?" class="tr-coach-input"></textarea>
+              <button id="training-coach-ask" class="tr-coach-btn">Preguntar</button>
+            </div>
+            <div id="training-coach-answer" style="margin-top:14px;"></div>
           </div>
         </div>
       </div>
@@ -3323,7 +3332,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260708d"></script>
+  <script type="module" src="/app.js?v=20260708e"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

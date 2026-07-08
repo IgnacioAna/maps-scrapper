@@ -2079,6 +2079,230 @@ td.empty-state .empty-state-content::before {
 }
 .train-call-card.win { border-left: 3px solid #5BB974; }
 
+/* ── Entrenamiento IA — rediseño premium (2026-07-08) ── */
+.tr-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.tr-toolbar .myp-toolbar-field select {
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.tr-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.tr-outcome {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.tr-outcome.win  { color: #6ee7a0; background: rgba(74, 222, 128, 0.12); border: 1px solid rgba(74, 222, 128, 0.25); }
+.tr-outcome.mid  { color: #FFB341; background: rgba(255, 179, 65, 0.10); border: 1px solid rgba(255, 179, 65, 0.22); }
+.tr-outcome.lost { color: #ff9089; background: rgba(248, 81, 73, 0.10); border: 1px solid rgba(248, 81, 73, 0.22); }
+.tr-outcome.flat { color: var(--text-secondary); background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+.tr-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tr-meta-right {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.tr-dur {
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.tr-open-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: rgba(157, 133, 242, 0.13);
+  border: 1px solid rgba(157, 133, 242, 0.35);
+  color: var(--accent);
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.tr-open-btn:hover { background: rgba(157, 133, 242, 0.22); border-color: var(--accent); }
+.training-call-body { padding: 0 16px 16px; }
+.tr-airead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  margin-bottom: 10px;
+}
+.tr-airead-reason { color: var(--text-secondary); }
+.tr-summary {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(157, 133, 242, 0.10) 0%, transparent 50%),
+    rgba(157, 133, 242, 0.04);
+  border: 1px solid rgba(157, 133, 242, 0.22);
+  border-radius: 12px;
+  padding: 13px 16px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.tr-summary-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 7px;
+}
+.tr-dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 2px 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.tr-copy-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 4px 11px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tr-copy-btn:hover { color: var(--text-primary); border-color: rgba(255, 255, 255, 0.22); }
+.tr-dialog {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+.tr-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 78%;
+}
+.tr-msg.setter { align-self: flex-end; align-items: flex-end; }
+.tr-msg.lead { align-self: flex-start; align-items: flex-start; }
+.tr-speaker {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  padding: 0 4px;
+}
+.tr-msg.setter .tr-speaker { color: color-mix(in srgb, var(--accent) 75%, var(--text-tertiary)); }
+.tr-bubble {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  padding: 9px 13px;
+  border-radius: 13px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.tr-msg.lead .tr-bubble {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom-left-radius: 5px;
+}
+.tr-msg.setter .tr-bubble {
+  background: rgba(157, 133, 242, 0.10);
+  border: 1px solid rgba(157, 133, 242, 0.22);
+  color: var(--text-primary);
+  border-bottom-right-radius: 5px;
+}
+.tr-coach-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+.tr-coach-input:focus { outline: none; border-color: rgba(157, 133, 242, 0.5); }
+.tr-coach-btn {
+  margin-top: 12px;
+  padding: 10px 22px;
+  background: var(--accent);
+  color: #0F1115;
+  border: none;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: filter 0.15s;
+}
+.tr-coach-btn:hover { filter: brightness(1.1); }
+.tr-coach-answer {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(157, 133, 242, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 15px 18px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /* ════════════════════════════════════════════════════════════════
    Mi rendimiento — controles, secciones y banner premium (2026-07-07)
 ═════════════════════════════════════════════════════════════════ */
