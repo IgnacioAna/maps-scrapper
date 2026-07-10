@@ -16033,106 +16033,112 @@ document.addEventListener('DOMContentLoaded', async () => {
         id: 'primer-dia',
         title: 'Tu primer día',
         body: `<ol>
-          <li>Logueate con el email y password que te mandó el admin por invitación.</li>
-          <li>El sidebar de la izquierda tiene todo lo que necesitás. Si te confunde, usá el menú hamburguesa arriba para esconderlo.</li>
+          <li>Logueate con el email y contraseña que te mandó el admin por invitación.</li>
           <li>Lo primero: andá a <strong>Centro de Entrenamiento</strong> y hacé los 8 módulos cortos. Cada uno tiene un quiz que tenés que aprobar (≥4/5).</li>
-          <li>Después tu vista principal es <strong>Llamadas</strong> (y <strong>Hoy</strong> para ver tu día). Acá vivís: tu trabajo es por teléfono.</li>
+          <li>Tu trabajo es <strong>100% por teléfono, desde el navegador</strong> — no abrís ningún programa aparte. Tus dos vistas: <strong>Hoy</strong> (qué hacer primero) y <strong>Llamadas</strong> (tu cola completa).</li>
           <li>La primera vez que llames, el navegador te pide <strong>permiso de micrófono</strong> → dale "Permitir" (una sola vez).</li>
+          <li>Conectá <strong>auriculares con micrófono</strong> antes de empezar (abajo te explicamos por qué importa tanto).</li>
         </ol>
-        <div class="guide-callout">Todo se llama desde el navegador (centralita Telnyx) — no abrís ningún programa aparte.</div>`,
-        goto: { target: 'view-calls', label: 'Ir a Llamadas' }
+        <div class="guide-callout">En las cards vas a ver el teléfono como <code>•••• 1234</code>. Es normal: el sistema disca igual con el botón <strong>Llamar</strong> — no necesitás el número.</div>`,
+        goto: { target: 'view-hoy', label: 'Ir a Hoy' }
+      },
+      {
+        id: 'hoy',
+        title: 'Arrancá el día en "Hoy"',
+        body: `<p>La vista <strong>Hoy</strong> te arma el día en orden de prioridad. Trabajala de arriba hacia abajo:</p>
+        <ol>
+          <li><strong>Callbacks de hoy:</strong> leads que te dijeron "llamame tal día" — son citas, no las dejes pasar.</li>
+          <li><strong>Interesados sin agendar:</strong> ya dijeron que sí — lo único que falta es cerrar la reunión. Tu oro.</li>
+          <li><strong>Para reintentar:</strong> no atendieron, buzón o te cortaron — segunda vuelta.</li>
+          <li><strong>Nuevos priorizados:</strong> nunca llamados, ordenados por puntaje (el sistema pone primero los mejores prospectos).</li>
+        </ol>
+        <div class="guide-callout">Cuando termines lo de Hoy, pasá a <strong>Llamadas</strong> y seguí con el Power Dialer.</div>`,
+        goto: { target: 'view-hoy', label: 'Ir a Hoy' }
       },
       {
         id: 'llamadas',
-        title: 'Llamadas (tu vista principal)',
-        body: `<p>En <strong>Llamadas</strong> tenés tu cola de leads para discar. Dos formas de trabajar:</p>
+        title: 'Llamadas — tu cola completa',
+        body: `<p>En <strong>Llamadas</strong> está toda tu cartera llamable. Dos formas de trabajar:</p>
         <ol>
-          <li><strong>Lista:</strong> cada lead es una card con su info, señales y el ángulo sugerido. Botón <strong>Llamar</strong> en cada una.</li>
-          <li><strong>Power Dialer</strong> (recomendado): modo continuous calling sin distracciones — te va pasando lead por lead. Tiene <strong>autopiloto</strong> y atajos numéricos.</li>
+          <li><strong>Power Dialer</strong> (recomendado): te va pasando lead por lead, sin distracciones. Es donde más volumen hacés.</li>
+          <li><strong>Lista:</strong> para buscar un lead puntual o revisar. Cada card muestra señales del negocio (sin web, pocas reseñas, corre anuncios…), el <strong>💡 ángulo sugerido</strong> para abrir la llamada, y la <strong>hora local</strong> del lead.</li>
         </ol>
-        <p>Arriba tenés un selector de orden: <strong>Prioridad</strong> (mejor a llamar primero), Nunca llamados, Para seguir, etc., y un buscador.</p>
-        <div class="guide-callout">El sistema elige solo el número saliente y muestra la <strong>hora local</strong> del lead (no llames fuera de horario hábil).</div>`,
+        <p>Arriba: buscador + selector de orden — <strong>🎯 Prioridad</strong> (mejor a llamar primero), <strong>Para seguir</strong> (tu cola de seguimiento del día: callbacks vencidos + cortados), Nunca llamados, etc.</p>
+        <p>Cada card tiene una <strong>nota pre-llamada</strong>: escribí ahí tu ángulo o contexto ANTES de discar — la ves durante la llamada.</p>
+        <div class="guide-callout">Respetá la <strong>hora local</strong> del lead (chip 🕐 en la card). Llamar fuera de horario hábil quema el lead.</div>`,
+        goto: { target: 'view-calls', label: 'Ir a Llamadas' }
+      },
+      {
+        id: 'power-dialer',
+        title: 'Power Dialer + autopiloto (así hacés volumen)',
+        body: `<p>El <strong>Power Dialer</strong> es tu modo de trabajo principal: te muestra un lead con toda su munición (señales, ángulo, Brief IA, historial, seguimientos) y vas discando uno tras otro.</p>
+        <p><strong>Autopiloto:</strong> activalo con el toggle (o la tecla <strong>A</strong>). Después de marcar cada resultado, cuenta 3 segundos y disca solo el siguiente. Cualquier tecla lo pausa.</p>
+        <p><strong>Atajos de teclado</strong> (con el dialer abierto):</p>
+        <ul>
+          <li><strong>C</strong> llamar · <strong>S</strong> saltear · <strong>B</strong> lead anterior · <strong>Esc</strong> salir</li>
+          <li><strong>1-9</strong> marcan el resultado directo (mismo orden que los botones)</li>
+          <li><strong>N</strong> foco en la nota · <strong>A</strong> autopiloto on/off · <strong>P</strong> pausar el countdown</li>
+        </ul>
+        <div class="guide-callout">El volumen es lo que más convierte: dialer + autopiloto + atajos = el triple de llamadas por hora que ir clickeando.</div>`,
         goto: { target: 'view-calls', label: 'Ir a Llamadas' }
       },
       {
         id: 'durante-llamada',
         title: 'Durante la llamada',
-        body: `<p>Cuando llamás, se abre el panel con timer, mute, colgar y teclado (para IVRs). Al lado tenés todo lo que necesitás:</p>
+        body: `<p>Al llamar se abre el panel flotante con timer, mute, colgar y teclado numérico (por si atiende un conmutador/IVR). El número saliente lo elige el sistema solo (va rotando entre los números del equipo). A un costado tenés:</p>
         <ul>
-          <li><strong>Guion</strong>: scripts oficiales (apertura, pitch, objeciones, cierre). Tono <strong>3-S</strong>: Slow, Smile, Strong.</li>
-          <li><strong>Mercury en vivo</strong>: si te tiran una objeción ("ya tengo sistema", "mandame info"), tocá el chip o escribila y la IA te sopla la respuesta al toque.</li>
-          <li><strong>Ficha del lead</strong>: reseñas, señales, <strong>ángulo de apertura</strong> y, si tiene, el <strong>Brief IA</strong> (gancho + dolores + tratamientos). El brief puede venir de las <strong>reseñas de Google</strong> o del <strong>sitio web</strong> del lead (lo dice la etiqueta). Cuando hay Brief IA, su gancho reemplaza al ángulo genérico.</li>
-          <li><strong>Contacto secundario</strong>: si la recepción te pasa otro número (el encargado), cargalo ahí y lo llamás sin perder el lead.</li>
+          <li><strong>Guion:</strong> los scripts oficiales por situación (pasar recepción, apertura, pitch, objeciones, cierre) con buscador. Arriba siempre: tono <strong>3-S</strong> (Slow, Smile, Strong) y el framework <strong>PACE</strong> para objeciones.</li>
+          <li><strong>IA en vivo:</strong> te tiran una objeción ("ya tengo sistema", "mandame info", "¿cuánto sale?") → tocá el chip o escribila y la IA te sopla la respuesta al instante.</li>
+          <li><strong>Ficha del lead:</strong> reseñas, señales, ángulo, tu nota pre-llamada y (si tiene) el <strong>Brief IA</strong> con gancho + dolores del negocio.</li>
+          <li><strong>Contacto secundario:</strong> si la recepción te pasa el número del encargado/doctor, cargalo ahí y llamalo sin perder el lead.</li>
         </ul>
-        <div class="guide-callout"><strong>Usá auriculares.</strong> La llamada se graba y transcribe sola para el Entrenamiento IA. Sin auriculares, la voz del cliente entra por tu micrófono y la transcripción sale mezclada. Con auriculares queda mucho más limpia — y el resto del equipo aprende de tus llamadas.</div>`
-      },
-      {
-        id: 'llamadas',
-        title: 'Llamar con Telnyx (centralita en el browser)',
-        body: `<p>Para leads sin WSP o para hacer follow-up por voz, usás la <strong>centralita Telnyx</strong> integrada. No abre ningún programa externo — todo desde el browser.</p>
-        <ol>
-          <li>La primera vez el browser te pide permiso de micrófono. Dale "Permitir".</li>
-          <li>Click en <strong>Llamar</strong> en cualquier lead.</li>
-          <li>Aparece un panel flotante con timer, mute y colgar. El sistema elige automáticamente el número saliente del país del lead (mejora tasa de atención).</li>
-          <li>Tenés un panel lateral de <strong>Guion</strong> con los scripts oficiales SCM v2: opener, pitch, manejo de objeciones, cierre.</li>
-          <li>Al colgar, aparece el modal de disposición. Marcá cómo fue (interesado, no interesado, no atendió, agendar más tarde, etc.).</li>
-        </ol>
-        <div class="guide-callout"><strong>Tono "3-S":</strong> Slow (hablá lento), Smile (sonreí — se nota), Strong (confiado). Está siempre arriba del panel.</div>
-        <div class="guide-callout warn">Si el botón aparece como <code>tel:</code> tradicional en vez del panel, significa que el admin no configuró Telnyx todavía. Avisale.</div>`
+        <div class="guide-callout"><strong>Usá auriculares, siempre.</strong> La llamada se graba y transcribe sola para tu biblioteca de Entrenamiento IA. Sin auriculares, la voz del cliente entra por tu micrófono y la transcripción sale mezclada. En Llamadas tenés un botón de <strong>Audio</strong> para elegir micrófono y probar cómo te escuchan — usalo el primer día.</div>`
       },
       {
         id: 'resultado',
         title: 'Marcar el resultado (disposición)',
-        body: `<p>Al colgar, marcá cómo fue con los botones (o los <strong>atajos numéricos 1-8</strong>):</p>
+        body: `<p>Al colgar, marcá cómo fue — botones o <strong>atajos 1-9</strong>:</p>
         <ul>
-          <li><strong>1 Interesado</strong> · <strong>2 No interesado</strong> (te pide la razón) · <strong>3 Me cortó</strong></li>
-          <li><strong>4 No atendió</strong> · <strong>5 Buzón</strong> · <strong>6 Volver a llamar</strong> (agenda callback) · <strong>7 Equivocado</strong> · <strong>8 No existe</strong></li>
+          <li><strong>1 Interesado</strong> · <strong>2 Agendó</strong> (elegís día/hora) · <strong>3 No interesado</strong> (te pide la razón) · <strong>4 Me cortó</strong></li>
+          <li><strong>5 No atendió</strong> · <strong>6 Buzón</strong> · <strong>7 Volver a llamar</strong> (elegís fecha/hora) · <strong>8 Equivocado</strong> · <strong>9 No existe</strong></li>
         </ul>
-        <p>Podés escribir una <strong>nota</strong> de la llamada arriba del grid antes de marcar.</p>
-        <div class="guide-callout"><strong>"No atendió" y "Buzón" NO descartan el lead:</strong> reaparece solo para re-llamar a las 24h, hasta 3 intentos. Al 3er no-contacto se descarta automático. Vos no perdés ningún lead.</div>`
+        <p>Antes de marcar podés escribir una <strong>nota</strong> de la llamada (tecla N) — queda en el historial del lead.</p>
+        <ul>
+          <li><strong>"No interesado"</strong> te pide la razón (no es el decisor, ya tiene proveedor, etc.). Si te pide que no lo llamen más, tildá <strong>🚫 No-llamar</strong> — sale de todas las colas para siempre.</li>
+          <li><strong>"Volver a llamar"</strong>: elegí fecha/hora y reaparece solo ese día en Hoy. Si cualquiera del equipo puede tomarlo, tildá <strong>🔁 compartido</strong>.</li>
+          <li><strong>"No atendió" / "Buzón"</strong>: el sistema lo reintenta solo <strong>una vez a las 24h</strong>. Si tampoco atiende la segunda, se descarta automático — no gastes llamadas en números muertos.</li>
+        </ul>
+        <div class="guide-callout"><strong>Marcá SIEMPRE el resultado.</strong> De ahí salen tu funnel, tus métricas y la cola del día siguiente. Llamada sin marcar = llamada que no existió.</div>`
       },
       {
         id: 'faqs',
         title: 'Banco de Respuestas',
-        body: `<p>El <strong>Banco de Respuestas</strong> son respuestas pre-aprobadas a las preguntas/objeciones más comunes. Es más rápido que el Asistente porque ya están escritas.</p>
+        body: `<p>El <strong>Banco de Respuestas</strong> son respuestas pre-aprobadas a las preguntas y objeciones más comunes (por WhatsApp o para inspirarte en la llamada).</p>
         <ol>
-          <li>Buscás por keyword o categoría (precio, objeción, seguimiento, calificación).</li>
-          <li>Click en <strong>Copiar</strong> — se incrementa el contador de uso.</li>
-          <li>Si esa respuesta cerró bien con el lead, marcala como <strong>"Funcionó"</strong> — sube en el ranking.</li>
-        </ol>
-        <p>Cuando agregás una entrada nueva, la IA sugiere automáticamente categoría + tags. Aceptá o editá.</p>`,
+          <li>Buscá por keyword o categoría (precio, objeción, seguimiento, calificación).</li>
+          <li>Click en <strong>Copiar</strong> para usarla.</li>
+          <li>Si esa respuesta funcionó con el lead, marcala como <strong>"Funcionó"</strong> — sube en el ranking y ayuda al resto.</li>
+        </ol>`,
         goto: { target: 'view-faqs', label: 'Ir al Banco' }
-      },
-      {
-        id: 'hoy',
-        title: 'Tu día en "Hoy" + seguimiento',
-        body: `<p>La vista <strong>Hoy</strong> te arma el día en orden de prioridad:</p>
-        <ul>
-          <li><strong>Callbacks:</strong> los que quedaron en volver a llamar (vos los agendaste).</li>
-          <li><strong>Interesados sin agendar:</strong> dijeron que sí — cerrá la reunión.</li>
-          <li><strong>Nuevos priorizados:</strong> nunca contactados, ordenados por prioridad.</li>
-        </ul>
-        <p>Los "no atendió / buzón" no aparecen en Hoy: vuelven solos a la cola de <strong>Llamadas</strong> a las 24h (filtro "Para seguir").</p>
-        <div class="guide-callout">Si un lead dice "llamame el martes", usá la disposición <strong>Volver a llamar</strong> y elegí fecha/hora — reaparece solo ese día.</div>`,
-        goto: { target: 'view-hoy', label: 'Ir a Hoy' }
       },
       {
         id: 'entrenamiento-ia',
         title: 'Entrenamiento IA (aprender + preguntar)',
-        body: `<p>En <strong>Entrenamiento IA</strong> tenés dos cosas para mejorar:</p>
+        body: `<p>En <strong>Entrenamiento IA</strong> tenés dos herramientas para mejorar:</p>
         <ul>
-          <li><strong>Biblioteca de llamadas:</strong> repasá tus propias llamadas transcriptas (anonimizado, sin datos del cliente). Mirá las que <strong>agendaron</strong> y repetí lo que funciona. Cada una tiene un resumen de la IA.</li>
-          <li><strong>Preguntale a la IA:</strong> dudas del producto, cómo rebatir una objeción, cómo mejorar — la IA te responde con el conocimiento del equipo.</li>
+          <li><strong>Biblioteca de llamadas:</strong> tus llamadas transcriptas (solo las tuyas, anonimizadas). Repasá las que <strong>agendaron</strong> y repetí lo que funcionó; cada una tiene un resumen IA con qué hiciste bien y qué mejorar.</li>
+          <li><strong>Preguntale a la IA:</strong> dudas de la oferta, cómo rebatir una objeción, qué decir en tal situación — el coach te responde con el conocimiento del equipo.</li>
         </ul>`,
         goto: { target: 'view-training-ai', label: 'Ir a Entrenamiento IA' }
       },
       {
         id: 'rendimiento',
         title: 'Mi rendimiento',
-        body: `<p>En <strong>Mi rendimiento</strong> tenés tu <strong>funnel de cold call</strong> del día/semana/mes:</p>
+        body: `<p>En <strong>Mi rendimiento</strong> ves tu operación completa del día/semana/mes:</p>
         <ul>
-          <li><strong>Llamadas (dials)</strong> → <strong>Conectadas</strong> (atendieron) → <strong>Conversaciones</strong> (hablaste ≥30s) → <strong>Agendadas</strong>.</li>
-          <li>Ratios con benchmark 2026 (connect, conversación, booking) — ves si estás por arriba o por abajo del estándar.</li>
+          <li><strong>Mi cartera:</strong> cuántos leads tenés en cada etapa.</li>
+          <li><strong>Cold Call Funnel:</strong> Llamadas → Conectadas (atendieron) → Conversaciones (≥30s) → Agendadas → Ganadas.</li>
+          <li><strong>Ratios con benchmark</strong> del mercado (connect 15-25%, booking 15-25%…) — ves al toque si estás arriba o abajo del estándar.</li>
         </ul>
         <div class="guide-callout">El número que más mueve la aguja es el <strong>volumen de llamadas</strong>: más dials = más agendadas. Mantené el ritmo.</div>`,
         goto: { target: 'view-myperf', label: 'Ir a Mi rendimiento' }
@@ -16141,12 +16147,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         id: 'tips',
         title: 'Tips operativos que suelen ahorrar tiempo',
         body: `<ul>
-          <li>Usá el <strong>Power Dialer</strong> con autopiloto: maximiza el volumen de llamadas (que es lo que más convierte).</li>
-          <li>Atajos en el dialer: <strong>1-8</strong> marcan el resultado, <strong>C</strong> llama, <strong>S</strong> saltea, <strong>Esc</strong> sale.</li>
-          <li>Antes de discar, leé el <strong>ángulo sugerido</strong> y (si tiene) el <strong>Brief IA</strong> — entrás con contexto y conectás más.</li>
+          <li><strong>Power Dialer + autopiloto + atajos</strong> = máximo volumen. Es la combinación que más agenda.</li>
+          <li>Antes de discar, leé el <strong>ángulo sugerido</strong> y el <strong>Brief IA</strong> si tiene — entrás con contexto y conectás más.</li>
+          <li>Usá la <strong>nota pre-llamada</strong> para dejarte el ángulo listo cuando preparás la cola.</li>
           <li>Si la recepción te pasa el número del encargado, cargalo como <strong>contacto secundario</strong> y llamalo ahí mismo.</li>
-          <li>Respetá la <strong>hora local</strong> del lead (la ves en la card) — no llames fuera de horario hábil.</li>
+          <li>Un "no atendió" no es un fracaso: el sistema lo reintenta solo. Vos seguí discando.</li>
           <li>Cuando algo te cuesta, preguntale al <strong>coach</strong> en Entrenamiento IA o repasá una llamada tuya que salió bien en la biblioteca.</li>
+          <li>Configurá tu <strong>micrófono</strong> el primer día (botón Audio en Llamadas) y trabajá siempre con auriculares.</li>
         </ul>`
       },
     ],
