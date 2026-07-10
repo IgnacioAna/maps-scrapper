@@ -5615,6 +5615,35 @@ app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) =
   res.json({ user: publicUser(user), oldRole, newRole: user.role });
 });
 
+// Reset de contraseña por admin. El admin tipea la nueva clave para un miembro
+// del equipo (ej. cuando alguien la olvida). Guarda un scrypt record fresco y
+// revoca las sesiones activas del usuario para forzar re-login con la clave nueva.
+app.post('/api/auth/users/:id/reset-password', requireAuth, requireRole('admin'), (req, res) => {
+  const userId = req.params.id;
+  const { password } = req.body || {};
+  // Mismas reglas que accept-invite (tipos + length para no reventar scrypt).
+  if (typeof password !== 'string' || !password) {
+    return res.status(400).json({ error: 'Contraseña requerida (string).' });
+  }
+  if (password.length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' });
+  if (password.length > 200) return res.status(400).json({ error: 'La contraseña es demasiado larga.' });
+
+  const auth = loadAuthData();
+  const user = (auth.users || []).find(u => u.id === userId);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
+
+  user.password = createPasswordRecord(password);
+  user.updatedAt = new Date().toISOString();
+  // Revocar sesiones activas: la clave vieja ya no debe servir en ninguna sesión abierta.
+  const sessionsBefore = (auth.sessions || []).length;
+  auth.sessions = (auth.sessions || []).filter(s => s.userId !== userId);
+  const sessionsRevoked = sessionsBefore - auth.sessions.length;
+  saveAuthData(auth);
+
+  console.log(`[user:reset-password] Admin '${req.auth?.user?.email}' reseteó la contraseña de '${user.email}', ${sessionsRevoked} sesión(es) revocada(s).`);
+  res.json({ ok: true, email: user.email, sessionsRevoked });
+});
+
 app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) => {
   const userId = req.params.id;
   const me = req.auth?.user;
@@ -7461,18 +7490,20 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // Phase 6: metadata Telnyx. Si la llamada fue por WebRTC, agregamos
   // duration, fromNumber, costo estimado al callLog.
   // Tabla de tarifas USD/min Telnyx (aprox dic 2025, hardcoded).
+  // Alineada 2026-07-10 con la rate sheet real de Telnyx (data/telnyx_rates.json)
+  // y verificada contra CDRs facturados. Solo se usa si la rate sheet no carga.
   const TELNYX_RATES_USD_PER_MIN = {
-    'ES_mobile': 0.034, 'ES_landline': 0.011,
-    'MX_mobile': 0.094, 'MX_landline': 0.015,
-    'CO_mobile': 0.060, 'CO_landline': 0.018,
-    'AR_mobile': 0.080, 'AR_landline': 0.060,
-    'CL_mobile': 0.070, 'CL_landline': 0.020,
-    'PE_mobile': 0.045, 'PE_landline': 0.030,
-    'EC_mobile': 0.080, 'EC_landline': 0.030,
-    'BO_mobile': 0.150, 'BO_landline': 0.090,
-    'UY_mobile': 0.100, 'UY_landline': 0.030,
-    'BR_mobile': 0.080, 'BR_landline': 0.020,
-    'US_any':    0.007,
+    'ES_mobile': 0.024, 'ES_landline': 0.011,
+    'MX_mobile': 0.029, 'MX_landline': 0.007,
+    'CO_mobile': 0.008, 'CO_landline': 0.008,
+    'AR_mobile': 0.130, 'AR_landline': 0.008,
+    'CL_mobile': 0.015, 'CL_landline': 0.009,
+    'PE_mobile': 0.009, 'PE_landline': 0.003,
+    'EC_mobile': 0.321, 'EC_landline': 0.200,
+    'BO_mobile': 0.320, 'BO_landline': 0.090,
+    'UY_mobile': 0.270, 'UY_landline': 0.070,
+    'BR_mobile': 0.020, 'BR_landline': 0.009,
+    'US_any':    0.005,
     // Audit fix Sprint 30: tarifas Europa (aprox dic 2025).
     'FR_mobile': 0.080, 'FR_landline': 0.012,
     'DE_mobile': 0.110, 'DE_landline': 0.012,
@@ -7540,9 +7571,12 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   function _estimateTelnyxCost(destinationPhone, durationSecs) {
     if (!durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
     // Preferir el lookup real contra la rate sheet de Telnyx
+    // Telnyx factura en incrementos de 60s (mínimo 1 min, redondeo hacia arriba)
+    // — verificado contra CDRs reales 2026-07-10: 1s→1min, 79s→2min.
+    const billableMinutes = Math.max(1, Math.ceil(durationSecs / 60));
     const realRate = _telnyxRateForNumber(destinationPhone);
     if (realRate) {
-      const minutes = durationSecs / 60;
+      const minutes = billableMinutes;
       return {
         cost: +(realRate.ratePerMin * minutes).toFixed(4),
         country: realRate.country,
@@ -7557,8 +7591,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     const { country, isMobile } = _detectCountryAndType(digits);
     const tariffKey = country === 'US' ? 'US_any' : `${country}_${isMobile ? 'mobile' : 'landline'}`;
     const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN[`${country}_mobile`] || TELNYX_RATES_USD_PER_MIN['default'];
-    const minutes = durationSecs / 60;
-    return { cost: +(rate * minutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
+    return { cost: +(rate * billableMinutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
   }
 
   const now = new Date().toISOString();

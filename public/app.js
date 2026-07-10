@@ -2015,18 +2015,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       pickNumberForDestination(destinationPhone) {
         const country = this._prefixToCountry(destinationPhone);
         const routing = this.countryRouting || {};
-        // 1) Match exacto por país
+        // 1) Routing explícito por país: si el admin fijó a mano un número para
+        //    este país (ej. un número local), se respeta y NO se rota.
         if (country && routing[country]) {
           const n = this.numbers.find(x => x.id === routing[country]);
           if (n) return n;
         }
-        // 2) Default
+        // 2) Rotación round-robin entre todos los números activos (anti-quemado).
+        //    Cada llamada sale de un número distinto: llamada 1 → nº A,
+        //    llamada 2 → nº B, etc. Reparte el volumen para que ninguno
+        //    acumule suficientes llamadas como para que lo marquen spam.
+        const pool = this.numbers || [];
+        if (pool.length > 1) return this._nextRotatingNumber(pool);
+        // 3) Un solo número (o fallback al default configurado)
         if (routing.default) {
           const n = this.numbers.find(x => x.id === routing.default);
           if (n) return n;
         }
-        // 3) Cualquier número activo si no hay routing configurado
-        return this.numbers[0] || null;
+        return pool[0] || null;
+      },
+
+      // Round-robin persistido en localStorage (por navegador/vendedora). Así la
+      // rotación sigue pareja aunque recarguen la página a mitad de jornada.
+      _nextRotatingNumber(pool) {
+        try {
+          const key = 'telnyx_rotation_idx';
+          let idx = parseInt(localStorage.getItem(key) || '0', 10);
+          if (!Number.isFinite(idx) || idx < 0) idx = 0;
+          const n = pool[idx % pool.length];
+          localStorage.setItem(key, String((idx + 1) % pool.length));
+          return n || pool[0];
+        } catch (e) {
+          // Si localStorage falla, elección aleatoria (igual reparte en volumen)
+          return pool[Math.floor(Math.random() * pool.length)] || pool[0];
+        }
       },
 
       async fetchConfig() {
@@ -9082,6 +9104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Disponible para todos los roles excepto el propio user (no podes cambiarte a vos mismo).
           if (user.id !== currentUser.id) {
             acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" title="Resetear la contraseña de este usuario" onclick="window._resetUserPassword(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Clave</button>');
           }
           // Acciones especificas de SDR
           if (user.role === 'setter') {
@@ -9280,6 +9303,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         alert('Error cambiando rol: ' + err.message);
       }
       loadCommandCenter();
+    };
+
+    // Reset de contraseña de un usuario (admin). El admin tipea la nueva clave
+    // acá mismo: la app nunca la muestra ni la guarda en otro lado que el hash.
+    window._resetUserPassword = async (userId, email) => {
+      if (!userId) return;
+      const nueva = prompt(
+        'Resetear contraseña de "' + (email || userId) + '"\n\n' +
+        'Escribí la contraseña nueva (mínimo 6 caracteres).\n' +
+        'El usuario va a tener que volver a iniciar sesión con esta clave.'
+      );
+      if (nueva === null) return; // canceló
+      if (nueva.length < 6) { alert('La contraseña debe tener al menos 6 caracteres.'); return; }
+      try {
+        const r = await fetch(apiUrl('/api/auth/users/' + userId + '/reset-password'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: nueva })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
+        alert('Contraseña actualizada para "' + (data.email || email) + '".' +
+          (data.sessionsRevoked ? '\n' + data.sessionsRevoked + ' sesión(es) cerrada(s) — deberá loguearse de nuevo.' : ''));
+      } catch (err) {
+        alert('Error reseteando contraseña: ' + err.message);
+      }
     };
 
     // Borra un user directo (huerfanos sin SDR o con SDR inexistente).
