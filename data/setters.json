@@ -2805,7 +2805,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T02:05:51.428Z",
-      "lastContactAt": "2026-05-14T11:22:32.750Z",
+      "lastContactAt": "2026-07-10T20:28:43.494Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -2819,10 +2819,18 @@
       "calificado": false,
       "fechaContacto": "2026-05-14",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-07-10T20:28:43.494Z",
+          "outcome": "voicemail",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T20:28:43.495Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -2864,7 +2872,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -3881,7 +3889,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-14T17:24:30.741Z",
+      "lastContactAt": "2026-07-10T21:21:58.399Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -3895,9 +3903,17 @@
       "fechaContacto": "2026-05-14",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:21:58.399Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:21:58.399Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -3939,7 +3955,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": true,
       "businessStatus": "",
@@ -4720,14 +4736,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_contactar",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-14T20:27:13.521Z",
+      "lastContactAt": "2026-07-10T21:20:09.330Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -4741,8 +4757,16 @@
       "fechaContacto": "2026-05-14",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:20:09.330Z",
+          "outcome": "answered_not_interested",
+          "by": "user_setter_1783542220942",
+          "notes": "dice que viene una vez al mes, por lo que no le interesa",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -5585,7 +5609,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T14:50:33.290Z",
+      "lastContactAt": "2026-07-10T20:28:55.147Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -5598,10 +5622,18 @@
       "lastVariantId": "",
       "fechaContacto": "2026-05-18",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-07-10T20:28:55.147Z",
+          "outcome": "voicemail",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T20:28:55.147Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -5641,7 +5673,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -6750,14 +6782,21 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
-      "calificado": false,
-      "interes": null,
-      "estado": "sin_contactar",
-      "notes": [],
+      "respondio": true,
+      "calificado": true,
+      "interes": "si",
+      "estado": "interesado",
+      "notes": [
+        {
+          "id": "note_1783718315506_fw95ix",
+          "text": "se entusiasma y respondera el lunes",
+          "by": "Paula Kroff",
+          "date": "2026-07-10T21:18:35.506Z"
+        }
+      ],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T19:04:34.777Z",
+      "lastContactAt": "2026-07-10T21:18:35.507Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -6770,8 +6809,16 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:18:04.939Z",
+          "outcome": "answered_interested",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "fechaContacto": "2026-05-18",
       "asistio": null,
@@ -6890,7 +6937,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T19:35:57.715Z",
+      "lastContactAt": "2026-07-10T20:29:07.095Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -6902,10 +6949,18 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-07-10T20:29:07.095Z",
+          "outcome": "voicemail",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T20:29:07.095Z",
       "fechaContacto": "2026-05-18",
       "asistio": null,
       "asistioAt": "",
@@ -6946,7 +7001,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -7380,7 +7435,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T12:50:47.136Z",
+      "lastContactAt": "2026-07-10T21:19:43.709Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -7393,9 +7448,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:19:43.709Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:19:43.709Z",
       "fechaContacto": "2026-05-18",
       "asistio": null,
       "asistioAt": "",
@@ -7436,7 +7499,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -8237,7 +8300,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T21:06:51.616Z",
+      "lastContactAt": "2026-07-10T21:22:06.390Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -8250,9 +8313,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:22:06.390Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:22:06.390Z",
       "fechaContacto": "2026-05-18",
       "asistio": null,
       "asistioAt": "",
@@ -8293,7 +8364,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -8473,14 +8544,14 @@
       "varianteId": "var_1776048243208",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_contactar",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-18T21:12:25.855Z",
+      "lastContactAt": "2026-07-10T21:21:49.769Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -8493,8 +8564,16 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:21:49.769Z",
+          "outcome": "answered_not_interested",
+          "by": "user_setter_1783542220942",
+          "notes": "me corto",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "fechaContacto": "2026-05-18",
       "asistio": null,
@@ -9190,7 +9269,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-19T12:25:14.252Z",
+      "lastContactAt": "2026-07-10T21:19:10.348Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -9202,10 +9281,18 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:19:10.348Z",
+          "outcome": "voicemail",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:19:10.348Z",
       "fechaContacto": "2026-05-19",
       "asistio": null,
       "asistioAt": "",
@@ -9246,7 +9333,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -15673,7 +15760,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-21T14:14:45.897Z",
+      "lastContactAt": "2026-07-10T21:20:19.819Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -15686,9 +15773,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:20:19.819Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:20:19.819Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -15729,7 +15824,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -16728,14 +16823,21 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
-      "calificado": false,
-      "interes": null,
-      "estado": "sin_contactar",
-      "notes": [],
+      "respondio": true,
+      "calificado": true,
+      "interes": "si",
+      "estado": "interesado",
+      "notes": [
+        {
+          "id": "note_1783718448827_1i5zxt",
+          "text": "quiere info por correo, le gusto la informacion",
+          "by": "Paula Kroff",
+          "date": "2026-07-10T21:20:48.827Z"
+        }
+      ],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-21T16:24:27.512Z",
+      "lastContactAt": "2026-07-10T21:20:48.827Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -16748,8 +16850,16 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:20:29.778Z",
+          "outcome": "answered_interested",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -17867,7 +17977,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-27T12:46:26.797Z",
+      "lastContactAt": "2026-07-10T21:19:25.649Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -17879,10 +17989,18 @@
       "lastStage": "",
       "lastVariantId": "",
       "wspProbability": "low",
-      "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "phoneStatus": "voicemail",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:19:25.649Z",
+          "outcome": "voicemail",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:19:25.649Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -17923,7 +18041,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -18109,7 +18227,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-26T16:02:49.518Z",
+      "lastContactAt": "2026-07-10T21:17:43.482Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -18122,9 +18240,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:17:43.482Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:17:43.482Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -18165,7 +18291,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -18923,7 +19049,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-05-26T20:00:10.990Z",
+      "lastContactAt": "2026-07-10T21:22:23.960Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -18936,9 +19062,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:22:23.960Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:22:23.960Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -18979,7 +19113,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -20635,14 +20769,14 @@
       "varianteId": "",
       "conexion": "sin_wsp",
       "apertura": "",
-      "respondio": false,
+      "respondio": true,
       "calificado": false,
-      "interes": null,
-      "estado": "sin_contactar",
+      "interes": "no",
+      "estado": "descartado",
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-06-02T14:54:00.404Z",
+      "lastContactAt": "2026-07-10T21:21:19.526Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -20655,8 +20789,16 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:21:19.526Z",
+          "outcome": "answered_not_interested",
+          "by": "user_setter_1783542220942",
+          "notes": "se jubila",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
       "callbackAt": "",
       "asistio": null,
       "asistioAt": "",
@@ -22043,7 +22185,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-06-03T16:06:02.684Z",
+      "lastContactAt": "2026-07-10T21:22:15.420Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -22056,9 +22198,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:22:15.420Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:22:15.420Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -22099,7 +22249,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": false,
       "businessStatus": "",
@@ -24456,7 +24606,7 @@
       "notes": [],
       "interactions": [],
       "importedAt": "2026-04-12T21:03:05.018Z",
-      "lastContactAt": "2026-06-03T20:26:21.916Z",
+      "lastContactAt": "2026-07-10T21:22:32.539Z",
       "followUps": {
         "24hs": false,
         "48hs": false,
@@ -24469,9 +24619,17 @@
       "lastVariantId": "",
       "wspProbability": "low",
       "phoneStatus": "",
-      "callLog": [],
-      "callAttempts": 0,
-      "callbackAt": "",
+      "callLog": [
+        {
+          "ts": "2026-07-10T21:22:32.539Z",
+          "outcome": "no_answer",
+          "by": "user_setter_1783542220942",
+          "notes": "",
+          "channel": "manual"
+        }
+      ],
+      "callAttempts": 1,
+      "callbackAt": "2026-07-11T21:22:32.539Z",
       "asistio": null,
       "asistioAt": "",
       "asistioBy": "",
@@ -24514,7 +24672,7 @@
       "doNotCallBy": "",
       "disqualifyReason": "",
       "callbackShared": false,
-      "cadenceStep": 0,
+      "cadenceStep": 1,
       "cadenceExhausted": false,
       "runsAds": true,
       "businessStatus": "",
@@ -583208,7 +583366,7 @@
           "realCost": 0.0091,
           "realCostCurrency": "USD",
           "realCostSid": "359bb92e-7be2-11f1-87ca-0aedf5ade7aa",
-          "realCostReconciledAt": "2026-07-10T11:58:21.721Z"
+          "realCostReconciledAt": "2026-07-10T19:19:47.920Z"
         }
       ],
       "callAttempts": 1,
@@ -583720,7 +583878,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "156b44e8-7be3-11f1-9fb7-c6a6f1c9eedf",
-          "realCostReconciledAt": "2026-07-10T11:58:21.721Z"
+          "realCostReconciledAt": "2026-07-10T19:19:47.920Z"
         }
       ],
       "callAttempts": 1,
