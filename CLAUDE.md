@@ -823,4 +823,6 @@ Plan completo en `.planning/phases/17-disposition-dnc-cadencias/PLAN.md`. Las 4 
 
 122. **pre-deploy.js tolera URL sin protocolo** (deploy `a474501`): si el user tipea `scm-setting.up.railway.app` a secas, se antepone `https://` (antes: ERR_INVALID_URL y el backup no corría).
 
-123. **Cache-buster actual: `v=20260710d`** (app.js + index.html; reemplaza #115). style.css sigue en `v=20260708e`-era, wa.js sin cambios.
+123. **Cache-buster actual: `v=20260710e`** (app.js + index.html; reemplaza #115). style.css sigue en `v=20260708e`-era, wa.js sin cambios.
+
+124. **Guía de uso SDR reescrita al flujo actual** (deploy `6e2e899`, 2026-07-10): `_guideContent.setter` reestructurada por flujo real (Hoy → Llamadas → Power Dialer → en-llamada → disposición → Banco → Entrenamiento IA → Mi rendimiento → tips). Datos corregidos vs la versión vieja: atajos reales (C/S/B/Esc, **1-9**, N/A/P), política de reintentos vigente (1 reintento a 24h, 2do no-contacto descarta — cambió 2026-06-25, `MAX_NO_CONTACT=2` en index.js ~7751; la nota #104 sobre 6 reintentos quedó obsoleta), teléfono `•••• 1234`, No-llamar, callback compartido, rotación de caller ID, biblioteca privada. Eliminada una sección con id duplicado ('llamadas' x2). Los 3 números US están cargados en Centralita y rotando. Verificada en preview logueado como setter (login por fetch + inspección del DOM — workaround del glitch de pane 0x0, ver #114).
