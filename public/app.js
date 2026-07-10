@@ -6324,6 +6324,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (igUrl) fichaItems.push(`<span class="label">Instagram</span><span class="value"><a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer">${escHtml(igRaw)}</a></span>`);
       }
       if (l.doctor && !l.doctor.includes('N/A')) fichaItems.push(`<span class="label">Doctor</span><span class="value">${escHtml(l.doctor)}</span>`);
+      if (l.decisor) fichaItems.push(`<span class="label">Decisor</span><span class="value">${escHtml(l.decisor)}</span>`);
       const _antigF = _leadAntiguedad(l);
       if (_antigF) fichaItems.push(`<span class="label">Antigüedad</span><span class="value">${escHtml(_antigF)}</span>`);
       if (l.facebook) {
@@ -6331,7 +6332,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fbUrl = fbRaw.startsWith('http') ? safeUrl(fbRaw) : 'https://facebook.com/' + fbRaw.replace(/[^a-zA-Z0-9_.\-]/g, '');
         if (fbUrl) fichaItems.push(`<span class="label">Facebook</span><span class="value"><a href="${escHtml(fbUrl)}" target="_blank" rel="noopener noreferrer">FB</a></span>`);
       }
+      if (l.aiRole && !l.aiRole.includes('N/A')) fichaItems.push(`<span class="label">Rol (IA)</span><span class="value">${escHtml(l.aiRole)}</span>`);
+      if (l.aiWhatsApp && !l.aiWhatsApp.includes('N/A')) fichaItems.push(`<span class="label">WSP (IA)</span><span class="value">${escHtml(l.aiWhatsApp)}</span>`);
+      if (l.aiDescription || l.aiResumen) fichaItems.push(`<span class="label">Resumen (IA)</span><span class="value">${escHtml(String(l.aiDescription || l.aiResumen)).substring(0, 280)}</span>`);
+      if (l.linkedin) {
+        const _liUrl = safeUrl(l.linkedin);
+        if (_liUrl) fichaItems.push(`<span class="label">LinkedIn</span><span class="value"><a href="${escHtml(_liUrl)}" target="_blank" rel="noopener noreferrer">Perfil</a></span>`);
+      }
       if (l.importedAt) fichaItems.push(`<span class="label">Importado</span><span class="value">${new Date(l.importedAt).toLocaleDateString('es-AR')}</span>`);
+
+      // Chips de contexto (mismos que la card del Power Dialer): score de
+      // prioridad, hora local del lead e intentos. Van al tope del panel.
+      const _expChips = [];
+      {
+        const sc = Math.round(_callScore(l));
+        const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494';
+        _expChips.push(`<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`);
+        const lt = _leadLocalTime(l);
+        if (lt) {
+          const ltCol = lt.ok ? '#5BB974' : '#FFB341';
+          _expChips.push(`<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${ltCol}; background:${ltCol}22; padding:3px 9px; border-radius:6px; font-weight:700;">${lt.time}${lt.ok ? '' : ' ⚠️'}</span>`);
+        }
+        const _att = l.callAttempts || 0;
+        _expChips.push(_att > 0
+          ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${_att} intento${_att > 1 ? 's' : ''}</span>`
+          : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">Nunca llamado</span>');
+        if (l.estado === 'interesado') _expChips.push('<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>');
+      }
+
+      // Brief IA (mismo bloque que el Power Dialer): dolores + gancho + fit.
+      // Solo se veía en el dialer — ahora también en la lista.
+      let _briefBlock = '';
+      {
+        const _bc = l.leadBrief ? _briefClean(l) : null;
+        const lb = l.leadBrief || {};
+        if (_bc && _bc.has) {
+          _briefBlock = `<div style="margin:0 0 12px; background:linear-gradient(135deg, rgba(255,179,65,0.10) 0%, rgba(255,179,65,0.03) 100%); border:1px solid rgba(255,179,65,0.3); border-left:3px solid #FFB341; padding:11px 13px; border-radius:9px;">
+            <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#FFB341; margin-bottom:6px;">Brief IA${lb.fitScore != null ? ` · fit ${lb.fitScore}/100` : ''}${lb.source === 'website' ? ' · desde web' : (lb.reviewsMined ? ` · ${lb.reviewsMined} reseñas` : '')}</div>
+            ${_bc.brief ? `<div style="color:#fff; font-size:12.5px; line-height:1.5; margin-bottom:6px;">${escHtml(_bc.brief)}</div>` : ''}
+            ${_bc.hook ? `<div style="font-size:12px; line-height:1.45; margin-bottom:6px; color:rgba(255,255,255,0.92);"><span style="color:#FFB341; font-weight:600;">Gancho:</span> ${escHtml(_bc.hook)}</div>` : ''}
+            ${_bc.pains.map(p => `<div style="font-size:11.5px; color:rgba(255,255,255,0.8); margin-top:4px;">• ${escHtml(p.dolor)}${p.cita ? ` <span style="color:rgba(255,255,255,0.5); font-style:italic;">"${escHtml(String(p.cita).slice(0, 120))}"</span>` : ''}</div>`).join('')}
+            ${_bc.treatments.length ? `<div style="font-size:10.5px; color:rgba(255,255,255,0.6); margin-top:6px;">Tratamientos: ${_bc.treatments.map(escHtml).join(' · ')}</div>` : ''}
+          </div>`;
+        }
+      }
+
+      // Contacto alternativo que le pasaron al SDR (mismo bloque que el dialer)
+      const _altBlock = l.altPhone ? `<div style="display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid #5BB974; border-radius:8px;">
+        <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(l.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:ui-monospace,monospace; color:var(--accent);">${escHtml(l.altPhone)}</span></span>
+        <button type="button" onclick="window._startTelnyxCall('${escHtml(l.id)}', '${escHtml(l.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
+      </div>` : '';
 
       // Histórico
       const historyHtml = callLog.length === 0
@@ -6346,17 +6396,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             const label = callOutcomeLabel(entry.outcome);
             const time = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
             const dur = entry.duration ? ` · ${entry.duration}s` : '';
-            const cost = entry.cost ? ` · $${Number(entry.cost).toFixed(3)}` : '';
+            // Costo: real (CDR reconciliado) preferido sobre estimado — solo admin/supervisor,
+            // mismo criterio que la card del Power Dialer.
+            const _canSeeCost = ['admin', 'supervisor'].includes(currentUser?.realRole || currentUser?.role);
+            let cost = '';
+            if (_canSeeCost && typeof entry.realCost === 'number') cost = ` · $${entry.realCost.toFixed(4)} real`;
+            else if (_canSeeCost && entry.cost) cost = ` · ~$${Number(entry.cost).toFixed(3)}`;
             // Sprint 25: si la entry tiene objection tags, mostrarlos como chips
             const tagLabelMap = { precio: 'precio', ya_tiene_sistema: 'otro sistema', tiempo: 'tiempo', no_es_decisor: 'no decisor', no_entiende_valor: 'no valor', desconfia: 'desconfía', mal_momento: 'mal momento', otra: 'otra' };
             const objTags = Array.isArray(entry.objectionTags) ? entry.objectionTags : [];
             const objTagsHtml = objTags.length > 0 ? `<div style="grid-column:2; display:flex; gap:4px; flex-wrap:wrap; margin-top:3px;">${objTags.map(t => `<span style="font-size:9.5px; background:rgba(244,114,114,0.12); border:1px solid rgba(244,114,114,0.28); color:#f47272; padding:1px 6px; border-radius:5px;">${tagLabelMap[t] || t}</span>`).join('')}</div>` : '';
-            return `<div class="call-history-item">
+            // Transcripción expandible (mismo criterio que el Power Dialer):
+            // solo si la llamada tuvo conversación real, no buzón/no-atendió.
+            const segs = entry.transcript?.segments;
+            const _convOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up'];
+            const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
+            const rowHtml = `<div class="call-history-item">
               <span class="call-history-icon">${icon}</span>
-              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}</span>
+              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:#9D85F2;">🎤</span>' : ''}</span>
               <span class="call-history-time">${time}</span>
               ${objTagsHtml}
             </div>`;
+            if (!hasTr) return rowHtml;
+            const segsHtml = _mergeTranscriptTurns(segs).map(s => {
+              const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+              const lbl = s.speaker === 'setter' ? 'Setter' : 'Lead';
+              return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
+            }).join('');
+            return `<details style="border:1px solid var(--border-subtle); border-radius:7px; overflow:hidden;">
+              <summary style="cursor:pointer; list-style:none;">${rowHtml}</summary>
+              <div style="padding:9px 12px 11px; border-top:1px solid var(--border-subtle); font-size:11px; line-height:1.5; max-height:220px; overflow-y:auto;">${segsHtml}</div>
+            </details>`;
           }).join('');
 
       // Notas
@@ -6377,6 +6447,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<div class="call-detail-panel">
         <!-- Columna izquierda: ficha + histórico -->
         <div class="call-detail-section">
+          ${_expChips.length ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">${_expChips.join('')}</div>` : ''}
+          ${_briefBlock}
+          ${_altBlock}
           <h4 class="call-detail-section-title">Ficha del lead</h4>
           <div class="call-detail-grid">${fichaItems.join('')}</div>
 
@@ -6397,6 +6470,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${(() => {
               const safeW = safeUrl(l.website || '');
               return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Abrir web</a>` : '';
+            })()}
+            ${(() => {
+              if (!l.name) return '';
+              const mapsQ = encodeURIComponent(`${l.name} ${l.city || ''} ${l.country || ''}`.trim());
+              return `<a href="https://www.google.com/maps/search/?api=1&query=${mapsQ}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Maps</a>`;
             })()}
           </div>
         </div>
