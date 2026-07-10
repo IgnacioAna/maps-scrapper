@@ -12,6 +12,22 @@
       "country": "US",
       "active": true,
       "createdAt": "2026-05-22T22:32:00.861Z"
+    },
+    {
+      "id": "telnyx_num_1783725925454_x2fu3a",
+      "phone": "+17864350620",
+      "label": "USA 2",
+      "country": "US",
+      "active": true,
+      "createdAt": "2026-07-10T23:25:25.454Z"
+    },
+    {
+      "id": "telnyx_num_1783725955014_ctkmvz",
+      "phone": "+17867725783",
+      "label": "USA 3",
+      "country": "US",
+      "active": true,
+      "createdAt": "2026-07-10T23:25:55.014Z"
     }
   ],
   "countryRouting": {
@@ -27,7 +43,7 @@
     "BO": "",
     "US": ""
   },
-  "updatedAt": "2026-06-01T15:09:49.958Z",
+  "updatedAt": "2026-07-10T23:25:55.014Z",
   "updatedBy": "ignacio.scmdental@gmail.com",
   "lowBalanceThreshold": 5
 }
