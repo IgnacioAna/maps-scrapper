@@ -5101,6 +5101,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       autopilotArmed: false,// flag interno: el próximo render debe disparar countdown
       autopilotTimer: null, // handle del setInterval del countdown
     };
+    // Teléfono según rol (2026-07-10): las SDR ven el número enmascarado en TODA
+    // la UI (lista, Power Dialer, panel de llamada) — solo últimos 4 dígitos para
+    // identificar la línea. Discan igual por el botón. Admin/supervisor completo.
+    function _phoneShown(p) {
+      if (currentUser?.role !== 'setter') return String(p || '');
+      const digits = String(p || '').replace(/\D/g, '');
+      return digits ? ('•••• ' + digits.slice(-4)) : '';
+    }
+
     function _pdAutopilotKey() { return 'pd_autopilot_' + (currentUser?.id || 'anon'); }
     // Cancela cualquier countdown de autopiloto pendiente y limpia el banner.
     function _pdCancelAutopilot() {
@@ -5469,7 +5478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
           </div>
           <div style="margin-top:8px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-            <span style="font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(lead.phone)}</span>
+            <span style="font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(_phoneShown(lead.phone))}</span>
             <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">·</span>
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
@@ -5662,7 +5671,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span style="display:flex; align-items:center;">${f}</span>
           <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' <span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}${l.doctor && !l.doctor.includes('N/A') ? ' <span style="color:var(--text-tertiary); font-size:11px;">· ' + escHtml(l.doctor) + '</span>' : ''}</span>
           ${att > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-app); padding:1px 6px; border-radius:5px;">${att} int</span>` : ''}
-          <span style="color:var(--text-tertiary); font-family:ui-monospace,monospace; font-size:11px;">${escHtml(l.phone)}</span>
+          <span style="color:var(--text-tertiary); font-family:ui-monospace,monospace; font-size:11px;">${escHtml(_phoneShown(l.phone))}</span>
         </div>`;
       }).join('');
 
@@ -6326,7 +6335,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Ficha rica
       const fichaItems = [];
-      if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(l.phone)}</span>`);
+      // Tel enmascarado para SDRs (2026-07-10): ven solo los últimos 4 dígitos.
+      if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(_phoneShown(l.phone))}</span>`);
       if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
       if (l.address) fichaItems.push(`<span class="label">Dirección</span><span class="value">${escHtml(l.address)}</span>`);
       // Sprint 37 (VULN-A1): pasar todas las URLs por safeUrl antes de href
@@ -6778,7 +6788,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 lastBadge = `<span style="font-size:9px; color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${daysAgo}d</span>`;
               }
             }
-            const btnTitle = cooldownWarn || (_telnyx.configured ? `title="Llamar por Telnyx WebRTC · ${escHtml(l.phone)}"` : `title="${escHtml(l.phone)} · Telnyx no configurado, abre dialer del SO"`);
+            // Sin número en el tooltip (2026-07-10, pedido del user): el teléfono del
+            // lead no se expone en la UI de la lista — el botón disca igual.
+            const btnTitle = cooldownWarn || (_telnyx.configured ? `title="Llamar por Telnyx WebRTC"` : `title="Telnyx no configurado, abre dialer del SO"`);
             return (_telnyx.configured && _telnyx.numbers.length > 0)
               ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" ${btnTitle}>
                   Llamar${lastBadge}
@@ -7456,7 +7468,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const panel = document.getElementById('telnyx-call-panel');
       const leadName = lead.name || '(sin nombre)';
       document.getElementById('telnyx-call-lead-name').textContent = leadName;
-      document.getElementById('telnyx-call-lead-meta').textContent = `${dialPhone}${phoneOverride ? ' (' + (lead.altPhoneLabel || 'contacto alt') + ')' : ''}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
+      // SDRs ven el número enmascarado también durante la llamada (2026-07-10).
+      document.getElementById('telnyx-call-lead-meta').textContent = `${_phoneShown(dialPhone)}${phoneOverride ? ' (' + (lead.altPhoneLabel || 'contacto alt') + ')' : ''}${lead.city ? ' · ' + lead.city : ''}${lead.country ? ' · ' + lead.country : ''}`;
       // Avatar: 2 iniciales del nombre (o phone si no hay nombre)
       const initials = (() => {
         const words = leadName.replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ\s]/g, '').trim().split(/\s+/).filter(Boolean);
@@ -16108,7 +16121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         title: 'Entrenamiento IA (aprender + preguntar)',
         body: `<p>En <strong>Entrenamiento IA</strong> tenés dos cosas para mejorar:</p>
         <ul>
-          <li><strong>Biblioteca de llamadas:</strong> escuchá/leé cómo llaman tus compañeros (anonimizado, sin datos del cliente). Mirá las que <strong>agendaron</strong> y copiá lo que funciona. Cada una tiene un resumen de la IA.</li>
+          <li><strong>Biblioteca de llamadas:</strong> repasá tus propias llamadas transcriptas (anonimizado, sin datos del cliente). Mirá las que <strong>agendaron</strong> y repetí lo que funciona. Cada una tiene un resumen de la IA.</li>
           <li><strong>Preguntale a la IA:</strong> dudas del producto, cómo rebatir una objeción, cómo mejorar — la IA te responde con el conocimiento del equipo.</li>
         </ul>`,
         goto: { target: 'view-training-ai', label: 'Ir a Entrenamiento IA' }
@@ -16133,7 +16146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li>Antes de discar, leé el <strong>ángulo sugerido</strong> y (si tiene) el <strong>Brief IA</strong> — entrás con contexto y conectás más.</li>
           <li>Si la recepción te pasa el número del encargado, cargalo como <strong>contacto secundario</strong> y llamalo ahí mismo.</li>
           <li>Respetá la <strong>hora local</strong> del lead (la ves en la card) — no llames fuera de horario hábil.</li>
-          <li>Cuando algo te cuesta, preguntale al <strong>coach</strong> en Entrenamiento IA o mirá una llamada que salió bien en la biblioteca.</li>
+          <li>Cuando algo te cuesta, preguntale al <strong>coach</strong> en Entrenamiento IA o repasá una llamada tuya que salió bien en la biblioteca.</li>
         </ul>`
       },
     ],

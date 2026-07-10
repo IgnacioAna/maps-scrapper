@@ -20,9 +20,12 @@ process.env.ADMIN_EMAIL = "admin-mg@local.test";
 process.env.ADMIN_PASSWORD = "mgpass1234";
 process.env.ADMIN_NAME = "AdminMG";
 process.env.JWT_SECRET = "test-secret-mg";
-delete process.env.MERCURY_API_KEY;
-delete process.env.QWEN_API_KEY;
-delete process.env.OPENAI_API_KEY; // ChatGPT ahora es proveedor primario: sin esto AI_AVAILABLE=true y el endpoint llama a OpenAI real (timeout)
+// String vacío, NO delete: index.js corre dotenv.config() que re-carga el .env
+// local y restauraba las keys borradas (causa raíz del flaky histórico de esta
+// suite). dotenv no pisa vars ya definidas, aunque estén vacías.
+process.env.MERCURY_API_KEY = "";
+process.env.QWEN_API_KEY = "";
+process.env.OPENAI_API_KEY = ""; // ChatGPT es proveedor primario: sin esto AI_AVAILABLE=true y el endpoint llama a OpenAI real (timeout)
 
 function pwd(plain) {
   const salt = crypto.randomBytes(16).toString("hex");

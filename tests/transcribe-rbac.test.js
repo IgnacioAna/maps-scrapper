@@ -21,7 +21,7 @@ process.env.DATA_DIR = tmpData;
 process.env.ADMIN_EMAIL = "admin-tr@local.test";
 process.env.ADMIN_PASSWORD = "trpass1234";
 process.env.JWT_SECRET = "test-secret-tr";
-delete process.env.OPENAI_API_KEY; // forzar el 503 para el caller autorizado
+process.env.OPENAI_API_KEY = ""; // forzar el 503 para el caller autorizado
 
 function pwd(plain) {
   const salt = crypto.randomBytes(16).toString("hex");

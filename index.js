@@ -864,12 +864,24 @@ function computeLeadSignals(lead = {}) {
 // (qué vendemos, a quién, cómo) + los aprendizajes que el admin fue cargando
 // ("Sugerir mejora" → feedbackNotes). Así el brief no analiza a ciegas: entiende
 // nuestra oferta real y lo que funciona en las llamadas. Capeado para no inflar tokens.
+// Anti-marca (2026-07-10, pedido del user): la IA NUNCA debe nombrar la empresa
+// ("SCM" / "SCM Dental") — ni al prospecto ni al setter. Habla de la oferta, no
+// de la marca. Se aplica tanto a los prompts que se inyectan (el systemPrompt de
+// mercury_config es data editable de prod y puede traer la marca) como a los
+// outputs de la IA (por si la marca se cuela vía banco de respuestas/transcripts).
+// El (?!-) evita romper URLs tipo scm-dental.vercel.app (lowercase, con guión).
+function _stripBrandMentions(text) {
+  return String(text || '')
+    .replace(/\bSCM\s+Dental\b/gi, 'la empresa')
+    .replace(/\bSCM\b(?!-)/g, 'la empresa');
+}
+
 function _briefKnowledge() {
   try {
     const cfg = loadMercuryConfig();
-    let k = String(cfg.systemPrompt || '').trim().slice(0, 2200);
+    let k = _stripBrandMentions(String(cfg.systemPrompt || '').trim()).slice(0, 2200);
     const notes = (cfg.feedbackNotes || []).slice(-6)
-      .map((n) => '- ' + String((n && n.text) || n || '').trim())
+      .map((n) => '- ' + _stripBrandMentions(String((n && n.text) || n || '').trim()))
       .filter((x) => x.length > 4);
     if (notes.length) k += '\n\nAPRENDIZAJES RECIENTES DEL EQUIPO:\n' + notes.join('\n');
     return k.slice(0, 3200);
@@ -9863,7 +9875,7 @@ async function _autoTagFaq({ pregunta, respuesta, categoria, tags }) {
   if (hasUserTags && hasUserCategoria) return { tags: userTags, categoria };
   if (!AI_AVAILABLE) return { tags: userTags, categoria: categoria || 'general' };
 
-  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
+  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental.
 Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
 {"categoria":"<una de: precio|objecion|seguimiento|calificacion|general>","tags":["palabra1","palabra2","palabra3"]}
 
@@ -10223,7 +10235,7 @@ app.post('/api/faqs/suggest-tags', requireAuth, aiLimiter, async (req, res) => {
   if (!pregunta.trim()) return res.status(400).json({ error: 'pregunta requerida' });
   if (!AI_AVAILABLE) return res.status(400).json({ error: 'No hay API de IA configurada' });
 
-  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental (SCM Dental).
+  const prompt = `Sos un clasificador de FAQs de ventas para una agencia dental.
 Dada una pregunta/objeción y su respuesta, devolvé EXCLUSIVAMENTE un JSON válido con esta forma exacta:
 {"categoria":"<una de: precio|objecion|seguimiento|calificacion|general>","tags":["palabra1","palabra2","palabra3"]}
 
@@ -10312,7 +10324,7 @@ app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
       })
       .filter(Boolean);
     if (chunks.length > 0) {
-      trainingContext = `\nMATERIAL DE ENTRENAMIENTO DE LA AGENCIA (usá esta info como base de verdad sobre SCM Dental):\n${chunks.join('\n\n')}\n`;
+      trainingContext = `\nMATERIAL DE ENTRENAMIENTO DE LA AGENCIA (usá esta info como base de verdad sobre la oferta):\n${_stripBrandMentions(chunks.join('\n\n'))}\n`;
     }
   } catch {}
 
@@ -10325,11 +10337,11 @@ app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
       return `[Módulo ${m.num} — ${m.title}: ${m.subtitle}]\n${text.substring(0, 1500)}`;
     }).filter(Boolean);
     if (oChunks.length > 0) {
-      onboardingContext = `\nONBOARDING OFICIAL DEL EQUIPO SCM (base de verdad sobre cómo trabaja el equipo y el sistema):\n${oChunks.join('\n\n')}\n`;
+      onboardingContext = `\nONBOARDING OFICIAL DEL EQUIPO (base de verdad sobre cómo trabaja el equipo y el sistema):\n${_stripBrandMentions(oChunks.join('\n\n'))}\n`;
     }
   } catch {}
 
-  const prompt = `Sos un asistente de ventas de SCM Dental. Ofrecemos un sistema de reactivación, seguimiento y fidelización de pacientes que trabaja sobre la base de pacientes que la clínica YA tiene (reactivar dormidos, seguir presupuestos no cerrados, recuperar no-shows). NO somos una agencia de publicidad ni buscamos pacientes nuevos. Tu trabajo es redactar la respuesta que un setter va a enviar por WhatsApp a un dueño de clínica dental (lead), con el objetivo de mantener la conversación viva y avanzar hacia una llamada.
+  const prompt = `Sos un asistente de ventas de una empresa que NUNCA se nombra (hablás siempre de la oferta, jamás de la marca). Ofrecemos un sistema de reactivación, seguimiento y fidelización de pacientes que trabaja sobre la base de pacientes que la clínica YA tiene (reactivar dormidos, seguir presupuestos no cerrados, recuperar no-shows). NO somos una agencia de publicidad ni buscamos pacientes nuevos. Tu trabajo es redactar la respuesta que un setter va a enviar por WhatsApp a un dueño de clínica dental (lead), con el objetivo de mantener la conversación viva y avanzar hacia una llamada.
 ${onboardingContext}${trainingContext}
 ${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
 ${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
@@ -10413,6 +10425,8 @@ Devolvé SOLO el/los bloque(s) de texto, nada más.`;
 function sanitizeMercuryStyle(input) {
   if (input == null) return { text: '', blocks: [] };
   let s = String(input);
+  // 0. Anti-marca: la empresa jamás se nombra en un output de IA (2026-07-10).
+  s = _stripBrandMentions(s);
   // 1. Strip signos de apertura ¿ ¡ (cualquier posicion).
   s = s.replace(/[¿¡]/g, '');
   // 2. Normalizar fin de linea.
@@ -10640,7 +10654,7 @@ function _defaultMercurySystemPrompt() {
   } catch (e) {
     console.warn("[mercury] No pude leer seed prompt:", e.message);
   }
-  return "Sos Mercury, un asistente de IA que ayuda a setters SCM Dental a redactar respuestas en WhatsApp. Reglas: sin signos de apertura ¿¡, bloques separados por doble salto, sin precios, sin stack tecnico, sin emojis, registro profesional natural. V→R→R en objeciones.";
+  return "Sos Mercury, un asistente de IA que ayuda a setters a redactar respuestas en WhatsApp. Reglas: sin signos de apertura ¿¡, bloques separados por doble salto, sin precios, sin stack tecnico, sin emojis, registro profesional natural, y NUNCA nombres la empresa. V→R→R en objeciones.";
 }
 
 function loadMercuryConfig() {
@@ -11149,7 +11163,7 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
       // A/B: si abEnabled y experimentalPrompt no vacío, 50/50 random.
       const useExperimental = cfg.abEnabled && cfg.experimentalPrompt && cfg.experimentalPrompt.trim() && Math.random() < 0.5;
       promptVariant = useExperimental ? "B" : "A";
-      let basePrompt = useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt());
+      let basePrompt = _stripBrandMentions(useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt()));
       if (isCallMode) {
         basePrompt += `\n\n---\nMODO LLAMADA EN VIVO (OVERRIDE): en esta generación el setter NO está chateando por WhatsApp — está EN una llamada telefónica en frío y el prospecto acaba de decir algo. Todo lo que este prompt dice sobre "mensajes de WhatsApp", "bloques" y formato de chat NO aplica acá. Tu output es la frase que el setter va a decir en voz alta a continuación. Las reglas de contenido (sin precios, sin stack técnico, el closer maneja la venta, objetivo = agendar reunión de 15 minutos) siguen valiendo igual.`;
       }
@@ -12458,11 +12472,11 @@ app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, 
     return `[${m}:${String(ss).padStart(2,'0')}] ${role}: ${s.text}`;
   }).join('\n');
   // Prompt MASIVO con todo el framework v2 + contexto de outcome
-  const systemPrompt = `Sos un coach experto en cold calling B2B para clínicas dentales. Analizás llamadas reales según el framework SCM Cold Call v2 (basado en Julio Sagantini: PACE, 3-S, problem-based pitch).
+  const systemPrompt = `Sos un coach experto en cold calling B2B para clínicas dentales. Analizás llamadas reales según el framework oficial del equipo, Cold Call v2 (basado en Julio Sagantini: PACE, 3-S, problem-based pitch). NUNCA nombres la empresa para la que trabaja el equipo — hablá de "la oferta" o "el sistema".
 
 OBJETIVO DE LA LLAMADA: agendar reunión de 20min con el decisor (Doctor) para mostrarle el sistema de reactivación de pacientes. El SETTER es quien llama; NO cierra la venta en la llamada, solo agenda.
 
-OFERTA SCM: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Casos de éxito (Uruguay): clínica grande con base de ~13.000 pacientes generó 147 citas en 11 semanas; consultorio chico de ~600 pacientes generó 50 agendas en 5 semanas (18,5% de conversión). Funciona en base grande y chica.
+LA OFERTA: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Casos de éxito (Uruguay): clínica grande con base de ~13.000 pacientes generó 147 citas en 11 semanas; consultorio chico de ~600 pacientes generó 50 agendas en 5 semanas (18,5% de conversión). Funciona en base grande y chica.
 
 FRAMEWORK QUE EVALUÁS:
 
@@ -12704,7 +12718,7 @@ async function _trainingSummaryLLM(segments, outcome) {
 Transcripción (anonimizada):
 ${dialog}
 
-Devolvé en español, claro y breve (sin nombres ni datos sensibles). Usá EXACTAMENTE estos 4 títulos en negrita markdown y NO te extiendas (el resumen completo entra en ~150 palabras):
+Devolvé en español, claro y breve (sin nombres ni datos sensibles, y sin nombrar la empresa — hablá de "la oferta"). Usá EXACTAMENTE estos 4 títulos en negrita markdown y NO te extiendas (el resumen completo entra en ~150 palabras):
 **Qué pasó** (1-2 líneas)
 **Qué hizo bien** (1-2 viñetas con "- ")
 **Qué mejorar** (1-2 viñetas con "- ")
@@ -12714,7 +12728,7 @@ Devolvé en español, claro y breve (sin nombres ni datos sensibles). Usá EXACT
       ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.3, max_tokens: 700 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
     ]);
-    return (c?.choices?.[0]?.message?.content || '').trim();
+    return _stripBrandMentions((c?.choices?.[0]?.message?.content || '').trim());
   } catch { return ''; }
 }
 
@@ -12725,7 +12739,7 @@ async function _coachAnswerLLM(question, faqs) {
   if (!AI_AVAILABLE) return '';
   const ctx = (faqs || []).slice(0, 12).map((f) => `P: ${f.pregunta}\nR: ${f.respuesta}`).join('\n\n').slice(0, 5000);
   const offer = _briefKnowledge();
-  const prompt = `Sos un coach de ventas experto en SCM (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un setter del equipo te hace una pregunta para entender mejor la oferta o mejorar su trabajo.
+  const prompt = `Sos un coach de ventas experto en la oferta del equipo (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un setter del equipo te hace una pregunta para entender mejor la oferta o mejorar su trabajo. NUNCA nombres la empresa — referite siempre a "la oferta", "el sistema" o "el equipo".
 
 CÓMO RESPONDER (crítico):
 - Le respondés AL SETTER, en segunda persona ("mirá, lo que ofrecemos es...", "en ese caso te conviene..."). Sos su coach explicándole, NO estás hablando con un cliente.
@@ -12749,7 +12763,7 @@ Tu respuesta al setter:`;
       ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.5, max_tokens: 500 }),
       new Promise((_, rej) => setTimeout(() => rej(new Error('llm_timeout')), 20000)),
     ]);
-    return (c?.choices?.[0]?.message?.content || '').trim();
+    return _stripBrandMentions((c?.choices?.[0]?.message?.content || '').trim());
   } catch { return ''; }
 }
 
@@ -12807,6 +12821,12 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
   // sobre leads de OTROS setters (el logEntry.by guarda el user que llamó).
   const userSetterId = {};
   try { (loadAuthData().users || []).forEach((u) => { if (u.id) userSetterId[u.id] = u.setterId || ''; }); } catch {}
+  // Privacidad (2026-07-10, pedido del user): cada setter ve SOLO sus llamadas.
+  // Admin/supervisor ven todo. Una llamada "es del setter" si la hizo él
+  // (c.by → su setterId) o, sin registro de quién llamó, si el lead es suyo.
+  const eff = getEffectiveAuth(req);
+  const onlyOwn = eff.role === 'setter';
+  const mySetterId = eff.setterId || '';
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
@@ -12819,6 +12839,10 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
       // Excluir también si el que HIZO la llamada es un setter oculto (aunque el
       // lead sea de otro): Ignacio test-llamando cualquier lead.
       if (c.by && TRAINING_EXCLUDED_SETTERS.has(userSetterId[c.by])) continue;
+      if (onlyOwn) {
+        const callSetter = (c.by && userSetterId[c.by]) || lead.assignedTo || '';
+        if (!mySetterId || callSetter !== mySetterId) continue;
+      }
       calls.push({
         leadId, callIdx: i, ts: c.ts, duration: c.duration || 0,
         outcome: c.outcome || '',
@@ -12841,6 +12865,14 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
   const i = parseInt(req.params.callIdx, 10);
   if (!lead || !Array.isArray(lead.callLog) || !lead.callLog[i]) return res.status(404).json({ error: 'No encontrado' });
   const c = lead.callLog[i];
+  // Privacidad: setter solo accede a SUS llamadas (mismo criterio que el listado).
+  const eff = getEffectiveAuth(req);
+  if (eff.role === 'setter') {
+    let bySetter = '';
+    try { bySetter = c.by ? ((loadAuthData().users || []).find((u) => u.id === c.by)?.setterId || '') : ''; } catch {}
+    const callSetter = bySetter || lead.assignedTo || '';
+    if (!eff.setterId || callSetter !== eff.setterId) return res.status(403).json({ error: 'Solo podés ver tus propias llamadas.' });
+  }
   const segs = c.transcript?.segments || [];
   if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
   // Reagrupar en turnos ANTES de anonimizar → conversación legible (no frases sueltas).
@@ -13885,7 +13917,7 @@ async function campaignMercuryReply({ leadId, lead, message }) {
     const completion = await ai.chat.completions.create({
       model: AI_MODEL,
       messages: [
-        { role: "system", content: cfg.systemPrompt || _defaultMercurySystemPrompt() },
+        { role: "system", content: _stripBrandMentions(cfg.systemPrompt || _defaultMercurySystemPrompt()) },
         { role: "user", content: userPrompt },
       ],
       temperature: 0.4,

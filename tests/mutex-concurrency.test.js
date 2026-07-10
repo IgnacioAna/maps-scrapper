@@ -23,9 +23,9 @@ process.env.ADMIN_EMAIL = "admin-mtx@local.test";
 process.env.ADMIN_PASSWORD = "mtxpass1234";
 process.env.ADMIN_NAME = "AdminMTX";
 process.env.JWT_SECRET = "test-secret-mtx";
-delete process.env.MERCURY_API_KEY;
-delete process.env.QWEN_API_KEY;
-delete process.env.OPENAI_API_KEY; // ChatGPT ahora es proveedor primario: sin esto AI_AVAILABLE=true y se llama a OpenAI real
+process.env.MERCURY_API_KEY = ""; // vacio, NO delete: dotenv.config() re-carga .env y restaura las borradas
+process.env.QWEN_API_KEY = "";
+process.env.OPENAI_API_KEY = ""; // ChatGPT ahora es proveedor primario: sin esto AI_AVAILABLE=true y se llama a OpenAI real
 
 function pwd(plain) {
   const salt = crypto.randomBytes(16).toString("hex");

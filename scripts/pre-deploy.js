@@ -30,7 +30,10 @@ async function main() {
   // 1. Obtener URL y credenciales
   let baseUrl = process.env.RAILWAY_URL;
   if (!baseUrl) baseUrl = await ask("URL de Railway (ej: https://tu-app.up.railway.app): ");
-  baseUrl = baseUrl.replace(/\/+$/, ""); // quitar trailing slash
+  baseUrl = baseUrl.trim().replace(/\/+$/, ""); // quitar trailing slash
+  // Tolerar URL sin protocolo (ej: "scm-setting.up.railway.app") — sin esto
+  // fetch() explota con ERR_INVALID_URL y el backup no corre.
+  if (!/^https?:\/\//i.test(baseUrl)) baseUrl = "https://" + baseUrl;
 
   let email = process.env.ADMIN_EMAIL;
   if (!email) email = await ask("Email de admin: ");
