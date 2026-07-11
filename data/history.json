@@ -68770,6 +68770,1836 @@
       "scrapedAt": "2026-07-11T16:16:39.456Z",
       "query": "clinica dental\nodontologos\ndentistas",
       "location": "Valencia, España"
+    },
+    "clínica dental cedent_ctra. de carmona, 50, 41008 sevilla, spain": {
+      "name": "Clínica Dental CEDENT",
+      "address": "Ctra. de Carmona, 50, 41008 Sevilla, Spain",
+      "phone": "+34 954 42 51 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental escrivá_c. jardín de la isla, 6, 41012 sevilla, spain": {
+      "name": "Clínica Dental Escrivá",
+      "address": "C. Jardín de la Isla, 6, 41012 Sevilla, Spain",
+      "phone": "+34 954 69 03 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental amador de los ríos_c. amador de los ríos, 27-29, 3ºa, 41003 sevilla, spain": {
+      "name": "Clínica Dental Amador de los Ríos",
+      "address": "C. Amador de los Ríos, 27-29, 3ºA, 41003 Sevilla, Spain",
+      "phone": "+34 954 41 79 14",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental josé castro herrero_c. monte carmelo, 10, bajo;a, 41011 sevilla, spain": {
+      "name": "Clínica Dental José Castro Herrero",
+      "address": "C. Monte Carmelo, 10, BAJO;A, 41011 Sevilla, Spain",
+      "phone": "+34 954 27 57 61",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "ortodoncia sevilla · ortodoncia niños y adultos · implantes · estética dental_virgen de lujan, 15, 1ºa, 41011 sevilla, spain": {
+      "name": "ORTODONCIA SEVILLA · Ortodoncia niños y adultos · Implantes · Estética Dental",
+      "address": "Virgen de Lujan, 15, 1ºA, 41011 Sevilla, Spain",
+      "phone": "+34 954 28 31 17",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental doctor ignacio barberó_c. juan sebastián elcano, 6, 41011 sevilla, spain": {
+      "name": "Clínica Dental Doctor Ignacio Barberó",
+      "address": "C. Juan Sebastián Elcano, 6, 41011 Sevilla, Spain",
+      "phone": "+34 954 27 09 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental dr. julio torrejón martínez_c/ de sta. clara, 13, 41002, casco antiguo, 41002 sevilla, spain": {
+      "name": "Clínica Dental Dr. Julio Torrejón Martínez",
+      "address": "C/ de Sta. Clara, 13, 41002, Casco Antiguo, 41002 Sevilla, Spain",
+      "phone": "+34 954 90 65 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "carillas dentales sevilla_c. farmaceutico murillo herrera, 3, 41010 sevilla, spain": {
+      "name": "Carillas dentales Sevilla",
+      "address": "C. Farmaceutico Murillo Herrera, 3, 41010 Sevilla, Spain",
+      "phone": "+34 954 99 04 53",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clinica dental sanitas el corte inglés san juan de aznalfarache_camino de las erillas: s/n, planta 1ª, 41920 san juan de aznalfarache, sevilla, spain": {
+      "name": "Clinica Dental Sanitas El Corte Inglés San Juan De Aznalfarache",
+      "address": "Camino de las Erillas: s/n, planta 1ª, 41920 San Juan de Aznalfarache, Sevilla, Spain",
+      "phone": "+34 954 86 51 65",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. carmen anaya rodriguez, dentista_c. camilo josé cela, 6, bj a3, 41018 sevilla, spain": {
+      "name": "Dra. Carmen Anaya Rodriguez, Dentista",
+      "address": "C. Camilo José Cela, 6, BJ A3, 41018 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "implantes dentales sevilla_av. de llanes, 1, 41008 sevilla, spain": {
+      "name": "Implantes dentales Sevilla",
+      "address": "Av. de Llanes, 1, 41008 Sevilla, Spain",
+      "phone": "+34 673 21 31 98",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dentalmarket_c. maimónides, 5, 41009 sevilla, spain": {
+      "name": "Dentalmarket",
+      "address": "C. Maimónides, 5, 41009 Sevilla, Spain",
+      "phone": "+34 954 44 14 77",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "centro odontologico aparicio_av. josé laguillo, 12, 41003 sevilla, spain": {
+      "name": "Centro Odontologico Aparicio",
+      "address": "Av. José Laguillo, 12, 41003 Sevilla, Spain",
+      "phone": "+34 955 30 05 56",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dr. jose enrique reche benitez, dentista_c. peñaflor, 4, 4ºa, 41010 sevilla, spain": {
+      "name": "Dr. Jose Enrique Reche Benitez, Dentista",
+      "address": "C. Peñaflor, 4, 4ºA, 41010 Sevilla, Spain",
+      "phone": "+34 954 33 79 99",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dr. juan antonio martínez silva, dentista_c. gaspar alonso, 4, 41013 sevilla, spain": {
+      "name": "Dr. Juan Antonio Martínez Silva, Dentista",
+      "address": "C. Gaspar Alonso, 4, 41013 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "centro médico sanitas sevilla_c. pagés del corro, 188, 41010 sevilla, spain": {
+      "name": "Centro Médico Sanitas Sevilla",
+      "address": "C. Pagés del Corro, 188, 41010 Sevilla, Spain",
+      "phone": "+34 955 14 14 10",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "madrid periodontics & implants_av. de menéndez pelayo, 81, retiro, 28007 madrid, spain": {
+      "name": "Madrid Periodontics & Implants",
+      "address": "Av. de Menéndez Pelayo, 81, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 914 34 02 58",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "elite dental vallehermoso_c. de vallehermoso, 15, chamberí, 28015 madrid, spain": {
+      "name": "Elite Dental Vallehermoso",
+      "address": "C. de Vallehermoso, 15, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 914 44 10 80",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinident, dra claudia muñoz naranjo_c. de altamirano, 22, moncloa - aravaca, 28008 madrid, spain": {
+      "name": "Clinident, Dra Claudia Muñoz Naranjo",
+      "address": "C. de Altamirano, 22, Moncloa - Aravaca, 28008 Madrid, Spain",
+      "phone": "+34 636 82 18 37",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica dental ortodoncia lopez espinosa - clinica dental madrid - dr. lopez espinosa_c. de tomás lópez, 3, salamanca, 28009 madrid, spain": {
+      "name": "Clinica Dental Ortodoncia Lopez Espinosa - Clinica dental Madrid - Dr. Lopez Espinosa",
+      "address": "C. de Tomás López, 3, Salamanca, 28009 Madrid, Spain",
+      "phone": "+34 682 62 44 31",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental hortaleza_calle boyacá, n°5, hortaleza, 28033 1°, dch, spain": {
+      "name": "Clínica Dental Hortaleza",
+      "address": "Calle Boyacá, n°5, Hortaleza, 28033 1°, dch, Spain",
+      "phone": "+34 913 82 08 64",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "centro de formación odontológica formadent | formación para odontólogos_c. de rafael calvo, 5, chamberí, 28010 madrid, spain": {
+      "name": "Centro de formación odontológica Formadent | Formación para odontólogos",
+      "address": "C. de Rafael Calvo, 5, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 26 80 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental lópez gonzález_c. alcalá, 229, 1ºa, salamanca, 28028 madrid, spain": {
+      "name": "Clínica Dental López González",
+      "address": "C. Alcalá, 229, 1ºa, Salamanca, 28028 Madrid, Spain",
+      "phone": "+34 917 26 73 27",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental marta moreno aguirre_c. de espalter, 5, bajo izquierda, retiro, 28014 madrid, spain": {
+      "name": "Clínica dental Marta Moreno Aguirre",
+      "address": "C. de Espalter, 5, Bajo izquierda, Retiro, 28014 Madrid, Spain",
+      "phone": "+34 914 20 39 60",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica dental san javier_c/ de virgen del portillo, 37, cdad. lineal, 28027 madrid, spain": {
+      "name": "Clinica Dental San Javier",
+      "address": "C/ de Virgen del Portillo, 37, Cdad. Lineal, 28027 Madrid, Spain",
+      "phone": "+34 913 26 23 46",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "ortodoncia y atm dra. teresa rodríguez ramírez de arellano_andrés mellado, pasaje oxford, 29, 28015 madrid, spain": {
+      "name": "Ortodoncia y ATM Dra. Teresa Rodríguez Ramírez de Arellano",
+      "address": "Andrés Mellado, Pasaje Oxford, 29, 28015 Madrid, Spain",
+      "phone": "+34 915 49 76 88",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "odontologos de hoy_5º, calle de las mártires concepcionistas, 7, 28006 madrid, spain": {
+      "name": "Odontologos de Hoy",
+      "address": "5º, Calle de las Mártires Concepcionistas, 7, 28006 Madrid, Spain",
+      "phone": "+34 911 93 59 59",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "gómez fernández susana_av. de la reina victoria, 70, moncloa - aravaca, 28040 madrid, spain": {
+      "name": "Gómez Fernández Susana",
+      "address": "Av. de la Reina Victoria, 70, Moncloa - Aravaca, 28040 Madrid, Spain",
+      "phone": "+34 915 53 72 22",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental jesús garcía toribio_c. de francos rodríguez, 57, tetuán, 28039 madrid, spain": {
+      "name": "Clínica Dental Jesús García Toribio",
+      "address": "C. de Francos Rodríguez, 57, Tetuán, 28039 Madrid, Spain",
+      "phone": "+34 914 50 78 61",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dr. javier lópez ruiz, dentista_metro-islas filipinas, c. de gaztambide, 52, bajo dcha, chamberí, 28015 madrid, spain": {
+      "name": "Dr. Javier López Ruiz, Dentista",
+      "address": "Metro-Islas Filipinas, C. de Gaztambide, 52, Bajo Dcha, Chamberí, 28015 Madrid, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "odontología martínez & rivera_pl. del conde del valle de súchil, 3, 1ºc, chamberí, 28015 madrid, spain": {
+      "name": "Odontología Martínez & Rivera",
+      "address": "Pl. del Conde del Valle de Súchil, 3, 1ºC, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 913 08 55 67",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dr. raúl casado estebaranz_calle bravo murillo, 311 esquina calle azucenas, 2, escalera 1, 1º b, 28039 madrid, spain": {
+      "name": "Dr. Raúl Casado Estebaranz",
+      "address": "Calle Bravo Murillo, 311 Esquina calle Azucenas, 2, ESCALERA 1, 1º B, 28039 Madrid, Spain",
+      "phone": "+34 915 71 41 83",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica dental isabel mañas_calle del cardenal silíceo, 14, 1f, chamartín, 28002 madrid, spain": {
+      "name": "Clinica dental Isabel Mañas",
+      "address": "Calle del Cardenal Silíceo, 14, 1F, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 914 16 49 59",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "swiss dental services [madrid]_calle de núñez de balboa, 35, salamanca, 28001 madrid, spain": {
+      "name": "Swiss Dental Services [Madrid]",
+      "address": "Calle de Núñez de Balboa, 35, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 637 04 23 60",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental pons soria_carrer d'alfred toran i olmos, 7, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Clínica Dental Pons Soria",
+      "address": "Carrer d'Alfred Toran i Olmos, 7, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 30 33 44",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "flor lópez, a.i._av. de burjassot, 21, campanar, 46009 valència, valencia, spain": {
+      "name": "Flor López, A.I.",
+      "address": "Av. de Burjassot, 21, Campanar, 46009 València, Valencia, Spain",
+      "phone": "+34 963 40 48 36",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "global prodent_c/ de guillem de castro, 15, extramurs, 46007 valència, valencia, spain": {
+      "name": "Global ProDent",
+      "address": "C/ de Guillem de Castro, 15, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 961 13 79 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental imr_av. de jacinto benavente, 2, eixample, 46005 valència, valencia, spain": {
+      "name": "Clínica Dental IMR",
+      "address": "Av. de Jacinto Benavente, 2, Eixample, 46005 València, Valencia, Spain",
+      "phone": "+34 960 61 90 02",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica médica_carrer de colón, 48, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Médica",
+      "address": "Carrer de Colón, 48, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 52 27 51",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dr león feliú, josé maría_c. de navellos, 8, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Dr León Feliú, José María",
+      "address": "C. de Navellos, 8, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 91 24 48",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "maría jesús segovia soriano, dentista_carrer de padilla, 1, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "María Jesús Segovia Soriano, Dentista",
+      "address": "Carrer de Padilla, 1, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 51 24 63",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica esquivel sevilla_calle dr. ordóñez de la barrera, 2, 41004 sevilla, spain": {
+      "name": "Clinica Esquivel Sevilla",
+      "address": "Calle Dr. Ordóñez de la Barrera, 2, 41004 Sevilla, Spain",
+      "phone": "+34 621 25 50 46",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "laboratorio dental sevilla - centro de fresado dental 3d_calle américo vespucio, 5, local 1 bis, 41092 sevilla, spain": {
+      "name": "Laboratorio Dental Sevilla - Centro de Fresado Dental 3D",
+      "address": "Calle Américo Vespucio, 5, Local 1 BIS, 41092 Sevilla, Spain",
+      "phone": "+34 675 69 99 93",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dr. joaquín lora – cirujano facial en sevilla_jesús del gran poder, 19, casco antiguo, 41002 sevilla, spain": {
+      "name": "Dr. Joaquín Lora – Cirujano Facial en Sevilla",
+      "address": "Jesús del Gran Poder, 19, Casco Antiguo, 41002 Sevilla, Spain",
+      "phone": "+34 954 38 21 00",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "sociedad española de odontología infantil integral_calle dr. antonio cortés lladó, 1, local 1, 41004 sevilla, spain": {
+      "name": "Sociedad Española de Odontología Infantil Integral",
+      "address": "Calle Dr. Antonio Cortés Lladó, 1, Local 1, 41004 Sevilla, Spain",
+      "phone": "+34 954 66 32 04",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dr jose m nieto|implantes y estética dental avanzada_": {
+      "name": "Dr Jose M Nieto|Implantes y estética dental avanzada",
+      "phone": "+34 647 22 05 30",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental ribes-terol c.b._c/ del dr. manuel candela, 62, algirós, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Ribes-Terol C.B.",
+      "address": "C/ del Dr. Manuel Candela, 62, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 963 71 41 02",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental concha martínez_carrer de sueca, 66, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clinica Dental Concha Martínez",
+      "address": "Carrer de Sueca, 66, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 960 01 67 47",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental sonrisabonita_c/ jose albi, c/ de manuel melià i fuster, 4, local b entrada por, 46025 valència, valencia, spain": {
+      "name": "Clinica Dental SonrisaBonita",
+      "address": "c/ Jose Albi, C/ de Manuel Melià i Fuster, 4, Local B ENTRADA POR, 46025 València, Valencia, Spain",
+      "phone": "+34 658 15 95 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "gyb dental_av. del port, 264, b, poblados marítimos, 46024 valència, valencia, spain": {
+      "name": "Gyb Dental",
+      "address": "Av. del Port, 264, b, Poblados Marítimos, 46024 València, Valencia, Spain",
+      "phone": "+34 661 42 52 86",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental cerdan otero_carrer de josep maria bayarri, 11, l'olivereta, 46014 valència, valencia, spain": {
+      "name": "Clinica dental Cerdan Otero",
+      "address": "Carrer de Josep Maria Bayarri, 11, L'Olivereta, 46014 València, Valencia, Spain",
+      "phone": "+34 962 05 83 83",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "espai dental valencia (paiporta)_carrer església, 26, 46200 paiporta, valencia, spain": {
+      "name": "Espai Dental Valencia (Paiporta)",
+      "address": "Carrer Església, 26, 46200 Paiporta, Valencia, Spain",
+      "phone": "+34 634 32 85 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental carbonell garcía_c/ de xàtiva, 1, escalera c puerta 12, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "CLÍNICA DENTAL CARBONELL GARCÍA",
+      "address": "C/ de Xàtiva, 1, Escalera C puerta 12, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 679 93 94 75",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "pérez & andrés_c. del duque de calabria, 4, ensanche, 46005 valència, valencia, spain": {
+      "name": "Pérez & Andrés",
+      "address": "C. del Duque de Calabria, 4, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 962 22 24 00",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental pedro reig_c/ dels llibrers, 3, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Clínica Dental Pedro Reig",
+      "address": "C/ dels Llibrers, 3, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 52 96 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "a.mas clínica medicina estética_c/ de guillem de castro, 44, bajo izquierda, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "A.MAS Clínica Medicina Estética",
+      "address": "C/ de Guillem de Castro, 44, bajo izquierda, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 691 40 62 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental garcia selva_carrer de rodríguez de cepeda, 14, camins al grau, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental GARCIA SELVA",
+      "address": "Carrer de Rodríguez de Cepeda, 14, Camins al Grau, 46021 València, Valencia, Spain",
+      "phone": "+34 637 68 43 08",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica estética rodríguez_c. del marqués de sant joan, 15, campanar, 46015 valència, valencia, spain": {
+      "name": "Clínica Estética Rodríguez",
+      "address": "C. del Marqués de Sant Joan, 15, Campanar, 46015 València, Valencia, Spain",
+      "phone": "+34 671 99 13 58",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental caser valencia - patraix_c/ de fra juníper serra, 82, patraix, 46014 valència, valencia, spain": {
+      "name": "Clinica Dental Caser Valencia - Patraix",
+      "address": "C/ de Fra Juníper Serra, 82, Patraix, 46014 València, Valencia, Spain",
+      "phone": "+34 963 58 45 36",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "asisa dental_av. de frança, 1, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Asisa Dental",
+      "address": "Av. de França, 1, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 37 23 08",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "casaban clinica dental_carrer del mestre valls, 1, 1-2, camins al grau, 46022 valència, valencia, spain": {
+      "name": "Casaban Clinica Dental",
+      "address": "Carrer del Mestre Valls, 1, 1-2, Camins al Grau, 46022 València, Valencia, Spain",
+      "phone": "+34 665 66 64 65",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental dr. manuel monterde_av. de l'orxata, 20, 46120 alboraya, valencia, spain": {
+      "name": "Clinica Dental Dr. Manuel Monterde",
+      "address": "Av. de l'Orxata, 20, 46120 Alboraya, Valencia, Spain",
+      "phone": "+34 961 85 75 65",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental en calle murta 8 benimaclet, valencia doctor caruso_carrer de la murta, 8, benimaclet, 46020 valència, valencia, spain": {
+      "name": "CLINICA DENTAL EN CALLE MURTA 8 BENIMACLET, VALENCIA DOCTOR CARUSO",
+      "address": "Carrer de la Murta, 8, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 960 22 42 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica pitarch. odontología y estética dental y facial_c. del mestre aguilar, 10, bajo, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clínica Pitarch. Odontología y estética dental y facial",
+      "address": "C. del Mestre Aguilar, 10, bajo, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 685 24 92 09",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental fontanares_carrer de fontanars dels alforins, 3, patraix, 46007 valència, valencia, spain": {
+      "name": "Clinica Dental Fontanares",
+      "address": "Carrer de Fontanars dels Alforins, 3, Patraix, 46007 València, Valencia, Spain",
+      "phone": "+34 963 57 85 79",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "instituto médico zahrawi_pl. de l'ajuntament, 8, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Instituto Médico Zahrawi",
+      "address": "Pl. de l'Ajuntament, 8, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 10 61 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "targa dental clinic_carrer de ramiro de maeztu, 43, camins al grau, 46022 valència, valencia, spain": {
+      "name": "Targa Dental Clinic",
+      "address": "Carrer de Ramiro de Maeztu, 43, Camins al Grau, 46022 València, Valencia, Spain",
+      "phone": "+34 605 46 69 83",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental bordes-fuenmayor_c/ de pelai, 50, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Bordes-Fuenmayor",
+      "address": "C/ de Pelai, 50, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 42 34 98",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "serralta dental_c/ dels sants just i pastor, 27, algirós, 46021 valència, valencia, spain": {
+      "name": "Serralta Dental",
+      "address": "C/ dels Sants Just i Pastor, 27, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 963 62 20 00",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental palacio de las artes_av. del professor lópez piñero, 4, bajo a, quatre carreres, 46013 valència, valencia, spain": {
+      "name": "Clinica Dental Palacio de las Artes",
+      "address": "Av. del Professor López Piñero, 4, Bajo A, Quatre Carreres, 46013 València, Valencia, Spain",
+      "phone": "+34 606 64 55 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica médico estética dra. lisbey barreto_c/ de la pau, 23, entresuelo, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Clínica Médico Estética Dra. Lisbey Barreto",
+      "address": "C/ de la Pau, 23, entresuelo, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 672 11 09 42",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica sebastian - clínica estética valencia_c. de cervantes, 25, bajo, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Sebastian - Clínica Estética Valencia",
+      "address": "C. de Cervantes, 25, BAJO, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 626 10 95 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental charani campanar_av. de les corts valencianes, 10, benicalap, 46015 valència, valencia, spain": {
+      "name": "Clínica dental Charani Campanar",
+      "address": "Av. de les Corts Valencianes, 10, Benicalap, 46015 València, Valencia, Spain",
+      "phone": "+34 963 38 45 67",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dental clinic seoane-pampín_calle de diego de león, 16, salamanca, 28006 madrid, spain": {
+      "name": "Dental Clinic Seoane-Pampín",
+      "address": "Calle de Diego de León, 16, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 915 63 42 31",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental avalon_c. de ferraz, 35, loc, moncloa - aravaca, 28008 madrid, spain": {
+      "name": "Clínica Dental Avalon",
+      "address": "C. de Ferraz, 35, Loc, Moncloa - Aravaca, 28008 Madrid, Spain",
+      "phone": "+34 915 47 22 11",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental y odontología drs.ruiz de temiño_av. del papa negro, 107, hortaleza, 28043 madrid, spain": {
+      "name": "Clínica Dental y Odontología Drs.Ruiz de Temiño",
+      "address": "Av. del Papa Negro, 107, Hortaleza, 28043 Madrid, Spain",
+      "phone": "+34 915 55 15 14",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica eme_c/ de ponzano, 67, chamberí, 28003 madrid, spain": {
+      "name": "Clínica EME",
+      "address": "C/ de Ponzano, 67, Chamberí, 28003 Madrid, Spain",
+      "phone": "+34 913 99 01 87",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental bárcena_c. del marqués de urquijo, 10, moncloa - aravaca, 28008 madrid, spain": {
+      "name": "Clínica Dental Bárcena",
+      "address": "C. del Marqués de Urquijo, 10, Moncloa - Aravaca, 28008 Madrid, Spain",
+      "phone": "+34 915 41 91 06",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dental clinic smylife_c. de orense, 46, tetuán, 28020 madrid, spain": {
+      "name": "Dental Clinic Smylife",
+      "address": "C. de Orense, 46, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 914 44 80 37",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental vallejo & romeo_calle de garcía de paredes, 62, chamberí, 28010 madrid, spain": {
+      "name": "Clínica Dental Vallejo & Romeo",
+      "address": "Calle de García de Paredes, 62, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 47 88 76",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica dental dra. marcela rodríguez_c. de juan álvarez mendizábal, 60, moncloa - aravaca, 28008 madrid, spain": {
+      "name": "Clinica Dental Dra. Marcela Rodríguez",
+      "address": "C. de Juan Álvarez Mendizábal, 60, Moncloa - Aravaca, 28008 Madrid, Spain",
+      "phone": "+34 915 42 35 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "onlydent_p.º de extremadura, 113, centro, latina, 28011 madrid, spain": {
+      "name": "onlydent",
+      "address": "P.º de Extremadura, 113, centro, Latina, 28011 Madrid, Spain",
+      "phone": "+34 912 32 39 39",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dra. sandra solís gonzález, dentista_c. genista, 7, latina, 28011 madrid, spain": {
+      "name": "Dra. Sandra Solís González, Dentista",
+      "address": "C. Genista, 7, Latina, 28011 Madrid, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental dr ignacio mallagray_calle de maldonado, 43, salamanca, 28006 madrid, spain": {
+      "name": "Clínica Dental Dr Ignacio Mallagray",
+      "address": "Calle de Maldonado, 43, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 914 11 29 55",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "pereda y cerquella_calle de castelló, 95, salamanca, 28006 madrid, spain": {
+      "name": "Pereda y Cerquella",
+      "address": "Calle de Castelló, 95, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 914 35 55 90",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "centro odontológico lorenzo-juárez_c. alcalá, 145, salamanca, 28001 madrid, spain": {
+      "name": "Centro Odontológico Lorenzo-Juárez",
+      "address": "C. Alcalá, 145, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 917 81 71 61",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "alfredo saralegui calvo_calle de o'donnell, 8, retiro, 28009 madrid, spain": {
+      "name": "Alfredo Saralegui Calvo",
+      "address": "Calle de O'Donnell, 8, Retiro, 28009 Madrid, Spain",
+      "phone": "+34 914 35 72 37",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental dres escamilla-pérez_av. d'amado granell mesado, 26, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Dres Escamilla-Pérez",
+      "address": "Av. d'Amado Granell Mesado, 26, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 33 09 20",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dra. carla balaguer_carrer de misser mascó, 42, el llano del real, 46010 valència, valencia, spain": {
+      "name": "Dra. Carla Balaguer",
+      "address": "Carrer de Misser Mascó, 42, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 665 29 08 63",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental maria josé martí_av. de peris i valero, 32, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Maria José Martí",
+      "address": "Av. de Peris i Valero, 32, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 73 60 72",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "jorge ortega clínicas dentales_carrer de vilafermosa, 39, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Jorge Ortega Clínicas Dentales",
+      "address": "Carrer de Vilafermosa, 39, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 73 29 28",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental juan pedro quiles_c/ de dolores marqués, 20, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Clínica Dental Juan Pedro Quiles",
+      "address": "C/ de Dolores Marqués, 20, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 963 60 26 95",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental sagunto_c/ de sagunt, 162, escalera a, puerta 1 +🔔, la saïdia, 46009 valència, valencia, spain": {
+      "name": "Clínica Dental Sagunto",
+      "address": "C/ de Sagunt, 162, escalera A, puerta 1 +🔔, La Saïdia, 46009 València, Valencia, Spain",
+      "phone": "+34 963 66 72 41",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica fons badal_gran via de ferran el catòlic, 66-1º-1, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica Fons Badal",
+      "address": "Gran Via de Ferran el Catòlic, 66-1º-1, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 91 37 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica garcía martínez_nº69, c/ de guillem de castro, 46008 valència, valencia, spain": {
+      "name": "Clínica García Martínez",
+      "address": "nº69, C/ de Guillem de Castro, 46008 València, Valencia, Spain",
+      "phone": "+34 963 92 18 22",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dra. olga cubells izquierdo clinica dental_av. del primer de maig, 25, jesús, 46017 valència, valencia, spain": {
+      "name": "Dra. Olga Cubells Izquierdo Clinica Dental",
+      "address": "Av. del Primer de Maig, 25, Jesús, 46017 València, Valencia, Spain",
+      "phone": "+34 963 78 25 21",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental ramón gil_carrer de joan llorenç, 11, 5, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clinica Dental Ramón Gil",
+      "address": "Carrer de Joan Llorenç, 11, 5, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 82 09 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica milián_carrer de sant vicent màrtir, 102, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Milián",
+      "address": "Carrer de Sant Vicent Màrtir, 102, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 52 58 31",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental jorge gil_av. del primat reig, 94, el llano del real, 46010 valència, valencia, spain": {
+      "name": "Clinica dental Jorge Gil",
+      "address": "Av. del Primat Reig, 94, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 686 08 30 65",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica dental solano centro estetico solano_av. de joan xxiii, 1, piso 1, benicalap, 46025 valència, valencia, spain": {
+      "name": "CLINICA DENTAL SOLANO CENTRO ESTETICO SOLANO",
+      "address": "Av. de Joan XXIII, 1, Piso 1, Benicalap, 46025 València, Valencia, Spain",
+      "phone": "+34 963 40 84 84",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "julio pitarch clínicas dentales_c. del mestre aguilar, 10 bajo, ensanche, 46006 valència, valencia, spain": {
+      "name": "Julio Pitarch Clínicas Dentales",
+      "address": "C. del Mestre Aguilar, 10 bajo, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 34 51 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "guerrero hernandez_av. de frança, 8, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Guerrero Hernandez",
+      "address": "Av. de França, 8, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 30 71 02",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "covadonga balaguer ortodoncia_av. d'aragó, 38, el llano del real, 46021 valència, valencia, spain": {
+      "name": "Covadonga Balaguer Ortodoncia",
+      "address": "Av. d'Aragó, 38, El Llano del Real, 46021 València, Valencia, Spain",
+      "phone": "+34 963 69 76 76",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dr. pablo freitas gómez, dentista_carrer d'emili baró, nº 33, bajo, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Dr. Pablo Freitas Gómez, Dentista",
+      "address": "Carrer d'Emili Baró, nº 33, Bajo, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "ballester calabuig carmen_av. de l'oest, 26, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Ballester Calabuig Carmen",
+      "address": "Av. de l'Oest, 26, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 91 79 55",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dr. carlos aviñó mira, dentista_carrer de pizarro, 27, bajo, ensanche, 46004 valència, valencia, spain": {
+      "name": "Dr. Carlos Aviñó Mira, Dentista",
+      "address": "Carrer de Pizarro, 27, Bajo, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 94 07 70",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dr. joaquin riñón_avinguda del cardenal benlloch, 82, algirós, 46021 valència, valencia, spain": {
+      "name": "Dr. Joaquin Riñón",
+      "address": "Avinguda del Cardenal Benlloch, 82, Algirós, 46021 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "colegio profesional de higienistas dentales de la comunidad valenciana_c/ de gorgos, 15, algirós, 46021 valència, valencia, spain": {
+      "name": "Colegio Profesional de Higienistas Dentales de la Comunidad Valenciana",
+      "address": "C/ de Gorgos, 15, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 963 46 06 80",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "dra. yaneth parra parra, dentista_c/ de viver, 25, rascaña, 46020 valència, valencia, spain": {
+      "name": "Dra. Yaneth Parra Parra, Dentista",
+      "address": "C/ de Viver, 25, Rascaña, 46020 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "ingeniería dental sl_c/ de fray francisco cabezas, 20, rascaña, 46019 valència, valencia, spain": {
+      "name": "Ingeniería Dental SL",
+      "address": "C/ de Fray Francisco Cabezas, 20, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 963 29 59 83",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "salud dental silvia collada_c/ de cora raga, 6, benicalap, 46025 valència, valencia, spain": {
+      "name": "Salud Dental Silvia Collada",
+      "address": "C/ de Cora Raga, 6, Benicalap, 46025 València, Valencia, Spain",
+      "phone": "+34 963 65 01 37",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "mariella valladares, dentista_c/ de carles cervera, 12, bajo, ensanche, 46006 valència, valencia, spain": {
+      "name": "Mariella Valladares, Dentista",
+      "address": "C/ de Carles Cervera, 12, bajo, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "fernando gómez ferrer bayo_c/ del cronista carreres, 10, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Fernando Gómez Ferrer Bayo",
+      "address": "C/ del Cronista Carreres, 10, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 51 93 40",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "seven teeth s l_av. del cid, 40, bajo, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "Seven Teeth S L",
+      "address": "Av. del Cid, 40, bajo, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 963 82 67 27",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "santident clínica dental_av. de vicent mortes alfonso, 58, 46980 paterna, valencia, spain": {
+      "name": "Santident Clínica Dental",
+      "address": "Av. de Vicent Mortes Alfonso, 58, 46980 Paterna, Valencia, Spain",
+      "phone": "+34 961 02 25 33",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clinica sevilla ortodoncia invisible dra. pilar martin balbuena_": {
+      "name": "Clinica Sevilla Ortodoncia invisible Dra. Pilar Martin Balbuena",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "pablo lopez iturriaga, dentista_c. feria, 1, casco antiguo, 41003 sevilla, spain": {
+      "name": "Pablo Lopez Iturriaga, Dentista",
+      "address": "C. Feria, 1, Casco Antiguo, 41003 Sevilla, Spain",
+      "phone": "+34 954 22 77 77",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "jm sevilla dental_c. del corazón de maría, 70, 1º oficina 8, chamartín, 28002 madrid, spain": {
+      "name": "JM Sevilla Dental",
+      "address": "C. del Corazón de María, 70, 1º Oficina 8, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 654 31 16 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. ana menjívar galán, dentista_c. rafael salas gonzalez, sn, local 1b, 41010 sevilla, spain": {
+      "name": "Dra. Ana Menjívar Galán, Dentista",
+      "address": "C. Rafael Salas Gonzalez, sn, Local 1b, 41010 Sevilla, Spain",
+      "phone": "+34 954 33 44 45",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. elena cuello pereira, dentista_clinica pereira estética, av. eduardo dato, 28, 4ºb, 41005 sevilla, spain": {
+      "name": "Dra. Elena Cuello Pereira, Dentista",
+      "address": "Clinica Pereira Estética, Av. Eduardo Dato, 28, 4ºB, 41005 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica sevilla dental - clisedent, s.l.p._av. los pinos, 20, loc 5 y 6, 41089 montequinto, sevilla, spain": {
+      "name": "Clínica Sevilla Dental - CLISEDENT, S.L.P.",
+      "address": "Av. los Pinos, 20, Loc 5 y 6, 41089 Montequinto, Sevilla, Spain",
+      "phone": "+34 955 02 13 00",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "biocentro salud sevilla_c. el silencio, 5, casco antiguo, 41001 sevilla, spain": {
+      "name": "Biocentro Salud Sevilla",
+      "address": "C. el Silencio, 5, Casco Antiguo, 41001 Sevilla, Spain",
+      "phone": "+34 652 94 25 04",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. irene martinez nieto, dentista_c. gaspar alonso, 4, 41013 sevilla, spain": {
+      "name": "Dra. Irene Martinez Nieto, Dentista",
+      "address": "C. Gaspar Alonso, 4, 41013 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clinica dental manuel vizcaya_c. peñaflor, 1, 41010 sevilla, spain": {
+      "name": "Clinica Dental Manuel Vizcaya",
+      "address": "C. Peñaflor, 1, 41010 Sevilla, Spain",
+      "phone": "+34 954 33 10 35",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. ana contreras lópez, dentista_rda. de triana, 28, 41010 sevilla, spain": {
+      "name": "Dra. Ana Contreras López, Dentista",
+      "address": "Rda. de Triana, 28, 41010 Sevilla, Spain",
+      "phone": "+34 954 33 67 23",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "lobo & sariego clinica dental / montequinto_c. parís, 12, 41089 montequinto, sevilla, spain": {
+      "name": "Lobo & Sariego Clinica Dental / Montequinto",
+      "address": "C. París, 12, 41089 Montequinto, Sevilla, Spain",
+      "phone": "+34 954 12 24 62",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "andrés teran notario_c. adolfo cuéllar, 11, casco antiguo, 41001 sevilla, spain": {
+      "name": "Andrés Teran Notario",
+      "address": "C. Adolfo Cuéllar, 11, Casco Antiguo, 41001 Sevilla, Spain",
+      "phone": "+34 640 35 64 26",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dr. jose juan ruiz segura, dentista_calle alberche bloque 6b, local, 41005 sevilla, spain": {
+      "name": "Dr. Jose Juan Ruiz Segura, Dentista",
+      "address": "Calle Alberche Bloque 6B, Local, 41005 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "centro médico santa maría de gracia_c. sta. maría de gracia, 31, 1b, 41900 camas, sevilla, spain": {
+      "name": "Centro Médico Santa María de Gracia",
+      "address": "C. Sta. María de Gracia, 31, 1B, 41900 Camas, Sevilla, Spain",
+      "phone": "+34 672 46 65 51",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dra. rocio jarana boy, dentista_esperanza de la trinidad umero 4, local 8-9, 41008 sevilla, spain": {
+      "name": "Dra. Rocio Jarana Boy, Dentista",
+      "address": "esperanza de la trinidad umero 4, local 8-9, 41008 Sevilla, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "laboratorio de prótesis dental manuel peña capuz_c. martínez de medina, nº1, loc 1-3, 41018 sevilla, spain": {
+      "name": "Laboratorio de Prótesis Dental Manuel Peña Capuz",
+      "address": "C. Martínez de Medina, nº1, Loc 1-3, 41018 Sevilla, Spain",
+      "phone": "+34 954 53 82 26",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental dobleese - dentista en dos hermanas_c. la mina, 1, 41701 dos hermanas, sevilla, spain": {
+      "name": "Clínica Dental Dobleese - Dentista en Dos Hermanas",
+      "address": "C. la Mina, 1, 41701 Dos Hermanas, Sevilla, Spain",
+      "phone": "+34 954 05 41 20",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "neoimplant clinic madrid_av. de la reina victoria, 7, chamberí, 28003 madrid, spain": {
+      "name": "Neoimplant Clinic Madrid",
+      "address": "Av. de la Reina Victoria, 7, Chamberí, 28003 Madrid, Spain",
+      "phone": "+34 910 07 55 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dental implants pifer_c. de la infanta mercedes, 17, tetuán, 28020 madrid, spain": {
+      "name": "Dental implants PIFER",
+      "address": "C. de la Infanta Mercedes, 17, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 915 45 67 50",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantes dentales chamartín_calle del príncipe de vergara, 256, chamartín, 28016 madrid, spain": {
+      "name": "Implantes Dentales Chamartín",
+      "address": "Calle del Príncipe de Vergara, 256, Chamartín, 28016 Madrid, Spain",
+      "phone": "+34 919 93 10 21",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantarex_c. de lópez de hoyos, 474, hortaleza, 28043 madrid, spain": {
+      "name": "Implantarex",
+      "address": "C. de López de Hoyos, 474, Hortaleza, 28043 Madrid, Spain",
+      "phone": "+34 644 11 18 50",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantes dentales madrid | clínica dental dr. tomás hernán_c. de los morales, 10, carabanchel, 28054 madrid, spain": {
+      "name": "Implantes Dentales Madrid | Clínica Dental Dr. Tomás Hernán",
+      "address": "C. de los Morales, 10, Carabanchel, 28054 Madrid, Spain",
+      "phone": "+34 915 11 35 21",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantes dentales fuencarral_c. de pedro rico, 43, loc, fuencarral-el pardo, 28029 madrid, spain": {
+      "name": "Implantes Dentales Fuencarral",
+      "address": "C. de Pedro Rico, 43, Loc, Fuencarral-El Pardo, 28029 Madrid, Spain",
+      "phone": "+34 919 93 04 25",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "dental clinic near home_c. del rodio, 19, arganzuela, 28045 madrid, spain": {
+      "name": "Dental Clinic near home",
+      "address": "C. del Rodio, 19, Arganzuela, 28045 Madrid, Spain",
+      "phone": "+34 915 06 34 91",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica cima implantologia_c. de lópez de hoyos, 78, bajo b, chamartín, 28002 madrid, spain": {
+      "name": "Clinica Cima Implantologia",
+      "address": "C. de López de Hoyos, 78, Bajo B, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 618 57 78 26",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "periocentrum madrid_c. de la reina mercedes, 17, tetuán, 28020 madrid, spain": {
+      "name": "Periocentrum Madrid",
+      "address": "C. de la Reina Mercedes, 17, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 915 36 36 66",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantes dentales chamberí_c. de san bernardo, 108, chamberí, 28015 madrid, spain": {
+      "name": "Implantes Dentales Chamberí",
+      "address": "C. de San Bernardo, 108, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 919 93 14 10",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implantes dentales puerta de toledo_gran vía de san francisco, 9, loc, centro, 28005 madrid, spain": {
+      "name": "Implantes Dentales Puerta de Toledo",
+      "address": "Gran Vía de San Francisco, 9, Loc, Centro, 28005 Madrid, Spain",
+      "phone": "+34 915 55 88 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental ondental_calle del gral. ricardos, 93, carabanchel, 28019 madrid, spain": {
+      "name": "Clínica dental Ondental",
+      "address": "Calle del Gral. Ricardos, 93, Carabanchel, 28019 Madrid, Spain",
+      "phone": "+34 917 29 59 66",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "idea_plaza mariano de cavia, 1, retiro, 28007 madrid, spain": {
+      "name": "IDEA",
+      "address": "Plaza Mariano de Cavia, 1, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 669 56 44 36",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental odontocentrum moncloa. periodoncia e implantes madrid_c. de hilarión eslava, 28, bajo a, chamberí, 28015 madrid, spain": {
+      "name": "Clínica dental Odontocentrum Moncloa. Periodoncia e Implantes Madrid",
+      "address": "C. de Hilarión Eslava, 28, Bajo A, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 915 44 07 79",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica palma medicodental | implantología dental avanzada en madrid_c. del corazón de maría, 70, chamartín, 28002 madrid, spain": {
+      "name": "Clínica Palma Medicodental | Implantología Dental Avanzada en Madrid",
+      "address": "C. del Corazón de María, 70, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 914 56 76 30",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "bienestar dental_c. de sor ángela de la cruz, 41, tetuán, 28020 madrid, spain": {
+      "name": "Bienestar Dental",
+      "address": "C. de Sor Ángela de la Cruz, 41, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 910 74 82 45",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "instituto de implantología dental avanzada_p.º de marcelino camacho, 25, carabanchel, 28025 madrid, spain": {
+      "name": "Instituto De Implantología Dental Avanzada",
+      "address": "P.º de Marcelino Camacho, 25, Carabanchel, 28025 Madrid, Spain",
+      "phone": "+34 914 61 86 44",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental alós cortés | arganzuela madrid | delicias madrid_c. de tomás bretón, 9, arganzuela, 28045 madrid, spain": {
+      "name": "Clínica Dental Alós Cortés | Arganzuela Madrid | Delicias Madrid",
+      "address": "C. de Tomás Bretón, 9, Arganzuela, 28045 Madrid, Spain",
+      "phone": "+34 915 39 44 92",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica sada, clínica dental_calle velázquez, 55, 1,dch, salamanca, 28001 madrid, spain": {
+      "name": "Clínica Sada, Clínica Dental",
+      "address": "Calle Velázquez, 55, 1,DCH, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 915 76 05 08",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "ammonite centro oral, dental y maxilofacial (fuente del berro, madrid)_p.º del marqués de zafra, 31, salamanca, 28028 madrid, spain": {
+      "name": "Ammonite Centro Oral, Dental y Maxilofacial (Fuente del Berro, Madrid)",
+      "address": "P.º del Marqués de Zafra, 31, Salamanca, 28028 Madrid, Spain",
+      "phone": "+34 910 88 80 20",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica de implantologia oral_c. de josé alix alix, 18, 28830 san fernando de henares, madrid, spain": {
+      "name": "Clinica De Implantologia Oral",
+      "address": "C. de José Alix Alix, 18, 28830 San Fernando de Henares, Madrid, Spain",
+      "phone": "+34 601 04 06 92",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental crooke madrid fortuny_c. de fortuny, 51, planta 1, puerta 7, chamberí, 28010 madrid, spain": {
+      "name": "Clínica Dental Crooke Madrid Fortuny",
+      "address": "C. de Fortuny, 51, Planta 1, Puerta 7, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 919 46 40 44",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental cied_c. de espronceda, 19, loc 7, chamberí, 28003 madrid, spain": {
+      "name": "Clínica Dental CIED",
+      "address": "C. de Espronceda, 19, Loc 7, Chamberí, 28003 Madrid, Spain",
+      "phone": "+34 917 79 32 02",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental maqueda 11, ortodoncia invisible e implantes dentales en madrid_c. de maqueda, 11, bajo a, latina, 28024 madrid, spain": {
+      "name": "Clínica Dental Maqueda 11, Ortodoncia Invisible e Implantes Dentales en Madrid",
+      "address": "C. de Maqueda, 11, Bajo A, Latina, 28024 Madrid, Spain",
+      "phone": "+34 915 18 83 62",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clinica dental improdent_c. de ferraz, 67, moncloa - aravaca, 28008 madrid, spain": {
+      "name": "CLINICA DENTAL IMPRODENT",
+      "address": "C. de Ferraz, 67, Moncloa - Aravaca, 28008 Madrid, Spain",
+      "phone": "+34 915 43 34 34",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "best fit by dentis_calle del dr. fleming, 16, chamartín, 28036 madrid, spain": {
+      "name": "Best Fit by Dentis",
+      "address": "Calle del Dr. Fleming, 16, Chamartín, 28036 Madrid, Spain",
+      "phone": "+34 910 72 62 27",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "perio | oralis_paseo de s. fco. de sales, 10, chamberí, 28003 madrid, spain": {
+      "name": "PERIO | ORALIS",
+      "address": "Paseo de S. Fco. de Sales, 10, Chamberí, 28003 Madrid, Spain",
+      "phone": "+34 914 41 96 56",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "cliladent - clínica dental usera - implantes dentales_c. del olvido, 33, usera, 28026 madrid, spain": {
+      "name": "CLILADENT - Clínica Dental Usera - Implantes Dentales",
+      "address": "C. del Olvido, 33, Usera, 28026 Madrid, Spain",
+      "phone": "+34 915 00 02 99",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "lobato & brinkmann - clínica dental - madrid 28028_c/ de biarritz, 3, salamanca, 28028 madrid, spain": {
+      "name": "LOBATO & BRINKMANN - Clínica dental - Madrid 28028",
+      "address": "C/ de Biarritz, 3, Salamanca, 28028 Madrid, Spain",
+      "phone": "+34 911 37 69 88",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "clínica dental orthoquick_calle de fernández de la hoz, 58, 1º c, chamberí, 28010 madrid, spain": {
+      "name": "Clínica Dental Orthoquick",
+      "address": "Calle de Fernández de la Hoz, 58, 1º C, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 42 32 81",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "espacio dental & sedación consciente_c. de clara del rey, 27, chamartín, 28002 madrid, spain": {
+      "name": "Espacio Dental & Sedación consciente",
+      "address": "C. de Clara del Rey, 27, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 674 98 57 57",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "tu dentista dr.uson_c. de bravo murillo, 327, loc 10, tetuán, 28020 madrid, spain": {
+      "name": "Tu Dentista Dr.USON",
+      "address": "C. de Bravo Murillo, 327, Loc 10, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 918 27 71 04",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "spanish society of implants - sei_c. de orense, 51, tetuán, 28020 madrid, spain": {
+      "name": "Spanish Society of Implants - SEI",
+      "address": "C. de Orense, 51, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 915 55 09 50",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Madrid, España"
+    },
+    "implants realtime_av. del port, 54, camins al grau, 46023 valència, valencia, spain": {
+      "name": "IMPLANTS REALTIME",
+      "address": "Av. del Port, 54, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 37 46 79",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "malilla dental_carrer de joaquín benlloch, 43, quatre carreres, 46026 valència, valencia, spain": {
+      "name": "Malilla Dental",
+      "address": "Carrer de Joaquín Benlloch, 43, Quatre Carreres, 46026 València, Valencia, Spain",
+      "phone": "+34 653 93 11 74",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental llera , implantes dentales y ortodoncia_calle juan ramón jiménez, nº 40, primer piso, pª 2, 46026 valència, spain": {
+      "name": "Clínica Dental Llera , implantes dentales y ortodoncia",
+      "address": "Calle Juan Ramón Jiménez, Nº 40, PRIMER PISO, Pª 2, 46026 València, Spain",
+      "phone": "+34 963 74 59 72",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "implantes dentales_c/ d'enric navarro, 6, 1º, benimaclet, 46020 valència, valencia, spain": {
+      "name": "implantes dentales",
+      "address": "C/ d'Enric Navarro, 6, 1º, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 961 28 16 75",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. lorente (av. francia)_av. de frança, 20, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Clínica dental Dr. Lorente (Av. Francia)",
+      "address": "Av. de França, 20, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 31 27 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "alia espacio dental_carrer de torrent, 18, patraix, 46014 valència, valencia, spain": {
+      "name": "Alia Espacio Dental",
+      "address": "Carrer de Torrent, 18, Patraix, 46014 València, Valencia, Spain",
+      "phone": "+34 607 66 78 61",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "pascual camps - centro médico_plaça de nou moles, 4, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "PASCUAL CAMPS - Centro Médico",
+      "address": "Plaça de Nou Moles, 4, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 963 84 50 32",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "ziving badia salud dental infantil_carrer del comte de salvatierra, 13, ensanche, 46004 valència, valencia, spain": {
+      "name": "Ziving Badia salud dental infantil",
+      "address": "Carrer del Comte de Salvatierra, 13, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 51 87 88",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental gnadent_carrer de albalat dels tarongers, 10, algirós, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Gnadent",
+      "address": "Carrer de Albalat dels Tarongers, 10, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 678 64 72 92",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr lorenzo gonzález cueva_c/ del dr. manuel candela, 5, pta 1, camins al grau, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Dr Lorenzo González Cueva",
+      "address": "C/ del Dr. Manuel Candela, 5, pta 1, Camins al Grau, 46021 València, Valencia, Spain",
+      "phone": "+34 963 60 88 33",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica de implantologia_c. del mestre aguilar, l'eixample, 46006 valència, valencia, spain": {
+      "name": "Clínica de Implantologia",
+      "address": "C. del Mestre Aguilar, L'Eixample, 46006 València, Valencia, Spain",
+      "phone": "+34 612 58 02 28",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica lux valencia | clínica dental en la malvarrosa_av.de la malva-rosa, 23, poblats marítims, 46011 valència, valencia, spain": {
+      "name": "Clínica LUX Valencia | Clínica dental en la Malvarrosa",
+      "address": "Av.de la Malva-Rosa, 23, Poblats Marítims, 46011 València, Valencia, Spain",
+      "phone": "+34 963 26 89 72",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "antonio pérez poveda_carrer d'emili baró, 82, escalera 1, 1º, 3ª, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Antonio Pérez Poveda",
+      "address": "Carrer d'Emili Baró, 82, Escalera 1, 1º, 3ª, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 963 60 63 54",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. peset_carrer de martínez aloy, 4, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Peset",
+      "address": "Carrer de Martínez Aloy, 4, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 691 71 20 55",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental vitaldent_c/ del dr. manuel candela, 57, algirós, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C/ del Dr. Manuel Candela, 57, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 963 93 71 71",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "tossal dental: tu clínica dental en torrefiel, valencia_plaça del tossal del rei, 5, rascaña, 46019 valència, valencia, spain": {
+      "name": "Tossal Dental: Tu Clínica Dental en Torrefiel, Valencia",
+      "address": "Plaça del Tossal del Rei, 5, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 640 85 57 14",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental melgar anguix_c. del mestre sosa, 25, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Melgar Anguix",
+      "address": "C. del Mestre Sosa, 25, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 41 73 04",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental niurka arvelo jiménez_carrer del músic magenti, 9, bajo, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Clínica Dental Niurka Arvelo Jiménez",
+      "address": "Carrer del Músic Magenti, 9, BAJO, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 657 80 68 90",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental muñoz galiana_c/ de conca, 31, 2º drcha, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Muñoz Galiana",
+      "address": "C/ de Conca, 31, 2º drcha, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 84 58 37",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "s a s exclusivas dentales_av. de frança, 19, camins al grau, 46023 valència, valencia, spain": {
+      "name": "S A S Exclusivas Dentales",
+      "address": "Av. de França, 19, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 31 81 10",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "pérez giugovaz | odontología digital_carrer de colón, 14, entresuelo b, ensanche, 46004 valència, valencia, spain": {
+      "name": "Pérez Giugovaz | Odontología Digital",
+      "address": "Carrer de Colón, 14, Entresuelo B, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 634 69 61 26",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Valencia, España"
+    },
+    "clínica dental de castro_cardenal bueno monreal, 33, loc 2, 41013 sevilla, spain": {
+      "name": "Clínica Dental De Castro",
+      "address": "Cardenal Bueno Monreal, 33, Loc 2, 41013 Sevilla, Spain",
+      "phone": "+34 665 34 61 94",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "implansur dentistas_c. juan antonio cavestany, 6, loc a, 41018 sevilla, spain": {
+      "name": "Implansur DENTISTAS",
+      "address": "C. Juan Antonio Cavestany, 6, Loc A, 41018 Sevilla, Spain",
+      "phone": "+34 954 53 32 79",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "séptima dental - sevilla_c. gaspar alonso, 4, 41013 sevilla, spain": {
+      "name": "Séptima Dental - Sevilla",
+      "address": "C. Gaspar Alonso, 4, 41013 Sevilla, Spain",
+      "phone": "+34 954 23 14 62",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental santa justa - dentista en sevilla_av. de kansas city, 32, blq c, 1ºa, 41007 sevilla, spain": {
+      "name": "Clínica Dental Santa Justa - Dentista en Sevilla",
+      "address": "Av. de Kansas City, 32, Blq C, 1ºA, 41007 Sevilla, Spain",
+      "phone": "+34 954 57 11 46",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clinica dental bella smile sevilla_c. pintarroja, 2, planta 3 piso 6, norte, 41015 sevilla, spain": {
+      "name": "Clinica Dental Bella Smile Sevilla",
+      "address": "C. Pintarroja, 2, Planta 3 Piso 6, Norte, 41015 Sevilla, Spain",
+      "phone": "+34 624 08 17 66",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental | orthodontic área | sevilla_c. luis montoto, 92, 41007 sevilla, spain": {
+      "name": "Clínica Dental | Orthodontic Área | Sevilla",
+      "address": "C. Luis Montoto, 92, 41007 Sevilla, Spain",
+      "phone": "+34 954 98 04 93",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica rafael flores_c. julio césar, 8, bajo, casco antiguo, 41001 sevilla, spain": {
+      "name": "Clínica Rafael Flores",
+      "address": "C. Julio César, 8, bajo, Casco Antiguo, 41001 Sevilla, Spain",
+      "phone": "+34 954 22 94 49",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica centro sevilla_c. alfonso xii, 46, loc, casco antiguo, 41002 sevilla, spain": {
+      "name": "Clínica Centro Sevilla",
+      "address": "C. Alfonso XII, 46, Loc, Casco Antiguo, 41002 Sevilla, Spain",
+      "phone": "+34 954 56 16 25",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica patrodent - dra. ángela martín_c. marqués de paradas, 22, 1ºdcha, casco antiguo, 41001 sevilla, spain": {
+      "name": "Clínica Patrodent - Dra. Ángela Martín",
+      "address": "C. Marqués de Paradas, 22, 1ºdcha, Casco Antiguo, 41001 Sevilla, Spain",
+      "phone": "+34 618 24 51 51",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "neadontia - clínica dental sevilla_ctra. de carmona, 6, local 9, 41008 sevilla, spain": {
+      "name": "Neadontia - Clínica Dental Sevilla",
+      "address": "Ctra. de Carmona, 6, Local 9, 41008 Sevilla, Spain",
+      "phone": "+34 649 99 80 89",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental vitaldent_c. telegrafistas, 24, norte, 41015 sevilla, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C. Telegrafistas, 24, Norte, 41015 Sevilla, Spain",
+      "phone": "+34 954 97 51 09",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dentalpasca_c/ marqués del nervión, 30, 41005 sevilla, spain": {
+      "name": "Clínica Dentalpasca",
+      "address": "C/ Marqués del Nervión, 30, 41005 Sevilla, Spain",
+      "phone": "+34 640 13 46 21",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental pablo carnerero - sevilla_c/ de león xiii, 5, loc e, 41009 sevilla, spain": {
+      "name": "Clínica Dental Pablo Carnerero - Sevilla",
+      "address": "C/ de León XIII, 5, Loc E, 41009 Sevilla, Spain",
+      "phone": "+34 954 41 57 56",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental en los remedios | manuel domínguez andújar_av. flota de indias, 24, 2ºb, 41011 sevilla, spain": {
+      "name": "Clínica dental en Los Remedios | Manuel Domínguez Andújar",
+      "address": "Av. Flota de Indias, 24, 2ºB, 41011 Sevilla, Spain",
+      "phone": "+34 954 45 25 39",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "imoa clínica dental_c. chaves nogales, 3, loc, 41018 sevilla, spain": {
+      "name": "IMOA Clínica Dental",
+      "address": "C. Chaves Nogales, 3, Loc, 41018 Sevilla, Spain",
+      "phone": "+34 854 88 76 50",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "sevilladental.net clínica dental - dentista urgencias 24h_c. reyes católicos, 15, bajo, casco antiguo, 41001 sevilla, spain": {
+      "name": "SevillaDental.Net Clínica Dental - Dentista Urgencias 24h",
+      "address": "C. Reyes Católicos, 15, Bajo, Casco Antiguo, 41001 Sevilla, Spain",
+      "phone": "+34 954 21 12 26",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "demax clinic | odontología y cirugía maxilofacial_c. benito mas y prat, 6, loc 5, 41005 sevilla, spain": {
+      "name": "Demax Clinic | Odontología y Cirugía Maxilofacial",
+      "address": "C. Benito Mas y Prat, 6, Loc 5, 41005 Sevilla, Spain",
+      "phone": "+34 955 60 48 17",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental castellanos_av. de ramón y cajal, 62, 41005 sevilla, spain": {
+      "name": "Clínica Dental Castellanos",
+      "address": "Av. de Ramón y Cajal, 62, 41005 Sevilla, Spain",
+      "phone": "+34 954 63 51 36",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental méndez millán_c. fray isidoro de sevilla, nº12, loc 1, 41009 sevilla, spain": {
+      "name": "Clínica Dental Méndez Millán",
+      "address": "C. Fray Isidoro de Sevilla, Nº12, Loc 1, 41009 Sevilla, Spain",
+      "phone": "+34 955 42 53 75",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental ruiz & aguilar_c. estrella canopus, 25, norte, 41015 sevilla, spain": {
+      "name": "Clínica Dental Ruiz & Aguilar",
+      "address": "C. Estrella Canopus, 25, Norte, 41015 Sevilla, Spain",
+      "phone": "+34 692 00 69 27",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica asisa dental sevilla_av. de la república argentina, 35-37, 41011 sevilla, spain": {
+      "name": "Clínica ASISA Dental Sevilla",
+      "address": "Av. de la República Argentina, 35-37, 41011 Sevilla, Spain",
+      "phone": "+34 954 99 04 88",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dental clinic dr. calvo_av. de ramón y cajal, 20, 41005 sevilla, spain": {
+      "name": "Dental Clinic Dr. Calvo",
+      "address": "Av. de Ramón y Cajal, 20, 41005 Sevilla, Spain",
+      "phone": "+34 954 65 60 70",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental amelar sevilla este_centro médico quirón, avenida de las ciencias (esq, av. médicos sin frontera, 41020 sevilla, spain": {
+      "name": "Clínica Dental Amelar Sevilla Este",
+      "address": "Centro Médico Quirón, Avenida de las Ciencias (esq, Av. Médicos sin Frontera, 41020 Sevilla, Spain",
+      "phone": "+34 649 74 60 56",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clinica dental pureza dr. ángel martínez-sahuquillo márquez_c. pureza, 12, loc, 41010 sevilla, spain": {
+      "name": "Clinica Dental Pureza Dr. Ángel Martínez-Sahuquillo Márquez",
+      "address": "C. Pureza, 12, Loc, 41010 Sevilla, Spain",
+      "phone": "+34 954 34 18 58",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental periodent_c. luis montoto, 105, 41007 sevilla, spain": {
+      "name": "Clínica dental periodent",
+      "address": "C. Luis Montoto, 105, 41007 Sevilla, Spain",
+      "phone": "+34 954 58 08 49",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "ugarte dental_c. maría auxiliadora, 41, loc izq, casco antiguo, 41003 sevilla, spain": {
+      "name": "UGARTE DENTAL",
+      "address": "C. María Auxiliadora, 41, Loc Izq, Casco Antiguo, 41003 Sevilla, Spain",
+      "phone": "+34 693 05 47 38",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental victoria kent sevilla norte_c. victoria kent, 5, loc 8 b, 41008 sevilla, spain": {
+      "name": "Clínica Dental Victoria Kent Sevilla Norte",
+      "address": "C. Victoria Kent, 5, Loc 8 B, 41008 Sevilla, Spain",
+      "phone": "+34 601 10 59 69",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "sevilla dental. bermejales_c/ colonia, av. del reino unido, 14, loc (esquina, 41012 sevilla, spain": {
+      "name": "Sevilla Dental. Bermejales",
+      "address": "C/ Colonia, Av. del Reino Unido, 14, Loc (Esquina, 41012 Sevilla, Spain",
+      "phone": "+34 954 23 48 41",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "ziving ortodoncia sevilla_av. de la república argentina, 19, 41011 sevilla, spain": {
+      "name": "Ziving Ortodoncia Sevilla",
+      "address": "Av. de la República Argentina, 19, 41011 Sevilla, Spain",
+      "phone": "+34 954 27 36 62",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental portaceli dental m & r_av. eduardo dato, 43, edif lisboa, bajo comercial, 41018 sevilla, spain": {
+      "name": "Clínica Dental Portaceli Dental M & R",
+      "address": "Av. Eduardo Dato, 43, Edif Lisboa, bajo comercial, 41018 Sevilla, Spain",
+      "phone": "+34 954 41 78 78",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental fátima pozo_c. manuel ramón alarcón, 2, loc, 41007 sevilla, spain": {
+      "name": "CLÍNICA DENTAL FÁTIMA POZO",
+      "address": "C. Manuel Ramón Alarcón, 2, Loc, 41007 Sevilla, Spain",
+      "phone": "+34 954 58 37 65",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "smilove dental_c. arroyo, 53, loc 1, 41008 sevilla, spain": {
+      "name": "Smilove Dental",
+      "address": "C. Arroyo, 53, Loc 1, 41008 Sevilla, Spain",
+      "phone": "+34 623 02 17 05",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental implantsite | odontología avanzada | dos hermanas_av. de españa, 110, loc i, 41704 dos hermanas, sevilla, spain": {
+      "name": "Clínica Dental Implantsite | Odontología Avanzada | Dos Hermanas",
+      "address": "Av. de España, 110, Loc I, 41704 Dos Hermanas, Sevilla, Spain",
+      "phone": "+34 620 48 10 58",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "molina clínica dental_av. de pino montano, 20, 41008 sevilla, spain": {
+      "name": "Molina Clínica Dental",
+      "address": "Av. de Pino Montano, 20, 41008 Sevilla, Spain",
+      "phone": "+34 954 36 14 02",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "live dental_c. cueva de menga, 3, 41020 sevilla, spain": {
+      "name": "LIVE DENTAL",
+      "address": "C. Cueva de Menga, 3, 41020 Sevilla, Spain",
+      "phone": "+34 640 18 27 43",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dental mayorga, slp_rda. de capuchinos, 8, casco antiguo, 41003 sevilla, spain": {
+      "name": "DENTAL MAYORGA, SLP",
+      "address": "Rda. de Capuchinos, 8, Casco Antiguo, 41003 Sevilla, Spain",
+      "phone": "+34 692 13 84 85",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental bell | dos hermanas_av. de españa, 112, 41702 dos hermanas, sevilla, spain": {
+      "name": "Clínica Dental Bell | Dos Hermanas",
+      "address": "Av. de España, 112, 41702 Dos Hermanas, Sevilla, Spain",
+      "phone": "+34 955 32 01 08",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clinica bonidental_rda. de capuchinos, 21, 3h, 41008 sevilla, spain": {
+      "name": "Clinica Bonidental",
+      "address": "Rda. de Capuchinos, 21, 3H, 41008 Sevilla, Spain",
+      "phone": "+34 954 36 16 77",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "dentist tomares cleardent implantes dentales_c. navarro caro, 27, 41940 tomares, sevilla, spain": {
+      "name": "Dentist Tomares Cleardent Implantes dentales",
+      "address": "C. Navarro Caro, 27, 41940 Tomares, Sevilla, Spain",
+      "phone": "+34 954 05 63 48",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "macrodental s.l._c. juglar, 3a, loc 31, 41018 sevilla, spain": {
+      "name": "Macrodental S.L.",
+      "address": "C. Juglar, 3A, LOC 31, 41018 Sevilla, Spain",
+      "phone": "+34 954 92 01 72",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "calidental_av. de la sabiduría, 15, 41927 mairena del aljarafe, sevilla, spain": {
+      "name": "Calidental",
+      "address": "Av. de la Sabiduría, 15, 41927 Mairena del Aljarafe, Sevilla, Spain",
+      "phone": "+34 954 58 64 64",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental navegalia sevilla_c. pdte. cárdenas, 6, 41013 sevilla, spain": {
+      "name": "CLÍNICA DENTAL NAVEGALIA SEVILLA",
+      "address": "C. Pdte. Cárdenas, 6, 41013 Sevilla, Spain",
+      "phone": "+34 954 62 14 62",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
+    },
+    "clínica dental calidental: oficina de administración_c/ de león xiii, 40, 41009 sevilla, spain": {
+      "name": "Clínica dental Calidental: Oficina de Administración",
+      "address": "C/ de León XIII, 40, 41009 Sevilla, Spain",
+      "phone": "+34 615 17 44 59",
+      "scrapedAt": "2026-07-11T17:00:12.280Z",
+      "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
+      "location": "Sevilla, España"
     }
   },
   "searches": [
@@ -69378,6 +71208,17 @@
       "timestamp": "2026-07-11T16:16:39.456Z",
       "newFound": 261,
       "duplicatesSkipped": 569
+    },
+    {
+      "query": "clinica dental | odontologo | estetica dental | dentista | implantes dentales",
+      "locations": [
+        "Madrid, España",
+        "Valencia, España",
+        "Sevilla, España"
+      ],
+      "timestamp": "2026-07-11T17:00:12.280Z",
+      "newFound": 229,
+      "duplicatesSkipped": 527
     }
   ],
   "lastPages": {
@@ -69509,21 +71350,21 @@
     "consultorio odontologico_san josé, costa rica": 5,
     "dentista_san josé, costa rica": 5,
     "estetica dental_monterrey, méxico": 10,
-    "odontologo_madrid, españa": 10,
-    "estetica dental_madrid, españa": 10,
+    "odontologo_madrid, españa": 13,
+    "estetica dental_madrid, españa": 11,
     "consultorio odontologico_madrid, españa": 10,
-    "dentista_madrid, españa": 10,
+    "dentista_madrid, españa": 14,
     "odontologo_barcelona, españa": 5,
     "clinica dental_valencia, españa": 12,
-    "odontologo_valencia, españa": 5,
-    "estetica dental_valencia, españa": 5,
+    "odontologo_valencia, españa": 10,
+    "estetica dental_valencia, españa": 10,
     "consultorio odontologico_valencia, españa": 5,
-    "dentista_valencia, españa": 5,
-    "clinica dental_sevilla, españa": 10,
-    "odontologo_sevilla, españa": 10,
+    "dentista_valencia, españa": 14,
+    "clinica dental_sevilla, españa": 12,
+    "odontologo_sevilla, españa": 11,
     "estetica dental_sevilla, españa": 10,
     "consultorio odontologico_sevilla, españa": 10,
-    "dentista_sevilla, españa": 10,
+    "dentista_sevilla, españa": 12,
     "med spa_miami, estados unidos": 1,
     "plastic surgery clinic_calgary, canadá": 10,
     "medical aesthetics clinic_calgary, canadá": 10,
@@ -69535,6 +71376,9 @@
     "odontologos_valencia, españa": 12,
     "dentistas_madrid, españa": 14,
     "dentistas_barcelona, españa": 14,
-    "dentistas_valencia, españa": 13
+    "dentistas_valencia, españa": 13,
+    "implantes dentales_madrid, españa": 10,
+    "implantes dentales_valencia, españa": 9,
+    "implantes dentales_sevilla, españa": 10
   }
 }
