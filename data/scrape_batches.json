@@ -95747,7 +95747,38 @@
           "alreadyScraped": false
         }
       ],
-      "sentToSetter": null,
+      "sentToSetter": {
+        "setterId": "multi",
+        "setterIds": [
+          "setter_judith_mendez",
+          "setter_roxana_cabaleiro",
+          "setter_nadine_tortonese"
+        ],
+        "sentAt": "2026-07-11T16:51:42.074Z",
+        "sentBy": "Ignacio",
+        "imported": 252,
+        "skipped": 9,
+        "distribution": [
+          {
+            "setterId": "setter_judith_mendez",
+            "setterName": "Judith Mendez",
+            "imported": 81,
+            "skipped": 6
+          },
+          {
+            "setterId": "setter_roxana_cabaleiro",
+            "setterName": "Roxana Cabaleiro",
+            "imported": 86,
+            "skipped": 1
+          },
+          {
+            "setterId": "setter_nadine_tortonese",
+            "setterName": "Nadine Tortonese",
+            "imported": 85,
+            "skipped": 2
+          }
+        ]
+      },
       "enrichmentStatus": "none"
     }
   ]
