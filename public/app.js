@@ -4849,6 +4849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
+          <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
           <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
         </div>`;
       }).join('');
@@ -4862,6 +4863,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${leads.length ? rows : '<div class="hoy-empty">Sin pendientes.</div>'}
       </div>`;
     }
+    // Ficha completa del lead desde Hoy (2026-07-10, pedido del user): reutiliza
+    // el MISMO panel expandido de la lista de Llamadas (_callsRenderExpandedPanel)
+    // en un modal. Los controles internos (notas, pre-call, contacto alt, etc.)
+    // operan por leadId → funcionan igual desde acá.
+    window._hoyOpenFicha = function(leadId) {
+      const l = _callsLeadsById.get(leadId);
+      if (!l) { window.showToast?.('No encontré la ficha de este lead — recargá la vista.', { type: 'error' }); return; }
+      document.getElementById('hoy-ficha-modal')?.remove();
+      const ov = document.createElement('div');
+      ov.id = 'hoy-ficha-modal';
+      ov.className = 'modal-overlay';
+      ov.style.cssText = 'display:flex; align-items:center; justify-content:center; z-index:1200;';
+      ov.innerHTML = `<div class="modal-card" style="max-width:880px; width:min(94vw,880px); max-height:88vh; display:flex; flex-direction:column;">
+        <div class="modal-header">
+          <h3 style="display:flex; align-items:center; gap:8px; min-width:0;">${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name || '(sin nombre)')}</span></h3>
+          <button class="modal-close-btn" onclick="document.getElementById('hoy-ficha-modal')?.remove()">×</button>
+        </div>
+        <div class="modal-body" style="overflow-y:auto; padding-top:6px;">${_callsRenderExpandedPanel(l)}</div>
+      </div>`;
+      ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+      const escClose = (e) => { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', escClose); } };
+      document.addEventListener('keydown', escClose);
+      document.body.appendChild(ov);
+    };
+
     // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
     // los nuevos se trabajan en Llamadas/Power Dialer, ya ordenados por prioridad.
     function _hoyNewLeadsPointer(count) {
@@ -5193,16 +5219,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       ));
       // Toggle "Pauta en ads": solo leads con señal de inversión en marketing.
       if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
-      leads = leads.filter(l => !['descartado','agendado'].includes(l.estado));
+      // 2026-07-10: los interesados tampoco entran al dialer — se agendan desde "Hoy".
+      leads = leads.filter(l => !['descartado','agendado','interesado'].includes(l.estado));
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
+      // 2026-07-10: los callbacks MANUALES tampoco — se llaman desde "Hoy" el día que tocan.
+      leads = leads.filter(l => {
+        const last = Array.isArray(l.callLog) && l.callLog.length ? l.callLog[l.callLog.length - 1].outcome : null;
+        return last !== 'callback_later';
+      });
       // 2026-07-07: los "no interesado" reciclados NO entran al dialer. El reciclaje
       // del pool los reseteó a sin_contactar conservando el callLog, así que se
       // colaban con su última llamada diciendo "No interesado". Se detectan por
       // recontactPriority=4 (tier estampado al reciclar) o por la última entry del
-      // callLog. Excepción: si alguien los re-trabajó (interesado / callback vencido),
-      // vuelven a ser elegibles. En la LISTA de Llamadas siguen visibles.
+      // callLog. Excepción: callback vencido re-trabajado vuelve a ser elegible.
       leads = leads.filter(l => {
-        if (l.estado === 'interesado') return true;
         if (l.callbackAt && new Date(l.callbackAt).getTime() <= now) return true;
         if (l.recontactPriority === 4) return false;
         const lastCall = Array.isArray(l.callLog) && l.callLog.length ? l.callLog[l.callLog.length - 1] : null;
@@ -6582,15 +6612,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const showDncView = document.getElementById('calls-show-dnc')?.checked;
       if (!showDncView) {
         const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
-        const hiddenStates = showDiscarded ? ['agendado'] : ['descartado','agendado'];
+        // 2026-07-10 (pedido del user): los INTERESADOS no viven en Llamadas —
+        // se trabajan desde "Hoy" (sección Interesados sin agendar). Llamadas
+        // queda para lo nuevo + seguimiento de no-contacto.
+        const hiddenStates = showDiscarded ? ['agendado','interesado'] : ['descartado','agendado','interesado'];
         leads = leads.filter(l => !hiddenStates.includes(l.estado));
       }
 
-      // "Para seguir": cola de seguimiento = callbacks vencidos + leads cuyo
-      // último resultado fue "Me cortó"/"No atendió"/"Buzón" (re-llamables).
+      // "Para seguir": cola de seguimiento = reintentos automáticos vencidos +
+      // leads cuyo último resultado fue "Me cortó"/"No atendió"/"Buzón".
       const FOLLOW_OUTCOMES = new Set(['hung_up', 'no_answer', 'voicemail']);
       const _lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
       const _isDueCallback = (l) => l.callbackAt && new Date(l.callbackAt).getTime() <= now;
+      // 2026-07-10 (pedido del user): los callbacks MANUALES ("volver a llamar")
+      // no viven en Llamadas — aparecen en Hoy el día que tocan. Acá solo quedan
+      // nuevos + reintentos automáticos de no-contacto. Excepción: click desde la
+      // agenda (_callsForceShow) sigue mostrando el lead puntual.
+      if (!showDncView) {
+        leads = leads.filter(l => _callsForceShow.has(l.id) || _lastOutcome(l) !== 'callback_later');
+      }
       if (sortMode === 'follow_up') {
         leads = leads.filter(l => _isDueCallback(l) || FOLLOW_OUTCOMES.has(_lastOutcome(l)));
       }
@@ -6718,10 +6758,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             callbackBadge = `<span style="font-size:10px; color:var(--info, #5BA3F2); background:rgba(91,163,242,0.12); padding:2px 7px; border-radius:6px;">${cbLabel}</span>`;
           }
         }
-        // Phase 17 Ola 2: indicador de callback compartido.
-        if (l.callbackShared && l.callbackAt) {
-          callbackBadge += ` <span style="font-size:10px; color:#7DD3FC; background:rgba(125,211,252,0.12); border:1px solid rgba(125,211,252,0.3); padding:2px 7px; border-radius:6px;" title="Callback compartido — cualquier setter lo puede tomar">compartido</span>`;
-        }
+        // 2026-07-10: chip "compartido" removido junto con el checkbox — los leads
+        // no se comparten entre SDRs (el backend conserva el soporte por si vuelve).
         // Phase 17 Ola 3: indicador de auto-reintento (cadencia).
         if (l.cadenceStep > 0 && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()) {
           callbackBadge += ` <span style="font-size:10px; color:#FFB341; background:rgba(255,179,65,0.10); padding:2px 6px; border-radius:6px;" title="Reintento automático programado por cadencia (no atendió)">auto #${l.cadenceStep}</span>`;
@@ -6731,7 +6769,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isDiscarded = l.estado === 'descartado';
         let cardBorder = interesado ? 'border-left:4px solid var(--success);' : '';
         if (isDiscarded) cardBorder = 'border-left:4px solid var(--text-tertiary); opacity:0.65;';
-        const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">INTERESADO — agendar con Ignacio</span>' : '';
+        const interesadoBadge = interesado ? '<span style="background:var(--success-soft); color:var(--success); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">INTERESADO — agendar reunión</span>' : '';
         const discardedBadge = isDiscarded ? `<span style="background:rgba(255,255,255,0.05); color:var(--text-tertiary); padding:2px 8px; border-radius:8px; font-size:10px; font-weight:600; letter-spacing:0.3px;">DESCARTADO${l.interes === 'no' ? ' (no interesado)' : l.phoneStatus === 'wrong' ? ' (número equivocado)' : l.phoneStatus === 'invalid' ? ' (no existe)' : ''}</span>` : '';
 
         const isSelected = _callsSelected.has(l.id);
@@ -6783,9 +6821,10 @@ document.addEventListener('DOMContentLoaded', async () => {
               const daysAgo = Math.floor(hoursAgo / 24);
               if (hoursAgo < 24) {
                 cooldownWarn = `title="⚠️ Lo llamaste hace ${Math.round(hoursAgo)}h — esperá 24h+ para no quemar. Click igual si querés." `;
-                lastBadge = `<span style="font-size:9px; color:#FFB341; background:rgba(255,179,65,0.15); border:1px solid rgba(255,179,65,0.35); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${Math.round(hoursAgo)}h</span>`;
+                // Pill oscura: el chip va DENTRO del botón verde — ámbar sobre verde era ilegible.
+                lastBadge = `<span style="font-size:9.5px; color:#FFFFFF; background:rgba(15,17,21,0.45); padding:2px 7px; border-radius:999px; margin-left:2px; font-weight:600;">hace ${Math.round(hoursAgo)}h</span>`;
               } else if (daysAgo < 7) {
-                lastBadge = `<span style="font-size:9px; color:rgba(255,255,255,0.5); background:rgba(255,255,255,0.05); padding:1px 5px; border-radius:4px; margin-left:6px;">hace ${daysAgo}d</span>`;
+                lastBadge = `<span style="font-size:9.5px; color:rgba(255,255,255,0.85); background:rgba(15,17,21,0.3); padding:2px 7px; border-radius:999px; margin-left:2px;">hace ${daysAgo}d</span>`;
               }
             }
             // Sin número en el tooltip (2026-07-10, pedido del user): el teléfono del
@@ -8203,9 +8242,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Default: mañana 10am hora local
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
       fechaInput.value = _toDatetimeLocal(m);
-      // Phase 17 Ola 2: reset checkbox "compartido" al abrir.
-      const _cbShared = document.getElementById('call-cb-shared');
-      if (_cbShared) _cbShared.checked = false;
+      // 2026-07-10: el checkbox "compartido" se removió del HTML (los leads no se
+      // comparten entre SDRs). El read de abajo usa ?.checked → siempre false.
 
       // Sprint 23: render quick-picks. Calculados al abrir el modal así
       // siempre son relativos a "ahora" (no se cachean stale).
@@ -16063,7 +16101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li><strong>Power Dialer</strong> (recomendado): te va pasando lead por lead, sin distracciones. Es donde más volumen hacés.</li>
           <li><strong>Lista:</strong> para buscar un lead puntual o revisar. Cada card muestra señales del negocio (sin web, pocas reseñas, corre anuncios…), el <strong>💡 ángulo sugerido</strong> para abrir la llamada, y la <strong>hora local</strong> del lead.</li>
         </ol>
-        <p>Arriba: buscador + selector de orden — <strong>🎯 Prioridad</strong> (mejor a llamar primero), <strong>Para seguir</strong> (tu cola de seguimiento del día: callbacks vencidos + cortados), Nunca llamados, etc.</p>
+        <p>Arriba: buscador + selector de orden — <strong>🎯 Prioridad</strong> (mejor a llamar primero), <strong>Para seguir</strong> (reintentos automáticos + cortados), Nunca llamados, etc. Los <strong>interesados</strong> y tus <strong>callbacks</strong> no están acá: se trabajan desde Hoy.</p>
         <p>Cada card tiene una <strong>nota pre-llamada</strong>: escribí ahí tu ángulo o contexto ANTES de discar — la ves durante la llamada.</p>
         <div class="guide-callout">Respetá la <strong>hora local</strong> del lead (chip 🕐 en la card). Llamar fuera de horario hábil quema el lead.</div>`,
         goto: { target: 'view-calls', label: 'Ir a Llamadas' }
@@ -16105,7 +16143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <p>Antes de marcar podés escribir una <strong>nota</strong> de la llamada (tecla N) — queda en el historial del lead.</p>
         <ul>
           <li><strong>"No interesado"</strong> te pide la razón (no es el decisor, ya tiene proveedor, etc.). Si te pide que no lo llamen más, tildá <strong>🚫 No-llamar</strong> — sale de todas las colas para siempre.</li>
-          <li><strong>"Volver a llamar"</strong>: elegí fecha/hora y reaparece solo ese día en Hoy. Si cualquiera del equipo puede tomarlo, tildá <strong>🔁 compartido</strong>.</li>
+          <li><strong>"Volver a llamar"</strong>: elegí fecha/hora y el lead desaparece de Llamadas — reaparece en <strong>Hoy</strong> el día que toca, como callback.</li>
           <li><strong>"No atendió" / "Buzón"</strong>: el sistema lo reintenta solo <strong>una vez a las 24h</strong>. Si tampoco atiende la segunda, se descarta automático — no gastes llamadas en números muertos.</li>
         </ul>
         <div class="guide-callout"><strong>Marcá SIEMPRE el resultado.</strong> De ahí salen tu funnel, tus métricas y la cola del día siguiente. Llamada sin marcar = llamada que no existió.</div>`
