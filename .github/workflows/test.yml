@@ -1,12 +1,16 @@
 name: Tests
 
 # Audit 2026-06-20: antes nada corría los tests solo. Esto los corre en cada push
-# a main/master y en cada PR → te avisa si algo rompe ANTES de que Railway deploye.
+# y en cada PR → te avisa si algo rompe ANTES de que Railway deploye.
+# 2026-07-11: solo main (master es espejo del mismo commit → corría todo DOBLE y
+# duplicaba los mails de "Run failed"). TZ alineada a la zona de negocio: los
+# tests con aserciones de "hoy/ayer" fallaban en el runner (UTC) cuando el push
+# era de noche en AR — cerca de la medianoche UTC los buckets de día difieren.
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
-    branches: [main, master]
+    branches: [main]
 
 jobs:
   test:
@@ -21,3 +25,4 @@ jobs:
       - run: npm test
         env:
           NODE_ENV: test
+          TZ: America/Argentina/Buenos_Aires

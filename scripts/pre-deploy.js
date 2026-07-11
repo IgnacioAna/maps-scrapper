@@ -166,6 +166,9 @@ async function main() {
     ['telnyxEvents', 'telnyx_events.json'],
     ['callScripts', 'call_scripts.json'],
     ['scheduledMessages', 'scheduled_messages.json'],
+    // Audit scraper 2026-07-11: los batches son leads ya PAGADOS con créditos
+    // SerpAPI — sin esto, un container nuevo de Railway los perdía.
+    ['scrapeBatches', 'scrape_batches.json'],
   ];
   for (const [key, fname] of extras) {
     saveFile(fname, data[key]);

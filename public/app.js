@@ -952,6 +952,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         debounceTimer = setTimeout(suggestPage, 500);
     });
 
+    // Auto-continuar ON → el campo "Desde Pág" se ignora (cada combo sigue solo).
+    // Lo atenuamos para que se entienda; destildar lo re-habilita (modo manual).
+    const _autoContChk = document.getElementById('scrape-auto-continue');
+    const _syncStartPageState = () => {
+      if (!startPageInput || !_autoContChk) return;
+      startPageInput.disabled = _autoContChk.checked;
+      startPageInput.style.opacity = _autoContChk.checked ? '0.45' : '';
+    };
+    _autoContChk?.addEventListener('change', _syncStartPageState);
+    _syncStartPageState();
+
     if (currentUser?.role === 'admin') loadHistoryStats();
 
     async function loadHistoryStats() {
@@ -1433,10 +1444,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       tbody.innerHTML = `<tr><td colspan="6" class="empty-state">Buscando ${keywordLabel} en ${locationCount} ubicación(es) (Pág ${startPage})...</td></tr>`;
       
       try {
+        // Auto-continuar (2026-07-11): cada combo keyword×ciudad sigue desde su
+        // propia última página barrida (history.lastPages) — el campo "Desde Pág"
+        // se ignora en ese modo. Destildado = comportamiento manual histórico.
+        const autoContinue = !!document.getElementById('scrape-auto-continue')?.checked;
         const response = await fetch(apiUrl('/api/scrape'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query, location, maxPages, startPage })
+          body: JSON.stringify({ query, location, maxPages, startPage, autoContinue })
         });
   
         const data = await response.json();
@@ -1477,6 +1492,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (data.hasMoreResults) {
           spans.push(`<span class="text-primary">MÁS leads disp. (Sube la página)</span>`);
+        }
+        // Auto-continuar: mostrar desde qué página siguió cada búsqueda×ciudad
+        if (data.autoContinue && Array.isArray(data.continuedFrom) && data.continuedFrom.length) {
+          const parts = data.continuedFrom.slice(0, 4).map(c => `${escHtml(c.query)}@${escHtml(c.location || 'sin ciudad')} p.${c.fromPage}-${c.toPage}`);
+          const extra = data.continuedFrom.length > 4 ? ` +${data.continuedFrom.length - 4} más` : '';
+          spans.push(`<span style="color:var(--accent);" title="Cada combinación siguió desde su última página barrida">⏩ ${parts.join(' · ')}${extra}</span>`);
         }
         filterInfo.innerHTML = spans.join('<span style="color:var(--border-color); margin: 0 8px;">|</span>');
 
@@ -9498,7 +9519,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await (await fetch(apiUrl('/api/setters/pool-summary'), { credentials: 'include' })).json();
         // KPIs + tabla por SDR + top países
         const kpi = (label, val, sub) => `<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:12px; padding:14px 16px;"><div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">${label}</div><div style="font-size:26px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums; line-height:1.1; margin-top:3px;">${val}</div>${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">${sub}</div>` : ''}</div>`;
-        const setterRows = (d.bySetter || []).map(s => `<tr><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.total}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched} sin tocar</td></tr>`).join('');
+        // 2026-07-11 (pedido del user): mostrar SOLO los llamables — el número
+        // real que el SDR ve en su cola de Llamadas. El total asignado (que
+        // incluye números muertos/terminales/interesados/callbacks) queda como
+        // tooltip informativo, no como columna.
+        const setterHeader = `<tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">SDR</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Llamables</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Sin tocar</th></tr>`;
+        const setterRows = setterHeader + (d.bySetter || []).map(s => {
+          const callable = (typeof s.callable === 'number') ? s.callable : s.total;
+          const gap = s.total - callable;
+          const tip = `${s.total} asignados en total` + (gap > 0 ? ` — ${gap} no llamables (números muertos, agendados, interesados o callbacks)` : '');
+          return `<tr title="${escHtml(tip)}"><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:#5BB974;">${callable}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched}</td></tr>`;
+        }).join('');
         // ¿A qué país llamar AHORA? — hora local de cada país + flag horario hábil.
         const countryTiming = (d.byCountry || [])
           .filter(c => c.country && c.country !== 'Sin país')
