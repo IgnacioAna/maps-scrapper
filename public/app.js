@@ -4666,10 +4666,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!distribution || !distribution.length) return; // cancelado
 
       try {
+        // autoEnrich: el server enriquece gratis (email/redes/ads) en background,
+        // robusto a que recargues. Sigue el toggle "Auto IA".
+        const _autoEnrichOn = !document.getElementById('auto-enrich-toggle') || document.getElementById('auto-enrich-toggle').checked;
         const importResp = await fetch(apiUrl('/api/setters/import'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leads: newLeads, distribution, batchId: window._lastScrapeBatchId || null })
+          body: JSON.stringify({ leads: newLeads, distribution, batchId: window._lastScrapeBatchId || null, autoEnrich: _autoEnrichOn })
         });
         if (!importResp.ok) {
           const errData = await importResp.text();
@@ -9634,7 +9637,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const fromSel = document.getElementById('pool-from');
         const toSel = document.getElementById('pool-to');
         const countrySel = document.getElementById('pool-country');
-        const setterOpts = (d.bySetter || []).map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${s.total})</option>`).join('');
+        // 2026-07-11: los dropdowns de origen muestran LLAMABLES (lo que sirve),
+        // no el total asignado — al user no le interesa cuántos manda sino cuántos
+        // son discables.
+        const setterOpts = (d.bySetter || []).map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${typeof s.callable === 'number' ? s.callable : s.total} llamables)</option>`).join('');
         fromSel.innerHTML = `<option value="__unassigned__">Sin asignar / pool (${d.unassigned.total})</option><option value="__all__">Todo el pool (${d.total})</option>` + setterOpts;
         // Destino: SIEMPRE todos los SDRs (allSetters del backend), aunque tengan 0 leads.
         const toSetters = (d.allSetters && d.allSetters.length) ? d.allSetters
@@ -14499,7 +14505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.innerHTML = `
         <input type="checkbox" data-dist-check="${s.id}" style="width:16px; height:16px; cursor:pointer;">
         <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
-        <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div></div>
+        <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div>${typeof s.callable === 'number' ? `<div style="font-size:11px; color:#5BB974;">${s.callable} llamables hoy</div>` : ''}</div>
         <input type="number" min="0" step="1" data-dist-count="${s.id}" placeholder="0" style="width:90px; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-elevated); color:var(--text-primary); text-align:right;">
         <span style="font-size:11px; color:var(--text-secondary); width:48px; text-align:right;">leads</span>
       `;
@@ -14592,6 +14598,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     _distTotalLeads = totalLeads;
     document.getElementById('setter-distribute-subtitle').textContent = subtitle || `${totalLeads} leads para repartir entre setters. Tildá los que vas a usar y poné cuántos a cada uno.`;
     _distSettersCache = await _pickSetterFetch();
+    // 2026-07-11: anexar cuántos LLAMABLES tiene cada SDR hoy (de pool-summary),
+    // para balancear la carga al repartir. Best-effort: si falla, sigue sin el dato.
+    try {
+      const ps = await (await fetch(apiUrl('/api/setters/pool-summary'), { credentials: 'include' })).json();
+      const callableById = {};
+      for (const s of (ps.bySetter || [])) callableById[s.id] = s.callable;
+      _distSettersCache = _distSettersCache.map(s => ({ ...s, callable: callableById[s.id] }));
+    } catch {}
     _distRender();
     document.getElementById('setter-distribute-modal').style.display = 'flex';
     return new Promise(resolve => { _distResolve = resolve; });

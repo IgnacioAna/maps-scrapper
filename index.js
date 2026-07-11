@@ -6200,7 +6200,9 @@ app.post('/api/setters/leads/manual-add', requireAuth, requireRole('admin'), (re
 // Reutilizado por /api/setters/import (admin manual) y por
 // /api/admin/scrape-batches/:id/send-to-setter (re-importar batch sin re-scrapear).
 // Devuelve { ok, imported, skipped, total } o { ok:false, status, error }.
-function _importLeadsToSetters(incoming, assignTo) {
+// opts.autoEnrich (default true): dispara el enriquecimiento web gratis en
+// background. La ruta del scrape lo pasa según el toggle "Auto IA".
+function _importLeadsToSetters(incoming, assignTo, opts = {}) {
   if (!incoming || !Array.isArray(incoming) || incoming.length === 0) {
     return { ok: false, status: 400, error: "No hay leads para importar." };
   }
@@ -6219,10 +6221,16 @@ function _importLeadsToSetters(incoming, assignTo) {
 
   const data = loadSettersData();
   const result = _importLeadsCore(data, incoming, assignTo);
-  // Validación automática de números (2026-07-11): en background, sin demorar
-  // la respuesta. Dedup por lookupAt + por número repetido (no se paga doble).
+  // Validación automática de números + enriquecimiento web GRATIS (2026-07-11):
+  // ambos en background del SERVIDOR, sin demorar la respuesta. Son robustos: si
+  // el admin cambia de vista / recarga la página (ej. "Ver como setter" recarga
+  // → mataba el enriquecimiento cliente), esto igual TERMINA. El brief IA (LLM,
+  // cuesta tokens) sigue siendo cliente/opt-in — acá solo lo gratis.
   if (result.ok && Array.isArray(result.importedIds) && result.importedIds.length) {
     setTimeout(() => { _autoValidateImportedNumbers(result.importedIds); }, 1500);
+    if (opts.autoEnrich !== false) {
+      setTimeout(() => { _autoEnrichAfterImport(result.importedIds); }, 2500);
+    }
   }
   return result;
 }
@@ -6443,9 +6451,83 @@ async function _autoValidateImportedNumbers(leadIds) {
   }
 }
 
+// 2026-07-11 (audit del scraper): enriquecimiento web GRATIS en background del
+// SERVIDOR tras cada import. Robusto: sobrevive que el admin cambie de vista o
+// recargue (antes esto corría en el navegador y "Ver como setter" recarga →
+// mataba el loop → los leads quedaban sin email/redes/ads). Solo lo GRATIS
+// (fetch del sitio: email + redes + pixeles de ads + antigüedad RDAP). El
+// owner-IA y el brief (LLM = tokens) NO van acá — quedan cliente/opt-in.
+// Procesa en tandas con _runPool, marca con *CheckedAt para no re-fetchear.
+async function _autoEnrichAfterImport(leadIds) {
+  try {
+    if (process.env.NODE_ENV === 'test') return;
+    if (!Array.isArray(leadIds) || !leadIds.length) return;
+    const ids = leadIds.slice(0, 5000); // tope de seguridad
+    let emails = 0, social = 0, ads = 0, ages = 0, done = 0;
+    // Tandas de 12 leads, releyendo estado fresco cada vuelta (otro proceso pudo tocar).
+    for (let off = 0; off < ids.length; off += 12) {
+      const batch = ids.slice(off, off + 12);
+      const data = loadSettersData();
+      const targets = batch
+        .map((id) => ({ id, lead: data.leads && data.leads[id] }))
+        .filter((x) => x.lead && _leadHasRealWebsite(x.lead) && !x.lead.adsCheckedAt); // sin re-fetchear
+      if (!targets.length) continue;
+      const patches = {};
+      await _runPool(targets.map(({ id, lead }) => async () => {
+        const w = await enrichFromWebsite(lead.website, { timeoutMs: 6000 });
+        const out = { adsChecked: true, ageChecked: true };
+        if (w.email) { out.email = w.email; out.emailType = w.emailType || 'unknown'; }
+        if (w.ads) { out.adPixelFB = !!w.ads.hasMetaPixel; out.adPixelGoogle = !!w.ads.hasGoogleAds; }
+        if (w.ads && w.ads.runsAds) {
+          out.runsAds = true;
+          const plats = [];
+          if (w.ads.hasMetaPixel) plats.push('Meta');
+          if (w.ads.hasGoogleAds) plats.push('Google');
+          if (w.ads.hasTikTokPixel) plats.push('TikTok');
+          out.adPlatforms = plats;
+        }
+        if (w.social) { if (w.social.instagram) out.instagram = w.social.instagram; if (w.social.facebook) out.facebook = w.social.facebook; }
+        if (w.age) { if (w.age.yearsActive != null) out.yearsActive = w.age.yearsActive; if (w.age.foundedYear) out.foundedYear = w.age.foundedYear; }
+        patches[id] = out;
+      }), 8);
+      if (!Object.keys(patches).length) continue;
+      await mutateSettersData((d) => {
+        for (const id of Object.keys(patches)) {
+          const lead = d.leads && d.leads[id];
+          if (!lead) continue;
+          const r = patches[id];
+          if (r.email && !String(lead.email || '').trim()) { lead.email = r.email; lead.emailType = r.emailType || 'unknown'; emails++; }
+          if (r.instagram && !String(lead.instagram || '').trim()) { lead.instagram = r.instagram; social++; }
+          if (r.facebook && !String(lead.facebook || '').trim()) lead.facebook = r.facebook;
+          if (r.yearsActive != null && lead.yearsActive == null) { lead.yearsActive = r.yearsActive; ages++; }
+          if (r.foundedYear && !lead.foundedYear) lead.foundedYear = r.foundedYear;
+          lead.ageCheckedAt = new Date().toISOString();
+          lead.adsCheckedAt = new Date().toISOString();
+          lead.runsAds = !!r.runsAds;
+          lead.adPlatforms = Array.isArray(r.adPlatforms) ? r.adPlatforms : [];
+          if (r.adPixelFB != null) lead.adPixelFB = !!r.adPixelFB;
+          if (r.adPixelGoogle != null) lead.adPixelGoogle = !!r.adPixelGoogle;
+          if (r.runsAds) ads++;
+          const _sig = computeLeadSignals(lead);
+          lead.signals = _sig.signals; lead.reputationTier = _sig.reputationTier;
+          lead.ratingNum = _sig.ratingNum; lead.hasWebsite = _sig.hasWebsite;
+          lead.openingAngle = _sig.openingAngle; lead.signalsAt = new Date().toISOString();
+          done++;
+        }
+      });
+    }
+    if (done) console.log(`[auto-enrich] ${done} leads enriquecidos gratis (${emails} emails, ${social} redes, ${ads} con ads, ${ages} antigüedad) — de ${ids.length} importados. Robusto: corrió en el servidor.`);
+  } catch (e) {
+    console.warn('[auto-enrich] error (no bloquea el import):', e && e.message);
+  }
+}
+
 app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) => {
   try {
     const { leads: incoming, assignTo, batchId, distribution } = req.body || {};
+    // Auto IA toggle del front (default true si no viene). Controla el enriquecimiento
+    // web gratis server-side; el brief LLM sigue siendo cliente/opt-in.
+    const autoEnrich = req.body?.autoEnrich !== false;
     if (!Array.isArray(incoming) || incoming.length === 0) {
       return res.status(400).json({ error: 'No hay leads para importar.' });
     }
@@ -6482,7 +6564,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
         const n = Math.floor(Number(d.count));
         const slice = incoming.slice(cursor, cursor + n);
         cursor += n;
-        const out = _importLeadsToSetters(slice, d.setterId);
+        const out = _importLeadsToSetters(slice, d.setterId, { autoEnrich });
         if (!out.ok) {
           return res.status(out.status || 400).json({
             error: `Error asignando a ${nameOf(d.setterId)}: ${out.error}`,
@@ -6519,7 +6601,7 @@ app.post('/api/setters/import', requireAuth, requireRole('admin'), (req, res) =>
     }
 
     // Modo LEGACY: assignTo string (1 setter solo) — back-compat
-    const out = _importLeadsToSetters(incoming, assignTo);
+    const out = _importLeadsToSetters(incoming, assignTo, { autoEnrich });
     if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
     if (batchId) {
       try {
