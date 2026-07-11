@@ -4503,6 +4503,15 @@ app.get('/api/history/stats', requireAuth, requireRole('admin'), (req, res) => {
   res.json({ totalEntries, recentSearches });
 });
 
+// ── Cobertura de scraping (2026-07-11, pedido del user) ──
+// Devuelve el map crudo de lastPages (combo keyword×ciudad → última página
+// barrida). El frontend lo cruza con LOCATIONS_DB para armar el panel de
+// cobertura: qué ciudades están vírgenes vs barridas y hasta dónde.
+app.get('/api/history/coverage', requireAuth, requireRole('admin'), (req, res) => {
+  const history = loadHistory();
+  res.json({ lastPages: history.lastPages || {} });
+});
+
 // ── Limpiar historial ──
 app.delete('/api/history', requireAuth, requireRole('admin'), (req, res) => {
   saveHistory({ entries: {}, searches: [], lastPages: {} });

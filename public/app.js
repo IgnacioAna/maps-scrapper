@@ -963,6 +963,68 @@ document.addEventListener('DOMContentLoaded', async () => {
     _autoContChk?.addEventListener('change', _syncStartPageState);
     _syncStartPageState();
 
+    // ── Panel de cobertura de scraping (2026-07-11, pedido del user) ──
+    // Cruza history.lastPages (qué combos keyword×ciudad se barrieron y hasta
+    // qué página) con LOCATIONS_DB → muestra por país las ciudades BARRIDAS
+    // (ámbar, hover = detalle por keyword) y las VÍRGENES (verde = máximo
+    // rendimiento para el próximo scrape). Lazy: carga al abrir el drawer.
+    const _covDrawer = document.getElementById('scrape-coverage-drawer');
+    let _covLoaded = false;
+    async function _renderScrapeCoverage() {
+      const body = document.getElementById('scrape-coverage-body');
+      const chip = document.getElementById('coverage-summary-chip');
+      if (!body) return;
+      try {
+        const r = await fetch(apiUrl('/api/history/coverage'), { credentials: 'include' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const { lastPages } = await r.json();
+        // key = `${query}_${location}`: la location no contiene '_' → split por el último.
+        const perLoc = new Map();
+        for (const [k, v] of Object.entries(lastPages || {})) {
+          const idx = k.lastIndexOf('_');
+          if (idx < 0) continue;
+          const loc = k.slice(idx + 1).trim();
+          if (!perLoc.has(loc)) perLoc.set(loc, []);
+          perLoc.get(loc).push({ query: k.slice(0, idx), page: v });
+        }
+        const norm = (s) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+        const locIdx = new Map();
+        for (const [loc, arr] of perLoc) locIdx.set(norm(loc), arr);
+        let totCities = 0, totTouched = 0;
+        const rows = Object.entries(LOCATIONS_DB).map(([pais, ciudades]) => {
+          const touched = [], virgin = [];
+          for (const c of ciudades) {
+            const arr = locIdx.get(norm(c + ', ' + pais));
+            if (arr && arr.length) touched.push({ city: c, kws: arr.length, maxPage: Math.max(...arr.map(x => x.page || 0)), detail: arr });
+            else virgin.push(c);
+          }
+          totCities += ciudades.length; totTouched += touched.length;
+          return { pais, touched, virgin };
+        });
+        rows.sort((a, b) => b.touched.length - a.touched.length);
+        if (chip) chip.textContent = `${totTouched}/${totCities} ciudades barridas (${Math.round(100 * totTouched / Math.max(1, totCities))}%) — el resto es territorio virgen`;
+        body.innerHTML = rows.map(rw => {
+          const tot = rw.touched.length + rw.virgin.length;
+          const touchedHtml = rw.touched.sort((a, b) => b.maxPage - a.maxPage).map(t =>
+            `<span title="${escHtml(t.detail.map(d => d.query + ' → pág ' + d.page).join('\n'))}" style="display:inline-block; font-size:11px; background:rgba(255,179,65,0.10); border:1px solid rgba(255,179,65,0.3); color:#FFB341; padding:2px 8px; border-radius:6px; margin:0 4px 4px 0; cursor:default;">${escHtml(t.city)} · ${t.kws} kw · pág ${t.maxPage}</span>`).join('');
+          const virginHtml = rw.virgin.map(c => `<span style="display:inline-block; font-size:11px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); color:#5BB974; padding:2px 8px; border-radius:6px; margin:0 4px 4px 0;">${escHtml(c)}</span>`).join('');
+          return `<details style="margin-bottom:6px;"><summary style="cursor:pointer; font-size:12.5px; padding:5px 0; color:var(--text-primary);">${escHtml(rw.pais)} <span style="color:var(--text-tertiary);">— ${rw.touched.length}/${tot} barridas · ${rw.virgin.length} vírgenes</span></summary>
+            <div style="padding:6px 0 4px;">
+              ${rw.touched.length ? `<div style="font-size:10.5px; color:var(--text-tertiary); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.4px;">Barridas (hover = detalle por keyword)</div>${touchedHtml}` : ''}
+              ${rw.virgin.length ? `<div style="font-size:10.5px; color:var(--text-tertiary); margin:8px 0 4px; text-transform:uppercase; letter-spacing:0.4px;">Vírgenes — sin scrapear, máximo rendimiento</div>${virginHtml}` : ''}
+            </div>
+          </details>`;
+        }).join('');
+      } catch (e) {
+        body.innerHTML = `<div class="muted" style="font-size:12px;">Error cargando cobertura: ${escHtml(e.message || 'desconocido')}</div>`;
+      }
+    }
+    _covDrawer?.addEventListener('toggle', () => {
+      if (_covDrawer.open && !_covLoaded) { _covLoaded = true; _renderScrapeCoverage(); }
+    });
+    // Refresh tras cada scrape exitoso (los contadores cambian).
+    window._refreshScrapeCoverage = () => { if (_covLoaded) _renderScrapeCoverage(); };
+
     if (currentUser?.role === 'admin') loadHistoryStats();
 
     async function loadHistoryStats() {
@@ -1505,6 +1567,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           spans.push(`<span style="color:var(--accent);" title="Cada combinación siguió desde su última página barrida">⏩ ${parts.join(' · ')}${extra}</span>`);
         }
         filterInfo.innerHTML = spans.join('<span style="color:var(--border-color); margin: 0 8px;">|</span>');
+        window._refreshScrapeCoverage?.(); // los contadores de páginas cambiaron
 
         if (currentData.length > 0) {
           downloadBtn.disabled = false;

@@ -344,6 +344,16 @@
           </form>
         </section>
 
+        <!-- 2026-07-11: Panel de cobertura de scraping — qué ciudades están vírgenes
+             vs barridas (y hasta qué página), cruzando history.lastPages con el
+             catálogo LOCATIONS_DB. Lazy: carga al abrir el drawer. -->
+        <details id="scrape-coverage-drawer" style="margin:0 0 14px; background:var(--bg-card, rgba(255,255,255,0.02)); border:1px solid var(--border-subtle, rgba(255,255,255,0.08)); border-radius:12px;">
+          <summary style="cursor:pointer; padding:12px 18px; font-size:13px; font-weight:600; color:var(--text-primary); user-select:none;">🗺️ Cobertura de scraping <span id="coverage-summary-chip" style="font-weight:400; color:var(--text-tertiary); font-size:12px; margin-left:8px;"></span></summary>
+          <div id="scrape-coverage-body" style="padding:4px 18px 16px;">
+            <div class="muted" style="font-size:12px;">Cargando…</div>
+          </div>
+        </details>
+
         <section class="results-panel">
           <div class="results-toolbar">
             <div class="toolbar-left">
@@ -3331,7 +3341,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260711a"></script>
+  <script type="module" src="/app.js?v=20260711b"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
