@@ -15,6 +15,17 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import readline from "readline";
+// 2026-07-11: cargar credenciales del proyecto (gitignored). Con ADMIN_EMAIL y
+// ADMIN_PASSWORD en .env o .env.local, el pre-deploy corre sin preguntar nada
+// → se puede automatizar el ciclo completo de deploy. dotenv NO pisa vars ya
+// cargadas, así que .env.local (más específico) gana sobre .env.
+import dotenv from "dotenv";
+const _root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+// .env.local primero (defaults de dev local), luego .env con override: para el
+// pre-deploy, .env manda — es donde el user pone las credenciales de PRODUCCIÓN
+// (evita que un ADMIN_EMAIL de dev en .env.local rompa el login a Railway).
+dotenv.config({ path: path.join(_root, ".env.local") });
+dotenv.config({ path: path.join(_root, ".env"), override: true });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, "..", "data");
@@ -27,9 +38,10 @@ function ask(question) {
 async function main() {
   console.log("\n=== PRE-DEPLOY: Backup de data desde Railway ===\n");
 
-  // 1. Obtener URL y credenciales
-  let baseUrl = process.env.RAILWAY_URL;
-  if (!baseUrl) baseUrl = await ask("URL de Railway (ej: https://tu-app.up.railway.app): ");
+  // 1. Obtener URL y credenciales. RAILWAY_URL default a la app de producción
+  // (la URL es pública, no un secreto) → así con solo ADMIN_EMAIL/PASSWORD en
+  // .env.local el pre-deploy corre 100% sin preguntas.
+  let baseUrl = process.env.RAILWAY_URL || "https://scm-setting.up.railway.app";
   baseUrl = baseUrl.trim().replace(/\/+$/, ""); // quitar trailing slash
   // Tolerar URL sin protocolo (ej: "scm-setting.up.railway.app") — sin esto
   // fetch() explota con ERR_INVALID_URL y el backup no corre.

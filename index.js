@@ -4473,6 +4473,10 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
       // Auto-continuar: desde qué página siguió cada combo keyword×ciudad
       autoContinue,
       continuedFrom,
+      // Créditos SerpAPI realmente consumidos en esta barrida (1 página = 1
+      // búsqueda = 1 crédito). Suma de pagesFetched de todos los combos — los
+      // cortes tempranos (relevancia/agotado/error) NO se cobran de más.
+      serpCallsUsed: continuedFrom.reduce((acc, c) => acc + (Number.isFinite(c.pagesFetched) ? c.pagesFetched : 0), 0),
     });
 
   } catch (errError) {

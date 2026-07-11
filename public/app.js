@@ -1493,6 +1493,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.hasMoreResults) {
           spans.push(`<span class="text-primary">MÁS leads disp. (Sube la página)</span>`);
         }
+        // Créditos SerpAPI consumidos (1 página pedida = 1 crédito). Los cortes
+        // tempranos ahorran: puede ser bastante menos que lo configurado.
+        if (Number.isFinite(data.serpCallsUsed)) {
+          spans.push(`<span style="color:#FFB341; font-weight:600;" title="Búsquedas SerpAPI que realmente se pidieron en esta barrida (los cortes tempranos por páginas irrelevantes o agotadas ahorran créditos)">💳 ${data.serpCallsUsed} créditos SerpAPI</span>`);
+        }
         // Auto-continuar: mostrar desde qué página siguió cada búsqueda×ciudad
         if (data.autoContinue && Array.isArray(data.continuedFrom) && data.continuedFrom.length) {
           const parts = data.continuedFrom.slice(0, 4).map(c => `${escHtml(c.query)}@${escHtml(c.location || 'sin ciudad')} p.${c.fromPage}-${c.toPage}`);
