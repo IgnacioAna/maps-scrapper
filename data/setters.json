@@ -17,19 +17,22 @@
       "id": "setter_judith_mendez",
       "name": "Judith Mendez",
       "activeVariantId": "",
-      "createdAt": "2026-07-11T00:08:21.452Z"
+      "createdAt": "2026-07-11T00:08:21.452Z",
+      "myPhones": []
     },
     {
       "id": "setter_roxana_cabaleiro",
       "name": "Roxana Cabaleiro",
       "activeVariantId": "",
-      "createdAt": "2026-07-11T00:09:12.888Z"
+      "createdAt": "2026-07-11T00:09:12.888Z",
+      "myPhones": []
     },
     {
       "id": "setter_nadine_tortonese",
       "name": "Nadine Tortonese",
       "activeVariantId": "",
-      "createdAt": "2026-07-11T00:10:07.058Z"
+      "createdAt": "2026-07-11T00:10:07.058Z",
+      "myPhones": []
     }
   ],
   "variants": [
@@ -583384,7 +583387,7 @@
           "realCost": 0.0091,
           "realCostCurrency": "USD",
           "realCostSid": "359bb92e-7be2-11f1-87ca-0aedf5ade7aa",
-          "realCostReconciledAt": "2026-07-11T12:07:01.070Z"
+          "realCostReconciledAt": "2026-07-11T16:16:50.111Z"
         }
       ],
       "callAttempts": 1,
@@ -583896,7 +583899,7 @@
           "realCost": 0,
           "realCostCurrency": "USD",
           "realCostSid": "156b44e8-7be3-11f1-9fb7-c6a6f1c9eedf",
-          "realCostReconciledAt": "2026-07-11T12:07:01.070Z"
+          "realCostReconciledAt": "2026-07-11T16:16:50.111Z"
         }
       ],
       "callAttempts": 1,

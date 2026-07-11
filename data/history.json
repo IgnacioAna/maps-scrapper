@@ -66684,6 +66684,2092 @@
       "scrapedAt": "2026-06-26T16:32:52.740Z",
       "query": "plastic surgery clinic\nmedical aesthetics clinic\nmed spa\ncosmetic dentist\ndental clinic",
       "location": "Calgary, Canadá"
+    },
+    "clínica dental dr. segarra_c/ de la universitat, 1, pta 11, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Segarra",
+      "address": "C/ de la Universitat, 1, Pta 11, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 52 79 32",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental jiménez_calle poeta quintana, nº5 bis, 2º, puerta 3, 46003 valència, valencia, spain": {
+      "name": "Clínica Dental Jiménez",
+      "address": "Calle Poeta Quintana, Nº5 bis, 2º, Puerta 3, 46003 València, Valencia, Spain",
+      "phone": "+34 963 52 04 22",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra salvador_c/ de la democràcia, 60, pta 4, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "Clínica Dental Dra Salvador",
+      "address": "C/ de la Democràcia, 60, pta 4, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 963 70 33 49",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dr. alpiste_c. pintor benedito, 10, pta. 5, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dr. Alpiste",
+      "address": "C. Pintor Benedito, 10, Pta. 5, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 80 16 69",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental amigó_carrer d'antoni suárez, 22, bajo, el llano del real, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Amigó",
+      "address": "Carrer d'Antoni Suárez, 22, BAJO, El Llano del Real, 46021 València, Valencia, Spain",
+      "phone": "+34 963 22 25 22",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "carrasco dental - clínica dental valencia - implantes dentales y ortodoncia_carrer d'àngel guimerà, 63, extramurs, 46008 valència, valencia, spain": {
+      "name": "Carrasco Dental - Clínica Dental Valencia - Implantes Dentales y Ortodoncia",
+      "address": "Carrer d'Àngel Guimerà, 63, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 653 97 99 88",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental sanitas milenium el corte inglés - nuevo centro_av. de menéndez pidal, 15, campanar, 46009 valència, valencia, spain": {
+      "name": "Clínica Dental Sanitas Milenium El Corte Inglés - Nuevo Centro",
+      "address": "Av. de Menéndez Pidal, 15, Campanar, 46009 València, Valencia, Spain",
+      "phone": "+34 961 25 90 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra. marta camps_carrer de colón, 35 - 1, ciutat vella, 46004 valència, valencia, spain": {
+      "name": "Clínica Dental Dra. Marta Camps",
+      "address": "Carrer de Colón, 35 - 1, Ciutat Vella, 46004 València, Valencia, Spain",
+      "phone": "+34 963 51 09 64",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental conrado andrés peris y valero_av. de peris i valero, 40, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Conrado Andrés Peris y Valero",
+      "address": "Av. de Peris i Valero, 40, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 50 43 81",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental davis_avinguda del cardenal benlloch, 88, algirós, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Davis",
+      "address": "Avinguda del Cardenal Benlloch, 88, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 960 05 18 91",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "idim instituto de implantología dental | implantes dentales en valencia_pl. d'amèrica, 5, ensanche, 46004 valència, valencia, spain": {
+      "name": "IDIM Instituto De IMplantología dental | Implantes dentales en Valencia",
+      "address": "Pl. d'Amèrica, 5, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 34 46 75",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental olga puchades_c/ de ciril amorós, 41, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Dental Olga Puchades",
+      "address": "C/ de Ciril Amorós, 41, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 52 18 72",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "mihi dental (antigua clínica dental avenida, dra. victoria martínez mihi)_av. del port, 284, poblados marítimos, 46024 valència, valencia, spain": {
+      "name": "MIHI DENTAL (antigua clínica dental Avenida, Dra. Victoria Martínez Mihi)",
+      "address": "Av. del Port, 284, Poblados Marítimos, 46024 València, Valencia, Spain",
+      "phone": "+34 963 31 14 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dentaval_pg. de la petxina, 48, 1, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "Clínica Dental Dentaval",
+      "address": "Pg. de la Petxina, 48, 1, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 648 48 88 25",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental vitaldent_c/ d'alboraia, 35, la zaidía, 46010 valència, valencia, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C/ d'Alboraia, 35, La Zaidía, 46010 València, Valencia, Spain",
+      "phone": "+34 963 39 10 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "concept dental_46022, carrer dels sants just i pastor, 56 bajo, 46022 valència, valencia, spain": {
+      "name": "Concept Dental",
+      "address": "46022, Carrer dels Sants Just i Pastor, 56 bajo, 46022 València, Valencia, Spain",
+      "phone": "+34 960 04 63 62",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "miracle dental_c. de xiva, 12, bajo izquierdo, patraix, 46018 valència, valencia, spain": {
+      "name": "Miracle Dental",
+      "address": "C. de Xiva, 12, Bajo izquierdo, Patraix, 46018 València, Valencia, Spain",
+      "phone": "+34 963 84 91 57",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental amparo ibáñez-algarra_carrer del marquès de dos aigües, 4, puerta 1, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Clínica Dental Amparo Ibáñez-Algarra",
+      "address": "Carrer del Marquès de Dos Aigües, 4, puerta 1, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 51 32 46",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental identity_calle de castellón, 7, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica dental Identity",
+      "address": "Calle de Castellón, 7, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 42 19 34",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental mercado de jesús_c/ del beat nicolau factor, 6, bajo izquierda, patraix, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Mercado de Jesús",
+      "address": "C/ del Beat Nicolau Factor, 6, bajo izquierda, Patraix, 46007 València, Valencia, Spain",
+      "phone": "+34 963 80 37 72",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica trafalgar_carrer de trafalgar, 48, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Clínica Trafalgar",
+      "address": "Carrer de Trafalgar, 48, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 646 07 19 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental adeslas_c/ de ruaya, 39, la zaidía, 46009 valència, valencia, spain": {
+      "name": "Clínica Dental Adeslas",
+      "address": "C/ de Ruaya, 39, La Zaidía, 46009 València, Valencia, Spain",
+      "phone": "+34 900 229 922",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica albalat dental valencia centro_c/ de ciril amorós, 21, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Albalat Dental Valencia Centro",
+      "address": "C/ de Ciril Amorós, 21, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 52 81 19",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental alboraya 10_c/ d'alboraia, 10, la zaidía, 46010 valència, valencia, spain": {
+      "name": "Clínica Dental Alboraya 10",
+      "address": "C/ d'Alboraia, 10, La Zaidía, 46010 València, Valencia, Spain",
+      "phone": "+34 963 69 60 36",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental el parque central valencia_carrer de sant vicent màrtir, 217, jesús, 46007 valència, valencia, spain": {
+      "name": "Clinica Dental el Parque Central Valencia",
+      "address": "Carrer de Sant Vicent Màrtir, 217, Jesús, 46007 València, Valencia, Spain",
+      "phone": "+34 963 44 09 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "barberá clínica dental_c. de gregori mayans, 6, ensanche, 46005 valència, valencia, spain": {
+      "name": "BARBERÁ CLÍNICA DENTAL",
+      "address": "C. de Gregori Mayans, 6, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 642 31 53 17",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental sanitas milenium alameda_carrer de misser mascó, 7, el llano del real, 46010 valència, valencia, spain": {
+      "name": "Clínica Dental Sanitas Milenium Alameda",
+      "address": "Carrer de Misser Mascó, 7, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 962 56 54 50",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental milenium cortes valencianas - sanitas_av. de les corts valencianes, 4, benicalap, 46015 valència, valencia, spain": {
+      "name": "Clínica Dental Milenium Cortes Valencianas - Sanitas",
+      "address": "Av. de les Corts Valencianes, 4, Benicalap, 46015 València, Valencia, Spain",
+      "phone": "+34 962 56 54 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "invesdent_carrer de calixt iii, 5, extramurs, 46008 valència, valencia, spain": {
+      "name": "Invesdent",
+      "address": "Carrer de Calixt III, 5, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 85 56 65",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica filo estrela_pg. de l'albereda, 6, el pla del real, 46010 valència, valencia, spain": {
+      "name": "Clínica Filo Estrela",
+      "address": "Pg. de l'Albereda, 6, El Pla del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 963 93 63 33",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental llambés_gran via del marqués del túria, 15, 1;1, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Llambés",
+      "address": "Gran Via del Marqués del Túria, 15, 1;1, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 51 84 37",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dentistas en valencia_c/ del pintor ferrandis, 27, bajo, poblats marítims, 46011 valència, valencia, spain": {
+      "name": "Dentistas en Valencia",
+      "address": "C/ del Pintor Ferrandis, 27, bajo, Poblats Marítims, 46011 València, Valencia, Spain",
+      "phone": "+34 963 56 25 41",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental guillermo ballester odontologo_av. de l'oest, 26, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínica Dental Guillermo Ballester Odontologo",
+      "address": "Av. de l'Oest, 26, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 91 74 70",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental barjau_av. de l'oest, 40, 6, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínica Dental Barjau",
+      "address": "Av. de l'Oest, 40, 6, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 94 26 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "ata-ali dental clinic_avinguda de campanar, 12, campanar, 46015 valència, valencia, spain": {
+      "name": "ATA-ALI DENTAL CLINIC",
+      "address": "Avinguda de Campanar, 12, Campanar, 46015 València, Valencia, Spain",
+      "phone": "+34 963 70 21 62",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental bonet_carrer de joaquín costa, 38, piso 4, pta 9, l'eixample, 46005 valència, valencia, spain": {
+      "name": "Clínica Dental Bonet",
+      "address": "Carrer de Joaquín Costa, 38, piso 4, pta 9, L'Eixample, 46005 València, Valencia, Spain",
+      "phone": "+34 963 95 18 12",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental remohí_c de don juan de austria, 4, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Clínica Dental Remohí",
+      "address": "C de Don Juan de Austria, 4, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 52 15 41",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental california danny payan_gran via de ferran el catòlic, 76, 2-3, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clinica Dental California Danny Payan",
+      "address": "Gran Via de Ferran el Catòlic, 76, 2-3, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 92 04 39",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "cabo muñoz odontólogos · císcar | clínica dental valencia_carrer de ciscar, 5, bajo, ensanche, 46005 valència, valencia, spain": {
+      "name": "Cabo Muñoz Odontólogos · CÍSCAR | Clínica Dental Valencia",
+      "address": "Carrer de Ciscar, 5, bajo, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 13 96 68",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental sanitas milenium guimerá_gran via de ferran el catòlic, 24, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica Dental Sanitas Milenium Guimerá",
+      "address": "Gran Via de Ferran el Catòlic, 24, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 962 56 56 30",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental selva_av. de burjassot, 199, bajo, benicalap, 46015 valència, valencia, spain": {
+      "name": "Clínica Dental Selva",
+      "address": "Av. de Burjassot, 199, bajo, Benicalap, 46015 València, Valencia, Spain",
+      "phone": "+34 963 49 78 84",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental bulevard serreria_carrer de la serradora, 65, algirós, 46022 valència, valencia, spain": {
+      "name": "Clinica Dental Bulevard Serreria",
+      "address": "Carrer de la Serradora, 65, Algirós, 46022 València, Valencia, Spain",
+      "phone": "+34 692 49 91 81",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental esperanza garcia collada_avinguda del doctor waksman, 37, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Clinica Dental Esperanza Garcia Collada",
+      "address": "Avinguda del Doctor Waksman, 37, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 73 45 69",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "hernadent valencia_c/ d'albacete, 8, extramurs, 46007 valència, valencia, spain": {
+      "name": "Hernadent Valencia",
+      "address": "C/ d'Albacete, 8, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 960 01 25 24",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "impress valencia_c/ de buenos aires, 2, l'eixample, 46006 valència, valencia, spain": {
+      "name": "Impress Valencia",
+      "address": "C/ de Buenos Aires, 2, L'Eixample, 46006 València, Valencia, Spain",
+      "phone": "+34 932 71 20 30",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dental úbeda_c/ d'albacete, 18, extramurs, 46007 valència, valencia, spain": {
+      "name": "Dental Úbeda",
+      "address": "C/ d'Albacete, 18, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 667 96 33 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra. mónica lópez galindo_c. del duque de calabria, 17, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clínica dental Dra. Mónica López Galindo",
+      "address": "C. del Duque de Calabria, 17, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 33 18 88",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental mañés jiménez_c/ de ciril amorós, 36, bajo interior, l'eixample, 46004 valència, valencia, spain": {
+      "name": "Clínica Dental Mañés Jiménez",
+      "address": "C/ de Ciril Amorós, 36, bajo interior, L'Eixample, 46004 València, Valencia, Spain",
+      "phone": "+34 963 94 38 39",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental javier morte esteban_av. de l'oest, 35, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínica Dental Javier Morte Esteban",
+      "address": "Av. de l'Oest, 35, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 52 20 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental elena muñoz_c/ d'alboraia, 63, la saïdia, 46010 valència, valencia, spain": {
+      "name": "Clinica Dental Elena Muñoz",
+      "address": "C/ d'Alboraia, 63, La Saïdia, 46010 València, Valencia, Spain",
+      "phone": "+34 692 93 96 78",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. manuel sancho_c/ de russafa, 36, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Manuel Sancho",
+      "address": "C/ de Russafa, 36, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 33 10 94",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "vivantadental_av. de peris i valero, 87, ensanche, 46006 valència, valencia, spain": {
+      "name": "vivantadental",
+      "address": "Av. de Peris i Valero, 87, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 21 22 21",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental pizarro_carrer de pizarro, 1, ensanche, 46004 valència, valencia, spain": {
+      "name": "CLINICA DENTAL PIZARRO",
+      "address": "Carrer de Pizarro, 1, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 51 37 28",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "ad atención dental especializada_de alava, carrer del comte de salvatierra, 28, ensanche, 46004 valència, valencia, spain": {
+      "name": "Ad Atención Dental Especializada",
+      "address": "de Alava, Carrer del Comte de Salvatierra, 28, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 44 77 78",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental beatriz sarrion_av. de frança, 18, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Clínica Dental Beatriz Sarrion",
+      "address": "Av. de França, 18, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 36 56 36",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental josé antonio ibáñez-algarra_gabinete derecho, carrer del marquès de dos aigües, 4, planta 1, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Clínica Dental José Antonio Ibáñez-Algarra",
+      "address": "gabinete derecho, Carrer del Marquès de Dos Aigües, 4, planta 1, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 94 26 73",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "ilzarbe garcía-sala odontology_gran via del marqués del túria, 30, ensanche, 46005 valència, valencia, spain": {
+      "name": "Ilzarbe García-Sala ODONTOLOGY",
+      "address": "Gran Via del Marqués del Túria, 30, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 21 93 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "raga infantil valencia | ortodoncia para niños y odontopediatría_carrer de jorge juan, 20, ensanche, 46004 valència, valencia, spain": {
+      "name": "Raga Infantil Valencia | Ortodoncia para niños y Odontopediatría",
+      "address": "Carrer de Jorge Juan, 20, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 52 93 91",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínicas ucv_pl. de la ciutat de bruges, 6, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínicas UCV",
+      "address": "Pl. de la Ciutat de Bruges, 6, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 92 06 24",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "mora arias clínica dental_carrer de ciscar, 49, bajo, ensanche, 46005 valència, valencia, spain": {
+      "name": "Mora Arias Clínica Dental",
+      "address": "Carrer de Ciscar, 49, bajo, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 33 34 64",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental granda_carrer d'àngel guimerà, 24, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clinica Dental Granda",
+      "address": "Carrer d'Àngel Guimerà, 24, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 640 95 85 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica beltrán tarazona_c. del hospital, 18, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínica Beltrán Tarazona",
+      "address": "C. del Hospital, 18, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 686 66 34 86",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental vázquez prat_c/ de quevedo, 8, ciutat vella, 46001 valència, valencia, spain": {
+      "name": "Clínica Dental Vázquez Prat",
+      "address": "C/ de Quevedo, 8, Ciutat Vella, 46001 València, Valencia, Spain",
+      "phone": "+34 963 52 32 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica san martín valencia_c/ del gral. san martín, 7, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica San Martín Valencia",
+      "address": "C/ del Gral. San Martín, 7, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 22 05 81",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental sirera en alboraya_av. ausiàs march, 5, 46120 alboraya, valencia, spain": {
+      "name": "Clínica Dental Sirera en Alboraya",
+      "address": "Av. Ausiàs March, 5, 46120 Alboraya, Valencia, Spain",
+      "phone": "+34 651 75 04 56",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental aguado baixauli_carrer la tauleta, 23, 46910 alfafar, valencia, spain": {
+      "name": "Clínica Dental Aguado Baixauli",
+      "address": "Carrer la Tauleta, 23, 46910 Alfafar, Valencia, Spain",
+      "phone": "+34 690 13 20 44",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "som dental_plaça d'espanya, 6, pta 3 extramurs, extramurs, 46007 valència, valencia, spain": {
+      "name": "Som dental",
+      "address": "Plaça d'Espanya, 6, Pta 3 Extramurs, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 626 07 58 63",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "centre mèdic i dental lluís vives_avinguda de lluís vives, 9, 46460 silla, valencia, spain": {
+      "name": "CENTRE MÈDIC I DENTAL LLUÍS VIVES",
+      "address": "Avinguda de Lluís Vives, 9, 46460 Silla, Valencia, Spain",
+      "phone": "+34 961 21 34 29",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "ortodental 3d valencia_c/ d'albacete, 4, extramurs, 46007 valència, valencia, spain": {
+      "name": "ORTODENTAL 3D VALENCIA",
+      "address": "C/ d'Albacete, 4, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 41 91 40",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental group js | odontologos en valencia | odontologia y ortodoncia_avenida carlos sanda, c.c. otama. piso #3, local 12, urb, valencia 2001, carabobo, venezuela": {
+      "name": "Clinica Dental Group JS | Odontologos en Valencia | Odontologia y Ortodoncia",
+      "address": "Avenida Carlos Sanda, C.C. Otama. Piso #3, Local 12, Urb, Valencia 2001, Carabobo, Venezuela",
+      "phone": "+58 414-4713978",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dra. irene penadés cuenca, dentista_gran via de ferran el catòlic, 79, puerta 4, extramurs, 46008 valència, valencia, spain": {
+      "name": "Dra. Irene Penadés Cuenca, Dentista",
+      "address": "Gran Via de Ferran el Catòlic, 79, puerta 4, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dr. lorenzo remohi agramunt_c/ de l'arxiduc carles, 27, patraix, 46018 valència, valencia, spain": {
+      "name": "Dr. Lorenzo Remohi Agramunt",
+      "address": "C/ de l'Arxiduc Carles, 27, Patraix, 46018 València, Valencia, Spain",
+      "phone": "+34 963 85 25 51",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "primerared consultoría dental - activa tu clínica dental_carrer de sueca, 23, ensanche, 46006 valència, valencia, spain": {
+      "name": "Primerared Consultoría Dental - Activa tu Clínica Dental",
+      "address": "Carrer de Sueca, 23, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 962 07 91 99",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "sonrisas clínica dental_c/ de molinell, 29, la zaidía, 46010 valència, valencia, spain": {
+      "name": "Sonrisas Clínica Dental",
+      "address": "C/ de Molinell, 29, La Zaidía, 46010 València, Valencia, Spain",
+      "phone": "+34 699 12 53 80",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "bucco dental technology | tac dental valencia, ortopantomografía, escáner intraoral_c/ de jesús, 60, extramurs, 46007 valència, valencia, spain": {
+      "name": "Bucco Dental Technology | Tac Dental Valencia, Ortopantomografía, Escáner Intraoral",
+      "address": "C/ de Jesús, 60, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 84 23 09",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental valència_carrer valència, 6, 46760 tavernes de la valldigna, valencia, spain": {
+      "name": "Clinica Dental València",
+      "address": "Carrer València, 6, 46760 Tavernes de la Valldigna, Valencia, Spain",
+      "phone": "+34 962 82 33 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "laboratorio dental goldent valencia s.l_carrer de pinzón, 8, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Laboratorio Dental Goldent Valencia S.L",
+      "address": "Carrer de Pinzón, 8, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 15 32 11",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "implantes dentales valencia 10_": {
+      "name": "Implantes dentales Valencia 10",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "oral studio valencia_gran via del marqués del túria, 3, ensanche, 46005 valència, valencia, spain": {
+      "name": "Oral Studio Valencia",
+      "address": "Gran Via del Marqués del Túria, 3, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 604 57 59 28",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dentin odontólogos | clínica dental en barrio salamanca_c. de jorge juan, 83, 1º derecha, salamanca, 28009 madrid, spain": {
+      "name": "Dentin Odontólogos | Clínica Dental en Barrio Salamanca",
+      "address": "C. de Jorge Juan, 83, 1º Derecha, Salamanca, 28009 Madrid, Spain",
+      "phone": "+34 915 78 13 11",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "smile more_gran vía, 51 - 1, a, centro, 28013 madrid, spain": {
+      "name": "Smile more",
+      "address": "Gran Vía, 51 - 1, A, Centro, 28013 Madrid, Spain",
+      "phone": "+34 910 74 09 44",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "eda clínica dental. odontólogos en chamberí_calle de sta engracia, 15, chamberí, 28010 madrid, spain": {
+      "name": "EDA Clínica Dental. Odontólogos en Chamberí",
+      "address": "Calle de Sta Engracia, 15, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 42 66 58",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica asisa dental_c. de edgar neville, 18, tetuán, 28020 madrid, spain": {
+      "name": "Clínica ASISA Dental",
+      "address": "C. de Edgar Neville, 18, Tetuán, 28020 Madrid, Spain",
+      "phone": "+34 917 70 99 70",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clinica dental medina balda_calle del príncipe de vergara, 58, 1º ext dcha, salamanca, 28006 madrid, spain": {
+      "name": "Clinica Dental Medina Balda",
+      "address": "Calle del Príncipe de Vergara, 58, 1º Ext Dcha, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 911 10 26 61",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro dental puerta de hierro sl_c. velayos, 8, 1ºd, moncloa - aravaca, 28035 madrid, spain": {
+      "name": "Centro Dental Puerta de Hierro SL",
+      "address": "C. Velayos, 8, 1ºD, Moncloa - Aravaca, 28035 Madrid, Spain",
+      "phone": "+34 913 16 38 69",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "ortom orthodontics madrid_c. de lucio del valle, 19, chamberí, 28003 madrid, spain": {
+      "name": "Ortom Orthodontics Madrid",
+      "address": "C. de Lucio del Valle, 19, Chamberí, 28003 Madrid, Spain",
+      "phone": "+34 915 35 91 35",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental caicoya. doctora ana caicoya de urzaiz_calle del general arrando, 12, 6, chamberí, 28010 madrid, spain": {
+      "name": "Clínica dental Caicoya. Doctora Ana Caicoya de Urzaiz",
+      "address": "Calle del General Arrando, 12, 6, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 47 77 61",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental dr.otero senín_c. de galileo, 25, primero c, chamberí, 28015 madrid, spain": {
+      "name": "CLÍNICA DENTAL DR.OTERO SENÍN",
+      "address": "C. de Galileo, 25, primero C, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 914 46 40 06",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental icoa_c. de fray luis de león, 14, loc a, arganzuela, 28012 madrid, spain": {
+      "name": "Clínica Dental ICOA",
+      "address": "C. de Fray Luis de León, 14, Loc A, Arganzuela, 28012 Madrid, Spain",
+      "phone": "+34 911 86 12 39",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro médico dental dra. martínez lozano_c. de luchana, 28, chamberí, 28010 madrid, spain": {
+      "name": "Centro Médico Dental Dra. Martínez Lozano",
+      "address": "C. de Luchana, 28, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 914 47 90 83",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental doctor sergio granados/ dr peña_calle del gral. palanca, 16, loc bajo, arganzuela, 28045 madrid, spain": {
+      "name": "Clínica Dental Doctor Sergio Granados/ Dr Peña",
+      "address": "Calle del Gral. Palanca, 16, Loc bajo, Arganzuela, 28045 Madrid, Spain",
+      "phone": "+34 914 74 08 15",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica odotologica dra margarita abreu_calle de antonio lópez, 74, carabanchel, 28019 madrid, spain": {
+      "name": "Clínica Odotologica Dra Margarita Abreu",
+      "address": "Calle de Antonio López, 74, Carabanchel, 28019 Madrid, Spain",
+      "phone": "+34 914 69 92 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dr. alfonso plaza mayor_c. de josé ortega y gasset, 43, salamanca, 28006 madrid, spain": {
+      "name": "Dr. Alfonso Plaza Mayor",
+      "address": "C. de José Ortega y Gasset, 43, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 914 01 51 66",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica alpe (dr. ricardo fernández )_av. de nazaret, 4, retiro, 28007 madrid, spain": {
+      "name": "Clínica Alpe (Dr. Ricardo Fernández )",
+      "address": "Av. de Nazaret, 4, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 914 00 83 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "cba clinica dental_c. de hilarión eslava, 55, bajo, chamberí, 28015 madrid, spain": {
+      "name": "CBA CLINICA DENTAL",
+      "address": "C. de Hilarión Eslava, 55, Bajo, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 915 44 70 74",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental garcía alonso_c. de blasco de garay, 20, 1º izq, chamberí, 28015 madrid, spain": {
+      "name": "Clínica Dental García Alonso",
+      "address": "C. de Blasco de Garay, 20, 1º izq, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 914 48 11 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "endodoncia madrid_calle del gral. pardiñas, 106, loc 5, salamanca, 28006 madrid, spain": {
+      "name": "Endodoncia Madrid",
+      "address": "Calle del Gral. Pardiñas, 106, Loc 5, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 915 63 47 48",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "bio salud dental - dres. castillo_c. esmeralda, 25, usera, 28026 madrid, spain": {
+      "name": "Bio Salud Dental - Dres. Castillo",
+      "address": "C. Esmeralda, 25, Usera, 28026 Madrid, Spain",
+      "phone": "+34 915 00 27 98",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clinica dental cedema 3 (hilarión eslava)_c. de hilarión eslava, 12, 1ºb, chamberí, 28015 madrid, spain": {
+      "name": "Clinica Dental Cedema 3 (Hilarión Eslava)",
+      "address": "C. de Hilarión Eslava, 12, 1ºB, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 915 44 75 52",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro medico dental galileo 60_c. de galileo, 60, chamberí, 28015 madrid, spain": {
+      "name": "CENTRO MEDICO DENTAL GALILEO 60",
+      "address": "C. de Galileo, 60, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 914 48 80 86",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental oña 105 sl_c. de oña, 105, bajo, hortaleza, 28050 madrid, spain": {
+      "name": "Clínica Dental Oña 105 Sl",
+      "address": "C. de Oña, 105, bajo, Hortaleza, 28050 Madrid, Spain",
+      "phone": "+34 913 84 50 85",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clinical castellana 100_p.º de la castellana, 100, 1ºa, chamartín, 28046 madrid, spain": {
+      "name": "Clinical Castellana 100",
+      "address": "P.º de la Castellana, 100, 1ºA, Chamartín, 28046 Madrid, Spain",
+      "phone": "+34 914 11 55 67",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental sonrisa 10_c. de embajadores, 55, arganzuela, 28012 madrid, spain": {
+      "name": "Clínica Dental Sonrisa 10",
+      "address": "C. de Embajadores, 55, Arganzuela, 28012 Madrid, Spain",
+      "phone": "+34 910 34 16 51",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro dental implantologico_c. de téllez, 20, retiro, 28007 madrid, spain": {
+      "name": "Centro Dental Implantologico",
+      "address": "C. de Téllez, 20, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 914 33 76 53",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "fine arts dental_c. leopoldo alas clarín, 47, fuencarral-el pardo, 28035 madrid, spain": {
+      "name": "Fine Arts Dental",
+      "address": "C. Leopoldo Alas Clarín, 47, Fuencarral-El Pardo, 28035 Madrid, Spain",
+      "phone": "+34 913 73 32 21",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental_av. de abrantes, 33, local, carabanchel, 28025 madrid, spain": {
+      "name": "Clínica Dental",
+      "address": "Av. de Abrantes, 33, LOCAL, Carabanchel, 28025 Madrid, Spain",
+      "phone": "+34 695 82 50 36",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dr. federico nefa gaillez, dentista_av. de orovilla, 47, loc 6, bajo, villaverde, 28041 madrid, spain": {
+      "name": "Dr. Federico Nefa Gaillez, Dentista",
+      "address": "Av. de Orovilla, 47, Loc 6, bajo, Villaverde, 28041 Madrid, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica coppel dental_c. del monte esquinza, 24, entreplanta izquierda, chamberí, 28010 madrid, spain": {
+      "name": "Clínica Coppel Dental",
+      "address": "C. del Monte Esquinza, 24, Entreplanta Izquierda, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 913 10 07 23",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro odontología integral dr pedro ariño rubiato_cl. de ayala, 106, local, salamanca, 28006 madrid, spain": {
+      "name": "Centro Odontología Integral Dr Pedro Ariño Rubiato",
+      "address": "Cl. de Ayala, 106, local, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 914 01 20 79",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dr. carlos acero sanz_av. de américa, 8, 4º b, salamanca, 28028 madrid, spain": {
+      "name": "Dr. Carlos Acero Sanz",
+      "address": "Av. de América, 8, 4º B, Salamanca, 28028 Madrid, Spain",
+      "phone": "+34 913 56 29 16",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental doctores aguado | dentista en hortaleza_c/ de sta. virgilia, 3, hortaleza, 28033 madrid, spain": {
+      "name": "Clínica Dental Doctores Aguado | Dentista en Hortaleza",
+      "address": "C/ de Sta. Virgilia, 3, Hortaleza, 28033 Madrid, Spain",
+      "phone": "+34 917 64 66 85",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "𝐂𝐥𝐢́𝐧𝐢𝐜𝐚 𝐃𝐞𝐧𝐭𝐚𝐥 𝐌𝐨𝐫𝐚𝐭𝐚𝐥𝐚𝐳. dr. ramón soto-yarritu_av. de moratalaz, 66, escalera derecha 1ºa, moratalaz, 28030 madrid, spain": {
+      "name": "𝐂𝐥𝐢́𝐧𝐢𝐜𝐚 𝐃𝐞𝐧𝐭𝐚𝐥 𝐌𝐨𝐫𝐚𝐭𝐚𝐥𝐚𝐳. Dr. Ramón Soto-Yarritu",
+      "address": "Av. de Moratalaz, 66, escalera derecha 1ºA, Moratalaz, 28030 Madrid, Spain",
+      "phone": "+34 914 37 00 40",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dentanet - astros clínica dental_c. de los astros, 14, retiro, 28007 madrid, spain": {
+      "name": "DENTANET - ASTROS CLÍNICA DENTAL",
+      "address": "C. de los Astros, 14, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 914 09 34 58",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "espacio de salud dkv príncipe de vergara madrid_calle del príncipe de vergara, 80, salamanca, 28006 madrid, spain": {
+      "name": "Espacio de Salud DKV Príncipe de Vergara Madrid",
+      "address": "Calle del Príncipe de Vergara, 80, Salamanca, 28006 Madrid, Spain",
+      "phone": "+34 915 63 38 81",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "spain dental express_c. del dr. esquerdo, 105, retiro, 28007 madrid, spain": {
+      "name": "Spain Dental Express",
+      "address": "C. del Dr. Esquerdo, 105, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 915 00 91 83",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "justicia dental_gran vía, 69, planta 6ª, centro, 28013 madrid, spain": {
+      "name": "Justicia Dental",
+      "address": "Gran Vía, 69, planta 6ª, Centro, 28013 Madrid, Spain",
+      "phone": "+34 911 93 00 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dental clinic villaverde bajo_calle de, c. leonor góngora, 34, villaverde, 28021 madrid, spain": {
+      "name": "Dental Clinic Villaverde Bajo",
+      "address": "Calle de, C. Leonor Góngora, 34, Villaverde, 28021 Madrid, Spain",
+      "phone": "+34 917 97 62 27",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "carlos michael lópez_c. de panamá, 3, chamartín, 28036 madrid, spain": {
+      "name": "Carlos Michael López",
+      "address": "C. de Panamá, 3, Chamartín, 28036 Madrid, Spain",
+      "phone": "+34 914 57 51 54",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro odontologico princesa_calle de la princesa, 64, chamberí, 28008 madrid, spain": {
+      "name": "Centro Odontologico Princesa",
+      "address": "Calle de la Princesa, 64, Chamberí, 28008 Madrid, Spain",
+      "phone": "+34 915 44 01 05",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "instituts odontològics - clínica dental barcelona_av. de madrid, 141, les corts, 08028 barcelona, spain": {
+      "name": "Instituts Odontològics - Clínica Dental Barcelona",
+      "address": "Av. de Madrid, 141, Les Corts, 08028 Barcelona, Spain",
+      "phone": "+34 934 39 45 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "instituts odontològics - clínica dental barcelona poblenou_carrer de ramon turró, 246, sant martí, 08005 barcelona, spain": {
+      "name": "Instituts Odontològics - Clínica Dental Barcelona Poblenou",
+      "address": "Carrer de Ramon Turró, 246, Sant Martí, 08005 Barcelona, Spain",
+      "phone": "+34 932 24 77 70",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dental clinic barcelona - dentist cleardent_carrer de provença, 116, loc 1, eixample, 08029 barcelona, spain": {
+      "name": "Dental Clinic Barcelona - Dentist Cleardent",
+      "address": "Carrer de Provença, 116, Loc 1, Eixample, 08029 Barcelona, Spain",
+      "phone": "+34 930 46 65 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "propdental | clínica dental sant martí barcelona_carrer de la independència, 275, sant martí, 08026 barcelona, spain": {
+      "name": "PROPDENTAL | Clínica Dental Sant Martí Barcelona",
+      "address": "Carrer de la Independència, 275, Sant Martí, 08026 Barcelona, Spain",
+      "phone": "+34 602 48 08 29",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "aurum dental barcelona_carrer del marquès de sentmenat, 50, loc 2, les corts, 08029 barcelona, spain": {
+      "name": "Aurum Dental Barcelona",
+      "address": "Carrer del Marquès de Sentmenat, 50, Loc 2, Les Corts, 08029 Barcelona, Spain",
+      "phone": "+34 932 47 01 98",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dentzia - clínica dental_carrer de regàs, 7-9, bajos, sarrià-sant gervasi, 08006 barcelona, spain": {
+      "name": "DENTZIA - Clínica Dental",
+      "address": "Carrer de Regàs, 7-9, bajos, Sarrià-Sant Gervasi, 08006 Barcelona, Spain",
+      "phone": "+34 934 15 87 47",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "almudena herraiz ortodoncia_carrer d'aribau, 279, 1º 2ª, sarrià-sant gervasi, 08021 barcelona, spain": {
+      "name": "Almudena Herraiz Ortodoncia",
+      "address": "Carrer d'Aribau, 279, 1º 2ª, Sarrià-Sant Gervasi, 08021 Barcelona, Spain",
+      "phone": "+34 932 09 69 06",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "barcelona tmj clínic_carrer de còrsega, 237, bajos, eixample, 08036 barcelona, spain": {
+      "name": "Barcelona TMJ Clínic",
+      "address": "Carrer de Còrsega, 237, Bajos, Eixample, 08036 Barcelona, Spain",
+      "phone": "+34 933 23 41 56",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "cauma espai dental🦷_carrer de l'àliga, 14, sants-montjuïc, 08014 barcelona, spain": {
+      "name": "Cauma Espai Dental🦷",
+      "address": "Carrer de l'Àliga, 14, Sants-Montjuïc, 08014 Barcelona, Spain",
+      "phone": "+34 934 31 56 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental josefa zarco_carrer de casanova, 105, loc 2, eixample, 08036 barcelona, spain": {
+      "name": "Clínica Dental Josefa Zarco",
+      "address": "Carrer de Casanova, 105, Loc 2, Eixample, 08036 Barcelona, Spain",
+      "phone": "+34 934 51 10 26",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental jessica dana_carrer de floridablanca, 87, eixample, 08015 barcelona, spain": {
+      "name": "Clínica Dental Jessica Dana",
+      "address": "Carrer de Floridablanca, 87, Eixample, 08015 Barcelona, Spain",
+      "phone": "+34 935 35 53 88",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica ismar dental_av. de josep tarradellas, 97, loc 7, les corts, 08029 barcelona, spain": {
+      "name": "Clínica Ismar Dental",
+      "address": "Av. de Josep Tarradellas, 97, Loc 7, Les Corts, 08029 Barcelona, Spain",
+      "phone": "+34 675 85 89 66",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "mit dental barcelona_carrer de mallorca, 366, loc, eixample, 08013 barcelona, spain": {
+      "name": "MIT Dental Barcelona",
+      "address": "Carrer de Mallorca, 366, Loc, Eixample, 08013 Barcelona, Spain",
+      "phone": "+34 936 24 36 29",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental miquel angel alseda_carrer de veneçuela, 166, entresuelo 2, sant martí, 08019 barcelona, spain": {
+      "name": "Clínica Dental Miquel Angel Alseda",
+      "address": "Carrer de Veneçuela, 166, Entresuelo 2, Sant Martí, 08019 Barcelona, Spain",
+      "phone": "+34 932 66 03 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "institut odontològic serra_carrer de roger de llúria, 81, loc, eixample, 08009 barcelona, spain": {
+      "name": "Institut Odontològic Serra",
+      "address": "Carrer de Roger de Llúria, 81, Loc, Eixample, 08009 Barcelona, Spain",
+      "phone": "+34 931 06 09 54",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental millán | barcelona_via augusta, 124, loc, sarrià-sant gervasi, 08006 barcelona, spain": {
+      "name": "Clínica Dental Millán | Barcelona",
+      "address": "Via Augusta, 124, Loc, Sarrià-Sant Gervasi, 08006 Barcelona, Spain",
+      "phone": "+34 932 01 60 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "cesea dental_carrer de gomis, 86, loc 8, gràcia, 08023 barcelona, spain": {
+      "name": "CeSeA Dental",
+      "address": "Carrer de Gomis, 86, Loc 8, Gràcia, 08023 Barcelona, Spain",
+      "phone": "+34 622 08 86 34",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clinica rumeu_via augusta, 336, bajos, sarrià-sant gervasi, 08017 barcelona, spain": {
+      "name": "CLINICA RUMEU",
+      "address": "Via Augusta, 336, bajos, Sarrià-Sant Gervasi, 08017 Barcelona, Spain",
+      "phone": "+34 934 14 23 48",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "col·legi oficial d'odontòlegs i estomatòlegs de catalunya_travessera de gràcia, 93, sarrià-sant gervasi, 08006 barcelona, spain": {
+      "name": "Col·legi Oficial d'Odontòlegs i Estomatòlegs de Catalunya",
+      "address": "Travessera de Gràcia, 93, Sarrià-Sant Gervasi, 08006 Barcelona, Spain",
+      "phone": "+34 933 10 15 55",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dra. cindy dias – especialista en atm y ortodoncia craneomandibular_carrer de pau claris, 95, 1ero, 2da, eixample, 08009 barcelona, spain": {
+      "name": "Dra. Cindy Dias – Especialista en ATM y Ortodoncia Craneomandibular",
+      "address": "Carrer de Pau Claris, 95, 1ero, 2da, Eixample, 08009 Barcelona, Spain",
+      "phone": "+34 933 17 14 69",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "de muller clínica dental_carrer de loreto, 36, les corts, 08029 barcelona, spain": {
+      "name": "De Muller Clínica Dental",
+      "address": "Carrer de Loreto, 36, Les Corts, 08029 Barcelona, Spain",
+      "phone": "+34 934 19 01 95",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "gaffner capriotti clinica dental barcelona_carrer de guillem tell, 14, sarrià-sant gervasi, 08006 barcelona, spain": {
+      "name": "Gaffner Capriotti Clinica Dental Barcelona",
+      "address": "Carrer de Guillem Tell, 14, Sarrià-Sant Gervasi, 08006 Barcelona, Spain",
+      "phone": "+34 932 17 73 75",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental arnabat - artés_avinguda meridiana, 274, entresuelo, sant andreu, 08027 barcelona, spain": {
+      "name": "Clínica Dental Arnabat - Artés",
+      "address": "Avinguda Meridiana, 274, ENTRESUELO, Sant Andreu, 08027 Barcelona, Spain",
+      "phone": "+34 933 51 67 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dra. alicia matas bonet, dentista_plaça d'alfonso comín, 5-7, gràcia, 08023 barcelona, spain": {
+      "name": "Dra. Alicia Matas Bonet, Dentista",
+      "address": "Plaça d'Alfonso Comín, 5-7, Gràcia, 08023 Barcelona, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dental barcelona_": {
+      "name": "Dental Barcelona",
+      "phone": "+34 682 43 89 47",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dr. guillem lópez burguete, dentista_pg. de la bonanova, 44, sarrià-sant gervasi, 08017 barcelona, spain": {
+      "name": "Dr. Guillem López Burguete, Dentista",
+      "address": "Pg. de la Bonanova, 44, Sarrià-Sant Gervasi, 08017 Barcelona, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "centro médico mapfre_c/ de muntaner, 40, 42, eixample, 08011 barcelona, spain": {
+      "name": "Centro Médico Mapfre",
+      "address": "C/ de Muntaner, 40, 42, Eixample, 08011 Barcelona, Spain",
+      "phone": "+34 936 34 41 41",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental aarvo suisse_av. de canaletes, 27, 08290 cerdanyola del vallès, barcelona, spain": {
+      "name": "Clínica Dental Aarvo Suisse",
+      "address": "Av. de Canaletes, 27, 08290 Cerdanyola del Vallès, Barcelona, Spain",
+      "phone": "+34 936 92 56 49",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental marien morata roig_c/ de les comèdies, 15, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Clínica dental Marien Morata Roig",
+      "address": "C/ de les Comèdies, 15, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 74 47 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "art & dent | clínica dental valencia | dentista en valencia_avinguda del cardenal benlloch, 82, algirós, 46021 valència, valencia, spain": {
+      "name": "Art & Dent | Clínica Dental Valencia | Dentista en Valencia",
+      "address": "Avinguda del Cardenal Benlloch, 82, Algirós, 46021 València, Valencia, Spain",
+      "phone": "+34 646 51 28 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental peydro herrero | ortodoncia invisible valencia_bajo, carrer de sant vicent màrtir, 139, 46007 valència, spain": {
+      "name": "Clínica Dental Peydro Herrero | Ortodoncia Invisible Valencia",
+      "address": "Bajo, Carrer de Sant Vicent Màrtir, 139, 46007 València, Spain",
+      "phone": "+34 963 16 36 27",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dr. gutiérrez colón - clínica dental valencia_carrer de colón, 21, ciutat vella, 46004 valència, valencia, spain": {
+      "name": "Dr. Gutiérrez Colón - Clínica Dental Valencia",
+      "address": "Carrer de Colón, 21, Ciutat Vella, 46004 València, Valencia, Spain",
+      "phone": "+34 962 83 51 94",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental marta paradís_de álava, carrer del comte de salvatierra, 35, 1, 4, ensanche, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Dental Marta Paradís",
+      "address": "de Álava, Carrer del Comte de Salvatierra, 35, 1, 4, Ensanche, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 51 14 40",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "primedent | odontología clínica dental_c. de l'art major de la seda, 39, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "PrimeDent | Odontología Clínica dental",
+      "address": "C. de l'Art Major de la Seda, 39, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 624 14 30 83",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "vericat implantología dental inmediata valència_pg. de l'albereda, 64-65, bajos, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Vericat Implantología Dental Inmediata València",
+      "address": "Pg. de l'Albereda, 64-65, bajos, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 39 16 84",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica llobell cortell_c/ de ciril amorós, 44, pta 1, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Llobell Cortell",
+      "address": "C/ de Ciril Amorós, 44, Pta 1, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 81 04 55",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica llobell_c/ de cavanilles, 20, el llano del real, 46010 valència, valencia, spain": {
+      "name": "Clínica Llobell",
+      "address": "C/ de Cavanilles, 20, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 963 69 68 62",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental fortedent_passatge dr. bartual moret, 2, el llano del real, 46010 valència, valencia, spain": {
+      "name": "Clínica Dental Fortedent",
+      "address": "Passatge Dr. Bartual Moret, 2, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 963 69 62 77",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental taberner | clínica dental en benimaclet_carrer d'emili baró, 9, el llano del real, 46020 valència, valencia, spain": {
+      "name": "Clínica Dental Taberner | Clínica Dental en Benimaclet",
+      "address": "Carrer d'Emili Baró, 9, El Llano del Real, 46020 València, Valencia, Spain",
+      "phone": "+34 961 07 17 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica buitrago_av. del regne de valència, 2, piso 2. puerta 5, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clínica Buitrago",
+      "address": "Av. del Regne de València, 2, Piso 2. Puerta 5, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 30 87 42",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "tus dentistas bucca_c/ d'alboraia, 15, la zaidía, 46010 valència, valencia, spain": {
+      "name": "Tus Dentistas Bucca",
+      "address": "C/ d'Alboraia, 15, La Zaidía, 46010 València, Valencia, Spain",
+      "phone": "+34 963 39 49 62",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental portaceli_gran via del marqués del túria, 44, piso 1 pta 1, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clinica Dental Portaceli",
+      "address": "Gran Via del Marqués del Túria, 44, Piso 1 PTA 1, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 95 58 78",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "centro periodontal de valencia_gran via del marqués del túria, 63, 5ª, ensanche, 46005 valència, valencia, spain": {
+      "name": "Centro Periodontal de Valencia",
+      "address": "Gran Via del Marqués del Túria, 63, 5ª, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 25 82 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr.moss valencia_carrer d'azcárraga, 28b, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica dental dr.moss Valencia",
+      "address": "Carrer d'Azcárraga, 28b, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 655 40 98 78",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental dr.serrano_carrer de borriana, 29, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clinica Dental Dr.Serrano",
+      "address": "Carrer de Borriana, 29, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 51 29 03",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra lópez mollá maría victoria_gran via del marqués del túria, 20, puerta 7, l'eixample, 46005 valència, valencia, spain": {
+      "name": "Clínica Dental Dra López Mollá María Victoria",
+      "address": "Gran Via del Marqués del Túria, 20, puerta 7, L'Eixample, 46005 València, Valencia, Spain",
+      "phone": "+34 963 73 14 66",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental vitaldent_gran via del marqués del túria, 1, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "Gran Via del Marqués del Túria, 1, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 52 23 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "e.dent odontología_c/ de maximilià thous, 35, la zaidía, 46009 valència, valencia, spain": {
+      "name": "e.dent Odontología",
+      "address": "C/ de Maximilià Thous, 35, La Zaidía, 46009 València, Valencia, Spain",
+      "phone": "+34 963 32 19 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "santamarta roig dental_c/ de guillem de castro, 145, extramurs, 46008 valència, valencia, spain": {
+      "name": "Santamarta Roig dental",
+      "address": "C/ de Guillem de Castro, 145, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 91 21 65",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "digitac dental s.l._c. del bon orde, 27, bajo, extramurs, 46008 valència, valencia, spain": {
+      "name": "DIGITAC DENTAL S.L.",
+      "address": "C. del Bon Orde, 27, bajo, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 962 06 92 21",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental martí bowen_avinguda del cardenal benlloch, 20, camins al grau, 46021 valència, valencia, spain": {
+      "name": "Clínica Dental Martí Bowen",
+      "address": "Avinguda del Cardenal Benlloch, 20, Camins al Grau, 46021 València, Valencia, Spain",
+      "phone": "+34 963 61 25 45",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra. mª victoria ortiz_carrer de fontanars dels alforins, 49, piso 4 puerta 13, patraix, 46014 valència, valencia, spain": {
+      "name": "Clínica Dental Dra. Mª Victoria Ortiz",
+      "address": "Carrer de Fontanars dels Alforins, 49, Piso 4 puerta 13, Patraix, 46014 València, Valencia, Spain",
+      "phone": "+34 963 78 39 95",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica pérez dental_carrer de marvà, 12, bajo, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clinica Pérez Dental",
+      "address": "Carrer de Marvà, 12, bajo, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 42 26 99",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental ana jiménez molinos_carrer de la florista, 23, benicalap, 46015 valència, valencia, spain": {
+      "name": "Clínica Dental Ana Jiménez Molinos",
+      "address": "Carrer de la Florista, 23, Benicalap, 46015 València, Valencia, Spain",
+      "phone": "+34 963 47 51 07",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. juanes_carrer de la guàrdia civil, 20, bajo, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Clínica dental Dr. Juanes",
+      "address": "Carrer de la Guàrdia Civil, 20, bajo, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 963 93 43 14",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "santident clínica dental valencia_c/ de les illes canàries, 30, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Santident Clínica Dental Valencia",
+      "address": "C/ de les Illes Canàries, 30, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 37 44 96",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental maite viguer_av. del general avilés, 35, benicalap, 46015 valència, valencia, spain": {
+      "name": "Clínica Dental Maite Viguer",
+      "address": "Av. del General Avilés, 35, Benicalap, 46015 València, Valencia, Spain",
+      "phone": "+34 963 49 15 55",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dr. victor perez chicote, doctor en odontologia_carrer de lluís oliag, 69, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Dr. Victor Perez Chicote, Doctor en Odontologia",
+      "address": "Carrer de Lluís Oliag, 69, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 33 62 38",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "bienestar dental valencia campanar_av. de pius xii, 28, campanar, 46015 valència, valencia, spain": {
+      "name": "Bienestar Dental Valencia Campanar",
+      "address": "Av. de Pius XII, 28, Campanar, 46015 València, Valencia, Spain",
+      "phone": "+34 679 25 75 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental vitaldent_c/ de l'escultor josep capuz, 20, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C/ de l'Escultor Josep Capuz, 20, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 16 11 12",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "facultat de medicina i odontologia_av. de blasco ibáñez, 15, el pla del real, 46010 valència, valencia, spain": {
+      "name": "Facultat de Medicina i Odontologia",
+      "address": "Av. de Blasco Ibáñez, 15, El Pla del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 963 86 41 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "amparo fortaña burgos_av. del port, 119, camins al grau, 46022 valència, valencia, spain": {
+      "name": "Amparo Fortaña Burgos",
+      "address": "Av. del Port, 119, Camins al Grau, 46022 València, Valencia, Spain",
+      "phone": "+34 963 30 10 18",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "sant lluís dental s l p_c/ de la fonteta de sant lluís, 6, quatre carreres, 46006 valència, valencia, spain": {
+      "name": "Sant Lluís Dental S L P",
+      "address": "C/ de la Fonteta de Sant Lluís, 6, Quatre Carreres, 46006 València, Valencia, Spain",
+      "phone": "+34 963 73 00 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica catarineu arribas_c/ de sant francesc de borja, 5, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Catarineu Arribas",
+      "address": "C/ de Sant Francesc de Borja, 5, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 80 87 22",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "doctor silvestre rangil - clínica dental en valencia_c/ de guillem de castro, 141, pta 4, extramurs, 46008 valència, valencia, spain": {
+      "name": "Doctor Silvestre Rangil - Clínica Dental en Valencia",
+      "address": "C/ de Guillem de Castro, 141, Pta 4, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 91 74 84",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental doctores gascón_av. del primat reig, 151, benimaclet, 46020 valència, valencia, spain": {
+      "name": "Clínica Dental Doctores Gascón",
+      "address": "Av. del Primat Reig, 151, Benimaclet, 46020 València, Valencia, Spain",
+      "phone": "+34 963 61 17 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental carlos cervera_carrer del brasil, 5, l'olivereta, 46018 valència, valencia, spain": {
+      "name": "Clínica Dental Carlos Cervera",
+      "address": "Carrer del Brasil, 5, L'Olivereta, 46018 València, Valencia, Spain",
+      "phone": "+34 963 83 60 24",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental elena selva_c/ del comte de torrefiel, 102, rascaña, 46019 valència, valencia, spain": {
+      "name": "Clínica Dental Elena Selva",
+      "address": "C/ del Comte de Torrefiel, 102, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 665 07 44 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental ribera 18_c/ de ribera, nº 18, 4ºb, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Clinica Dental Ribera 18",
+      "address": "C/ de Ribera, nº 18, 4ºB, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 963 28 55 54",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. luis martorell_gran via de les germanies, 39, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Luis Martorell",
+      "address": "Gran Via de les Germanies, 39, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 41 41 47",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "javier sarrión martínez_c/ de josé grollo, 60, 2ª, benicalap, 46025 valència, valencia, spain": {
+      "name": "Javier Sarrión Martínez",
+      "address": "C/ de José Grollo, 60, 2ª, Benicalap, 46025 València, Valencia, Spain",
+      "phone": "+34 963 49 21 30",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica nou dental_carrer del duc de mandas, 11, rascaña, 46019 valència, valencia, spain": {
+      "name": "Clínica Nou Dental",
+      "address": "Carrer del Duc de Mandas, 11, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 963 66 48 46",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "sos odontologia social clinica dental_bajo, carrer de berni i català, 55, 46019 valència, valencia, spain": {
+      "name": "SOS Odontologia Social Clinica Dental",
+      "address": "bajo, Carrer de Berni i Català, 55, 46019 València, Valencia, Spain",
+      "phone": "+34 960 44 51 02",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica benet - odontología_c/ de sagunt, 203, bajo izquierda, la zaidía, 46009 valència, valencia, spain": {
+      "name": "Clínica Benet - Odontología",
+      "address": "C/ de Sagunt, 203, bajo izquierda, La Zaidía, 46009 València, Valencia, Spain",
+      "phone": "+34 963 66 42 77",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental elena mora escribano_c/ de l'arxiduc carles, 44, patraix, 46014 valència, valencia, spain": {
+      "name": "Clínica Dental Elena Mora Escribano",
+      "address": "C/ de l'Arxiduc Carles, 44, Patraix, 46014 València, Valencia, Spain",
+      "phone": "+34 963 57 42 00",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "imed dental valencia_av. de la ilustración, 1, 46100 burjassot, valencia, spain": {
+      "name": "IMED Dental Valencia",
+      "address": "Av. de la Ilustración, 1, 46100 Burjassot, Valencia, Spain",
+      "phone": "+34 963 00 30 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dentista gisela_av.de la malva-rosa, 64, poblados marítimos, 46011 valència, valencia, spain": {
+      "name": "Dentista Gisela",
+      "address": "Av.de la Malva-Rosa, 64, Poblados Marítimos, 46011 València, Valencia, Spain",
+      "phone": "+34 963 55 24 09",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra belén miquel_carrer de navarra, 8, bajo, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica Dental Dra Belén Miquel",
+      "address": "Carrer de Navarra, 8, bajo, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 84 42 13",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental vendent implantes dentales_c/ de veneçuela, 22, 1 bajo centro, jesús, 46007 valència, valencia, spain": {
+      "name": "Clinica Dental Vendent Implantes Dentales",
+      "address": "C/ de Veneçuela, 22, 1 Bajo Centro, Jesús, 46007 València, Valencia, Spain",
+      "phone": "+34 961 05 20 15",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "protésico dental valencia_carrer de cambrils, 9, rascaña, 46019 valència, valencia, spain": {
+      "name": "Protésico Dental Valencia",
+      "address": "Carrer de Cambrils, 9, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 960 44 96 95",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica rocafort_carrer bonavista, 15, 46111 rocafort, valencia, spain": {
+      "name": "Clinica Rocafort",
+      "address": "Carrer Bonavista, 15, 46111 Rocafort, Valencia, Spain",
+      "phone": "+34 961 31 24 42",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "dr. fernando ruiz roda, dentista_c/ del pare urbano, nº31, bajo, la zaidía, 46009 valència, valencia, spain": {
+      "name": "Dr. Fernando Ruiz Roda, Dentista",
+      "address": "C/ del Pare Urbano, Nº31, bajo, La Zaidía, 46009 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental mark | dentistas en madrid | clínicas dentales madrid_c. de los hermanos machado, 20, loc bajo izquierda, cdad. lineal, 28017 madrid, spain": {
+      "name": "Clínica Dental Mark | Dentistas en Madrid | Clínicas Dentales Madrid",
+      "address": "C. de los Hermanos Machado, 20, Loc bajo izquierda, Cdad. Lineal, 28017 Madrid, Spain",
+      "phone": "+34 614 85 48 42",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental doctora mónica toledo_c. de pobla de segur, 1, hortaleza, 28033 madrid, spain": {
+      "name": "Clínica Dental Doctora Mónica Toledo",
+      "address": "C. de Pobla de Segur, 1, Hortaleza, 28033 Madrid, Spain",
+      "phone": "+34 913 02 55 29",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental en avenida de la ilustración mirasierra peñagrande_c. de ramón gómez de la serna, 5, loc 10, fuencarral-el pardo, 28035 madrid, spain": {
+      "name": "Clínica Dental en Avenida de la Ilustración Mirasierra Peñagrande",
+      "address": "C. de Ramón Gómez de la Serna, 5, Loc 10, Fuencarral-El Pardo, 28035 Madrid, Spain",
+      "phone": "+34 913 73 06 95",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "hinboca clínica dental_c. de josé de cadalso, 64, latina, 28044 madrid, spain": {
+      "name": "Hinboca Clínica Dental",
+      "address": "C. de José de Cadalso, 64, Latina, 28044 Madrid, Spain",
+      "phone": "+34 917 92 86 92",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "salud dental blanco | dentista carabanchel bajo_c. de antonio de leyva, 6, carabanchel, 28019 madrid, spain": {
+      "name": "Salud Dental Blanco | Dentista Carabanchel Bajo",
+      "address": "C. de Antonio de Leyva, 6, Carabanchel, 28019 Madrid, Spain",
+      "phone": "+34 914 69 17 03",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica orgaz dental_av. de machupichu, 35, hortaleza, 28043 madrid, spain": {
+      "name": "Clínica Orgaz Dental",
+      "address": "Av. de Machupichu, 35, Hortaleza, 28043 Madrid, Spain",
+      "phone": "+34 917 16 19 35",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro odontológico dr. jorge megía_calle de o'donnell, 47, local, salamanca, 28009 madrid, spain": {
+      "name": "Centro Odontológico Dr. Jorge Megía",
+      "address": "Calle de O'Donnell, 47, local, Salamanca, 28009 Madrid, Spain",
+      "phone": "+34 696 15 39 70",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental fernández de los ríos | expertos en implantes avanzados_c. de fernández de los ríos, 17, loc, chamberí, 28015 madrid, spain": {
+      "name": "Clínica Dental Fernández de los Ríos | Expertos en implantes avanzados",
+      "address": "C. de Fernández de los Ríos, 17, Loc, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 910 05 97 95",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "interoralia - dental clinic_c. de guzmán el bueno, 69, chamberí, 28015 madrid, spain": {
+      "name": "Interoralia - Dental Clinic",
+      "address": "C. de Guzmán el Bueno, 69, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 911 25 24 34",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "sanchez vaquero clínica dental_c. de aguilón, 4, local 2, arganzuela, 28045 madrid, spain": {
+      "name": "SANCHEZ VAQUERO Clínica Dental",
+      "address": "C. de Aguilón, 4, Local 2, Arganzuela, 28045 Madrid, Spain",
+      "phone": "+34 914 73 55 79",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "abecedent clínica dental_calle del príncipe de vergara, 211, 1º escalera izquierda, chamartín, 28002 madrid, spain": {
+      "name": "Abecedent Clínica Dental",
+      "address": "Calle del Príncipe de Vergara, 211, 1º Escalera Izquierda, Chamartín, 28002 Madrid, Spain",
+      "phone": "+34 914 11 01 31",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica baobab_c. de fernando el católico, 57, bajo a, chamberí, 28015 madrid, spain": {
+      "name": "Clínica Baobab",
+      "address": "C. de Fernando el Católico, 57, bajo a, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 676 57 89 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental sisto & de vargas_c. de espartinas, 6, salamanca, 28001 madrid, spain": {
+      "name": "Clínica dental Sisto & de Vargas",
+      "address": "C. de Espartinas, 6, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 911 76 54 11",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro dental lastra astorga_c. de fernández de los ríos, 86, chamberí, 28015 madrid, spain": {
+      "name": "Centro Dental Lastra Astorga",
+      "address": "C. de Fernández de los Ríos, 86, Chamberí, 28015 Madrid, Spain",
+      "phone": "+34 915 43 66 43",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "pelayo clinica dental_c. del príncipe, 33, 1ºb, centro, 28012 madrid, spain": {
+      "name": "Pelayo Clinica Dental",
+      "address": "C. del Príncipe, 33, 1ºB, Centro, 28012 Madrid, Spain",
+      "phone": "+34 914 29 48 59",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "jennifer visser navarro - clínica odontólogica_c. de valdesangil, 18, moncloa - aravaca, 28039 madrid, spain": {
+      "name": "Jennifer Visser Navarro - Clínica Odontólogica",
+      "address": "C. de Valdesangil, 18, Moncloa - Aravaca, 28039 Madrid, Spain",
+      "phone": "+34 913 16 80 10",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental doctor madrid_c. de venezuela, 7, loc, 28823 coslada, madrid, spain": {
+      "name": "Clínica Dental Doctor Madrid",
+      "address": "C. de Venezuela, 7, Loc, 28823 Coslada, Madrid, Spain",
+      "phone": "+34 916 73 69 34",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "ariño dental_calle del gral. ricardos, 92, loc derecho, carabanchel, 28019 madrid, spain": {
+      "name": "Ariño Dental",
+      "address": "Calle del Gral. Ricardos, 92, Loc derecho, Carabanchel, 28019 Madrid, Spain",
+      "phone": "+34 914 72 19 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "elite dental menéndez pelayo_av. de menéndez pelayo, 95, retiro, 28007 madrid, spain": {
+      "name": "Elite Dental Menéndez Pelayo",
+      "address": "Av. de Menéndez Pelayo, 95, Retiro, 28007 Madrid, Spain",
+      "phone": "+34 915 01 21 11",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental milenium el corte ingles callao - sanitas_pl. del callao, 2, centro, 28013 madrid, spain": {
+      "name": "Clínica Dental Milenium El Corte Ingles Callao - Sanitas",
+      "address": "Pl. del Callao, 2, Centro, 28013 Madrid, Spain",
+      "phone": "+34 917 16 58 40",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "centro dental martínez de velasco_c. de hermosilla, 88, salamanca, 28001 madrid, spain": {
+      "name": "Centro Dental Martínez De Velasco",
+      "address": "C. de Hermosilla, 88, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 914 01 90 30",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "sedación dental madrid_c. luarca, 13, 28231 las rozas de madrid, madrid, spain": {
+      "name": "SEDACIÓN DENTAL MADRID",
+      "address": "C. Luarca, 13, 28231 Las Rozas de Madrid, Madrid, Spain",
+      "phone": "+34 644 31 93 49",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "fourden_c/ del alcalde sainz de baranda, 35, retiro, 28009 madrid, spain": {
+      "name": "Fourden",
+      "address": "C/ del Alcalde Sainz de Baranda, 35, Retiro, 28009 Madrid, Spain",
+      "phone": "+34 914 47 28 49",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "privilege dental_calle del gral. pardiñas, 34, salamanca, 28001 madrid, spain": {
+      "name": "Privilege Dental",
+      "address": "Calle del Gral. Pardiñas, 34, Salamanca, 28001 Madrid, Spain",
+      "phone": "+34 603 25 15 66",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "dentistas en chamberí_calle de zurbano, 39, chamberí, 28010 madrid, spain": {
+      "name": "Dentistas en Chamberí",
+      "address": "Calle de Zurbano, 39, Chamberí, 28010 Madrid, Spain",
+      "phone": "+34 917 12 32 74",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "maría josé martínez lozano, dentista_c. de luchana, 28, chamberí, 28010 madrid, spain": {
+      "name": "María José Martínez Lozano, Dentista",
+      "address": "C. de Luchana, 28, Chamberí, 28010 Madrid, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Madrid, España"
+    },
+    "clínica dental care barcelona | urgencias dentales_carrer de calàbria, 205, eixample, 08029 barcelona, spain": {
+      "name": "Clínica Dental Care Barcelona | Urgencias dentales",
+      "address": "Carrer de Calàbria, 205, Eixample, 08029 Barcelona, Spain",
+      "phone": "+34 648 00 86 89",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "rodríguez solucions dentals/clinica dental_av. de sant ramon nonat, 4, les corts, 08028 barcelona, spain": {
+      "name": "Rodríguez Solucions Dentals/Clinica Dental",
+      "address": "Av. de Sant Ramon Nonat, 4, Les Corts, 08028 Barcelona, Spain",
+      "phone": "+34 934 48 31 91",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental josmel_carrer de teodor bonaplata, 6, sants-montjuïc, 08004 barcelona, spain": {
+      "name": "Clínica Dental Josmel",
+      "address": "Carrer de Teodor Bonaplata, 6, Sants-Montjuïc, 08004 Barcelona, Spain",
+      "phone": "+34 933 25 98 01",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "happyclínica dental clinic_carrer del rosselló, 255, 2º 1ª, eixample, 08008 barcelona, spain": {
+      "name": "HappyClínica Dental clinic",
+      "address": "Carrer del Rosselló, 255, 2º 1ª, Eixample, 08008 Barcelona, Spain",
+      "phone": "+34 665 64 86 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "dra. ruth carvajal rodriguez, dentista_carrer del rosselló, 183, entlo 2, eixample, 08036 barcelona, spain": {
+      "name": "Dra. Ruth Carvajal Rodriguez, Dentista",
+      "address": "Carrer del Rosselló, 183, Entlo 2, Eixample, 08036 Barcelona, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "france dental clinique barcelone_carrer de floridablanca, 87, eixample, 08015 barcelona, spain": {
+      "name": "FRANCE DENTAL CLINIQUE BARCELONE",
+      "address": "Carrer de Floridablanca, 87, Eixample, 08015 Barcelona, Spain",
+      "phone": "+33 6 28 27 01 18",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "saiz dental clinic_gran via de les corts catalanes, 634, primero tercera, eixample, 08007 barcelona, spain": {
+      "name": "Saiz dental clinic",
+      "address": "Gran Via de les Corts Catalanes, 634, Primero tercera, Eixample, 08007 Barcelona, Spain",
+      "phone": "+34 606 10 50 62",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "arianna borràs gibert, dentista_carrer de pau claris, 95, 1ero, 2da, eixample, 08009 barcelona, spain": {
+      "name": "Arianna Borràs Gibert, Dentista",
+      "address": "Carrer de Pau Claris, 95, 1ero, 2da, Eixample, 08009 Barcelona, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "centre dental fort pienc s.l._c. de sicília, 164, eixample, 08013 barcelona, spain": {
+      "name": "Centre Dental Fort Pienc S.L.",
+      "address": "C. de Sicília, 164, Eixample, 08013 Barcelona, Spain",
+      "phone": "+34 932 65 46 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Barcelona, España"
+    },
+    "clínica dental vicente martínez vm_plaça d'espanya, 1, piso 3, puerta 6, extramurs, 46007 valència, valencia, spain": {
+      "name": "Clínica Dental Vicente Martínez VM",
+      "address": "Plaça d'Espanya, 1, piso 3, puerta 6, Extramurs, 46007 València, Valencia, Spain",
+      "phone": "+34 963 51 22 67",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. vicente faus - valencia_carrer del duc de mandas, 15, rascaña, 46019 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Vicente Faus - Valencia",
+      "address": "Carrer del Duc de Mandas, 15, Rascaña, 46019 València, Valencia, Spain",
+      "phone": "+34 963 32 00 88",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "implant clinics_paseo de la alameda, 52, (frente c. comercial aqua), 46023 valència, valencia, spain": {
+      "name": "Implant Clinics",
+      "address": "Paseo de la Alameda, 52, (Frente C. Comercial Aqua), 46023 València, Valencia, Spain",
+      "phone": "+34 962 06 50 65",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. fuset_gran via de les germanies, 10, 2º, 3º, ensanche, 46006 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Fuset",
+      "address": "Gran Via de les Germanies, 10, 2º, 3º, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "+34 963 41 90 90",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "déniz clínica dental_carrer de matias perelló, 49, bajo derecha, ensanche, 46005 valència, valencia, spain": {
+      "name": "Déniz Clínica Dental",
+      "address": "Carrer de Matias Perelló, 49, Bajo derecha, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 601 47 29 74",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dr. mateo sánchez acedo_c. del n, 15, bajo, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Mateo Sánchez Acedo",
+      "address": "C. del N, 15, bajo, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 84 87 98",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "teeth whitening valencia | osmile | professional & affordable laser whitening • valencia_avinguda del doctor waksman, 63, bajo 4 esq, quatre carreres, 46013 valència, valencia, spain": {
+      "name": "Teeth Whitening Valencia | OSmile | Professional & Affordable Laser Whitening • Valencia",
+      "address": "Avinguda del Doctor Waksman, 63, bajo 4 Esq, Quatre Carreres, 46013 València, Valencia, Spain",
+      "phone": "+34 656 39 21 29",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental el carmen_c. de alejandra soler, 3, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Clínica Dental El Carmen",
+      "address": "C. de Alejandra Soler, 3, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 608 63 02 74",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "carillas dentales ilumine_carrer de sant vicent màrtir, 55, ciutat vella, 46002 valència, valencia, spain": {
+      "name": "Carillas dentales ilumine",
+      "address": "Carrer de Sant Vicent Màrtir, 55, Ciutat Vella, 46002 València, Valencia, Spain",
+      "phone": "+34 601 50 45 42",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental celia haya_c/ de vicente beltrán grimal, 8, 1, camins al grau, 46023 valència, valencia, spain": {
+      "name": "Clínica Dental Celia Haya",
+      "address": "C/ de Vicente Beltrán Grimal, 8, 1, Camins al Grau, 46023 València, Valencia, Spain",
+      "phone": "+34 963 31 21 21",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental amparo castañer_gran via de ferran el catòlic, 68, 1º piso, pta 2, extramurs, 46008 valència, valencia, spain": {
+      "name": "Clínica Dental Amparo Castañer",
+      "address": "Gran Via de Ferran el Catòlic, 68, 1º piso, pta 2, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 963 92 53 16",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "digitac dental s.l._av. d'aragó, 29, el llano del real, 46010 valència, valencia, spain": {
+      "name": "DIGITAC DENTAL S.L.",
+      "address": "Av. d'Aragó, 29, El Llano del Real, 46010 València, Valencia, Spain",
+      "phone": "+34 963 32 80 01",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinica dental valencia_carrer de lluçà, 42, les corts, 08028 barcelona, spain": {
+      "name": "Clinica Dental Valencia",
+      "address": "Carrer de Lluçà, 42, Les Corts, 08028 Barcelona, Spain",
+      "phone": "+34 682 54 48 99",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental pérez-jorge_carrer del comte d'altea, 9, ensanche, 46005 valència, valencia, spain": {
+      "name": "Clínica Dental Pérez-Jorge",
+      "address": "Carrer del Comte d'Altea, 9, Ensanche, 46005 València, Valencia, Spain",
+      "phone": "+34 963 11 91 02",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica aliaga_carrer de jorge juan, 5, ensanche, 46004 valència, valencia, spain": {
+      "name": "Clínica Aliaga",
+      "address": "Carrer de Jorge Juan, 5, Ensanche, 46004 València, Valencia, Spain",
+      "phone": "+34 963 51 31 93",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental san josé quilis_carrer del crist del refugi, 37, poblados del sur, 46026 valència, valencia, spain": {
+      "name": "Clínica dental San José Quilis",
+      "address": "Carrer del Crist del Refugi, 37, Poblados del Sur, 46026 València, Valencia, Spain",
+      "phone": "+34 640 62 96 76",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "santident clínica dental picanya_carrer sant joan baptista, 23, 46210 picanya, valencia, spain": {
+      "name": "Santident Clínica Dental Picanya",
+      "address": "Carrer Sant Joan Baptista, 23, 46210 Picanya, Valencia, Spain",
+      "phone": "+34 961 08 46 36",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "hispana-dental dra ana mª valencia_c/ de veneçuela, 22, jesús, 46007 valència, valencia, spain": {
+      "name": "Hispana-Dental Dra Ana Mª Valencia",
+      "address": "C/ de Veneçuela, 22, Jesús, 46007 València, Valencia, Spain",
+      "phone": "+34 677 05 93 02",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "3dentalstudio valencia_carrer de l'heroi romeu, 7, bajo, extramurs, 46008 valència, valencia, spain": {
+      "name": "3DentalStudio Valencia",
+      "address": "Carrer de l'Heroi Romeu, 7, bajo, Extramurs, 46008 València, Valencia, Spain",
+      "phone": "+34 662 67 89 28",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental dra. roxana gonzález galván_c/ de la floresta, 28, camins al grau, 46022 valència, valencia, spain": {
+      "name": "Clínica Dental Dra. Roxana González Galván",
+      "address": "C/ de la Floresta, 28, Camins al Grau, 46022 València, Valencia, Spain",
+      "phone": "+34 963 55 42 42",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clínica dental y podológica ciudad fallera_av. de sant josep artesà, 2, benicalap, 46025 valència, valencia, spain": {
+      "name": "Clínica Dental y Podológica Ciudad Fallera",
+      "address": "Av. de Sant Josep Artesà, 2, Benicalap, 46025 València, Valencia, Spain",
+      "phone": "+34 963 40 85 88",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "plusdental ️ valencia ruzafa_c/ de carles cervera, 12, bajo, ensanche, 46006 valència, valencia, spain": {
+      "name": "PlusDental ️ Valencia Ruzafa",
+      "address": "C/ de Carles Cervera, 12, bajo, Ensanche, 46006 València, Valencia, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "san jose quilis dentistas_c/ de mossèn cuenca, 20, pobles del sud, 46012 valència, valencia, spain": {
+      "name": "San Jose Quilis Dentistas",
+      "address": "C/ de Mossèn Cuenca, 20, Pobles del Sud, 46012 València, Valencia, Spain",
+      "phone": "+34 601 11 94 46",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "clinicas dentales_av. del port, 266, poblats marítims, 46024 valència, valencia, spain": {
+      "name": "Clinicas Dentales",
+      "address": "Av. del Port, 266, Poblats Marítims, 46024 València, Valencia, Spain",
+      "phone": "+34 963 67 44 03",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
+    },
+    "depósito dental dentival sl_pl. de vicent iborra, 6, ciutat vella, 46003 valència, valencia, spain": {
+      "name": "Depósito Dental Dentival SL",
+      "address": "Pl. de Vicent Iborra, 6, Ciutat Vella, 46003 València, Valencia, Spain",
+      "phone": "+34 963 91 15 97",
+      "scrapedAt": "2026-07-11T16:16:39.456Z",
+      "query": "clinica dental\nodontologos\ndentistas",
+      "location": "Valencia, España"
     }
   },
   "searches": [
@@ -67281,6 +69367,17 @@
       "timestamp": "2026-06-26T16:32:52.740Z",
       "newFound": 354,
       "duplicatesSkipped": 0
+    },
+    {
+      "query": "clinica dental | odontologos | dentistas",
+      "locations": [
+        "Madrid, España",
+        "Barcelona, España",
+        "Valencia, España"
+      ],
+      "timestamp": "2026-07-11T16:16:39.456Z",
+      "newFound": 261,
+      "duplicatesSkipped": 569
     }
   ],
   "lastPages": {
@@ -67316,7 +69413,7 @@
     "clinica dental_bogotá, colombia": 50,
     "estetica dental_bogotá, colombia": 50,
     "consultorio odontologico_bogotá, colombia": 50,
-    "clinica dental_barcelona, españa": 50,
+    "clinica dental_barcelona, españa": 75,
     "estetica dental_barcelona, españa": 50,
     "consultorio odontologico_barcelona, españa": 50,
     "clinica dental_málaga, españa": 10,
@@ -67417,7 +69514,7 @@
     "consultorio odontologico_madrid, españa": 10,
     "dentista_madrid, españa": 10,
     "odontologo_barcelona, españa": 5,
-    "clinica dental_valencia, españa": 5,
+    "clinica dental_valencia, españa": 12,
     "odontologo_valencia, españa": 5,
     "estetica dental_valencia, españa": 5,
     "consultorio odontologico_valencia, españa": 5,
@@ -67432,6 +69529,12 @@
     "medical aesthetics clinic_calgary, canadá": 10,
     "med spa_calgary, canadá": 10,
     "cosmetic dentist_calgary, canadá": 10,
-    "dental clinic_calgary, canadá": 10
+    "dental clinic_calgary, canadá": 10,
+    "odontologos_madrid, españa": 13,
+    "odontologos_barcelona, españa": 13,
+    "odontologos_valencia, españa": 12,
+    "dentistas_madrid, españa": 14,
+    "dentistas_barcelona, españa": 14,
+    "dentistas_valencia, españa": 13
   }
 }
