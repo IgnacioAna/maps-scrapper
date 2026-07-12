@@ -384,6 +384,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!allowed.includes(currentUser.role)) el.classList.add('hidden');
     });
 
+    // ─── Supervisor scoped (Phase 18): oculta las vistas que el backend 403ea ───
+    // Un supervisor con visibleSetterIds restringido no puede ver pool/Distribución,
+    // Centro de Comando ni Equipo online (data global de setters fuera de su lista).
+    // Supervisor sin lista (visibleSetterIds vacío) = ve todo, comportamiento intacto.
+    const _isScopedSupervisor = currentUser.role === 'supervisor' && (currentUser.visibleSetterIds?.length > 0);
+    if (_isScopedSupervisor) {
+      const SCOPED_HIDDEN_VIEWS = ['view-pool', 'view-command', 'view-online'];
+      SCOPED_HIDDEN_VIEWS.forEach((v) => {
+        document.querySelectorAll('[data-target="' + v + '"]').forEach((el) => el.classList.add('hidden'));
+      });
+    }
+
     // ─── Modo "Ver como" (impersonation visual del admin) ──────────────────
     // Solo el admin REAL puede usar esta funcionalidad. Si esta en modo
     // viewAs, mostramos banner sticky + permitimos volver a admin.
@@ -9249,6 +9261,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
             acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" title="Resetear la contraseña de este usuario" onclick="window._resetUserPassword(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Clave</button>');
           }
+          // Supervisor: editar qué SDRs puede ver (visibleSetterIds).
+          // Vacío = ve todos. Solo aplica al rol supervisor.
+          if (user.role === 'supervisor') {
+            const visJson = encodeURIComponent(JSON.stringify(user.visibleSetterIds || []));
+            const visCount = (user.visibleSetterIds || []).length;
+            const visLabel = visCount > 0 ? ('Setters visibles (' + visCount + ')') : 'Setters visibles';
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" title="Elegir qué SDRs puede ver este supervisor (vacío = todos)" onclick="window._editVisibleSetters(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.name || user.email || '') + '\'), decodeURIComponent(\'' + visJson + '\'))">' + visLabel + '</button>');
+          }
           // Acciones especificas de SDR
           if (user.role === 'setter') {
             const isOrphan = !user.setterId || !validSetterIds.has(user.setterId);
@@ -9374,6 +9394,70 @@ document.addEventListener('DOMContentLoaded', async () => {
       const wrap = document.createElement('div');
       wrap.innerHTML = html;
       document.body.appendChild(wrap.firstChild);
+    };
+
+    // Editor de setters visibles de un supervisor (visibleSetterIds).
+    // Overlay con checkboxes de TODOS los setters; tildados = los que ve.
+    // Vacío = ve todos (comportamiento default del rol supervisor).
+    window._editVisibleSetters = async (userId, userName, currentIdsJson) => {
+      let current = [];
+      try { current = JSON.parse(currentIdsJson || '[]'); } catch (e) { current = []; }
+      const currentSet = new Set(current);
+      let setters = [];
+      try {
+        const r = await fetch(apiUrl('/api/setters'));
+        const d = await r.json();
+        setters = (d.setters || []).filter(s => !s.hidden);
+      } catch (e) {
+        alert('Error cargando setters: ' + e.message);
+        return;
+      }
+      const rows = setters.map(s => {
+        const checked = currentSet.has(s.id) ? ' checked' : '';
+        return '<label style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; cursor:pointer; border:1px solid var(--border-subtle); background:var(--bg-surface);">' +
+          '<input type="checkbox" class="vs-setter-cb" value="' + escHtml(s.id) + '"' + checked + ' style="width:16px; height:16px; accent-color:var(--accent);">' +
+          '<span style="font-size:13px; color:var(--text-primary);">' + escHtml(s.name || s.id) + '</span>' +
+        '</label>';
+      }).join('');
+      const html = '<div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:9999;" onclick="if(event.target===this) this.remove()">' +
+        '<div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:14px; padding:24px; max-width:520px; width:92%; max-height:88vh; overflow:auto;">' +
+        '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
+          '<h2 style="margin:0; color:var(--text-primary); font-size:18px;">Setters visibles · ' + escHtml(userName) + '</h2>' +
+          '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
+        '</div>' +
+        '<div style="color:var(--text-secondary); font-size:12px; margin-bottom:16px;">Elegí qué SDRs puede ver este supervisor. Vacío = ve todos los setters.</div>' +
+        '<div id="vs-setter-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">' + (rows || '<div style="color:var(--text-tertiary); font-size:13px;">No hay setters.</div>') + '</div>' +
+        '<div style="display:flex; gap:8px; justify-content:flex-end;">' +
+          '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="font-size:13px; background:none; color:var(--text-secondary); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>' +
+          '<button id="vs-save-btn" style="font-size:13px; background:var(--accent); color:#0F1115; border:none; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:600;" data-user="' + escHtml(userId) + '">Guardar</button>' +
+        '</div>' +
+        '</div></div>';
+      const wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      const overlay = wrap.firstChild;
+      document.body.appendChild(overlay);
+      const saveBtn = overlay.querySelector('#vs-save-btn');
+      saveBtn.addEventListener('click', async () => {
+        const ids = Array.from(overlay.querySelectorAll('.vs-setter-cb'))
+          .filter(cb => cb.checked).map(cb => cb.value);
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+        try {
+          const r = await fetch(apiUrl('/api/auth/users/' + userId), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ visibleSetterIds: ids })
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+          overlay.remove();
+          await loadUsersPanel();
+        } catch (e) {
+          alert('Error guardando: ' + e.message);
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Guardar';
+        }
+      });
     };
 
     // Marca los 8 modulos como aprobados para "darle libre" a un SDR
@@ -9527,6 +9611,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // Selector de setters visibles en el invite: solo se muestra cuando el rol
+    // elegido es supervisor. Se puebla on-demand con todos los setters.
+    const inviteRoleSel = document.getElementById('invite-role');
+    const inviteVisibleBox = document.getElementById('invite-visible-setters');
+    const inviteVisibleList = document.getElementById('invite-visible-setters-list');
+    let _inviteVisibleLoaded = false;
+    async function _populateInviteVisibleSetters() {
+      if (_inviteVisibleLoaded || !inviteVisibleList) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters'));
+        const d = await r.json();
+        const setters = (d.setters || []).filter(s => !s.hidden);
+        inviteVisibleList.innerHTML = setters.map(s =>
+          '<label style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border-subtle); border-radius:8px; cursor:pointer; font-size:12px; color:var(--text-primary);">' +
+          '<input type="checkbox" class="invite-vs-cb" value="' + escHtml(s.id) + '" style="width:15px; height:15px; accent-color:var(--accent);">' +
+          escHtml(s.name || s.id) + '</label>'
+        ).join('') || '<span style="font-size:12px; color:var(--text-tertiary);">No hay setters.</span>';
+        _inviteVisibleLoaded = true;
+      } catch (e) { /* no-op */ }
+    }
+    if (inviteRoleSel && inviteVisibleBox) {
+      inviteRoleSel.addEventListener('change', () => {
+        if (inviteRoleSel.value === 'supervisor') {
+          inviteVisibleBox.classList.remove('hidden');
+          _populateInviteVisibleSetters();
+        } else {
+          inviteVisibleBox.classList.add('hidden');
+        }
+      });
+    }
+
     if (inviteUserBtn) {
       inviteUserBtn.addEventListener('click', async () => {
         const name = document.getElementById('invite-name').value.trim();
@@ -9538,11 +9653,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         inviteUserBtn.textContent = 'Enviando...';
         if (inviteResultDiv) inviteResultDiv.classList.add('hidden');
 
+        const inviteBody = { name, email, role, sendEmail: true };
+        if (role === 'supervisor' && inviteVisibleList) {
+          inviteBody.visibleSetterIds = Array.from(inviteVisibleList.querySelectorAll('.invite-vs-cb'))
+            .filter(cb => cb.checked).map(cb => cb.value);
+        }
+
         try {
           const resp = await fetch(apiUrl('/api/auth/invites'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, role, sendEmail: true })
+            body: JSON.stringify(inviteBody)
           });
           const data = await resp.json();
           if (!resp.ok) throw new Error(data.error || 'No se pudo crear la invitación.');
@@ -9569,6 +9690,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           document.getElementById('invite-name').value = '';
           document.getElementById('invite-email').value = '';
+          if (inviteVisibleList) inviteVisibleList.querySelectorAll('.invite-vs-cb').forEach(cb => { cb.checked = false; });
           await loadUsersPanel();
         } catch (err) {
           alert(err.message || 'Error al crear la invitación.');
@@ -10752,8 +10874,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Vista por defecto para TODOS los roles: Llamadas (el Setteo WhatsApp quedó
     // parkeado — "todo el trabajo es por llamada"). El handler de view-calls ya está
     // bindeado (línea ~7242), así que el click dispara loadCallsView() y carga la data.
-    const _defaultMenuItem = document.querySelector('[data-target="view-calls"]');
-    _defaultMenuItem?.click();
+    // Home del supervisor scoped (Phase 18): aterriza en Equipo (panel de
+    // rendimiento) en vez de Llamadas. Supervisor sin lista y demás roles → Llamadas.
+    // El click de view-team se difiere: su loader (_teamLoad) se bindea más abajo
+    // en este mismo init (~línea 14200), así que un setTimeout(0) garantiza que el
+    // listener ya esté montado cuando disparamos el click.
+    if (currentUser?.role === 'supervisor' && currentUser?.visibleSetterIds?.length > 0) {
+      setTimeout(() => {
+        const _teamMenuItem = document.querySelector('[data-target="view-team"]');
+        (_teamMenuItem || document.querySelector('[data-target="view-calls"]'))?.click();
+      }, 0);
+    } else {
+      const _defaultMenuItem = document.querySelector('[data-target="view-calls"]');
+      _defaultMenuItem?.click();
+    }
     if (currentUser?.role === 'setter') {
       setTimeout(() => { checkWelcomeBanner(); }, 200);
     }
