@@ -3972,6 +3972,33 @@ function _isAlreadyScraped(history, idx, item) {
   return false;
 }
 
+// Índice de dedup de los leads YA ASIGNADOS a los SDRs (setters.json). Mismo
+// shape que _buildHistoryDedupIndex → se consulta con _isInSettersIndex. Todos
+// los leads de setters tienen teléfono, así que este índice es MÁS fuerte que
+// el del historial (que solo tiene teléfono en ~5% de las entries viejas).
+function _buildSettersDedupIndex(settersData) {
+  const normKeys = new Set();
+  const phones = new Set();
+  for (const l of Object.values((settersData && settersData.leads) || {})) {
+    const normName = normalizeNameForDedup(l.name);
+    const normAddr = normalizeAddressForDedup(l.address);
+    if (normName && normAddr) normKeys.add(`${normName}_${normAddr}`);
+    const normPhone = normalizePhoneForDedup(l.phone || l.webWhatsApp || l.aiWhatsApp);
+    if (normPhone) phones.add(normPhone);
+  }
+  return { normKeys, phones };
+}
+
+function _isInSettersIndex(idx, item) {
+  if (!idx) return false;
+  const normPhone = normalizePhoneForDedup(item.phone);
+  if (normPhone && idx.phones.has(normPhone)) return true;
+  const normName = normalizeNameForDedup(item.name);
+  const normAddr = normalizeAddressForDedup(item.address);
+  if (normName && normAddr && idx.normKeys.has(`${normName}_${normAddr}`)) return true;
+  return false;
+}
+
 // ── Mutex para history y scrape_batches (regla #19: mismo patrón que
 // mutateSettersData). El endpoint /api/scrape tiene awaits largos (SerpAPI)
 // entre load y save → dos scrapes concurrentes se pisaban el archivo.
@@ -4268,6 +4295,12 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     // hacían que dos scrapes concurrentes se pisaran el archivo).
     const history = loadHistory();
     const historyIdx = _buildHistoryDedupIndex(history);
+    // Audit 2026-07-11: además del historial, dedupear contra los leads YA
+    // ASIGNADOS a un SDR. El historial solo tiene teléfono en ~5% de las entries
+    // (las viejas no) → clínicas ya en el sistema se colaban como "nuevas" y la
+    // dedup del ENVÍO las frenaba después (cartel confuso de "duplicados"). Con
+    // esto se marcan "ya scrapeado" desde el vamos y "Solo nuevos" las filtra.
+    const settersIdx = _buildSettersDedupIndex(loadSettersData());
 
     // Combos query×ubicación en paralelo (pool de 3): mismo gasto de créditos
     // (el clamp de 50 llamadas ya corrió arriba), ~3x menos espera total.
@@ -4335,8 +4368,9 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
           seenKeys.add(key);
           if (normPhone) seenPhones.add(normPhone);
           if (normNameAddrKey) seenNormNames.add(normNameAddrKey);
-          // Marcar si ya fue scrapeado antes (exacto O normalizado O por teléfono)
-          item.alreadyScraped = _isAlreadyScraped(history, historyIdx, item);
+          // Marcar como "ya en el sistema" si está en el historial O ya asignado
+          // a un SDR. Lo segundo cierra el hueco de las entries viejas sin teléfono.
+          item.alreadyScraped = _isAlreadyScraped(history, historyIdx, item) || _isInSettersIndex(settersIdx, item);
           allResults.push(item);
         } else {
           dedupCount++;
@@ -10922,7 +10956,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _runPool };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");

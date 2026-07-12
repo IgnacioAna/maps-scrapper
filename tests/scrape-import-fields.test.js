@@ -29,7 +29,7 @@ fs.writeFileSync(path.join(tmpData, "auth.json"), JSON.stringify({ users: [{ id:
 fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({ setters: [{ id: "setter_test", name: "Test", active: true }], variants: [], leads: {}, calendar: [], sessions: [] }, null, 2));
 
 const { app } = await import("../index.js");
-const { _buildHistoryDedupIndex, _isAlreadyScraped, _runPool } = globalThis.__phase16;
+const { _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool } = globalThis.__phase16;
 
 async function login() {
   const res = await request(app).post("/api/auth/login").send({ email: "admin-sf@local.test", password: "sfpass123456" });
@@ -99,6 +99,34 @@ describe("dedup contra history con normalización", () => {
   });
   it("negocio realmente nuevo → no scrapeado", () => {
     expect(_isAlreadyScraped(history, idx, { name: "Dental Norte", address: "Calle Falsa 123", phone: "+54 11 9999 0000" })).toBe(false);
+  });
+});
+
+// 2026-07-11: el scrape ahora también dedupea contra los leads YA ASIGNADOS a
+// un SDR (setters.json), no solo el historial. Cierra el hueco de las entries
+// viejas del historial sin teléfono → clínicas ya en el sistema aparecían
+// "nuevas" y la dedup del envío las frenaba (cartel confuso de "duplicados").
+describe("_buildSettersDedupIndex / _isInSettersIndex", () => {
+  const settersData = {
+    leads: {
+      lead_1: { name: "Clínica Ya Asignada", address: "Gran Vía 100", phone: "+34 911 22 33 44" },
+      lead_2: { name: "Odontología Centro", address: "Calle Sol 5", phone: "" },
+    },
+  };
+  const sidx = _buildSettersDedupIndex(settersData);
+
+  it("detecta un lead ya asignado por teléfono (últimos 8 dígitos, aunque el nombre varíe)", () => {
+    expect(_isInSettersIndex(sidx, { name: "Clinica Ya Asignada - Dental", address: "Otra dir", phone: "911223344" })).toBe(true);
+  });
+  it("detecta por nombre+dirección normalizado cuando no hay teléfono", () => {
+    expect(_isInSettersIndex(sidx, { name: "Odontología  Centro", address: "Calle Sol 5!", phone: "" })).toBe(true);
+  });
+  it("un lead genuinamente nuevo NO está en el índice de setters", () => {
+    expect(_isInSettersIndex(sidx, { name: "Clínica Nueva", address: "Av Nueva 999", phone: "+34 600 00 00 00" })).toBe(false);
+  });
+  it("índice vacío / null no rompe", () => {
+    expect(_isInSettersIndex(null, { name: "X", phone: "123" })).toBe(false);
+    expect(_isInSettersIndex(_buildSettersDedupIndex({}), { name: "X", phone: "123" })).toBe(false);
   });
 });
 
