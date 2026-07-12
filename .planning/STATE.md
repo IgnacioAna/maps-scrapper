@@ -156,6 +156,13 @@ Extensión Chrome MV3 "Pegar como humano" — distribuible
 
 ### Roadmap Evolution
 
+- 2026-07-12 — Phase 18 added: Supervisor restringido + panel de
+  rendimiento SDR. `visibleSetterIds[]` en el user record (auth.json),
+  scoping server-side en todos los endpoints de métricas accesibles a
+  supervisor, panel de rendimiento pro con las 3 SDRs (Judith Mendez,
+  Roxana Cabaleiro, Nadine Tortonese). setter_ignacio y
+  setter_paula_kroff EXCLUIDOS de la visibilidad del supervisor.
+
 - 2026-06-10 — Phase 8 added: Anti-detección wa-multi (Proxy +
   Fingerprint por cuenta). Modelo "perfil antidetect" tipo Dolphin Anty.
   Proxy por cuenta vía `session.setProxy` nativo de Electron (HTTP/SOCKS5;

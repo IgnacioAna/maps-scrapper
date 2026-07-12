@@ -317,6 +317,54 @@ WA + botón "Probar proxy")
 
 ---
 
+## Phase 18 — Supervisor restringido + panel de rendimiento SDR
+
+**Goal:** Un usuario supervisor con visibilidad LIMITADA a un subconjunto
+configurable de setters (Judith Mendez, Roxana Cabaleiro, Nadine
+Tortonese), que NO puede ver nada de setter_ignacio ni
+setter_paula_kroff (métricas, leads, llamadas, transcripciones,
+dropdowns, comparativas). Home del supervisor = panel de rendimiento pro
+con las 3 SDRs.
+
+**Status:** Planned — 2026-07-12. 3 plans (2 waves). Próximo paso: `/gsd-execute-phase 18`.
+
+**Plans:** 3 plans
+- [ ] 18-01-PLAN.md — Scoping server-side (helpers + audit de endpoints + auth plumbing de visibleSetterIds) [wave 1]
+- [ ] 18-02-PLAN.md — tests/supervisor-scope.test.js (scoping, regresión, gestión admin) [wave 2]
+- [ ] 18-03-PLAN.md — Frontend (editor de setters visibles, home scoped en view-team, hide de sidebar, cache-buster) [wave 2]
+
+**Depends on:** nada bloqueante. Extiende el RBAC existente
+(`requireRole`/`getEffectiveAuth` en index.js) y los endpoints de
+métricas ya construidos (team-performance, cold-call-metrics, telnyx
+metrics, training/calls).
+
+**Decisiones de diseño:**
+- Campo `visibleSetterIds[]` en el user record (`auth.json`). Vacío o
+  ausente = supervisor ve todo (comportamiento actual intacto, cero
+  regresión para Paula). Con valores = scoping server-side.
+- El filtro se aplica en BACKEND (RBAC real), no solo en UI: auditar
+  todos los endpoints que supervisor puede tocar hoy y filtrar por la
+  lista de setters visibles.
+- Admin gestiona `visibleSetterIds` desde el Centro de Comando al
+  crear/editar usuarios.
+- El usuario supervisor real se crea vía el flujo de invitación
+  existente.
+
+**Success criteria:**
+1. Supervisor scoped NO recibe data de setters fuera de su lista en
+   NINGÚN endpoint (verificado con tests estilo training-privacy)
+2. Supervisor sin `visibleSetterIds` sigue viendo todo (sin regresión)
+3. Home del supervisor scoped = panel de rendimiento (llamadas/día,
+   connects, conversaciones, agendas, deals, tendencias, alertas,
+   comparativa entre sus SDRs)
+4. Admin puede editar la lista de setters visibles desde el panel
+5. Tests verdes siguiendo el patrón del repo
+
+**UI hint:** yes (panel de rendimiento del supervisor + editor de
+visibilidad en Centro de Comando)
+
+---
+
 ## Phase 5 — Bloque E: Llamadas con IA (futuro lejano)
 
 **Goal:** Llamar a leads que respondieron pero no avanzaron por chat,
