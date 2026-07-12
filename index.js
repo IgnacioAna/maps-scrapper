@@ -224,6 +224,7 @@ function publicUser(user) {
     role: user.role,
     status: user.status,
     setterId: user.setterId || "",
+    visibleSetterIds: Array.isArray(user.visibleSetterIds) ? user.visibleSetterIds : [],
     createdAt: user.createdAt,
     updatedAt: user.updatedAt || user.createdAt
   };
@@ -519,18 +520,20 @@ function requireRole(...roles) {
 function getEffectiveAuth(req) {
   const realRole = req.auth?.user?.role;
   const realSetterId = req.auth?.user?.setterId || '';
+  const visibleSetterIds = (req.auth?.user?.visibleSetterIds) || [];
   if (realRole !== 'admin') {
-    return { role: realRole, setterId: realSetterId, isImpersonating: false };
+    return { role: realRole, setterId: realSetterId, isImpersonating: false, visibleSetterIds };
   }
   const viewAs = String(req.query.viewAs || '').trim().toLowerCase();
   const asSetterId = String(req.query.asSetterId || '').trim();
   if (!viewAs || !['setter', 'supervisor', 'admin'].includes(viewAs)) {
-    return { role: 'admin', setterId: realSetterId, isImpersonating: false };
+    return { role: 'admin', setterId: realSetterId, isImpersonating: false, visibleSetterIds };
   }
   return {
     role: viewAs,
     setterId: viewAs === 'setter' ? asSetterId : '',
-    isImpersonating: true
+    isImpersonating: true,
+    visibleSetterIds
   };
 }
 
@@ -1570,7 +1573,13 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
   const RECENT_THRESHOLD = 30 * 60 * 1000; // 30 min
 
   const data = loadAuthData();
-  const allUsers = data.users.filter(u => u.status === 'active').map(u => {
+  // Phase 18: supervisor scoped — solo el propio user + users cuyo setterId sea visible.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  const myId = req.auth?.user?.id;
+  const onlineUsers = visibleSet
+    ? data.users.filter(u => u.id === myId || visibleSet.has(u.setterId))
+    : data.users;
+  const allUsers = onlineUsers.filter(u => u.status === 'active').map(u => {
     // Bug fix 2026-05-24: antes solo leiamos `onlinePresence` (Map in-memory).
     // Tras cada redeploy de Railway ese Map arranca vacio → todos los users
     // mostraban "Sin actividad registrada" hasta que volvieran a entrar al
@@ -1644,7 +1653,15 @@ app.post('/api/auth/logout', (req, res) => {
 
 app.get('/api/auth/users', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const data = loadAuthData();
-  res.json({ users: data.users.map(publicUser), invites: data.invites });
+  // Phase 18: supervisor scoped — filtrar (no 403, otras UIs consumen esto) a:
+  // el propio caller + users cuyo setterId esté en visibleSet.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  const myId = req.auth?.user?.id;
+  const users = visibleSet
+    ? data.users.filter(u => u.id === myId || visibleSet.has(u.setterId))
+    : data.users;
+  const invites = visibleSet ? [] : data.invites;
+  res.json({ users: users.map(publicUser), invites });
 });
 
 app.get('/api/auth/invites/:token', (req, res) => {
@@ -1863,6 +1880,13 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
     setterId = ensureSetterProfile(name);
   }
 
+  // Phase 18: supervisor scoped — visibleSetterIds opcional, validado contra setters existentes.
+  let visibleSetterIds = [];
+  if (role === 'supervisor' && Array.isArray(req.body?.visibleSetterIds)) {
+    const validIds = new Set((loadSettersData().setters || []).map((s) => s.id));
+    visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id));
+  }
+
   const invite = {
     id: `inv_${Date.now()}`,
     token: crypto.randomUUID().replace(/-/g, ''),
@@ -1870,6 +1894,7 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
     email: email.trim().toLowerCase(),
     role,
     setterId,
+    visibleSetterIds,
     status: 'pending',
     createdAt: new Date().toISOString(),
     createdBy: req.auth.user.email
@@ -1914,6 +1939,7 @@ app.post('/api/auth/accept-invite', acceptInviteLimiter, (req, res) => {
     role: invite.role,
     status: 'active',
     setterId: invite.setterId || '',
+    visibleSetterIds: invite.visibleSetterIds || [],
     password: createPasswordRecord(password),
     createdAt: now,
     updatedAt: now
@@ -5132,7 +5158,8 @@ app.get('/api/scheduled-messages/upcoming', requireAuth, (req, res) => {
 app.get('/api/setters', requireAuth, (req, res) => {
   const data = loadSettersData();
   const variants = data.variants.map(normalizeVariantRecord);
-  res.json({ setters: data.setters, variants });
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  res.json({ setters: _filterSettersVisible(data.setters, visibleSet), variants });
 });
 
 // ── Setters: Gestionar equipo ──
@@ -5229,6 +5256,8 @@ app.get('/api/setters/team/:id/quota', requireAuth, (req, res) => {
   } else if (role !== 'admin' && role !== 'supervisor') {
     return res.status(403).json({ error: 'No autorizado.' });
   }
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && !visibleSet.has(setterId)) return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
   const data = loadSettersData();
   const setter = (data.setters || []).find((s) => s.id === setterId);
   if (!setter) return res.status(404).json({ error: 'Setter no encontrado.' });
@@ -5311,6 +5340,28 @@ function _callSetterId(entry, lead, userMap) {
 // Expuestos para tests puros (patrón globalThis.__phase16 / __mercury).
 globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour, _bizDayOfWeek, _buildUserSetterMap, _callSetterId };
 
+// Phase 18 — scoping del rol supervisor por subconjunto de setters visibles.
+// Devuelve null si NO hay restricción (admin, setter, o supervisor SIN
+// visibleSetterIds configurado = ve TODO, cero regresión). Devuelve un
+// Set<string> de setterIds visibles si es un supervisor scoped.
+function _visibleSetterIds(authUser) {
+  if (!authUser || authUser.role !== 'supervisor') return null;
+  const ids = Array.isArray(authUser.visibleSetterIds) ? authUser.visibleSetterIds.filter(Boolean) : [];
+  if (ids.length === 0) return null; // vacío/ausente = sin restricción (LOCKED en CONTEXT)
+  return new Set(ids);
+}
+// Filtra un array de setters (data.setters) al subconjunto visible.
+// visibleSet === null → devuelve el array sin tocar.
+function _filterSettersVisible(setters, visibleSet) {
+  if (!visibleSet) return setters;
+  return (setters || []).filter((s) => visibleSet.has(s.id));
+}
+// true si el setterId dado es visible para este auth (o no hay restricción).
+function _setterIsVisible(setterId, visibleSet) {
+  return !visibleSet || visibleSet.has(setterId);
+}
+globalThis.__phase18 = { _visibleSetterIds, _filterSettersVisible, _setterIsVisible };
+
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
 // GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
 // Funnel de cold call basado en callLog: Dials → Connects → Conversations → Appointments.
@@ -5329,6 +5380,13 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
     setterId = requestedSetter; // admin/supervisor puede pedir cualquiera; vacío = todos
   } else {
     return res.status(403).json({ error: 'No autorizado.' });
+  }
+
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; ?setter= vacío = agregado
+  // del subconjunto visible (filtro por _callSetterId en el loop).
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && requestedSetter && !visibleSet.has(requestedSetter)) {
+    return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
   }
 
   const period = String(req.query.period || 'week').toLowerCase();
@@ -5350,13 +5408,14 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   const byReason = {}; // Phase 17: razones de descalificación (answered_not_interested)
   // Atribución por quién LLAMÓ (entry.by), no por dueño actual del lead — las
   // redistribuciones del pool no deben mover las llamadas históricas de setter.
-  const userMap = setterId ? _buildUserSetterMap() : null;
+  const userMap = (setterId || visibleSet) ? _buildUserSetterMap() : null;
 
   for (const id in data.leads) {
     const lead = data.leads[id];
     const log = Array.isArray(lead.callLog) ? lead.callLog : [];
     for (const entry of log) {
       if (setterId && _callSetterId(entry, lead, userMap) !== setterId) continue;
+      if (visibleSet && !visibleSet.has(_callSetterId(entry, lead, userMap))) continue;
       const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
       if (!ts || ts < fromTs) continue;
       dials++;
@@ -5384,6 +5443,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   for (const entry of (Array.isArray(data.calendar) ? data.calendar : [])) {
     if (entry.calendarioEstado !== 'ganada') continue;
     if (setterId && entry.setterId !== setterId) continue;
+    if (visibleSet && !visibleSet.has(entry.setterId)) continue;
     const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
     if (!closedTs || closedTs < fromTs) continue;
     deals++;
@@ -5419,6 +5479,8 @@ app.get('/api/setters/team/:id/calls-today', requireAuth, (req, res) => {
   } else if (role !== 'admin' && role !== 'supervisor') {
     return res.status(403).json({ error: 'No autorizado.' });
   }
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && !visibleSet.has(setterId)) return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
   const data = loadSettersData();
   // Audit 2026-07-08: "hoy" en TZ de negocio (el server corre en UTC en Railway)
   // + atribución por quién llamó (entry.by) con fallback al dueño del lead.
@@ -5742,6 +5804,17 @@ app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) =
   if (newName !== undefined && String(newName).trim()) {
     user.name = String(newName).trim();
   }
+
+  // Phase 18: setear/actualizar visibleSetterIds (supervisor scoped). Solo si
+  // viene en el body (omitido = no tocar). Se valida contra setters existentes.
+  if (req.body && req.body.visibleSetterIds !== undefined) {
+    if (!Array.isArray(req.body.visibleSetterIds)) {
+      return res.status(400).json({ error: 'visibleSetterIds debe ser un array.' });
+    }
+    const validIds = new Set((loadSettersData().setters || []).map((s) => s.id));
+    user.visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id));
+  }
+
   user.updatedAt = new Date().toISOString();
   saveAuthData(auth);
 
@@ -5911,14 +5984,19 @@ app.get('/api/setters/leads', requireAuth, (req, res) => {
   let leads = Object.entries(data.leads).map(([id, lead]) => ({ id, ...lead }));
   const eff = getEffectiveAuth(req);
   const authSetterId = eff.role === 'setter' ? eff.setterId : '';
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; sin setter, limitar a visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && setter && !visibleSet.has(setter)) return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
   if (authSetterId) {
     leads = leads.filter((l) => l.assignedTo === authSetterId);
   } else if (setter) {
     leads = leads.filter(l => l.assignedTo === setter);
+  } else if (visibleSet) {
+    leads = leads.filter((l) => visibleSet.has(l.assignedTo));
   }
   if (estado) leads = leads.filter(l => l.estado === estado);
   leads.sort((a, b) => (a.num || 0) - (b.num || 0));
-  res.json({ leads, setters: data.setters, variants: data.variants });
+  res.json({ leads, setters: _filterSettersVisible(data.setters, visibleSet), variants: data.variants });
 });
 
 // Sin WSP - DEBE estar antes de las rutas con :id
@@ -5953,6 +6031,9 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
     .map(([id, l]) => ({ id, ...l }));
   const eff = getEffectiveAuth(req);
   const authSetterId = eff.role === 'setter' ? eff.setterId : '';
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; sin setter, limitar a visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && setter && !visibleSet.has(setter)) return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
   if (authSetterId) {
     // Phase 17 Ola 2: el setter ve los suyos + los callbacks COMPARTIDOS vencidos
     // de cualquiera (cola compartida — el primero que lo agarra lo trabaja).
@@ -5961,6 +6042,8 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
       || (l.callbackShared && l.callbackAt && new Date(l.callbackAt).getTime() <= _now));
   } else if (setter) {
     leads = leads.filter(l => l.assignedTo === setter);
+  } else if (visibleSet) {
+    leads = leads.filter((l) => visibleSet.has(l.assignedTo));
   }
   leads.sort((a, b) => (a.num || 0) - (b.num || 0));
   res.json({ leads });
@@ -5987,12 +6070,14 @@ app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 's
   let totalRejected = 0;
   let totalWithTags = 0;
   const userMap = _buildUserSetterMap(); // atribución por quién llamó
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
 
   for (const id in data.leads) {
     const lead = data.leads[id];
     const log = Array.isArray(lead.callLog) ? lead.callLog : [];
     for (const entry of log) {
       if (entry.outcome !== 'answered_not_interested') continue;
+      if (visibleSet && !visibleSet.has(_callSetterId(entry, lead, userMap))) continue;
       const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
       // Sprint 37 (BUG-M4): filtrar timestamps inválidos para que NaN no infle
       // los totales como "dentro de rango".
@@ -6083,7 +6168,9 @@ app.get('/api/setters/recent-responses', requireAuth, (req, res) => {
   const role = req.auth?.user?.role;
   if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
   const sinceTs = req.query.since ? new Date(req.query.since).getTime() : Date.now() - 60000;
-  const newResponses = _recentLeadResponses.filter(r => new Date(r.ts).getTime() > sinceTs);
+  // Phase 18: supervisor scoped — solo respuestas de setters visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  const newResponses = _recentLeadResponses.filter(r => new Date(r.ts).getTime() > sinceTs && _setterIsVisible(r.setterId, visibleSet));
   res.json({ responses: newResponses, serverTs: new Date().toISOString() });
 });
 
@@ -6851,6 +6938,8 @@ function _leadIsCallableNow(l, now) {
 }
 
 app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  // Phase 18: gestión de pool no disponible para supervisor scoped (no es "mi equipo").
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const data = loadSettersData();
   const leads = Object.values(data.leads || {});
   const _now = Date.now();
@@ -6901,6 +6990,7 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
 // Buckets mutuamente excluyentes en orden: DNC → agendado → descartado →
 // interesado → callback pendiente → sin tocar → en proceso (trabajado, sigue llamable).
 app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const setterId = String(req.query.setterId || '').trim();
   if (!setterId) return res.status(400).json({ error: 'setterId requerido.' });
   const data = loadSettersData();
@@ -7166,6 +7256,7 @@ app.get('/api/setters/leads/:id/contact-status', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado." });
   }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   res.json({
     contactedFromAccountId: lead.contactedFromAccountId || null,
     contactedFromPhone: lead.contactedFromPhone || null,
@@ -7181,6 +7272,7 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   // Security audit 2026-05-23 (C-1): `assignedTo` SACADO del mass-assign abierto.
   // Antes un setter podia mandar {assignedTo:"otro"} y transferir su lead (lead
   // huerfano si el id no existe → invisible para todos). Solo admin puede reasignar
@@ -7378,6 +7470,7 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
     return res.status(403).json({ error: "No autorizado para este lead." });
   }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   ensureLeadDefaults(lead);
   const valid = ['24hs', '48hs', '72hs', '7d', '15d'];
   if (step === undefined || !valid.includes(step)) {
@@ -7677,6 +7770,7 @@ app.patch('/api/setters/leads/:id/asistencia', requireAuth, requireRole('admin',
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
   if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   ensureLeadDefaults(lead);
   if (lead.estado !== 'agendado') {
     return res.status(400).json({ error: 'El lead no esta en estado agendado.' });
@@ -8371,10 +8465,18 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
   let leads = Object.values(data.leads);
   const eff = getEffectiveAuth(req);
   const authSetterId = eff.role === 'setter' ? eff.setterId : '';
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; agregado sin setter se
+  // limita a leads de setters visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && setter && !visibleSet.has(setter)) {
+    return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
+  }
   if (authSetterId) {
     leads = leads.filter((l) => l.assignedTo === authSetterId);
   } else if (setter) {
     leads = leads.filter(l => l.assignedTo === setter);
+  } else if (visibleSet) {
+    leads = leads.filter((l) => visibleSet.has(l.assignedTo));
   }
 
   const total = leads.length;
@@ -8416,7 +8518,7 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
     pctApertura: conexiones > 0 ? ((respondieron / conexiones) * 100).toFixed(1) : '0.0',
     pctCalificacion: calificados > 0 ? ((interesados / calificados) * 100).toFixed(1) : '0.0',
     byVariant,
-    setters: data.setters,
+    setters: _filterSettersVisible(data.setters, visibleSet),
     variants: data.variants
   });
 });
@@ -8818,6 +8920,12 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
 
   // Determinar setter target.
   const requestedSetter = String(req.query.setter || "").trim();
+  // Phase 18: supervisor scoped — ?setter=<oculto> → 403; agregado vacío se
+  // limita a los leads de setters visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  if (visibleSet && requestedSetter && !visibleSet.has(requestedSetter)) {
+    return res.status(403).json({ error: "Setter fuera de tu visibilidad." });
+  }
   let setterFilter = "";
   if (isSetter) {
     setterFilter = req.auth.user.setterId || "";
@@ -8826,7 +8934,7 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   }
   const filtered = setterFilter
     ? allLeads.filter((l) => l.assignedTo === setterFilter)
-    : allLeads;
+    : (visibleSet ? allLeads.filter((l) => visibleSet.has(l.assignedTo)) : allLeads);
 
   // Buckets del periodo actual + agregar kpis por bucket.
   const buckets = _perfBucketsForPeriod(period, fromTs, toTs).map((b) => ({
@@ -8868,7 +8976,7 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
     },
     deltas,
     buckets,
-    setters: isAdminOrSuper ? (data.setters || []).map((s) => ({ id: s.id, name: s.name })) : [],
+    setters: isAdminOrSuper ? _filterSettersVisible(data.setters || [], visibleSet).map((s) => ({ id: s.id, name: s.name })) : [],
   });
 });
 
@@ -8942,6 +9050,10 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   if (toTs <= fromTs) return res.status(400).json({ error: "Range invalido (to <= from)." });
 
   const data = loadSettersData();
+  // Phase 18: supervisor scoped — filtrar setters ANTES de construir perSetter,
+  // para que teamAverages/alertas se computen SOLO sobre el subconjunto visible.
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  const scopedSetters = _filterSettersVisible(data.setters || [], visibleSet);
   const allLeads = Object.entries(data.leads || {}).map(([id, l]) => ({ ...ensureLeadDefaults(l), _id: id }));
   const periodMs = toTs - fromTs;
   // Período anterior. Para "day" con rango default (hoy desde la medianoche),
@@ -8985,7 +9097,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     }
   }
 
-  const perSetter = (data.setters || []).map((s) => {
+  const perSetter = scopedSetters.map((s) => {
     const setterLeads = leadsBySetter.get(s.id) || [];
     const setterCalls = callsBySetter.get(s.id) || [];
     const current = _perfCallFunnel(setterLeads, fromTs, toTs, data.calendar, s.id, setterCalls);
@@ -9092,6 +9204,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
 
 // ── Centro de comando: stats por setter ──
 app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const data = loadSettersData();
   const allLeads = Object.values(data.leads);
 
@@ -9550,7 +9663,10 @@ app.get('/api/setters/calendar', requireAuth, (req, res) => {
   const data = loadSettersData();
   const calendar = data.calendar || [];
   const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
-  res.json({ calendar: authSetterId ? calendar.filter((entry) => entry.setterId === authSetterId) : calendar });
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
+  let out = authSetterId ? calendar.filter((entry) => entry.setterId === authSetterId) : calendar;
+  if (visibleSet) out = out.filter((entry) => visibleSet.has(entry.setterId));
+  res.json({ calendar: out });
 });
 
 app.post('/api/setters/calendar', requireAuth, (req, res) => {
@@ -9570,6 +9686,16 @@ app.post('/api/setters/calendar', requireAuth, (req, res) => {
     const lead = data.leads?.[leadId];
     if (lead && lead.assignedTo !== req.auth.user.setterId) {
       return res.status(403).json({ error: 'No autorizado para este lead.' });
+    }
+  }
+  // Phase 18: supervisor scoped — no crear citas para setters/leads fuera de su visibilidad.
+  { const visibleSet = _visibleSetterIds(req.auth.user);
+    if (visibleSet) {
+      if (effectiveSetterId && !visibleSet.has(effectiveSetterId)) return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
+      if (typeof leadId === 'string' && leadId) {
+        const lead = data.leads?.[leadId];
+        if (lead && !visibleSet.has(lead.assignedTo)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' });
+      }
     }
   }
   if (!Array.isArray(data.calendar)) data.calendar = [];
@@ -9594,7 +9720,9 @@ app.get('/api/setters/calendar/enriched', requireAuth, (req, res) => {
   const data = loadSettersData();
   const calendar = Array.isArray(data.calendar) ? data.calendar.slice() : [];
   const authSetterId = req.auth?.user?.role === 'setter' ? req.auth.user.setterId : '';
-  const filtered = authSetterId ? calendar.filter((e) => e.setterId === authSetterId) : calendar;
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
+  let filtered = authSetterId ? calendar.filter((e) => e.setterId === authSetterId) : calendar;
+  if (visibleSet) filtered = filtered.filter((e) => visibleSet.has(e.setterId));
   const settersById = {};
   for (const s of (data.setters || [])) settersById[s.id] = s.name;
   const enriched = filtered.map((entry) => {
@@ -12051,6 +12179,7 @@ app.get("/api/telnyx/rate", requireAuth, (req, res) => {
 });
 
 app.get("/api/telnyx/balance", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const cfg = loadTelnyxConfig();
   if (!cfg.apiKey || !cfg.apiKey.trim()) {
     return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
@@ -12210,6 +12339,7 @@ async function _telnyxFetchAllDetailRecords(apiKey, recordType, dateRange, maxPa
 let _telnyxRealCostCache = {}; // range → { ts, data }
 const TELNYX_REALCOST_TTL_MS = 5 * 60 * 1000;
 app.get("/api/telnyx/real-costs", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const cfg = loadTelnyxConfig();
   if (!cfg.apiKey || !cfg.apiKey.trim()) {
     return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
@@ -12618,14 +12748,17 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   const data = loadSettersData();
   // Recolectar todas las calls Telnyx en rango
   const _effUserMap = _buildUserSetterMap(); // atribución por quién llamó
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog)) continue;
     for (const c of lead.callLog) {
       if (c.channel !== 'telnyx_webrtc') continue;
+      const sid = _callSetterId(c, lead, _effUserMap);
+      if (visibleSet && !visibleSet.has(sid)) continue;
       const ts = new Date(c.ts).getTime();
       if (fromTs > 0 && ts < fromTs) continue;
-      calls.push({ ...c, leadId, leadCountry: lead.country || '', leadCity: lead.city || '', setterId: _callSetterId(c, lead, _effUserMap) });
+      calls.push({ ...c, leadId, leadCountry: lead.country || '', leadCity: lead.city || '', setterId: sid });
     }
   }
   // Totales generales
@@ -12757,6 +12890,9 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
   const scriptsData = loadCallScripts();
   const scriptsById = {};
   for (const s of (scriptsData.scripts || [])) scriptsById[s.id] = s;
+  // Phase 18: supervisor scoped — solo llamadas de setters visibles (por quién llamó).
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  const _seUserMap = visibleSet ? _buildUserSetterMap() : null;
   // Acumular stats por scriptId
   const stats = {};
   const scheduledOutcomes = new Set(['scheduled_with_admin', 'answered_interested']);
@@ -12765,6 +12901,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
     if (!Array.isArray(lead.callLog)) continue;
     for (const c of lead.callLog) {
       if (c.channel !== 'telnyx_webrtc') continue;
+      if (visibleSet && !visibleSet.has(_callSetterId(c, lead, _seUserMap))) continue;
       if (!Array.isArray(c.scriptIdsUsed) || c.scriptIdsUsed.length === 0) continue;
       const ts = new Date(c.ts).getTime();
       if (fromTs > 0 && ts < fromTs) continue;
@@ -12981,6 +13118,8 @@ app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
   const search = (req.query.search || '').toString().toLowerCase().trim();
   const outcomeFilter = (req.query.outcome || '').toString().trim();
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
+  const _recUserMap = visibleSet ? _buildUserSetterMap() : null;
   const data = loadSettersData();
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
@@ -12989,6 +13128,7 @@ app.get('/api/telnyx/calls/recent', requireAuth, (req, res) => {
     for (let i = 0; i < lead.callLog.length; i++) {
       const c = lead.callLog[i];
       if (c.channel !== 'telnyx_webrtc') continue; // solo Telnyx
+      if (visibleSet && !visibleSet.has(_callSetterId(c, lead, _recUserMap))) continue;
       if (outcomeFilter && c.outcome !== outcomeFilter) continue;
       const transcriptText = (c.transcript?.segments || []).map(s => s.text).join(' ');
       if (search) {
@@ -13184,11 +13324,14 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
   const eff = getEffectiveAuth(req);
   const onlyOwn = eff.role === 'setter';
   const mySetterId = eff.setterId || '';
+  // Phase 18: supervisor scoped — INCLUIR solo llamadas de setters visibles.
+  const visibleSet = _visibleSetterIds(req.auth.user);
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
     // Excluir la cartera de los setters ocultos (sus leads asignados).
     if (TRAINING_EXCLUDED_SETTERS.has(lead.assignedTo)) continue;
+    if (visibleSet && !visibleSet.has(lead.assignedTo)) continue;
     for (let i = 0; i < lead.callLog.length; i++) {
       const c = lead.callLog[i];
       if (!c.transcript?.segments?.length) continue; // solo material con transcripción
@@ -13196,6 +13339,8 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
       // Excluir también si el que HIZO la llamada es un setter oculto (aunque el
       // lead sea de otro): Ignacio test-llamando cualquier lead.
       if (c.by && TRAINING_EXCLUDED_SETTERS.has(userSetterId[c.by])) continue;
+      // Y (scoped) incluir solo si quien llamó pertenece al subconjunto visible.
+      if (visibleSet && c.by && !visibleSet.has(userSetterId[c.by])) continue;
       if (onlyOwn) {
         const callSetter = (c.by && userSetterId[c.by]) || lead.assignedTo || '';
         if (!mySetterId || callSetter !== mySetterId) continue;
@@ -13230,6 +13375,8 @@ app.get('/api/training/calls/:leadId/:callIdx', requireAuth, async (req, res) =>
     const callSetter = bySetter || lead.assignedTo || '';
     if (!eff.setterId || callSetter !== eff.setterId) return res.status(403).json({ error: 'Solo podés ver tus propias llamadas.' });
   }
+  // Phase 18: supervisor scoped — solo llamadas de setters visibles.
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !visibleSet.has(lead.assignedTo)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
   const segs = c.transcript?.segments || [];
   if (!segs.length) return res.status(400).json({ error: 'Sin transcripción' });
   // Reagrupar en turnos ANTES de anonimizar → conversación legible (no frases sueltas).
@@ -13398,6 +13545,13 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
     const lead = loadSettersData().leads?.[leadId];
     if (!lead || lead.assignedTo !== req.auth?.user?.setterId) {
       return res.status(403).json({ error: 'No autorizado para este lead.' });
+    }
+  } else {
+    // Phase 18: supervisor scoped — solo transcribe leads de setters visibles.
+    const visibleSet = _visibleSetterIds(req.auth.user);
+    if (visibleSet) {
+      const lead = loadSettersData().leads?.[leadId];
+      if (!lead || !visibleSet.has(lead.assignedTo)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' });
     }
   }
   if (!process.env.OPENAI_API_KEY) {
@@ -13603,6 +13757,7 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
   const data = loadSettersData();
   const settersById = new Map((data.setters || []).map((s) => [s.id, s]));
   const userMap = _buildUserSetterMap(); // atribución por quién llamó
+  const visibleSet = _visibleSetterIds(req.auth.user); // Phase 18: supervisor scoped
   let totalCalls = 0;
   let totalMinutes = 0;
   let totalCostUSD = 0;
@@ -13617,6 +13772,7 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
     for (const entry of lead.callLog) {
       if (entry.channel !== 'telnyx_webrtc') continue;
       const setterId = _callSetterId(entry, lead, userMap);
+      if (visibleSet && !visibleSet.has(setterId)) continue;
       const setterName = settersById.get(setterId)?.name || '(sin setter)';
       const ts = new Date(entry.ts).getTime();
       if (!isFinite(ts) || ts < sinceTs) continue;
@@ -13676,6 +13832,7 @@ app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), 
 // GET /api/telnyx/events — admin/supervisor: últimos eventos de webhook.
 // Útil para debug y para ver llamadas recientes.
 app.get("/api/telnyx/events", requireAuth, requireRole("admin", "supervisor"), (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 500);
   const data = loadTelnyxEvents();
   const events = Array.isArray(data.events) ? data.events : [];
