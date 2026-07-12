@@ -156,6 +156,12 @@ Extensión Chrome MV3 "Pegar como humano" — distribuible
 
 ### Roadmap Evolution
 
+- 2026-07-12 — Phase 18 EXECUTED y verificada (commits 6b00175 backend,
+  a196b76 tests 21/21, 53b7db7 frontend; suite completa 751/751; verificación
+  en vivo en preview: supervisor scoped ve solo sus 3 SDRs, 403 en
+  financieros/pool/command, home = view-team, sidebar depurado; regresión
+  admin/supervisor-sin-lista intacta). Pendiente: pre-deploy + push (user)
+  + crear el usuario supervisor real vía invitación.
 - 2026-07-12 — Phase 18 added: Supervisor restringido + panel de
   rendimiento SDR. `visibleSetterIds[]` en el user record (auth.json),
   scoping server-side en todos los endpoints de métricas accesibles a
