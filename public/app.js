@@ -14221,7 +14221,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       const title = document.getElementById('sh-modal-title');
       const meta = document.getElementById('sh-modal-meta');
       const already = document.getElementById('sh-modal-already-sent');
-      const setterSel = document.getElementById('sh-modal-setter');
       const tbody = document.getElementById('sh-modal-tbody');
 
       title.textContent = `Batch ${new Date(d.batch.createdAt).toLocaleString()}`;
@@ -14235,18 +14234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         already.style.display = 'none';
       }
 
-      // Popular selector con SDRs reales (vía /api/setters)
-      if (setterSel.children.length <= 1) {
-        try {
-          const sr = await fetch('/api/setters', { credentials: 'include' });
-          const sd = await sr.json();
-          for (const s of (sd.setters || sd || [])) {
-            const opt = document.createElement('option');
-            opt.value = s.id; opt.textContent = s.name;
-            setterSel.appendChild(opt);
-          }
-        } catch {}
-      }
+      // (El selector de SDR se reemplazó por el modal multi-SDR — ya no se popula acá.)
 
       // Render tabla con leads
       tbody.innerHTML = '';
@@ -14281,10 +14269,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('sh-modal-send')?.addEventListener('click', async () => {
     if (!_shCurrentBatch) return;
-    const setterId = document.getElementById('sh-modal-setter').value;
-    if (!setterId) { alert('Elegí un SDR primero.'); return; }
     const onlyNew = document.getElementById('sh-modal-onlynew').checked;
-    if (!confirm(`Enviar ${onlyNew ? 'los nuevos' : 'TODOS'} los leads de este batch al SDR seleccionado? Los ya importados se van a saltar por dedup.`)) return;
+    // 2026-07-11: mismo modal multi-SDR que el flujo post-scrape (antes acá solo
+    // se podía elegir 1 SDR). Contamos cuántos leads se van a repartir (con el filtro).
+    const results = Array.isArray(_shCurrentBatch.results) ? _shCurrentBatch.results : [];
+    const enviables = onlyNew ? results.filter(l => !l.alreadyScraped) : results;
+    if (!enviables.length) { alert('Este batch no tiene leads para enviar' + (onlyNew ? ' (con "Solo nuevos" tildado).' : '.')); return; }
+    const distribution = await window.pickSettersDistribution({
+      totalLeads: enviables.length,
+      subtitle: `${enviables.length} leads del batch para repartir. Tildá los SDRs destino y poné cuántos a cada uno. Los ya importados se saltan por dedup.`,
+    });
+    if (!distribution || !distribution.length) return; // cancelado
+    const _autoEnrichOn = !document.getElementById('auto-enrich-toggle') || document.getElementById('auto-enrich-toggle').checked;
     const btn = document.getElementById('sh-modal-send');
     btn.disabled = true; btn.textContent = 'Enviando…';
     try {
@@ -14292,11 +14288,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ setterId, onlyNew }),
+        body: JSON.stringify({ distribution, onlyNew, autoEnrich: _autoEnrichOn }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'http ' + r.status);
-      alert(`Enviados: ${d.imported} · Saltados (dedup): ${d.skipped}`);
+      let msg = `Total enviado: ${d.imported} · Saltados (dedup): ${d.skipped}`;
+      if (Array.isArray(d.perSetter)) msg += '\n\n' + d.perSetter.map(p => `  • ${p.setterName || p.setterId}: ${p.imported}${p.skipped ? ' (+' + p.skipped + ' dup)' : ''}`).join('\n');
+      alert(msg);
       document.getElementById('sh-detail-modal').style.display = 'none';
       _shLoad();
     } catch (e) {

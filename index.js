@@ -6656,47 +6656,71 @@ app.get("/api/admin/scrape-batches/:id", requireAuth, requireRole("admin"), (req
   res.json({ batch });
 });
 
-// POST /api/admin/scrape-batches/:id/send-to-setter — body: { setterId, onlyNew? }
-// Envia los leads del batch a un setter usando el helper compartido. Marca el
-// batch como sentToSetter. Si onlyNew=true, solo envia los que tienen
-// alreadyScraped=false (los nuevos del momento del scrape original).
+// POST /api/admin/scrape-batches/:id/send-to-setter
+// body: { setterId, onlyNew? } (1 SDR) O { distribution:[{setterId,count}], onlyNew? }
+// (multi-SDR, 2026-07-11 — mismo modal que el flujo post-scrape). Reenvía los
+// leads del batch sin re-scrapear. onlyNew=true → solo los nuevos del momento.
 app.post("/api/admin/scrape-batches/:id/send-to-setter", requireAuth, requireRole("admin"), (req, res) => {
-  const { setterId, onlyNew = false } = req.body || {};
-  if (!setterId || !String(setterId).trim()) {
-    return res.status(400).json({ error: "setterId requerido." });
-  }
+  const { setterId, onlyNew = false, distribution } = req.body || {};
+  const autoEnrich = req.body?.autoEnrich !== false;
   const data = loadScrapeBatches();
   const idx = (data.batches || []).findIndex((b) => b.id === req.params.id);
   if (idx < 0) return res.status(404).json({ error: "Batch no encontrado." });
   const batch = data.batches[idx];
 
   let leadsToSend = Array.isArray(batch.results) ? batch.results : [];
-  if (onlyNew) {
-    leadsToSend = leadsToSend.filter((l) => !l.alreadyScraped);
-  }
+  if (onlyNew) leadsToSend = leadsToSend.filter((l) => !l.alreadyScraped);
   if (leadsToSend.length === 0) {
     return res.status(400).json({ error: "El batch no tiene leads para enviar (con el filtro aplicado)." });
   }
 
-  const out = _importLeadsToSetters(leadsToSend, setterId);
-  if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
+  // Modo multi-SDR: distribution = [{setterId, count}]. Particiona en orden.
+  if (Array.isArray(distribution) && distribution.length > 0) {
+    let sum = 0;
+    for (const d of distribution) {
+      if (!d || typeof d.setterId !== "string" || !d.setterId.trim()) return res.status(400).json({ error: "distribution invalido: falta setterId." });
+      const c = Number(d.count);
+      if (!Number.isFinite(c) || c < 1) return res.status(400).json({ error: "distribution invalido: count >= 1 para " + d.setterId });
+      sum += Math.floor(c);
+    }
+    if (sum > leadsToSend.length) return res.status(400).json({ error: `La distribucion suma ${sum} pero el batch tiene ${leadsToSend.length} leads (con el filtro).` });
+    const setterCatalog = (() => { try { return loadSettersData().setters || []; } catch { return []; } })();
+    const nameOf = (id) => (setterCatalog.find((s) => s.id === id) || {}).name || id;
+    let cursor = 0, totalImported = 0, totalSkipped = 0;
+    const perSetter = [];
+    for (const d of distribution) {
+      const n = Math.floor(Number(d.count));
+      const slice = leadsToSend.slice(cursor, cursor + n);
+      cursor += n;
+      const out = _importLeadsToSetters(slice, d.setterId, { autoEnrich });
+      if (!out.ok) return res.status(out.status || 400).json({ error: `Error asignando a ${nameOf(d.setterId)}: ${out.error}`, partial: { perSetter, totalImported, totalSkipped } });
+      totalImported += out.imported || 0;
+      totalSkipped += out.skipped || 0;
+      perSetter.push({ setterId: d.setterId, setterName: nameOf(d.setterId), imported: out.imported, skipped: out.skipped });
+    }
+    batch.sentToSetter = {
+      setterId: distribution.length === 1 ? distribution[0].setterId : "multi",
+      setterIds: distribution.map((d) => d.setterId),
+      sentAt: new Date().toISOString(),
+      sentBy: req.auth.user.name || req.auth.user.email,
+      imported: totalImported, skipped: totalSkipped, onlyNew: !!onlyNew, distribution: perSetter,
+    };
+    saveScrapeBatches(data);
+    return res.json({ ok: true, imported: totalImported, skipped: totalSkipped, perSetter, batch: { id: batch.id, sentToSetter: batch.sentToSetter } });
+  }
 
+  // Modo legacy: 1 solo SDR.
+  if (!setterId || !String(setterId).trim()) return res.status(400).json({ error: "setterId o distribution requerido." });
+  const out = _importLeadsToSetters(leadsToSend, setterId, { autoEnrich });
+  if (!out.ok) return res.status(out.status || 400).json({ error: out.error });
   batch.sentToSetter = {
     setterId,
     sentAt: new Date().toISOString(),
     sentBy: req.auth.user.name || req.auth.user.email,
-    imported: out.imported,
-    skipped: out.skipped,
-    onlyNew: !!onlyNew,
+    imported: out.imported, skipped: out.skipped, onlyNew: !!onlyNew,
   };
   saveScrapeBatches(data);
-  res.json({
-    ok: true,
-    imported: out.imported,
-    skipped: out.skipped,
-    total: out.total,
-    batch: { id: batch.id, sentToSetter: batch.sentToSetter },
-  });
+  res.json({ ok: true, imported: out.imported, skipped: out.skipped, total: out.total, batch: { id: batch.id, sentToSetter: batch.sentToSetter } });
 });
 
 // DELETE /api/admin/scrape-batches/:id — borrar batch (cleanup manual)

@@ -2521,18 +2521,13 @@
 
             <div id="sh-modal-already-sent" style="display:none; padding:10px 12px; border-radius:8px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.4); color:#5bb974; font-size:12px; margin-bottom:12px;"></div>
 
-            <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px;">
-              <div>
-                <label style="display:block; font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Asignar a</label>
-                <select id="sh-modal-setter" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-size:13px;">
-                  <option value="">— Elegir SDR —</option>
-                </select>
-              </div>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+              <!-- 2026-07-11: el dropdown de 1 SDR se reemplazó por el modal multi-SDR (el botón lo abre). -->
               <label style="display:flex; gap:6px; align-items:center; font-size:12px; color:var(--text-secondary);">
                 <input id="sh-modal-onlynew" type="checkbox" checked>
                 Solo enviar los nuevos (no ya scrapeados antes)
               </label>
-              <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a SDR</button>
+              <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a SDRs…</button>
               <button id="sh-modal-download" class="btn-secondary" style="font-size:12px; padding:8px 16px; color:#5bb974;" title="Enriquece los emails de este batch (baja la web de cada clínica) y descarga el listado prolijo en CSV + Excel: Nombre, Email, Teléfono (con +), Dirección, Ciudad, País, Web, Instagram, Facebook, Rating, Reseñas. Sin link de WhatsApp.">Descargar (CSV + Excel)</button>
               <span id="sh-modal-download-progress" style="font-size:11px; color:var(--text-secondary);"></span>
               <button id="sh-modal-delete" class="btn-secondary" style="font-size:12px; padding:8px 14px; color:#f85149; margin-left:auto;">Borrar batch</button>
@@ -3341,7 +3336,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260711c"></script>
+  <script type="module" src="/app.js?v=20260711d"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
