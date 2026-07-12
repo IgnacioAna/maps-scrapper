@@ -14176,6 +14176,137 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
   }
 
+  // ── Panel pro (Phase 18): KPIs del equipo + evolución por SDR + mini-funnels ──
+  let _teamChart = null;
+  let _teamChartMetric = 'dials';
+
+  function _teamRenderKpis(d) {
+    const cont = document.getElementById('team-kpis');
+    if (!cont) return;
+    const t = d.teamTotals || {};
+    const tile = (label, num, accent, foot) => `
+      <div class="myp-tile" style="--tile-accent:${accent}; min-height:104px;">
+        <div class="myp-tile-label">${label}</div>
+        <div class="myp-tile-num" style="font-size:30px;">${(Number(num) || 0).toLocaleString('es-AR')}</div>
+        <div class="myp-tile-foot"><span class="muted" style="font-size:11px;">${foot || '&nbsp;'}</span></div>
+      </div>`;
+    cont.innerHTML = [
+      tile('Llamadas', t.dials, '#8892A6', 'total del equipo'),
+      tile('Atendidas', t.connects, '#6E8BF0', `${t.connectRate || 0}% atención`),
+      tile('Conversaciones', t.conversations, '#A97DEE', `${t.conversationRate || 0}% de atendidas`),
+      tile('Agendadas', t.appointments, '#4ADE80', `${t.bookingRate || 0}% de conversaciones`),
+      tile('Deals', t.deals, '#F5B301', 'cerradas en el período'),
+    ].join('');
+  }
+
+  // Paleta distinguible por SDR (no arcoíris — tomada del design system).
+  const _TEAM_SERIES_COLORS = ['#9D85F2', '#6E8BF0', '#4ADE80', '#F5B301', '#F87171', '#38BDF8', '#F472B6', '#A3E635', '#FB923C', '#818CF8'];
+
+  function _teamRenderChart(d) {
+    const canvas = document.getElementById('team-chart');
+    if (!canvas || !window.Chart) return;
+    const cbd = d.callsByDay || { days: [], perSetter: [] };
+    const labels = (cbd.days || []).map((ds) => {
+      const [, m, day] = ds.split('-');
+      return `${day}/${m}`;
+    });
+    const metric = _teamChartMetric === 'connects' ? 'connects' : 'dials';
+    const datasets = (cbd.perSetter || []).map((s, i) => {
+      const color = _TEAM_SERIES_COLORS[i % _TEAM_SERIES_COLORS.length];
+      return {
+        label: s.name || s.setterId,
+        data: Array.isArray(s[metric]) ? s[metric] : [],
+        borderColor: color,
+        backgroundColor: color + '22',
+        tension: 0.35,
+        fill: false,
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: color,
+        pointHoverBorderColor: '#0F1115',
+        pointHoverBorderWidth: 2,
+      };
+    });
+    if (_teamChart) _teamChart.destroy();
+    _teamChart = new window.Chart(canvas, {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: datasets.length > 1, labels: { color: '#B4B8C2', font: { size: 11 }, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle' } },
+          tooltip: {
+            backgroundColor: 'rgba(17, 20, 27, 0.96)',
+            borderColor: 'rgba(157, 133, 242, 0.25)',
+            borderWidth: 1,
+            titleColor: '#E5E7E2',
+            bodyColor: '#B4B8C2',
+            padding: 10,
+            cornerRadius: 9,
+            displayColors: true,
+            boxWidth: 8, boxHeight: 8, usePointStyle: true,
+          },
+        },
+        scales: {
+          x: { ticks: { color: '#7E8494', font: { size: 10 }, maxRotation: 0 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' } },
+          y: { ticks: { color: '#7E8494', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, beginAtZero: true },
+        },
+      },
+    });
+  }
+
+  function _teamRenderFunnels(d) {
+    const cont = document.getElementById('team-funnels');
+    if (!cont) return;
+    const rows = d.perSetter || [];
+    if (!rows.length) { cont.innerHTML = '<p class="muted" style="grid-column:1/-1; font-size:12px;">Sin SDRs en el período.</p>'; return; }
+    // Benchmarks SDR 2026 (mismo criterio que _mypLoadColdCall).
+    const bench = (val, ok, good, label) => {
+      const v = parseFloat(val) || 0;
+      const cls = v >= good ? 'ok' : v >= ok ? 'mid' : 'low';
+      const icon = v >= good ? '▲' : v >= ok ? '◆' : '▼';
+      return `<span class="ccm-bench ${cls}" title="Benchmark SDR 2026: ${label}">${icon} ${label}</span>`;
+    };
+    const step = (label, val, color) => `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:5px 0;">
+        <span style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-secondary);"><i style="width:7px; height:7px; border-radius:50%; background:${color}; flex-shrink:0;"></i>${label}</span>
+        <strong style="font-size:13px; color:var(--text-primary); font-variant-numeric:tabular-nums;">${(Number(val) || 0).toLocaleString('es-AR')}</strong>
+      </div>`;
+    const sorted = [...rows].sort((a, b) => (b.current?.dials || 0) - (a.current?.dials || 0));
+    cont.innerHTML = sorted.map((s) => {
+      const c = s.current || {};
+      const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
+      return `
+        <div class="team-funnel-card" data-setter-id="${escHtml(s.id)}" style="background:var(--bg-surface); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:15px 16px; cursor:pointer; transition:border-color 0.15s, transform 0.15s;"
+             onmouseover="this.style.borderColor='color-mix(in srgb, var(--accent) 40%, transparent)'; this.style.transform='translateY(-2px)';"
+             onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'; this.style.transform='';">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <div style="width:26px; height:26px; flex-shrink:0; background:linear-gradient(135deg, var(--accent), #7a5ff0); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px;">${initial}</div>
+            <span class="tf-name" style="font-weight:600; font-size:13.5px; color:var(--text-primary);"></span>
+          </div>
+          ${step('Dials', c.dials, '#8892A6')}
+          ${step('Connects', c.connects, '#6E8BF0')}
+          ${step('Conversaciones', c.conversations, '#A97DEE')}
+          ${step('Agendadas', c.appointments, '#4ADE80')}
+          ${step('Deals', c.deals, '#F5B301')}
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:11px; padding-top:11px; border-top:1px solid rgba(255,255,255,0.06);">
+            ${bench(c.connectRate, 15, 25, `${c.connectRate || 0}% atención`)}
+            ${bench(c.conversationRate, 50, 60, `${c.conversationRate || 0}% conv`)}
+            ${bench(c.bookingRate, 15, 25, `${c.bookingRate || 0}% booking`)}
+          </div>
+        </div>`;
+    }).join('');
+    cont.querySelectorAll('.team-funnel-card').forEach((el) => {
+      const nameSpan = el.querySelector('.tf-name');
+      const row = sorted.find((s) => String(s.id) === el.dataset.setterId);
+      if (nameSpan && row) nameSpan.textContent = row.name;
+      el.addEventListener('click', () => _teamDrilldown(el.dataset.setterId));
+    });
+  }
+
   function _teamDrilldown(setterId) {
     // Navegar a Mi rendimiento con SDR pre-seleccionado.
     const item = document.querySelector('[data-target="view-myperf"]');
@@ -14200,11 +14331,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       const range = document.getElementById('team-range');
       if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
       _teamRenderAlerts(d.alerts || []);
+      _teamRenderKpis(d);
+      _teamRenderChart(d);
+      _teamRenderFunnels(d);
       _teamRenderTable(d);
     } catch (e) {
       alert('Error cargando equipo: ' + e.message);
     }
   }
+
+  // Toggle Llamadas/Atendidas del chart de evolución (no re-fetchea, redibuja).
+  document.getElementById('team-chart-toggle')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    const metric = btn.dataset.metric === 'connects' ? 'connects' : 'dials';
+    if (metric === _teamChartMetric) return;
+    _teamChartMetric = metric;
+    document.querySelectorAll('#team-chart-toggle .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
+    if (_teamData) _teamRenderChart(_teamData);
+  });
 
   document.querySelector('[data-target="view-team"]')?.addEventListener('click', () => {
     setTimeout(() => _teamLoad(), 80);

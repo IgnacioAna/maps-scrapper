@@ -2583,7 +2583,26 @@
           </div>
         </section>
 
-        <section style="margin-top:18px; overflow-x:auto;">
+        <!-- Panel pro (Phase 18): KPIs del equipo + evolución por SDR + mini-funnels -->
+        <section id="team-kpis" style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;"></section>
+
+        <section style="margin-top:22px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+            <h3 style="margin:0; font-size:14px; color:var(--text-primary);">Llamadas por día <span class="muted" style="font-size:11px; font-weight:400;">· últimos 14 días</span></h3>
+            <div class="seg-control" id="team-chart-toggle">
+              <button class="seg-btn active" data-metric="dials">Llamadas</button>
+              <button class="seg-btn" data-metric="connects">Atendidas</button>
+            </div>
+          </div>
+          <div style="position:relative; height:260px;"><canvas id="team-chart"></canvas></div>
+        </section>
+
+        <section style="margin-top:22px;">
+          <h3 style="margin:0 0 12px; font-size:14px; color:var(--text-primary);">Funnel por SDR <span class="muted" style="font-size:11px; font-weight:400;">· período seleccionado</span></h3>
+          <div id="team-funnels" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
+        </section>
+
+        <section style="margin-top:22px; overflow-x:auto;">
           <table id="team-table" style="width:100%; border-collapse:collapse; font-size:13px;">
             <thead>
               <tr style="text-align:left; border-bottom:2px solid var(--accent); background:rgba(157,133,242,0.04);">
@@ -3340,7 +3359,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260712a"></script>
+  <script type="module" src="/app.js?v=20260712b"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

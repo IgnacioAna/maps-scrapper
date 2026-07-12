@@ -55,3 +55,22 @@ Requiere levantar preview/prod, login como admin, y un supervisor con `visibleSe
 - `public/app.js` y `public/index.html` modificados y en disco (diff: +142/-4).
 - `node --check public/app.js` limpio.
 - Cache-buster `v=20260712a` presente en `index.html`.
+
+## Upgrade panel pro (2026-07-12)
+
+El user reportó que el panel del supervisor (view-team) estaba "medio choto". Se convirtió la tabla comparativa en un dashboard de rendimiento PRO (aplica a admin y supervisor, scoped o no — el scoping lo resuelve 18-01 en backend).
+
+### Backend (`index.js`, `GET /api/setters/team-performance`)
+Dos bloques nuevos calculados DESPUÉS del filtro `visibleSet`, reusando `callsBySetter`/`_callSetterId` y `_bizDayStr` (TZ de negocio #113):
+- **`teamTotals`**: sumas del período de los setters visibles (`dials/connects/conversations/appointments/deals`) + rates recalculadas de las sumas (no promedio de promedios). `teamAverages` intacto.
+- **`callsByDay`**: `{days:[14 días de negocio], perSetter:[{setterId, name, dials[14], connects[14]}]}` — SIEMPRE 14 días hasta hoy (independiente del `period`), solo setters visibles, connects por `COLD_CALL_CONNECT_OUTCOMES`.
+
+### Frontend (`public/app.js` + `public/index.html`)
+En view-team, entre alertas y la tabla:
+- **Fila de KPI tiles** (`.myp-tile`): Llamadas, Atendidas (% connect), Conversaciones (%), Agendadas (% booking), Deals — de `teamTotals`.
+- **Chart.js "Llamadas por día"**: línea multi-serie (una por SDR, 14 días), toggle `.seg-control` Llamadas/Atendidas (redibuja sin refetch), instancia `_teamChart` con destroy en re-render (patrón de `_mypRenderChart`), tooltip themed, paleta `_TEAM_SERIES_COLORS` del design system.
+- **Mini-funnels por SDR**: grid responsive, card por setter con dials→connects→conversations→appointments→deals + chips `.ccm-bench ok/mid/low` (benchmarks connect 15-25 / conv 50-60 / booking 15-25). Click → `_teamDrilldown` (view-myperf preseleccionado, mismo handler que la fila de tabla).
+- Tabla comparativa + alertas QUEDAN debajo, sin cambios. UI minimalista sin emojis. Cache-buster `v=20260712b` (app.js). `style.css` NO se tocó.
+
+### Tests
+`tests/supervisor-scope.test.js` +2 casos (teamTotals/callsByDay scoped solo visibles; admin recibe los 3). `npx vitest run supervisor-scope team-performance` → 40/40 verde.

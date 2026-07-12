@@ -145,6 +145,29 @@ describe("team-performance — scoping", () => {
     expect(r.status).toBe(200);
     expect(r.body.teamAverages.total).toBe(3);
   });
+
+  it("panel pro — teamTotals y callsByDay.perSetter del supervisor scoped solo incluyen setter_a/setter_b", async () => {
+    const r = await request(app).get("/api/setters/team-performance").set("Cookie", supScopedCookie);
+    expect(r.status).toBe(200);
+    // teamTotals: suma de dials del período (setter_a=2 + setter_b=4 = 6).
+    expect(r.body.teamTotals).toBeTruthy();
+    expect(r.body.teamTotals.dials).toBe(6);
+    // callsByDay: ventana fija de 14 días, solo setters visibles.
+    expect(r.body.callsByDay).toBeTruthy();
+    expect(Array.isArray(r.body.callsByDay.days)).toBe(true);
+    expect(r.body.callsByDay.days.length).toBe(14);
+    const cbdIds = r.body.callsByDay.perSetter.map((s) => s.setterId).sort();
+    expect(cbdIds).toEqual(["setter_a", "setter_b"]);
+  });
+
+  it("panel pro — admin recibe callsByDay con los 3 setters", async () => {
+    const r = await request(app).get("/api/setters/team-performance").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    const cbdIds = r.body.callsByDay.perSetter.map((s) => s.setterId).sort();
+    expect(cbdIds).toEqual(["setter_a", "setter_b", "setter_c"]);
+    // teamTotals admin suma los 3 (2+4+10=16).
+    expect(r.body.teamTotals.dials).toBe(16);
+  });
 });
 
 describe("cold-call-metrics — scoping", () => {

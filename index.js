@@ -9191,12 +9191,72 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     return (sevOrder[a.severity] ?? 9) - (sevOrder[b.severity] ?? 9);
   });
 
+  // Phase 18 (panel pro) — teamTotals: SUMAS del período de los setters visibles
+  // (no promedio de promedios). Rates recalculadas de las sumas.
+  const _sum = (key) => perSetter.reduce((a, s) => a + (s.current[key] || 0), 0);
+  const ttDials = _sum("dials");
+  const ttConnects = _sum("connects");
+  const ttConversations = _sum("conversations");
+  const ttAppointments = _sum("appointments");
+  const teamTotals = {
+    dials: ttDials,
+    connects: ttConnects,
+    conversations: ttConversations,
+    appointments: ttAppointments,
+    deals: _sum("deals"),
+    connectRate: ttDials > 0 ? Number(((ttConnects / ttDials) * 100).toFixed(1)) : 0,
+    conversationRate: ttConnects > 0 ? Number(((ttConversations / ttConnects) * 100).toFixed(1)) : 0,
+    bookingRate: ttConversations > 0 ? Number(((ttAppointments / ttConversations) * 100).toFixed(1)) : 0,
+  };
+
+  // Phase 18 (panel pro) — callsByDay: últimos 14 días de negocio (TZ #113),
+  // SIEMPRE (independiente del period). Derivado del callLog con _callSetterId,
+  // solo setters visibles. connects = COLD_CALL_CONNECT_OUTCOMES.
+  const DAYS = 14;
+  const todayStart = _bizStartOfDay(Date.now());
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const windowStart = todayStart - (DAYS - 1) * oneDayMs;
+  const windowEnd = todayStart + oneDayMs; // exclusivo (fin de hoy)
+  const cbdDays = [];
+  const cbdIndex = {};
+  for (let i = 0; i < DAYS; i++) {
+    const ds = _bizDayStr(windowStart + i * oneDayMs);
+    cbdDays.push(ds);
+    cbdIndex[ds] = i;
+  }
+  const cbdBySetter = new Map();
+  for (const s of scopedSetters) {
+    cbdBySetter.set(s.id, {
+      setterId: s.id,
+      name: s.name,
+      dials: new Array(DAYS).fill(0),
+      connects: new Array(DAYS).fill(0),
+    });
+  }
+  for (const l of allLeads) {
+    const log = Array.isArray(l.callLog) ? l.callLog : [];
+    for (const e of log) {
+      const ts = e.ts ? new Date(e.ts).getTime() : 0;
+      if (!ts || ts < windowStart || ts >= windowEnd) continue;
+      const sid = _callSetterId(e, l, userMap);
+      const row = sid && cbdBySetter.get(sid);
+      if (!row) continue;
+      const idx = cbdIndex[_bizDayStr(ts)];
+      if (idx == null) continue;
+      row.dials[idx]++;
+      if (COLD_CALL_CONNECT_OUTCOMES.has(String(e.outcome || ""))) row.connects[idx]++;
+    }
+  }
+  const callsByDay = { days: cbdDays, perSetter: Array.from(cbdBySetter.values()) };
+
   res.json({
     period,
     from: new Date(fromTs).toISOString(),
     to: new Date(toTs).toISOString(),
     perSetter,
     teamAverages,
+    teamTotals,
+    callsByDay,
     alerts: allAlerts,
     alertConfig: cfg,
   });
