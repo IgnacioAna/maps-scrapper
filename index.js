@@ -6895,6 +6895,47 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   });
 });
 
+// GET /api/setters/pool-setter-breakdown?setterId=X — desglose de UN SDR:
+// cuántos leads por país y en qué etapa del embudo está cada uno (2026-07-11,
+// pedido del user: "cuántos de qué país por SDR y cuáles ya trabajaron").
+// Buckets mutuamente excluyentes en orden: DNC → agendado → descartado →
+// interesado → callback pendiente → sin tocar → en proceso (trabajado, sigue llamable).
+app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
+  const setterId = String(req.query.setterId || '').trim();
+  if (!setterId) return res.status(400).json({ error: 'setterId requerido.' });
+  const data = loadSettersData();
+  const _now = Date.now();
+  const setter = (data.setters || []).find((s) => s.id === setterId);
+  const isUntouched = (l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0) && !l.conexion;
+  const byCountry = {}; // country → { total, callable }
+  const byStatus = { sinTocar: 0, enProceso: 0, interesado: 0, agendado: 0, descartado: 0, callbackPendiente: 0, dnc: 0 };
+  let total = 0, callable = 0;
+  for (const l of Object.values(data.leads || {})) {
+    if (l.assignedTo !== setterId) continue;
+    total++;
+    const c = (l.country || 'Sin país').trim() || 'Sin país';
+    if (!byCountry[c]) byCountry[c] = { total: 0, callable: 0 };
+    byCountry[c].total++;
+    const isCallable = _leadIsCallableNow(l, _now);
+    if (isCallable) { callable++; byCountry[c].callable++; }
+    // Bucket de etapa (excluyente, en orden de prioridad)
+    if (l.doNotCall) byStatus.dnc++;
+    else if (l.estado === 'agendado') byStatus.agendado++;
+    else if (l.estado === 'descartado') byStatus.descartado++;
+    else if (l.estado === 'interesado') byStatus.interesado++;
+    else if (l.callbackAt && new Date(l.callbackAt).getTime() > _now) byStatus.callbackPendiente++;
+    else if (isUntouched(l)) byStatus.sinTocar++;
+    else byStatus.enProceso++;
+  }
+  res.json({
+    setterId,
+    setterName: setter ? (setter.name || setterId) : setterId,
+    total, callable,
+    byStatus,
+    byCountry: Object.entries(byCountry).map(([country, v]) => ({ country, total: v.total, callable: v.callable })).sort((a, b) => b.total - a.total),
+  });
+});
+
 // POST /api/setters/pool-distribute — admin reparte leads del pool a un setter,
 // EN ORDEN DE PRIORIDAD (interesados → sin contactar → a medias → no interesados),
 // reseteando el estado operativo del lead (re-contacto desde cero, conserva historial).

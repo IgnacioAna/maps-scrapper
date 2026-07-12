@@ -9598,8 +9598,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const setterRows = setterHeader + (d.bySetter || []).map(s => {
           const callable = (typeof s.callable === 'number') ? s.callable : s.total;
           const gap = s.total - callable;
-          const tip = `${s.total} asignados en total` + (gap > 0 ? ` — ${gap} no llamables (números muertos, agendados, interesados o callbacks)` : '');
-          return `<tr title="${escHtml(tip)}"><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''}</td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:#5BB974;">${callable}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched}</td></tr>`;
+          const tip = `Click para ver el desglose por país y etapa. ${s.total} asignados` + (gap > 0 ? ` · ${gap} no llamables` : '');
+          return `<tr title="${escHtml(tip)}" style="cursor:pointer;" onclick="window._poolSetterBreakdown('${escHtml(s.id)}')"><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''} <span style="color:var(--text-tertiary); font-size:10px;">›</span></td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:#5BB974;">${callable}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched}</td></tr>`;
         }).join('');
         // ¿A qué país llamar AHORA? — hora local de cada país + flag horario hábil.
         const countryTiming = (d.byCountry || [])
@@ -9652,6 +9652,62 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
     window.loadPoolView = loadPoolView;
+
+    // 2026-07-11: desglose de un SDR — cuántos leads por país y en qué etapa está
+    // cada uno (sin tocar / en proceso / interesado / agendado / descartado /
+    // callback / no-llamar). Modal al clickear una fila de "POR SDR".
+    window._poolSetterBreakdown = async function (setterId) {
+      document.getElementById('pool-breakdown-modal')?.remove();
+      const ov = document.createElement('div');
+      ov.id = 'pool-breakdown-modal';
+      ov.className = 'modal-overlay';
+      ov.style.cssText = 'display:flex; align-items:center; justify-content:center; z-index:1200;';
+      ov.innerHTML = `<div class="modal-card" style="max-width:640px; width:min(94vw,640px); max-height:88vh; display:flex; flex-direction:column;"><div class="modal-body" style="overflow-y:auto;"><div class="muted" style="padding:20px;">Cargando…</div></div></div>`;
+      ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
+      const esc = (e) => { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', esc); } };
+      document.addEventListener('keydown', esc);
+      document.body.appendChild(ov);
+      try {
+        const d = await (await fetch(apiUrl('/api/setters/pool-setter-breakdown?setterId=' + encodeURIComponent(setterId)), { credentials: 'include' })).json();
+        if (d.error) throw new Error(d.error);
+        const st = d.byStatus || {};
+        // Etapas con color + explicación de a dónde va cada una.
+        const stages = [
+          { k: 'sinTocar', label: 'Sin tocar', col: '#7E8494', hint: 'nunca llamados — la materia prima' },
+          { k: 'enProceso', label: 'En proceso', col: '#79B8FF', hint: 'ya los llamó, siguen en la cola (no atendió / cortó / a reintentar)' },
+          { k: 'interesado', label: 'Interesados', col: '#5BB974', hint: 'dijeron que sí → viven en la vista Hoy hasta agendar' },
+          { k: 'agendado', label: 'Agendados', col: '#4ADE80', hint: 'reunión reservada → salen de la cola, van al calendario' },
+          { k: 'callbackPendiente', label: 'Callbacks', col: '#A78BFA', hint: 'quedaron en volver a llamar → aparecen en Hoy el día que toca' },
+          { k: 'descartado', label: 'Descartados', col: '#F87171', hint: 'no interesado / número malo / sin contacto agotado' },
+          { k: 'dnc', label: 'No-llamar', col: '#F87171', hint: 'marcados DNC — fuera de toda cola' },
+        ].filter(x => (st[x.k] || 0) > 0);
+        const stageRow = (x) => `<div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-subtle);">
+          <span style="width:10px; height:10px; border-radius:50%; background:${x.col}; flex-shrink:0;"></span>
+          <div style="flex:1; min-width:0;"><span style="font-weight:600; color:var(--text-primary); font-size:13px;">${x.label}</span> <span style="color:var(--text-tertiary); font-size:11px;">— ${x.hint}</span></div>
+          <span style="font-variant-numeric:tabular-nums; font-weight:700; color:${x.col};">${st[x.k]}</span>
+        </div>`;
+        const trabajados = d.total - (st.sinTocar || 0);
+        const countryRows = (d.byCountry || []).map(c => `<tr><td style="padding:5px 10px;">${escHtml(c.country)}</td><td style="padding:5px 10px; text-align:right; color:#5BB974; font-weight:600; font-variant-numeric:tabular-nums;">${c.callable}</td><td style="padding:5px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${c.total}</td></tr>`).join('');
+        ov.querySelector('.modal-body').innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+            <h3 style="margin:0; font-size:17px;">${escHtml(d.setterName)}</h3>
+            <button class="modal-close-btn" onclick="document.getElementById('pool-breakdown-modal')?.remove()">×</button>
+          </div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">${d.total} leads asignados · <span style="color:#5BB974;">${d.callable} llamables</span> · ${trabajados} ya trabajados</div>
+
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">En qué etapa está cada lead</div>
+          <div style="margin-bottom:20px;">${stages.length ? stages.map(stageRow).join('') : '<div class="muted" style="font-size:12px;">Sin leads.</div>'}</div>
+
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Por país</div>
+          <table style="width:100%; border-collapse:collapse; font-size:12.5px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">
+            <tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">País</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">Llamables</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">Total</th></tr>
+            ${countryRows || '<tr><td colspan="3" class="muted" style="padding:10px;">Sin leads.</td></tr>'}
+          </table>`;
+      } catch (e) {
+        const body = ov.querySelector('.modal-body');
+        if (body) body.innerHTML = `<div class="muted" style="padding:20px;">Error: ${escHtml(e.message || 'desconocido')} <button class="modal-close-btn" style="float:right;" onclick="document.getElementById('pool-breakdown-modal')?.remove()">×</button></div>`;
+      }
+    };
 
     document.getElementById('pool-distribute-btn')?.addEventListener('click', async () => {
       const btn = document.getElementById('pool-distribute-btn');
