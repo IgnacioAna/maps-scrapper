@@ -2518,6 +2518,40 @@ app.get('/api/admin/meta-ad-probe', requireAuth, requireRole('admin'), async (re
   res.json({ tokenPresent, query: { fb, country }, result });
 });
 
+// GET /api/admin/whisper-probe (admin) — diagnóstico del OPENAI_API_KEY que usa
+// Whisper para transcribir llamadas. Sin costo: pega a GET /v1/models (no gasta
+// tokens ni Whisper). Devuelve si el key está seteado, si es válido (200), si tiene
+// crédito (401/insufficient_quota lo delata) y si el modelo whisper-1 está accesible.
+// Sirve para confirmar en 1 clic por qué no se generan transcripciones.
+app.get('/api/admin/whisper-probe', requireAuth, requireRole('admin'), async (req, res) => {
+  const key = process.env.OPENAI_API_KEY;
+  const keyPresent = !!(key && String(key).trim());
+  if (!keyPresent) {
+    return res.json({ keyPresent: false, ok: false, reason: 'OPENAI_API_KEY no está seteada en Railway → toda transcripción devuelve 503.' });
+  }
+  try {
+    const r = await Promise.race([
+      fetch('https://api.openai.com/v1/models', { headers: { 'Authorization': 'Bearer ' + key } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    ]);
+    const status = r.status;
+    let body = null; try { body = await r.json(); } catch {}
+    if (status === 200) {
+      const ids = Array.isArray(body?.data) ? body.data.map((m) => m.id) : [];
+      const hasWhisper = ids.includes('whisper-1');
+      return res.json({ keyPresent: true, ok: true, status, hasWhisper, modelCount: ids.length, reason: hasWhisper ? 'Key válido y whisper-1 accesible. La transcripción debería funcionar en llamadas hechas por el discador de la app.' : 'Key válido pero whisper-1 NO aparece en los modelos accesibles — revisá permisos del key.' });
+    }
+    const errType = body?.error?.type || '';
+    const errMsg = body?.error?.message || ('HTTP ' + status);
+    let reason = errMsg;
+    if (status === 401) reason = 'Key inválido o revocado (401). Regenerá el OPENAI_API_KEY en OpenAI y actualizalo en Railway.';
+    else if (errType === 'insufficient_quota' || /quota|billing/i.test(errMsg)) reason = 'El key es válido pero la cuenta de OpenAI NO tiene crédito/saldo (insufficient_quota). Cargá saldo en platform.openai.com/billing.';
+    return res.json({ keyPresent: true, ok: false, status, errorType: errType, reason });
+  } catch (e) {
+    return res.json({ keyPresent: true, ok: false, reason: 'No se pudo contactar a OpenAI: ' + (e?.message || 'error') });
+  }
+});
+
 // GET /api/admin/serpapi-account — uso/saldo de SerpApi (como el saldo de Telnyx).
 // Consulta https://serpapi.com/account server-side (la key nunca al browser). El plan
 // tiene 2 límites: searches/MES (total_searches_left) y un throttle de 200/HORA.
