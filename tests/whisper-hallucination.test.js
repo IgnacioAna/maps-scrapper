@@ -132,4 +132,34 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     // La misma frase SIN prompt (y con buenas métricas) se conserva
     expect(clean(raw, "lead").length).toBe(1);
   });
+
+  // Bug 2026-07-13 (caso real de la biblioteca): Whisper devolvió el prompt
+  // PARTIDO en 2 segmentos DISTINTOS con buenas métricas — el gate de loop
+  // (uniq.size <= 1) no los atrapaba y aparecían como turnos del CLIENTE.
+  it("eco del prompt partido en segmentos distintos -> filtrado por segmento", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 4, text: "Llamada telefónica en español de un vendedor a una clínica dental.", no_speech_prob: 0.3, avg_logprob: -0.3, compression_ratio: 1.2 }),
+      seg({ start: 5, end: 8, text: "Términos frecuentes.", no_speech_prob: 0.3, avg_logprob: -0.3, compression_ratio: 1.1 }),
+    ];
+    expect(clean(raw, "lead", prompt)).toEqual([]);
+  });
+
+  it("eco parcial del prompt mezclado con habla real -> solo se va el eco", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 2, text: "Términos frecuentes.", no_speech_prob: 0.2, avg_logprob: -0.3, compression_ratio: 1.0 }),
+      seg({ start: 3, end: 6, text: "Sí, dígame, ¿de parte de quién?", no_speech_prob: 0.1, avg_logprob: -0.2, compression_ratio: 1.2 }),
+    ];
+    const out = clean(raw, "lead", prompt);
+    expect(out.map((s) => s.text)).toEqual(["Sí, dígame, ¿de parte de quién?"]);
+  });
+
+  it("término del rubro dicho por el cliente NO se filtra (está después de 'Términos frecuentes:')", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 3, text: "Nos interesa la reactivación de pacientes, contame más.", no_speech_prob: 0.1, avg_logprob: -0.2, compression_ratio: 1.4 }),
+    ];
+    expect(clean(raw, "lead", prompt).length).toBe(1);
+  });
 });

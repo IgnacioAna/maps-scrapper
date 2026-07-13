@@ -2278,6 +2278,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el SDR (auriculares)
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
                 if (!_setterRecorder) _startCallRecording(localStream, stream); // Whisper (Sprint 7)
+                // Bug 2026-07-13: si la grabación arrancó en early-media y el carrier
+                // reemplazó el stream al atender, re-conectar el mixer al stream nuevo
+                // (sin esto el canal del cliente grababa silencio).
+                else window._rebindLeadRecording?.(stream);
                 return;
               }
               if (++tries < 16) setTimeout(go, 250);
@@ -2313,6 +2317,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // anti-alucinación del backend lo descarta.
             if (_hasRemoteAudio() && !_setterRecorder && !_leadRecorder) {
               _startCallRecording(call.localStream || _telnyx.activeCall?.localStream || null, call.remoteStream);
+            } else if (_hasRemoteAudio()) {
+              // Ya grabando: si el SDK cambió el remoteStream entre notificaciones,
+              // re-conectar el mixer (bug 2026-07-13 — canal del cliente en silencio).
+              window._rebindLeadRecording?.(call.remoteStream);
             }
             if (_hasRemoteAudio() && !_telnyxCallState.enteredActive && !_telnyxCallState.committedRemote) {
               _startRemoteVoiceWatch(call, () => {
@@ -7109,6 +7117,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _setterChunks = [];
     let _leadChunks = [];
     let _localStreamForRecording = null;
+    // Bug 2026-07-13: el MediaRecorder del lead quedaba atado al remoteStream de
+    // early-media; cuando el carrier lo REEMPLAZA al atender ('active'), el recorder
+    // seguía grabando el stream muerto → canal del cliente en silencio → Whisper
+    // alucinaba el prompt y toda la conversación quedaba del lado SDR. Fix: grabar
+    // vía Web Audio (MediaStreamAudioDestinationNode) y re-conectar el source cuando
+    // el stream cambia (_rebindLeadRecording, llamado desde _attachRemote).
+    let _leadRecCtx = null;   // AudioContext del mixer del lead
+    let _leadRecSrc = null;   // MediaStreamAudioSourceNode actual
+    let _leadRecSrcStream = null; // stream al que está conectado el source
+
+    function _rebindLeadRecording(stream) {
+      if (!_leadRecCtx || !stream || stream === _leadRecSrcStream) return;
+      try {
+        if (_leadRecSrc) { try { _leadRecSrc.disconnect(); } catch {} }
+        _leadRecSrc = _leadRecCtx.createMediaStreamSource(stream);
+        _leadRecSrc.connect(_leadRecCtx._recDest);
+        _leadRecSrcStream = stream;
+        _leadRecCtx.resume?.().catch(() => {});
+        console.log('[transcribe] lead recording re-conectado al stream nuevo');
+      } catch (e) {
+        console.warn('[transcribe] rebind lead failed:', e.message);
+      }
+    }
+    window._rebindLeadRecording = _rebindLeadRecording;
 
     function _startCallRecording(localStream, remoteStream) {
       _setterChunks = [];
@@ -7132,7 +7164,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           _setterRecorder.start(1000); // chunk cada 1s
         }
         if (remoteStream) {
-          _leadRecorder = new MediaRecorder(remoteStream, { mimeType, audioBitsPerSecond: 32000 });
+          // Mixer Web Audio: el recorder graba el destination (estable toda la
+          // llamada) y el source se re-conecta si el SDK cambia el remoteStream.
+          _leadRecCtx = new (window.AudioContext || window.webkitAudioContext)();
+          _leadRecCtx._recDest = _leadRecCtx.createMediaStreamDestination();
+          _leadRecSrc = null; _leadRecSrcStream = null;
+          _rebindLeadRecording(remoteStream);
+          _leadRecorder = new MediaRecorder(_leadRecCtx._recDest.stream, { mimeType, audioBitsPerSecond: 32000 });
           _leadRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _leadChunks.push(e.data); };
           _leadRecorder.start(1000);
         }
@@ -7163,6 +7201,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all([stopRecorder(_setterRecorder), stopRecorder(_leadRecorder)]);
       _setterRecorder = null;
       _leadRecorder = null;
+      // Cerrar el mixer Web Audio del lead (libera el AudioContext).
+      try { _leadRecSrc?.disconnect(); } catch {}
+      try { _leadRecCtx?.close(); } catch {}
+      _leadRecCtx = null; _leadRecSrc = null; _leadRecSrcStream = null;
       // Detener tracks del local stream para liberar el mic
       if (_localStreamForRecording) {
         try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}

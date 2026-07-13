@@ -13682,6 +13682,21 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // no_speech_prob alto + avg_logprob muy bajo, o compression_ratio alto.
 function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
   const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
+  // Eco del prompt POR SEGMENTO (bug 2026-07-13): Whisper puede devolver el prompt
+  // partido en varios segmentos distintos ("Llamada telefónica en español de un
+  // vendedor a una clínica dental." + "Términos frecuentes.") — el gate de loop de
+  // abajo (uniq.size <= 1) no los atrapa porque son frases DIFERENTES. Filtramos
+  // cualquier segmento cuyo texto sea parte de la porción INSTRUCCIONAL del prompt
+  // (todo hasta "Términos frecuentes:" inclusive). Los términos del rubro listados
+  // después (reactivación de pacientes, agenda, ...) NO se filtran — esos sí
+  // aparecen en conversaciones reales.
+  const _promptRaw = String(promptText || '');
+  const _tfIdx = _promptRaw.toLowerCase().indexOf('términos frecuentes');
+  const _instrNorm = _normSeg(_tfIdx >= 0 ? _promptRaw.slice(0, _tfIdx) + 'términos frecuentes' : _promptRaw);
+  const _isPromptEchoSeg = (txt) => {
+    const n = _normSeg(txt);
+    return !!(n && n.length >= 10 && _instrNorm && _instrNorm.includes(n));
+  };
   let segs = (rawSegments || []).map((s) => ({
     speaker: speakerLabel,
     start: Math.round((s.start || 0) * 10) / 10,
@@ -13691,6 +13706,7 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
     _alp: typeof s.avg_logprob === 'number' ? s.avg_logprob : 0,
     _cr: typeof s.compression_ratio === 'number' ? s.compression_ratio : 0,
   })).filter((s) => s.text)
+    .filter((s) => !_isPromptEchoSeg(s.text))           // eco del prompt (por segmento)
     .filter((s) => !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación
     .filter((s) => s._cr < 2.4);                        // segmento repetitivo
   // Colapsa loops: la misma frase repetida N veces (clásico de Whisper en
