@@ -13496,8 +13496,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${sinc != null ? `
               <div style="flex:1; min-width:200px;">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
-                  <span style="color:var(--success); font-weight:600;" title="Leads de la cartera con algún historial (puede incluir trabajo de un SDR anterior si fueron reasignados)">${trabajados.toLocaleString()} con historial</span>
-                  <span style="color:var(--text-tertiary);">${sinc.toLocaleString()} sin tocar</span>
+                  <span style="color:var(--success); font-weight:600;" title="Leads de la cartera que ya fueron discados alguna vez (por cualquier SDR — puede incluir llamadas de un SDR anterior si fueron reasignados)">${trabajados.toLocaleString()} con llamadas</span>
+                  <span style="color:var(--text-tertiary);" title="Nunca discados por nadie (callLog vacío)">${sinc.toLocaleString()} sin llamar</span>
                 </div>
                 <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
                   <div style="height:100%; width:${pctTrab}%; border-radius:999px; background:linear-gradient(90deg, rgba(74,222,128,0.55), var(--success)); transition:width 0.7s cubic-bezier(0.22,1,0.36,1);"></div>
@@ -14211,7 +14211,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ratio = untouched / totalAssigned;
         const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
         const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
-        assignedBadge = ` <span title="Total asignados al SDR (no del periodo). ${untouched} sin tocar." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin tocar` : ''}</span>`;
+        assignedBadge = ` <span title="Total asignados al SDR (no del periodo). ${untouched} nunca discados por nadie (callLog vacío)." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin llamar` : ''}</span>`;
       }
       const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');

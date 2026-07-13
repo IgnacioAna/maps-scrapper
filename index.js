@@ -9085,7 +9085,11 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   // distinto de totals.total que es "tocó N en el período". Sin esto el panel solo
   // mostraba los tocados y parecía que el setter tenía muchos menos leads.
   const assignedTotal = filtered.length;
-  const assignedSinContactar = filtered.filter((l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0)).length;
+  // "Sin tocar" = NUNCA DISCADO (callLog vacío) — unificado con team-performance
+  // y pool-setter-breakdown (bug 2026-07-13: !lastContactAt quedó incoherente tras
+  // resets/redistribuciones — leads de la era WhatsApp con lastContactAt pero cero
+  // llamadas contaban como "tocados").
+  const assignedSinContactar = filtered.filter((l) => !(Array.isArray(l.callLog) && l.callLog.length > 0)).length;
 
   res.json({
     period,
@@ -9248,7 +9252,11 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     // Ultima actividad ATRIBUIDA al setter (llamadas por `by` + interactions suyas).
     const lastActivity = lastActivityBySetter.get(s.id) || 0;
     const totalAssigned = setterLeads.length;
-    const untouchedAssigned = setterLeads.filter(l => !l.lastContactAt).length;
+    // "Sin tocar" = NUNCA DISCADO por nadie (callLog vacío) — mismo criterio que
+    // pool-setter-breakdown. Bug 2026-07-13: antes era !lastContactAt, que quedó
+    // incoherente tras resets/redistribuciones (leads con lastContactAt de la era
+    // WhatsApp sin una sola llamada contaban como "tocados", y viceversa).
+    const untouchedAssigned = setterLeads.filter(l => !(Array.isArray(l.callLog) && l.callLog.length > 0)).length;
 
     // Follow-ups del día (dueToday + dueYesterday) — para columna del panel Equipo.
     const followupsToday = _countFollowupsForBadge(setterLeads);
@@ -9282,7 +9290,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     }
     // Untouched aunque haya algo de actividad: si tiene >50% sin tocar, alerta media
     if (totalAssigned >= cfg.minTotalForAlert && lastActivity > 0 && untouchedAssigned / totalAssigned >= 0.5) {
-      alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) sin tocar todavía.` });
+      alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) sin llamar todavía.` });
     }
     // Funnel de llamadas: si hizo bastantes llamadas pero atiende muy poco, alerta
     // (tasa de atención baja vs el umbral configurado, reusado de aperturaPctMin).
