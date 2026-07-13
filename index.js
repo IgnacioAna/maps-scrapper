@@ -5404,15 +5404,17 @@ globalThis.__phase18 = { _visibleSetterIds, _filterSettersVisible, _setterIsVisi
 // 2026-05-25: implementado por pedido del user (curso de cold calling).
 // Cada métrica se calcula sobre callLog entries cuyo ts cae en el período.
 app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
-  const role = req.auth?.user?.role;
   const eff = getEffectiveAuth(req);
   const requestedSetter = req.query.setter || '';
-  // Setter solo ve los suyos
+  // Setter solo ve los suyos. Bug 2026-07-13: antes brancheaba por el rol REAL
+  // (cookie) → un admin en modo "Ver como SDR" (apiUrl manda ?viewAs=setter&
+  // asSetterId=) recibía el agregado del EQUIPO como si fuera del SDR. Ahora
+  // usa el rol EFECTIVO (getEffectiveAuth), consistente con sin-wsp/stats.
   let setterId = '';
-  if (role === 'setter') {
+  if (eff.role === 'setter') {
     if (!eff.setterId) return res.status(403).json({ error: 'No autorizado.' });
     setterId = eff.setterId;
-  } else if (role === 'admin' || role === 'supervisor') {
+  } else if (eff.role === 'admin' || eff.role === 'supervisor') {
     setterId = requestedSetter; // admin/supervisor puede pedir cualquiera; vacío = todos
   } else {
     return res.status(403).json({ error: 'No autorizado.' });
@@ -7075,6 +7077,13 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
     descartados: 0,       // no interesado / número malo / contacto agotado
     dnc: 0,               // No-llamar
   };
+  // Bug 2026-07-13: calledLeads/totalDials contaban TODO el callLog de los leads
+  // asignados — una SDR nueva heredaba los discados del setter anterior (la
+  // redistribución conserva callLog a propósito). Se atribuye por quién LLAMÓ
+  // (entry.by → _callSetterId), igual que el resto de las métricas. Los buckets
+  // de activity/sinTocar siguen siendo por estado del LEAD (composición del pool
+  // — "sin tocar" = nunca discado por NADIE — semántica correcta para distribuir).
+  const _pbUserMap = _buildUserSetterMap();
   let total = 0, callable = 0, calledLeads = 0, totalDials = 0;
   for (const l of Object.values(data.leads || {})) {
     if (l.assignedTo !== setterId) continue;
@@ -7083,7 +7092,10 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
     if (!byCountry[c]) byCountry[c] = { total: 0, callable: 0 };
     byCountry[c].total++;
     if (_leadIsCallableNow(l, _now)) { callable++; byCountry[c].callable++; }
-    if (hasCalls(l)) { calledLeads++; totalDials += l.callLog.length; }
+    if (hasCalls(l)) {
+      const ownDials = l.callLog.filter((e) => _callSetterId(e, l, _pbUserMap) === setterId).length;
+      if (ownDials > 0) { calledLeads++; totalDials += ownDials; }
+    }
     // Actividad (excluyente, en orden de prioridad)
     if (l.doNotCall) activity.dnc++;
     else if (l.estado === 'agendado') activity.agendados++;
@@ -8865,27 +8877,29 @@ function _perfAggregate(leads, fromTs, toTs, attr) {
   // 'enviada'; respondieron=respondio; calificados=calificado; interesados=interes
   // 'si'; agendados=estado 'agendado'; shows/noShows=asistioAt+asistio.
   //
-  // attr (opcional): { setterId, userMap } → atribuye "trabajado" por quién EJECUTÓ
-  // la llamada (callLog.by → setterId), NO por el dueño ACTUAL del lead. Sin esto,
-  // un SDR nuevo que HEREDA leads vía reassign-bulk (que no toca lastContactAt) veía
-  // como "trabajados" leads que otro trabajó antes de la reasignación (bug de
-  // atribución 2026-07-13, mismo criterio que _callSetterId / cold-call-metrics).
+  // attr (opcional): { setterIds: Set, userMap } → atribuye "trabajado" por quién
+  // EJECUTÓ la acción (callLog.by → setterId / interactions.setterId ∈ setterIds),
+  // NO por el dueño ACTUAL del lead. Sin esto, un SDR nuevo que HEREDA leads vía
+  // reassign-bulk (que no toca lastContactAt) veía como "trabajados" leads que otro
+  // trabajó antes de la reasignación (bug de atribución 2026-07-13, mismo criterio
+  // que _callSetterId / cold-call-metrics). Individual = Set de 1; agregado de
+  // equipo/supervisor scoped = Set de los setters visibles.
   // Sin attr mantiene el comportamiento legacy (lastContactAt del lead).
-  const attributed = !!(attr && attr.setterId);
+  const attributed = !!(attr && attr.setterIds && attr.setterIds.size > 0);
   let total = 0, recibidos = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
   for (const lead of leads) {
-    const mine = !attributed || lead.assignedTo === attr.setterId;
+    const mine = !attributed || attr.setterIds.has(lead.assignedTo);
     let touchedInBucket;
     if (attributed) {
-      // ¿el setter target ejecutó una acción sobre este lead dentro del bucket?
+      // ¿algún setter del set ejecutó una acción sobre este lead dentro del bucket?
       // Llamada (callLog.by → setterId) o interacción de setteo (interactions.setterId).
       // NO se usa lastContactAt porque un lead reasignado lo hereda del setter previo.
       const inWin = (ts) => { const x = ts ? new Date(ts).getTime() : 0; return x >= fromTs && x < toTs; };
       const acts = Array.isArray(lead.interactions) ? lead.interactions : [];
       const log = Array.isArray(lead.callLog) ? lead.callLog : [];
       touchedInBucket =
-        acts.some((a) => a.setterId === attr.setterId && inWin(a.createdAt)) ||
-        log.some((e) => inWin(e.ts) && _callSetterId(e, lead, attr.userMap) === attr.setterId);
+        acts.some((a) => a.setterId && attr.setterIds.has(a.setterId) && inWin(a.createdAt)) ||
+        log.some((e) => inWin(e.ts) && attr.setterIds.has(_callSetterId(e, lead, attr.userMap)));
     } else {
       const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
       touchedInBucket = lc >= fromTs && lc < toTs;
@@ -8993,9 +9007,11 @@ function _perfDelta(curr, prev, keys) {
 }
 
 app.get("/api/setters/performance", requireAuth, (req, res) => {
-  const role = req.auth?.user?.role;
-  const isSetter = role === "setter";
-  const isAdminOrSuper = role === "admin" || role === "supervisor";
+  // Bug 2026-07-13: usar rol EFECTIVO (viewAs) — el frontend además pasa
+  // ?setter= explícito en "Ver como" (cinturón y tiradores).
+  const eff = getEffectiveAuth(req);
+  const isSetter = eff.role === "setter";
+  const isAdminOrSuper = eff.role === "admin" || eff.role === "supervisor";
   if (!isSetter && !isAdminOrSuper) return res.status(403).json({ error: "No autorizado." });
 
   const period = ["day", "week", "month"].includes(req.query.period) ? req.query.period : "week";
@@ -9028,7 +9044,7 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   }
   let setterFilter = "";
   if (isSetter) {
-    setterFilter = req.auth.user.setterId || "";
+    setterFilter = eff.setterId || "";
   } else {
     setterFilter = requestedSetter; // vacio = agregado del equipo
   }
@@ -9036,12 +9052,16 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
     ? allLeads.filter((l) => l.assignedTo === setterFilter)
     : (visibleSet ? allLeads.filter((l) => visibleSet.has(l.assignedTo)) : allLeads);
 
-  // Atribución por quién LLAMÓ (bug 2026-07-13): con un SDR individual, "leads
-  // trabajados"/embudo se cuentan desde el callLog atribuido por `by` sobre TODOS
+  // Atribución por quién LLAMÓ (bug 2026-07-13): "leads trabajados"/embudo se
+  // cuentan desde callLog/interactions atribuidos por quién ejecutó, sobre TODOS
   // los leads (no solo los asignados hoy) — así un SDR nuevo no hereda el trabajo
-  // ajeno de leads que le reasignaron. El agregado de equipo mantiene el legacy.
-  const attr = setterFilter ? { setterId: setterFilter, userMap: _buildUserSetterMap() } : null;
-  const aggLeads = attr ? allLeads : filtered;
+  // ajeno de leads que le reasignaron. Individual = Set de 1; supervisor scoped =
+  // sus setters visibles; admin equipo = todos los setters.
+  const attrSet = setterFilter
+    ? new Set([setterFilter])
+    : (visibleSet || new Set((data.setters || []).map((s) => s.id)));
+  const attr = { setterIds: attrSet, userMap: _buildUserSetterMap() };
+  const aggLeads = allLeads;
 
   // Buckets del periodo actual + agregar kpis por bucket.
   const buckets = _perfBucketsForPeriod(period, fromTs, toTs).map((b) => ({
@@ -9191,16 +9211,30 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
   // período actual + anterior; _perfCallFunnel filtra por [from, to) adentro.
   const userMap = _buildUserSetterMap();
   const callsBySetter = new Map();
+  // Bug 2026-07-13: última actividad ATRIBUIDA (llamada del setter o interaction
+  // suya, all-time) — antes era max(lastContactAt) de los leads asignados, que se
+  // HEREDA en cada reasignación: una SDR nueva con leads redistribuidos figuraba
+  // "activa" sin haber llamado nunca, y la alerta never_touched jamás disparaba.
+  const lastActivityBySetter = new Map();
+  const _bumpActivity = (sid, ts) => {
+    if (!sid || !ts) return;
+    if (ts > (lastActivityBySetter.get(sid) || 0)) lastActivityBySetter.set(sid, ts);
+  };
   for (const l of allLeads) {
     const log = Array.isArray(l.callLog) ? l.callLog : [];
     for (const e of log) {
       const ts = e.ts ? new Date(e.ts).getTime() : 0;
-      if (!ts || ts < prevFrom || ts >= toTs) continue;
+      if (!ts) continue;
       const sid = _callSetterId(e, l, userMap);
+      _bumpActivity(sid, ts);
+      if (ts < prevFrom || ts >= toTs) continue;
       if (!sid) continue;
       let arr = callsBySetter.get(sid);
       if (!arr) { arr = []; callsBySetter.set(sid, arr); }
       arr.push({ ts, outcome: String(e.outcome || ""), duration: Number(e.duration || 0) });
+    }
+    for (const a of (Array.isArray(l.interactions) ? l.interactions : [])) {
+      if (a.setterId) _bumpActivity(a.setterId, a.createdAt ? new Date(a.createdAt).getTime() : 0);
     }
   }
 
@@ -9211,11 +9245,8 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     const previous = _perfCallFunnel(setterLeads, prevFrom, prevTo, data.calendar, s.id, setterCalls);
     const deltas = _perfDelta(current, previous, ["total", "dials", "connects", "conversations", "appointments", "deals", "shows", "noShows"]);
 
-    // Ultima actividad: max(lastContactAt) entre todos los leads del setter.
-    const lastActivity = setterLeads.reduce((max, l) => {
-      const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
-      return t > max ? t : max;
-    }, 0);
+    // Ultima actividad ATRIBUIDA al setter (llamadas por `by` + interactions suyas).
+    const lastActivity = lastActivityBySetter.get(s.id) || 0;
     const totalAssigned = setterLeads.length;
     const untouchedAssigned = setterLeads.filter(l => !l.lastContactAt).length;
 
