@@ -2574,7 +2574,9 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
     if (!l) return false;
     const phone = String(l.phone || '').trim();
     if (!phone || phone.replace(/\D/g, '').length < 8) return false;
-    if (onlyMissing && l.lookupAt) return false;
+    // onlyMissing salta los ya validados, PERO reintenta los que erroraron transitorio
+    // (rate-limit 10011 / timeout): esos nunca se validaron de verdad.
+    if (onlyMissing && l.lookupAt && !_lookupErrorIsTransient(l.lookupError)) return false;
     return true;
   };
   if (dryRun) {
@@ -2589,9 +2591,9 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
   const knownByDigits = new Map();
   for (const id of Object.keys(leadsMap)) {
     const l = leadsMap[id];
-    if (!l || !l.lookupAt) continue;
+    if (!l || !l.lookupAt || l.lookupError) continue; // no copiar gratis desde lookups que erroraron
     const dig = String(l.phone || '').replace(/\D/g, '');
-    if (dig) knownByDigits.set(dig, { phoneType: l.phoneType || '', carrier: l.lookupCarrier || '', error: l.lookupError || '' });
+    if (dig) knownByDigits.set(dig, { phoneType: l.phoneType || '', carrier: l.lookupCarrier || '' });
   }
   const candidates = [];
   const copies = {};
@@ -2648,7 +2650,7 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
         lead.phoneType = copies[id].phoneType || '';
         if (copies[id].carrier) lead.lookupCarrier = copies[id].carrier;
         lead.lookupAt = new Date().toISOString();
-        if (copies[id].error) lead.lookupError = copies[id].error; else delete lead.lookupError;
+        delete lead.lookupError; // copia gratis desde un lookup exitoso → limpia error viejo
         copiedFree++;
       }
     });
@@ -6015,11 +6017,10 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
       // Phase 17: los DNC (no-llamar) salen de TODA cola de llamada salvo dnc=1.
       if (l.doNotCall && !showDnc) return false;
       if (showDnc) return !!l.doNotCall;
-      // Validado por Telnyx Number Lookup SIN operadora (lookupAt seteado pero phoneType
-      // vacío) = número muerto casi seguro → fuera de la cola de discado. Es el lever
-      // contra la tasa de abandono de Telnyx (no discás números que nunca atienden).
-      // (Si el lookup ERRORÓ, no se setea lookupAt → se sigue ofreciendo para reintentar.)
-      if (l.lookupAt && !String(l.phoneType || '').trim()) return false;
+      // Número muerto = lookup exitoso SIN tipo NI operadora (ver _leadIsConfirmedDeadNumber).
+      // Lever contra la tasa de abandono de Telnyx, pero SIN enterrar reales: MX/ES vuelven
+      // con operadora y sin tipo → siguen llamables. Los que erroraron (rate-limit) también.
+      if (_leadIsConfirmedDeadNumber(l)) return false;
       if (l.conexion === 'sin_wsp') return true;
       if (includeCallable) {
         const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
@@ -6530,15 +6531,17 @@ async function _autoValidateImportedNumbers(leadIds) {
     // Índice dígitos → resultado de todos los lookups ya pagados en la base.
     const known = new Map();
     for (const l of Object.values(data.leads || {})) {
-      if (!l || !l.lookupAt) continue;
+      if (!l || !l.lookupAt || l.lookupError) continue; // no sembrar copias gratis desde lookups que erroraron
       const dig = String(l.phone || '').replace(/\D/g, '');
-      if (dig) known.set(dig, { phoneType: l.phoneType || '', carrier: l.lookupCarrier || '', error: l.lookupError || '' });
+      if (dig) known.set(dig, { phoneType: l.phoneType || '', carrier: l.lookupCarrier || '' });
     }
     const copies = {};
     const toLookup = [];
     for (const id of leadIds) {
       const l = data.leads && data.leads[id];
-      if (!l || l.lookupAt) continue;
+      // Saltar solo los YA validados con éxito. Los que erroraron transitorio (rate-limit) se reintentan.
+      if (!l) continue;
+      if (l.lookupAt && !_lookupErrorIsTransient(l.lookupError)) continue;
       const dig = String(l.phone || '').replace(/\D/g, '');
       if (dig.length < 8) continue;
       if (known.has(dig)) copies[id] = known.get(dig);
@@ -6925,9 +6928,33 @@ function getReassignCandidates(data, { fromSetterId, country, city, estado, unto
 // operadora), terminales, interesados y callbacks manuales (esos van a Hoy).
 // Se usa para que "POR SDR" muestre el total real vs los llamables (2026-07-10:
 // el user veía 341 asignados pero menos en la vista y no cuadraba).
+// Un número se considera MUERTO (fuera de la cola de discado) SOLO si Telnyx hizo
+// el lookup con éxito y no encontró NI tipo de línea NI operadora. Clave para no
+// enterrar leads reales: en México/España/LatAm el number_lookup de Telnyx suele
+// devolver la operadora (Vodafone/Telmex/Orange) SIN el tipo de línea — esos números
+// son reales y SÍ se llaman. Un lookupError (rate-limit/timeout) tampoco es muerte
+// confirmada → se sigue ofreciendo para reintentar. (Fix 2026-07-12: antes bastaba
+// lookupAt+phoneType vacío para enterrarlo, lo que escondía ~1100 leads buenos.)
+function _leadIsConfirmedDeadNumber(l) {
+  if (!l || !l.lookupAt) return false;
+  if (String(l.phoneType || '').trim()) return false;    // tiene tipo → vivo
+  if (String(l.lookupCarrier || '').trim()) return false; // tiene operadora → real
+  if (String(l.lookupError || '').trim()) return false;   // erroró → reintentar, no muerto
+  return true;
+}
+// Un lookupError transitorio (rate-limit 10011 de Telnyx, timeout, red) NO es una
+// respuesta definitiva del número → se reintenta y NO cuenta como muerto. Un error
+// permanente (número inválido) no matchea acá → queda marcado y no se re-cobra.
+function _lookupErrorIsTransient(err) {
+  if (!err) return false;
+  const s = String(err).toLowerCase();
+  return s.includes('10011') || s.includes('exceeded') || s.includes('rate limit')
+    || s.includes('too many') || s.includes('429') || s.includes('timeout')
+    || s.includes('econn') || s.includes('network') || s.includes('fetch failed');
+}
 function _leadIsCallableNow(l, now) {
   if (l.doNotCall) return false;
-  if (l.lookupAt && !String(l.phoneType || '').trim()) return false; // línea muerta validada
+  if (_leadIsConfirmedDeadNumber(l)) return false; // línea muerta validada (sin tipo NI operadora)
   const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
   if (!hasPhone) return false;
   if (['descartado', 'agendado', 'interesado'].includes(l.estado)) return false;
@@ -11202,7 +11229,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
