@@ -70600,6 +70600,2469 @@
       "scrapedAt": "2026-07-11T17:00:12.280Z",
       "query": "clinica dental\nodontologo\nestetica dental\ndentista\nimplantes dentales",
       "location": "Sevilla, España"
+    },
+    "clínica dental antequera_c. compositor lehmberg ruiz, 4 - 6º, 4 - 6º, distrito centro, 29007 málaga, spain": {
+      "name": "Clínica Dental Antequera",
+      "address": "C. Compositor Lehmberg Ruiz, 4 - 6º, 4 - 6º, Distrito Centro, 29007 Málaga, Spain",
+      "phone": "+34 952 39 20 70",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "ortodoncia ceballos_c/ trinidad grund, 33, 2ºe, distrito centro, 29001 málaga, spain": {
+      "name": "Ortodoncia Ceballos",
+      "address": "C/ Trinidad Grund, 33, 2ºE, Distrito Centro, 29001 Málaga, Spain",
+      "phone": "+34 952 21 57 47",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "jobesa | escuela superior de prótesis dental málaga_c. huerta del obispo, 23, distrito centro, 29007 málaga, spain": {
+      "name": "JOBESA | Escuela superior de prótesis dental Málaga",
+      "address": "C. Huerta del Obispo, 23, Distrito Centro, 29007 Málaga, Spain",
+      "phone": "+34 952 28 50 03",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "clínica dental en zaragoza | clínica dental gran vía_gran vía santiago ramón y cajal, 41, 1º, 50006 zaragoza, spain": {
+      "name": "Clínica Dental en Zaragoza | Clínica Dental Gran Vía",
+      "address": "Gran Vía Santiago Ramón y Cajal, 41, 1º, 50006 Zaragoza, Spain",
+      "phone": "+34 976 02 43 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "la clínica dental - zaragoza_andador de ignacio menaya reinoso, av. de pablo gargallo, 19-25, local, 28-29, 50003 zaragoza, spain": {
+      "name": "La Clínica Dental - Zaragoza",
+      "address": "Andador de Ignacio Menaya Reinoso, Av. de Pablo Gargallo, 19-25, local, 28-29, 50003 Zaragoza, Spain",
+      "phone": "+34 976 54 17 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental caser zaragoza - constitución_p.º de la constitucion, 10, 50008 zaragoza, spain": {
+      "name": "Clinica Dental Caser Zaragoza - Constitución",
+      "address": "P.º de la Constitucion, 10, 50008 Zaragoza, Spain",
+      "phone": "+34 976 69 52 17",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental ag_c. de josé oto, 49, 50014 zaragoza, spain": {
+      "name": "Clinica Dental AG",
+      "address": "C. de José Oto, 49, 50014 Zaragoza, Spain",
+      "phone": "+34 976 47 55 43",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic lorenzo_c. de miguel servet, 67, 50013 zaragoza, spain": {
+      "name": "Dental Clinic Lorenzo",
+      "address": "C. de Miguel Servet, 67, 50013 Zaragoza, Spain",
+      "phone": "+34 976 49 16 90",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. loscos_gta. de diego velázquez, 2, 50006 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Loscos",
+      "address": "Gta. de Diego Velázquez, 2, 50006 Zaragoza, Spain",
+      "phone": "+34 976 21 20 68",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental salvo | dentistas zaragoza_calle de joaquín costa, 16, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Salvo | Dentistas Zaragoza",
+      "address": "Calle de Joaquín Costa, 16, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 13 40 14",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental sagasta 49_p.º de sagasta, 49, ppal derecha, san josé, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Sagasta 49",
+      "address": "P.º de Sagasta, 49, ppal derecha, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 976 37 99 95",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "institutos odontológicos - clínica dental zaragoza centro_c. del coso, 102, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Institutos Odontológicos - Clínica Dental Zaragoza Centro",
+      "address": "C. del Coso, 102, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 876 50 61 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "centro dental torres independencia | clínica dental zaragoza_p.º de la independencia, 5, casco antiguo, 50001 entresuelo, zaragoza, spain": {
+      "name": "Centro Dental Torres Independencia | Clínica Dental Zaragoza",
+      "address": "P.º de la Independencia, 5, Casco Antiguo, 50001 Entresuelo, Zaragoza, Spain",
+      "phone": "+34 625 39 86 40",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental saura · dentista en zaragoza_p.º gran vía, 26, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Saura · Dentista en Zaragoza",
+      "address": "P.º Gran Vía, 26, 50006 Zaragoza, Spain",
+      "phone": "+34 976 21 52 24",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental zoe - zaragoza odontología especializada_gran vía santiago ramón y cajal, 30, local dcha, 50005 zaragoza, spain": {
+      "name": "Clínica Dental ZOE - Zaragoza Odontología Especializada",
+      "address": "Gran Vía Santiago Ramón y Cajal, 30, Local Dcha, 50005 Zaragoza, Spain",
+      "phone": "+34 876 28 28 59",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental zaragoza_primero a, av. de césar augusto, 22, esc. 2, 50004 zaragoza, spain": {
+      "name": "CLÍNICA DENTAL ZARAGOZA",
+      "address": "Primero A, Av. de César Augusto, 22, Esc. 2, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 73 22",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental caxal zaragoza. ortodoncia y odontopediatría_vía de ramón pignatelli, 29, 50007 zaragoza, spain": {
+      "name": "Clínica Dental CAXAL Zaragoza. Ortodoncia y Odontopediatría",
+      "address": "Vía de Ramón Pignatelli, 29, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 86 97",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental palafox_el caracol, p.º de la independencia, 24-26, planta -2 local 95, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Palafox",
+      "address": "El Caracol, P.º de la Independencia, 24-26, Planta -2 Local 95, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 39 34",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental cardona_c. de san vicente mártir, 17, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Cardona",
+      "address": "C. de San Vicente Mártir, 17, 50008 Zaragoza, Spain",
+      "phone": "+34 722 30 47 81",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "gonzalvo dental clinic_c/ de felipe sanclemente, 15, 1º, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Gonzalvo dental clinic",
+      "address": "C/ de Felipe Sanclemente, 15, 1º, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 79 57 85",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental san lázaro. sector centro_av. tenor fleta, 18 esq, cam. de las torres, 50007 zaragoza, spain": {
+      "name": "Clínica Dental San Lázaro. Sector Centro",
+      "address": "Av. Tenor Fleta, 18 Esq, Cam. de las Torres, 50007 Zaragoza, Spain",
+      "phone": "+34 976 55 75 72",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental caser zaragoza - san josé_av. de san josé, 38, 50008 zaragoza, spain": {
+      "name": "Clinica Dental Caser Zaragoza - San José",
+      "address": "Av. de San José, 38, 50008 Zaragoza, Spain",
+      "phone": "+34 976 59 66 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental guadalfajara_c. de marcelino unceta, 101, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Guadalfajara",
+      "address": "C. de Marcelino Unceta, 101, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 53 05 99",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental las fuentes norte_c. del dr. iranzo, 80, 50002 zaragoza, spain": {
+      "name": "Clínica Dental Las Fuentes Norte",
+      "address": "C. del Dr. Iranzo, 80, 50002 Zaragoza, Spain",
+      "phone": "+34 976 36 25 28",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental pablo murillo | clínica dental zaragoza | dentistas zaragoza_av. de madrid, 157, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Pablo Murillo | Clínica dental Zaragoza | Dentistas Zaragoza",
+      "address": "Av. de Madrid, 157, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 876 28 60 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental sanitas milenium madre vedruna_c. de sta. joaquina de vedruna, 46, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Sanitas Milenium Madre Vedruna",
+      "address": "C. de Sta. Joaquina de Vedruna, 46, 50008 Zaragoza, Spain",
+      "phone": "+34 976 18 70 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental san josé_c. de zaragoza la vieja, 26 esquina, c. del escultor lobato, 3, 50007 zaragoza, spain": {
+      "name": "Clínica Dental San José",
+      "address": "C. de Zaragoza la Vieja, 26 esquina, C. del Escultor Lobato, 3, 50007 Zaragoza, Spain",
+      "phone": "+34 876 65 57 40",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vitaldent_c. del coso, 85, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C. del Coso, 85, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 48 30 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "torres clínica dental | plaza roma_pl. de roma, 8, delicias, 50010 zaragoza, spain": {
+      "name": "Torres Clínica Dental | Plaza Roma",
+      "address": "Pl. de Roma, 8, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 686 17 29 36",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental hc_p.º de los rosales, 28 dpdo, 50008 zaragoza, spain": {
+      "name": "Clínica dental HC",
+      "address": "P.º de los Rosales, 28 dpdo, 50008 Zaragoza, Spain",
+      "phone": "+34 976 01 43 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica asisa dental_cam. de las torres, 7-9, 7-9, 50008 zaragoza, spain": {
+      "name": "Clínica ASISA Dental",
+      "address": "Cam. de las Torres, 7-9, 7-9, 50008 Zaragoza, Spain",
+      "phone": "+34 976 46 17 50",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dehental_p.º de la constitucion, 23-25, loc, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Dehental",
+      "address": "P.º de la Constitucion, 23-25, Loc, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 876 61 52 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentists in zaragoza iglesias ruiz_c. de sta. joaquina de vedruna, 22 principal, dcha, 50008 zaragoza, spain": {
+      "name": "Dentists in Zaragoza Iglesias Ruiz",
+      "address": "C. de Sta. Joaquina de Vedruna, 22 Principal, Dcha, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 08 95",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental tres jiménez_c/, av. de juan pablo ii, 4, 50009 zaragoza, spain": {
+      "name": "Clinica Dental Tres Jiménez",
+      "address": "C/, Av. de Juan Pablo II, 4, 50009 Zaragoza, Spain",
+      "phone": "+34 976 75 29 45",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic south zaragoza_calle ludwig van beethoven, 34, 50012 zaragoza, spain": {
+      "name": "Dental Clinic South Zaragoza",
+      "address": "Calle Ludwig van Beethoven, 34, 50012 Zaragoza, Spain",
+      "phone": "+34 876 28 04 28",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental fernández cano_p.º de pamplona, 15 principal, izq, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Fernández Cano",
+      "address": "P.º de Pamplona, 15 Principal, izq, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 11 63",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental plaza roma_calle de josé garcía sánchez, 39, delicias, 50005 zaragoza, spain": {
+      "name": "Clinica Dental Plaza Roma",
+      "address": "Calle de José García Sánchez, 39, Delicias, 50005 Zaragoza, Spain",
+      "phone": "+34 976 40 24 82",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "institutos odontológicos - clínica dental sagasta_p.º de sagasta, 76, 50006 zaragoza, spain": {
+      "name": "Institutos Odontológicos - Clínica Dental Sagasta",
+      "address": "P.º de Sagasta, 76, 50006 Zaragoza, Spain",
+      "phone": "+34 976 37 61 69",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental saldaña zaragoza_c. de los hermanos ibarra, 3, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Saldaña Zaragoza",
+      "address": "C. de los Hermanos Ibarra, 3, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 48 20 15",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. toledo_av. de madrid, 84, delicias, 50017 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Toledo",
+      "address": "Av. de Madrid, 84, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 32 81 11",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "aragonia clinica dental | dental romareda | dentistas zaragoza_av. de gómez laguna, 22, delicias, 50009 zaragoza, spain": {
+      "name": "Aragonia Clinica Dental | Dental Romareda | Dentistas Zaragoza",
+      "address": "Av. de Gómez Laguna, 22, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 876 61 43 33",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "centro dental torres san josé | dentistas zaragoza_av. de san josé, 145, san josé, 50007 zaragoza, spain": {
+      "name": "Centro Dental Torres San José | Dentistas Zaragoza",
+      "address": "Av. de San José, 145, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 876 28 79 47",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "casablanca dental | clínica dental en zaragoza_c. de la vía, 2, casablanca, 50009 zaragoza, spain": {
+      "name": "Casablanca Dental | Clínica Dental en Zaragoza",
+      "address": "C. de la Vía, 2, Casablanca, 50009 Zaragoza, Spain",
+      "phone": "+34 876 24 06 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. portolés_p.º de teruel, 26, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Portolés",
+      "address": "P.º de Teruel, 26, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 56 26",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental tello | dentista zaragoza_c. de ángela lópez jiménez, 1, 50009 zaragoza, spain": {
+      "name": "Clínica Dental Tello | Dentista Zaragoza",
+      "address": "C. de Ángela López Jiménez, 1, 50009 Zaragoza, Spain",
+      "phone": "+34 976 27 95 50",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental ag_c. de la cuarta avenida, 23, torrero-la paz, 50007 zaragoza, spain": {
+      "name": "Clínica Dental AG",
+      "address": "C. de la Cuarta Avenida, 23, Torrero-La Paz, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 40 96",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vintanel & moreno - dentistas zaragoza_c. de sta. joaquina de vedruna, 1, 50008 zaragoza, spain": {
+      "name": "Clínica dental Vintanel & Moreno - Dentistas Zaragoza",
+      "address": "C. de Sta. Joaquina de Vedruna, 1, 50008 Zaragoza, Spain",
+      "phone": "+34 876 54 69 79",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "ubb dental - clínica dental zaragoza_c. del monasterio de poblet, nº 2, loc, 50013 zaragoza, spain": {
+      "name": "UBB Dental - Clínica Dental Zaragoza",
+      "address": "C. del Monasterio de Poblet, Nº 2, Loc, 50013 Zaragoza, Spain",
+      "phone": "+34 876 28 36 74",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental sonrisalud zaragoza_c. de s. miguel, 45, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Sonrisalud Zaragoza",
+      "address": "C. de S. Miguel, 45, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 876 06 33 80",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental san lázaro. sector avenida cataluña.🦷_c/ jesus, av. de cataluña, 1, esq, 50014 zaragoza, spain": {
+      "name": "Clínica Dental San Lázaro. Sector Avenida Cataluña.🦷",
+      "address": "C/ JESUS, Av. de Cataluña, 1, Esq, 50014 Zaragoza, Spain",
+      "phone": "+34 876 59 69 69",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "arturo lozano clínica dental. las fuentes_c/ del monasterio de siresa, 15, 50002 zaragoza, spain": {
+      "name": "Arturo Lozano Clínica Dental. Las Fuentes",
+      "address": "C/ del Monasterio de Siresa, 15, 50002 Zaragoza, Spain",
+      "phone": "+34 976 93 56 75",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental pascual_c. de la corona de aragón, 25, 50009 zaragoza, spain": {
+      "name": "Clínica Dental Pascual",
+      "address": "C. de la Corona de Aragón, 25, 50009 Zaragoza, Spain",
+      "phone": "+34 647 54 43 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental los arcos_c. de san ignacio de loyola, 11, 1 h, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Los Arcos",
+      "address": "C. de San Ignacio de Loyola, 11, 1 H, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 35 67",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental argote - zaragoza_p.º de las damas, 31, 1º b, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Argote - Zaragoza",
+      "address": "P.º de las Damas, 31, 1º B, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 84 71",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. toledo_c. de las cortes, 19, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Toledo",
+      "address": "C. de las Cortes, 19, 50003 Zaragoza, Spain",
+      "phone": "+34 976 44 01 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. toledo_c. de mariano lagasca, 14, 50006 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Toledo",
+      "address": "C. de Mariano Lagasca, 14, 50006 Zaragoza, Spain",
+      "phone": "+34 976 21 21 21",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental merino_p.º de sagasta, 2, 50006 zaragoza, spain": {
+      "name": "Clínica dental Merino",
+      "address": "P.º de Sagasta, 2, 50006 Zaragoza, Spain",
+      "phone": "+34 976 22 55 07",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental servet san josé | dentistas zaragoza_av. de cesáreo alierta, 95, 50013 zaragoza, spain": {
+      "name": "Clínica Dental Servet San José | Dentistas Zaragoza",
+      "address": "Av. de Cesáreo Alierta, 95, 50013 Zaragoza, Spain",
+      "phone": "+34 876 67 03 32",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "campos y losada clínica dental zaragoza_av. de césar augusto, 22, esc. 1, 1ºb, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Campos y Losada Clínica Dental Zaragoza",
+      "address": "Av. de César Augusto, 22, Esc. 1, 1ºB, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 86 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental maría agustín_p.º de maría agustín, 80, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Clínica Dental María Agustín",
+      "address": "P.º de María Agustín, 80, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 09 96 51",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental ginés_c. de hernán cortés, 22, loc, 50005 zaragoza, spain": {
+      "name": "Clínica Dental Ginés",
+      "address": "C. de Hernán Cortés, 22, Loc, 50005 Zaragoza, Spain",
+      "phone": "+34 976 15 84 70",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "lorente ortodoncia - clínica de ortodoncia en zaragoza_p.º de la constitucion, 29, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Lorente Ortodoncia - Clínica de Ortodoncia en Zaragoza",
+      "address": "P.º de la Constitucion, 29, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 46 12 60",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic peguero moreira_av. del tenor fleta, 3, 50008 zaragoza, spain": {
+      "name": "Dental Clinic Peguero Moreira",
+      "address": "Av. del Tenor Fleta, 3, 50008 Zaragoza, Spain",
+      "phone": "+34 976 38 49 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental aragonesa_c. de pedro lapuyade, 1, san josé, 50007 zaragoza, spain": {
+      "name": "Clinica Dental Aragonesa",
+      "address": "C. de Pedro Lapuyade, 1, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 976 27 60 22",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental pilar henrique_c. de miguel servet, 103, 50013 zaragoza, spain": {
+      "name": "Clinica Dental Pilar Henrique",
+      "address": "C. de Miguel Servet, 103, 50013 Zaragoza, Spain",
+      "phone": "+34 976 78 32 85",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental bairós_av. de césar augusto, n°69, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Bairós",
+      "address": "Av. de César Augusto, n°69, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 45 68 81",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental gutiérrez_c. de la duquesa de villahermosa, 109, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Gutiérrez",
+      "address": "C. de la Duquesa de Villahermosa, 109, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 53 55 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental caredent zaragoza-las fuentes_av. del compromiso de caspe, 93, 50002 zaragoza, spain": {
+      "name": "Clínica dental Caredent Zaragoza-Las Fuentes",
+      "address": "Av. del Compromiso de Caspe, 93, 50002 Zaragoza, Spain",
+      "phone": "+34 876 21 20 09",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentalasét_av. de césar augusto, 9, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Dentalasét",
+      "address": "Av. de César Augusto, 9, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 44 16 67",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. cerezuela_residencial paraíso, portal 6, 1º d, 50008 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Cerezuela",
+      "address": "Residencial Paraíso, PORTAL 6, 1º D, 50008 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental caredent zaragoza-mozart_pl. de wolfgang amadeus mozart, 8, 50014 zaragoza, spain": {
+      "name": "Clínica dental Caredent Zaragoza-Mozart",
+      "address": "Pl. de Wolfgang Amadeus Mozart, 8, 50014 Zaragoza, Spain",
+      "phone": "+34 876 21 20 07",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. toledo_av. de cataluña, 84, 86, 50015 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Toledo",
+      "address": "Av. de Cataluña, 84, 86, 50015 Zaragoza, Spain",
+      "phone": "+34 876 28 67 96",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental san lorenzo y diego serrano estética dental_c. de san lorenzo, 5, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental San Lorenzo y Diego Serrano estética dental",
+      "address": "C. de San Lorenzo, 5, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 39 10 28",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. nora abud zafra & dr. jacinto rodriguez gomez_av. de césar augusto, 73, 2b, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Nora Abud Zafra & Dr. Jacinto Rodriguez Gomez",
+      "address": "Av. de César Augusto, 73, 2B, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 28 32 92",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "mb dental universitas_vía univérsitas, 48, delicias, 50017 zaragoza, spain": {
+      "name": "MB Dental Universitas",
+      "address": "Vía Univérsitas, 48, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 694 28 23 31",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental plaza alfonso_c. de bolonia, 6, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Plaza Alfonso",
+      "address": "C. de Bolonia, 6, 50007 Zaragoza, Spain",
+      "phone": "+34 976 37 92 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental lipe_c. de don pedro de luna, 64, local, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Lipe",
+      "address": "C. de Don Pedro de Luna, 64, LOCAL, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 33 62 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. talía gil penón_av. de gómez laguna, n° 24, piso 1 puerta 4, delicias, 50009 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Talía Gil Penón",
+      "address": "Av. de Gómez Laguna, n° 24, Piso 1 puerta 4, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 75 77 44",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. pablo murillo_c. del marqués de la cadena, 52, 50014 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Pablo Murillo",
+      "address": "C. del Marqués de la Cadena, 52, 50014 Zaragoza, Spain",
+      "phone": "+34 876 28 60 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental augusta_c. de francisco de vitoria, 14, 50008 zaragoza, spain": {
+      "name": "Clinica Dental Augusta",
+      "address": "C. de Francisco de Vitoria, 14, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 88 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental longás y valdés_av. de césar augusto, 18, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Longás Y Valdés",
+      "address": "Av. de César Augusto, 18, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 90 11",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. toledo. actur_c. de pablo ruiz picasso, 7, 50018 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Toledo. Actur",
+      "address": "C. de Pablo Ruiz Picasso, 7, 50018 Zaragoza, Spain",
+      "phone": "+34 976 52 10 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental berga hidalgo_c. de eduardo sanz hernaz, 8, loc, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Berga Hidalgo",
+      "address": "C. de Eduardo Sanz Hernaz, 8, Loc, 50008 Zaragoza, Spain",
+      "phone": "+34 976 41 24 41",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "famydent - clínica dental_av. de salvador allende, 69, 50015 zaragoza, spain": {
+      "name": "Famydent - Clínica Dental",
+      "address": "Av. de Salvador Allende, 69, 50015 Zaragoza, Spain",
+      "phone": "+34 976 01 75 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "gotor dental - clínica dental en zaragoza_p.º de sagasta, 72, 50006 zaragoza, spain": {
+      "name": "GOTOR DENTAL - Clínica dental en Zaragoza",
+      "address": "P.º de Sagasta, 72, 50006 Zaragoza, Spain",
+      "phone": "+34 976 15 58 26",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental torrero_av. de américa, 4, 3ºa, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Torrero",
+      "address": "Av. de América, 4, 3ºA, 50007 Zaragoza, Spain",
+      "phone": "+34 976 27 91 08",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental almozara_av. de pablo gargallo, 47, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Almozara",
+      "address": "Av. de Pablo Gargallo, 47, 50003 Zaragoza, Spain",
+      "phone": "+34 976 44 25 12",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental beltran_c. pilar lorengar, 6, 50005 zaragoza, spain": {
+      "name": "Clinica Dental Beltran",
+      "address": "C. Pilar Lorengar, 6, 50005 Zaragoza, Spain",
+      "phone": "+34 976 56 66 48",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental marzo_c. de josé pellicer, 3, san josé, 50007 zaragoza, spain": {
+      "name": "Clínica dental Marzo",
+      "address": "C. de José Pellicer, 3, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 07 24",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "institutos odontológicos - clínica dental zambrano_c. pablo casals, 2, 50018 zaragoza, spain": {
+      "name": "Institutos Odontológicos - Clínica Dental Zambrano",
+      "address": "C. Pablo Casals, 2, 50018 Zaragoza, Spain",
+      "phone": "+34 976 51 68 33",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental puente del pilar_cmo del vado, 4, 50014 zaragoza, spain": {
+      "name": "Clínica Dental Puente del Pilar",
+      "address": "Cmo del Vado, 4, 50014 Zaragoza, Spain",
+      "phone": "+34 976 20 57 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental gonzález del castillo_p.º de pamplona, 11, 50004 zaragoza, spain": {
+      "name": "Clínica Dental González del Castillo",
+      "address": "P.º de Pamplona, 11, 50004 Zaragoza, Spain",
+      "phone": "+34 649 87 40 34",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental margalejo & franco_av. del tenor fleta, 36, san josé, 50007 zaragoza, spain": {
+      "name": "Clínica dental Margalejo & Franco",
+      "address": "Av. del Tenor Fleta, 36, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 876 28 24 99",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental gustavo rodríguez_vía hispanidad, 58, delicias, 50009 zaragoza, spain": {
+      "name": "Clínica Dental Gustavo Rodríguez",
+      "address": "Vía Hispanidad, 58, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 08 17 83",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra.carolina mora_c. de hernán cortés, 4, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Dra.Carolina Mora",
+      "address": "C. de Hernán Cortés, 4, 50004 Zaragoza, Spain",
+      "phone": "+34 976 11 71 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "policlínica dental d&d - zaragoza_p.º de maría agustín, 60, bajo, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Policlínica Dental D&D - Zaragoza",
+      "address": "P.º de María Agustín, 60, Bajo, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 28 03 94",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental pilar sierra_c. de santander, 10, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Pilar Sierra",
+      "address": "C. de Santander, 10, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 54 17 76",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica aura_av. de cesáreo alierta, 23, loc, 50008 zaragoza, spain": {
+      "name": "Clinica Aura",
+      "address": "Av. de Cesáreo Alierta, 23, Loc, 50008 Zaragoza, Spain",
+      "phone": "+34 976 02 23 24",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "doctor noguera pérez_pl. de mariano arregui canela, 9, 50009 zaragoza, spain": {
+      "name": "Doctor Noguera Pérez",
+      "address": "Pl. de Mariano Arregui Canela, 9, 50009 Zaragoza, Spain",
+      "phone": "+34 654 29 23 02",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental gómez plana_c. de josé maría lacarra de miguel, 10, 1-izda, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Gómez Plana",
+      "address": "C. de José María Lacarra de Miguel, 10, 1-IZDA, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 00 99",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. torralba - simón_av. de san josé, 66, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Torralba - Simón",
+      "address": "Av. de San José, 66, 50008 Zaragoza, Spain",
+      "phone": "+34 744 40 20 08",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental milenium fernando el católico zaragoza - sanitas_p.º de fernando el católico, 7, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Milenium Fernando el Católico Zaragoza - Sanitas",
+      "address": "P.º de Fernando el Católico, 7, 50006 Zaragoza, Spain",
+      "phone": "+34 976 69 68 90",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica suma+ dental | dentista en zaragoza · pº sagasta_p.º de sagasta, 39, 50007 zaragoza, spain": {
+      "name": "Clínica Suma+ Dental | Dentista en Zaragoza · Pº Sagasta",
+      "address": "P.º de Sagasta, 39, 50007 Zaragoza, Spain",
+      "phone": "+34 876 24 08 30",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental comet_c. de cristóbal colón, 13, local, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Comet",
+      "address": "C. de Cristóbal Colón, 13, local, 50007 Zaragoza, Spain",
+      "phone": "+34 976 31 85 62",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. eva ibáñez_c. de numancia, 6, 50013 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Eva Ibáñez",
+      "address": "C. de Numancia, 6, 50013 Zaragoza, Spain",
+      "phone": "+34 976 13 46 42",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental barreiro & bengoa_p.º de maría agustín, 31, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Barreiro & Bengoa",
+      "address": "P.º de María Agustín, 31, 50004 Zaragoza, Spain",
+      "phone": "+34 976 43 94 75",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra sanz de la tajada_av. de valencia, 48, delicias, 50005 zaragoza, spain": {
+      "name": "Clínica Dental Dra Sanz de la Tajada",
+      "address": "Av. de Valencia, 48, Delicias, 50005 Zaragoza, Spain",
+      "phone": "+34 976 55 41 83",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "roger dental -dentistas-_av. de cesáreo alierta, 4, loc 8, 50008 zaragoza, spain": {
+      "name": "Roger Dental -DENTISTAS-",
+      "address": "Av. de Cesáreo Alierta, 4, Loc 8, 50008 Zaragoza, Spain",
+      "phone": "+34 876 54 95 48",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental calanda_p.º de calanda, 29, delicias, 50010 zaragoza, spain": {
+      "name": "Clinica Dental Calanda",
+      "address": "P.º de Calanda, 29, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 876 53 58 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr alfonso_c. de pedro maría ric, 1, 1;c, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Dr Alfonso",
+      "address": "C. de Pedro María Ric, 1, 1;C, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 78 33",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dres. zárate_av. de madrid, 109-111, 2º a, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica dental Dres. Zárate",
+      "address": "Av. de Madrid, 109-111, 2º A, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 31 49 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental ziba ruiseñores_c. del arzobispo morcillo, 40, loc, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Ziba Ruiseñores",
+      "address": "C. del Arzobispo Morcillo, 40, Loc, 50006 Zaragoza, Spain",
+      "phone": "+34 976 05 15 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vitaldent_av. de américa, 24, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "Av. de América, 24, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 93 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "mota clínica dental_c. de la paz, 25, local, 50008 zaragoza, spain": {
+      "name": "Mota Clínica Dental",
+      "address": "C. de la Paz, 25, LOCAL, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 17 65",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental dr. toledo_pl. de la reina sofía, 1, 50013 zaragoza, spain": {
+      "name": "Clinica Dental Dr. Toledo",
+      "address": "Pl. de la Reina Sofía, 1, 50013 Zaragoza, Spain",
+      "phone": "+34 976 93 48 52",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vitaldent_av. de gómez laguna, 28, delicias, 50009 zaragoza, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "Av. de Gómez Laguna, 28, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 75 71 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental castillo_c. de nicolás guillén, 4, 1ºd, 50018 zaragoza, spain": {
+      "name": "Clinica Dental Castillo",
+      "address": "C. de Nicolás Guillén, 4, 1ºD, 50018 Zaragoza, Spain",
+      "phone": "+34 976 52 15 49",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "policlínicas nacar dental (sector las fuentes)_c. de leopoldo romeo, 15, 50002 zaragoza, spain": {
+      "name": "Policlínicas Nacar Dental (Sector Las Fuentes)",
+      "address": "C. de Leopoldo Romeo, 15, 50002 Zaragoza, Spain",
+      "phone": "+34 876 61 10 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "guallar roman clinica dental_via universitas, c. de sta. maría reina, 8, local. acceso por, 50009 zaragoza, spain": {
+      "name": "Guallar Roman Clinica Dental",
+      "address": "Via Universitas, C. de Sta. María Reina, 8, local. Acceso por, 50009 Zaragoza, Spain",
+      "phone": "+34 976 32 46 75",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "centro dental tenor fleta_av. del tenor fleta, 75, 50008 zaragoza, spain": {
+      "name": "Centro Dental Tenor Fleta",
+      "address": "Av. del Tenor Fleta, 75, 50008 Zaragoza, Spain",
+      "phone": "+34 976 24 22 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. toledo_c. de silvestre pérez, 25, 50002 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Toledo",
+      "address": "C. de Silvestre Pérez, 25, 50002 Zaragoza, Spain",
+      "phone": "+34 976 48 75 84",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental delicias_c. de las delicias, 6, izquierda, delicias, 50017 zaragoza, spain": {
+      "name": "CLÍNICA DENTAL DELICIAS",
+      "address": "C. de las Delicias, 6, izquierda, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 30 42 60",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. castillo_c. de isabel ram, 4, 1b, delicias, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Castillo",
+      "address": "C. de Isabel Ram, 4, 1B, Delicias, 50007 Zaragoza, Spain",
+      "phone": "+34 976 53 41 94",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental garcía lópez_c. de jerónimo zurita, 6, entlo dcha, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental García López",
+      "address": "C. de Jerónimo Zurita, 6, entlo dcha, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 21 81 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "nôraí klinikë dental_av. del puente del pilar, 29, 50014 zaragoza, spain": {
+      "name": "Nôraí Klinikë Dental",
+      "address": "Av. del Puente del Pilar, 29, 50014 Zaragoza, Spain",
+      "phone": "+34 876 45 00 26",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental dr. larrosa_av. de juan pablo ii, 9, delicias, 50009 zaragoza, spain": {
+      "name": "Clinica Dental Dr. Larrosa",
+      "address": "Av. de Juan Pablo II, 9, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 45 83 95",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental zaragoza escolar y burillo_p.º de longares, 17, loc, 50014 zaragoza, spain": {
+      "name": "Clínica Dental Zaragoza Escolar y Burillo",
+      "address": "P.º de Longares, 17, Loc, 50014 Zaragoza, Spain",
+      "phone": "+34 876 03 37 92",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental - dra. elena lamana - odontología especializada_josé oto 61, local ( esquina con, p.º de longares, 8, 50014 zaragoza, spain": {
+      "name": "Clinica Dental - Dra. Elena Lamana - Odontología especializada",
+      "address": "José Oto 61, local ( esquina con, P.º de Longares, 8, 50014 Zaragoza, Spain",
+      "phone": "+34 976 47 25 31",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental miñana_av. fco. de goya, 2, 1°b, 50006 zaragoza, spain": {
+      "name": "Clínica dental Miñana",
+      "address": "Av. Fco. de Goya, 2, 1°B, 50006 Zaragoza, Spain",
+      "phone": "+34 976 23 05 68",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinicas dentales dra. elena tejero - zaragoza_av. del tenor fleta, 124, 126, 50007 zaragoza, spain": {
+      "name": "Clinicas Dentales Dra. Elena Tejero - Zaragoza",
+      "address": "Av. del Tenor Fleta, 124, 126, 50007 Zaragoza, Spain",
+      "phone": "+34 638 17 18 72",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental jose martín - torrero_c. de juan cabrero, 12, torrero-la paz, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Jose Martín - Torrero",
+      "address": "C. de Juan Cabrero, 12, Torrero-La Paz, 50007 Zaragoza, Spain",
+      "phone": "+34 876 04 23 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental rosales slp_c. j. sebastián bach, 43, casablanca, 50012 zaragoza, spain": {
+      "name": "Dental Rosales SLP",
+      "address": "C. J. Sebastián Bach, 43, Casablanca, 50012 Zaragoza, Spain",
+      "phone": "+34 876 53 88 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental pedro miguel hernández gutiérrez_c. de salamanca, 13, delicias, 50005 zaragoza, spain": {
+      "name": "Clínica dental Pedro Miguel Hernández Gutiérrez",
+      "address": "C. de Salamanca, 13, Delicias, 50005 Zaragoza, Spain",
+      "phone": "+34 976 56 75 35",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental soler-dones_p.º de las damas, 19, principal izquierda, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Soler-Dones",
+      "address": "P.º de las Damas, 19, Principal Izquierda, 50008 Zaragoza, Spain",
+      "phone": "+34 976 15 83 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "juan gil dentista y clínica dental en aragonia - romareda_av. de juan pablo ii, 44, 1ºe, 50009 zaragoza, spain": {
+      "name": "JUAN GIL Dentista y Clínica Dental en Aragonia - Romareda",
+      "address": "Av. de Juan Pablo II, 44, 1ºE, 50009 Zaragoza, Spain",
+      "phone": "+34 976 45 89 69",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental serdent_c. de miguel servet, 29, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Serdent",
+      "address": "C. de Miguel Servet, 29, 50008 Zaragoza, Spain",
+      "phone": "+34 976 41 81 07",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental julio guelbenzu morte_c. del coso, 66, 1º-f, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Julio Guelbenzu Morte",
+      "address": "C. del Coso, 66, 1º-F, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 23 94 76",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental dr. catalán de val - dentistas en zaragoza_c. de bielsa, 8, local, 50014 zaragoza, spain": {
+      "name": "Clinica Dental Dr. Catalán De Val - Dentistas en Zaragoza",
+      "address": "C. de Bielsa, 8, Local, 50014 Zaragoza, Spain",
+      "phone": "+34 976 08 08 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental sanclemente_c/ de felipe sanclemente, 8, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Sanclemente",
+      "address": "C/ de Felipe Sanclemente, 8, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 21 40 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental infantil sanz coarasa_c. de francisco de vitoria, 13, 1º, oficina 6, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Infantil Sanz Coarasa",
+      "address": "C. de Francisco de Vitoria, 13, 1º, Oficina 6, 50008 Zaragoza, Spain",
+      "phone": "+34 876 71 54 24",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental gomez millaruelo_c. de mariano royo, 5, 50006 zaragoza, spain": {
+      "name": "CLINICA DENTAL GOMEZ MILLARUELO",
+      "address": "C. de Mariano Royo, 5, 50006 Zaragoza, Spain",
+      "phone": "+34 976 21 64 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. toledo calvo marcelo_av. de américa, 11, loc, torrero-la paz, 50007 zaragoza, spain": {
+      "name": "Dr. Toledo Calvo Marcelo",
+      "address": "Av. de América, 11, Loc, Torrero-La Paz, 50007 Zaragoza, Spain",
+      "phone": "+34 976 27 41 27",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental zaragoza - jorge garcía monzón_c. de francisco de vitoria, 26, 2;2;b, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Zaragoza - Jorge García Monzón",
+      "address": "C. de Francisco de Vitoria, 26, 2;2;B, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 91 39",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental luis y ricardo garcía cros._paseo pamplona, 2 esc. 2º, 2º a, 50004 zaragoza, spain": {
+      "name": "Clinica Dental Luis y Ricardo García Cros.",
+      "address": "Paseo PAMPLONA, 2 ESC. 2º, 2º A, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 12 12",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental juan bouthelier almozara_c. la almunia de doña godina, 14, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Juan Bouthelier Almozara",
+      "address": "C. la Almunia de Doña Godina, 14, 50003 Zaragoza, Spain",
+      "phone": "+34 976 43 09 05",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "armendáriz bandrés - clínica dental_c. del dr. cerrada, 7, esc. 1ª - 1º b, 50005 zaragoza, spain": {
+      "name": "Armendáriz Bandrés - Clínica Dental",
+      "address": "C. del Dr. Cerrada, 7, ESC. 1ª - 1º B, 50005 Zaragoza, Spain",
+      "phone": "+34 976 22 76 90",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "policlinicas nacar dental (torrero)_c. de venecia, 42, 50007 zaragoza, spain": {
+      "name": "Policlinicas Nacar Dental (Torrero)",
+      "address": "C. de Venecia, 42, 50007 Zaragoza, Spain",
+      "phone": "+34 876 61 10 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "carillas dentales en zaragoza - dr. cardona_c. de san vicente mártir, 17, 50005 zaragoza, spain": {
+      "name": "Carillas Dentales en Zaragoza - Dr. Cardona",
+      "address": "C. de San Vicente Mártir, 17, 50005 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental orensanz hermanos_c. de francisco de vitoria, 23, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Orensanz Hermanos",
+      "address": "C. de Francisco de Vitoria, 23, 50008 Zaragoza, Spain",
+      "phone": "+34 976 22 80 46",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "espacio de salud dkv zaragoza constitución_p.º de la constitucion, 25, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Espacio de Salud DKV Zaragoza Constitución",
+      "address": "P.º de la Constitucion, 25, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 79 64 86",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vitaldent_c. de las delicias, 6, delicias, 50017 zaragoza, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "C. de las Delicias, 6, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 72 53 84",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental r. niño_residencial paraíso, calle león xiii, 33, portal 3 escalera f piso 1º d, 50008 zaragoza, spain": {
+      "name": "Clínica Dental R. Niño",
+      "address": "Residencial Paraíso, Calle León XIII, 33, Portal 3 Escalera F Piso 1º D, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 73 04",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental jose martín - las fuentes_av. del compromiso de caspe, 77, 50002 zaragoza, spain": {
+      "name": "Clínica Dental Jose Martín - Las Fuentes",
+      "address": "Av. del Compromiso de Caspe, 77, 50002 Zaragoza, Spain",
+      "phone": "+34 976 41 87 95",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "policlínica bucodental_c. de telesforo peromarta, 3, local, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Policlínica Bucodental",
+      "address": "C. de Telesforo Peromarta, 3, local, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 46 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental las fuentes_av. del compromiso de caspe, 89, 50002 zaragoza, spain": {
+      "name": "Clínica Dental Las Fuentes",
+      "address": "Av. del Compromiso de Caspe, 89, 50002 Zaragoza, Spain",
+      "phone": "+34 976 42 77 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental ortodent sl_de gargallo, 11 local 19, av. de pablo gargallo, 50003 zaragoza, spain": {
+      "name": "Clinica Dental Ortodent SL",
+      "address": "de Gargallo, 11 LOCAL 19, Av. de Pablo Gargallo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 28 02 02",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental doctor carlos bello_av. de américa, 83, torrero-la paz, 50007 zaragoza, spain": {
+      "name": "Clínica Dental Doctor Carlos Bello",
+      "address": "Av. de América, 83, Torrero-La Paz, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 06 42",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental martínez laclaustra_p.º de teruel, 32, loc interior, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Martínez Laclaustra",
+      "address": "P.º de Teruel, 32, Loc interior, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 71 15",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental asprodent_c. de estepona, 2, loc 8, 50002 zaragoza, spain": {
+      "name": "Clínica Dental Asprodent",
+      "address": "C. de Estepona, 2, Loc 8, 50002 Zaragoza, Spain",
+      "phone": "+34 976 13 48 39",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra fernández_c. del monasterio de poblet, 30, 50013 zaragoza, spain": {
+      "name": "Clínica Dental Dra Fernández",
+      "address": "C. del Monasterio de Poblet, 30, 50013 Zaragoza, Spain",
+      "phone": "+34 976 04 80 64",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental domident_c. del teniente coronel valenzuela, 13, 1 i, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Clínica dental Domident",
+      "address": "C. del Teniente Coronel Valenzuela, 13, 1 I, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 14 41",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "vivantadental_p.º de pamplona, 23, 50004 zaragoza, spain": {
+      "name": "vivantadental",
+      "address": "P.º de Pamplona, 23, 50004 Zaragoza, Spain",
+      "phone": "+34 976 97 87 25",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica aradental_c. de mariana pineda, 29, 50018 zaragoza, spain": {
+      "name": "Clínica Aradental",
+      "address": "C. de Mariana Pineda, 29, 50018 Zaragoza, Spain",
+      "phone": "+34 976 73 44 56",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentistas en zaragoza doctores navarro_pl. de ntra. sra. del pilar, 10, entresuelo izq, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Dentistas en Zaragoza Doctores Navarro",
+      "address": "Pl. de Ntra. Sra. del Pilar, 10, entresuelo izq, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 39 46 29",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "sanadental zaragoza_c. de gertrudis gómez de avellaneda, 33, 50018 zaragoza, spain": {
+      "name": "Sanadental Zaragoza",
+      "address": "C. de Gertrudis Gómez de Avellaneda, 33, 50018 Zaragoza, Spain",
+      "phone": "+34 976 74 01 11",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra maría jesús de la serna_c. de las cortes, n° 19-21, 1°d, 50003 zaragoza, spain": {
+      "name": "Clínica Dental Dra María Jesús de la Serna",
+      "address": "C. de las Cortes, N° 19-21, 1°D, 50003 Zaragoza, Spain",
+      "phone": "+34 976 28 00 59",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental aida pellejero en la bombarda_c. de miguel labordeta, 49, delicias, 50017 zaragoza, spain": {
+      "name": "Clínica Dental Aida Pellejero en la Bombarda",
+      "address": "C. de Miguel Labordeta, 49, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 32 98 75",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental sonrisa latina_vía hispanidad, 58, loc trasera, delicias, 50009 zaragoza, spain": {
+      "name": "Clinica Dental Sonrisa Latina",
+      "address": "Vía Hispanidad, 58, Loc trasera, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 618 19 90 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental márquez_c. ibón de estanés, 6, 50011 zaragoza, spain": {
+      "name": "Clínica Dental Márquez",
+      "address": "C. Ibón de Estanés, 6, 50011 Zaragoza, Spain",
+      "phone": "+34 634 62 93 64",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "milenium dental clinic actur - sanitas_c. de pablo ruiz picasso, 47, 50018 zaragoza, spain": {
+      "name": "Milenium Dental Clinic Actur - Sanitas",
+      "address": "C. de Pablo Ruiz Picasso, 47, 50018 Zaragoza, Spain",
+      "phone": "+34 976 73 78 71",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dres. monsalve & rodrigo | clínica dental_c. de josé maría lacarra de miguel, 7, ppal izda, 50008 zaragoza, spain": {
+      "name": "Dres. Monsalve & Rodrigo | Clínica Dental",
+      "address": "C. de José María Lacarra de Miguel, 7, ppal izda, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 69 05",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental serrano del valle_calle sor maría antonia de oviedo, 1, 50008 zaragoza, spain": {
+      "name": "Clínica dental Serrano Del Valle",
+      "address": "Calle Sor María Antonia de Oviedo, 1, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 99 33",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "tu dentista zaragoza - dental san josé_av. del tenor fleta, 126, san josé, 50007 zaragoza, spain": {
+      "name": "Tu Dentista Zaragoza - Dental San José",
+      "address": "Av. del Tenor Fleta, 126, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 976 25 09 14",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "centro dental funcional_av. de navarra, 17, delicias, 50010 zaragoza, spain": {
+      "name": "Centro Dental Funcional",
+      "address": "Av. de Navarra, 17, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 34 56 45",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr torralba martín, ramón_c. del dr. cerrada, 14, 50005 zaragoza, spain": {
+      "name": "Dr Torralba Martín, Ramón",
+      "address": "C. del Dr. Cerrada, 14, 50005 Zaragoza, Spain",
+      "phone": "+34 976 23 89 34",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental rodríguez estévez_c. de san ignacio de loyola, 8, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Rodríguez Estévez",
+      "address": "C. de San Ignacio de Loyola, 8, 50008 Zaragoza, Spain",
+      "phone": "+34 976 22 36 82",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "josé luis gonzález valenzuela_av. de cesáreo alierta, 23, 50008 zaragoza, spain": {
+      "name": "José Luis González Valenzuela",
+      "address": "Av. de Cesáreo Alierta, 23, 50008 Zaragoza, Spain",
+      "phone": "+34 976 59 49 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental irudent_av. de las majas de goya, 10, loc, 50018 zaragoza, spain": {
+      "name": "Clínica Dental Irudent",
+      "address": "Av. de las Majas de Goya, 10, Loc, 50018 Zaragoza, Spain",
+      "phone": "+34 976 09 73 50",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "centro odontologico canfranc_c. de canfranc, 3, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Centro Odontologico Canfranc",
+      "address": "C. de Canfranc, 3, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 11 88",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental oia (odontología integral aragonesa)_urb, residencial paraíso, 1, loc 51, 50008 zaragoza, spain": {
+      "name": "Clínica dental OIA (Odontología Integral Aragonesa)",
+      "address": "Urb, Residencial Paraíso, 1, Loc 51, 50008 Zaragoza, Spain",
+      "phone": "+34 976 22 25 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "miguel hornero corisco_edif. los abetos, c. del dr. cerrada, 24 26, 1.º dcha, 50005 zaragoza, spain": {
+      "name": "Miguel Hornero Corisco",
+      "address": "Edif. Los Abetos, C. del Dr. Cerrada, 24 26, 1.º dcha, 50005 Zaragoza, Spain",
+      "phone": "+34 976 04 05 03",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental m. v. romero_vía de san fernando, 5, 1.-b, san josé, 50007 zaragoza, spain": {
+      "name": "Clínica Dental M. V. Romero",
+      "address": "Vía de San Fernando, 5, 1.-B, San José, 50007 Zaragoza, Spain",
+      "phone": "+34 976 38 12 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dra. francisca raquel medina, dentista_c. de león xiii, nº28, 1ºa, 50008 zaragoza, spain": {
+      "name": "Dra. Francisca Raquel Medina, Dentista",
+      "address": "C. de León XIII, nº28, 1ºA, 50008 Zaragoza, Spain",
+      "phone": "+34 976 22 75 53",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental otal_c. de san vicente mártir, 23, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Otal",
+      "address": "C. de San Vicente Mártir, 23, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 97 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental fernando jiménez solana_c. de don alonso de aragón, 1, delicias, 50010 zaragoza, spain": {
+      "name": "Clinica Dental Fernando Jiménez Solana",
+      "address": "C. de Don Alonso de Aragón, 1, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 31 06 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental_santa isabel, 50016 zaragoza, spain": {
+      "name": "Clínica Dental",
+      "address": "Santa Isabel, 50016 Zaragoza, Spain",
+      "phone": "+34 976 57 11 94",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "carillas dentales en zaragoza - dr. cardona_c. de san vicente mártir, 50008 zaragoza, spain": {
+      "name": "Carillas dentales en Zaragoza - Dr. Cardona",
+      "address": "C. de San Vicente Mártir, 50008 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. luis montis - dentista en zaragoza_p.º de sagasta, 20, entpl - ofic. izquierda, 50006 zaragoza, spain": {
+      "name": "Clínica dental Dr. Luis Montis - Dentista en Zaragoza",
+      "address": "P.º de Sagasta, 20, Entpl - Ofic. Izquierda, 50006 Zaragoza, Spain",
+      "phone": "+34 976 23 73 22",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica antolín_c. del dr. d. joaquín aznar molina, 1, 1, casco antiguo, 50002 zaragoza, spain": {
+      "name": "Clínica Antolín",
+      "address": "C. del Dr. D. Joaquín Aznar Molina, 1, 1, Casco Antiguo, 50002 Zaragoza, Spain",
+      "phone": "+34 976 39 43 73",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "roger dental - clínica dental en zaragoza_c. de somport, 20, 50015 zaragoza, spain": {
+      "name": "Roger Dental - Clínica Dental en Zaragoza",
+      "address": "C. de Somport, 20, 50015 Zaragoza, Spain",
+      "phone": "+34 976 23 90 28",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "oralstudio clinica dental - zaragoza_c. de s. miguel, 7, casco antiguo, 50001 zaragoza, spain": {
+      "name": "OralStudio Clinica Dental - Zaragoza",
+      "address": "C. de S. Miguel, 7, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 662 40 60 86",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental ángel vallés_p.º de maría agustín, 5, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Ángel Vallés",
+      "address": "P.º de María Agustín, 5, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 60 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental garcía cros_c. de la duquesa de villahermosa, 48, delicias, 50009 zaragoza, spain": {
+      "name": "Clínica Dental García Cros",
+      "address": "C. de la Duquesa de Villahermosa, 48, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 53 83 37",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica salud orofacial. odontología, fisioterapia & psicología._residencial paraíso, local 41, 50008 zaragoza, spain": {
+      "name": "Clínica Salud Orofacial. Odontología, Fisioterapia & Psicología.",
+      "address": "Residencial Paraíso, Local 41, 50008 Zaragoza, Spain",
+      "phone": "+34 976 24 70 19",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "endodoncia zaragoza_c. de san vicente mártir, 19, 50008 zaragoza, spain": {
+      "name": "Endodoncia Zaragoza",
+      "address": "C. de San Vicente Mártir, 19, 50008 Zaragoza, Spain",
+      "phone": "+34 876 43 64 09",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. zaragozá_c/ de jerónima galés, 60, jesús, 46017 valència, valencia, spain": {
+      "name": "Clínica Dental Dr. Zaragozá",
+      "address": "C/ de Jerónima Galés, 60, Jesús, 46017 València, Valencia, Spain",
+      "phone": "+34 695 38 48 14",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "puerta sancho dental_av. de pablo gargallo, 95, 50003 zaragoza, spain": {
+      "name": "PUERTA SANCHO DENTAL",
+      "address": "Av. de Pablo Gargallo, 95, 50003 Zaragoza, Spain",
+      "phone": "+34 976 44 05 88",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. javier gonzalvo suñer_c/ de felipe sanclemente, 15, 1º, oficina 5, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica dental Dr. Javier Gonzalvo Suñer",
+      "address": "C/ de Felipe Sanclemente, 15, 1º, Oficina 5, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 23 36 12",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentotal_c. de la ciudadela, 8, delicias, 50017 zaragoza, spain": {
+      "name": "Dentotal",
+      "address": "C. de la Ciudadela, 8, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 32 85 21",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "c3d zaragoza (odontología digital radiología 3d)_c. del arzobispo doménech, 21, bajo, 50006 zaragoza, spain": {
+      "name": "C3D Zaragoza (Odontología Digital Radiología 3D)",
+      "address": "C. del Arzobispo Doménech, 21, bajo, 50006 Zaragoza, Spain",
+      "phone": "+34 676 75 63 45",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental del villar,zaragoza_independencia, 30, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Clinica dental del Villar,Zaragoza",
+      "address": "Independencia, 30, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 20 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental.dr zapatero.estomatologo_av. de josé anselmo clavé, 37-45, 50004 zaragoza, spain": {
+      "name": "clinica dental.Dr Zapatero.Estomatologo",
+      "address": "Av. de José Anselmo Clavé, 37-45, 50004 Zaragoza, Spain",
+      "phone": "+34 976 28 39 84",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. pablo avilés_p.º marítimo pablo ruiz picasso, 25, málaga-este, 29016 málaga, spain": {
+      "name": "Dr. Pablo Avilés",
+      "address": "P.º Marítimo Pablo Ruiz Picasso, 25, Málaga-Este, 29016 Málaga, Spain",
+      "phone": "+34 952 00 99 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "centro médico mapfre salud dentist_c. compositor lehmberg ruiz, 13, distrito centro, 29007 málaga, spain": {
+      "name": "Centro Médico MAPFRE Salud Dentist",
+      "address": "C. Compositor Lehmberg Ruiz, 13, Distrito Centro, 29007 Málaga, Spain",
+      "phone": "+34 951 30 55 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "dental implants pablo avilés_p.º de sancha, 26, málaga-este, 29016 málaga, spain": {
+      "name": "Dental implants Pablo Avilés",
+      "address": "P.º de Sancha, 26, Málaga-Este, 29016 Málaga, Spain",
+      "phone": "+34 952 22 02 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "clinics muelle heredia_avenida de manuel agustín heredia, 14, bajo, distrito centro, 29001 málaga, spain": {
+      "name": "Clinics Muelle Heredia",
+      "address": "Avenida de Manuel Agustín Heredia, 14, Bajo, Distrito Centro, 29001 Málaga, Spain",
+      "phone": "+34 951 79 50 64",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "dr. eduardo crooke gonzález de aguilar_p.º de la farola, 1, málaga-este, 29016 málaga, spain": {
+      "name": "Dr. Eduardo Crooke González de Aguilar",
+      "address": "P.º de la Farola, 1, Málaga-Este, 29016 Málaga, Spain",
+      "phone": "+34 951 50 01 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "cl. dental antonio josé españa lópez_pl. de la solidaridad, 1, distrito centro, 29002 málaga, spain": {
+      "name": "Cl. Dental Antonio José España López",
+      "address": "Pl. de la Solidaridad, 1, Distrito Centro, 29002 Málaga, Spain",
+      "phone": "+34 952 36 39 83",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "clínica dental sector actur_c. de maría zambrano, 16, 50018 zaragoza, spain": {
+      "name": "Clínica Dental Sector Actur",
+      "address": "C. de María Zambrano, 16, 50018 Zaragoza, Spain",
+      "phone": "+34 876 65 64 40",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental román_c/ del monasterio de siresa, 31, loc 6, 50002 zaragoza, spain": {
+      "name": "CLÍNICA DENTAL ROMÁN",
+      "address": "C/ del Monasterio de Siresa, 31, Loc 6, 50002 Zaragoza, Spain",
+      "phone": "+34 976 25 53 52",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "arturo lozano clínica dental. torrero_av. de américa, 14, 50007 zaragoza, spain": {
+      "name": "Arturo Lozano Clínica Dental. Torrero",
+      "address": "Av. de América, 14, 50007 Zaragoza, Spain",
+      "phone": "+34 976 23 99 83",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental zero_c. de castilla, 8-10, delicias, 50009 zaragoza, spain": {
+      "name": "Clínica dental Zero",
+      "address": "C. de Castilla, 8-10, Delicias, 50009 Zaragoza, Spain",
+      "phone": "+34 976 75 82 74",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "moliner and aragon orthodontics_c/ del azoque, 64, 1ºa, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Moliner and Aragon Orthodontics",
+      "address": "C/ del Azoque, 64, 1ºA, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 66 44",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental clinic dr. ruth marin_vía hispanidad, 110, loc 4, delicias, 50017 zaragoza, spain": {
+      "name": "Dental Clinic Dr. Ruth Marin",
+      "address": "Vía Hispanidad, 110, Loc 4, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 31 06 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "aragón centro odontológico_c. de salvador minguijón, 11, 50002 zaragoza, spain": {
+      "name": "Aragón Centro Odontológico",
+      "address": "C. de Salvador Minguijón, 11, 50002 Zaragoza, Spain",
+      "phone": "+34 976 59 11 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental stoma | dentista en montecanal, zaragoza_av. de la ilustración, 14, loc 9, casablanca, 50012 zaragoza, spain": {
+      "name": "Clínica Dental Stoma | Dentista en Montecanal, Zaragoza",
+      "address": "Av. de la Ilustración, 14, Loc 9, Casablanca, 50012 Zaragoza, Spain",
+      "phone": "+34 976 75 14 81",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "miguel angel valles cano_c. de josé luis albareda, 6, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Miguel Angel Valles Cano",
+      "address": "C. de José Luis Albareda, 6, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 89 35",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "jose manuel sampietro centro de ortodoncia zaragoza_c. de josé luis albareda, 8, pral a, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Jose Manuel Sampietro Centro de Ortodoncia Zaragoza",
+      "address": "C. de José Luis Albareda, 8, Pral A, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 44 45",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "iberdent clínica dental - dres. villanueva_p.º de fernando el católico, 61, loc izquierdo, 50006 zaragoza, spain": {
+      "name": "Iberdent Clínica Dental - Dres. Villanueva",
+      "address": "P.º de Fernando el Católico, 61, Loc Izquierdo, 50006 Zaragoza, Spain",
+      "phone": "+34 976 56 88 25",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental rasal_c. de jacinto benavente, 1, loc, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Rasal",
+      "address": "C. de Jacinto Benavente, 1, Loc, 50006 Zaragoza, Spain",
+      "phone": "+34 976 25 57 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. trinidad pérez colomina_c. de sta. teresa de jesús, numero 24, 50006 zaragoza, spain": {
+      "name": "CLÍNICA DENTAL DRA. TRINIDAD PÉREZ COLOMINA",
+      "address": "C. de Sta. Teresa de Jesús, numero 24, 50006 Zaragoza, Spain",
+      "phone": "+34 976 15 91 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "instituto odontologico dr. larrosa, s.l._gran vía santiago ramón y cajal, 9, 1º, 4ª, 50006 zaragoza, spain": {
+      "name": "INSTITUTO ODONTOLOGICO DR. LARROSA, S.L.",
+      "address": "Gran Vía Santiago Ramón y Cajal, 9, 1º, 4ª, 50006 Zaragoza, Spain",
+      "phone": "+34 976 23 80 97",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental tarragona rubio_c. de tomás zumalacárregui, 9, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Tarragona Rubio",
+      "address": "C. de Tomás Zumalacárregui, 9, 50006 Zaragoza, Spain",
+      "phone": "+34 976 32 29 82",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "buba, clínicas dentales (paseo de la independencia 23, local 4)_p.º de la independencia, pasaje argensola, 23, local 4, 50001 zaragoza, spain": {
+      "name": "Buba, clínicas dentales (Paseo de la independencia 23, Local 4)",
+      "address": "P.º de la Independencia, Pasaje Argensola, 23, Local 4, 50001 Zaragoza, Spain",
+      "phone": "+34 660 99 16 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental lomania_c/ jose mº, c. de josé maría muñoz damián, 17, local, 50011 zaragoza, spain": {
+      "name": "Clinica Dental Lomania",
+      "address": "C/ Jose Mº, C. de José María Muñoz Damián, 17, Local, 50011 Zaragoza, Spain",
+      "phone": "+34 876 66 22 22",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. isabel esparza_vía univérsitas, 58, delicias, 50017 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Isabel Esparza",
+      "address": "Vía Univérsitas, 58, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 33 64 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. faci lópez, julián_c. del coso, 66, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Dr. Faci López, Julián",
+      "address": "C. del Coso, 66, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 22 31 87",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica ardent zaragoza_c. luces de la ciudad, 17, 50019 zaragoza, spain": {
+      "name": "Clinica Ardent Zaragoza",
+      "address": "C. Luces de la Ciudad, 17, 50019 Zaragoza, Spain",
+      "phone": "+34 976 93 58 00",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr novillo_c. de pedro maría ric, 38, loc, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Dr Novillo",
+      "address": "C. de Pedro María Ric, 38, Loc, 50008 Zaragoza, Spain",
+      "phone": "+34 976 02 76 33",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. sancho marcén_c. de pedro joaquín soler, 6, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Sancho Marcén",
+      "address": "C. de Pedro Joaquín Soler, 6, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 59 69 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "santiago alberto tamparillas_c. de la morería, 1, casco antiguo, 50004 zaragoza, spain": {
+      "name": "Santiago Alberto Tamparillas",
+      "address": "C. de la Morería, 1, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 22 07 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental jiménez olite_vía hispanidad, 102, delicias, 50017 zaragoza, spain": {
+      "name": "Clínica Dental Jiménez Olite",
+      "address": "Vía Hispanidad, 102, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 31 22 21",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica r-dental_p.º de sagasta, 16, 1ºd, 50006 zaragoza, spain": {
+      "name": "Clínica R-Dental",
+      "address": "P.º de Sagasta, 16, 1ºD, 50006 Zaragoza, Spain",
+      "phone": "+34 638 62 17 52",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dr. ruiz - dental moncasi_c. de josé moncasi, 29, 50006 zaragoza, spain": {
+      "name": "Clínica Dr. Ruiz - Dental Moncasi",
+      "address": "C. de José Moncasi, 29, 50006 Zaragoza, Spain",
+      "phone": "+34 976 23 59 38",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. montolio salvador_c. de león xiii, 9, 50008 zaragoza, spain": {
+      "name": "Dr. Montolio Salvador",
+      "address": "C. de León XIII, 9, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 80 77",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental ferrer de val – garcía ramón | clínica dental actur zaragoza_c. de rafael alberti, 6, 1ºe, 50018 zaragoza, spain": {
+      "name": "Clínica Dental Ferrer de Val – García Ramón | Clínica Dental Actur Zaragoza",
+      "address": "C. de Rafael Alberti, 6, 1ºE, 50018 Zaragoza, Spain",
+      "phone": "+34 976 51 29 05",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. maría pilar beamonte_c. de s. miguel, 26, 1a, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Dra. María Pilar Beamonte",
+      "address": "C. de S. Miguel, 26, 1A, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 22 32 55",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica odontológica garcía velasco_4º, p.º de la independencia, 27, 50001 zaragoza, spain": {
+      "name": "Clínica Odontológica García Velasco",
+      "address": "4º, P.º de la Independencia, 27, 50001 Zaragoza, Spain",
+      "phone": "+34 976 21 91 77",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental gorri & corvinos_calle de don felipe sanclemente, 21, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clinica Dental Gorri & Corvinos",
+      "address": "Calle de Don Felipe Sanclemente, 21, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 21 78 76",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr comet martínez, josé luis_c. de sta. lucía, 4, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Dr Comet Martínez, José Luis",
+      "address": "C. de Sta. Lucía, 4, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 686 10 70 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. santiago pardo en zaragoza odontología y estress_c/ de alfonso x el sabio, 6, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Dr. Santiago Pardo en Zaragoza Odontología y Estress",
+      "address": "C/ de Alfonso X el Sabio, 6, 50006 Zaragoza, Spain",
+      "phone": "+34 688 86 18 40",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "maría de los ángeles aparicio giménez_c. de alfonso i, 23, antigua joyería aladrén, casco antiguo, 50003 zaragoza, spain": {
+      "name": "María de los Ángeles Aparicio Giménez",
+      "address": "C. de Alfonso I, 23, Antigua Joyería Aladrén, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 39 71 37",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental doctor lorenzo belenguer_c. de josefa amar y borbón, 5, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Clínica Dental Doctor Lorenzo Belenguer",
+      "address": "C. de Josefa Amar y Borbón, 5, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 22 11 74",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica angulo s.l.p_c. de juan pablo bonet, 2, 50006 zaragoza, spain": {
+      "name": "Clínica Angulo S.L.P",
+      "address": "C. de Juan Pablo Bonet, 2, 50006 Zaragoza, Spain",
+      "phone": "+34 976 27 11 72",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental dr. baroni_p.º de sagasta, 9, bajo, local 2c, 50008 zaragoza, spain": {
+      "name": "Clinica Dental Dr. Baroni",
+      "address": "P.º de Sagasta, 9, Bajo, Local 2c, 50008 Zaragoza, Spain",
+      "phone": "+34 976 30 20 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "policlínica dental actur_c. de maría zambrano, 38, 50018 zaragoza, spain": {
+      "name": "POLICLÍNICA DENTAL ACTUR",
+      "address": "C. de María Zambrano, 38, 50018 Zaragoza, Spain",
+      "phone": "+34 976 59 28 93",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "one dental_c. de pablo neruda, 17, loc, 50018 zaragoza, spain": {
+      "name": "One dental",
+      "address": "C. de Pablo Neruda, 17, Loc, 50018 Zaragoza, Spain",
+      "phone": "+34 976 52 77 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. jaime polo armas_c. de león xiii, 10, 50008 zaragoza, spain": {
+      "name": "Clínica dental Dr. Jaime Polo Armas",
+      "address": "C. de León XIII, 10, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 16 31",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental la paz_c. de oviedo, 173, torrero-la paz, 50007 zaragoza, spain": {
+      "name": "Clinica Dental La Paz",
+      "address": "C. de Oviedo, 173, Torrero-La Paz, 50007 Zaragoza, Spain",
+      "phone": "+34 876 24 47 06",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental doctor ros_av. fco. de goya, 26, 9, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Doctor Ros",
+      "address": "Av. Fco. de Goya, 26, 9, 50006 Zaragoza, Spain",
+      "phone": "+34 976 21 82 80",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental milenio_c. de alfonso v de aragón, 1, 50011 zaragoza, spain": {
+      "name": "Clínica Dental Milenio",
+      "address": "C. de Alfonso V de Aragón, 1, 50011 Zaragoza, Spain",
+      "phone": "+34 646 78 61 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "fundación médico-odontológica al-ghanem_c. de ntra. sra. de covadonga, 49, delicias, 50017 zaragoza, spain": {
+      "name": "Fundación Médico-Odontológica Al-Ghanem",
+      "address": "C. de Ntra. Sra. de Covadonga, 49, Delicias, 50017 Zaragoza, Spain",
+      "phone": "+34 976 34 88 82",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. manuel miñana amada_av. fco. de goya, 2, 1°b, 50006 zaragoza, spain": {
+      "name": "Dr. Manuel Miñana Amada",
+      "address": "Av. Fco. de Goya, 2, 1°B, 50006 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr calatayud sierra, fernando_c. de mariano escar, 3, entlo. izqda, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Dr Calatayud Sierra, Fernando",
+      "address": "C. de Mariano Escar, 3, entlo. Izqda, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 59 74 13",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "pedro elipe puértolas_c. gregorio garcía arista, 7, 50015 zaragoza, spain": {
+      "name": "Pedro Elipe Puértolas",
+      "address": "C. Gregorio García Arista, 7, 50015 Zaragoza, Spain",
+      "phone": "+34 976 52 83 26",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental_c. de josé maría beltrán, 50018 zaragoza, spain": {
+      "name": "Clinica Dental",
+      "address": "C. de José María Beltrán, 50018 Zaragoza, Spain",
+      "phone": "+34 976 73 33 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dr. fernando calatayud sierra, dentista_junto a, c/ mariano escar, pl. de los sitios, nº 3, entlo. izqda, 50001 zaragoza, spain": {
+      "name": "Dr. Fernando Calatayud Sierra, Dentista",
+      "address": "junto a, C/ Mariano Escar, Pl. de los Sitios, Nº 3, entlo. Izqda, 50001 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dra guridi rodríguez coro_av. fco. de goya, 16, 50006 zaragoza, spain": {
+      "name": "Dra Guridi Rodríguez Coro",
+      "address": "Av. Fco. de Goya, 16, 50006 Zaragoza, Spain",
+      "phone": "+34 976 22 80 69",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "marina garcía cano_c. de san ignacio de loyola, nº 11, 50008 zaragoza, spain": {
+      "name": "Marina García Cano",
+      "address": "C. de San Ignacio de Loyola, nº 11, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 16 23",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dr. beltrán odontología integral_av. de cesáreo alierta, 71, 50013 zaragoza, spain": {
+      "name": "Clínica Dr. Beltrán Odontología Integral",
+      "address": "Av. de Cesáreo Alierta, 71, 50013 Zaragoza, Spain",
+      "phone": "+34 976 41 76 35",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dental pereda_c. de juan pablo bonet, 7, 1ºc, 50006 zaragoza, spain": {
+      "name": "Dental Pereda",
+      "address": "C. de Juan Pablo Bonet, 7, 1ºC, 50006 Zaragoza, Spain",
+      "phone": "+34 976 25 02 91",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental vitaldent_p.º de maría agustín, 3, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Vitaldent",
+      "address": "P.º de María Agustín, 3, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 36 90",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental miguel ángel iglesia puig_residencial paraíso 1, esc b, 1ºc, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Miguel Ángel Iglesia Puig",
+      "address": "Residencial Paraíso 1, esc B, 1ºC, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 34 48",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental pina_c. de miguel servet, 15, local izq, casco antiguo, 50002 zaragoza, spain": {
+      "name": "Clinica Dental Pina",
+      "address": "C. de Miguel Servet, 15, local izq, Casco Antiguo, 50002 Zaragoza, Spain",
+      "phone": "+34 976 59 71 34",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. vallejo s.l._c. de andrés piquer, 2, loc, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Vallejo S.L.",
+      "address": "C. de Andrés Piquer, 2, Loc, 50006 Zaragoza, Spain",
+      "phone": "+34 976 04 56 85",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental esteban castán 1981_paseo de la independencia, 8 dpdo, 4º dcha, 50004 zaragoza, spain": {
+      "name": "Clínica Dental Esteban Castán 1981",
+      "address": "Paseo de la Independencia, 8 Dpdo, 4º Dcha, 50004 Zaragoza, Spain",
+      "phone": "+34 976 35 70 39",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "abel garcía clínica dental_paseo de don, p.º de fernando el católico, 29, 50006 zaragoza, spain": {
+      "name": "Abel García Clínica Dental",
+      "address": "Paseo de Don, P.º de Fernando el Católico, 29, 50006 Zaragoza, Spain",
+      "phone": "+34 976 35 02 62",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental alberto ruiz_p.º de sagasta, 62, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Alberto Ruiz",
+      "address": "P.º de Sagasta, 62, 50006 Zaragoza, Spain",
+      "phone": "+34 976 37 01 96",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentista bordejé odontología_c. de cortes de aragón, 46, 50005 zaragoza, spain": {
+      "name": "Dentista Bordejé Odontología",
+      "address": "C. de Cortes de Aragón, 46, 50005 Zaragoza, Spain",
+      "phone": "+34 976 25 81 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental rosario asensio loren_c. de san juan de la cruz, 6, 50006 zaragoza, spain": {
+      "name": "Clínica Dental Rosario Asensio Loren",
+      "address": "C. de San Juan de la Cruz, 6, 50006 Zaragoza, Spain",
+      "phone": "+34 976 56 45 73",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. vera_c. de josé pascasio escoriaza, 11, loc derecha, delicias, 50010 zaragoza, spain": {
+      "name": "Clínica Dental Dra. Vera",
+      "address": "C. de José Pascasio Escoriaza, 11, Loc derecha, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 31 23 35",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dra. pérez lorenz_c. de manuel lasala, 44, 50006 zaragoza, spain": {
+      "name": "Clínica dental Dra. Pérez Lorenz",
+      "address": "C. de Manuel Lasala, 44, 50006 Zaragoza, Spain",
+      "phone": "+34 976 35 61 57",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "odontopediatra belkys balda_c. c. los porches del audiorama, pl. del emperador carlos, 8, 50009 zaragoza, spain": {
+      "name": "Odontopediatra Belkys Balda",
+      "address": "C. C. Los Porches del Audiorama, Pl. del Emperador Carlos, 8, 50009 Zaragoza, Spain",
+      "phone": "+34 648 84 50 07",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "colegio oficial de odontólogos y estomatólogos de aragón_el aaiún, s/n, bajos, casco antiguo, 50002 zaragoza, spain": {
+      "name": "Colegio Oficial de Odontólogos y Estomatólogos de Aragón",
+      "address": "El Aaiún, s/n, bajos, Casco Antiguo, 50002 Zaragoza, Spain",
+      "phone": "+34 976 29 45 16",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental luis revuelta villalba_av. de salvador allende, 27, 50015 zaragoza, spain": {
+      "name": "Clinica Dental Luis Revuelta Villalba",
+      "address": "Av. de Salvador Allende, 27, 50015 Zaragoza, Spain",
+      "phone": "+34 976 73 34 07",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "javier lerma puertas_p.º de fernando el católico, 27, 50006 zaragoza, spain": {
+      "name": "Javier Lerma Puertas",
+      "address": "P.º de Fernando el Católico, 27, 50006 Zaragoza, Spain",
+      "phone": "+34 976 35 56 99",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clinica dental santa lucia_c. de sta. lucía, 4, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Clinica Dental Santa Lucia",
+      "address": "C. de Sta. Lucía, 4, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 44 01 18",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "radiología dental zaragoza_centro médico puerta del carmen, c. del dr. horno alcorta, 29, 50004 zaragoza, spain": {
+      "name": "Radiología Dental Zaragoza",
+      "address": "Centro Médico Puerta del Carmen, C. del Dr. Horno Alcorta, 29, 50004 Zaragoza, Spain",
+      "phone": "+34 976 92 71 25",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "lagasca dental_c. de mariano lagasca, 17, 50006 zaragoza, spain": {
+      "name": "Lagasca Dental",
+      "address": "C. de Mariano Lagasca, 17, 50006 Zaragoza, Spain",
+      "phone": "",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "ramón machetti sánchez_c. de antonio cánovas, 42, 50004 zaragoza, spain": {
+      "name": "Ramón Machetti Sánchez",
+      "address": "C. de Antonio Cánovas, 42, 50004 Zaragoza, Spain",
+      "phone": "+34 976 23 13 06",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "implantología basal | implantología estratégica | imbiodent s l_cam. de las torres, 96, l-4, 50008 zaragoza, spain": {
+      "name": "Implantología Basal | Implantología Estratégica | Imbiodent S L",
+      "address": "Cam. de las Torres, 96, L-4, 50008 Zaragoza, Spain",
+      "phone": "+34 976 25 89 70",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "concepción serrano serrano_c. del coso, 62, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Concepción Serrano Serrano",
+      "address": "C. del Coso, 62, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 22 02 79",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "fernando perales arguedas_pl. de roma, 6, delicias, 50010 zaragoza, spain": {
+      "name": "Fernando Perales Arguedas",
+      "address": "Pl. de Roma, 6, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 976 55 40 66",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "on dental service_c. de tomás higuera, 12, 50013 zaragoza, spain": {
+      "name": "ON Dental Service",
+      "address": "C. de Tomás Higuera, 12, 50013 Zaragoza, Spain",
+      "phone": "+34 976 96 46 06",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dra córdoba díaz de laspra maría elena_vía hispanidad, 37, consulta 306, casablanca, 50012 zaragoza, spain": {
+      "name": "Dra Córdoba Díaz De Laspra María Elena",
+      "address": "Vía Hispanidad, 37, Consulta 306, Casablanca, 50012 Zaragoza, Spain",
+      "phone": "+34 636 56 22 21",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica de medicina estética y cirugía plástica zaragoza | clínica licea_c. de la madre sacramento, 3, 50004 zaragoza, spain": {
+      "name": "Clínica de Medicina Estética y Cirugía Plástica Zaragoza | Clínica Licea",
+      "address": "C. de la Madre Sacramento, 3, 50004 Zaragoza, Spain",
+      "phone": "+34 722 22 58 16",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental la muela_c. zaragoza, 2bis, bajos, 50196 la muela, zaragoza, spain": {
+      "name": "Clínica Dental La Muela",
+      "address": "C. Zaragoza, 2bis, Bajos, 50196 La Muela, Zaragoza, Spain",
+      "phone": "+34 976 14 75 56",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "depósito dental-baherdent_c. del arzobispo doménech, 43, 50006 zaragoza, spain": {
+      "name": "Depósito dental-Baherdent",
+      "address": "C. del Arzobispo Doménech, 43, 50006 Zaragoza, Spain",
+      "phone": "+34 976 25 53 25",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "laboratorio dental eduardo marqueta_c. de calatorao, 6, casco antiguo, 50003 zaragoza, spain": {
+      "name": "Laboratorio dental Eduardo Marqueta",
+      "address": "C. de Calatorao, 6, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 43 18 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "milenium medical center zaragoza_gran vía santiago ramón y cajal, 9, 50006 zaragoza, spain": {
+      "name": "Milenium Medical Center Zaragoza",
+      "address": "Gran Vía Santiago Ramón y Cajal, 9, 50006 Zaragoza, Spain",
+      "phone": "+34 976 69 55 10",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "deposito dental_c. del dr. d. joaquín aznar molina, casco antiguo, 50002 zaragoza, spain": {
+      "name": "Deposito Dental",
+      "address": "C. del Dr. D. Joaquín Aznar Molina, Casco Antiguo, 50002 Zaragoza, Spain",
+      "phone": "+34 976 20 05 56",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "tac dental zaragoza_c. de la corona de aragón, 46, 50009 zaragoza, spain": {
+      "name": "TAC DENTAL ZARAGOZA",
+      "address": "C. de la Corona de Aragón, 46, 50009 Zaragoza, Spain",
+      "phone": "+34 697 37 87 34",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "maría auxiliadora abela domínguez_p.º de los tilos, 23, cruz de humilladero, 29006 málaga, spain": {
+      "name": "María Auxiliadora Abela Domínguez",
+      "address": "P.º de los Tilos, 23, Cruz de Humilladero, 29006 Málaga, Spain",
+      "phone": "+34 952 35 09 09",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "josé antonio campaña jover_p.º marítimo cdad. de melilla, 23, loc bajo derecha, málaga-este, 29016 málaga, spain": {
+      "name": "José Antonio Campaña Jover",
+      "address": "P.º Marítimo Cdad. de Melilla, 23, Loc Bajo Derecha, Málaga-Este, 29016 Málaga, Spain",
+      "phone": "+34 952 36 91 22",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "juan manuel chaneta pérez_c. rosa, 1 edificio jaen piso:, 1-e, 29010 málaga, spain": {
+      "name": "JUAN MANUEL CHANETA PÉREZ",
+      "address": "C. Rosa, 1 Edificio Jaen Piso:, 1-E, 29010 Málaga, Spain",
+      "phone": "+34 952 30 92 96",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "isidoro de la torre prados_c. strachan, 12 4, a, distrito centro, 29015 málaga, spain": {
+      "name": "Isidoro De La Torre Prados",
+      "address": "C. Strachan, 12 4, A, Distrito Centro, 29015 Málaga, Spain",
+      "phone": "+34 952 22 23 47",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Málaga, España"
+    },
+    "impladent en zaragoza - dentista_c/ de felipe sanclemente, 6, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Impladent en Zaragoza - Dentista",
+      "address": "C/ de Felipe Sanclemente, 6, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 876 04 68 72",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "abad y antolín clínica de ortodoncia - obyra_c. de sta. joaquina de vedruna, 7, 50008 zaragoza, spain": {
+      "name": "Abad y Antolín Clínica de Ortodoncia - obyra",
+      "address": "C. de Sta. Joaquina de Vedruna, 7, 50008 Zaragoza, Spain",
+      "phone": "+34 976 23 38 58",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "susín dental_c. del conde de aranda, 122, casco antiguo, 50003 zaragoza, spain": {
+      "name": "SUSÍN DENTAL",
+      "address": "C. del Conde de Aranda, 122, Casco Antiguo, 50003 Zaragoza, Spain",
+      "phone": "+34 976 11 23 11",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dantea_cam. de las torres, 10, casco antiguo, 50008 zaragoza, spain": {
+      "name": "Clínica Dental Dantea",
+      "address": "Cam. de las Torres, 10, Casco Antiguo, 50008 Zaragoza, Spain",
+      "phone": "+34 976 42 49 64",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "vivantadental_c. de maría zambrano, 26, 50018 zaragoza, spain": {
+      "name": "vivantadental",
+      "address": "C. de María Zambrano, 26, 50018 Zaragoza, Spain",
+      "phone": "+34 976 73 13 03",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "ricardo lecina galvé_c. de san vicente mártir, 11, 50008 zaragoza, spain": {
+      "name": "Ricardo Lecina Galvé",
+      "address": "C. de San Vicente Mártir, 11, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 94 61",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "chamorro pons, m.c._c. de sta. joaquina de vedruna, 44, piso 1 puerta 1, 50008 zaragoza, spain": {
+      "name": "Chamorro Pons, M.C.",
+      "address": "C. de Sta. Joaquina de Vedruna, 44, Piso 1 puerta 1, 50008 Zaragoza, Spain",
+      "phone": "+34 976 21 15 77",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "milenium dental clinic gómez laguna - sanitas_calle alcalde, av. de gómez laguna, 9, 50009 zaragoza, spain": {
+      "name": "Milenium Dental Clinic Gómez Laguna - Sanitas",
+      "address": "Calle Alcalde, Av. de Gómez Laguna, 9, 50009 Zaragoza, Spain",
+      "phone": "+34 976 69 55 20",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "bouthelier moreno carlos_c. de don jaime i, 34, casco antiguo, 50001 zaragoza, spain": {
+      "name": "Bouthelier Moreno Carlos",
+      "address": "C. de Don Jaime I, 34, Casco Antiguo, 50001 Zaragoza, Spain",
+      "phone": "+34 976 29 45 17",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "laboratorio protesicos zaragoza soluciones dentales_c. de dña blanca de navarra, 5, delicias, 50010 zaragoza, spain": {
+      "name": "Laboratorio protesicos Zaragoza soluciones dentales",
+      "address": "C. de Dña Blanca de Navarra, 5, Delicias, 50010 Zaragoza, Spain",
+      "phone": "+34 876 04 11 54",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "dentista en zaragoza_": {
+      "name": "Dentista en Zaragoza",
+      "phone": "+34 666 36 52 89",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
+    },
+    "clínica dental dr. machetti_c. de josé luis albareda, 6, 2.°d, casco antiguo, 50004 zaragoza, spain": {
+      "name": "clínica dental Dr. Machetti",
+      "address": "C. de José Luis Albareda, 6, 2.°D, Casco Antiguo, 50004 Zaragoza, Spain",
+      "phone": "+34 976 21 39 02",
+      "scrapedAt": "2026-07-13T00:40:00.037Z",
+      "query": "clinica dental\nconsultorio odontologico\nodontologo\ndentista",
+      "location": "Zaragoza, España"
     }
   },
   "searches": [
@@ -71219,6 +73682,17 @@
       "timestamp": "2026-07-11T17:00:12.280Z",
       "newFound": 229,
       "duplicatesSkipped": 527
+    },
+    {
+      "query": "clinica dental | consultorio odontologico | odontologo | dentista",
+      "locations": [
+        "Málaga, España",
+        "Zaragoza, España",
+        "Sevilla, España"
+      ],
+      "timestamp": "2026-07-13T00:40:00.037Z",
+      "newFound": 308,
+      "duplicatesSkipped": 41
     }
   ],
   "lastPages": {
@@ -71257,10 +73731,10 @@
     "clinica dental_barcelona, españa": 75,
     "estetica dental_barcelona, españa": 50,
     "consultorio odontologico_barcelona, españa": 50,
-    "clinica dental_málaga, españa": 10,
-    "dentista_málaga, españa": 10,
+    "clinica dental_málaga, españa": 12,
+    "dentista_málaga, españa": 12,
     "implante dental_málaga, españa": 10,
-    "consultorio odontologico_málaga, españa": 10,
+    "consultorio odontologico_málaga, españa": 11,
     "ortodoncia_málaga, españa": 10,
     "clinica dental_la paz, bolivia": 3,
     "clinica dental_cartagena, colombia": 10,
@@ -71364,7 +73838,7 @@
     "odontologo_sevilla, españa": 11,
     "estetica dental_sevilla, españa": 10,
     "consultorio odontologico_sevilla, españa": 10,
-    "dentista_sevilla, españa": 12,
+    "dentista_sevilla, españa": 13,
     "med spa_miami, estados unidos": 1,
     "plastic surgery clinic_calgary, canadá": 10,
     "medical aesthetics clinic_calgary, canadá": 10,
@@ -71379,6 +73853,10 @@
     "dentistas_valencia, españa": 13,
     "implantes dentales_madrid, españa": 10,
     "implantes dentales_valencia, españa": 9,
-    "implantes dentales_sevilla, españa": 10
+    "implantes dentales_sevilla, españa": 10,
+    "clinica dental_zaragoza, españa": 12,
+    "consultorio odontologico_zaragoza, españa": 12,
+    "odontologo_zaragoza, españa": 13,
+    "dentista_zaragoza, españa": 13
   }
 }
