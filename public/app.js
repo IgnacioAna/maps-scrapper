@@ -9822,7 +9822,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3 style="margin:0; font-size:17px;">${escHtml(d.setterName)}</h3>
             <button class="modal-close-btn" onclick="document.getElementById('pool-breakdown-modal')?.remove()">×</button>
           </div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;"><span style="color:#5BB974; font-weight:600;">${d.callable} llamables</span> ahora · ${d.total} asignados en total</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;"><span style="color:#5BB974; font-weight:600;">${d.callable} llamables</span> ahora</div>
 
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Actividad de llamadas</div>
           <div style="margin-bottom:20px;">${activityBlock}</div>
