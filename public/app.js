@@ -7893,6 +7893,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       return meta;
     }
 
+    // 2026-07-12: si el SDR marca el resultado SIN colgar primero (la llamada sigue
+    // activa), la metadata + el audio nunca se capturaban → la llamada quedaba como
+    // 'manual' sin transcripción. Este helper se llama al inicio de la disposition:
+    // si hay una llamada Telnyx activa de ESTE lead, la cuelga y espera a que
+    // _onTelnyxCallEnded arme la metadata (que se setea 500ms post-cuelgue) + buffere
+    // el audio. Defensivo: si no hay llamada activa o es de otro lead, es no-op; ante
+    // cualquier error cae al comportamiento de siempre.
+    async function _finalizeActiveCallBeforeDisposition(leadId) {
+      try {
+        if (!_telnyx?.activeCall) return;                 // no hay llamada en curso → nada que finalizar
+        if (_telnyxCallState?.leadId && _telnyxCallState.leadId !== leadId) return; // llamada de otro lead
+        if (_pendingTelnyxCallMetadata[leadId]) return;   // ya está capturada (colgó manual antes)
+        try { _telnyx.activeCall.hangup?.(); } catch {}
+        // safety: forzar el end handler si el SDK no emite el evento hangup
+        setTimeout(() => { try { if (_telnyxCallState.startedAt && !_telnyxCallState.ended) _onTelnyxCallEnded('disposition_hangup'); } catch {} }, 1200);
+        // esperar a que la metadata quede seteada (end handler + su setTimeout de 500ms)
+        const t0 = Date.now();
+        while (Date.now() - t0 < 4500) {
+          if (_pendingTelnyxCallMetadata[leadId]) break;
+          await new Promise((r) => setTimeout(r, 150));
+        }
+        // respiro extra para que _stopCallRecordingAndBuffer termine de armar el audio
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (e) { console.warn('[transcribe] finalize-before-disposition falló:', e?.message); }
+    }
+
     // ── Script panel (banco de guiones durante la llamada) ──
     let _callScriptsCache = [];
     let _currentCallLead = null; // se setea en _startTelnyxCall, usado para interpolar variables
@@ -8214,6 +8240,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       selectEl.disabled = true;
 
       try {
+        // Si la llamada sigue activa (marcó el resultado sin colgar), colgar y capturar
+        // audio + metadata ANTES de seguir → la llamada NO queda 'manual' sin transcript.
+        await _finalizeActiveCallBeforeDisposition(leadId);
         if (outcome === 'callback_later') {
           openCallbackModal(leadId);
           selectEl.value = '';
