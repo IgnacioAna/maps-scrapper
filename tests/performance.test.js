@@ -290,9 +290,33 @@ describe("GET /api/setters/performance · atribución por quién trabajó (no he
     expect(rb.body.totals.total).toBe(1); // solo l_b1, NO el heredado
     // pero SÍ aparece en sus "asignados" (dueño actual).
     expect(rb.body.assignedTotal).toBe(2);
+    // "Sin llamar" para setter_b: el heredado (que solo llamó setter_a) cuenta como
+    // sin llamar para B → arranca de cero al reasignar. B tiene 2 asignados (l_b1
+    // que él llamó no… l_b1 no tiene callLog, solo interactions) → ambos sin llamar
+    // por B salvo que B tenga callLog propio. l_b1 no tiene callLog → 2 sin llamar.
+    expect(rb.body.assignedSinContactar).toBe(2);
 
     // setter_a SÍ lo cuenta como trabajado aunque ya no sea el dueño.
     const ra = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterACookie);
     expect(ra.body.totals.total).toBe(4); // sus 3 + el heredado que trabajó
+  });
+
+  it("assignedSinContactar cuenta por llamadas del dueño (arranca de cero al reasignar)", async () => {
+    // setter_b: agregamos un lead que B llamó él mismo (callLog con by=user_setterB)
+    // + el heredado del test anterior (llamado solo por A). B tiene: l_b1 (sin
+    // callLog), l_heredado (llamado por A), l_bcalled (llamado por B).
+    const cur = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+    cur.leads.l_bcalled = {
+      num: 100, name: "B llamó", phone: "+5490100", assignedTo: "setter_b",
+      estado: "sin_contactar", conexion: "sin_wsp",
+      followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+      notes: [], importedAt: t(1),
+      callLog: [{ ts: t(0), outcome: "no_answer", by: "user_setterB", duration: 0 }],
+    };
+    fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify(cur, null, 2));
+    const rb = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterBCookie);
+    expect(rb.body.assignedTotal).toBe(3); // l_b1 + l_heredado + l_bcalled
+    // Solo l_bcalled fue llamado por B → 2 sin llamar (l_b1 y el heredado).
+    expect(rb.body.assignedSinContactar).toBe(2);
   });
 });

@@ -5373,6 +5373,17 @@ function _buildUserSetterMap() {
 function _callSetterId(entry, lead, userMap) {
   return (entry.by && userMap[entry.by]) || lead.assignedTo || '';
 }
+// ¿el setter `sid` hizo al menos una llamada PROPIA sobre este lead? Atribución por
+// quién llamó (callLog.by → setterId), NO por dueño actual. Regla de negocio
+// (2026-07-13): cuando un lead se reasigna, ARRANCA DE CERO para el nuevo dueño —
+// las llamadas de un SDR anterior NO cuentan como trabajo suyo (quedan solo como
+// historial/notas al abrir el lead). Todas las métricas de "sin llamar / con
+// llamadas / trabajado" por SDR usan esto, jamás lastContactAt.
+function _setterCalledLead(lead, sid, userMap) {
+  if (!sid) return false;
+  const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+  return log.some((e) => _callSetterId(e, lead, userMap) === sid);
+}
 // Expuestos para tests puros (patrón globalThis.__phase16 / __mercury).
 globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour, _bizDayOfWeek, _buildUserSetterMap, _callSetterId };
 
@@ -7006,9 +7017,10 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   const data = loadSettersData();
   const leads = Object.values(data.leads || {});
   const _now = Date.now();
-  // "Sin tocar" para el display = nunca discado (callLog vacío). El estado/conexion
-  // los mueve la redistribución/reciclaje (nota #86), no son señal de actividad real.
-  const isUntouched = (l) => !(Array.isArray(l.callLog) && l.callLog.length > 0);
+  const _psUserMap = _buildUserSetterMap();
+  // "Sin llamar" SIN asignar = nadie lo discó (no hay dueño). Por SDR = el DUEÑO
+  // actual no lo llamó (2026-07-13, arranca-de-cero al reasignar).
+  const isUntouchedGlobal = (l) => !(Array.isArray(l.callLog) && l.callLog.length > 0);
   const settersById = {};
   for (const s of (data.setters || [])) settersById[s.id] = s.name || s.id;
 
@@ -7022,12 +7034,12 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
     // Phase 17: los DNC se cuentan aparte y NO entran al pool distribuible.
     if (l.doNotCall) { dnc++; continue; }
     const sid = l.assignedTo || '';
-    if (!sid) { unassigned++; if (isUntouched(l)) unassignedUntouched++; }
+    if (!sid) { unassigned++; if (isUntouchedGlobal(l)) unassignedUntouched++; }
     else {
       if (!bySetter[sid]) bySetter[sid] = { id: sid, name: settersById[sid] || sid, total: 0, callable: 0, untouched: 0, orphanSetter: !settersById[sid] };
       bySetter[sid].total++;
       if (_leadIsCallableNow(l, _now)) bySetter[sid].callable++;
-      if (isUntouched(l)) bySetter[sid].untouched++;
+      if (!_setterCalledLead(l, sid, _psUserMap)) bySetter[sid].untouched++;
     }
     const c = (l.country || 'Sin país').trim() || 'Sin país';
     byCountry[c] = (byCountry[c] || 0) + 1;
@@ -7064,26 +7076,29 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
   // "Llamado" = actividad REAL en el callLog. El estado/conexion los mueve la
   // redistribución/reciclaje del pool (nota #86: reciclaje setea conexion='sin_wsp'
   // en leads nunca llamados), así que NO son señal de que la SDR llamó — el callLog sí.
-  const hasCalls = (l) => Array.isArray(l.callLog) && l.callLog.length > 0;
-  const lastCallOutcome = (l) => (hasCalls(l) ? String(l.callLog[l.callLog.length - 1].outcome || '') : '');
   const byCountry = {}; // country → { total, callable }
-  // Foco: actividad de llamadas real, no etiquetas de estado.
+  // Foco: actividad de llamadas real del DUEÑO, no etiquetas de estado.
   const activity = {
-    sinTocar: 0,          // callLog vacío — nunca discados (la materia prima)
-    intentados: 0,        // discados pero sin atender aún (no_answer/voicemail/hung_up) y siguen llamables
-    interesados: 0,       // dijeron que sí (estado interesado o último outcome answered_interested)
+    sinTocar: 0,          // el SDR no lo llamó todavía (la materia prima)
+    intentados: 0,        // el SDR lo discó pero sin atender aún y sigue llamable
+    interesados: 0,       // dijeron que sí (estado interesado o último outcome propio answered_interested)
     agendados: 0,         // reunión reservada
     callbackPendiente: 0, // quedaron en volver a llamar, fecha futura
     descartados: 0,       // no interesado / número malo / contacto agotado
     dnc: 0,               // No-llamar
   };
-  // Bug 2026-07-13: calledLeads/totalDials contaban TODO el callLog de los leads
-  // asignados — una SDR nueva heredaba los discados del setter anterior (la
-  // redistribución conserva callLog a propósito). Se atribuye por quién LLAMÓ
-  // (entry.by → _callSetterId), igual que el resto de las métricas. Los buckets
-  // de activity/sinTocar siguen siendo por estado del LEAD (composición del pool
-  // — "sin tocar" = nunca discado por NADIE — semántica correcta para distribuir).
+  // 2026-07-13 (arranca-de-cero al reasignar): TODA la actividad se atribuye por
+  // quién LLAMÓ (callLog.by → setterId). Un lead reasignado no arrastra los discados
+  // del SDR anterior — para el nuevo dueño está "sin tocar" hasta que ÉL lo llame.
   const _pbUserMap = _buildUserSetterMap();
+  const setterCalled = (l) => _setterCalledLead(l, setterId, _pbUserMap);
+  const setterLastOutcome = (l) => {
+    const log = Array.isArray(l.callLog) ? l.callLog : [];
+    for (let i = log.length - 1; i >= 0; i--) {
+      if (_callSetterId(log[i], l, _pbUserMap) === setterId) return String(log[i].outcome || '');
+    }
+    return '';
+  };
   let total = 0, callable = 0, calledLeads = 0, totalDials = 0;
   for (const l of Object.values(data.leads || {})) {
     if (l.assignedTo !== setterId) continue;
@@ -7092,17 +7107,15 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
     if (!byCountry[c]) byCountry[c] = { total: 0, callable: 0 };
     byCountry[c].total++;
     if (_leadIsCallableNow(l, _now)) { callable++; byCountry[c].callable++; }
-    if (hasCalls(l)) {
-      const ownDials = l.callLog.filter((e) => _callSetterId(e, l, _pbUserMap) === setterId).length;
-      if (ownDials > 0) { calledLeads++; totalDials += ownDials; }
-    }
-    // Actividad (excluyente, en orden de prioridad)
+    const ownDials = (Array.isArray(l.callLog) ? l.callLog : []).filter((e) => _callSetterId(e, l, _pbUserMap) === setterId).length;
+    if (ownDials > 0) { calledLeads++; totalDials += ownDials; }
+    // Actividad (excluyente, en orden de prioridad) — atribuida al dueño
     if (l.doNotCall) activity.dnc++;
     else if (l.estado === 'agendado') activity.agendados++;
     else if (l.estado === 'descartado') activity.descartados++;
-    else if (l.estado === 'interesado' || lastCallOutcome(l) === 'answered_interested') activity.interesados++;
+    else if (l.estado === 'interesado' || setterLastOutcome(l) === 'answered_interested') activity.interesados++;
     else if (l.callbackAt && new Date(l.callbackAt).getTime() > _now) activity.callbackPendiente++;
-    else if (hasCalls(l)) activity.intentados++;
+    else if (setterCalled(l)) activity.intentados++;
     else activity.sinTocar++;
   }
   res.json({
@@ -9085,11 +9098,12 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   // distinto de totals.total que es "tocó N en el período". Sin esto el panel solo
   // mostraba los tocados y parecía que el setter tenía muchos menos leads.
   const assignedTotal = filtered.length;
-  // "Sin tocar" = NUNCA DISCADO (callLog vacío) — unificado con team-performance
-  // y pool-setter-breakdown (bug 2026-07-13: !lastContactAt quedó incoherente tras
-  // resets/redistribuciones — leads de la era WhatsApp con lastContactAt pero cero
-  // llamadas contaban como "tocados").
-  const assignedSinContactar = filtered.filter((l) => !(Array.isArray(l.callLog) && l.callLog.length > 0)).length;
+  // "Sin llamar" = el/los setter(s) de esta vista no lo llamaron todavía (2026-07-13,
+  // arranca-de-cero al reasignar). Individual = el dueño; equipo/supervisor = ningún
+  // setter del set atribuido lo llamó. Nunca lastContactAt (legacy WhatsApp).
+  const assignedSinContactar = filtered.filter((l) =>
+    !(Array.isArray(l.callLog) && l.callLog.some((e) => attr.setterIds.has(_callSetterId(e, l, attr.userMap))))
+  ).length;
 
   res.json({
     period,
@@ -9252,11 +9266,10 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     // Ultima actividad ATRIBUIDA al setter (llamadas por `by` + interactions suyas).
     const lastActivity = lastActivityBySetter.get(s.id) || 0;
     const totalAssigned = setterLeads.length;
-    // "Sin tocar" = NUNCA DISCADO por nadie (callLog vacío) — mismo criterio que
-    // pool-setter-breakdown. Bug 2026-07-13: antes era !lastContactAt, que quedó
-    // incoherente tras resets/redistribuciones (leads con lastContactAt de la era
-    // WhatsApp sin una sola llamada contaban como "tocados", y viceversa).
-    const untouchedAssigned = setterLeads.filter(l => !(Array.isArray(l.callLog) && l.callLog.length > 0)).length;
+    // "Sin llamar" = el DUEÑO ACTUAL no lo llamó todavía (2026-07-13). Un lead
+    // reasignado arranca de cero para el nuevo SDR: las llamadas de un SDR anterior
+    // NO cuentan como trabajo suyo (quedan como historial al abrir el lead).
+    const untouchedAssigned = setterLeads.filter(l => !_setterCalledLead(l, s.id, userMap)).length;
 
     // Follow-ups del día (dueToday + dueYesterday) — para columna del panel Equipo.
     const followupsToday = _countFollowupsForBadge(setterLeads);
