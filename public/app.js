@@ -4846,7 +4846,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const [leadsResp, mResp, settersResp] = await Promise.all([
           fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable'), { credentials: 'include' }),
-          fetch(apiUrl('/api/setters/cold-call-metrics?period=today'), { credentials: 'include' }).catch(() => null),
+          // Bug 2026-07-13: en modo "Ver como" el backend ve admin vía cookie →
+          // sin ?setter= los KPIs de Hoy eran del EQUIPO entero. Setter efectivo explícito.
+          fetch(apiUrl('/api/setters/cold-call-metrics?period=today' + ((window.__CURRENT_USER__?.realRole === 'admin' && window.__CURRENT_USER__?.role === 'setter' && window.__CURRENT_USER__?.setterId) ? '&setter=' + encodeURIComponent(window.__CURRENT_USER__.setterId) : '')), { credentials: 'include' }).catch(() => null),
           // Mapa setterId→nombre para el chip de dueño. settersList se puebla en
           // Setteo (parkeada), así que en Hoy puede estar vacío → lo cargamos lazy.
           (window.__settersList && window.__settersList.length) ? null : fetch(apiUrl('/api/setters'), { credentials: 'include' }).catch(() => null),
@@ -13452,7 +13454,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${sinc != null ? `
               <div style="flex:1; min-width:200px;">
                 <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
-                  <span style="color:var(--success); font-weight:600;">${trabajados.toLocaleString()} trabajados</span>
+                  <span style="color:var(--success); font-weight:600;" title="Leads de la cartera con algún historial (puede incluir trabajo de un SDR anterior si fueron reasignados)">${trabajados.toLocaleString()} con historial</span>
                   <span style="color:var(--text-tertiary);">${sinc.toLocaleString()} sin tocar</span>
                 </div>
                 <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
@@ -13870,7 +13872,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!cont) return;
     // Setter scope: si admin/supervisor + dropdown setter elegido, usar ese.
     // Si setter, backend filtra solo. Si admin sin SDR → equipo completo.
-    const setterSel = document.getElementById('myp-setter')?.value || '';
+    // Bug 2026-07-13: en modo "Ver como" (admin impersonando SDR) el backend ve
+    // admin vía cookie → sin ?setter= devolvía el agregado del EQUIPO como si
+    // fuera del SDR (46 dials del equipo mostrados como de Judith). Mismo fix
+    // que ya tenía _mypLoad: pasar el setter efectivo explícito.
+    const u = window.__CURRENT_USER__;
+    const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+    const setterSel = document.getElementById('myp-setter')?.value || (isViewAsSetter ? u.setterId : '');
     const qs = new URLSearchParams({ period: _ccmPeriod });
     if (setterSel) qs.set('setter', setterSel);
     try {
