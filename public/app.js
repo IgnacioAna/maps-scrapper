@@ -9792,38 +9792,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const d = await (await fetch(apiUrl('/api/setters/pool-setter-breakdown?setterId=' + encodeURIComponent(setterId)), { credentials: 'include' })).json();
         if (d.error) throw new Error(d.error);
-        const st = d.byStatus || {};
-        // Etapas con color + explicación de a dónde va cada una.
-        const stages = [
-          { k: 'sinTocar', label: 'Sin tocar', col: '#7E8494', hint: 'nunca llamados — la materia prima' },
-          { k: 'enProceso', label: 'En proceso', col: '#79B8FF', hint: 'ya los llamó, siguen en la cola (no atendió / cortó / a reintentar)' },
-          { k: 'interesado', label: 'Interesados', col: '#5BB974', hint: 'dijeron que sí → viven en la vista Hoy hasta agendar' },
-          { k: 'agendado', label: 'Agendados', col: '#4ADE80', hint: 'reunión reservada → salen de la cola, van al calendario' },
-          { k: 'callbackPendiente', label: 'Callbacks', col: '#A78BFA', hint: 'quedaron en volver a llamar → aparecen en Hoy el día que toca' },
-          { k: 'descartado', label: 'Descartados', col: '#F87171', hint: 'no interesado / número malo / sin contacto agotado' },
-          { k: 'dnc', label: 'No-llamar', col: '#F87171', hint: 'marcados DNC — fuera de toda cola' },
-        ].filter(x => (st[x.k] || 0) > 0);
+        const act = d.activity || {};
+        const called = d.calledLeads || 0;
+        // Cómo va: solo etapas de resultado, y solo si tienen algo.
+        const resultRows = [
+          { k: 'interesados', label: 'Interesados', col: '#5BB974', hint: 'dijeron que sí → viven en Hoy hasta agendar' },
+          { k: 'agendados', label: 'Agendados', col: '#4ADE80', hint: 'reunión reservada' },
+          { k: 'callbackPendiente', label: 'Callbacks', col: '#A78BFA', hint: 'quedaron en volver a llamar' },
+          { k: 'intentados', label: 'A reintentar', col: '#79B8FF', hint: 'discados sin atender — vuelven a la cola' },
+          { k: 'descartados', label: 'Descartados', col: '#F87171', hint: 'no interesado / número malo / agotado' },
+          { k: 'dnc', label: 'No-llamar', col: '#F87171', hint: 'marcados DNC' },
+        ].filter(x => (act[x.k] || 0) > 0);
         const stageRow = (x) => `<div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-subtle);">
           <span style="width:10px; height:10px; border-radius:50%; background:${x.col}; flex-shrink:0;"></span>
           <div style="flex:1; min-width:0;"><span style="font-weight:600; color:var(--text-primary); font-size:13px;">${x.label}</span> <span style="color:var(--text-tertiary); font-size:11px;">— ${x.hint}</span></div>
-          <span style="font-variant-numeric:tabular-nums; font-weight:700; color:${x.col};">${st[x.k]}</span>
+          <span style="font-variant-numeric:tabular-nums; font-weight:700; color:${x.col};">${act[x.k]}</span>
         </div>`;
-        const trabajados = d.total - (st.sinTocar || 0);
-        const countryRows = (d.byCountry || []).map(c => `<tr><td style="padding:5px 10px;">${escHtml(c.country)}</td><td style="padding:5px 10px; text-align:right; color:#5BB974; font-weight:600; font-variant-numeric:tabular-nums;">${c.callable}</td><td style="padding:5px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${c.total}</td></tr>`).join('');
+        const countryRows = (d.byCountry || []).filter(c => c.callable > 0).map(c => `<tr><td style="padding:5px 10px;">${escHtml(c.country)}</td><td style="padding:5px 10px; text-align:right; color:#5BB974; font-weight:600; font-variant-numeric:tabular-nums;">${c.callable}</td></tr>`).join('');
+        // Bloque de actividad: si no llamó a nadie, lo decimos claro.
+        const activityBlock = called === 0
+          ? `<div style="padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; color:var(--text-secondary); font-size:13px;">Todavía no llamó a nadie.</div>`
+          : `<div style="padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; margin-bottom:14px;">
+              <span style="font-size:22px; font-weight:700; color:var(--text-primary); font-variant-numeric:tabular-nums;">${called}</span>
+              <span style="font-size:13px; color:var(--text-secondary);"> lead${called === 1 ? '' : 's'} llamado${called === 1 ? '' : 's'}${d.totalDials > called ? ` · ${d.totalDials} discados en total` : ''}</span>
+            </div>
+            ${resultRows.length ? `<div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Cómo va</div><div>${resultRows.map(stageRow).join('')}</div>` : ''}`;
         ov.querySelector('.modal-body').innerHTML = `
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
             <h3 style="margin:0; font-size:17px;">${escHtml(d.setterName)}</h3>
             <button class="modal-close-btn" onclick="document.getElementById('pool-breakdown-modal')?.remove()">×</button>
           </div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;">${d.total} leads asignados · <span style="color:#5BB974;">${d.callable} llamables</span> · ${trabajados} ya trabajados</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;"><span style="color:#5BB974; font-weight:600;">${d.callable} llamables</span> ahora · ${d.total} asignados en total</div>
 
-          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">En qué etapa está cada lead</div>
-          <div style="margin-bottom:20px;">${stages.length ? stages.map(stageRow).join('') : '<div class="muted" style="font-size:12px;">Sin leads.</div>'}</div>
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Actividad de llamadas</div>
+          <div style="margin-bottom:20px;">${activityBlock}</div>
 
-          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Por país</div>
+          <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Llamables por país</div>
           <table style="width:100%; border-collapse:collapse; font-size:12.5px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; overflow:hidden;">
-            <tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">País</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">Llamables</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">Total</th></tr>
-            ${countryRows || '<tr><td colspan="3" class="muted" style="padding:10px;">Sin leads.</td></tr>'}
+            <tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">País</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase;">Llamables</th></tr>
+            ${countryRows || '<tr><td colspan="2" class="muted" style="padding:10px;">Sin leads llamables.</td></tr>'}
           </table>`;
       } catch (e) {
         const body = ov.querySelector('.modal-body');

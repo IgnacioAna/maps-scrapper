@@ -6943,7 +6943,9 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   const data = loadSettersData();
   const leads = Object.values(data.leads || {});
   const _now = Date.now();
-  const isUntouched = (l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0) && !l.conexion;
+  // "Sin tocar" para el display = nunca discado (callLog vacío). El estado/conexion
+  // los mueve la redistribución/reciclaje (nota #86), no son señal de actividad real.
+  const isUntouched = (l) => !(Array.isArray(l.callLog) && l.callLog.length > 0);
   const settersById = {};
   for (const s of (data.setters || [])) settersById[s.id] = s.name || s.id;
 
@@ -6996,32 +6998,47 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
   const data = loadSettersData();
   const _now = Date.now();
   const setter = (data.setters || []).find((s) => s.id === setterId);
-  const isUntouched = (l) => !l.lastContactAt && !(Array.isArray(l.interactions) && l.interactions.length > 0) && !l.conexion;
+  // "Llamado" = actividad REAL en el callLog. El estado/conexion los mueve la
+  // redistribución/reciclaje del pool (nota #86: reciclaje setea conexion='sin_wsp'
+  // en leads nunca llamados), así que NO son señal de que la SDR llamó — el callLog sí.
+  const hasCalls = (l) => Array.isArray(l.callLog) && l.callLog.length > 0;
+  const lastCallOutcome = (l) => (hasCalls(l) ? String(l.callLog[l.callLog.length - 1].outcome || '') : '');
   const byCountry = {}; // country → { total, callable }
-  const byStatus = { sinTocar: 0, enProceso: 0, interesado: 0, agendado: 0, descartado: 0, callbackPendiente: 0, dnc: 0 };
-  let total = 0, callable = 0;
+  // Foco: actividad de llamadas real, no etiquetas de estado.
+  const activity = {
+    sinTocar: 0,          // callLog vacío — nunca discados (la materia prima)
+    intentados: 0,        // discados pero sin atender aún (no_answer/voicemail/hung_up) y siguen llamables
+    interesados: 0,       // dijeron que sí (estado interesado o último outcome answered_interested)
+    agendados: 0,         // reunión reservada
+    callbackPendiente: 0, // quedaron en volver a llamar, fecha futura
+    descartados: 0,       // no interesado / número malo / contacto agotado
+    dnc: 0,               // No-llamar
+  };
+  let total = 0, callable = 0, calledLeads = 0, totalDials = 0;
   for (const l of Object.values(data.leads || {})) {
     if (l.assignedTo !== setterId) continue;
     total++;
     const c = (l.country || 'Sin país').trim() || 'Sin país';
     if (!byCountry[c]) byCountry[c] = { total: 0, callable: 0 };
     byCountry[c].total++;
-    const isCallable = _leadIsCallableNow(l, _now);
-    if (isCallable) { callable++; byCountry[c].callable++; }
-    // Bucket de etapa (excluyente, en orden de prioridad)
-    if (l.doNotCall) byStatus.dnc++;
-    else if (l.estado === 'agendado') byStatus.agendado++;
-    else if (l.estado === 'descartado') byStatus.descartado++;
-    else if (l.estado === 'interesado') byStatus.interesado++;
-    else if (l.callbackAt && new Date(l.callbackAt).getTime() > _now) byStatus.callbackPendiente++;
-    else if (isUntouched(l)) byStatus.sinTocar++;
-    else byStatus.enProceso++;
+    if (_leadIsCallableNow(l, _now)) { callable++; byCountry[c].callable++; }
+    if (hasCalls(l)) { calledLeads++; totalDials += l.callLog.length; }
+    // Actividad (excluyente, en orden de prioridad)
+    if (l.doNotCall) activity.dnc++;
+    else if (l.estado === 'agendado') activity.agendados++;
+    else if (l.estado === 'descartado') activity.descartados++;
+    else if (l.estado === 'interesado' || lastCallOutcome(l) === 'answered_interested') activity.interesados++;
+    else if (l.callbackAt && new Date(l.callbackAt).getTime() > _now) activity.callbackPendiente++;
+    else if (hasCalls(l)) activity.intentados++;
+    else activity.sinTocar++;
   }
   res.json({
     setterId,
     setterName: setter ? (setter.name || setterId) : setterId,
     total, callable,
-    byStatus,
+    calledLeads,   // cuántos leads DISTINTOS tocó al menos una vez (real)
+    totalDials,    // total de discados (incluye reintentos al mismo lead)
+    activity,
     byCountry: Object.entries(byCountry).map(([country, v]) => ({ country, total: v.total, callable: v.callable })).sort((a, b) => b.total - a.total),
   });
 });
