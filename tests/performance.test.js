@@ -264,3 +264,35 @@ describe("Agregaciones · KPIs y comparativa", () => {
     expect(r.body.totals.pctShow).toBe(0);
   });
 });
+
+// Bug 2026-07-13: un SDR que HEREDA leads vía reassign-bulk (que no toca
+// lastContactAt) NO debe verlos como "trabajados". "total" se atribuye por quién
+// EJECUTÓ la acción (interactions.setterId / callLog.by), no por el dueño actual.
+describe("GET /api/setters/performance · atribución por quién trabajó (no herencia)", () => {
+  it("lead reasignado no cuenta como trabajado por el nuevo dueño", async () => {
+    // Lead asignado HOY a setter_b, pero toda su actividad (lastContactAt +
+    // interactions + callLog) es de setter_a antes de la reasignación.
+    const heredado = {
+      num: 99, name: "Heredado", phone: "+5490009", assignedTo: "setter_b",
+      estado: "calificado", conexion: "enviada", respondio: true, calificado: true, interes: "no",
+      followUps: { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false },
+      notes: [], importedAt: t(20), lastContactAt: t(1),
+      interactions: [{ id: "ih1", action: "open", createdAt: t(1), setterId: "setter_a" }],
+      callLog: [{ ts: t(1), outcome: "answered_not_interested", by: "user_setterA", duration: 40 }],
+    };
+    const cur = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+    cur.leads.l_heredado = heredado;
+    fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify(cur, null, 2));
+
+    // setter_b NO debe contar el lead heredado (su actividad es de setter_a).
+    const rb = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterBCookie);
+    expect(rb.status).toBe(200);
+    expect(rb.body.totals.total).toBe(1); // solo l_b1, NO el heredado
+    // pero SÍ aparece en sus "asignados" (dueño actual).
+    expect(rb.body.assignedTotal).toBe(2);
+
+    // setter_a SÍ lo cuenta como trabajado aunque ya no sea el dueño.
+    const ra = await request(app).get("/api/setters/performance?period=day").set("Cookie", setterACookie);
+    expect(ra.body.totals.total).toBe(4); // sus 3 + el heredado que trabajó
+  });
+});

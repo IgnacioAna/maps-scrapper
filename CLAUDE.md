@@ -1,4 +1,4 @@
-# SCM Dental Setting App - Instrucciones para IA
+# SCM Setting App - Instrucciones para IA
 
 > Última actualización: 2026-04-29 — Documento mantenido para que cualquier IA o dev que entre al proyecto entienda el estado actual sin tener que reconstruirlo leyendo commits.
 
@@ -853,3 +853,7 @@ Plan completo en `.planning/phases/17-disposition-dnc-cadencias/PLAN.md`. Las 4 
 132. **Audit del enrichment (verificado sano, sin cambios)**: Auto IA post-scrape usa solo fetch web + LLM (cero SerpAPI); brief de reseñas reusa placeId del scrape y respeta markers; markers por fuente OK (#111); enrich NPI/dominio/emails gratis y no pisan datos manuales. Notas menores conocidas: dos scrapes simultáneos compartirían snapshot de lastPages (admin-only, riesgo teórico); META_AD_LIBRARY_TOKEN sigue faltando en Railway para España.
 
 133. **Cache-buster actual: `app.js v=20260710h` + `style.css v=20260710a`** (reemplaza #123). wa.js sin cambios.
+
+## Sesión 2026-07-13 — Fix atribución "Leads trabajados" en Mi rendimiento
+
+134. **"Leads trabajados" (embudo de `/api/setters/performance`) atribuía por dueño ACTUAL, no por quién trabajó** (solo backend `index.js` + `tests/performance.test.js` → sin cache-buster). El user reportó SDRs recién arrancadas (Roxana/Judith/Nadine) con "87 leads trabajados" pero 3 dials — imposible. Causa: `_perfAggregate` contaba "total"/embudo por `lead.lastContactAt` sobre los leads con `assignedTo === setterFilter`. Como `reassign-bulk` (index.js:7256) cambia `assignedTo` pero NO toca `lastContactAt`/callLog/interactions, una SDR nueva heredaba TODO el trabajo del setter previo. El Cold Call Funnel (dials) ya estaba bien porque el callLog se atribuye por `by` (`_callSetterId`, nota #113) — de ahí la discrepancia 3 vs 87. **Fix**: `_perfAggregate(leads, from, to, attr)` acepta `attr={setterId,userMap}`; con SDR individual, "trabajado" = existe `interactions[].setterId===target` O `callLog[].by→target` dentro del bucket (mismo criterio de atribución que el resto de métricas). El endpoint pasa `attr` + `allLeads` (no pre-filtrado por assignedTo) cuando hay `setterFilter`; el agregado de equipo mantiene el legacy por `lastContactAt`. `assignedTotal`/`assignedSinContactar` siguen por `assignedTo` (cartera actual, correcto). Verificado contra data de prod (pre-deploy 2026-07-13): las 3 SDRs nuevas dan 0 leads realmente trabajados (todo era herencia), Paula 30 / Ignacio 172 reales. Conteo de HOY: Roxana 8 llamadas/8 leads, Judith 4/4. Test de regresión en `tests/performance.test.js` ("atribución por quién trabajó"). 41/41 verde en las suites de performance/team/timezone.

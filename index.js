@@ -8858,18 +8858,40 @@ function _perfTableRange(period) {
   return { from, to };
 }
 
-function _perfAggregate(leads, fromTs, toTs) {
+function _perfAggregate(leads, fromTs, toTs, attr) {
   // Embudo de WhatsApp/setteo. Lo SIGUE usando /api/setters/performance ("Mi
   // rendimiento", sus 7 KPI cards + chart). El panel Equipo usa _perfCallFunnel.
-  // Definiciones: total=tocados (lastContactAt en bucket); conexiones=conexion
+  // Definiciones: total=tocados; conexiones=conexion
   // 'enviada'; respondieron=respondio; calificados=calificado; interesados=interes
   // 'si'; agendados=estado 'agendado'; shows/noShows=asistioAt+asistio.
+  //
+  // attr (opcional): { setterId, userMap } → atribuye "trabajado" por quién EJECUTÓ
+  // la llamada (callLog.by → setterId), NO por el dueño ACTUAL del lead. Sin esto,
+  // un SDR nuevo que HEREDA leads vía reassign-bulk (que no toca lastContactAt) veía
+  // como "trabajados" leads que otro trabajó antes de la reasignación (bug de
+  // atribución 2026-07-13, mismo criterio que _callSetterId / cold-call-metrics).
+  // Sin attr mantiene el comportamiento legacy (lastContactAt del lead).
+  const attributed = !!(attr && attr.setterId);
   let total = 0, recibidos = 0, conexiones = 0, respondieron = 0, calificados = 0, interesados = 0, agendados = 0, shows = 0, noShows = 0;
   for (const lead of leads) {
-    const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+    const mine = !attributed || lead.assignedTo === attr.setterId;
+    let touchedInBucket;
+    if (attributed) {
+      // ¿el setter target ejecutó una acción sobre este lead dentro del bucket?
+      // Llamada (callLog.by → setterId) o interacción de setteo (interactions.setterId).
+      // NO se usa lastContactAt porque un lead reasignado lo hereda del setter previo.
+      const inWin = (ts) => { const x = ts ? new Date(ts).getTime() : 0; return x >= fromTs && x < toTs; };
+      const acts = Array.isArray(lead.interactions) ? lead.interactions : [];
+      const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+      touchedInBucket =
+        acts.some((a) => a.setterId === attr.setterId && inWin(a.createdAt)) ||
+        log.some((e) => inWin(e.ts) && _callSetterId(e, lead, attr.userMap) === attr.setterId);
+    } else {
+      const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
+      touchedInBucket = lc >= fromTs && lc < toTs;
+    }
     const imp = lead.importedAt ? new Date(lead.importedAt).getTime() : 0;
-    const touchedInBucket = lc >= fromTs && lc < toTs;
-    const importedInBucket = imp >= fromTs && imp < toTs;
+    const importedInBucket = imp >= fromTs && imp < toTs && mine;
     if (touchedInBucket) total++;
     if (importedInBucket) recibidos++;
     if (touchedInBucket) {
@@ -8880,7 +8902,7 @@ function _perfAggregate(leads, fromTs, toTs) {
       if (lead.estado === "agendado") agendados++;
     }
     const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
-    if (ats >= fromTs && ats < toTs) {
+    if (ats >= fromTs && ats < toTs && mine) {
       if (lead.asistio === true) shows++;
       else if (lead.asistio === false) noShows++;
     }
@@ -9014,22 +9036,29 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
     ? allLeads.filter((l) => l.assignedTo === setterFilter)
     : (visibleSet ? allLeads.filter((l) => visibleSet.has(l.assignedTo)) : allLeads);
 
+  // Atribución por quién LLAMÓ (bug 2026-07-13): con un SDR individual, "leads
+  // trabajados"/embudo se cuentan desde el callLog atribuido por `by` sobre TODOS
+  // los leads (no solo los asignados hoy) — así un SDR nuevo no hereda el trabajo
+  // ajeno de leads que le reasignaron. El agregado de equipo mantiene el legacy.
+  const attr = setterFilter ? { setterId: setterFilter, userMap: _buildUserSetterMap() } : null;
+  const aggLeads = attr ? allLeads : filtered;
+
   // Buckets del periodo actual + agregar kpis por bucket.
   const buckets = _perfBucketsForPeriod(period, fromTs, toTs).map((b) => ({
     label: b.label,
     from: new Date(b.from).toISOString(),
     to: new Date(b.to).toISOString(),
-    ...(_perfAggregate(filtered, b.from, b.to)),
+    ...(_perfAggregate(aggLeads, b.from, b.to, attr)),
   }));
 
   // Totales del periodo actual.
-  const totals = _perfAggregate(filtered, fromTs, toTs);
+  const totals = _perfAggregate(aggLeads, fromTs, toTs, attr);
 
   // Periodo anterior: misma duracion, justo antes de fromTs.
   const periodMs = toTs - fromTs;
   const prevTo = fromTs;
   const prevFrom = fromTs - periodMs;
-  const previous = _perfAggregate(filtered, prevFrom, prevTo);
+  const previous = _perfAggregate(aggLeads, prevFrom, prevTo, attr);
   const deltas = _perfDelta(totals, previous);
 
   // Total de leads ASIGNADOS al setter (sin filtro de período) — es el "tiene 500",
