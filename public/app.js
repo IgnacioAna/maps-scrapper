@@ -9388,7 +9388,56 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td>' + actions + '</td>' +
         '</tr>';
       }).join('');
+
+      // Invitaciones PENDIENTES (nunca aceptadas). No aparecen como users, así que
+      // sin esto quedaban invisibles e imposibles de revocar desde el panel.
+      const pendSec = document.getElementById('pending-invites-section');
+      if (pendSec) {
+        const userEmails = new Set(users.map(u => (u.email || '').toLowerCase()));
+        const pend = invites.filter(inv => inv.status === 'pending' && !userEmails.has((inv.email || '').toLowerCase()));
+        if (!pend.length) { pendSec.innerHTML = ''; }
+        else {
+          const rows = pend.map(inv => {
+            const roleLabel = inv.role === 'setter' ? 'SDR' : (inv.role === 'supervisor' ? 'Supervisor' : 'Admin');
+            const canRevoke = meIsAdmin;
+            const btn = canRevoke
+              ? '<button type="button" class="btn-table-action" style="color:var(--danger); font-size:11px;" onclick="window._revokeInvite(\'' + escHtml(inv.id) + '\', decodeURIComponent(\'' + encodeURIComponent(inv.email || '') + '\'))">Revocar</button>'
+              : '—';
+            return '<tr>' +
+              '<td>' + escHtml(inv.name || '') + '</td>' +
+              '<td>' + escHtml(inv.email || '') + '</td>' +
+              '<td>' + roleLabel + '</td>' +
+              '<td><span style="color:var(--warning); font-weight:600;">Pendiente</span></td>' +
+              '<td>' + btn + '</td>' +
+            '</tr>';
+          }).join('');
+          pendSec.innerHTML =
+            '<div style="margin-top:22px;">' +
+            '<div style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase; margin-bottom:8px;">Invitaciones pendientes (' + pend.length + ')</div>' +
+            '<table class="data-table" style="width:100%;"><thead><tr>' +
+            '<th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th>' +
+            '</tr></thead><tbody>' + rows + '</tbody></table>' +
+            '<div class="muted" style="font-size:11px; margin-top:6px;">Revocá una invitación para poder re-invitar ese email con otro rol. Si era SDR, se limpia también el setter vacío que generó.</div>' +
+            '</div>';
+        }
+      }
     }
+
+    // Revocar una invitación pendiente (admin). Libera el email para re-invitar.
+    window._revokeInvite = async (inviteId, email) => {
+      if (!confirm('¿Revocar la invitación de ' + email + '?\n\nSe libera el email para invitarlo de nuevo con otro rol. Si era SDR, se elimina el setter vacío que generó.')) return;
+      try {
+        const r = await fetch(apiUrl('/api/auth/invites/' + encodeURIComponent(inviteId)), { method: 'DELETE', credentials: 'include' });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { alert('No se pudo revocar: ' + (d.error || ('HTTP ' + r.status))); return; }
+        let msg = 'Invitación de ' + (d.email || email) + ' revocada.';
+        if (d.orphanSetterRemoved) msg += '\nSetter vacío eliminado.';
+        window.showToast?.(msg, { type: 'success' });
+        await loadUsersPanel();
+      } catch (e) {
+        alert('Error: ' + (e?.message || e));
+      }
+    };
 
     // Drilldown del progreso de onboarding por modulo. Muestra cada modulo
     // con: aprobado SI/NO, ultimo score, cuantos intentos, fecha del ultimo,

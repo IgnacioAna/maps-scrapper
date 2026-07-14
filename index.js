@@ -5947,6 +5947,42 @@ app.delete('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) 
   res.json({ ok: true, email: user.email, sessionsRevoked, invitesRevoked });
 });
 
+// DELETE /api/auth/invites/:id — revoca una invitación PENDIENTE (2026-07-13).
+// Antes no había forma de borrar un invite no aceptado: quedaba bloqueando el email
+// (no se podía re-invitar) y ni siquiera aparecía en el panel (solo se listan users
+// que ya aceptaron). Caso típico: se invita con el rol equivocado (SDR en vez de
+// supervisor) y hay que rehacerlo. Si el invite era de setter, ensureSetterProfile
+// creó un setter huérfano — se limpia también SI no tiene user vinculado ni leads.
+app.delete('/api/auth/invites/:id', requireAuth, requireRole('admin'), (req, res) => {
+  const inviteId = String(req.params.id || '');
+  const auth = loadAuthData();
+  const invite = (auth.invites || []).find((i) => i.id === inviteId);
+  if (!invite) return res.status(404).json({ error: 'Invitación no encontrada.' });
+  if (invite.status === 'accepted') {
+    return res.status(400).json({ error: 'Esa invitación ya fue aceptada (hay un usuario). Borrá el usuario en su lugar.' });
+  }
+  auth.invites = (auth.invites || []).filter((i) => i.id !== inviteId);
+  saveAuthData(auth);
+
+  // Limpiar setter huérfano creado por ensureSetterProfile al invitar como SDR.
+  let orphanSetterRemoved = null;
+  if (invite.setterId) {
+    const userLinked = (auth.users || []).some((u) => u.setterId === invite.setterId);
+    if (!userLinked) {
+      const sd = loadSettersData();
+      const leadsForSetter = Object.values(sd.leads || {}).filter((l) => l.assignedTo === invite.setterId).length;
+      if (leadsForSetter === 0 && (sd.setters || []).some((s) => s.id === invite.setterId)) {
+        sd.setters = sd.setters.filter((s) => s.id !== invite.setterId);
+        sd.variants = (sd.variants || []).filter((v) => v.setterId !== invite.setterId);
+        saveSettersData(sd);
+        orphanSetterRemoved = invite.setterId;
+      }
+    }
+  }
+  console.log(`[invite:delete] Invite '${invite.email}' (${invite.role}) revocado.${orphanSetterRemoved ? ` Setter huérfano ${orphanSetterRemoved} eliminado.` : ''}`);
+  res.json({ ok: true, email: invite.email, role: invite.role, orphanSetterRemoved });
+});
+
 // ── Variantes CRUD (compartidas) ──
 app.get('/api/setters/variants', requireAuth, (req, res) => {
   const data = loadSettersData();
