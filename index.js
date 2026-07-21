@@ -13750,9 +13750,18 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
   const _promptRaw = String(promptText || '');
   const _tfIdx = _promptRaw.toLowerCase().indexOf('términos frecuentes');
   const _instrNorm = _normSeg(_tfIdx >= 0 ? _promptRaw.slice(0, _tfIdx) + 'términos frecuentes' : _promptRaw);
+  // Núcleo instruccional SIN el marcador (para atrapar VARIANTES del eco): Whisper
+  // a veces alucina el prompt CON texto extra ("...a una clínica dental en Colombia",
+  // caso real 2026-07-21) — eso no es substring del prompt y el chequeo de arriba lo
+  // dejaba pasar como habla del cliente. Ningún hablante real dice la oración
+  // instruccional completa, así que si el segmento la CONTIENE, es eco.
+  const _instrCoreNorm = _normSeg(_tfIdx >= 0 ? _promptRaw.slice(0, _tfIdx) : _promptRaw);
   const _isPromptEchoSeg = (txt) => {
     const n = _normSeg(txt);
-    return !!(n && n.length >= 10 && _instrNorm && _instrNorm.includes(n));
+    if (!n || n.length < 10) return false;
+    if (_instrNorm && _instrNorm.includes(n)) return true; // segmento ⊂ prompt
+    if (_instrCoreNorm && _instrCoreNorm.length >= 20 && n.includes(_instrCoreNorm)) return true; // prompt ⊂ segmento (variante con cola)
+    return false;
   };
   let segs = (rawSegments || []).map((s) => ({
     speaker: speakerLabel,
@@ -13828,10 +13837,24 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   if (!process.env.OPENAI_API_KEY) {
     return res.status(503).json({ error: 'OPENAI_API_KEY no configurada. Setear como env var en Railway.' });
   }
-  const { setterAudioB64, leadAudioB64, mimeType, callStartedAt } = req.body || {};
+  const { setterAudioB64, leadAudioB64, mimeType, callStartedAt, recMeta } = req.body || {};
   if (!setterAudioB64 && !leadAudioB64) {
     return res.status(400).json({ error: 'Al menos uno de setterAudioB64 o leadAudioB64 requerido' });
   }
+  // Debug de la grabación del browser (2026-07-21): binds por canal, errores del
+  // MediaRecorder y bytes por blob. Se persiste con el transcript para poder
+  // diagnosticar canales mudos (transcripts incompletos) sin adivinar.
+  const recMetaClean = (() => {
+    if (!recMeta || typeof recMeta !== 'object') return null;
+    const out = {};
+    for (const k of ['startedAt', 'setterBinds', 'leadBinds', 'setterBytes', 'leadBytes']) {
+      if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
+    }
+    for (const k of ['setterRecError', 'leadRecError']) {
+      if (typeof recMeta[k] === 'string' && recMeta[k]) out[k] = recMeta[k].slice(0, 80);
+    }
+    return Object.keys(out).length ? out : null;
+  })();
   const fileType = mimeType || 'audio/webm';
   const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -13891,6 +13914,12 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       transcribe(leadAudioB64, 'lead'),
     ]);
     const merged = [...setterSegs, ...leadSegs].sort((a, b) => a.start - b.start);
+    // Visibilidad de canales mudos: si un canal vino con audio pero terminó sin
+    // segmentos, es señal de blob silencioso/corrupto (bug de grabación) o de
+    // Whisper descartando el canal — dejar rastro en logs de Railway.
+    console.log(`[transcribe] lead=${leadId} setterSegs=${setterSegs.length} leadSegs=${leadSegs.length}` + (recMetaClean ? ' recMeta=' + JSON.stringify(recMetaClean) : ''));
+    if (setterAudioB64 && setterSegs.length === 0 && leadSegs.length > 0) console.warn('[transcribe] canal SETTER vacío con audio presente (posible blob mudo)');
+    if (leadAudioB64 && leadSegs.length === 0 && setterSegs.length > 0) console.warn('[transcribe] canal LEAD vacío con audio presente (posible blob mudo)');
     // Audit fix: recargar fresh data justo antes de escribir (TOCTOU). Whisper
     // tarda ~5-30s, otros endpoints pueden haber escrito en el JSON entre tanto.
     // Audit fix: matching del callLog entry correcto por callStartedAt si vino.
@@ -13925,6 +13954,7 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
           transcribedAt: new Date().toISOString(),
           whisperModel: 'whisper-1',
           language: 'es',
+          ...(recMetaClean ? { recMeta: recMetaClean } : {}),
         };
         return { savedIdx: idx };
       });

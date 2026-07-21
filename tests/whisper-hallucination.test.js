@@ -162,4 +162,25 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     ];
     expect(clean(raw, "lead", prompt).length).toBe(1);
   });
+
+  // Bug 2026-07-21 (caso real de la biblioteca): Whisper alucinó una VARIANTE del
+  // prompt con texto extra ("...a una clínica dental EN COLOMBIA") sobre el canal
+  // mudo del cliente — no es substring del prompt, el filtro viejo la dejaba pasar
+  // y aparecía como turno del CLIENTE en la conversación.
+  it("variante del prompt con cola extra -> filtrada (contiene el núcleo instruccional)", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 35, text: "Llamada telefónica en español de un vendedor a una clínica dental en Colombia", no_speech_prob: 0.3, avg_logprob: -0.35, compression_ratio: 1.3 }),
+      seg({ start: 36, end: 40, text: "Sí, dígame.", no_speech_prob: 0.1, avg_logprob: -0.2, compression_ratio: 1.1 }),
+    ];
+    expect(clean(raw, "lead", prompt).map((s) => s.text)).toEqual(["Sí, dígame."]);
+  });
+
+  it("habla real que menciona 'clínica dental' suelta NO se filtra (no contiene la oración completa)", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 4, text: "Le llamo porque trabajamos con clínicas dentales de la zona.", no_speech_prob: 0.1, avg_logprob: -0.2, compression_ratio: 1.3 }),
+    ];
+    expect(clean(raw, "setter", prompt).length).toBe(1);
+  });
 });

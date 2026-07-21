@@ -2267,7 +2267,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           // early-media). Rellamarlo es seguro (idempotente).
           const _attachRemote = () => {
             _stopRingbackTone();
-            const localStream = call.localStream || _telnyx.activeCall?.localStream || null;
             let tries = 0;
             const go = () => {
               const audioEl = document.getElementById('telnyx-remote-audio');
@@ -2277,11 +2276,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 audioEl.volume = 1.0; audioEl.muted = false;
                 try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el SDR (auriculares)
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
-                if (!_setterRecorder) _startCallRecording(localStream, stream); // Whisper (Sprint 7)
-                // Bug 2026-07-13: si la grabación arrancó en early-media y el carrier
-                // reemplazó el stream al atender, re-conectar el mixer al stream nuevo
-                // (sin esto el canal del cliente grababa silencio).
-                else window._rebindLeadRecording?.(stream);
+                // Whisper: arranca la grabación si hace falta y re-conecta ambos
+                // canales al stream/track vigente (bug 2026-07-13/2026-07-21).
+                _syncCallRecording(call);
                 return;
               }
               if (++tries < 16) setTimeout(go, 250);
@@ -2309,19 +2306,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             // energía SOSTENIDA (voz/buzón real) corta el tono sintético y conmuta al
             // audio del carrier. Mientras tanto seguís escuchando el tono de llamando.
             // El status queda "Sonando" hasta 'active' (no mentimos "En llamada" en early).
-            // Audit 2026-07-06 (Whisper A1): la grabación arranca APENAS hay audio remoto,
-            // sin esperar el commit de voz sostenida ni 'active'. Antes se perdían los
-            // primeros ~2.4s de cada llamada early-media y los buzones cortos enteros →
-            // transcripts truncados/vacíos. Grabar no afecta lo que escucha el SDR
-            // (el tono sintético sigue su lógica); si solo se grabó ringback, el filtro
-            // anti-alucinación del backend lo descarta.
-            if (_hasRemoteAudio() && !_setterRecorder && !_leadRecorder) {
-              _startCallRecording(call.localStream || _telnyx.activeCall?.localStream || null, call.remoteStream);
-            } else if (_hasRemoteAudio()) {
-              // Ya grabando: si el SDK cambió el remoteStream entre notificaciones,
-              // re-conectar el mixer (bug 2026-07-13 — canal del cliente en silencio).
-              window._rebindLeadRecording?.(call.remoteStream);
-            }
+            // Audit 2026-07-06 (Whisper A1) + 2026-07-21: la grabación arranca APENAS
+            // hay CUALQUIER stream (aunque call.localStream todavía no exista — los
+            // recorders graban destinations estables del mixer y cada canal se conecta
+            // cuando su stream aparece). Antes, si localStream llegaba tarde, el canal
+            // del SDR no se grababa nunca y el re-run en 'active' reseteaba los chunks
+            // del lead → huecos en el transcript. _syncCallRecording es idempotente y
+            // re-conecta ante swaps de stream/track entre notificaciones. Si solo se
+            // grabó ringback, el filtro anti-alucinación del backend lo descarta.
+            _syncCallRecording(call);
             if (_hasRemoteAudio() && !_telnyxCallState.enteredActive && !_telnyxCallState.committedRemote) {
               _startRemoteVoiceWatch(call, () => {
                 _telnyxCallState.committedRemote = true;
@@ -7117,38 +7110,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _setterChunks = [];
     let _leadChunks = [];
     let _localStreamForRecording = null;
-    // Bug 2026-07-13: el MediaRecorder del lead quedaba atado al remoteStream de
-    // early-media; cuando el carrier lo REEMPLAZA al atender ('active'), el recorder
-    // seguía grabando el stream muerto → canal del cliente en silencio → Whisper
-    // alucinaba el prompt y toda la conversación quedaba del lado SDR. Fix: grabar
-    // vía Web Audio (MediaStreamAudioDestinationNode) y re-conectar el source cuando
-    // el stream cambia (_rebindLeadRecording, llamado desde _attachRemote).
-    let _leadRecCtx = null;   // AudioContext del mixer del lead
-    let _leadRecSrc = null;   // MediaStreamAudioSourceNode actual
-    let _leadRecSrcStream = null; // stream al que está conectado el source
+    // Bug 2026-07-13 + 2026-07-21: AMBOS canales se graban vía mixer Web Audio
+    // (MediaStreamAudioDestinationNode): el MediaRecorder graba el destination
+    // (estable toda la llamada) y el source se re-conecta cuando el SDK cambia
+    // el STREAM o el TRACK adentro del mismo stream. El <audio> element sigue el
+    // track nuevo solo (por eso el SDR escucha bien), pero MediaStreamAudioSourceNode
+    // y MediaRecorder quedan clavados al track viejo → canal grabado en silencio →
+    // Whisper alucina el prompt o el canal sale vacío del transcript.
+    // Además los dos recorders arrancan JUNTOS aunque call.localStream todavía no
+    // exista (antes el canal SDR directamente no se creaba y el re-run posterior de
+    // _startCallRecording reseteaba los chunks del lead → huecos en el transcript).
+    let _recCtx = null;        // AudioContext único de la grabación
+    let _recChannels = null;   // { setter:{dest,src,stream,trackId}, lead:{...} }
+    let _recHealthTimer = null; // re-sync cada 1s (atrapa swaps sin notification)
+    let _recMeta = null;       // debug de la grabación → viaja con el transcribe
 
-    function _rebindLeadRecording(stream) {
-      if (!_leadRecCtx || !stream || stream === _leadRecSrcStream) return;
+    function _recBindChannel(name, stream) {
+      const ch = _recChannels?.[name];
+      if (!_recCtx || !ch || !stream) return;
+      const track = stream.getAudioTracks?.()[0] || null;
+      if (!track || track.readyState === 'ended') return; // no atarse a un track muerto
+      if (stream === ch.stream && track.id === ch.trackId) return; // sin cambios
       try {
-        if (_leadRecSrc) { try { _leadRecSrc.disconnect(); } catch {} }
-        _leadRecSrc = _leadRecCtx.createMediaStreamSource(stream);
-        _leadRecSrc.connect(_leadRecCtx._recDest);
-        _leadRecSrcStream = stream;
-        _leadRecCtx.resume?.().catch(() => {});
-        console.log('[transcribe] lead recording re-conectado al stream nuevo');
+        if (ch.src) { try { ch.src.disconnect(); } catch {} }
+        ch.src = _recCtx.createMediaStreamSource(stream);
+        ch.src.connect(ch.dest);
+        ch.stream = stream; ch.trackId = track.id;
+        _recCtx.resume?.().catch(() => {});
+        if (_recMeta) _recMeta[name + 'Binds'] = (_recMeta[name + 'Binds'] || 0) + 1;
+        console.log('[transcribe] canal ' + name + ' conectado a la grabación');
       } catch (e) {
-        console.warn('[transcribe] rebind lead failed:', e.message);
+        console.warn('[transcribe] bind ' + name + ' failed:', e.message);
       }
     }
-    window._rebindLeadRecording = _rebindLeadRecording;
 
-    function _startCallRecording(localStream, remoteStream) {
+    // Punto de entrada idempotente: arranca la grabación si hace falta y re-conecta
+    // los sources de ambos canales al stream/track vigente. Se llama desde las
+    // notifications del SDK y desde el health timer.
+    function _syncCallRecording(call) {
+      const localStream = call?.localStream || _telnyx.activeCall?.localStream || null;
+      const remoteStream = call?.remoteStream || _telnyx.activeCall?.remoteStream || null;
+      if (!localStream && !remoteStream) return;
+      if (!_setterRecorder && !_leadRecorder) _startCallRecording();
+      if (!_recChannels) return;
+      _recBindChannel('setter', localStream);
+      _recBindChannel('lead', remoteStream);
+    }
+
+    function _startCallRecording() {
+      if (_setterRecorder || _leadRecorder) return; // una sola vez por llamada
       _setterChunks = [];
       _leadChunks = [];
-      // localStream ahora es el stream PROPIO de la llamada (call.localStream), NO uno
-      // nuestro. NO guardamos referencia para parar sus tracks — eso lo maneja el SDK
-      // al colgar; si lo paráramos nosotros cortaríamos el mic de la llamada. Solo
-      // grabamos de él (lectura), no lo poseemos.
+      // Los streams de la llamada son del SDK (no los poseemos): solo grabamos de
+      // ellos (lectura). Pararles los tracks cortaría el mic de la llamada.
       _localStreamForRecording = null;
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
@@ -7158,26 +7172,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       try {
-        if (localStream) {
-          _setterRecorder = new MediaRecorder(localStream, { mimeType, audioBitsPerSecond: 32000 });
-          _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
-          _setterRecorder.start(1000); // chunk cada 1s
-        }
-        if (remoteStream) {
-          // Mixer Web Audio: el recorder graba el destination (estable toda la
-          // llamada) y el source se re-conecta si el SDK cambia el remoteStream.
-          _leadRecCtx = new (window.AudioContext || window.webkitAudioContext)();
-          _leadRecCtx._recDest = _leadRecCtx.createMediaStreamDestination();
-          _leadRecSrc = null; _leadRecSrcStream = null;
-          _rebindLeadRecording(remoteStream);
-          _leadRecorder = new MediaRecorder(_leadRecCtx._recDest.stream, { mimeType, audioBitsPerSecond: 32000 });
-          _leadRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _leadChunks.push(e.data); };
-          _leadRecorder.start(1000);
-        }
-        console.log('[transcribe] Grabación iniciada (setter + lead)');
+        _recCtx = new (window.AudioContext || window.webkitAudioContext)();
+        _recCtx.resume?.().catch(() => {});
+        _recChannels = {
+          setter: { dest: _recCtx.createMediaStreamDestination(), src: null, stream: null, trackId: null },
+          lead: { dest: _recCtx.createMediaStreamDestination(), src: null, stream: null, trackId: null },
+        };
+        _recMeta = { startedAt: Date.now() };
+        _setterRecorder = new MediaRecorder(_recChannels.setter.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
+        _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
+        _setterRecorder.onerror = (e) => { if (_recMeta) _recMeta.setterRecError = String(e?.error?.name || e?.error || 'error'); };
+        _setterRecorder.start(1000); // chunk cada 1s
+        _leadRecorder = new MediaRecorder(_recChannels.lead.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
+        _leadRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _leadChunks.push(e.data); };
+        _leadRecorder.onerror = (e) => { if (_recMeta) _recMeta.leadRecError = String(e?.error?.name || e?.error || 'error'); };
+        _leadRecorder.start(1000);
+        // Health check 1s: atrapa el swap de stream/track que ocurre ENTRE
+        // notifications (el carrier renegocia al atender). Comparar refs/ids es barato.
+        if (_recHealthTimer) clearInterval(_recHealthTimer);
+        _recHealthTimer = setInterval(() => { try { _syncCallRecording(_telnyx.activeCall); } catch {} }, 1000);
+        console.log('[transcribe] Grabación iniciada (setter + lead, mixer por canal)');
       } catch (e) {
         console.warn('[transcribe] start failed:', e.message);
       }
+    }
+
+    function _teardownRecordingGraph() {
+      if (_recHealthTimer) { clearInterval(_recHealthTimer); _recHealthTimer = null; }
+      try { _recChannels?.setter?.src?.disconnect(); } catch {}
+      try { _recChannels?.lead?.src?.disconnect(); } catch {}
+      try { _recCtx?.close(); } catch {}
+      _recCtx = null; _recChannels = null;
     }
 
     // 2026-07-07: la llamada cuelga ANTES de que el SDR marque el resultado,
@@ -7201,10 +7226,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all([stopRecorder(_setterRecorder), stopRecorder(_leadRecorder)]);
       _setterRecorder = null;
       _leadRecorder = null;
-      // Cerrar el mixer Web Audio del lead (libera el AudioContext).
-      try { _leadRecSrc?.disconnect(); } catch {}
-      try { _leadRecCtx?.close(); } catch {}
-      _leadRecCtx = null; _leadRecSrc = null; _leadRecSrcStream = null;
+      // Cerrar el grafo Web Audio de la grabación (libera el AudioContext).
+      _teardownRecordingGraph();
       // Detener tracks del local stream para liberar el mic
       if (_localStreamForRecording) {
         try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}
@@ -7214,6 +7237,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const leadBlob = _leadChunks.length ? new Blob(_leadChunks, { type: 'audio/webm' }) : null;
       _setterChunks = [];
       _leadChunks = [];
+      // Debug de la grabación (binds por canal, errores del recorder, bytes):
+      // viaja con el transcribe y queda persistido para diagnosticar canales mudos.
+      const recMeta = _recMeta ? { ..._recMeta, setterBytes: setterBlob?.size || 0, leadBytes: leadBlob?.size || 0 } : null;
+      _recMeta = null;
       // Si no hay audio o llamada muy corta, no guardar nada
       const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
       if (totalBytes < 5000) {
@@ -7226,7 +7253,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const timer = setTimeout(() => {
         if (_pendingTranscribe?.leadId === leadId) _discardPendingTranscription();
       }, 10 * 60 * 1000);
-      _pendingTranscribe = { leadId, setterBlob, leadBlob, callStartedAtIso, timer };
+      _pendingTranscribe = { leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer };
       console.log('[transcribe] Audio buffereado (' + Math.round(totalBytes / 1024) + 'KB) — se transcribe al marcar resultado');
     }
 
@@ -7242,7 +7269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[transcribe] Outcome "' + outcome + '" sin conversación — audio descartado, no se gasta Whisper');
         return;
       }
-      const { setterBlob, leadBlob, callStartedAtIso } = pending;
+      const { setterBlob, leadBlob, callStartedAtIso, recMeta } = pending;
       // Convertir a base64
       const blobToB64 = (blob) => new Promise((resolve) => {
         if (!blob) { resolve(null); return; }
@@ -7262,7 +7289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ]);
         const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/transcribe`), {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm', callStartedAt: callStartedAtIso || null }),
+          body: JSON.stringify({ setterAudioB64, leadAudioB64, mimeType: 'audio/webm', callStartedAt: callStartedAtIso || null, recMeta: recMeta || null }),
         });
         if (!r.ok) {
           let msg = 'HTTP ' + r.status;
@@ -7826,6 +7853,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_localStreamForRecording) { try { _localStreamForRecording.getTracks().forEach(t => t.stop()); } catch {}; _localStreamForRecording = null; }
         _setterRecorder = null; _leadRecorder = null;
         _setterChunks = []; _leadChunks = [];
+        _teardownRecordingGraph();
+        _recMeta = null;
       }
       setTimeout(() => {
         _closeTelnyxCallPanel();
