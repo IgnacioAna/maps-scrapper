@@ -4893,6 +4893,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Vista ADITIVA (no toca Llamadas/Power Dialer). Lee los mismos leads callable,
     // los clasifica client-side y los muestra accionables. Popula _callsLeadsById
     // para que el botón "Llamar" (window._startTelnyxCall) resuelva el lead.
+    // 2026-07-22: filtro por SDR en Hoy (admin + supervisor). La selección
+    // persiste por user en localStorage. El dropdown se puebla desde
+    // window.__settersList (fetch vía apiUrl → un supervisor o el modo
+    // "Ver como Supervisor" NUNCA ven los setters admin-only).
+    function _hoySelectedSetter() {
+      const u = window.__CURRENT_USER__;
+      if (!u || (u.role !== 'admin' && u.role !== 'supervisor')) return '';
+      return document.getElementById('hoy-setter-select')?.value || '';
+    }
+    function _hoyPopulateSetterSelect() {
+      const sel = document.getElementById('hoy-setter-select');
+      const u = window.__CURRENT_USER__;
+      if (!sel || !u || (u.role !== 'admin' && u.role !== 'supervisor')) return;
+      const list = (window.__settersList || []).filter(s => !s.hidden);
+      if (sel.children.length <= 1 && list.length) {
+        for (const s of list) {
+          const opt = document.createElement('option');
+          opt.value = s.id; opt.textContent = s.name || s.id;
+          sel.appendChild(opt);
+        }
+        const saved = localStorage.getItem('scm_hoy_setter_' + (u.id || ''));
+        if (saved && list.some(s => s.id === saved)) sel.value = saved;
+        sel.addEventListener('change', () => {
+          try { localStorage.setItem('scm_hoy_setter_' + (u.id || ''), sel.value); } catch {}
+          loadHoyView();
+        });
+      }
+    }
     async function loadHoyView() {
       const kpisEl = document.getElementById('hoy-kpis');
       const secEl = document.getElementById('hoy-sections');
@@ -4900,16 +4928,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!secEl) return;
       secEl.innerHTML = '<div style="color:var(--text-tertiary); padding:20px;">Cargando…</div>';
       try {
-        const [leadsResp, mResp, settersResp] = await Promise.all([
-          fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable'), { credentials: 'include' }),
-          // Bug 2026-07-13: en modo "Ver como" el backend ve admin vía cookie →
-          // sin ?setter= los KPIs de Hoy eran del EQUIPO entero. Setter efectivo explícito.
-          fetch(apiUrl('/api/setters/cold-call-metrics?period=today' + ((window.__CURRENT_USER__?.realRole === 'admin' && window.__CURRENT_USER__?.role === 'setter' && window.__CURRENT_USER__?.setterId) ? '&setter=' + encodeURIComponent(window.__CURRENT_USER__.setterId) : '')), { credentials: 'include' }).catch(() => null),
-          // Mapa setterId→nombre para el chip de dueño. settersList se puebla en
-          // Setteo (parkeada), así que en Hoy puede estar vacío → lo cargamos lazy.
-          (window.__settersList && window.__settersList.length) ? null : fetch(apiUrl('/api/setters'), { credentials: 'include' }).catch(() => null),
+        // Asegurar settersList ANTES de armar las URLs (el dropdown filtra la carga).
+        if (!(window.__settersList && window.__settersList.length)) {
+          try { const sr = await fetch(apiUrl('/api/setters'), { credentials: 'include' }); const sd = await sr.json(); if (Array.isArray(sd.setters)) window.__settersList = sd.setters; } catch {}
+        }
+        _hoyPopulateSetterSelect();
+        const hoySetter = _hoySelectedSetter();
+        // Bug 2026-07-13: en modo "Ver como" el backend ve admin vía cookie →
+        // sin ?setter= los KPIs de Hoy eran del EQUIPO entero. Setter efectivo explícito.
+        const viewAsSdr = (window.__CURRENT_USER__?.realRole === 'admin' && window.__CURRENT_USER__?.role === 'setter' && window.__CURRENT_USER__?.setterId) ? window.__CURRENT_USER__.setterId : '';
+        const metricsSetter = viewAsSdr || hoySetter;
+        const [leadsResp, mResp] = await Promise.all([
+          fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable' + (hoySetter ? '&setter=' + encodeURIComponent(hoySetter) : '')), { credentials: 'include' }),
+          fetch(apiUrl('/api/setters/cold-call-metrics?period=today' + (metricsSetter ? '&setter=' + encodeURIComponent(metricsSetter) : '')), { credentials: 'include' }).catch(() => null),
         ]);
-        if (settersResp) { try { const sd = await settersResp.json(); if (Array.isArray(sd.setters)) window.__settersList = sd.setters; } catch {} }
         const leads = (await leadsResp.json()).leads || [];
         // Audit 2026-07 (frontend WR-03): antes Hoy sembraba SÓLO el Map, dejando
         // callsLeadsCache (la lista) con objetos distintos para el mismo lead →

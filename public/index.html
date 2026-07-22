@@ -789,7 +789,10 @@
       <div id="view-hoy" class="module-view hidden" data-roles="admin,supervisor,setter">
         <div class="content-header">
           <h2>Hoy</h2>
-          <div class="header-actions">
+          <div class="header-actions" style="display:flex; align-items:center; gap:12px;">
+            <select id="hoy-setter-select" data-roles="admin,supervisor" class="calls-filter-select" title="Filtrar el día por vendedor">
+              <option value="">Todos los SDRs</option>
+            </select>
             <span id="hoy-greeting" style="font-size:13px; color:var(--text-secondary);"></span>
           </div>
         </div>
@@ -3365,7 +3368,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260722e"></script>
+  <script type="module" src="/app.js?v=20260722f"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
