@@ -156,7 +156,9 @@ describe("RBAC admin+supervisor · setter 403, supervisor OK", () => {
   const ADMIN_OR_SUPER = [
     { method: "get", url: "/api/auth/users" },
     { method: "get", url: "/api/auth/online" },
-    { method: "get", url: "/api/setters/command" },
+    // 2026-07-22: /api/setters/command salió de esta lista — desde los
+    // setters admin-only TODO supervisor es scoped y Comando (data global)
+    // devuelve 403 para cualquier supervisor. Ver test dedicado abajo.
     { method: "get", url: "/api/setters/team-performance" },
     { method: "get", url: "/api/setters/alert-config" },
   ];
@@ -171,6 +173,17 @@ describe("RBAC admin+supervisor · setter 403, supervisor OK", () => {
       expect([200, 304]).toContain(r.status);
     });
   }
+
+  it("/api/setters/command — setter 403", async () => {
+    const r = await request(app).get("/api/setters/command").set("Cookie", setterACookie);
+    expect(r.status).toBe(403);
+  });
+  it("/api/setters/command — supervisor 403 (2026-07-22: data global, admin only), admin OK", async () => {
+    const rs = await request(app).get("/api/setters/command").set("Cookie", superCookie);
+    expect(rs.status).toBe(403);
+    const ra = await request(app).get("/api/setters/command").set("Cookie", adminCookie);
+    expect([200, 304]).toContain(ra.status);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────

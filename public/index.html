@@ -1857,7 +1857,7 @@
             <button id="invite-user-btn" class="btn-primary pill-btn">+ Invitar y enviar email</button>
           </div>
           <div id="invite-visible-setters" class="hidden" data-roles="admin" style="margin-bottom:10px; padding:12px 14px; border:1px solid var(--border-subtle); border-radius:12px; background:var(--bg-surface);">
-            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Setters visibles para este supervisor (vacío = ve todos):</div>
+            <div style="font-size:12px; color:var(--text-secondary); margin-bottom:8px;">Setters visibles para este supervisor (vacío = ve todos, salvo los SDRs reservados al admin):</div>
             <div id="invite-visible-setters-list" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
           </div>
           <div id="invite-assign-supervisor" class="hidden" data-roles="admin" style="margin-bottom:10px; padding:12px 14px; border:1px solid var(--border-subtle); border-radius:12px; background:var(--bg-surface);">
@@ -3365,7 +3365,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260722b"></script>
+  <script type="module" src="/app.js?v=20260722c"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

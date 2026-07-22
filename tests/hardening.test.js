@@ -300,10 +300,11 @@ describe("Rol 'supervisor': lectura del Centro de Comando + bloqueo de admin-onl
     supervisorCookie = sessionCookie.split(";")[0];
   });
 
-  it("supervisor PUEDE leer /api/setters/command", async () => {
+  // 2026-07-22: desde los setters admin-only, TODO supervisor es scoped y el
+  // Centro de Comando (data global) devuelve 403 para cualquier supervisor.
+  it("supervisor ya NO puede leer /api/setters/command (403)", async () => {
     const r = await request(app).get("/api/setters/command").set("Cookie", supervisorCookie);
-    expect(r.status).toBe(200);
-    expect(r.body.totals).toBeTruthy();
+    expect(r.status).toBe(403);
   });
 
   it("supervisor PUEDE leer /api/auth/users (ver el equipo)", async () => {

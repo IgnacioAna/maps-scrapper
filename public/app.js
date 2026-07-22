@@ -410,7 +410,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Un supervisor con visibleSetterIds restringido no puede ver pool/Distribución,
     // Centro de Comando ni Equipo online (data global de setters fuera de su lista).
     // Supervisor sin lista (visibleSetterIds vacío) = ve todo, comportamiento intacto.
-    const _isScopedSupervisor = currentUser.role === 'supervisor' && (currentUser.visibleSetterIds?.length > 0);
+    // 2026-07-22: TODO supervisor es scoped ahora (los sin lista ven todo
+    // menos los setters admin-only del backend) → estas vistas globales
+    // devuelven 403 para cualquier supervisor.
+    const _isScopedSupervisor = currentUser.role === 'supervisor';
     if (_isScopedSupervisor) {
       const SCOPED_HIDDEN_VIEWS = ['view-pool', 'view-command', 'view-online'];
       SCOPED_HIDDEN_VIEWS.forEach((v) => {
@@ -9597,6 +9600,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.appendChild(wrap.firstChild);
     };
 
+    // 2026-07-22: setters visibles SOLO para el admin — ningún supervisor los
+    // ve, así que tampoco se ofrecen en los pickers de visibleSetterIds.
+    // Espejo del ADMIN_ONLY_SETTER_IDS del backend (que igual los filtra al
+    // guardar y al servir data — esto es solo para no confundir en la UI).
+    const _ADMIN_ONLY_SETTER_IDS = ['setter_ignacio', 'setter_paula_kroff'];
+
     // Editor de setters visibles de un supervisor (visibleSetterIds).
     // Overlay con checkboxes de TODOS los setters; tildados = los que ve.
     // Vacío = ve todos (comportamiento default del rol supervisor).
@@ -9608,7 +9617,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const r = await fetch(apiUrl('/api/setters'));
         const d = await r.json();
-        setters = (d.setters || []).filter(s => !s.hidden);
+        setters = (d.setters || []).filter(s => !s.hidden && !_ADMIN_ONLY_SETTER_IDS.includes(s.id));
       } catch (e) {
         alert('Error cargando setters: ' + e.message);
         return;
@@ -9626,7 +9635,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<h2 style="margin:0; color:var(--text-primary); font-size:18px;">Setters visibles · ' + escHtml(userName) + '</h2>' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
         '</div>' +
-        '<div style="color:var(--text-secondary); font-size:12px; margin-bottom:16px;">Elegí qué SDRs puede ver este supervisor. Vacío = ve todos los setters.</div>' +
+        '<div style="color:var(--text-secondary); font-size:12px; margin-bottom:16px;">Elegí qué SDRs puede ver este supervisor. Vacío = ve todos (salvo los SDRs reservados al admin).</div>' +
         '<div id="vs-setter-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">' + (rows || '<div style="color:var(--text-tertiary); font-size:13px;">No hay setters.</div>') + '</div>' +
         '<div style="display:flex; gap:8px; justify-content:flex-end;">' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="font-size:13px; background:none; color:var(--text-secondary); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>' +
@@ -9823,7 +9832,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         const r = await fetch(apiUrl('/api/setters'));
         const d = await r.json();
-        const setters = (d.setters || []).filter(s => !s.hidden);
+        const setters = (d.setters || []).filter(s => !s.hidden && !_ADMIN_ONLY_SETTER_IDS.includes(s.id));
         inviteVisibleList.innerHTML = setters.map(s =>
           '<label style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border-subtle); border-radius:8px; cursor:pointer; font-size:12px; color:var(--text-primary);">' +
           '<input type="checkbox" class="invite-vs-cb" value="' + escHtml(s.id) + '" style="width:15px; height:15px; accent-color:var(--accent);">' +
@@ -11122,12 +11131,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Vista por defecto para TODOS los roles: Llamadas (el Setteo WhatsApp quedó
     // parkeado — "todo el trabajo es por llamada"). El handler de view-calls ya está
     // bindeado (línea ~7242), así que el click dispara loadCallsView() y carga la data.
-    // Home del supervisor scoped (Phase 18): aterriza en Equipo (panel de
-    // rendimiento) en vez de Llamadas. Supervisor sin lista y demás roles → Llamadas.
+    // Home del supervisor (Phase 18, ampliado 2026-07-22 a TODO supervisor):
+    // aterriza en Equipo (panel de rendimiento) en vez de Llamadas.
     // El click de view-team se difiere: su loader (_teamLoad) se bindea más abajo
     // en este mismo init (~línea 14200), así que un setTimeout(0) garantiza que el
     // listener ya esté montado cuando disparamos el click.
-    if (currentUser?.role === 'supervisor' && currentUser?.visibleSetterIds?.length > 0) {
+    if (currentUser?.role === 'supervisor') {
       setTimeout(() => {
         const _teamMenuItem = document.querySelector('[data-target="view-team"]');
         (_teamMenuItem || document.querySelector('[data-target="view-calls"]'))?.click();

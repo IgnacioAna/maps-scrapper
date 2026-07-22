@@ -415,20 +415,23 @@ function attachAuth(req, _res, next) {
     // siendo admin (requireRole intacto) y solo aplica a admins reales.
     if (req.auth.user.role === 'admin' && String(req.query?.viewAs || '').trim().toLowerCase() === 'supervisor') {
       const asUserId = String(req.query?.asUserId || '').trim();
+      let vis = [];
       if (asUserId) {
         try {
           const target = (loadAuthData().users || []).find((x) => x.id === asUserId && x.role === 'supervisor');
-          if (target) {
-            req.auth.user = {
-              ...req.auth.user,
-              visibleSetterIds: Array.isArray(target.visibleSetterIds) ? target.visibleSetterIds : [],
-              // _visibleSetterIds() solo scopea supervisores; este flag le
-              // dice que scopee también esta copia admin-impersonando.
-              _viewAsScoped: true
-            };
-          }
+          if (target && Array.isArray(target.visibleSetterIds)) vis = target.visibleSetterIds;
         } catch {}
       }
+      // Con asUserId adopta la lista de ESE supervisor; sin asUserId (opción
+      // genérica "Supervisor") queda [] = supervisor sin restricción, que
+      // _visibleSetterIds() convierte en "todo menos los setters admin-only".
+      req.auth.user = {
+        ...req.auth.user,
+        visibleSetterIds: vis,
+        // _visibleSetterIds() solo scopea supervisores; este flag le
+        // dice que scopee también esta copia admin-impersonando.
+        _viewAsScoped: true
+      };
     }
     const u = req.auth.user;
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
@@ -1908,7 +1911,7 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
   let visibleSetterIds = [];
   if (role === 'supervisor' && Array.isArray(req.body?.visibleSetterIds)) {
     const validIds = new Set((loadSettersData().setters || []).map((s) => s.id));
-    visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id));
+    visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id) && !ADMIN_ONLY_SETTER_IDS.has(id));
   }
 
   // 2026-07-22: al invitar un SDR nuevo, el admin puede asignarlo a uno o más
@@ -5436,14 +5439,27 @@ globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour
 // Devuelve null si NO hay restricción (admin, setter, o supervisor SIN
 // visibleSetterIds configurado = ve TODO, cero regresión). Devuelve un
 // Set<string> de setterIds visibles si es un supervisor scoped.
+// 2026-07-22: setters visibles SOLO para el admin. Ningún supervisor (scoped
+// o sin restricción, real o impersonado) los ve en listas/métricas/leads.
+// Pedido explícito del user: Ignacio (admin que también llama) y Paula.
+const ADMIN_ONLY_SETTER_IDS = new Set(['setter_ignacio', 'setter_paula_kroff']);
+// Pseudo-Set de exclusión para el supervisor SIN lista: "ve todo menos los
+// admin-only". Los call sites solo usan truthiness + .has() (verificado
+// 2026-07-22), así que alcanza con implementar has().
+const _SUPERVISOR_EXCLUSION_SET = { has: (id) => !ADMIN_ONLY_SETTER_IDS.has(id) };
+
 function _visibleSetterIds(authUser) {
   if (!authUser) return null;
   // Scopea supervisores reales + la copia de un admin en modo
-  // "Ver como Supervisor · X" (flag _viewAsScoped seteado en attachAuth).
+  // "Ver como Supervisor" (flag _viewAsScoped seteado en attachAuth).
   if (authUser.role !== 'supervisor' && !authUser._viewAsScoped) return null;
   const ids = Array.isArray(authUser.visibleSetterIds) ? authUser.visibleSetterIds.filter(Boolean) : [];
-  if (ids.length === 0) return null; // vacío/ausente = sin restricción (LOCKED en CONTEXT)
-  return new Set(ids);
+  // Sin lista = ve todo EXCEPTO los setters admin-only. Nota: desde este
+  // cambio TODO supervisor es "scoped" (los endpoints que hacían 403 solo
+  // para scoped ahora aplican a todos los supervisores — intencional, esas
+  // vistas globales exponen data de los setters admin-only).
+  if (ids.length === 0) return _SUPERVISOR_EXCLUSION_SET;
+  return new Set(ids.filter((id) => !ADMIN_ONLY_SETTER_IDS.has(id)));
 }
 // Filtra un array de setters (data.setters) al subconjunto visible.
 // visibleSet === null → devuelve el array sin tocar.
@@ -5909,7 +5925,7 @@ app.patch('/api/auth/users/:id', requireAuth, requireRole('admin'), (req, res) =
       return res.status(400).json({ error: 'visibleSetterIds debe ser un array.' });
     }
     const validIds = new Set((loadSettersData().setters || []).map((s) => s.id));
-    user.visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id));
+    user.visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id) && !ADMIN_ONLY_SETTER_IDS.has(id));
   }
 
   user.updatedAt = new Date().toISOString();
