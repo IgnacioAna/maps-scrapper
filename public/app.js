@@ -13651,7 +13651,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const effectiveSetter = setterFilter || (isViewAsSetter ? u.setterId : '');
     if (effectiveSetter) params.set('setter', effectiveSetter);
     try {
-      const r = await fetch(`/api/setters/performance?${params.toString()}`, { credentials: 'include' });
+      // apiUrl (2026-07-22): mismo fix que team-performance — respetar "Ver como".
+      const r = await fetch(apiUrl(`/api/setters/performance?${params.toString()}`), { credentials: 'include' });
       if (!r.ok) throw new Error('http ' + r.status);
       const d = await r.json();
       _mypLastData = d;
@@ -14589,7 +14590,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function _teamLoad() {
     const period = document.getElementById('team-period')?.value || 'week';
     try {
-      const r = await fetch(`/api/setters/team-performance?period=${period}`, { credentials: 'include' });
+      // apiUrl (2026-07-22): fetch crudo bypasseaba el modo "Ver como" → el
+      // admin impersonando supervisor veía el equipo SIN filtrar (Ignacio y
+      // Paula aparecían en Equipo aunque el supervisor real no los ve).
+      const r = await fetch(apiUrl(`/api/setters/team-performance?period=${period}`), { credentials: 'include' });
       if (!r.ok) throw new Error('http ' + r.status);
       const d = await r.json();
       _teamData = d;
