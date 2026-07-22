@@ -59,6 +59,10 @@ fs.writeFileSync(
       lead_virgen: { id: "lead_virgen", num: 3, name: "Virgen", phone: "+5215500000003", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callLog: [] },
       // Legacy sin `by`: fallback a assignedTo (dueño actual) → true.
       lead_legacy: { id: "lead_legacy", num: 4, name: "Legacy", phone: "+5215500000004", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callLog: [{ ts: now, outcome: "no_answer", duration: 0 }] },
+      // Llamado por un user que ya NO existe (SDR eliminada) → NO se atribuye
+      // al dueño actual (caso real Melissa 2026-07-22: heredó leads con
+      // llamadas de una SDR borrada y figuraba con 9 "en seguimiento").
+      lead_user_borrado: { id: "lead_user_borrado", num: 5, name: "UserBorrado", phone: "+5215500000005", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callLog: [{ ts: now, outcome: "voicemail", duration: 0, by: "user_eliminado_inexistente" }] },
     },
     calendar: [],
     sessions: [],
@@ -95,6 +99,7 @@ describe("sin-wsp — calledByOwner atribuido por quién llamó", () => {
     expect(byId.lead_propio).toBe(true);
     expect(byId.lead_virgen).toBe(false);
     expect(byId.lead_legacy).toBe(true);
+    expect(byId.lead_user_borrado).toBe(false);
   });
 
   it("el setter logueado recibe el mismo flag sobre sus leads", async () => {

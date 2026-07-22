@@ -5419,7 +5419,14 @@ function _buildUserSetterMap() {
   return m;
 }
 function _callSetterId(entry, lead, userMap) {
-  return (entry.by && userMap[entry.by]) || lead.assignedTo || '';
+  // 2026-07-22: si la entry TIENE `by` pero ese user ya no existe (SDR
+  // eliminado) o no tiene setter vinculado, la llamada queda SIN atribuir ('')
+  // en vez de caer al dueño actual — el fallback hacía que Melissa (0 llamadas)
+  // figurara con 9 "en seguimiento"/"con llamadas" por llamadas de una SDR
+  // borrada cuyos leads heredó. El fallback a assignedTo queda solo para
+  // entries legacy SIN `by` (hoy: 0 en la base, pero por las dudas).
+  if (entry.by) return userMap[entry.by] || '';
+  return lead.assignedTo || '';
 }
 // ¿el setter `sid` hizo al menos una llamada PROPIA sobre este lead? Atribución por
 // quién llamó (callLog.by → setterId), NO por dueño actual. Regla de negocio
