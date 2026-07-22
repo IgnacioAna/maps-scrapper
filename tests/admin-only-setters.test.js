@@ -166,6 +166,15 @@ describe("admin — sin cambios, y viewAs supervisor también excluye", () => {
     expect(r.body.setters.map((s) => s.id)).toEqual(["setter_x"]);
   });
 
+  it("selector de SDRs de Mi rendimiento (performance.setters) filtrado en viewAs y para supervisor real", async () => {
+    const rv = await request(app).get("/api/setters/performance?viewAs=supervisor").set("Cookie", adminCookie);
+    expect(rv.status).toBe(200);
+    expect(rv.body.setters.map((s) => s.id)).toEqual(["setter_x"]);
+    const rs = await request(app).get("/api/setters/performance").set("Cookie", supAllCookie);
+    expect(rs.status).toBe(200);
+    expect(rs.body.setters.map((s) => s.id)).toEqual(["setter_x"]);
+  });
+
   it("PATCH visibleSetterIds filtra los admin-only al guardar", async () => {
     const r = await request(app).patch("/api/auth/users/user_sup_scoped").set("Cookie", adminCookie)
       .send({ visibleSetterIds: ["setter_x", "setter_ignacio", "setter_paula_kroff"] });
