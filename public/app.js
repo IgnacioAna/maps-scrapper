@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!u.searchParams.has('viewAs')) {
           u.searchParams.set('viewAs', viewAs.role);
           if (viewAs.setterId) u.searchParams.set('asSetterId', viewAs.setterId);
+          // "Ver como Supervisor · X": el backend adopta los visibleSetterIds
+          // de ese user (attachAuth) para filtrar igual que el supervisor real.
+          if (viewAs.userId) u.searchParams.set('asUserId', viewAs.userId);
           url = u.toString();
         }
       }
@@ -349,6 +352,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser.setterId = _va.setterId || '';
       // No cambiamos name — para no confundir, el admin sigue viendo su nombre
       // en el sidebar, solo el rol cambia.
+      // "Ver como Supervisor · X" (2026-07-22): adoptar los visibleSetterIds
+      // del supervisor real para que sidebar/home se comporten EXACTO como los
+      // ve él (scoped: sin Distribución/Comando/Online, aterriza en Equipo).
+      if (_va.role === 'supervisor' && _va.userId) {
+        // Snapshot guardado al elegir la opción; refrescamos contra el server
+        // por si el admin editó la lista después. Fetch SIN apiUrl a propósito:
+        // con viewAs activo el backend filtraría /api/auth/users y podríamos
+        // no encontrar al supervisor impersonado.
+        let _vaVis = Array.isArray(_va.visibleSetterIds) ? _va.visibleSetterIds : [];
+        try {
+          const _vr = await fetch(new URL('/api/auth/users', API_BASE_URL));
+          if (_vr.ok) {
+            const _vj = await _vr.json();
+            const _vt = (_vj.users || []).find((u) => u.id === _va.userId && u.role === 'supervisor');
+            if (_vt) _vaVis = Array.isArray(_vt.visibleSetterIds) ? _vt.visibleSetterIds : [];
+          }
+        } catch {}
+        currentUser.visibleSetterIds = _vaVis;
+      }
     }
     window.__CURRENT_USER__ = currentUser;
     authScreen.classList.add('hidden');
@@ -406,9 +428,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       const viewAsLabel = document.getElementById('view-as-label');
       const viewAsExit = document.getElementById('view-as-exit');
 
-      // Poblar setters disponibles (uno por SDR)
+      // Poblar opciones. Fetches SIN apiUrl a propósito: si ya hay un viewAs
+      // activo (p.ej. supervisor scoped), apiUrl haría que el backend filtre
+      // estas listas y el dropdown perdería opciones.
+      // 1) Un "Supervisor · Nombre" por cada user supervisor real (con su
+      //    scoping de SDRs). La opción genérica "Supervisor" del HTML queda
+      //    como preview de un supervisor SIN restricción.
+      let _vaSupervisors = [];
       try {
-        const r = await fetch(apiUrl('/api/setters'));
+        const ru = await fetch(new URL('/api/auth/users', API_BASE_URL));
+        if (ru.ok) {
+          const uj = await ru.json();
+          _vaSupervisors = (uj.users || []).filter((u) => u.role === 'supervisor' && u.status === 'active');
+          _vaSupervisors.forEach((u) => {
+            const opt = document.createElement('option');
+            opt.value = 'supervisor:' + u.id;
+            opt.textContent = 'Supervisor · ' + (u.name || u.email);
+            viewAsSelect.appendChild(opt);
+          });
+        }
+      } catch {}
+      // 2) Un "SDR · Nombre" por setter.
+      try {
+        const r = await fetch(new URL('/api/setters', API_BASE_URL));
         if (r.ok) {
           const sd = await r.json();
           (sd.setters || []).forEach(s => {
@@ -423,18 +465,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Setear el value actual segun localStorage
       const _vaState = getViewAs();
       if (_vaState && _vaState.role) {
-        const v = _vaState.role === 'setter'
-          ? 'setter:' + (_vaState.setterId || '')
-          : _vaState.role + ':';
+        let v;
+        if (_vaState.role === 'setter') v = 'setter:' + (_vaState.setterId || '');
+        else if (_vaState.role === 'supervisor' && _vaState.userId) v = 'supervisor:' + _vaState.userId;
+        else v = _vaState.role + ':';
         viewAsSelect.value = v;
         if (viewAsBanner && viewAsLabel) {
           viewAsBanner.classList.remove('hidden');
-          if (_vaState.role === 'setter') {
-            const opt = viewAsSelect.options[viewAsSelect.selectedIndex];
-            viewAsLabel.textContent = opt ? opt.textContent : 'SDR';
-          } else {
-            viewAsLabel.textContent = _vaState.role.charAt(0).toUpperCase() + _vaState.role.slice(1);
-          }
+          const opt = viewAsSelect.options[viewAsSelect.selectedIndex];
+          viewAsLabel.textContent = (opt && opt.value === v && opt.textContent)
+            ? opt.textContent
+            : _vaState.role.charAt(0).toUpperCase() + _vaState.role.slice(1);
         }
       }
       viewAsControl?.classList.remove('hidden');
@@ -444,8 +485,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!v) {
           setViewAs(null);
         } else {
-          const [role, setterId] = v.split(':');
-          setViewAs({ role, setterId });
+          const idx = v.indexOf(':');
+          const role = v.slice(0, idx);
+          const rest = v.slice(idx + 1);
+          if (role === 'supervisor' && rest) {
+            // Snapshot del scoping para el próximo boot (se refresca igual
+            // contra el server al cargar).
+            const su = _vaSupervisors.find((u) => u.id === rest);
+            setViewAs({ role, userId: rest, visibleSetterIds: (su && su.visibleSetterIds) || [] });
+          } else {
+            setViewAs({ role, setterId: role === 'setter' ? rest : '' });
+          }
         }
         window.location.reload();
       });

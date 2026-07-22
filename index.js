@@ -406,6 +406,30 @@ const onlinePresence = new Map();
 function attachAuth(req, _res, next) {
   req.auth = getSessionFromRequest(req);
   if (req.auth?.user) {
+    // "Ver como Supervisor · X" (2026-07-22): si el admin REAL pide
+    // viewAs=supervisor con asUserId de un supervisor concreto, adoptamos los
+    // visibleSetterIds de ESE user en una copia de req.auth.user. Todo el
+    // scoping Phase 18 (`_visibleSetterIds(req.auth.user)` en ~40 endpoints)
+    // filtra entonces EXACTAMENTE igual que para el supervisor real, sin
+    // duplicar lógica por endpoint. Solo RESTRINGE visibilidad — el rol sigue
+    // siendo admin (requireRole intacto) y solo aplica a admins reales.
+    if (req.auth.user.role === 'admin' && String(req.query?.viewAs || '').trim().toLowerCase() === 'supervisor') {
+      const asUserId = String(req.query?.asUserId || '').trim();
+      if (asUserId) {
+        try {
+          const target = (loadAuthData().users || []).find((x) => x.id === asUserId && x.role === 'supervisor');
+          if (target) {
+            req.auth.user = {
+              ...req.auth.user,
+              visibleSetterIds: Array.isArray(target.visibleSetterIds) ? target.visibleSetterIds : [],
+              // _visibleSetterIds() solo scopea supervisores; este flag le
+              // dice que scopee también esta copia admin-impersonando.
+              _viewAsScoped: true
+            };
+          }
+        } catch {}
+      }
+    }
     const u = req.auth.user;
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
     onlinePresence.set(u.id, {
@@ -5392,7 +5416,10 @@ globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour
 // visibleSetterIds configurado = ve TODO, cero regresión). Devuelve un
 // Set<string> de setterIds visibles si es un supervisor scoped.
 function _visibleSetterIds(authUser) {
-  if (!authUser || authUser.role !== 'supervisor') return null;
+  if (!authUser) return null;
+  // Scopea supervisores reales + la copia de un admin en modo
+  // "Ver como Supervisor · X" (flag _viewAsScoped seteado en attachAuth).
+  if (authUser.role !== 'supervisor' && !authUser._viewAsScoped) return null;
   const ids = Array.isArray(authUser.visibleSetterIds) ? authUser.visibleSetterIds.filter(Boolean) : [];
   if (ids.length === 0) return null; // vacío/ausente = sin restricción (LOCKED en CONTEXT)
   return new Set(ids);

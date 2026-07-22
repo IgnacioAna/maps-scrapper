@@ -243,8 +243,9 @@
           <label style="display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Ver como</label>
           <select id="view-as-select" style="width:100%; font-size:12px; padding:4px 6px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:6px; color:var(--text-primary);">
             <option value="">Yo (admin)</option>
-            <option value="supervisor:">Supervisor</option>
-            <!-- Opciones de setter se agregan en runtime con sus IDs -->
+            <option value="supervisor:">Supervisor (sin restricción)</option>
+            <!-- Opciones "Supervisor · Nombre" (con su scoping real) y
+                 "SDR · Nombre" se agregan en runtime -->
           </select>
         </div>
         <div id="history-info" class="history-badge hidden"></div>
@@ -3360,7 +3361,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260721a"></script>
+  <script type="module" src="/app.js?v=20260722a"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
