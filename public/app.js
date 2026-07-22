@@ -5320,6 +5320,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       autopilot: false,     // auto-disca el siguiente lead tras cada disposition
       autopilotArmed: false,// flag interno: el próximo render debe disparar countdown
       autopilotTimer: null, // handle del setInterval del countdown
+      // 2026-07-22: tras guardar un resultado SIN autopiloto, la tarjeta se queda
+      // (el SDR puede seguir anotando) y avanza solo cuando él lo pide. Mientras
+      // holdCurrent=true, _pdRender NO expulsa el lead aunque haya quedado
+      // descartado/agendado/con callback.
+      holdCurrent: false,
+      holdOutcome: null,    // outcome guardado, para el banner "Resultado guardado"
     };
     // Teléfono según rol (2026-07-10): las SDR ven el número enmascarado en TODA
     // la UI (lista, Power Dialer, panel de llamada) — solo últimos 4 dígitos para
@@ -5463,6 +5469,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.active = true;
       _pd.autopilot = localStorage.getItem(_pdAutopilotKey()) === '1';
       _pd.autopilotArmed = false; // no auto-discar el primer lead al abrir
+      _pd.holdCurrent = false;
+      _pd.holdOutcome = null;
       _pdSyncAutopilotToggle();
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
@@ -5554,6 +5562,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function _pdAdvance() {
       _pdCancelAutopilot();
+      _pd.holdCurrent = false;
+      _pd.holdOutcome = null;
       _pd.autopilotArmed = _pd.autopilot; // el próximo render dispara el countdown
       _pd.currentIdx++;
       _pd.processed++;
@@ -5577,8 +5587,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const currentId = _pd.queue[_pd.currentIdx];
       const lead = _callsLeadsById.get(currentId);
       if (!lead) { _pdAdvance(); return; }
-      if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
-      if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
+      // holdCurrent (2026-07-22): tras una disposition sin autopiloto, la tarjeta
+      // se queda aunque el lead haya quedado descartado/agendado/con callback —
+      // el SDR sigue anotando y avanza con el botón "Siguiente lead" (o S).
+      if (!_pd.holdCurrent) {
+        if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
+        if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
+      }
 
       const flagHTML = lead.country ? countryFlagHTML(lead.country, 'lg') : '';
       const attempts = lead.callAttempts || 0;
@@ -5692,7 +5707,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const main = document.getElementById('pd-current-content');
+      // Banner "Resultado guardado" (holdCurrent): la disposition ya se guardó,
+      // la tarjeta se queda para seguir anotando y el SDR avanza cuando quiere.
+      const _holdBanner = _pd.holdCurrent ? `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; padding:12px 16px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.45); border-radius:10px;">
+        <div style="min-width:0;">
+          <div style="font-size:13px; font-weight:700; color:var(--success);">✓ Resultado guardado${_pd.holdOutcome && typeof callOutcomeLabel === 'function' ? ' · ' + escHtml(callOutcomeLabel(_pd.holdOutcome)) : ''}</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Podés seguir agregando notas en esta tarjeta. Avanzá cuando termines.</div>
+        </div>
+        <button type="button" onclick="window._pdAdvance()" style="padding:10px 20px; background:var(--success); color:#0F1115; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
+          Siguiente lead →
+          <kbd style="font-family:ui-monospace,monospace; font-size:10px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px;">S</kbd>
+        </button>
+      </div>` : '';
       main.innerHTML = `
+      ${_holdBanner}
       <!-- Bloque 1: Header del lead + acciones primarias -->
       <div style="display:grid; grid-template-columns:auto 1fr auto; gap:22px; align-items:flex-start; padding-bottom:18px; border-bottom:1px solid var(--border-subtle);">
         <div style="display:flex; align-items:center; justify-content:center; width:54px; height:54px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:14px;">${flagHTML || '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'}</div>
@@ -6036,6 +6065,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
       if (selectEl) { selectEl.disabled = false; selectEl.value = ''; }
+      // 2026-07-22: sin autopiloto, guardar el resultado NO saca al SDR de la
+      // tarjeta — queda un banner "Resultado guardado" y avanza cuando quiere
+      // (botón Siguiente / tecla S). Con autopiloto ON se mantiene el flow
+      // automático de siempre.
+      const _afterSaved = () => {
+        if (_pd.autopilot) { _pdAdvance(); return; }
+        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
+          _pd.holdCurrent = true;
+          _pd.holdOutcome = outcome;
+          _pdRender();
+        }
+      };
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
       // hasta 30s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
@@ -6052,18 +6093,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(check, 400);
             return;
           }
-          // Avanzar solo si el lead realmente cambió de estado (la disposition
-          // fue confirmada). Si el SDR canceló, el lead sigue accionable.
+          // Avanzar/holdear solo si el lead realmente cambió de estado (la
+          // disposition fue confirmada). Si el SDR canceló, el lead sigue accionable.
           const lead = _callsLeadsById.get(leadId);
           if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
           const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
-          if (!stillActionable) _pdAdvance();
+          if (!stillActionable) _afterSaved();
         };
         setTimeout(check, 600);
       } else {
         // Outcomes directos (no_answer, voicemail, wrong_number, invalid_number,
-        // answered_interested) — auto-avanzar
-        setTimeout(() => _pdAdvance(), 600);
+        // answered_interested, hung_up)
+        setTimeout(_afterSaved, 600);
       }
     };
 
@@ -6139,6 +6180,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (_pd.currentIdx <= 0) { window.showToast?.('Ya estás en el primer lead', { type: 'info', duration: 1500 }); return; }
       _pdCancelAutopilot();
       _pd.autopilotArmed = false; // al volver atrás, no auto-discar
+      _pd.holdCurrent = false;
+      _pd.holdOutcome = null;
       _pd.currentIdx--;
       if (_pd.processed > 0) _pd.processed--;
       _pdRender();
