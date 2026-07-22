@@ -3885,6 +3885,20 @@ app.use((req, res, next) => {
   res.send(html);
 });
 
+// ── Versión del frontend servido (2026-07-22) ──
+// El cache-buster de app.js en index.html identifica el build. El frontend se
+// compara contra esto cada tanto: si difiere, muestra el banner "Actualizar"
+// (los SDRs dejan el tab abierto DÍAS y siguen corriendo código viejo post-deploy
+// — visto en prod: transcripciones rotas por grabar con un app.js anterior al fix).
+// Público a propósito: el valor ya es visible en el HTML sin login.
+const APP_BUILD_VERSION = (() => {
+  try {
+    const html = fs.readFileSync(path.join(process.cwd(), 'public', 'index.html'), 'utf8');
+    return (html.match(/app\.js\?v=([0-9a-z]+)/i) || [])[1] || '';
+  } catch { return ''; }
+})();
+app.get('/api/version', (req, res) => res.json({ version: APP_BUILD_VERSION }));
+
 app.use(express.static(path.join(process.cwd(), "public"), { maxAge: 0, etag: false }));
 
 // ── Historial persistente ──

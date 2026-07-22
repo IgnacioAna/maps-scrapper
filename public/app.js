@@ -7240,51 +7240,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _setterChunks = [];
     let _leadChunks = [];
     let _localStreamForRecording = null;
-    // Bug 2026-07-13 + 2026-07-21: AMBOS canales se graban vía mixer Web Audio
-    // (MediaStreamAudioDestinationNode): el MediaRecorder graba el destination
-    // (estable toda la llamada) y el source se re-conecta cuando el SDK cambia
-    // el STREAM o el TRACK adentro del mismo stream. El <audio> element sigue el
-    // track nuevo solo (por eso el SDR escucha bien), pero MediaStreamAudioSourceNode
-    // y MediaRecorder quedan clavados al track viejo → canal grabado en silencio →
-    // Whisper alucina el prompt o el canal sale vacío del transcript.
+    // Bug 2026-07-13 + 2026-07-21 + 2026-07-22: AMBOS canales se graban vía mixer
+    // Web Audio (MediaStreamAudioDestinationNode): el MediaRecorder graba el
+    // destination (estable toda la llamada) y cada track de audio que aparece se
+    // SUMA al mixer (unión, dedupe por track.id, nunca se desconecta hasta colgar).
+    // Historia: v1 grababa el stream directo (moría con el swap del carrier); v2
+    // re-bindeaba UN source al detectar cambio de stream/track — pero en prod se
+    // vieron llamadas con leadBinds=1 y canal mudo igual: el SDK cuelga el audio
+    // real en el <audio> element (por eso el SDR escucha bien) SIN actualizar
+    // call.remoteStream, así que no había "cambio" que detectar. v3 (actual):
+    // unión de todos los tracks de call.remoteStream Y de audioEl.srcObject (lo
+    // que se está REPRODUCIENDO = ground truth); un track muerto solo aporta
+    // silencio, el vivo aporta el audio — no hace falta adivinar cuál es.
     // Además los dos recorders arrancan JUNTOS aunque call.localStream todavía no
     // exista (antes el canal SDR directamente no se creaba y el re-run posterior de
     // _startCallRecording reseteaba los chunks del lead → huecos en el transcript).
     let _recCtx = null;        // AudioContext único de la grabación
-    let _recChannels = null;   // { setter:{dest,src,stream,trackId}, lead:{...} }
-    let _recHealthTimer = null; // re-sync cada 1s (atrapa swaps sin notification)
+    let _recChannels = null;   // { setter:{dest,bound:Map}, lead:{dest,bound:Map} }
+    let _recHealthTimer = null; // re-sync cada 1s (atrapa streams/tracks nuevos)
     let _recMeta = null;       // debug de la grabación → viaja con el transcribe
 
     function _recBindChannel(name, stream) {
       const ch = _recChannels?.[name];
       if (!_recCtx || !ch || !stream) return;
-      const track = stream.getAudioTracks?.()[0] || null;
-      if (!track || track.readyState === 'ended') return; // no atarse a un track muerto
-      if (stream === ch.stream && track.id === ch.trackId) return; // sin cambios
-      try {
-        if (ch.src) { try { ch.src.disconnect(); } catch {} }
-        ch.src = _recCtx.createMediaStreamSource(stream);
-        ch.src.connect(ch.dest);
-        ch.stream = stream; ch.trackId = track.id;
-        _recCtx.resume?.().catch(() => {});
-        if (_recMeta) _recMeta[name + 'Binds'] = (_recMeta[name + 'Binds'] || 0) + 1;
-        console.log('[transcribe] canal ' + name + ' conectado a la grabación');
-      } catch (e) {
-        console.warn('[transcribe] bind ' + name + ' failed:', e.message);
+      for (const track of (stream.getAudioTracks?.() || [])) {
+        if (!track || track.readyState === 'ended') continue; // no sumar tracks muertos
+        if (ch.bound.has(track.id)) continue;                 // ya está en el mixer
+        try {
+          const src = _recCtx.createMediaStreamSource(new MediaStream([track]));
+          src.connect(ch.dest);
+          ch.bound.set(track.id, src);
+          _recCtx.resume?.().catch(() => {});
+          if (_recMeta) _recMeta[name + 'Binds'] = (_recMeta[name + 'Binds'] || 0) + 1;
+          console.log('[transcribe] canal ' + name + ': track sumado al mixer (' + ch.bound.size + ' en total)');
+        } catch (e) {
+          console.warn('[transcribe] bind ' + name + ' failed:', e.message);
+        }
       }
     }
 
-    // Punto de entrada idempotente: arranca la grabación si hace falta y re-conecta
-    // los sources de ambos canales al stream/track vigente. Se llama desde las
-    // notifications del SDK y desde el health timer.
+    // Punto de entrada idempotente: arranca la grabación si hace falta y suma al
+    // mixer cualquier stream/track nuevo. Se llama desde las notifications del SDK
+    // y desde el health timer.
     function _syncCallRecording(call) {
       const localStream = call?.localStream || _telnyx.activeCall?.localStream || null;
       const remoteStream = call?.remoteStream || _telnyx.activeCall?.remoteStream || null;
-      if (!localStream && !remoteStream) return;
+      // Ground truth del audio del lead: lo que el <audio> está REPRODUCIENDO.
+      // El SDK puede colgar un stream nuevo ahí sin actualizar call.remoteStream.
+      const playingStream = document.getElementById('telnyx-remote-audio')?.srcObject || null;
+      if (!localStream && !remoteStream && !playingStream) return;
       if (!_setterRecorder && !_leadRecorder) _startCallRecording();
       if (!_recChannels) return;
       _recBindChannel('setter', localStream);
       _recBindChannel('lead', remoteStream);
+      _recBindChannel('lead', playingStream);
     }
 
     function _startCallRecording() {
@@ -7305,8 +7314,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         _recCtx = new (window.AudioContext || window.webkitAudioContext)();
         _recCtx.resume?.().catch(() => {});
         _recChannels = {
-          setter: { dest: _recCtx.createMediaStreamDestination(), src: null, stream: null, trackId: null },
-          lead: { dest: _recCtx.createMediaStreamDestination(), src: null, stream: null, trackId: null },
+          setter: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
+          lead: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
         };
         _recMeta = { startedAt: Date.now() };
         _setterRecorder = new MediaRecorder(_recChannels.setter.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
@@ -7329,8 +7338,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function _teardownRecordingGraph() {
       if (_recHealthTimer) { clearInterval(_recHealthTimer); _recHealthTimer = null; }
-      try { _recChannels?.setter?.src?.disconnect(); } catch {}
-      try { _recChannels?.lead?.src?.disconnect(); } catch {}
+      for (const name of ['setter', 'lead']) {
+        for (const src of (_recChannels?.[name]?.bound?.values?.() || [])) {
+          try { src.disconnect(); } catch {}
+        }
+      }
       try { _recCtx?.close(); } catch {}
       _recCtx = null; _recChannels = null;
     }
@@ -17291,6 +17303,47 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('[data-target="view-guide"]')?.addEventListener('click', () => {
     setTimeout(_guideInit, 50);
   });
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // Chequeo de versión (2026-07-22): los SDRs dejan el tab abierto DÍAS y
+  // siguen corriendo código viejo después de cada deploy (visto en prod:
+  // transcripciones rotas por grabar con un app.js anterior al fix, sin forma
+  // de darse cuenta). Cada 5 min + al enfocar la ventana se compara el
+  // cache-buster propio contra /api/version; si difiere, banner "Actualizar"
+  // que recarga la página (nunca en medio de una llamada activa).
+  const _myAppVersion = (() => {
+    try {
+      const s = document.querySelector('script[src*="app.js?v="]');
+      return ((s?.getAttribute('src') || '').match(/v=([0-9a-z]+)/i) || [])[1] || '';
+    } catch { return ''; }
+  })();
+  function _showUpdateBanner() {
+    if (document.getElementById('app-update-banner')) return;
+    const div = document.createElement('div');
+    div.id = 'app-update-banner';
+    div.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#1A1D24;border:1px solid #9D85F2;color:#E5E7E2;padding:10px 16px;border-radius:10px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:13px;';
+    div.innerHTML = 'Hay una versión nueva del sistema. <button id="app-update-reload" style="background:#9D85F2;color:#14151A;border:none;border-radius:8px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:13px;">Actualizar ahora</button>';
+    document.body.appendChild(div);
+    document.getElementById('app-update-reload').addEventListener('click', () => {
+      if (window._telnyx?.activeCall) {
+        window.showToast?.('Terminá la llamada antes de actualizar', { type: 'warn' });
+        return;
+      }
+      location.reload();
+    });
+  }
+  async function _checkAppVersion() {
+    if (!_myAppVersion) return;
+    try {
+      const r = await fetch('/api/version', { cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d?.version && d.version !== _myAppVersion) _showUpdateBanner();
+    } catch {}
+  }
+  setInterval(_checkAppVersion, 5 * 60 * 1000);
+  window.addEventListener('focus', _checkAppVersion);
+  setTimeout(_checkAppVersion, 20000);
 
   // ═══════════════════════════════════════════════════════════════════════
   // Audit Sprint 37: Esc cierra cualquier modal estático abierto + click en
