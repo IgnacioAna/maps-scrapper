@@ -6205,6 +6205,14 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
     leads = leads.filter((l) => visibleSet.has(l.assignedTo));
   }
   leads.sort((a, b) => (a.num || 0) - (b.num || 0));
+  // 2026-07-22: atribución para el pipeline (criterio #139 "arranca de cero al
+  // reasignar"). `calledByOwner` = el DUEÑO ACTUAL hizo alguna llamada a este
+  // lead (callLog entry atribuida por `by`→setterId). Las redistribuciones
+  // conservan el callLog como contexto, así que "tiene callLog" NO implica
+  // "este SDR lo trabajó" — sin este flag, "En seguimiento" de Mi rendimiento
+  // contaba herencia de SDRs anteriores (Judith: 55 mostrados vs 21 propios).
+  const _swUserMap = _buildUserSetterMap();
+  for (const l of leads) l.calledByOwner = _setterCalledLead(l, l.assignedTo, _swUserMap);
   res.json({ leads });
 });
 
