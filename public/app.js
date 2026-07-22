@@ -411,11 +411,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Centro de Comando ni Equipo online (data global de setters fuera de su lista).
     // Supervisor sin lista (visibleSetterIds vacío) = ve todo, comportamiento intacto.
     // 2026-07-22: TODO supervisor es scoped ahora (los sin lista ven todo
-    // menos los setters admin-only del backend) → estas vistas globales
-    // devuelven 403 para cualquier supervisor.
+    // menos los setters admin-only del backend) → Distribución y Comando
+    // devuelven 403 para cualquier supervisor. Equipo online SÍ queda para
+    // supervisores: el backend filtra los users a su subconjunto visible
+    // (nunca ven a los admin-only ni al admin).
     const _isScopedSupervisor = currentUser.role === 'supervisor';
     if (_isScopedSupervisor) {
-      const SCOPED_HIDDEN_VIEWS = ['view-pool', 'view-command', 'view-online'];
+      const SCOPED_HIDDEN_VIEWS = ['view-pool', 'view-command'];
       SCOPED_HIDDEN_VIEWS.forEach((v) => {
         document.querySelectorAll('[data-target="' + v + '"]').forEach((el) => el.classList.add('hidden'));
       });

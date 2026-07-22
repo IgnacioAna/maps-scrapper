@@ -117,6 +117,32 @@ describe("supervisor sin lista — ve todo MENOS los admin-only", () => {
     expect(ids).not.toContain("user_admin");
     expect(ids).toContain("user_sup_all");
   });
+
+  it("/api/auth/online (Equipo online) SÍ responde pero sin el user admin", async () => {
+    const r = await request(app).get("/api/auth/online").set("Cookie", supAllCookie);
+    expect(r.status).toBe(200);
+    const ids = r.body.users.map((u) => u.id);
+    expect(ids).not.toContain("user_admin");
+  });
+
+  it("/api/setters/calendar (Reuniones) excluye entradas de los admin-only", async () => {
+    // Crear 2 citas como admin: una de setter_ignacio, una de setter_x.
+    const c1 = await request(app).post("/api/setters/calendar").set("Cookie", adminCookie)
+      .send({ leadId: "lead_ig1", nombre: "Cita Ignacio", fecha: new Date().toISOString(), setterId: "setter_ignacio" });
+    expect(c1.status).toBe(200);
+    const c2 = await request(app).post("/api/setters/calendar").set("Cookie", adminCookie)
+      .send({ leadId: "lead_x1", nombre: "Cita X", fecha: new Date().toISOString(), setterId: "setter_x" });
+    expect(c2.status).toBe(200);
+
+    const sup = await request(app).get("/api/setters/calendar").set("Cookie", supAllCookie);
+    expect(sup.status).toBe(200);
+    const names = sup.body.calendar.map((e) => e.nombre);
+    expect(names).toContain("Cita X");
+    expect(names).not.toContain("Cita Ignacio");
+
+    const adm = await request(app).get("/api/setters/calendar").set("Cookie", adminCookie);
+    expect(adm.body.calendar.map((e) => e.nombre)).toEqual(expect.arrayContaining(["Cita Ignacio", "Cita X"]));
+  });
 });
 
 describe("supervisor scoped — los admin-only se strippean de su lista", () => {
