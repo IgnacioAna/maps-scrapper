@@ -63,6 +63,12 @@ fs.writeFileSync(
       // al dueño actual (caso real Melissa 2026-07-22: heredó leads con
       // llamadas de una SDR borrada y figuraba con 9 "en seguimiento").
       lead_user_borrado: { id: "lead_user_borrado", num: 5, name: "UserBorrado", phone: "+5215500000005", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callLog: [{ ts: now, outcome: "voicemail", duration: 0, by: "user_eliminado_inexistente" }] },
+      // Callback MANUAL propio ("vuelvo a llamar" marcado por B) → manualCallbackByOwner true.
+      lead_cb_manual: { id: "lead_cb_manual", num: 6, name: "CbManual", phone: "+5215500000006", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callbackAt: now, callLog: [{ ts: now, outcome: "callback_later", duration: 45, by: "user_b" }] },
+      // Cadencia AUTOMÁTICA (no_answer setea callbackAt) → NO es seguimiento del SDR.
+      lead_cb_auto: { id: "lead_cb_auto", num: 7, name: "CbAuto", phone: "+5215500000007", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callbackAt: now, cadenceStep: 1, callLog: [{ ts: now, outcome: "no_answer", duration: 0, by: "user_b" }] },
+      // Callback manual pero de OTRO SDR (heredado) → false para el dueño actual.
+      lead_cb_ajeno: { id: "lead_cb_ajeno", num: 8, name: "CbAjeno", phone: "+5215500000008", country: "México", assignedTo: "setter_b", estado: "sin_contactar", conexion: "sin_wsp", callbackAt: now, callLog: [{ ts: now, outcome: "callback_later", duration: 30, by: "user_a" }] },
     },
     calendar: [],
     sessions: [],
@@ -100,6 +106,17 @@ describe("sin-wsp — calledByOwner atribuido por quién llamó", () => {
     expect(byId.lead_virgen).toBe(false);
     expect(byId.lead_legacy).toBe(true);
     expect(byId.lead_user_borrado).toBe(false);
+  });
+
+  it("manualCallbackByOwner: true solo para callback MANUAL propio (no cadencia auto ni heredado)", async () => {
+    const r = await request(app).get("/api/setters/leads/sin-wsp?setter=setter_b").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    const byId = {};
+    r.body.leads.forEach((l) => { byId[l.id] = l.manualCallbackByOwner; });
+    expect(byId.lead_cb_manual).toBe(true);
+    expect(byId.lead_cb_auto).toBe(false);
+    expect(byId.lead_cb_ajeno).toBe(false);
+    expect(byId.lead_propio).toBe(false);
   });
 
   it("el setter logueado recibe el mismo flag sobre sus leads", async () => {

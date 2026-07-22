@@ -13772,15 +13772,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const now = Date.now();
     const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado' || l.estado === 'cerrado';
     const interesados = leads.filter((l) => l.estado === 'interesado');
-    // 2026-07-22: "En seguimiento" atribuido — cuenta solo leads que el DUEÑO
-    // ACTUAL llamó (backend manda `calledByOwner`) o con callback pendiente.
-    // Antes contaba cualquier lead con callLog, incluida la herencia de SDRs
-    // anteriores (las redistribuciones conservan el historial como contexto)
-    // → "55 en seguimiento" con solo 30 conexiones propias. Criterio #139:
-    // el lead reasignado arranca de cero para el nuevo dueño.
-    const worked = (l) => l.callbackAt || l.calledByOwner === true;
-    const enSeguimiento = leads.filter((l) => !terminal(l) && l.estado !== 'interesado' && worked(l));
-    const sinContactar = leads.filter((l) => !terminal(l) && l.estado !== 'interesado' && !worked(l));
+    // 2026-07-22 (criterio del user): "En seguimiento" = SOLO los leads donde
+    // el vendedor marcó "vuelvo a llamar" (callback MANUAL propio — backend
+    // manda `manualCallbackByOwner`). Los buzones/no-contesta reaparecen solos
+    // en la cola de Llamadas por la cadencia interna, pero eso NO es una
+    // métrica del SDR. "Sin contactar" = nunca llamados por el dueño actual
+    // (`calledByOwner`, atribuido por quién llamó — la herencia no cuenta).
+    const enSeguimiento = leads.filter((l) => !terminal(l) && l.estado !== 'interesado' && l.manualCallbackByOwner === true);
+    const sinContactar = leads.filter((l) => !terminal(l) && l.estado !== 'interesado' && !l.calledByOwner);
     const proximas = calendar
       .filter((c) => (c.calendarioEstado === 'pendiente' || c.calendarioEstado === 'reagendada')
         && c.fecha && new Date(c.fecha).getTime() >= now - 12 * 3600000)

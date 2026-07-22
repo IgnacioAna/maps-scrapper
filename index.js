@@ -6219,7 +6219,18 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   // "este SDR lo trabajó" — sin este flag, "En seguimiento" de Mi rendimiento
   // contaba herencia de SDRs anteriores (Judith: 55 mostrados vs 21 propios).
   const _swUserMap = _buildUserSetterMap();
-  for (const l of leads) l.calledByOwner = _setterCalledLead(l, l.assignedTo, _swUserMap);
+  for (const l of leads) {
+    l.calledByOwner = _setterCalledLead(l, l.assignedTo, _swUserMap);
+    // 2026-07-22 (criterio del user): "En seguimiento" del pipeline = SOLO
+    // callbacks MANUALES ("vuelvo a llamar") marcados por el DUEÑO ACTUAL.
+    // Los reintentos automáticos de no_answer/voicemail (cadencia) también
+    // setean callbackAt pero son plomería interna, NO una métrica del SDR.
+    // Manual = el último intento fue disposition 'callback_later' hecha por él.
+    const _log = Array.isArray(l.callLog) ? l.callLog : [];
+    const _last = _log.length ? _log[_log.length - 1] : null;
+    l.manualCallbackByOwner = !!(l.callbackAt && _last && _last.outcome === 'callback_later'
+      && _callSetterId(_last, l, _swUserMap) === l.assignedTo);
+  }
   res.json({ leads });
 });
 
