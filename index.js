@@ -1911,6 +1911,26 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
     visibleSetterIds = req.body.visibleSetterIds.filter((id) => typeof id === 'string' && validIds.has(id));
   }
 
+  // 2026-07-22: al invitar un SDR nuevo, el admin puede asignarlo a uno o más
+  // supervisores (supervisorUserIds). El setterId recién creado se agrega a
+  // los visibleSetterIds de cada supervisor SCOPED. Un supervisor sin lista
+  // (= ve todos) se saltea a propósito: agregarle un id lo RESTRINGIRÍA a ver
+  // solo ese SDR.
+  const assignedSupervisorIds = [];
+  if (role === 'setter' && setterId && Array.isArray(req.body?.supervisorUserIds)) {
+    for (const supId of req.body.supervisorUserIds) {
+      if (typeof supId !== 'string') continue;
+      const sup = data.users.find((u) => u.id === supId && u.role === 'supervisor' && u.status === 'active');
+      if (!sup) continue;
+      if (!Array.isArray(sup.visibleSetterIds) || sup.visibleSetterIds.length === 0) continue;
+      if (!sup.visibleSetterIds.includes(setterId)) {
+        sup.visibleSetterIds.push(setterId);
+        sup.updatedAt = new Date().toISOString();
+      }
+      assignedSupervisorIds.push(sup.id);
+    }
+  }
+
   const invite = {
     id: `inv_${Date.now()}`,
     token: crypto.randomUUID().replace(/-/g, ''),
@@ -1919,6 +1939,7 @@ app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res
     role,
     setterId,
     visibleSetterIds,
+    assignedSupervisorIds,
     status: 'pending',
     createdAt: new Date().toISOString(),
     createdBy: req.auth.user.email
@@ -6003,6 +6024,17 @@ app.delete('/api/auth/invites/:id', requireAuth, requireRole('admin'), (req, res
         sd.variants = (sd.variants || []).filter((v) => v.setterId !== invite.setterId);
         saveSettersData(sd);
         orphanSetterRemoved = invite.setterId;
+        // 2026-07-22: si el SDR fue asignado a supervisores al invitarlo,
+        // sacar el setterId huérfano de sus visibleSetterIds.
+        let supsTouched = false;
+        for (const u of (auth.users || [])) {
+          if (u.role === 'supervisor' && Array.isArray(u.visibleSetterIds) && u.visibleSetterIds.includes(invite.setterId)) {
+            u.visibleSetterIds = u.visibleSetterIds.filter((id) => id !== invite.setterId);
+            u.updatedAt = new Date().toISOString();
+            supsTouched = true;
+          }
+        }
+        if (supsTouched) saveAuthData(auth);
       }
     }
   }

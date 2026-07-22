@@ -9832,15 +9832,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         _inviteVisibleLoaded = true;
       } catch (e) { /* no-op */ }
     }
+    // 2026-07-22: al invitar un SDR, checkboxes para asignarlo a supervisores
+    // SCOPED (con lista de SDRs). Un supervisor sin lista ve todos — asignarle
+    // no tiene sentido (y lo restringiría), así que no se lista.
+    const inviteAssignSupBox = document.getElementById('invite-assign-supervisor');
+    const inviteAssignSupList = document.getElementById('invite-assign-supervisor-list');
+    let _inviteSupLoaded = false;
+    async function _populateInviteAssignSupervisors() {
+      if (!inviteAssignSupBox || !inviteAssignSupList) return;
+      if (!_inviteSupLoaded) {
+        try {
+          const r = await fetch(apiUrl('/api/auth/users'));
+          const d = await r.json();
+          const sups = (d.users || []).filter(u => u.role === 'supervisor' && u.status === 'active' && (u.visibleSetterIds || []).length > 0);
+          inviteAssignSupList.innerHTML = sups.map(u =>
+            '<label style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border-subtle); border-radius:8px; cursor:pointer; font-size:12px; color:var(--text-primary);">' +
+            '<input type="checkbox" class="invite-sup-cb" value="' + escHtml(u.id) + '" style="width:15px; height:15px; accent-color:var(--accent);">' +
+            escHtml(u.name || u.email) + '</label>'
+          ).join('');
+          inviteAssignSupList.dataset.count = String(sups.length);
+          _inviteSupLoaded = true;
+        } catch (e) { /* no-op */ }
+      }
+      // Solo mostrar el bloque si hay al menos un supervisor scoped.
+      const hasSups = parseInt(inviteAssignSupList.dataset.count || '0', 10) > 0;
+      inviteAssignSupBox.classList.toggle('hidden', !hasSups);
+    }
+    function _syncInviteRoleBoxes() {
+      const role = inviteRoleSel?.value;
+      if (role === 'supervisor') {
+        inviteVisibleBox?.classList.remove('hidden');
+        _populateInviteVisibleSetters();
+      } else {
+        inviteVisibleBox?.classList.add('hidden');
+      }
+      if (role === 'setter') {
+        _populateInviteAssignSupervisors();
+      } else {
+        inviteAssignSupBox?.classList.add('hidden');
+      }
+    }
     if (inviteRoleSel && inviteVisibleBox) {
-      inviteRoleSel.addEventListener('change', () => {
-        if (inviteRoleSel.value === 'supervisor') {
-          inviteVisibleBox.classList.remove('hidden');
-          _populateInviteVisibleSetters();
-        } else {
-          inviteVisibleBox.classList.add('hidden');
-        }
-      });
+      inviteRoleSel.addEventListener('change', _syncInviteRoleBoxes);
+      // El rol default del form es SDR → sincronizar al cargar el panel.
+      _syncInviteRoleBoxes();
     }
 
     if (inviteUserBtn) {
@@ -9857,6 +9892,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const inviteBody = { name, email, role, sendEmail: true };
         if (role === 'supervisor' && inviteVisibleList) {
           inviteBody.visibleSetterIds = Array.from(inviteVisibleList.querySelectorAll('.invite-vs-cb'))
+            .filter(cb => cb.checked).map(cb => cb.value);
+        }
+        if (role === 'setter' && inviteAssignSupList) {
+          inviteBody.supervisorUserIds = Array.from(inviteAssignSupList.querySelectorAll('.invite-sup-cb'))
             .filter(cb => cb.checked).map(cb => cb.value);
         }
 
@@ -9892,6 +9931,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           document.getElementById('invite-name').value = '';
           document.getElementById('invite-email').value = '';
           if (inviteVisibleList) inviteVisibleList.querySelectorAll('.invite-vs-cb').forEach(cb => { cb.checked = false; });
+          if (inviteAssignSupList) inviteAssignSupList.querySelectorAll('.invite-sup-cb').forEach(cb => { cb.checked = false; });
           await loadUsersPanel();
         } catch (err) {
           alert(err.message || 'Error al crear la invitación.');
