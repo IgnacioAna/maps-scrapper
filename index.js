@@ -4390,6 +4390,20 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     return res.status(400).json({ error: "location debe ser string (ciudades separadas por ;)." });
   }
 
+  // Auditoría tarifas 2026-07-23: países donde TODO destino es tarifa roja con
+  // caller ID US (UY $0.07-0.27, EC $0.20-0.36, BO $0.21-0.36/min). Scrapearlos
+  // gasta créditos SerpAPI en leads que la cola de discado va a filtrar igual.
+  // España NO se bloquea: los móviles (+346/7) son baratos; los fijos +349 se
+  // filtran más abajo por teléfono, resultado por resultado.
+  const _scrapeBlockedCountries = ['uruguay', 'ecuador', 'bolivia'];
+  const _scrapeTarget = `${query} ${location || ''}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const _blockedHit = _scrapeBlockedCountries.find(c => _scrapeTarget.includes(c));
+  if (_blockedHit) {
+    return res.status(400).json({
+      error: `Scraping de ${_blockedHit.charAt(0).toUpperCase() + _blockedHit.slice(1)} bloqueado: Telnyx cobra tarifa roja a TODO destino de ese país llamando con número de EE.UU. (auditoría 2026-07-23). Sería gastar créditos SerpAPI en leads que no se pueden discar.`
+    });
+  }
+
   try {
     // Soportar múltiples keywords separadas por salto de línea
     const queries = query.split('\n').map(q => q.trim()).filter(Boolean);
@@ -4553,6 +4567,21 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     const newResults = contactableResults.filter(item => !item.alreadyScraped);
     const oldResults = contactableResults.filter(item => item.alreadyScraped);
 
+    // Auditoría tarifas 2026-07-23 (pedido del user): España se sigue scrapeando,
+    // pero los teléfonos de tarifa roja (fijos +349 a $0.40/min, UY/EC/BO, PE fijo
+    // — ver _expensiveTariffLabel) NO se ofrecen para importar: serían leads que
+    // la cola de discado filtra igual. SÍ quedan en el historial (newResults se
+    // persiste completo abajo) → el dedup los reconoce en scrapes futuros y no se
+    // vuelve a gastar SerpAPI en re-encontrarlos.
+    const _isTariffRed = (item) => !!(item.phone && _expensiveTariffLabel(item.phone));
+    const tariffFilteredCount = contactableResults.filter(_isTariffRed).length;
+    const dialableResults = contactableResults.filter(i => !_isTariffRed(i));
+    const newDialable = newResults.filter(i => !_isTariffRed(i));
+    const oldDialable = oldResults.filter(i => !_isTariffRed(i));
+    if (tariffFilteredCount > 0) {
+      console.log(`💸 Filtro de tarifa: ${tariffFilteredCount} resultados con destino caro (ES fijo/UY/EC/BO/PE fijo) excluidos del import (quedan en historial).`);
+    }
+
     // Guardar los nuevos en el historial (dentro del mutex: re-carga fresh,
     // aplica y persiste — un scrape concurrente ya no pisa las entries)
     const searchTimestamp = new Date().toISOString();
@@ -4608,14 +4637,15 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
         queries,
         locations,
         stats: {
-          newCount: newResults.length,
-          alreadyScrapedCount: oldResults.length,
+          newCount: newDialable.length,
+          alreadyScrapedCount: oldDialable.length,
           totalBeforeFilter: allResults.length,
           dedupRemoved: dedupCount,
           removedNoContact: removed,
+          tariffFiltered: tariffFilteredCount,
           locationsSearched: locations.length,
         },
-        results: contactableResults,
+        results: dialableResults,
         sentToSetter: null,
         enrichmentStatus: "none",
       });
@@ -4630,12 +4660,14 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
 
     res.json({
       batchId,
-      results: contactableResults,
-      newCount: newResults.length,
-      alreadyScrapedCount: oldResults.length,
+      results: dialableResults,
+      newCount: newDialable.length,
+      alreadyScrapedCount: oldDialable.length,
       totalInHistory,
       totalBeforeFilter: allResults.length,
       removedNoContact: removed,
+      // 2026-07-23: destinos de tarifa roja excluidos del import (ES fijo etc.)
+      tariffFiltered: tariffFilteredCount,
       dedupRemoved: dedupCount,
       locationsSearched: locations.length,
       hasMoreResults: totalHasMore,
@@ -6201,12 +6233,18 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   // terminales (descartado/agendado). Sin el flag, comportamiento histórico intacto.
   const includeCallable = include === 'callable';
   const showDnc = req.query.dnc === '1'; // Phase 17: admin puede ver los DNC para revisarlos
+  const showExpensive = req.query.expensive === '1'; // 2026-07-23: listar los de tarifa roja
   const data = loadSettersData();
   let leads = Object.entries(data.leads)
     .filter(([_, l]) => {
       // Phase 17: los DNC (no-llamar) salen de TODA cola de llamada salvo dnc=1.
       if (l.doNotCall && !showDnc) return false;
       if (showDnc) return !!l.doNotCall;
+      // Auditoría tarifas 2026-07-23: destinos rojos (ES fijo, UY, EC, BO, PE
+      // fijo — ver _expensiveTariffLabel) fuera de TODA cola de discado. Con
+      // ?expensive=1 el admin puede listarlos para revisarlos (patrón dnc=1).
+      if (showExpensive) return !!_expensiveTariffLabel(l.phone);
+      if (_expensiveTariffLabel(l.phone)) return false;
       // Número muerto = lookup exitoso SIN tipo NI operadora (ver _leadIsConfirmedDeadNumber).
       // Lever contra la tasa de abandono de Telnyx, pero SIN enterrar reales: MX/ES vuelven
       // con operadora y sin tipo → siguen llamables. Los que erroraron (rate-limit) también.
@@ -7161,8 +7199,29 @@ function _lookupErrorIsTransient(err) {
     || s.includes('too many') || s.includes('429') || s.includes('timeout')
     || s.includes('econn') || s.includes('network') || s.includes('fetch failed');
 }
+// Auditoría de tarifas 2026-07-23: destinos que Telnyx factura CARO llamando con
+// caller ID de EE.UU. ("surcharged origination" — verificado contra CDRs: ES fijo
+// se facturó a $0.4001/min). Franjas según la rate sheet real de la cuenta
+// (data/telnyx_rates.json): ES fijo $0.40 · UY $0.07-0.27 · EC $0.20-0.36 ·
+// BO $0.21-0.36 · PE fijo mayoría $0.40. Estos leads salen de TODA cola de
+// discado (Llamadas/Power Dialer/Hoy) hasta que haya caller ID local o cambie
+// la tarifa. Los móviles ES (+346/7) y PE (+519) y todo CO/MX/CL/CR/BR/US/CA
+// siguen llamables (~$0.01-0.05/min). AR móvil ($0.26) NO se filtra a propósito:
+// no es mercado activo (2 leads) y medio sistema usa +549 como fixture de tests.
+function _expensiveTariffLabel(phone) {
+  const d = String(phone || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('34')) return /^34[67]/.test(d) ? null : 'ES fijo ~$0.40/min';
+  if (d.startsWith('598')) return 'UY ~$0.07-0.27/min';
+  if (d.startsWith('593')) return 'EC ~$0.20-0.36/min';
+  if (d.startsWith('591')) return 'BO ~$0.21-0.36/min';
+  if (d.startsWith('519')) return null; // PE móvil barato
+  if (d.startsWith('51')) return 'PE fijo ~$0.40/min';
+  return null;
+}
 function _leadIsCallableNow(l, now) {
   if (l.doNotCall) return false;
+  if (_expensiveTariffLabel(l.phone)) return false; // tarifa roja → fuera de circulación
   if (_leadIsConfirmedDeadNumber(l)) return false; // línea muerta validada (sin tipo NI operadora)
   const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
   if (!hasPhone) return false;
@@ -11506,7 +11565,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow, _expensiveTariffLabel };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
