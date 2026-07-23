@@ -3114,6 +3114,79 @@ app.post('/api/admin/enrich-web-brief', requireAuth, requireRole('admin'), async
   res.json({ ok: true, scanned: candidates.length, briefed, skipped: Object.keys(skips).length, applied, errors, briefedSample, leadBriefs: builtBriefs });
 });
 
+// Auditoría tarifas 2026-07-23: rescate de móviles españoles desde la web.
+// Los fijos ES (+349) cuestan $0.40/min con caller ID US → fuera de circulación.
+// Este barrido (admin, opt-in, GRATIS — solo fetch HTTP del sitio, cero SerpAPI)
+// busca en la web de cada clínica un móvil (+34 6xx/7xx: wa.me, tel:, +34 en
+// texto). Si lo encuentra, INTERCAMBIA el teléfono del lead (el fijo queda en
+// `phoneFixed` como respaldo) → el lead vuelve solo a la cola de discado con
+// tarifa verde (~$0.03/min). Marker `esMobileCheckedAt` para no re-fetchear.
+app.post('/api/admin/rescue-es-mobile', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  const dryRun = !!body.dryRun;
+  const force = body.force === true;
+  const limit = Math.min(Math.max(1, parseInt(body.limit, 10) || 100), 300);
+
+  const data = loadSettersData();
+  const leadsMap = (data.leads && typeof data.leads === 'object') ? data.leads : {};
+  const candidates = [];
+  for (const [id, l] of Object.entries(leadsMap)) {
+    if (!l || l.descartado || l.doNotCall) continue;
+    const label = _expensiveTariffLabel(l.phone);
+    if (!label || !label.startsWith('ES fijo')) continue;
+    if (!_leadHasRealWebsite(l)) continue;
+    if (!force && l.esMobileCheckedAt) continue;
+    candidates.push({ id, website: l.website });
+    if (candidates.length >= limit) break;
+  }
+  if (dryRun) return res.json({ dryRun: true, pending: candidates.length });
+
+  // Fetch de los sitios FUERA del mutex (patrón enrich-leads).
+  const found = {};   // id → móvil
+  const errors = {};
+  await _runPool(candidates.map((c) => async () => {
+    try {
+      const w = await enrichFromWebsite(c.website, { timeoutMs: 7000 });
+      if (w && w.esMobile) found[c.id] = w.esMobile;
+      else errors[(w && w.error) || 'no_mobile'] = (errors[(w && w.error) || 'no_mobile'] || 0) + 1;
+    } catch (e) {
+      errors[(e?.message || 'error').slice(0, 30)] = (errors[(e?.message || 'error').slice(0, 30)] || 0) + 1;
+    }
+  }), 6);
+
+  let swapped = 0, dups = 0;
+  const swappedSample = [];
+  if (candidates.length) {
+    makeBackup('pre-rescue-es-mobile');
+    await mutateSettersData((d) => {
+      // Índice de teléfonos existentes (últimos 9 díg) para no crear duplicados.
+      const inUse = new Set();
+      for (const [oid, ol] of Object.entries(d.leads || {})) {
+        const dd = String(ol.phone || '').replace(/\D/g, '');
+        if (dd.length >= 9) inUse.add(dd.slice(-9));
+      }
+      const ts = new Date().toISOString();
+      for (const c of candidates) {
+        const lead = d.leads && d.leads[c.id]; if (!lead) continue;
+        lead.esMobileCheckedAt = ts; // marker SIEMPRE (también en no-encontrado)
+        const mobile = found[c.id]; if (!mobile) continue;
+        const nine = mobile.replace(/\D/g, '').slice(-9);
+        if (inUse.has(nine)) { dups++; continue; } // otro lead ya usa ese móvil
+        inUse.add(nine);
+        lead.phoneFixed = lead.phone;      // respaldo del fijo original
+        lead.phone = mobile;
+        lead.phoneSwappedAt = ts;
+        // El lookup viejo era del fijo → resetear para que el número nuevo
+        // se valide solo en la próxima barrida/import.
+        delete lead.lookupAt; delete lead.phoneType; delete lead.lookupCarrier; delete lead.lookupError;
+        swapped++;
+        if (swappedSample.length < 20) swappedSample.push({ id: c.id, name: lead.name, fijo: lead.phoneFixed, movil: mobile });
+      }
+    });
+  }
+  res.json({ ok: true, checked: candidates.length, found: Object.keys(found).length, swapped, dups, errors, swappedSample });
+});
+
 // Backfill: detecta leads con phone US '(NNN) NNN-NNNN' pero whatsappUrl con
 // prefijo +52 (o cualquier prefijo que no sea +1) y los corrige a +1.
 // Resultado del bug en zona fronteriza Tijuana/Juarez/Reynosa donde clinicas
@@ -4421,7 +4494,7 @@ app.post('/api/scrape', requireAuth, requireRole('admin'), scrapeLimiter, async 
     // Audit 2026-07 (WR-03): el guard usaba Math.min(maxPages, 10) mientras
     // searchLocation pagina hasta 100 (l.3669) → subcontaba hasta 10x (maxPages=100
     // pasaba como 10). Usamos el MISMO clamp efectivo que searchLocation.
-    const MAX_SCRAPE_CALLS = 300;
+    const MAX_SCRAPE_CALLS = 500;
     const effectivePages = Math.min(Math.max(1, parseInt(maxPages) || 1), 100);
     const totalCalls = queries.length * locations.length * effectivePages;
     if (totalCalls > MAX_SCRAPE_CALLS) {

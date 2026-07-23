@@ -448,6 +448,33 @@ export function extractAgeFromHtml(html) {
  * @param {{ fetchImpl?: Function, timeoutMs?: number }} [opts]
  * @returns {Promise<{ email: string|null, ads: object|null, social: object, age: object, error: string|null }>}
  */
+// PURA. Rescata un MÓVIL español (+34 6xx/7xx, 9 dígitos) del HTML de un sitio.
+// Auditoría tarifas 2026-07-23: los fijos ES (+349) cuestan $0.40/min con caller
+// ID US; si la web de la clínica publica un móvil, el lead vuelve a ser llamable
+// barato. Precisión sobre recall: solo acepta señales fuertes (wa.me / tel: /
+// prefijo +34 explícito) — un "9 dígitos que empieza en 6" suelto en el texto
+// puede ser un precio o un id y NO se acepta.
+export function extractSpanishMobileFromHtml(html) {
+  if (!html || typeof html !== "string") return null;
+  const norm = (s) => {
+    const d = String(s).replace(/\D/g, "");
+    const nine = d.startsWith("0034") ? d.slice(4) : d.startsWith("34") && d.length === 11 ? d.slice(2) : d;
+    return /^[67]\d{8}$/.test(nine) ? "+34" + nine : null;
+  };
+  // 1) Links de WhatsApp (señal más fuerte: es el número de contacto real)
+  const wa = html.match(/(?:wa\.me\/|api\.whatsapp\.com\/send[^"'\s]*?phone=)\+?(\d{9,13})/i);
+  if (wa) { const m = norm(wa[1]); if (m) return m; }
+  // 2) Links tel:
+  for (const t of html.matchAll(/href=["']tel:([+\d\s\-().]{7,22})["']/gi)) {
+    const m = norm(t[1]); if (m) return m;
+  }
+  // 3) Texto con prefijo internacional explícito (+34 / 0034)
+  for (const t of html.matchAll(/(?:\+34|0034)[\s.\-]?([67](?:[\s.\-]?\d){8})/g)) {
+    const m = norm(t[1]); if (m) return m;
+  }
+  return null;
+}
+
 export async function enrichFromWebsite(website, opts = {}) {
   const fetchImpl = opts.fetchImpl || (typeof fetch !== "undefined" ? fetch : null);
   const timeoutMs = opts.timeoutMs || DEFAULT_TIMEOUT_MS;
@@ -474,6 +501,7 @@ export async function enrichFromWebsite(website, opts = {}) {
     if (!r.ok) return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: r.error || "fetch_failed" };
 
     const email = extractEmailFromHtml(r.text, url);
+    const esMobile = extractSpanishMobileFromHtml(r.text);
     const ads = detectAdPixels(r.text);
     const social = extractSocialFromHtml(r.text);
     const age = extractAgeFromHtml(r.text);
@@ -487,7 +515,7 @@ export async function enrichFromWebsite(website, opts = {}) {
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 8000);
-    return { email: email || null, emailType, ads, social, age, text, error: email ? null : "no_email_found" };
+    return { email: email || null, emailType, ads, social, age, text, esMobile, error: email ? null : "no_email_found" };
   } catch {
     return { email: null, ads: null, social: {}, age: {}, emailType: "unknown", error: "unexpected" };
   }

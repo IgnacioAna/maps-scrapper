@@ -109,13 +109,13 @@ describe("C-1: PATCH concurrentes mantienen integridad del lead", () => {
 });
 
 describe("C-2: rate limit y clamp en endpoints externos", () => {
-  it("/api/scrape rechaza payloads que excedan el clamp de llamadas (300)", async () => {
-    // 2026-07-11: límite subido 50→300 (el user tiene créditos y quería barridas
-    // grandes). 6 keywords x 6 ubicaciones x 10 páginas = 360 > 300.
+  it("/api/scrape rechaza payloads que excedan el clamp de llamadas (500)", async () => {
+    // 2026-07-11: límite subido 50→300; 2026-07-23: 300→500 (pedido del user).
+    // 6 keywords x 6 ubicaciones x 15 páginas = 540 > 500.
     const r = await request(app).post("/api/scrape").set("Cookie", cookie).send({
       query: "k1\nk2\nk3\nk4\nk5\nk6",
       location: "Bogota; Lima; Madrid; Mexico DF; Buenos Aires; Quito",
-      maxPages: 10
+      maxPages: 15
     });
     expect(r.status).toBe(400);
     expect(r.body.error).toMatch(/Demasiado|llamadas/i);
