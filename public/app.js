@@ -5327,13 +5327,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       holdCurrent: false,
       holdOutcome: null,    // outcome guardado, para el banner "Resultado guardado"
     };
-    // Teléfono según rol (2026-07-10): las SDR ven el número enmascarado en TODA
-    // la UI (lista, Power Dialer, panel de llamada) — solo últimos 4 dígitos para
-    // identificar la línea. Discan igual por el botón. Admin/supervisor completo.
+    // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
+    // necesitan copiar el número para mandar mensajes desde el celular.
+    // (El enmascarado por rol de 2026-07-10 se revirtió a pedido del user.)
     function _phoneShown(p) {
-      if (currentUser?.role !== 'setter') return String(p || '');
-      const digits = String(p || '').replace(/\D/g, '');
-      return digits ? ('•••• ' + digits.slice(-4)) : '';
+      return String(p || '');
     }
 
     function _pdAutopilotKey() { return 'pd_autopilot_' + (currentUser?.id || 'anon'); }
@@ -16940,7 +16938,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li>La primera vez que llames, el navegador te pide <strong>permiso de micrófono</strong> → dale "Permitir" (una sola vez).</li>
           <li>Conectá <strong>auriculares con micrófono</strong> antes de empezar (abajo te explicamos por qué importa tanto).</li>
         </ol>
-        <div class="guide-callout">En las cards vas a ver el teléfono como <code>•••• 1234</code>. Es normal: el sistema disca igual con el botón <strong>Llamar</strong> — no necesitás el número.</div>`,
+        <div class="guide-callout">En las cards ves el teléfono completo del lead: podés copiarlo si necesitás mandarle un mensaje desde tu celular. Para llamar, usá siempre el botón <strong>Llamar</strong> del sistema.</div>`,
         goto: { target: 'view-hoy', label: 'Ir a Hoy' }
       },
       {
