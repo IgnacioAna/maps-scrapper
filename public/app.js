@@ -4601,7 +4601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'HTTP ' + r.status);
         const partes = [];
-        partes.push('Setter "' + (data.setterName || setterId) + '" eliminado.');
+        partes.push('SDR "' + (data.setterName || setterId) + '" eliminado.');
         if (data.leadsFreed) partes.push('• ' + data.leadsFreed + ' lead(s) liberado(s)');
         if (data.variantsFreed) partes.push('• ' + data.variantsFreed + ' variante(s) liberada(s)');
         if (data.userDeleted) {
@@ -4611,7 +4611,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.invitesRevoked) partes.push('• ' + data.invitesRevoked + ' invite(s) pendientes revocada(s)');
         alert(partes.join('\n'));
       } catch (err) {
-        alert('Error eliminando setter: ' + err.message);
+        alert('Error eliminando SDR: ' + err.message);
       }
       loadCommandCenter();
     };
@@ -5846,7 +5846,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               // Reagrupar en turnos → conversación legible, no frases sueltas picadas.
               const segsHtml = _mergeTranscriptTurns(segs).map(s => {
                 const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
-                const lbl = s.speaker === 'setter' ? 'Setter' : 'Lead';
+                const lbl = s.speaker === 'setter' ? 'SDR' : 'Lead';
                 return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
               }).join('');
               return `<details style="background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; overflow:hidden;">
@@ -6719,7 +6719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!hasTr) return rowHtml;
             const segsHtml = _mergeTranscriptTurns(segs).map(s => {
               const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
-              const lbl = s.speaker === 'setter' ? 'Setter' : 'Lead';
+              const lbl = s.speaker === 'setter' ? 'SDR' : 'Lead';
               return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
             }).join('');
             return `<details style="border:1px solid var(--border-subtle); border-radius:7px; overflow:hidden;">
@@ -9284,7 +9284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Badge total de leads
         const totalBadge = document.getElementById('setter-leads-total-badge');
-        if (totalBadge) totalBadge.textContent = t.total + ' leads totales en setters';
+        if (totalBadge) totalBadge.textContent = t.total + ' leads totales en SDRs';
 
         // Tabla por SDR
         const _cmdSetterBody = document.getElementById('cmd-table-body');
@@ -9510,7 +9510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (user.role === 'supervisor') {
             const visJson = encodeURIComponent(JSON.stringify(user.visibleSetterIds || []));
             const visCount = (user.visibleSetterIds || []).length;
-            const visLabel = visCount > 0 ? ('Setters visibles (' + visCount + ')') : 'Setters visibles';
+            const visLabel = visCount > 0 ? ('SDRs visibles (' + visCount + ')') : 'SDRs visibles';
             acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" title="Elegir qué SDRs puede ver este supervisor (vacío = todos)" onclick="window._editVisibleSetters(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.name || user.email || '') + '\'), decodeURIComponent(\'' + visJson + '\'))">' + visLabel + '</button>');
           }
           // Acciones especificas de SDR
@@ -9551,7 +9551,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return '<tr>' +
           '<td>' + escHtml(user.name || '') + '</td>' +
           '<td>' + escHtml(user.email || '') + '</td>' +
-          '<td>' + escHtml(user.role || '') + '</td>' +
+          '<td>' + escHtml(user.role === 'setter' ? 'SDR' : (user.role || '')) + '</td>' +
           '<td>' + escHtml(user.status || '') + '</td>' +
           '<td>' + (user.role === 'setter' ? varCount : '—') + '</td>' +
           '<td>' + onboardingCell + '</td>' +
@@ -9588,7 +9588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<table class="data-table" style="width:100%;"><thead><tr>' +
             '<th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th>' +
             '</tr></thead><tbody>' + rows + '</tbody></table>' +
-            '<div class="muted" style="font-size:11px; margin-top:6px;">Revocá una invitación para poder re-invitar ese email con otro rol. Si era SDR, se limpia también el setter vacío que generó.</div>' +
+            '<div class="muted" style="font-size:11px; margin-top:6px;">Revocá una invitación para poder re-invitar ese email con otro rol. Si era SDR, se limpia también el perfil de SDR vacío que generó.</div>' +
             '</div>';
         }
       }
@@ -9596,13 +9596,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Revocar una invitación pendiente (admin). Libera el email para re-invitar.
     window._revokeInvite = async (inviteId, email) => {
-      if (!confirm('¿Revocar la invitación de ' + email + '?\n\nSe libera el email para invitarlo de nuevo con otro rol. Si era SDR, se elimina el setter vacío que generó.')) return;
+      if (!confirm('¿Revocar la invitación de ' + email + '?\n\nSe libera el email para invitarlo de nuevo con otro rol. Si era SDR, se elimina el perfil de SDR vacío que generó.')) return;
       try {
         const r = await fetch(apiUrl('/api/auth/invites/' + encodeURIComponent(inviteId)), { method: 'DELETE', credentials: 'include' });
         const d = await r.json().catch(() => ({}));
         if (!r.ok) { alert('No se pudo revocar: ' + (d.error || ('HTTP ' + r.status))); return; }
         let msg = 'Invitación de ' + (d.email || email) + ' revocada.';
-        if (d.orphanSetterRemoved) msg += '\nSetter vacío eliminado.';
+        if (d.orphanSetterRemoved) msg += '\nSDR vacío eliminado.';
         window.showToast?.(msg, { type: 'success' });
         await loadUsersPanel();
       } catch (e) {
@@ -9708,7 +9708,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await r.json();
         setters = (d.setters || []).filter(s => !s.hidden && !_ADMIN_ONLY_SETTER_IDS.includes(s.id));
       } catch (e) {
-        alert('Error cargando setters: ' + e.message);
+        alert('Error cargando SDRs: ' + e.message);
         return;
       }
       const rows = setters.map(s => {
@@ -9721,11 +9721,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const html = '<div style="position:fixed; inset:0; background:rgba(0,0,0,0.7); display:flex; align-items:center; justify-content:center; z-index:9999;" onclick="if(event.target===this) this.remove()">' +
         '<div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:14px; padding:24px; max-width:520px; width:92%; max-height:88vh; overflow:auto;">' +
         '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">' +
-          '<h2 style="margin:0; color:var(--text-primary); font-size:18px;">Setters visibles · ' + escHtml(userName) + '</h2>' +
+          '<h2 style="margin:0; color:var(--text-primary); font-size:18px;">SDRs visibles · ' + escHtml(userName) + '</h2>' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none; border:none; color:var(--text-tertiary); font-size:24px; cursor:pointer; padding:0 8px;">×</button>' +
         '</div>' +
         '<div style="color:var(--text-secondary); font-size:12px; margin-bottom:16px;">Elegí qué SDRs puede ver este supervisor. Vacío = ve todos (salvo los SDRs reservados al admin).</div>' +
-        '<div id="vs-setter-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">' + (rows || '<div style="color:var(--text-tertiary); font-size:13px;">No hay setters.</div>') + '</div>' +
+        '<div id="vs-setter-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">' + (rows || '<div style="color:var(--text-tertiary); font-size:13px;">No hay SDRs.</div>') + '</div>' +
         '<div style="display:flex; gap:8px; justify-content:flex-end;">' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="font-size:13px; background:none; color:var(--text-secondary); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>' +
           '<button id="vs-save-btn" style="font-size:13px; background:var(--accent); color:#0F1115; border:none; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:600;" data-user="' + escHtml(userId) + '">Guardar</button>' +
@@ -9811,8 +9811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         'Escribí el rol nuevo:\n' +
         '  • admin       (acceso total)\n' +
         '  • supervisor  (ve el equipo, no puede borrar ni scrapear)\n' +
-        '  • setter      (operativo, solo ve sus leads)\n\n' +
-        'Nota: si era setter, conserva sus leads y su base de prospección.',
+        '  • setter      (SDR operativo, solo ve sus leads)\n\n' +
+        'Nota: si era SDR, conserva sus leads y su base de prospección.',
         currentRole
       );
       if (!next || next === currentRole) return;
@@ -9926,7 +9926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<label style="display:flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border-subtle); border-radius:8px; cursor:pointer; font-size:12px; color:var(--text-primary);">' +
           '<input type="checkbox" class="invite-vs-cb" value="' + escHtml(s.id) + '" style="width:15px; height:15px; accent-color:var(--accent);">' +
           escHtml(s.name || s.id) + '</label>'
-        ).join('') || '<span style="font-size:12px; color:var(--text-tertiary);">No hay setters.</span>';
+        ).join('') || '<span style="font-size:12px; color:var(--text-tertiary);">No hay SDRs.</span>';
         _inviteVisibleLoaded = true;
       } catch (e) { /* no-op */ }
     }
@@ -10251,7 +10251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       setterClearBtn.addEventListener('click', async () => {
         const setterId = await window.pickSetter({
           title: 'Borrar leads de un SDR',
-          subtitle: '⚠️ Vas a borrar leads. Elegí de qué setter.',
+          subtitle: '⚠️ Vas a borrar leads. Elegí de qué SDR.',
           allowEmpty: false,
         });
         if (!setterId) return;
@@ -10296,7 +10296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const assignTo = await window.pickSetter({
           title: 'Importar CSV a SDR',
-          subtitle: 'A qué setter querés asignar los leads del CSV?',
+          subtitle: 'A qué SDR querés asignar los leads del CSV?',
           allowEmpty: true,
         });
         if (assignTo === null) { setterImportCsv.value = ''; return; }
@@ -11122,7 +11122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 2026-05-24: si admin esta en modo "Ver como setter", mostrar el nombre
       // del SDR impersonado, no el nombre real del admin. Antes decia
       // "Hola Ignacio" para todos los SDRs porque el admin queda con su nombre.
-      let name = currentUser?.name || 'Setter';
+      let name = currentUser?.name || 'SDR';
       const isImpersonating = currentUser?.realRole === 'admin' && currentUser?.role === 'setter';
       if (isImpersonating && currentUser?.setterId) {
         const impersonatedSetter = (settersList || []).find(s => s.id === currentUser.setterId);
@@ -11891,7 +11891,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <strong style="color:var(--text-primary); font-size:14px;">${dot(u.status)} ${escHtml(u.name)}</strong>
             <span style="background:${stColor(u.status)}22; color:${stColor(u.status)}; padding:3px 10px; border-radius:10px; font-size:11px; font-weight:600;">${stLabel(u.status)}</span>
           </div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:var(--info);">${u.role}</span></div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:var(--info);">${u.role === 'setter' ? 'SDR' : u.role}</span></div>
           <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Última actividad: <strong style="color:var(--text-primary);">${fmtAge(u.lastSeen)}</strong></div>
           ${u.ip ? `<div style="font-size:11px; color:var(--text-secondary);">IP: <code style="background:var(--bg-color); padding:1px 6px; border-radius:4px;">${escHtml(u.ip)}</code> · ${browser}/${os}</div>` : ''}
         </div>`;
@@ -13230,9 +13230,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function _mrSetterActionPill(g) {
     if (!g.setterAction) return '';
     const map = {
-      good: { text: 'Setter: ✓ buena', color: '#5bb974' },
-      bad: { text: 'Setter: ✗ descartó', color: '#f85149' },
-      edited: { text: 'Setter: ✎ editó', color: '#9D85F2' },
+      good: { text: 'SDR: ✓ buena', color: '#5bb974' },
+      bad: { text: 'SDR: ✗ descartó', color: '#f85149' },
+      edited: { text: 'SDR: ✎ editó', color: '#9D85F2' },
     };
     const m = map[g.setterAction];
     if (!m) return '';
@@ -14021,7 +14021,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const searchTerm = (document.getElementById('chist-search')?.value || '').toLowerCase().trim();
         transcriptEl.innerHTML = _mergeTranscriptTurns(c.transcript.segments).map(s => {
           const speakerColor = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
-          const speakerLabel = s.speaker === 'setter' ? 'Setter' : 'Lead';
+          const speakerLabel = s.speaker === 'setter' ? 'SDR' : 'Lead';
           let text = escHtml(s.text);
           if (searchTerm && text.toLowerCase().includes(searchTerm)) {
             const re = new RegExp('(' + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
@@ -15158,7 +15158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   window.pickSetter = async function pickSetter(opts = {}) {
-    const { title = 'Elegir setter', subtitle = 'A qué setter querés asignar estos leads?', allowEmpty = false } = opts;
+    const { title = 'Elegir SDR', subtitle = 'A qué SDR querés asignar estos leads?', allowEmpty = false } = opts;
     document.getElementById('setter-picker-title').textContent = title;
     document.getElementById('setter-picker-subtitle').textContent = subtitle;
     const search = document.getElementById('setter-picker-search');
@@ -15289,7 +15289,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.pickSettersDistribution = async function pickSettersDistribution(opts = {}) {
     const { totalLeads = 0, subtitle } = opts;
     _distTotalLeads = totalLeads;
-    document.getElementById('setter-distribute-subtitle').textContent = subtitle || `${totalLeads} leads para repartir entre setters. Tildá los que vas a usar y poné cuántos a cada uno.`;
+    document.getElementById('setter-distribute-subtitle').textContent = subtitle || `${totalLeads} leads para repartir entre SDRs. Tildá los que vas a usar y poné cuántos a cada uno.`;
     _distSettersCache = await _pickSetterFetch();
     // 2026-07-11: anexar cuántos LLAMABLES tiene cada SDR hoy (de pool-summary),
     // para balancear la carga al repartir. Best-effort: si falla, sigue sin el dato.
@@ -15903,7 +15903,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         items.push({
           type: 'setter',
           label: s.name,
-          sublabel: 'Setter',
+          sublabel: 'SDR',
           icon: '🧑‍💼',
           action: () => {
             const sel = document.getElementById('setter-select');
@@ -16597,7 +16597,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
   window._tlxDeleteScript = async (id, label) => {
     const ok = await window.askConfirm({
-      title: '¿Borrar guion?', message: `Vas a borrar "${label}". Los setters dejarán de verlo.`,
+      title: '¿Borrar guion?', message: `Vas a borrar "${label}". Los SDRs dejarán de verlo.`,
       confirmLabel: 'Borrar', danger: true,
     });
     if (!ok) return;
@@ -17038,7 +17038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       },
       {
         id: 'usuarios',
-        title: 'Invitar usuarios (setters / supervisores)',
+        title: 'Invitar usuarios (SDRs / supervisores)',
         body: `<ol>
           <li>Andá a <strong>Configuración → Usuarios</strong> (o equivalente según tu menú).</li>
           <li>Generá invitación con email + rol (SDR / supervisor / admin).</li>

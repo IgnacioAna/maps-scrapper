@@ -9973,7 +9973,7 @@ app.post('/api/setters/sessions/end', requireAuth, async (req, res) => {
   try {
     if (AI_AVAILABLE) {
       const interactionsList = interactionsSnap.slice(0, 25).map((i) => `- ${new Date(i.at).toLocaleString()}: ${i.action} → ${i.leadName}`).join("\n");
-      const prompt = `Sos un coach de un equipo de prospección por WhatsApp. Hacé un mini-resumen (3-5 lineas, español rioplatense, tono cordial pero directo) de la sesión de un setter llamado ${effectiveSetter}.
+      const prompt = `Sos un coach de un equipo de prospección por WhatsApp. Hacé un mini-resumen (3-5 lineas, español rioplatense, tono cordial pero directo) de la sesión de un SDR llamado ${effectiveSetter}.
 Datos:
 - Duración: ${durationMin} min
 - Conexiones enviadas: ${connections}
@@ -10229,7 +10229,7 @@ REGLAS:
 4. Si no hay certeza, deja campos vacíos.
 5. Genera una apertura humana de WhatsApp.
    REGLAS DEL openMessage (CRÍTICO):
-   - QUIÉN MANDA: el openMessage lo manda un SETTER (nuestro vendedor) al
+   - QUIÉN MANDA: el openMessage lo manda un SDR (nuestro vendedor) al
      dueño de la clínica para INICIAR conversación. NO sos un cliente
      interesado en agendar. Sos el que saluda primero para arrancar charla.
    - Máximo 1 oración, máximo 90 caracteres.
@@ -10238,14 +10238,14 @@ REGLAS:
      "me gustaría saber sobre sus servicios", "estoy interesado en sus
      tratamientos", "quiero agendar una cita", "podrían darme más info",
      "necesito información sobre". Eso es lo que diría un cliente — vos
-     sos el setter, NO el cliente.
+     sos el SDR, NO el cliente.
    - PROHIBIDO: URLs, links, wa.me, http, www, hashtags, @menciones.
    - PROHIBIDO: emojis, markdown (** _ # > -), comillas, corchetes [ ], llaves { }.
    - PROHIBIDO: placeholders tipo [Nombre], {clinica}, <doctor>, %s, \${cualquier}.
    - PROHIBIDO: instrucciones, preguntas tipo "¿qué te parece?", promesas concretas.
    - Si tenés DUDA del rol, devolvé openMessage como string VACÍO (vamos a
      usar un saludo neutro del banco).
-   - Ejemplos VÁLIDOS (saludo neutro del setter): "Hola, buenas tardes" /
+   - Ejemplos VÁLIDOS (saludo neutro del SDR): "Hola, buenas tardes" /
      "Buenas, ¿cómo andan?" / "Hola, ¿cómo están hoy?" / "Hola, buen día"
    - Ejemplos INVÁLIDOS (rol invertido, NO usar): "Hola, me gustaría saber
      sobre sus tratamientos" / "Estoy interesado en agendar una cita" /
@@ -10481,7 +10481,7 @@ REGLAS:
 4. Si no hay certeza, deja campos vacíos.
 5. Genera una apertura humana de WhatsApp.
    REGLAS DEL openMessage (CRÍTICO):
-   - QUIÉN MANDA: el openMessage lo manda un SETTER (nuestro vendedor) al
+   - QUIÉN MANDA: el openMessage lo manda un SDR (nuestro vendedor) al
      dueño de la clínica para INICIAR conversación. NO sos un cliente
      interesado en agendar. Sos el que saluda primero para arrancar charla.
    - Máximo 1 oración, máximo 90 caracteres.
@@ -10490,14 +10490,14 @@ REGLAS:
      "me gustaría saber sobre sus servicios", "estoy interesado en sus
      tratamientos", "quiero agendar una cita", "podrían darme más info",
      "necesito información sobre". Eso es lo que diría un cliente — vos
-     sos el setter, NO el cliente.
+     sos el SDR, NO el cliente.
    - PROHIBIDO: URLs, links, wa.me, http, www, hashtags, @menciones.
    - PROHIBIDO: emojis, markdown (** _ # > -), comillas, corchetes [ ], llaves { }.
    - PROHIBIDO: placeholders tipo [Nombre], {clinica}, <doctor>, %s, ${cualquier}.
    - PROHIBIDO: instrucciones, preguntas tipo "¿qué te parece?", promesas concretas.
    - Si tenés DUDA del rol, devolvé openMessage como string VACÍO (vamos a
      usar un saludo neutro del banco).
-   - Ejemplos VÁLIDOS (saludo neutro del setter): "Hola, buenas tardes" /
+   - Ejemplos VÁLIDOS (saludo neutro del SDR): "Hola, buenas tardes" /
      "Buenas, ¿cómo andan?" / "Hola, ¿cómo están hoy?" / "Hola, buen día"
    - Ejemplos INVÁLIDOS (rol invertido, NO usar): "Hola, me gustaría saber
      sobre sus tratamientos" / "Estoy interesado en agendar una cita" /
@@ -11196,7 +11196,7 @@ app.post('/api/faqs/suggest', requireAuth, aiLimiter, async (req, res) => {
     }
   } catch {}
 
-  const prompt = `Sos un asistente de ventas de una empresa que NUNCA se nombra (hablás siempre de la oferta, jamás de la marca). Ofrecemos un sistema de reactivación, seguimiento y fidelización de pacientes que trabaja sobre la base de pacientes que la clínica YA tiene (reactivar dormidos, seguir presupuestos no cerrados, recuperar no-shows). NO somos una agencia de publicidad ni buscamos pacientes nuevos. Tu trabajo es redactar la respuesta que un setter va a enviar por WhatsApp a un dueño de clínica dental (lead), con el objetivo de mantener la conversación viva y avanzar hacia una llamada.
+  const prompt = `Sos un asistente de ventas de una empresa que NUNCA se nombra (hablás siempre de la oferta, jamás de la marca). Ofrecemos un sistema de reactivación, seguimiento y fidelización de pacientes que trabaja sobre la base de pacientes que la clínica YA tiene (reactivar dormidos, seguir presupuestos no cerrados, recuperar no-shows). NO somos una agencia de publicidad ni buscamos pacientes nuevos. Tu trabajo es redactar la respuesta que un SDR va a enviar por WhatsApp a un dueño de clínica dental (lead), con el objetivo de mantener la conversación viva y avanzar hacia una llamada.
 ${onboardingContext}${trainingContext}
 ${varianteTexto ? `MENSAJE INICIAL QUE SE LES ENVIÓ:\n${varianteTexto}\n` : ''}
 ${contexto ? `CONTEXTO ADICIONAL: ${contexto}\n` : ''}
@@ -11429,7 +11429,7 @@ o el placeholder textual: (ninguna)
 
 CUÁNDO USAR CADA SECCIÓN
 
-1. Si el lead pide algo que NO se manda por chat ahora (su mail, un PDF, un link, info de la empresa) o está frío/dudando/silencioso, la "RESPUESTA AL LEAD" suele ser "(no responder ahora)" y vos das acciones al setter en SUGERENCIAS.
+1. Si el lead pide algo que NO se manda por chat ahora (su mail, un PDF, un link, info de la empresa) o está frío/dudando/silencioso, la "RESPUESTA AL LEAD" suele ser "(no responder ahora)" y vos das acciones al SDR en SUGERENCIAS.
 
 2. Si el lead pregunta algo que sí se contesta por chat (objeción, pregunta sobre cómo funciona, calificación), poné los bloques en RESPUESTA AL LEAD. Sumá SUGERENCIAS si tiene sentido (ej: "después mandale el caso del Dr. X").
 
@@ -11437,7 +11437,7 @@ CUÁNDO USAR CADA SECCIÓN
 
 REGLAS DE LAS SUGERENCIAS
 
-- Son acciones concretas para el SETTER, NO texto para el lead.
+- Son acciones concretas para el SDR, NO texto para el lead.
 - En imperativo, cortas, accionables. Máximo 4 ítems.
 - Ejemplos buenos:
   • "Mandá el PDF ejecutivo"
@@ -11448,7 +11448,7 @@ REGLAS DE LAS SUGERENCIAS
   • "Escalalo al closer ya, está caliente"
 - Ejemplos malos: "Sé empático", "Pensá lo que vas a decir" (vagos, no accionables).
 
-NUNCA mezcles: nada de instrucciones al setter dentro de RESPUESTA AL LEAD, nada de texto para el lead dentro de SUGERENCIAS.`;
+NUNCA mezcles: nada de instrucciones al SDR dentro de RESPUESTA AL LEAD, nada de texto para el lead dentro de SUGERENCIAS.`;
 
 // Detecta la intención del lead a partir del mensaje + historial reciente.
 // Heurística keyword-based, rápida y barata. Retorna una etiqueta corta:
@@ -11975,7 +11975,7 @@ app.post("/api/mercury/generate", requireAuth, aiLimiter, async (req, res) => {
           .map((b) => `[${b.label || 'Bloque'}]\n${b.text.trim()}`)
           .join("\n\n");
         if (blocksText) {
-          variantBlock = `MENSAJE INICIAL QUE EL SETTER ENVIÓ AL PROSPECTO (variante: ${v.name || variantId}):\n${blocksText}\n\n`;
+          variantBlock = `MENSAJE INICIAL QUE EL SDR ENVIÓ AL PROSPECTO (variante: ${v.name || variantId}):\n${blocksText}\n\n`;
           variantUsed = { id: v.id, name: v.name || '' };
         }
       }
@@ -11995,7 +11995,7 @@ ${ctx ? `CONTEXTO ADICIONAL DE LA CONVERSACION:\n${ctx}\n\n` : ""}${isCallMode ?
 ${message}
 
 ${toneInstruction ? toneInstruction + "\n\n" : ""}${isCallMode
-    ? `Generá lo que el setter va a DECIR en voz alta, ahora mismo. Reglas del modo llamada (pisan cualquier regla de formato WhatsApp):
+    ? `Generá lo que el SDR va a DECIR en voz alta, ahora mismo. Reglas del modo llamada (pisan cualquier regla de formato WhatsApp):
 - UNA sola respuesta hablada y corta: 1 a 3 frases, máximo ~50 palabras. Sin bloques, sin listas.
 - Lenguaje HABLADO natural, ritmo de conversación telefónica — que no suene leído ni escrito.
 - Manejo de objeción tipo PACE: reconocé lo que dijo en una frase corta, reencuadrá con el dolor o beneficio concreto, y cerrá con una pregunta o con el pedido de la reunión de 15 minutos.
@@ -12003,10 +12003,10 @@ ${toneInstruction ? toneInstruction + "\n\n" : ""}${isCallMode
     : `Generá la respuesta lista para copiar al WhatsApp. Sin signos de apertura ¿¡. Bloques separados con doble salto. Sin precios, sin stack tecnico, sin emojis. NUNCA menciones el nombre de la empresa ("SCM" / "SCM Dental") al prospecto. 1 a 3 bloques.${variantBlock ? ' Tené en cuenta que el prospecto está respondiendo al mensaje inicial mostrado arriba — encadená con coherencia.' : ''}`}
 
 CRÍTICO — FORMATO DE TU RESPUESTA:
-- Respondé ÚNICAMENTE con ${isCallMode ? 'la frase final en ESPAÑOL que el setter dice en voz alta' : 'el mensaje final en ESPAÑOL, listo para pegar en WhatsApp'}.
+- Respondé ÚNICAMENTE con ${isCallMode ? 'la frase final en ESPAÑOL que el SDR dice en voz alta' : 'el mensaje final en ESPAÑOL, listo para pegar en WhatsApp'}.
 - NO escribas tu razonamiento, ni análisis, ni explicaciones, ni conteo de palabras.
 - NO uses inglés. NO uses frases tipo "We need to", "Let's", "Maybe", "Block 1".
-- Tu output es SOLO el texto que el setter ${isCallMode ? 'dice' : 'copia y pega'}. Nada antes, nada después.`;
+- Tu output es SOLO el texto que el SDR ${isCallMode ? 'dice' : 'copia y pega'}. Nada antes, nada después.`;
 
   let rawOutput = "";
   let usedFallback = false;
@@ -12020,7 +12020,7 @@ CRÍTICO — FORMATO DE TU RESPUESTA:
       promptVariant = useExperimental ? "B" : "A";
       let basePrompt = _stripBrandMentions(useExperimental ? cfg.experimentalPrompt : (cfg.systemPrompt || _defaultMercurySystemPrompt()));
       if (isCallMode) {
-        basePrompt += `\n\n---\nMODO LLAMADA EN VIVO (OVERRIDE): en esta generación el setter NO está chateando por WhatsApp — está EN una llamada telefónica en frío y el prospecto acaba de decir algo. Todo lo que este prompt dice sobre "mensajes de WhatsApp", "bloques" y formato de chat NO aplica acá. Tu output es la frase que el setter va a decir en voz alta a continuación. Las reglas de contenido (sin precios, sin stack técnico, el closer maneja la venta, objetivo = agendar reunión de 15 minutos) siguen valiendo igual.`;
+        basePrompt += `\n\n---\nMODO LLAMADA EN VIVO (OVERRIDE): en esta generación el SDR NO está chateando por WhatsApp — está EN una llamada telefónica en frío y el prospecto acaba de decir algo. Todo lo que este prompt dice sobre "mensajes de WhatsApp", "bloques" y formato de chat NO aplica acá. Tu output es la frase que el SDR va a decir en voz alta a continuación. Las reglas de contenido (sin precios, sin stack técnico, el closer maneja la venta, objetivo = agendar reunión de 15 minutos) siguen valiendo igual.`;
       }
       // 2026-05-04: removido MERCURY_OUTPUT_FORMAT_INSTRUCTIONS del system. La
       // IA todavía no está estabilizada y el formato dual sumaba fricción al
@@ -13330,7 +13330,7 @@ app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, 
   }
   // Armar el texto del transcript para el prompt
   const transcriptText = transcript.segments.map(s => {
-    const role = s.speaker === 'setter' ? 'SETTER (vendedor)' : 'LEAD (decisor)';
+    const role = s.speaker === 'setter' ? 'SDR (vendedor)' : 'LEAD (decisor)';
     const m = Math.floor(s.start / 60);
     const ss = Math.floor(s.start % 60);
     return `[${m}:${String(ss).padStart(2,'0')}] ${role}: ${s.text}`;
@@ -13338,14 +13338,14 @@ app.post('/api/telnyx/calls/:leadId/:callIdx/analyze', requireAuth, async (req, 
   // Prompt MASIVO con todo el framework v2 + contexto de outcome
   const systemPrompt = `Sos un coach experto en cold calling B2B para clínicas dentales. Analizás llamadas reales según el framework oficial del equipo, Cold Call v2 (basado en Julio Sagantini: PACE, 3-S, problem-based pitch). NUNCA nombres la empresa para la que trabaja el equipo — hablá de "la oferta" o "el sistema".
 
-OBJETIVO DE LA LLAMADA: agendar reunión de 20min con el decisor (Doctor) para mostrarle el sistema de reactivación de pacientes. El SETTER es quien llama; NO cierra la venta en la llamada, solo agenda.
+OBJETIVO DE LA LLAMADA: agendar reunión de 20min con el decisor (Doctor) para mostrarle el sistema de reactivación de pacientes. El SDR es quien llama; NO cierra la venta en la llamada, solo agenda.
 
 LA OFERTA: NO es marketing. NO buscamos pacientes nuevos. Activamos pacientes existentes que dejaron de ir (base dormida 3-5%). Casos de éxito (Uruguay): clínica grande con base de ~13.000 pacientes generó 147 citas en 11 semanas; consultorio chico de ~600 pacientes generó 50 agendas en 5 semanas (18,5% de conversión). Funciona en base grande y chica.
 
 FRAMEWORK QUE EVALUÁS:
 
 1. OPENER (primeros 27 segundos):
-   - "Hola Doctor [nombre]?" + pausa + presentación breve con el nombre propio del setter
+   - "Hola Doctor [nombre]?" + pausa + presentación breve con el nombre propio del SDR
    - "Estuve revisando la presencia online de la clínica"
    - "Le tomo 27 segundos, si no le hace sentido no lo molesto más" → DARLE LA SALIDA
    - Si pasa el opener (>30 seg sin colgar) → flag PASSED_OPENER
@@ -13394,7 +13394,7 @@ ANALIZÁ EL TRANSCRIPT Y DEVOLVÉ JSON ESTRICTO (sin markdown wrapping):
   "score": <1-10>,
   "scoreReason": "<una frase justificando>",
   "passedOpener": <true|false>,
-  "biggestStrength": "<lo mejor que hizo el setter>",
+  "biggestStrength": "<lo mejor que hizo el SDR>",
   "biggestMistake": "<el error más grande, si hay>",
   "missedOpportunities": ["<oportunidad 1 perdida con timestamp>", "<oportunidad 2>"],
   "paceCompliance": {
@@ -13579,8 +13579,8 @@ function _mergeTranscriptTurns(segments) {
 // Resumen de entrenamiento de una llamada (qué pasó, qué funcionó, aprendizaje).
 async function _trainingSummaryLLM(segments, outcome) {
   if (!AI_AVAILABLE) return '';
-  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 6000);
-  const prompt = `Sos analista de un call center de ventas (reactivación de pacientes para clínicas dentales). Resumí esta llamada para ENTRENAMIENTO de otros setters. Resultado de la llamada: ${outcome || 'desconocido'}.
+  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SDR' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 6000);
+  const prompt = `Sos analista de un call center de ventas (reactivación de pacientes para clínicas dentales). Resumí esta llamada para ENTRENAMIENTO de otros SDRs. Resultado de la llamada: ${outcome || 'desconocido'}.
 
 Transcripción (anonimizada):
 ${dialog}
@@ -13606,25 +13606,25 @@ async function _coachAnswerLLM(question, faqs) {
   if (!AI_AVAILABLE) return '';
   const ctx = (faqs || []).slice(0, 12).map((f) => `P: ${f.pregunta}\nR: ${f.respuesta}`).join('\n\n').slice(0, 5000);
   const offer = _briefKnowledge();
-  const prompt = `Sos un coach de ventas experto en la oferta del equipo (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un setter del equipo te hace una pregunta para entender mejor la oferta o mejorar su trabajo. NUNCA nombres la empresa — referite siempre a "la oferta", "el sistema" o "el equipo".
+  const prompt = `Sos un coach de ventas experto en la oferta del equipo (reactivación de pacientes y seguimiento de presupuestos para clínicas dentales, vía llamadas en frío). Un SDR del equipo te hace una pregunta para entender mejor la oferta o mejorar su trabajo. NUNCA nombres la empresa — referite siempre a "la oferta", "el sistema" o "el equipo".
 
 CÓMO RESPONDER (crítico):
-- Le respondés AL SETTER, en segunda persona ("mirá, lo que ofrecemos es...", "en ese caso te conviene..."). Sos su coach explicándole, NO estás hablando con un cliente.
-- NO redactes el mensaje o la frase para mandarle al prospecto, salvo que el setter te lo pida explícitamente ("qué le digo", "pasame una frase"). En ese caso la das textual, y en esa frase nunca nombres la empresa.
+- Le respondés AL SDR, en segunda persona ("mirá, lo que ofrecemos es...", "en ese caso te conviene..."). Sos su coach explicándole, NO estás hablando con un cliente.
+- NO redactes el mensaje o la frase para mandarle al prospecto, salvo que el SDR te lo pida explícitamente ("qué le digo", "pasame una frase"). En ese caso la das textual, y en esa frase nunca nombres la empresa.
 - Si pregunta por la oferta (qué hacemos, qué incluye, cómo funciona, a quién le sirve), explicásela con la información de abajo, clara y completa.
 - Tono argentino/rioplatense natural, concreto y accionable, sin signos de apertura ¿¡. Máximo ~150 palabras, sin teoría de relleno.
-- Podés mencionar precios o detalles internos SOLO para explicarle al setter qué NO debe decir; nunca inventes datos que no estén abajo.
+- Podés mencionar precios o detalles internos SOLO para explicarle al SDR qué NO debe decir; nunca inventes datos que no estén abajo.
 
 INFORMACIÓN DE LA OFERTA Y CÓMO TRABAJA EL EQUIPO (base de verdad para tus explicaciones):
 ${offer || _BRIEF_OFFER}
 
-Banco de respuestas del equipo (pares pregunta-del-cliente → respuesta-del-setter; usalo como conocimiento de objeciones y argumentos, NO como formato de tu respuesta):
+Banco de respuestas del equipo (pares pregunta-del-cliente → respuesta-del-SDR; usalo como conocimiento de objeciones y argumentos, NO como formato de tu respuesta):
 ${ctx || '(sin banco cargado)'}
 
-Pregunta del setter:
+Pregunta del SDR:
 ${question}
 
-Tu respuesta al setter:`;
+Tu respuesta al SDR:`;
   try {
     const c = await Promise.race([
       ai.chat.completions.create({ model: AI_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.5, max_tokens: 500 }),
@@ -13640,7 +13640,7 @@ Tu respuesta al setter:`;
 const _AUTO_DISP_OUTCOMES = ['answered_interested', 'answered_not_interested', 'no_answer', 'voicemail', 'hung_up', 'callback_later', 'scheduled_with_admin', 'wrong_number', 'invalid_number'];
 async function _autoDispositionLLM(segments) {
   if (!AI_AVAILABLE) return null;
-  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SETTER' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 5000);
+  const dialog = (segments || []).map((s) => `${s.speaker === 'setter' ? 'SDR' : 'CLIENTE'}: ${s.text}`).join('\n').slice(0, 5000);
   if (!dialog.trim()) return null;
   const prompt = `Analizá esta llamada de venta en frío (reactivación de pacientes para clínicas dentales) y clasificá el RESULTADO. Devolvé SOLO un JSON: {"outcome":"<uno de: ${_AUTO_DISP_OUTCOMES.join(', ')}>","reason":"<una línea explicando por qué>"}.
 
@@ -13654,7 +13654,7 @@ Significado de cada outcome (elegí el que MEJOR describa el final de la llamada
 - no_answer: nadie atendió (tono, silencio, se corta sin voz humana).
 - wrong_number: atendió alguien que no tiene relación con la clínica buscada.
 - invalid_number: número fuera de servicio / inexistente (mensaje de operadora).
-Si dudás entre dos, priorizá el que refleje lo que dijo el CLIENTE, no el setter.
+Si dudás entre dos, priorizá el que refleje lo que dijo el CLIENTE, no el SDR.
 
 Transcripción:
 ${dialog}
@@ -13718,7 +13718,7 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
       calls.push({
         leadId, callIdx: i, ts: c.ts, duration: c.duration || 0,
         outcome: c.outcome || '',
-        setter: setterName[lead.assignedTo] || 'Setter',
+        setter: setterName[lead.assignedTo] || 'SDR',
         country: lead.country || '', category: lead.category || lead.type || '',
         segCount: c.transcript.segments.length,
         hasSummary: !!c.trainingSummary,
