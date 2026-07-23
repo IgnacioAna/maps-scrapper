@@ -57,6 +57,11 @@ fs.writeFileSync(
       // CO / MX → verdes, siguen
       lead_co: { num: 7, name: "CO", phone: "+573001234567", assignedTo: "setter_tf", estado: "sin_wsp", conexion: "sin_wsp" },
       lead_mx: { num: 8, name: "MX", phone: "+5215512345678", assignedTo: "setter_tf", estado: "sin_wsp", conexion: "sin_wsp" },
+      // ES fijo pero YA TRABAJADO con interés → exento del filtro (2026-07-23)
+      lead_es_fijo_interesado: { num: 9, name: "ES fijo interesado", phone: "+34913565584", assignedTo: "setter_tf", estado: "interesado", conexion: "sin_wsp", callLog: [{ ts: new Date().toISOString(), outcome: "answered_interested", by: "user_admin_tf" }] },
+      lead_es_fijo_callback: { num: 10, name: "ES fijo callback", phone: "+34914567630", assignedTo: "setter_tf", estado: "sin_wsp", conexion: "sin_wsp", callbackAt: new Date(Date.now() - 3600e3).toISOString(), callLog: [{ ts: new Date().toISOString(), outcome: "callback_later", by: "user_admin_tf" }] },
+      // ES fijo con cadencia automática (no_answer) → NO exento, se filtra igual
+      lead_es_fijo_cadencia: { num: 11, name: "ES fijo cadencia", phone: "+34954647171", assignedTo: "setter_tf", estado: "sin_wsp", conexion: "sin_wsp", callbackAt: new Date(Date.now() - 3600e3).toISOString(), callLog: [{ ts: new Date().toISOString(), outcome: "no_answer", by: "user_admin_tf" }] },
     },
     calendar: [], sessions: [],
   }, null, 2)
@@ -113,11 +118,19 @@ describe("GET /api/setters/leads/sin-wsp — filtro de tarifa roja", () => {
     expect(ids).not.toContain("lead_pe_fijo");
   });
 
-  it("?expensive=1 lista SOLO los de tarifa roja (revisión admin)", async () => {
+  it("exime a los rojos YA trabajados con interés (interesado / callback manual), no a la cadencia automática", async () => {
+    const r = await request(app).get("/api/setters/leads/sin-wsp").set("Cookie", cookie);
+    const ids = r.body.leads.map(l => l.id);
+    expect(ids).toContain("lead_es_fijo_interesado"); // interesado → sigue llamable
+    expect(ids).toContain("lead_es_fijo_callback");   // "vuelvo a llamar" manual → sigue
+    expect(ids).not.toContain("lead_es_fijo_cadencia"); // reintento automático → filtrado
+  });
+
+  it("?expensive=1 lista SOLO los de tarifa roja bloqueados (sin los exentos)", async () => {
     const r = await request(app).get("/api/setters/leads/sin-wsp?expensive=1").set("Cookie", cookie);
     expect(r.status).toBe(200);
     const ids = r.body.leads.map(l => l.id).sort();
-    expect(ids).toEqual(["lead_ec", "lead_es_fijo", "lead_pe_fijo", "lead_uy"]);
+    expect(ids).toEqual(["lead_ec", "lead_es_fijo", "lead_es_fijo_cadencia", "lead_pe_fijo", "lead_uy"]);
   });
 });
 

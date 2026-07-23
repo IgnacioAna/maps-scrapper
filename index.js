@@ -6241,10 +6241,12 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
       if (l.doNotCall && !showDnc) return false;
       if (showDnc) return !!l.doNotCall;
       // Auditoría tarifas 2026-07-23: destinos rojos (ES fijo, UY, EC, BO, PE
-      // fijo — ver _expensiveTariffLabel) fuera de TODA cola de discado. Con
-      // ?expensive=1 el admin puede listarlos para revisarlos (patrón dnc=1).
-      if (showExpensive) return !!_expensiveTariffLabel(l.phone);
-      if (_expensiveTariffLabel(l.phone)) return false;
+      // fijo — ver _expensiveTariffLabel) fuera de TODA cola de discado, SALVO
+      // los que un SDR ya trabajó con interés (_tariffRedButEngaged: interesado
+      // o "vuelvo a llamar" manual — esos siguen y se laburan desde Hoy). Con
+      // ?expensive=1 el admin puede listar los bloqueados (patrón dnc=1).
+      if (showExpensive) return _tariffBlocked(l);
+      if (_tariffBlocked(l)) return false;
       // Número muerto = lookup exitoso SIN tipo NI operadora (ver _leadIsConfirmedDeadNumber).
       // Lever contra la tasa de abandono de Telnyx, pero SIN enterrar reales: MX/ES vuelven
       // con operadora y sin tipo → siguen llamables. Los que erroraron (rate-limit) también.
@@ -7219,9 +7221,24 @@ function _expensiveTariffLabel(phone) {
   if (d.startsWith('51')) return 'PE fijo ~$0.40/min';
   return null;
 }
+// 2026-07-23 (pedido del user): los leads de tarifa roja que un SDR YA trabajó
+// y mostraron interés NO se filtran — pueden cerrar y sería tirar el trabajo
+// hecho. Engagement = estado interesado, o el último intento terminó en
+// "vuelvo a llamar" / "interesado". Los callbacks AUTOMÁTICOS de cadencia
+// (no_answer/voicemail) NO cuentan: pagar $0.40/min por reintentar a alguien
+// que nunca atendió es exactamente lo que el filtro evita.
+function _tariffRedButEngaged(l) {
+  if (l.estado === 'interesado') return true;
+  const log = Array.isArray(l.callLog) ? l.callLog : [];
+  const last = log.length ? log[log.length - 1].outcome : null;
+  return last === 'callback_later' || last === 'answered_interested';
+}
+function _tariffBlocked(l) {
+  return !!_expensiveTariffLabel(l.phone) && !_tariffRedButEngaged(l);
+}
 function _leadIsCallableNow(l, now) {
   if (l.doNotCall) return false;
-  if (_expensiveTariffLabel(l.phone)) return false; // tarifa roja → fuera de circulación
+  if (_tariffBlocked(l)) return false; // tarifa roja sin engagement → fuera de circulación
   if (_leadIsConfirmedDeadNumber(l)) return false; // línea muerta validada (sin tipo NI operadora)
   const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
   if (!hasPhone) return false;
