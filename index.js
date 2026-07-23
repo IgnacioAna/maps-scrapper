@@ -435,6 +435,13 @@ function attachAuth(req, _res, next) {
     }
     const u = req.auth.user;
     const ip = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').toString().split(',')[0].trim();
+    // Versión del frontend del user (2026-07-23): el app.js nuevo manda su
+    // cache-buster en X-App-Version (en el chequeo periódico de /api/version).
+    // Se preserva el último valor conocido cuando el request no lo trae.
+    // Sirve para ver en "Equipo online" quién corre un tab desactualizado
+    // (causa raíz de transcripciones rotas: código viejo grabando).
+    const prevPresence = onlinePresence.get(u.id);
+    const appVersion = String(req.headers['x-app-version'] || '').slice(0, 20) || prevPresence?.appVersion || null;
     onlinePresence.set(u.id, {
       userId: u.id,
       name: u.name,
@@ -442,7 +449,8 @@ function attachAuth(req, _res, next) {
       role: u.role,
       lastSeen: Date.now(),
       ip,
-      userAgent: (req.headers['user-agent'] || '').slice(0, 200)
+      userAgent: (req.headers['user-agent'] || '').slice(0, 200),
+      appVersion
     });
   }
   next();
@@ -1629,7 +1637,10 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
       status,
       lastSeen: lastSeenTs,
       ip,
-      userAgent
+      userAgent,
+      // Versión del app.js del user (solo la reportan frontends >= 20260723a
+      // vía X-App-Version; null = versión vieja o sin actividad post-deploy).
+      appVersion: presence?.appVersion || null
     };
   });
   // Ordenar: online > recent > offline; dentro de cada grupo, lastSeen desc
@@ -1638,7 +1649,7 @@ app.get('/api/auth/online', requireRole('admin', 'supervisor'), (req, res) => {
     if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
     return (b.lastSeen || 0) - (a.lastSeen || 0);
   });
-  res.json({ users: allUsers, generatedAt: now });
+  res.json({ users: allUsers, generatedAt: now, appCurrent: APP_BUILD_VERSION });
 });
 
 app.post('/api/auth/login', loginLimiter, (req, res) => {
@@ -13962,10 +13973,15 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   const recMetaClean = (() => {
     if (!recMeta || typeof recMeta !== 'object') return null;
     const out = {};
-    for (const k of ['startedAt', 'setterBinds', 'leadBinds', 'setterBytes', 'leadBytes']) {
+    for (const k of ['startedAt', 'setterBinds', 'leadBinds', 'setterBytes', 'leadBytes',
+      // 2026-07-23: niveles de audio medidos EN VIVO por canal (AnalyserNode sobre
+      // el mixer). lvlMax = RMS máximo; activePct = % de muestras con señal.
+      // Distingue "se grabó silencio" (bug de captura) de "había audio y Whisper
+      // lo descartó" (problema de ASR) sin adivinar.
+      'setterLvlMax', 'leadLvlMax', 'setterActivePct', 'leadActivePct']) {
       if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
     }
-    for (const k of ['setterRecError', 'leadRecError']) {
+    for (const k of ['setterRecError', 'leadRecError', 'v']) {
       if (typeof recMeta[k] === 'string' && recMeta[k]) out[k] = recMeta[k].slice(0, 80);
     }
     return Object.keys(out).length ? out : null;

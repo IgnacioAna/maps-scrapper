@@ -7267,9 +7267,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!track || track.readyState === 'ended') continue; // no sumar tracks muertos
         if (ch.bound.has(track.id)) continue;                 // ya está en el mixer
         try {
-          const src = _recCtx.createMediaStreamSource(new MediaStream([track]));
+          const wrapper = new MediaStream([track]);
+          const src = _recCtx.createMediaStreamSource(wrapper);
           src.connect(ch.dest);
-          ch.bound.set(track.id, src);
+          // Quirk conocido de Chromium: un track REMOTO (WebRTC) puede entregar
+          // silencio a Web Audio si ningún media element lo consume. El <audio>
+          // principal consume el stream original, pero por las dudas colgamos un
+          // consumidor MUDO del wrapper (sin DOM, sin UI, cero audio audible).
+          const sink = new Audio();
+          sink.muted = true;
+          sink.srcObject = wrapper;
+          sink.play?.().catch(() => {});
+          ch.bound.set(track.id, { src, sink });
           _recCtx.resume?.().catch(() => {});
           if (_recMeta) _recMeta[name + 'Binds'] = (_recMeta[name + 'Binds'] || 0) + 1;
           console.log('[transcribe] canal ' + name + ': track sumado al mixer (' + ch.bound.size + ' en total)');
@@ -7317,7 +7326,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           setter: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
           lead: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
         };
-        _recMeta = { startedAt: Date.now() };
+        // Medidor de nivel por canal (2026-07-23): mide EN VIVO si al mixer le
+        // llega señal de verdad. Va al recMeta → distingue "se grabó silencio"
+        // (bug de captura) de "había audio y Whisper lo descartó" (ASR).
+        for (const ch of Object.values(_recChannels)) {
+          ch.analyser = _recCtx.createAnalyser();
+          ch.analyser.fftSize = 2048;
+          _recCtx.createMediaStreamSource(ch.dest.stream).connect(ch.analyser);
+          ch.lvlMax = 0; ch.lvlSamples = 0; ch.lvlActive = 0;
+        }
+        _recMeta = { startedAt: Date.now(), v: (typeof _myAppVersion === 'string' ? _myAppVersion : '') };
         _setterRecorder = new MediaRecorder(_recChannels.setter.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
         _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
         _setterRecorder.onerror = (e) => { if (_recMeta) _recMeta.setterRecError = String(e?.error?.name || e?.error || 'error'); };
@@ -7327,9 +7345,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         _leadRecorder.onerror = (e) => { if (_recMeta) _recMeta.leadRecError = String(e?.error?.name || e?.error || 'error'); };
         _leadRecorder.start(1000);
         // Health check 1s: atrapa el swap de stream/track que ocurre ENTRE
-        // notifications (el carrier renegocia al atender). Comparar refs/ids es barato.
+        // notifications (el carrier renegocia al atender) + muestrea el nivel
+        // de señal de cada canal para el recMeta.
         if (_recHealthTimer) clearInterval(_recHealthTimer);
-        _recHealthTimer = setInterval(() => { try { _syncCallRecording(_telnyx.activeCall); } catch {} }, 1000);
+        _recHealthTimer = setInterval(() => {
+          try { _syncCallRecording(_telnyx.activeCall); } catch {}
+          try {
+            for (const ch of Object.values(_recChannels || {})) {
+              if (!ch.analyser) continue;
+              const buf = new Float32Array(ch.analyser.fftSize);
+              ch.analyser.getFloatTimeDomainData(buf);
+              let sum = 0;
+              for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+              const rms = Math.sqrt(sum / buf.length);
+              if (rms > ch.lvlMax) ch.lvlMax = rms;
+              ch.lvlSamples++;
+              if (rms > 0.01) ch.lvlActive++;
+            }
+          } catch {}
+        }, 1000);
         console.log('[transcribe] Grabación iniciada (setter + lead, mixer por canal)');
       } catch (e) {
         console.warn('[transcribe] start failed:', e.message);
@@ -7339,8 +7373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _teardownRecordingGraph() {
       if (_recHealthTimer) { clearInterval(_recHealthTimer); _recHealthTimer = null; }
       for (const name of ['setter', 'lead']) {
-        for (const src of (_recChannels?.[name]?.bound?.values?.() || [])) {
-          try { src.disconnect(); } catch {}
+        for (const b of (_recChannels?.[name]?.bound?.values?.() || [])) {
+          try { b.src?.disconnect(); } catch {}
+          try { if (b.sink) { b.sink.pause?.(); b.sink.srcObject = null; } } catch {}
         }
       }
       try { _recCtx?.close(); } catch {}
@@ -7368,6 +7403,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       await Promise.all([stopRecorder(_setterRecorder), stopRecorder(_leadRecorder)]);
       _setterRecorder = null;
       _leadRecorder = null;
+      // Volcar los niveles medidos al recMeta ANTES del teardown (que borra los canales).
+      if (_recMeta && _recChannels) {
+        for (const [name, ch] of Object.entries(_recChannels)) {
+          if (!ch.lvlSamples) continue;
+          _recMeta[name + 'LvlMax'] = Math.round((ch.lvlMax || 0) * 1000) / 1000;
+          _recMeta[name + 'ActivePct'] = Math.round((100 * (ch.lvlActive || 0)) / ch.lvlSamples);
+        }
+      }
       // Cerrar el grafo Web Audio de la grabación (libera el AudioContext).
       _teardownRecordingGraph();
       // Detener tracks del local stream para liberar el mic
@@ -11886,6 +11929,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const renderCard = (u) => {
         const browser = (u.userAgent || '').match(/(Chrome|Firefox|Safari|Edge|Opera)/)?.[1] || '?';
         const os = (u.userAgent || '').match(/(Windows|Mac OS X|Linux|Android|iPhone)/)?.[1] || '?';
+        // Chip de versión del sistema (2026-07-23): verde = al día, rojo = tab
+        // desactualizado (o versión tan vieja que ni reporta). Clave para detectar
+        // SDRs corriendo código viejo (transcripciones rotas post-deploy).
+        const appCur = data.appCurrent || '';
+        let verChip = '';
+        if (appCur && u.appVersion === appCur) {
+          verChip = `<div style="font-size:11px; color:var(--success); margin-top:4px;">Sistema al día (v${escHtml(u.appVersion)})</div>`;
+        } else if (appCur && u.status !== 'offline') {
+          // Activo AHORA con versión vieja (o tan vieja que ni reporta) → ese tab
+          // está corriendo código viejo. Un user offline no importa: al volver a
+          // entrar carga la versión nueva solo.
+          verChip = `<div style="font-size:11px; color:var(--danger); margin-top:4px; font-weight:600;">Tab DESACTUALIZADO ${u.appVersion ? '(v' + escHtml(u.appVersion) + ')' : '(versión vieja, no reporta)'} — pedirle que recargue (F5)</div>`;
+        }
         return `<div style="background:var(--surface-color); border:1px solid var(--border-color); border-radius:10px; padding:14px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <strong style="color:var(--text-primary); font-size:14px;">${dot(u.status)} ${escHtml(u.name)}</strong>
@@ -11894,6 +11950,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">${escHtml(u.email)} · <span style="color:var(--info);">${u.role === 'setter' ? 'SDR' : u.role}</span></div>
           <div style="font-size:11px; color:var(--text-secondary); margin-bottom:4px;">Última actividad: <strong style="color:var(--text-primary);">${fmtAge(u.lastSeen)}</strong></div>
           ${u.ip ? `<div style="font-size:11px; color:var(--text-secondary);">IP: <code style="background:var(--bg-color); padding:1px 6px; border-radius:4px;">${escHtml(u.ip)}</code> · ${browser}/${os}</div>` : ''}
+          ${verChip}
         </div>`;
       };
       list.innerHTML =
@@ -17335,7 +17392,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function _checkAppVersion() {
     if (!_myAppVersion) return;
     try {
-      const r = await fetch('/api/version', { cache: 'no-store' });
+      // X-App-Version: attachAuth lo guarda en la presencia → "Equipo online"
+      // muestra qué versión corre cada user (detecta tabs desactualizados).
+      const r = await fetch('/api/version', { cache: 'no-store', credentials: 'include', headers: { 'X-App-Version': _myAppVersion } });
       if (!r.ok) return;
       const d = await r.json();
       if (d?.version && d.version !== _myAppVersion) _showUpdateBanner();
