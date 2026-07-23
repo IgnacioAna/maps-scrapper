@@ -5874,7 +5874,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div style="margin-top:18px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
           <span>Resultado de la llamada</span>
-          <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-8</span>
+          <span style="color:var(--text-tertiary); font-weight:500; text-transform:none; letter-spacing:0;">atajos numéricos 1-9</span>
         </div>
         <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:stretch;">
           <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada — ej: contestó la secre, pedir por Dr. X el martes" style="flex:1; min-width:240px; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
@@ -5885,7 +5885,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}', '${escHtml(lead.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:6px 10px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px; cursor:pointer; font-family:inherit;">editar</button>
         </div>` : `<div style="margin-bottom:12px;">
-          <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar número de contacto que me pasaron</button>
+          <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar contacto que me pasaron (tel / email)</button>
         </div>`}
         <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:rgba(157,133,242,0.10); border:1px solid rgba(157,133,242,0.35); border-radius:8px; font-size:12.5px;"></div>
         <div class="pd-disposition-grid">
@@ -6549,26 +6549,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
 
-    // Sprint 21: "Este sí tenía WSP" → vuelve a Setteo (limpia conexion='sin_wsp')
-    window._callsMarkHasWsp = async function(leadId) {
-      if (!confirm('¿Confirmás que este lead SÍ tiene WhatsApp? Va a volver a la vista de Setteo.')) return;
-      try {
-        const r = await fetch(apiUrl('/api/setters/leads/' + leadId), {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conexion: '' })
-        });
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        // Sacar del cache local
-        callsLeadsCache = callsLeadsCache.filter(l => l.id !== leadId);
-        _callsLeadsById.delete(leadId);
-        _callsExpanded.delete(leadId);
-        renderCallsList();
-        _callsRenderCountryChips();
-        window.showToast?.('Lead movido a Setteo', { type: 'success' });
-      } catch (e) {
-        window.showToast?.('Error: ' + e.message, { type: 'error' });
-      }
-    };
+    // Sprint 21: botón "Este sí tenía WSP → Setteo" removido 2026-07-23 (el flujo
+    // de Setteo WhatsApp está parkeado — todo el trabajo es por llamada).
 
     // Sprint 21: Renderiza el panel expandido de un lead en Llamadas.
     // Devuelve HTML que se inserta debajo de la row.
@@ -6757,9 +6739,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:#5bb974; font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
               Reactivar lead
             </button>` : ''}
-            <button class="call-action-btn is-wsp" onclick="window._callsMarkHasWsp('${escHtml(l.id)}')" title="Si descubrís que el lead SÍ atiende por WhatsApp, mandalo de vuelta a Setteo">
-              Este sí tenía WSP → Setteo
-            </button>
             ${(() => {
               const safeEmail = String(l.email || '').trim();
               return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">Mandar mail</a>` : '';
@@ -7080,6 +7059,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <option value="answered_interested">Interesado (sin agendar)</option>
               <option value="scheduled_with_admin">Agendar reunión</option>
               <option value="answered_not_interested">No interesado</option>
+              <option value="hung_up">Me cortó (atendió y colgó)</option>
             </optgroup>
             <optgroup label="No atendió">
               <option value="no_answer">No atendió / sonó nada</option>
@@ -8092,12 +8072,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           if (dispositionSel) {
             setTimeout(() => dispositionSel.focus(), 400);
-            // Shortcut numérico 1-7 para elegir disposition rápido sin tocar mouse
+            // Shortcut numérico 1-9 para elegir disposition rápido sin tocar mouse.
+            // Mismo mapeo que el grid del Power Dialer (sincronizado 2026-07-23).
             // Solo activo durante 30s post-cuelgue mientras el dropdown está en foco.
             const shortcutMap = {
               '1': 'answered_interested', '2': 'scheduled_with_admin',
-              '3': 'answered_not_interested', '4': 'no_answer', '5': 'voicemail',
-              '6': 'callback_later', '7': 'wrong_number', '8': 'invalid_number',
+              '3': 'answered_not_interested', '4': 'hung_up', '5': 'no_answer',
+              '6': 'voicemail', '7': 'callback_later', '8': 'wrong_number',
+              '9': 'invalid_number',
             };
             // Audit fix: limpiar handler anterior si quedó colgado de una llamada previa
             // (sino se acumulan listeners si haces 2-3 llamadas en <30s).
@@ -8983,6 +8965,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const lead = (_callsLeadsById && _callsLeadsById.get(leadId)) || (callsLeadsCache || []).find((x) => x.id === leadId);
       const curPhone = (lead && lead.altPhone) || '';
       const curLabel = (lead && lead.altPhoneLabel) || '';
+      const curEmail = (lead && lead.email) || '';
       const old = document.getElementById('alt-contact-overlay'); if (old) old.remove();
       const ov = document.createElement('div');
       ov.id = 'alt-contact-overlay';
@@ -8990,14 +8973,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       ov.innerHTML = `
         <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:420px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
           <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Contacto secundario</div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">El número que te pasó la recepción (encargado / decisor).</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">El número y/o email que te pasaron (encargado / decisor / recepción).</div>
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Número (con código de país)</label>
           <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:8px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:15px; font-family:ui-monospace,monospace; text-align:center; letter-spacing:1px;">
           <div id="alt-contact-keypad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:16px;">
             ${['1','2','3','4','5','6','7','8','9','+','0','⌫'].map(k => `<button type="button" data-k="${k}" style="padding:11px 0; background:var(--bg-app); border:1px solid var(--border-default); border-radius:9px; color:var(--text-primary); font-size:16px; font-weight:600; cursor:pointer; font-family:inherit;">${k}</button>`).join('')}
           </div>
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Quién es</label>
-          <input id="alt-contact-label" type="text" value="${escHtml(curLabel)}" placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
+          <input id="alt-contact-label" type="text" value="${escHtml(curLabel)}" placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Email del lead (opcional)</label>
+          <input id="alt-contact-email" type="email" value="${escHtml(curEmail)}" placeholder="contacto@clinica.com" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:18px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:inherit;">
           <div style="display:flex; gap:8px; align-items:center;">
             <button type="button" id="alt-contact-save" style="flex:1; padding:11px; background:var(--accent); color:#fff; border:none; border-radius:9px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit;">Guardar</button>
             ${curPhone ? `<button type="button" id="alt-contact-clear" style="padding:11px 14px; background:transparent; color:#f47272; border:1px solid rgba(244,114,114,0.4); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Borrar</button>` : ''}
@@ -9019,14 +9004,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           phoneInput.focus();
         };
       });
-      const doSave = async (phone, label) => {
+      const doSave = async (phone, label, email) => {
         try {
-          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label }) });
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/alt-contact'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, label, email }) });
           const d = await r.json();
           if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
-          if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel });
-          window.showToast?.(d.altPhone ? 'Contacto guardado' : 'Contacto borrado', { type: 'success' });
-          if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _renderLeadFile(_currentCallLead); }
+          if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel, email: d.email });
+          window.showToast?.(d.altPhone || d.email ? 'Contacto guardado' : 'Contacto borrado', { type: 'success' });
+          if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _currentCallLead.email = d.email; _renderLeadFile(_currentCallLead); }
           if (typeof renderCallsList === 'function') renderCallsList();
           if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
           close();
@@ -9038,8 +9023,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // HTML decodifica &#39;→' antes de que el JS lo lea), así que una comilla
       // rompería el handler / permitiría inyección. Un teléfono sólo tiene dígitos
       // y '+', así que el whitelist es inocuo y cierra el vector en el origen.
-      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').replace(/[^\d+]/g, '').trim(), (document.getElementById('alt-contact-label').value || '').trim());
-      const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '');
+      const _emailVal = () => (document.getElementById('alt-contact-email').value || '').trim();
+      document.getElementById('alt-contact-save').onclick = () => doSave((phoneInput.value || '').replace(/[^\d+]/g, '').trim(), (document.getElementById('alt-contact-label').value || '').trim(), _emailVal());
+      // "Borrar" borra solo el teléfono/label del contacto; el email queda como esté tipeado.
+      const clearBtn = document.getElementById('alt-contact-clear'); if (clearBtn) clearBtn.onclick = () => doSave('', '', _emailVal());
       phoneInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('alt-contact-save').click(); });
     };
     // Generar el brief del lead actual del Power Dialer en el momento (admin).

@@ -8110,8 +8110,17 @@ app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
   const label = (typeof req.body.label === 'string' ? req.body.label : '').trim().slice(0, 60);
   lead.altPhone = phone ? (phone.startsWith('+') ? phone : '+' + phone) : '';
   lead.altPhoneLabel = lead.altPhone ? label : '';
+  // 2026-07-23: el mismo modal permite cargar el email que le pasaron al SDR.
+  // Solo se toca si el body trae el campo (string); omitido = no modificar.
+  if (typeof req.body.email === 'string') {
+    const email = req.body.email.trim().slice(0, 120);
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Email inválido.' });
+    }
+    lead.email = email;
+  }
   saveSettersData(data);
-  res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel });
+  res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel, email: lead.email || '' });
 });
 
 // Notas
