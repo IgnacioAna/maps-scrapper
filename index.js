@@ -5610,6 +5610,161 @@ function _setterIsVisible(setterId, visibleSet) {
 }
 globalThis.__phase18 = { _visibleSetterIds, _filterSettersVisible, _setterIsVisible };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// CALL METRICS CORE (2026-07-24) — ÚNICA fuente de verdad del funnel de llamadas
+// ═══════════════════════════════════════════════════════════════════════════
+// Antes el funnel (dials→connects→conversations→appointments→deals) estaba
+// implementado 4 veces (cold-call-metrics, _perfCallFunnel, _callAgg del
+// Comando, cold-call-effectiveness) con 3 sets de outcomes distintos → los
+// dashboards nunca cuadraban entre sí y cada fix dejaba 3 copias rotas.
+// Definiciones canónicas (decisión del user 2026-07-24):
+//   connect      = outcome ∈ COLD_CALL_CONNECT_OUTCOMES (5, INCLUYE hung_up y
+//                  callback_later: atendió el teléfono = atendida)
+//   conversation = connect && (duration >= COLD_CALL_CONV_MIN_S || appointment)
+//   appointment  = outcome ∈ COLD_CALL_APPOINTMENT_OUTCOMES
+//   deal         = cita del calendar en 'ganada' con closedAt dentro del rango,
+//                  atribuida a entry.setterId (quien agendó)
+// Atribución de llamadas SIEMPRE por quién llamó (_callSetterId), nunca por
+// dueño actual del lead. Tests de consistencia cruzada:
+// tests/metrics-consistency.test.js.
+
+// Aplana todos los callLog en entries pre-atribuidas. Filtros opcionales:
+// setterId (solo llamadas de ese setter), visibleSet (supervisor scoped),
+// channel ('telnyx_webrtc' para Centralita). Entries sin ts se descartan.
+function _ccCollectCalls(data, { setterId = '', visibleSet = null, channel = '' } = {}) {
+  const userMap = _buildUserSetterMap();
+  const out = [];
+  for (const id in (data.leads || {})) {
+    const lead = data.leads[id];
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    for (const entry of log) {
+      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+      if (!ts) continue;
+      if (channel && entry.channel !== channel) continue;
+      const sid = _callSetterId(entry, lead, userMap);
+      if (setterId && sid !== setterId) continue;
+      if (visibleSet && !visibleSet.has(sid)) continue;
+      out.push({
+        ts,
+        outcome: String(entry.outcome || ''),
+        duration: Number(entry.duration || 0),
+        setterId: sid,
+        leadId: id,
+        disqualifyReason: entry.disqualifyReason || '',
+      });
+    }
+  }
+  return out;
+}
+
+// Funnel agregado sobre entries YA filtradas por setter (las de _ccCollectCalls).
+// opts.setterId/visibleSet aplican SOLO a los deals del calendar (que se
+// atribuyen por entry.setterId, no por callLog).
+function _ccFunnelAggregate(calls, calendar, fromTs, toTs, { setterId = '', visibleSet = null } = {}) {
+  let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0, revenue = 0, totalDurationS = 0;
+  const byReason = {};
+  for (const c of calls) {
+    if (c.ts < fromTs || c.ts >= toTs) continue;
+    dials++;
+    if (COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)) {
+      connects++;
+      totalDurationS += c.duration;
+      if (c.duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(c.outcome)) conversations++;
+      if (COLD_CALL_APPOINTMENT_OUTCOMES.has(c.outcome)) appointments++;
+    }
+    if (c.outcome === 'answered_not_interested') {
+      const r = c.disqualifyReason || 'sin_razon';
+      byReason[r] = (byReason[r] || 0) + 1;
+    }
+  }
+  for (const entry of (Array.isArray(calendar) ? calendar : [])) {
+    if (entry.calendarioEstado !== 'ganada') continue;
+    if (setterId && entry.setterId !== setterId) continue;
+    if (visibleSet && !visibleSet.has(entry.setterId)) continue;
+    const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
+    if (!closedTs || closedTs < fromTs || closedTs >= toTs) continue;
+    deals++;
+    revenue += Number(entry.valorProyecto || 0);
+  }
+  const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
+  return {
+    dials, connects, conversations, appointments, deals, revenue,
+    totalDurationS, byReason,
+    // Quirk histórico preservado: "avgConv" divide por connects, no por conversations.
+    avgConvDurationS: connects > 0 ? Math.round(totalDurationS / connects) : 0,
+    rates: {
+      connectRate: pct(connects, dials),
+      conversationRate: pct(conversations, connects),
+      bookingRate: pct(appointments, conversations),
+      closeRate: pct(deals, appointments),
+      dialToAppointment: pct(appointments, dials),
+    },
+  };
+}
+
+// YYYY-MM-DD → timestamp de la medianoche de ese día en la TZ de negocio.
+function _bizDateStrToTs(str) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(str || '').trim());
+  if (!m) return null;
+  const utcMid = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  if (Number.isNaN(utcMid)) return null;
+  return utcMid - _bizOffsetMs(utcMid);
+}
+
+// Semántica de rango ÚNICA para métricas de llamadas. Períodos canónicos:
+//   today     → [medianoche TZ negocio, ahora]
+//   7d / 30d  → [medianoche - N días, ahora]  (N días completos + hoy parcial;
+//               es la semántica histórica de cold-call-metrics — se conserva
+//               para no cambiar números)
+//   thismonth → [día 1 del mes TZ negocio, ahora]
+//   all       → [0, ahora]
+//   from/to   → custom YYYY-MM-DD inclusivo en TZ negocio (ignora period)
+// Aliases retro-compat: week→7d, month→30d.
+function _ccResolveRange(period, { from, to } = {}) {
+  const now = Date.now();
+  const oneDay = 86400000;
+  if (from && to) {
+    const fromTs = _bizDateStrToTs(from);
+    const toDayTs = _bizDateStrToTs(to);
+    if (fromTs != null && toDayTs != null && toDayTs >= fromTs) {
+      return { period: 'custom', fromTs, toTs: Math.min(toDayTs + oneDay, now) };
+    }
+  }
+  let p = String(period || '7d').toLowerCase();
+  if (p === 'week') p = '7d';
+  else if (p === 'month') p = '30d';
+  const startOfDay = _bizStartOfDay(now);
+  if (p === 'today') return { period: 'today', fromTs: startOfDay, toTs: now };
+  if (p === 'all') return { period: 'all', fromTs: 0, toTs: now };
+  if (p === 'thismonth') {
+    const off = _bizOffsetMs(now);
+    const d = new Date(now + off);
+    return { period: 'thismonth', fromTs: Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1) - off, toTs: now };
+  }
+  const days = p === '30d' ? 30 : 7;
+  return { period: days === 30 ? '30d' : '7d', fromTs: startOfDay - days * oneDay, toTs: now };
+}
+
+// Serie temporal del funnel — buckets day/week/month (TZ negocio, reusa
+// _perfBucketsForPeriod). O(buckets × calls): con miles de llamadas y ≤45
+// buckets es negligible.
+function _ccFunnelSeries(calls, calendar, fromTs, toTs, granularity, opts = {}) {
+  const g = granularity === 'week' || granularity === 'month' ? granularity : 'day';
+  return _perfBucketsForPeriod(g, fromTs, toTs).map((b) => {
+    const agg = _ccFunnelAggregate(calls, calendar, b.from, b.to, opts);
+    return {
+      label: b.label,
+      from: new Date(b.from).toISOString(),
+      to: new Date(b.to).toISOString(),
+      dials: agg.dials, connects: agg.connects, conversations: agg.conversations,
+      appointments: agg.appointments, deals: agg.deals, revenue: agg.revenue,
+    };
+  });
+}
+
+// Expuestos para tests puros (patrón __metricsAudit / __phase18).
+globalThis.__callCore = { _ccCollectCalls, _ccFunnelAggregate, _ccResolveRange, _ccFunnelSeries, _bizDateStrToTs };
+
 // Sprint 33: count de llamadas del setter HOY (todas las disposition logueadas)
 // GET /api/setters/cold-call-metrics?setter=<id>&period=today|week|month|all
 // Funnel de cold call basado en callLog: Dials → Connects → Conversations → Appointments.
@@ -5640,81 +5795,84 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   }
 
   const period = String(req.query.period || 'week').toLowerCase();
-  const startOfDay = _bizStartOfDay(); // medianoche en TZ de negocio, no del server
-  let fromTs;
-  if (period === 'today') fromTs = startOfDay;
-  else if (period === 'week') fromTs = startOfDay - 7 * 86400000;
-  else if (period === 'month') fromTs = startOfDay - 30 * 86400000;
-  else if (period === 'all') fromTs = 0;
-  else fromTs = startOfDay - 7 * 86400000;
-
-  const CONNECT_OUTCOMES = COLD_CALL_CONNECT_OUTCOMES;
-  const APPOINTMENT_OUTCOMES = COLD_CALL_APPOINTMENT_OUTCOMES;
-  const CONV_MIN_DURATION_S = COLD_CALL_CONV_MIN_S;
+  // CALL METRICS CORE (2026-07-24): rango + funnel delegados al core — única
+  // definición del funnel en toda la app. ?from/?to = rango custom YYYY-MM-DD.
+  const range = _ccResolveRange(period, { from: req.query.from, to: req.query.to });
+  const { fromTs, toTs } = range;
 
   const data = loadSettersData();
-  let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0;
-  let totalDurationS = 0, revenue = 0;
-  const byReason = {}; // Phase 17: razones de descalificación (answered_not_interested)
-  // Atribución por quién LLAMÓ (entry.by), no por dueño actual del lead — las
-  // redistribuciones del pool no deben mover las llamadas históricas de setter.
-  const userMap = (setterId || visibleSet) ? _buildUserSetterMap() : null;
+  const calls = _ccCollectCalls(data, { setterId, visibleSet });
+  const agg = _ccFunnelAggregate(calls, data.calendar, fromTs, toTs, { setterId, visibleSet });
+  const _mShape = (a) => ({
+    dials: a.dials, connects: a.connects, conversations: a.conversations,
+    appointments: a.appointments, deals: a.deals, revenue: a.revenue,
+  });
 
-  for (const id in data.leads) {
-    const lead = data.leads[id];
-    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
-    for (const entry of log) {
-      if (setterId && _callSetterId(entry, lead, userMap) !== setterId) continue;
-      if (visibleSet && !visibleSet.has(_callSetterId(entry, lead, userMap))) continue;
-      const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
-      if (!ts || ts < fromTs) continue;
-      dials++;
-      const outcome = String(entry.outcome || '');
-      const duration = Number(entry.duration || 0); // segundos
-      if (CONNECT_OUTCOMES.has(outcome)) {
-        connects++;
-        totalDurationS += duration;
-        // Una llamada cuenta como "conversación" si superó el umbral de duración
-        // O si terminó en agendamiento (agendar implica que hubo conversación,
-        // aunque el canal manual no registre duration). Garantiza appointments <=
-        // conversations → bookingRate nunca supera 100% (audit 2026-06-20, #3).
-        if (duration >= CONV_MIN_DURATION_S || APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
-        if (APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
-      }
-      if (outcome === 'answered_not_interested') {
-        const r = entry.disqualifyReason || 'sin_razon';
-        byReason[r] = (byReason[r] || 0) + 1;
-      }
+  // ── Extensiones 2026-07-24 (serie temporal + comparación + cartera) ──
+  const extra = {};
+  if (req.query.series === '1') {
+    // 'all' arranca en la primera llamada real (bucketear desde epoch no tiene sentido).
+    let seriesFrom = fromTs;
+    if (seriesFrom <= 0) {
+      let minTs = 0;
+      for (const c of calls) if (!minTs || c.ts < minTs) minTs = c.ts;
+      seriesFrom = minTs || _bizStartOfDay();
     }
+    const spanDays = (toTs - seriesFrom) / 86400000;
+    const granReq = String(req.query.granularity || '').toLowerCase();
+    const granularity = ['day', 'week', 'month'].includes(granReq) ? granReq
+      : spanDays <= 45 ? 'day' : spanDays <= 180 ? 'week' : 'month';
+    extra.granularity = granularity;
+    extra.buckets = _ccFunnelSeries(calls, data.calendar, seriesFrom, toTs, granularity, { setterId, visibleSet });
+  }
+  if (req.query.compare === '1' && fromTs > 0) {
+    // Ventana espejo. Para 'today': ayer hasta esta misma hora (mismo criterio
+    // que team-performance — comparar contra la madrugada da deltas sin sentido).
+    let prevFrom, prevTo;
+    if (range.period === 'today') {
+      prevFrom = fromTs - 86400000; prevTo = toTs - 86400000;
+    } else {
+      prevFrom = fromTs - (toTs - fromTs); prevTo = fromTs;
+    }
+    const prevAgg = _ccFunnelAggregate(calls, data.calendar, prevFrom, prevTo, { setterId, visibleSet });
+    extra.previous = {
+      from: new Date(prevFrom).toISOString(),
+      to: new Date(prevTo).toISOString(),
+      metrics: _mShape(prevAgg),
+      rates: prevAgg.rates,
+      avgConvDurationS: prevAgg.avgConvDurationS,
+    };
+    extra.deltas = _perfDelta(_mShape(agg), _mShape(prevAgg), ['dials', 'connects', 'conversations', 'appointments', 'deals', 'revenue']);
+  }
+  // Cartera asignada (independiente del período) — el "tiene N", para el strip
+  // de Mi rendimiento. "Sin llamar" = ningún setter de esta vista lo llamó
+  // (atribución por quién llamó, criterio #139 — jamás lastContactAt).
+  {
+    const userMap = _buildUserSetterMap();
+    const attrSet = setterId ? new Set([setterId]) : (visibleSet || new Set((data.setters || []).map((s) => s.id)));
+    let total = 0, sinContactar = 0;
+    for (const id in (data.leads || {})) {
+      const lead = data.leads[id];
+      const mine = setterId ? lead.assignedTo === setterId : (!visibleSet || visibleSet.has(lead.assignedTo));
+      if (!mine) continue;
+      total++;
+      const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+      if (!log.some((e) => attrSet.has(_callSetterId(e, lead, userMap)))) sinContactar++;
+    }
+    extra.assigned = { total, sinContactar };
   }
 
-  // Deals cerrados: citas del calendario marcadas 'ganada' cuyo cierre (closedAt)
-  // cae en el período. Se atribuyen al setter que agendó (entry.setterId).
-  for (const entry of (Array.isArray(data.calendar) ? data.calendar : [])) {
-    if (entry.calendarioEstado !== 'ganada') continue;
-    if (setterId && entry.setterId !== setterId) continue;
-    if (visibleSet && !visibleSet.has(entry.setterId)) continue;
-    const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
-    if (!closedTs || closedTs < fromTs) continue;
-    deals++;
-    revenue += Number(entry.valorProyecto || 0);
-  }
-
-  const ratio = (n, d) => d > 0 ? +(n / d * 100).toFixed(1) : 0;
   res.json({
     period,
     fromTs,
+    from: new Date(fromTs).toISOString(),
+    to: new Date(toTs).toISOString(),
     setterId: setterId || null,
-    metrics: { dials, connects, conversations, appointments, deals, revenue },
-    byReason, // Phase 17: razones de "no interesado" en el período
-    rates: {
-      connectRate: ratio(connects, dials),
-      conversationRate: ratio(conversations, connects),
-      bookingRate: ratio(appointments, conversations),
-      closeRate: ratio(deals, appointments),
-      dialToAppointment: ratio(appointments, dials), // top-of-funnel total
-    },
-    avgConvDurationS: connects > 0 ? Math.round(totalDurationS / connects) : 0,
+    metrics: _mShape(agg),
+    byReason: agg.byReason, // Phase 17: razones de "no interesado" en el período
+    rates: agg.rates,
+    avgConvDurationS: agg.avgConvDurationS,
+    ...extra,
   });
 });
 
@@ -9189,18 +9347,14 @@ function _perfDefaultRange(period) {
 // Range para la TABLA de Equipo: el periodo en si (no series).
 // Si pides "week", queres VER esta semana (ultimos 7 dias), no las ultimas 8.
 // Si pides "month", queres VER este mes (ultimos 30 dias), no los ultimos 6.
+// 2026-07-24: delega en _ccResolveRange (CALL METRICS CORE) — antes week/month
+// eran ventana móvil (`now - N días`) mientras cold-call-metrics cortaba a
+// medianoche → la tabla de Equipo y el funnel de Mi rendimiento podían mostrar
+// números distintos para el mismo SDR/período. Ahora ambas cortan igual.
 function _perfTableRange(period) {
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-  const to = now;
-  let from;
-  // Audit 2026-07-08: "day" = HOY desde la medianoche (TZ de negocio). Antes
-  // era una ventana móvil de 24hs → a media mañana la tabla del Equipo mostraba
-  // también las llamadas de ayer.
-  if (period === "day") from = _bizStartOfDay(now);
-  else if (period === "month") from = now - 30 * oneDay;
-  else from = now - 7 * oneDay; // week (default)
-  return { from, to };
+  const p = period === "day" ? "today" : period === "month" ? "30d" : "7d";
+  const r = _ccResolveRange(p);
+  return { from: r.fromTs, to: r.toTs };
 }
 
 function _perfAggregate(leads, fromTs, toTs, attr) {
@@ -9276,28 +9430,25 @@ function _perfAggregate(leads, fromTs, toTs, attr) {
 // llamadas se cuentan desde ahí (independiente de a quién esté asignado el lead
 // hoy); `leads` queda solo para shows/noShows (que sí son del dueño del lead).
 function _perfCallFunnel(leads, fromTs, toTs, calendar, setterId, callEntries) {
-  let dials = 0, connects = 0, conversations = 0, appointments = 0, deals = 0, revenue = 0;
-  let shows = 0, noShows = 0, totalDurationS = 0;
-  const countEntry = (ts, outcome, duration) => {
-    if (!ts || ts < fromTs || ts >= toTs) return;
-    dials++;
-    if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
-      connects++;
-      totalDurationS += duration;
-      if (duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) conversations++;
-      if (COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) appointments++;
-    }
-  };
+  // CALL METRICS CORE (2026-07-24): el conteo del funnel delega en
+  // _ccFunnelAggregate — única definición. Esta función conserva su firma y
+  // shape de salida (team-performance y sus tests no cambian) y le suma lo
+  // que es propio de acá: shows/noShows por dueño del lead + alias `total`.
+  let calls;
   if (Array.isArray(callEntries)) {
-    for (const e of callEntries) countEntry(e.ts, e.outcome, e.duration);
+    calls = callEntries; // pre-atribuidas por el caller ({ts:number, outcome, duration})
   } else {
+    calls = [];
     for (const lead of leads) {
       const log = Array.isArray(lead.callLog) ? lead.callLog : [];
       for (const entry of log) {
-        countEntry(entry.ts ? new Date(entry.ts).getTime() : 0, String(entry.outcome || ""), Number(entry.duration || 0));
+        const ts = entry.ts ? new Date(entry.ts).getTime() : 0;
+        if (ts) calls.push({ ts, outcome: String(entry.outcome || ""), duration: Number(entry.duration || 0) });
       }
     }
   }
+  const agg = _ccFunnelAggregate(calls, calendar, fromTs, toTs, { setterId });
+  let shows = 0, noShows = 0;
   for (const lead of leads) {
     const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
     if (ats >= fromTs && ats < toTs) {
@@ -9305,22 +9456,17 @@ function _perfCallFunnel(leads, fromTs, toTs, calendar, setterId, callEntries) {
       else if (lead.asistio === false) noShows++;
     }
   }
-  for (const entry of (Array.isArray(calendar) ? calendar : [])) {
-    if (entry.calendarioEstado !== "ganada") continue;
-    if (setterId && entry.setterId !== setterId) continue;
-    const closedTs = entry.closedAt ? new Date(entry.closedAt).getTime() : 0;
-    if (!closedTs || closedTs < fromTs || closedTs >= toTs) continue;
-    deals++; revenue += Number(entry.valorProyecto || 0);
-  }
   const pct = (n, d) => (d > 0 ? Number(((n / d) * 100).toFixed(1)) : 0);
   return {
-    total: dials,
-    dials, connects, conversations, appointments, deals, revenue, shows, noShows,
-    avgConvDurationS: connects > 0 ? Math.round(totalDurationS / connects) : 0,
-    connectRate: pct(connects, dials),
-    conversationRate: pct(conversations, connects),
-    bookingRate: pct(appointments, conversations),
-    dialToAppt: pct(appointments, dials),
+    total: agg.dials,
+    dials: agg.dials, connects: agg.connects, conversations: agg.conversations,
+    appointments: agg.appointments, deals: agg.deals, revenue: agg.revenue,
+    shows, noShows,
+    avgConvDurationS: agg.avgConvDurationS,
+    connectRate: agg.rates.connectRate,
+    conversationRate: agg.rates.conversationRate,
+    bookingRate: agg.rates.bookingRate,
+    dialToAppt: agg.rates.dialToAppointment,
     pctShow: pct(shows, shows + noShows),
   };
 }
