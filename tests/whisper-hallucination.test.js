@@ -218,4 +218,22 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     }));
     expect(clean(raw, "lead", prompt, { lax: true })).toEqual([]);
   });
+
+  // Caso real 2026-07-24 (lax v1 → v2): Whisper devolvió REMIXES del prompt con
+  // compression_ratio altísimo ("Términos frecuentes en español de un vendedor a
+  // una clínica dental de un vendedor a..." cr=7.91, "un vendedor a un vendedor a
+  // un vendedor" cr=21) que evaden el detector de eco por substring. El lax v1
+  // salteaba el filtro de cr y los resucitaba. v2: cr se aplica SIEMPRE.
+  it("lax v2 IGUAL descarta loops de decoder (compression_ratio alto)", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 1, text: "Términos frecuentes en español de un vendedor a una clínica dental de un vendedor a una clínica", no_speech_prob: 0.24, avg_logprob: -0.2, compression_ratio: 7.91 }),
+      seg({ start: 2, end: 4, text: "un vendedor a un vendedor a un vendedor a un vendedor a un vendedor", no_speech_prob: 0.1, avg_logprob: -0.14, compression_ratio: 21.21 }),
+      seg({ start: 5, end: 8, text: "¿De parte de quién, disculpe?", no_speech_prob: 0.68, avg_logprob: -0.55, compression_ratio: 1.2 }),
+    ];
+    // estricto: mata los loops (cr) y también el habla pobre (nsp/alp) → vacío
+    expect(clean(raw, "lead", prompt)).toEqual([]);
+    // lax v2: rescata el habla pobre pero los loops siguen afuera
+    expect(clean(raw, "lead", prompt, { lax: true }).map((s) => s.text)).toEqual(["¿De parte de quién, disculpe?"]);
+  });
 });

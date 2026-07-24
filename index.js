@@ -14218,14 +14218,14 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // 2026-06-26: el bug era transcripts tipo "Reactivación de pacientes." × 30 en
 // llamadas de buzón. Whisper inventa sobre silencio: esos segmentos tienen
 // no_speech_prob alto + avg_logprob muy bajo, o compression_ratio alto.
-// opts.lax (2026-07-24): modo rescate — SOLO filtra eco del prompt y colapsa
-// loops; NO aplica los filtros por métricas (no_speech_prob / avg_logprob /
-// compression_ratio) ni el vaciado por "parece silencio". Se usa cuando el
-// medidor de nivel del browser (recMeta.activePct) CONFIRMÓ que el canal tuvo
-// voz real: en ese caso, si la limpieza estricta vació el canal, se estaba
-// comiendo habla verdadera (audio telefónico de línea pobre puntúa como
-// "silencio/alucinación" para Whisper) — caso real 2026-07-23: canales con
-// 12-46% de actividad medida salían con 0 segmentos.
+// opts.lax (2026-07-24, v2 mismo día): modo rescate — mantiene el filtro de eco
+// del prompt, el de segmentos repetitivos (compression_ratio, loops de decoder
+// = nunca habla real) y el colapso de loops; NO aplica el filtro por métricas
+// de silencio (no_speech_prob / avg_logprob) ni el vaciado por "parece
+// silencio". Se usa cuando el medidor del browser (recMeta.activePct) CONFIRMÓ
+// que el canal tuvo voz real: el habla de línea telefónica pobre puntúa como
+// "silencio" para Whisper y el estricto la vaciaba (caso 2026-07-23). El lax v1
+// también salteaba compression_ratio y resucitó loops de alucinación — v2 no.
 function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {}) {
   const lax = !!opts.lax;
   const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -14264,7 +14264,12 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {})
   })).filter((s) => s.text)
     .filter((s) => !_isPromptEchoSeg(s.text))           // eco del prompt (por segmento)
     .filter((s) => lax || !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación (skip en lax)
-    .filter((s) => lax || s._cr < 2.4);                 // segmento repetitivo (skip en lax)
+    // Repetitivo (compression_ratio alto) se filtra SIEMPRE, también en lax:
+    // un loop de decoder nunca es habla real, sin importar cuánta señal midió
+    // el browser. Caso real 2026-07-24: el lax v1 salteaba este filtro y
+    // resucitó canales enteros de "la clínica dental de la Ciudad de México es
+    // el centro de salud" ×17 (cr 7.31) que el estricto había matado bien.
+    .filter((s) => s._cr < 2.4);
   // Colapsa loops: la misma frase repetida N veces (clásico de Whisper en
   // silencio) se junta en una sola extendiendo el rango temporal.
   const deduped = [];
@@ -14355,14 +14360,20 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   const fileType = mimeType || 'audio/webm';
   const fileExt = fileType.includes('webm') ? 'webm' : fileType.includes('ogg') ? 'ogg' : fileType.includes('mp3') ? 'mp3' : 'webm';
   const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  // Historia del prompt: se sacó el 2026-06-26 porque en llamadas de buzón (audio
-  // casi en silencio) Whisper "alucinaba" repitiendo el prompt en loop
-  // ("Reactivación de pacientes." × 30). Reintroducido el 2026-07-06: ahora
-  // _cleanWhisperSegments filtra esos loops por métricas (no_speech_prob /
-  // avg_logprob / compression_ratio) Y descarta específicamente el canal cuyo
-  // texto colapsa a un eco del prompt (se le pasa promptText). El prompt corto
-  // mejora la transcripción de términos del rubro y nombres.
-  const WHISPER_PROMPT = 'Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.';
+  // Historia del prompt de dominio: se sacó el 2026-06-26 (alucinaba en loop sobre
+  // buzones), se reintrodujo el 2026-07-06 con filtros anti-eco, y se ELIMINÓ
+  // DEFINITIVAMENTE el 2026-07-24: el asrDebug de prod probó que en canales con
+  // poca señal (el cliente en línea telefónica) Whisper regurgita REMIXES del
+  // prompt en vez de transcribir el habla real ("Términos frecuentes en español de
+  // un vendedor a una clínica dental de un vendedor a...", "un vendedor a un
+  // vendedor a un vendedor" con compression_ratio 21, canales enteros de "la
+  // clínica dental de la Ciudad de México es el centro de salud" ×17). Las
+  // variantes remixadas evaden cualquier filtro de eco por substring. Sin prompt,
+  // las alucinaciones sobre silencio son genéricas y raras, y el habla real se
+  // transcribe en vez de ser reemplazada por el eco. El costo (peor ortografía de
+  // términos del rubro) es irrelevante frente a canales enteros de basura.
+  // ⚠️ NO REINTRODUCIR el prompt — ya falló dos veces (2026-06-26 y 2026-07-24).
+  const WHISPER_PROMPT = '';
   // Diagnóstico ASR por canal: qué devolvió Whisper crudo, qué quedó tras la
   // limpieza, si hubo rescate lax, y una muestra de lo descartado (con métricas).
   // Se persiste en transcript.asrDebug → el próximo transcript raro se lee, no se adivina.
