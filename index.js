@@ -5816,6 +5816,7 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
 
   // ── Extensiones 2026-07-24 (serie temporal + comparación + cartera) ──
   const extra = {};
+  let seriesGranularity = null;
   if (req.query.series === '1') {
     // 'all' arranca en la primera llamada real (bucketear desde epoch no tiene sentido).
     let seriesFrom = fromTs;
@@ -5826,10 +5827,10 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
     }
     const spanDays = (toTs - seriesFrom) / 86400000;
     const granReq = String(req.query.granularity || '').toLowerCase();
-    const granularity = ['day', 'week', 'month'].includes(granReq) ? granReq
+    seriesGranularity = ['day', 'week', 'month'].includes(granReq) ? granReq
       : spanDays <= 45 ? 'day' : spanDays <= 180 ? 'week' : 'month';
-    extra.granularity = granularity;
-    extra.buckets = _ccFunnelSeries(calls, data.calendar, seriesFrom, toTs, granularity, { setterId, visibleSet });
+    extra.granularity = seriesGranularity;
+    extra.buckets = _ccFunnelSeries(calls, data.calendar, seriesFrom, toTs, seriesGranularity, { setterId, visibleSet });
   }
   if (req.query.compare === '1' && fromTs > 0) {
     // Ventana espejo. Para 'today': ayer hasta esta misma hora (mismo criterio
@@ -5849,14 +5850,20 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
       avgConvDurationS: prevAgg.avgConvDurationS,
     };
     extra.deltas = _perfDelta(_mShape(agg), _mShape(prevAgg), ['dials', 'connects', 'conversations', 'appointments', 'deals', 'revenue']);
+    // Serie fantasma para el chart: mismos buckets sobre la ventana anterior.
+    if (seriesGranularity) {
+      extra.previousBuckets = _ccFunnelSeries(calls, data.calendar, prevFrom, prevTo, seriesGranularity, { setterId, visibleSet });
+    }
   }
   // Cartera asignada (independiente del período) — el "tiene N", para el strip
   // de Mi rendimiento. "Sin llamar" = ningún setter de esta vista lo llamó
   // (atribución por quién llamó, criterio #139 — jamás lastContactAt).
+  // Show rate: asistencia de reuniones (lead.asistio) marcada dentro del
+  // período, del dueño actual — misma semántica que _perfCallFunnel.
   {
     const userMap = _buildUserSetterMap();
     const attrSet = setterId ? new Set([setterId]) : (visibleSet || new Set((data.setters || []).map((s) => s.id)));
-    let total = 0, sinContactar = 0;
+    let total = 0, sinContactar = 0, shows = 0, noShows = 0;
     for (const id in (data.leads || {})) {
       const lead = data.leads[id];
       const mine = setterId ? lead.assignedTo === setterId : (!visibleSet || visibleSet.has(lead.assignedTo));
@@ -5864,8 +5871,17 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
       total++;
       const log = Array.isArray(lead.callLog) ? lead.callLog : [];
       if (!log.some((e) => attrSet.has(_callSetterId(e, lead, userMap)))) sinContactar++;
+      const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
+      if (ats >= fromTs && ats < toTs) {
+        if (lead.asistio === true) shows++;
+        else if (lead.asistio === false) noShows++;
+      }
     }
     extra.assigned = { total, sinContactar };
+    extra.showRate = {
+      shows, noShows,
+      pctShow: (shows + noShows) > 0 ? Number(((shows / (shows + noShows)) * 100).toFixed(1)) : 0,
+    };
   }
 
   res.json({
@@ -9836,10 +9852,12 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     bookingRate: ttConversations > 0 ? Number(((ttAppointments / ttConversations) * 100).toFixed(1)) : 0,
   };
 
-  // Phase 18 (panel pro) — callsByDay: últimos 14 días de negocio (TZ #113),
-  // SIEMPRE (independiente del period). Derivado del callLog con _callSetterId,
-  // solo setters visibles. connects = COLD_CALL_CONNECT_OUTCOMES.
-  const DAYS = 14;
+  // Phase 18 (panel pro) — callsByDay: serie diaria por SDR (TZ negocio #113),
+  // derivada del callLog con _callSetterId, solo setters visibles.
+  // 2026-07-24: la ventana respeta el period del panel (antes 14 días fijos
+  // aunque cambiaras el selector) y suma conversations/appointments por día
+  // (definición canónica del CALL METRICS CORE).
+  const DAYS = period === "day" ? 7 : period === "month" ? 30 : 14;
   const todayStart = _bizStartOfDay(Date.now());
   const oneDayMs = 24 * 60 * 60 * 1000;
   const windowStart = todayStart - (DAYS - 1) * oneDayMs;
@@ -9858,6 +9876,8 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       name: s.name,
       dials: new Array(DAYS).fill(0),
       connects: new Array(DAYS).fill(0),
+      conversations: new Array(DAYS).fill(0),
+      appointments: new Array(DAYS).fill(0),
     });
   }
   for (const l of allLeads) {
@@ -9870,8 +9890,14 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       if (!row) continue;
       const idx = cbdIndex[_bizDayStr(ts)];
       if (idx == null) continue;
+      const outcome = String(e.outcome || "");
+      const duration = Number(e.duration || 0);
       row.dials[idx]++;
-      if (COLD_CALL_CONNECT_OUTCOMES.has(String(e.outcome || ""))) row.connects[idx]++;
+      if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
+        row.connects[idx]++;
+        if (duration >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) row.conversations[idx]++;
+        if (COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) row.appointments[idx]++;
+      }
     }
   }
   const callsByDay = { days: cbdDays, perSetter: Array.from(cbdBySetter.values()) };

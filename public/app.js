@@ -78,6 +78,105 @@ document.addEventListener('DOMContentLoaded', async () => {
       return url;
     };
 
+    // ── SCM_CHART: helper único de Chart.js (2026-07-24) ──
+    // Arregla de raíz los charts borrosos: se creaban apenas se clickeaba el
+    // menú, con el canvas oculto o a mitad de la transición CSS → Chart.js
+    // medía un ancho intermedio y el canvas quedaba estirado/borroso en HiDPI.
+    // Este helper (1) difiere el render hasta que el canvas sea visible,
+    // (2) registra UN ResizeObserver por canvas que lo re-dimensiona,
+    // (3) hace update() en vez de destroy+new cuando la estructura no cambió
+    // (sin flash en los toggles), y (4) centraliza el theming (fuente, colores,
+    // tooltip) que antes estaba copy-pasteado en cada chart.
+    const SCM_CHART = (() => {
+      const charts = new Map();    // canvasId → Chart
+      const observers = new Map(); // canvasId → ResizeObserver
+      const pending = new Map();   // canvasId → buildConfig esperando visibilidad
+      let defaultsDone = false;
+      const isVisible = (el) => !!(el && el.offsetWidth > 0 && el.offsetHeight > 0);
+      const applyDefaults = () => {
+        if (defaultsDone || !window.Chart) return;
+        defaultsDone = true;
+        const C = window.Chart;
+        C.defaults.font.family = getComputedStyle(document.body).fontFamily || "'Geist', sans-serif";
+        C.defaults.font.size = 11.5;
+        C.defaults.color = '#8A90A0';
+        Object.assign(C.defaults.plugins.tooltip, {
+          backgroundColor: 'rgba(17, 20, 27, 0.96)',
+          borderColor: 'rgba(157, 133, 242, 0.25)',
+          borderWidth: 1,
+          titleColor: '#E5E7E2',
+          bodyColor: '#B4B8C2',
+          footerColor: '#8A90A0',
+          padding: 10,
+          cornerRadius: 9,
+          boxWidth: 8, boxHeight: 8, usePointStyle: true,
+          titleFont: { size: 12 }, bodyFont: { size: 11.5 }, footerFont: { size: 11, weight: 'normal' },
+        });
+        Object.assign(C.defaults.plugins.legend.labels, {
+          color: '#B4B8C2', boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle',
+        });
+      };
+      const ensureObserver = (canvasId, canvas) => {
+        if (observers.has(canvasId) || !window.ResizeObserver) return;
+        const ro = new ResizeObserver(() => {
+          const pend = pending.get(canvasId);
+          if (pend && isVisible(canvas)) { pending.delete(canvasId); doRender(canvasId, pend); return; }
+          const ch = charts.get(canvasId);
+          if (ch && isVisible(canvas)) ch.resize();
+        });
+        ro.observe(canvas.parentElement || canvas);
+        observers.set(canvasId, ro);
+      };
+      const doRender = (canvasId, buildConfig) => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas || !window.Chart) return;
+        applyDefaults();
+        const config = buildConfig();
+        if (!config) return;
+        const existing = charts.get(canvasId);
+        const sameShape = existing && existing.config.type === config.type
+          && existing.data.datasets.length === config.data.datasets.length
+          && existing.data.datasets.every((ds, i) => (ds.type || config.type) === (config.data.datasets[i].type || config.type));
+        if (sameShape) {
+          existing.data = config.data;
+          Object.assign(existing.options, config.options || {});
+          existing.update();
+          return;
+        }
+        if (existing) existing.destroy();
+        charts.set(canvasId, new window.Chart(canvas, config));
+        ensureObserver(canvasId, canvas);
+      };
+      return {
+        render(canvasId, buildConfig) {
+          const canvas = document.getElementById(canvasId);
+          if (!canvas) return;
+          if (!isVisible(canvas)) {
+            // Vista oculta o en transición: queda pendiente; el próximo frame
+            // o el ResizeObserver del contenedor lo dispara cuando aparece.
+            pending.set(canvasId, buildConfig);
+            ensureObserver(canvasId, canvas);
+            requestAnimationFrame(() => {
+              const pend = pending.get(canvasId);
+              if (pend && isVisible(canvas)) { pending.delete(canvasId); doRender(canvasId, pend); }
+            });
+            return;
+          }
+          pending.delete(canvasId);
+          doRender(canvasId, buildConfig);
+        },
+        get(canvasId) { return charts.get(canvasId) || null; },
+        destroy(canvasId) {
+          const ch = charts.get(canvasId);
+          if (ch) { ch.destroy(); charts.delete(canvasId); }
+          const ro = observers.get(canvasId);
+          if (ro) { ro.disconnect(); observers.delete(canvasId); }
+          pending.delete(canvasId);
+        },
+      };
+    })();
+    window.SCM_CHART = SCM_CHART;
+
     const authScreen = document.getElementById('auth-screen');
     const mainLayout = document.getElementById('main-layout');
     const authForm = document.getElementById('auth-form');
@@ -13600,19 +13699,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     _mrCloseDetail();
   });
 
-  // ── Mi rendimiento (setter + admin + supervisor) ──
-  let _mypChart = null;
+  // ── Mi rendimiento (SDR + admin + supervisor) — rediseño 2026-07-24 ──
+  // UNA sola fuente de datos: /api/setters/cold-call-metrics?series=1&compare=1
+  // alimenta el strip de cartera, el Cold Call Funnel (con deltas) y el chart
+  // de evolución. Un solo control de período para toda la vista (antes el
+  // funnel tenía su selector propio y convivían dos verdades en pantalla).
+  // El embudo WhatsApp (conexiones/respondieron/calificados) se retiró de la
+  // UI — la operación es 100% llamadas; /api/setters/performance queda vivo
+  // sin consumidor por si algún día vuelve WhatsApp.
   let _mypLastData = null;
-  let _mypActiveSeries = ['agendados']; // KPIs visibles en el chart
+  let _mypActiveSeries = ['dials']; // métricas visibles en el chart
+  const _mypState = { period: '7d', from: null, to: null };
 
-  const MYP_KPI_DEFS = [
-    { key: 'total',        label: 'Leads trabajados',  hint: 'Leads que tocaste en el período (NO el total asignado — ese va arriba)' },
-    { key: 'conexiones',   label: 'Conexiones',   hint: 'WhatsApp enviados' },
-    { key: 'respondieron', label: 'Respondieron', hint: 'Leads que contestaron' },
-    { key: 'calificados',  label: 'Calificados',  hint: 'Leads que pasaron calificación' },
-    { key: 'interesados',  label: 'Interesados',  hint: 'Leads que mostraron interés' },
-    { key: 'agendados',    label: 'Agendados',    hint: 'Reuniones cerradas' },
-    { key: 'shows',        label: 'Show rate',    hint: 'Asistieron a la llamada (de marcados)', isShowRate: true },
+  const MYP_METRIC_DEFS = [
+    { key: 'dials',         label: 'Llamadas',       color: '#8892A6' },
+    { key: 'connects',      label: 'Atendidas',      color: '#6E8BF0' },
+    { key: 'conversations', label: 'Conversaciones', color: '#A97DEE' },
+    { key: 'appointments',  label: 'Agendadas',      color: '#4ADE80' },
+    { key: 'deals',         label: 'Deals',          color: '#FFB341' },
   ];
 
   function _mypFmtDelta(d) {
@@ -13623,67 +13727,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const up = abs > 0;
     return `<span class="myp-delta ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(abs)} <span style="opacity:0.8; font-weight:500;">${pct > 0 ? '+' : ''}${pct}%</span></span>`;
   }
-  // Acento por métrica: rampa violeta que progresa hacia el verde (la meta =
-  // agendados). Sequential-hacia-el-objetivo, no rainbow → lectura premium.
-  const MYP_KPI_ACCENTS = {
-    total: '#8892A6', conexiones: '#6E8BF0', respondieron: '#8A83F0',
-    calificados: '#A97DEE', interesados: '#C77BE0', agendados: '#4ADE80', shows: '#4DABF7',
-  };
-
-  function _mypRenderKpis(d) {
-    const el = document.getElementById('myp-kpis');
-    if (!el) return;
-    el.innerHTML = '';
-    // Base del funnel = leads trabajados. Cada tile muestra su conversión sobre
-    // esa base con un medidor, para que las 7 cajas cuenten una historia (embudo)
-    // en vez de ser 7 números sueltos.
-    const base = Math.max(1, Number(d.totals.total) || 0);
-    for (const def of MYP_KPI_DEFS) {
-      let value, deltaHtml = '', meterPct = null, convLabel = '', isAccentNum = false;
-      if (def.isShowRate) {
-        const shows = d.totals.shows || 0;
-        const noShows = d.totals.noShows || 0;
-        const denom = shows + noShows;
-        value = denom > 0 ? `${d.totals.pctShow}%` : '—';
-        const prevDenom = (d.previous.shows || 0) + (d.previous.noShows || 0);
-        const prevPct = prevDenom > 0 ? Number(((d.previous.shows / prevDenom) * 100).toFixed(1)) : 0;
-        const curr = denom > 0 ? d.totals.pctShow : 0;
-        const abs = Number((curr - prevPct).toFixed(1));
-        const pctRel = prevPct > 0 ? Number((((curr - prevPct) / prevPct) * 100).toFixed(1)) : (curr > 0 ? 100 : 0);
-        deltaHtml = denom > 0 ? _mypFmtDelta({ abs, pct: pctRel }) : '<span class="myp-delta flat">sin agendados</span>';
-        meterPct = denom > 0 ? Math.min(100, Math.round(curr)) : 0;
-        convLabel = denom > 0 ? 'asistencia' : '';
-      } else {
-        value = d.totals[def.key];
-        deltaHtml = _mypFmtDelta(d.deltas[def.key]);
-        if (def.key === 'total') { meterPct = 100; convLabel = 'trabajados'; }
-        else {
-          meterPct = Math.min(100, Math.round((Number(value) || 0) / base * 100));
-          convLabel = meterPct + '% del total';
-        }
-        if (def.key === 'agendados') isAccentNum = true;
-      }
-      const accent = MYP_KPI_ACCENTS[def.key] || 'var(--accent)';
-      const tile = document.createElement('div');
-      tile.className = 'myp-tile';
-      tile.style.setProperty('--tile-accent', accent);
-      tile.title = def.hint;
-      tile.innerHTML = `
-        <div class="myp-tile-label">${def.label}</div>
-        <div class="myp-tile-num${isAccentNum ? ' is-accent' : ''}">${value}</div>
-        <div class="myp-tile-foot">${deltaHtml}${convLabel ? `<span class="myp-conv">${convLabel}</span>` : ''}</div>
-        ${meterPct != null ? `<div class="myp-meter"><i style="width:${meterPct}%"></i></div>` : ''}
-      `;
-      el.appendChild(tile);
-    }
-  }
 
   function _mypRenderChartToggle() {
     const wrap = document.getElementById('myp-chart-toggle');
     if (!wrap) return;
     wrap.innerHTML = '';
-    for (const def of MYP_KPI_DEFS) {
-      if (def.isShowRate) continue;
+    for (const def of MYP_METRIC_DEFS) {
       const active = _mypActiveSeries.includes(def.key);
       const btn = document.createElement('button');
       btn.className = 'seg-btn' + (active ? ' active' : '');
@@ -13691,7 +13740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', () => {
         if (active) {
           _mypActiveSeries = _mypActiveSeries.filter((k) => k !== def.key);
-          if (_mypActiveSeries.length === 0) _mypActiveSeries = ['agendados'];
+          if (_mypActiveSeries.length === 0) _mypActiveSeries = ['dials'];
         } else {
           _mypActiveSeries = [..._mypActiveSeries, def.key];
         }
@@ -13703,143 +13752,182 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function _mypRenderChart(d) {
-    if (!d || !window.Chart) return;
     const canvas = document.getElementById('myp-chart');
+    const emptyEl = document.getElementById('myp-chart-empty');
     if (!canvas) return;
-    const labels = d.buckets.map((b) => b.label);
-    // 2026-07-08: paleta alineada a MYP_KPI_ACCENTS (misma rampa que los tiles)
-    // + área con degradé sutil, puntos solo en hover, grilla casi invisible.
+    const buckets = Array.isArray(d?.buckets) ? d.buckets : [];
+    // Con "Hoy" (1 solo bucket) la serie no cuenta nada — mensaje en su lugar.
+    if (buckets.length <= 1) {
+      SCM_CHART.destroy('myp-chart');
+      canvas.style.display = 'none';
+      if (emptyEl) {
+        emptyEl.style.display = 'flex';
+        emptyEl.textContent = _mypState.period === 'today'
+          ? 'Elegí un rango de días (7 días, 30 días…) para ver la evolución.'
+          : 'Sin datos suficientes para graficar la evolución.';
+      }
+      return;
+    }
+    canvas.style.display = '';
+    if (emptyEl) emptyEl.style.display = 'none';
+    const prevBuckets = Array.isArray(d.previousBuckets) ? d.previousBuckets : [];
+    const single = _mypActiveSeries.length === 1;
+    // Conteos diarios = BARRAS (los días sin actividad se ven como huecos
+    // honestos; una línea sugiere continuidad que no existe).
     const datasets = _mypActiveSeries.map((k) => {
-      const def = MYP_KPI_DEFS.find((x) => x.key === k);
-      const color = MYP_KPI_ACCENTS[k] || '#9D85F2';
+      const def = MYP_METRIC_DEFS.find((x) => x.key === k);
+      const color = def?.color || '#9D85F2';
       return {
+        type: 'bar',
         label: def?.label || k,
-        data: d.buckets.map((b) => b[k] || 0),
-        borderColor: color,
-        backgroundColor: (ctx) => {
-          const { chartArea, ctx: c } = ctx.chart;
-          if (!chartArea) return color + '14';
-          const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          g.addColorStop(0, color + '2E');
-          g.addColorStop(1, color + '00');
-          return g;
-        },
-        tension: 0.35,
-        fill: _mypActiveSeries.length === 1, // área solo con 1 serie (con varias ensucia)
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        pointHoverBackgroundColor: color,
-        pointHoverBorderColor: '#0F1115',
-        pointHoverBorderWidth: 2,
+        data: buckets.map((b) => b[k] || 0),
+        backgroundColor: color + (single ? 'D9' : 'B3'),
+        hoverBackgroundColor: color,
+        borderRadius: 4,
+        maxBarThickness: 34,
+        order: 2,
       };
     });
-    if (_mypChart) _mypChart.destroy();
-    _mypChart = new window.Chart(canvas, {
-      type: 'line',
+    // Serie fantasma: el período anterior alineado bucket a bucket (solo con
+    // una métrica activa — con varias ensucia la lectura).
+    if (single && prevBuckets.length) {
+      const k = _mypActiveSeries[0];
+      datasets.push({
+        type: 'line',
+        label: 'Período anterior',
+        data: buckets.map((_, i) => (prevBuckets[i] ? (prevBuckets[i][k] || 0) : null)),
+        borderColor: 'rgba(140, 146, 164, 0.55)',
+        borderWidth: 1.5,
+        borderDash: [5, 4],
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        fill: false,
+        tension: 0.3,
+        spanGaps: true,
+        order: 1,
+      });
+    }
+    const labels = buckets.map((b) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(b.label);
+      return m ? `${m[3]}/${m[2]}` : b.label;
+    });
+    SCM_CHART.render('myp-chart', () => ({
+      type: 'bar',
       data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: _mypActiveSeries.length > 1, labels: { color: '#B4B8C2', font: { size: 11 }, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle' } },
+          legend: { display: datasets.length > 1 },
           tooltip: {
-            backgroundColor: 'rgba(17, 20, 27, 0.96)',
-            borderColor: 'rgba(157, 133, 242, 0.25)',
-            borderWidth: 1,
-            titleColor: '#E5E7E2',
-            bodyColor: '#B4B8C2',
-            padding: 10,
-            cornerRadius: 9,
-            displayColors: true,
-            boxWidth: 8, boxHeight: 8, usePointStyle: true,
+            callbacks: {
+              // El funnel completo del día en el pie del tooltip.
+              footer: (items) => {
+                const i = items[0]?.dataIndex;
+                const b = i != null ? buckets[i] : null;
+                if (!b) return '';
+                const cr = b.dials > 0 ? Math.round((b.connects / b.dials) * 100) : 0;
+                return `Atendidas ${b.connects}/${b.dials} (${cr}%) · Conversaciones ${b.conversations} · Agendadas ${b.appointments}`;
+              },
+            },
           },
         },
         scales: {
-          x: { ticks: { color: '#7E8494', font: { size: 10 }, maxRotation: 0 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' } },
-          y: { ticks: { color: '#7E8494', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, beginAtZero: true },
+          x: { grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 16 } },
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { precision: 0 } },
         },
       },
-    });
+    }));
+  }
+
+  function _mypRenderAssigned(d) {
+    // Cartera asignada (independiente del período) — solo con SDR individual.
+    const asg = document.getElementById('myp-assigned');
+    if (!asg) return;
+    if (!d.setterId || !d.assigned || typeof d.assigned.total !== 'number') {
+      asg.style.display = 'none';
+      return;
+    }
+    const total = d.assigned.total;
+    const sinc = d.assigned.sinContactar;
+    const trabajados = Math.max(0, total - sinc);
+    const pctTrab = total > 0 ? Math.round((trabajados / total) * 100) : 0;
+    asg.innerHTML = `
+      <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:26px; font-weight:700; color:var(--text-primary); line-height:1; letter-spacing:-0.5px; font-variant-numeric:tabular-nums;">${total.toLocaleString()}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">leads asignados</div>
+        </div>
+        <div style="flex:1; min-width:200px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
+            <span style="color:var(--success); font-weight:600;" title="Leads de la cartera que este SDR ya discó alguna vez (atribución por quién llamó)">${trabajados.toLocaleString()} con llamadas propias</span>
+            <span style="color:var(--text-tertiary);" title="El dueño actual nunca los discó">${sinc.toLocaleString()} sin llamar</span>
+          </div>
+          <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
+            <div style="height:100%; width:${pctTrab}%; border-radius:999px; background:linear-gradient(90deg, rgba(74,222,128,0.55), var(--success)); transition:width 0.7s cubic-bezier(0.22,1,0.36,1);"></div>
+          </div>
+        </div>
+      </div>
+      <div class="muted" style="font-size:11px; margin-top:11px;">El funnel y la evolución de abajo son del período seleccionado, no del total.</div>`;
+    asg.style.display = 'block';
+  }
+
+  async function _mypPopulateSetters() {
+    const wrap = document.getElementById('myp-setter-wrap');
+    const sel = document.getElementById('myp-setter');
+    const role = window.__CURRENT_USER__?.role;
+    if (!(role === 'admin' || role === 'supervisor') || !wrap || !sel) return;
+    wrap.style.display = 'block';
+    if (sel.children.length > 1) return;
+    if (!(window.__settersList && window.__settersList.length)) {
+      try {
+        const sr = await fetch(apiUrl('/api/setters'), { credentials: 'include' });
+        const sd = await sr.json();
+        if (Array.isArray(sd.setters)) window.__settersList = sd.setters;
+      } catch {}
+    }
+    for (const s of (window.__settersList || []).filter((x) => !x.hidden)) {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.name;
+      sel.appendChild(opt);
+    }
   }
 
   async function _mypLoad() {
-    // 2026-05-25: chain Cold Call Funnel load para que aparezca sin depender de click
-    if (typeof window._ccmLoadDeferred === 'function') {
-      try { window._ccmLoadDeferred(); } catch {}
-    }
-    const period = document.getElementById('myp-period')?.value || 'week';
-    const setterFilter = document.getElementById('myp-setter')?.value || '';
     const params = new URLSearchParams();
-    params.set('period', period);
-    // En modo "Ver como" (admin impersonando setter), el backend ve admin via cookie y no
-    // fuerza el SDR. Tenemos que pasarlo explicito desde el frontend.
+    if (_mypState.period === 'custom' && _mypState.from && _mypState.to) {
+      params.set('from', _mypState.from);
+      params.set('to', _mypState.to);
+    } else {
+      params.set('period', _mypState.period);
+    }
+    params.set('series', '1');
+    params.set('compare', '1');
+    // En modo "Ver como" (admin impersonando SDR), el backend ve admin via cookie
+    // y no fuerza el SDR — pasarlo explícito desde el frontend (regla #135).
     const u = window.__CURRENT_USER__;
     const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+    const setterFilter = document.getElementById('myp-setter')?.value || '';
     const effectiveSetter = setterFilter || (isViewAsSetter ? u.setterId : '');
     if (effectiveSetter) params.set('setter', effectiveSetter);
     try {
-      // apiUrl (2026-07-22): mismo fix que team-performance — respetar "Ver como".
-      const r = await fetch(apiUrl(`/api/setters/performance?${params.toString()}`), { credentials: 'include' });
+      const r = await fetch(apiUrl(`/api/setters/cold-call-metrics?${params.toString()}`), { credentials: 'include' });
       if (!r.ok) throw new Error('http ' + r.status);
       const d = await r.json();
       _mypLastData = d;
       const range = document.getElementById('myp-range');
-      if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(d.to).toLocaleDateString()}`;
-      // Total ASIGNADO (independiente del período) — el "tiene 500", separado de los
-      // leads trabajados en el período. Solo cuando hay un SDR individual seleccionado.
-      const asg = document.getElementById('myp-assigned');
-      if (asg) {
-        if (d.setterScope !== 'team' && typeof d.assignedTotal === 'number') {
-          const sinc = typeof d.assignedSinContactar === 'number' ? d.assignedSinContactar : null;
-          const total = d.assignedTotal;
-          const trabajados = sinc != null ? Math.max(0, total - sinc) : null;
-          const pctTrab = (sinc != null && total > 0) ? Math.round(trabajados / total * 100) : null;
-          asg.innerHTML = `
-            <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
-              <div>
-                <div style="font-size:26px; font-weight:700; color:var(--text-primary); line-height:1; letter-spacing:-0.5px; font-variant-numeric:tabular-nums;">${total.toLocaleString()}</div>
-                <div style="font-size:10px; color:var(--text-tertiary); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">leads asignados</div>
-              </div>
-              ${sinc != null ? `
-              <div style="flex:1; min-width:200px;">
-                <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
-                  <span style="color:var(--success); font-weight:600;" title="Leads de la cartera que ya fueron discados alguna vez (por cualquier SDR — puede incluir llamadas de un SDR anterior si fueron reasignados)">${trabajados.toLocaleString()} con llamadas</span>
-                  <span style="color:var(--text-tertiary);" title="Nunca discados por nadie (callLog vacío)">${sinc.toLocaleString()} sin llamar</span>
-                </div>
-                <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
-                  <div style="height:100%; width:${pctTrab}%; border-radius:999px; background:linear-gradient(90deg, rgba(74,222,128,0.55), var(--success)); transition:width 0.7s cubic-bezier(0.22,1,0.36,1);"></div>
-                </div>
-              </div>` : ''}
-            </div>
-            <div class="muted" style="font-size:11px; margin-top:11px;">Los KPIs de abajo son del período seleccionado (lo trabajado), no el total.</div>`;
-          asg.style.display = 'block';
-        } else {
-          asg.style.display = 'none';
-        }
-      }
-      _mypRenderKpis(d);
+      // `to` es exclusivo — mostrar el último instante INCLUIDO (si no, un
+      // rango custom hasta el 15/7 aparecía como "→ 16/7").
+      if (range) range.textContent = `${new Date(d.from).toLocaleDateString()} → ${new Date(new Date(d.to).getTime() - 1).toLocaleDateString()}`;
+      _mypRenderAssigned(d);
+      _ccmRender(d);
       _mypRenderChart(d);
-      // 2026-07-06: Mi pipeline — cartera personal por etapa. No bloquea los KPIs.
+      // Mi pipeline — cartera personal por etapa. No bloquea el resto.
       _mypLoadPipeline(effectiveSetter).catch((e) => console.warn('[myp-pipeline]', e?.message));
-
-      // Popular selector de SDRs si admin/supervisor (primer carga)
-      const wrap = document.getElementById('myp-setter-wrap');
-      const sel = document.getElementById('myp-setter');
-      const role = window.__CURRENT_USER__?.role;
-      if ((role === 'admin' || role === 'supervisor') && wrap) {
-        wrap.style.display = 'block';
-        if (sel && sel.children.length <= 1 && Array.isArray(d.setters)) {
-          for (const s of d.setters) {
-            const opt = document.createElement('option');
-            opt.value = s.id; opt.textContent = s.name;
-            sel.appendChild(opt);
-          }
-        }
-      }
+      _mypPopulateSetters();
     } catch (e) {
-      alert('Error cargando rendimiento: ' + e.message);
+      window.showToast?.('Error cargando rendimiento: ' + e.message, { type: 'error' });
     }
   }
 
@@ -13925,9 +14013,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
-    setTimeout(() => { _mypRenderChartToggle(); _mypLoad(); }, 80);
+    // Sin setTimeout: SCM_CHART difiere el render hasta que el canvas sea visible.
+    _mypRenderChartToggle();
+    _mypLoad();
   });
-  document.getElementById('myp-period')?.addEventListener('change', () => _mypLoad());
+  // Período único de TODA la vista (funnel + evolución + rango del chip).
+  document.getElementById('myp-period-seg')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    const p = btn.dataset.period || '7d';
+    document.querySelectorAll('#myp-period-seg .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
+    const customWrap = document.getElementById('myp-custom-range');
+    if (p === 'custom') {
+      if (customWrap) customWrap.style.display = '';
+      _mypState.period = 'custom';
+      if (_mypState.from && _mypState.to) _mypLoad(); // ya había rango aplicado
+      return;
+    }
+    if (customWrap) customWrap.style.display = 'none';
+    _mypState.period = p;
+    _mypLoad();
+  });
+  document.getElementById('myp-apply-range')?.addEventListener('click', () => {
+    const from = document.getElementById('myp-from')?.value || '';
+    const to = document.getElementById('myp-to')?.value || '';
+    if (!from || !to) { window.showToast?.('Elegí las dos fechas (desde y hasta).', { type: 'error' }); return; }
+    if (to < from) { window.showToast?.('La fecha "hasta" es anterior a "desde".', { type: 'error' }); return; }
+    _mypState.period = 'custom';
+    _mypState.from = from;
+    _mypState.to = to;
+    _mypLoad();
+  });
   document.getElementById('myp-setter')?.addEventListener('change', () => _mypLoad());
 
   // ───────────────────────────────────────────────────────────────
@@ -14218,34 +14334,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('myp-refresh')?.addEventListener('click', () => _mypLoad());
 
   // ─── Cold Call Funnel (dentro de view-myperf) ──────────────────
-  // 2026-05-25: pedido del user (curso de cold calling).
-  // Carga /api/setters/cold-call-metrics y renderiza funnel + ratios.
-  let _ccmPeriod = 'week';
-  window._ccmLoadDeferred = () => _ccmLoad();
-  async function _ccmLoad() {
-    const cont = document.getElementById('ccm-content');
-    if (!cont) return;
-    // Setter scope: si admin/supervisor + dropdown setter elegido, usar ese.
-    // Si setter, backend filtra solo. Si admin sin SDR → equipo completo.
-    // Bug 2026-07-13: en modo "Ver como" (admin impersonando SDR) el backend ve
-    // admin vía cookie → sin ?setter= devolvía el agregado del EQUIPO como si
-    // fuera del SDR (46 dials del equipo mostrados como de Judith). Mismo fix
-    // que ya tenía _mypLoad: pasar el setter efectivo explícito.
-    const u = window.__CURRENT_USER__;
-    const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
-    const setterSel = document.getElementById('myp-setter')?.value || (isViewAsSetter ? u.setterId : '');
-    const qs = new URLSearchParams({ period: _ccmPeriod });
-    if (setterSel) qs.set('setter', setterSel);
-    try {
-      const r = await fetch(apiUrl('/api/setters/cold-call-metrics?' + qs.toString()), { credentials: 'include' });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const d = await r.json();
-      _ccmRender(d);
-    } catch (err) {
-      cont.innerHTML = `<p class="muted" style="text-align:center; padding:20px 0; font-size:13px; color:var(--danger);">Error cargando métricas: ${escHtml(err.message)}</p>`;
-    }
-  }
-
+  // 2026-07-24: ya no tiene fetch ni período propios — _mypLoad le pasa la
+  // MISMA data que alimenta los tiles y el chart (una sola verdad en pantalla).
   function _ccmRender(d) {
     const cont = document.getElementById('ccm-content');
     if (!cont) return;
@@ -14260,15 +14350,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     // Rediseño 2026-07-08: mismo lenguaje visual que los .myp-tile (sin emojis,
     // acento por etapa, medidor proporcional al tope del funnel) + el salto de
-    // conversión entre etapas como chip. Escala log-ish no: proporcional simple.
+    // conversión entre etapas como chip. 2026-07-24: cada etapa muestra su
+    // delta vs período anterior (compare=1 del endpoint).
     const maxV = Math.max(m.dials || 1, 1);
-    const stage = (label, sub, value, color, meterV, jump) => {
+    const deltas = d.deltas || {};
+    const stage = (label, sub, value, color, meterV, jump, deltaKey) => {
       const pct = Math.min(100, Math.round(((Number(meterV) || 0) / maxV) * 100));
+      const deltaHtml = deltaKey ? _mypFmtDelta(deltas[deltaKey]) : '';
       return `
       <div class="myp-tile ccm-stage" style="--tile-accent:${color};">
         <div class="myp-tile-label">${label}</div>
         <div class="myp-tile-num" style="font-size:28px;">${value}</div>
         <div class="ccm-stage-sub">${sub || '&nbsp;'}</div>
+        ${deltaHtml ? `<div class="myp-tile-foot" title="vs período anterior">${deltaHtml}</div>` : ''}
         <div class="myp-meter"><i style="width:${pct}%"></i></div>
         ${jump ? `<div class="ccm-jump" title="Conversión desde la etapa anterior">${jump}</div>` : ''}
       </div>`;
@@ -14290,13 +14384,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${benchHtml || ''}
       </div>`;
 
+    const sr = d.showRate || {};
+    const srDenom = (sr.shows || 0) + (sr.noShows || 0);
     cont.innerHTML = `
       <div class="ccm-funnel">
-        ${stage('Dials', 'llamadas marcadas', m.dials || 0, '#8892A6', m.dials)}
-        ${stage('Connects', 'atendieron', m.connects || 0, '#6E8BF0', m.connects, fmtPct(r.connectRate))}
-        ${stage('Conversations', '&ge;30s de charla', m.conversations || 0, '#A97DEE', m.conversations, fmtPct(r.conversationRate))}
-        ${stage('Appointments', 'reuniones agendadas', m.appointments || 0, '#4ADE80', m.appointments, fmtPct(r.bookingRate))}
-        ${stage('Deals', revenueStr, dealsVal, '#FFB341', m.deals, m.deals > 0 ? fmtPct(r.closeRate) : '')}
+        ${stage('Llamadas', 'marcadas en el período', m.dials || 0, '#8892A6', m.dials, '', 'dials')}
+        ${stage('Atendidas', 'levantaron el teléfono', m.connects || 0, '#6E8BF0', m.connects, fmtPct(r.connectRate), 'connects')}
+        ${stage('Conversaciones', '&ge;30s de charla', m.conversations || 0, '#A97DEE', m.conversations, fmtPct(r.conversationRate), 'conversations')}
+        ${stage('Agendadas', 'reuniones agendadas', m.appointments || 0, '#4ADE80', m.appointments, fmtPct(r.bookingRate), 'appointments')}
+        ${stage('Deals', revenueStr, dealsVal, '#FFB341', m.deals, m.deals > 0 ? fmtPct(r.closeRate) : '', 'deals')}
       </div>
 
       <div class="ccm-ratios">
@@ -14305,26 +14401,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${ratio(fmtPct(r.bookingRate), 'Booking rate', bench(r.bookingRate, 10, 15, '15-25%'))}
         ${ratio(fmtPct(r.dialToAppointment), 'Dial &rarr; appointment', bench(r.dialToAppointment, 1, 2, '1-3%'), true)}
         ${ratio(fmtDur(d.avgConvDurationS), 'Duración promedio', '')}
+        ${ratio(srDenom > 0 ? fmtPct(sr.pctShow) : '—', 'Show rate', srDenom > 0 ? `<span class="ccm-bench" style="opacity:0.7;">${sr.shows}/${srDenom} asistieron</span>` : '')}
       </div>
     `;
   }
-
-  // Wire period buttons (estado activo por clase .seg-btn.active, sin inline styles)
-  document.querySelectorAll('.ccm-period-btn').forEach((b) => {
-    b.addEventListener('click', () => {
-      _ccmPeriod = b.getAttribute('data-period') || 'week';
-      document.querySelectorAll('.ccm-period-btn').forEach((x) => x.classList.remove('active'));
-      b.classList.add('active');
-      _ccmLoad();
-    });
-  });
-
-  // Auto-load cuando entran a la view o cambia setter
-  document.querySelector('[data-target="view-myperf"]')?.addEventListener('click', () => {
-    setTimeout(_ccmLoad, 200);
-  });
-  document.getElementById('myp-setter')?.addEventListener('change', () => _ccmLoad());
-  document.getElementById('myp-refresh')?.addEventListener('click', () => _ccmLoad());
 
   // ─── Vista Mis programados ──────────────────────────────────
   let _scheduledTab = 'pending';
@@ -14576,7 +14656,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ── Panel pro (Phase 18): KPIs del equipo + evolución por SDR + mini-funnels ──
-  let _teamChart = null;
   let _teamChartMetric = 'dials';
 
   function _teamRenderKpis(d) {
@@ -14602,59 +14681,111 @@ document.addEventListener('DOMContentLoaded', async () => {
   const _TEAM_SERIES_COLORS = ['#9D85F2', '#6E8BF0', '#4ADE80', '#F5B301', '#F87171', '#38BDF8', '#F472B6', '#A3E635', '#FB923C', '#818CF8'];
 
   function _teamRenderChart(d) {
+    // 2026-07-24: barras APILADAS por SDR (las N líneas superpuestas eran
+    // spaghetti con 4+ SDRs) + línea de % atención del equipo con banda de
+    // benchmark 15-25% en eje derecho. La ventana ahora respeta el período.
     const canvas = document.getElementById('team-chart');
-    if (!canvas || !window.Chart) return;
+    if (!canvas) return;
     const cbd = d.callsByDay || { days: [], perSetter: [] };
     const labels = (cbd.days || []).map((ds) => {
       const [, m, day] = ds.split('-');
       return `${day}/${m}`;
     });
-    const metric = _teamChartMetric === 'connects' ? 'connects' : 'dials';
-    const datasets = (cbd.perSetter || []).map((s, i) => {
+    const metric = ['connects', 'conversations', 'appointments'].includes(_teamChartMetric) ? _teamChartMetric : 'dials';
+    const rows = (cbd.perSetter || []).filter((s) => (s[metric] || []).some((v) => v > 0));
+    const datasets = rows.map((s, i) => {
       const color = _TEAM_SERIES_COLORS[i % _TEAM_SERIES_COLORS.length];
       return {
+        type: 'bar',
         label: s.name || s.setterId,
         data: Array.isArray(s[metric]) ? s[metric] : [],
-        borderColor: color,
-        backgroundColor: color + '22',
-        tension: 0.35,
-        fill: false,
+        backgroundColor: color + 'CC',
+        hoverBackgroundColor: color,
+        borderRadius: 3,
+        maxBarThickness: 30,
+        stack: 'team',
+        order: 3,
+        yAxisID: 'y',
+      };
+    });
+    // % de atención del EQUIPO por día (sum connects / sum dials) sobre eje y1.
+    const nDays = (cbd.days || []).length;
+    const teamRate = [];
+    for (let i = 0; i < nDays; i++) {
+      let dials = 0, connects = 0;
+      for (const s of (cbd.perSetter || [])) {
+        dials += (s.dials || [])[i] || 0;
+        connects += (s.connects || [])[i] || 0;
+      }
+      teamRate.push(dials > 0 ? Math.round((connects / dials) * 100) : null);
+    }
+    const hasRate = teamRate.some((v) => v != null);
+    if (hasRate) {
+      // Banda de benchmark 15-25% (dos series constantes con fill entre ambas).
+      datasets.push({
+        type: 'line', label: '_bench_hi', data: new Array(nDays).fill(25),
+        borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, fill: '+1',
+        backgroundColor: 'rgba(74, 222, 128, 0.07)', yAxisID: 'y1', order: 2,
+      });
+      datasets.push({
+        type: 'line', label: '_bench_lo', data: new Array(nDays).fill(15),
+        borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, fill: false, yAxisID: 'y1', order: 2,
+      });
+      datasets.push({
+        type: 'line',
+        label: '% atención equipo',
+        data: teamRate,
+        borderColor: '#4ADE80',
         borderWidth: 2,
         pointRadius: 0,
         pointHoverRadius: 4,
-        pointHoverBackgroundColor: color,
+        pointHoverBackgroundColor: '#4ADE80',
         pointHoverBorderColor: '#0F1115',
-        pointHoverBorderWidth: 2,
-      };
-    });
-    if (_teamChart) _teamChart.destroy();
-    _teamChart = new window.Chart(canvas, {
-      type: 'line',
+        tension: 0.3,
+        spanGaps: true,
+        fill: false,
+        yAxisID: 'y1',
+        order: 1,
+      });
+    }
+    SCM_CHART.render('team-chart', () => ({
+      type: 'bar',
       data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: datasets.length > 1, labels: { color: '#B4B8C2', font: { size: 11 }, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle' } },
+          legend: {
+            display: true,
+            labels: { filter: (item) => !String(item.text || '').startsWith('_bench_') },
+          },
           tooltip: {
-            backgroundColor: 'rgba(17, 20, 27, 0.96)',
-            borderColor: 'rgba(157, 133, 242, 0.25)',
-            borderWidth: 1,
-            titleColor: '#E5E7E2',
-            bodyColor: '#B4B8C2',
-            padding: 10,
-            cornerRadius: 9,
-            displayColors: true,
-            boxWidth: 8, boxHeight: 8, usePointStyle: true,
+            filter: (item) => !String(item.dataset?.label || '').startsWith('_bench_'),
+            callbacks: {
+              footer: (items) => {
+                const bars = items.filter((it) => it.dataset?.type === 'bar');
+                if (!bars.length) return '';
+                const total = bars.reduce((a, it) => a + (Number(it.raw) || 0), 0);
+                return `Total equipo: ${total}`;
+              },
+            },
           },
         },
         scales: {
-          x: { ticks: { color: '#7E8494', font: { size: 10 }, maxRotation: 0 }, grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' } },
-          y: { ticks: { color: '#7E8494', font: { size: 10 }, precision: 0 }, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, beginAtZero: true },
+          x: { stacked: true, grid: { display: false }, border: { color: 'rgba(255,255,255,0.08)' }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 16 } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false }, ticks: { precision: 0 } },
+          y1: {
+            display: hasRate,
+            position: 'right',
+            min: 0, max: 100,
+            grid: { drawOnChartArea: false },
+            border: { display: false },
+            ticks: { callback: (v) => v + '%', maxTicksLimit: 5 },
+          },
         },
       },
-    });
+    }));
   }
 
   function _teamRenderFunnels(d) {
@@ -14742,11 +14873,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Toggle Llamadas/Atendidas del chart de evolución (no re-fetchea, redibuja).
+  // Toggle de métrica del chart de evolución (no re-fetchea, redibuja).
   document.getElementById('team-chart-toggle')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.seg-btn');
     if (!btn) return;
-    const metric = btn.dataset.metric === 'connects' ? 'connects' : 'dials';
+    const metric = ['dials', 'connects', 'conversations', 'appointments'].includes(btn.dataset.metric) ? btn.dataset.metric : 'dials';
     if (metric === _teamChartMetric) return;
     _teamChartMetric = metric;
     document.querySelectorAll('#team-chart-toggle .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
@@ -14754,7 +14885,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.querySelector('[data-target="view-team"]')?.addEventListener('click', () => {
-    setTimeout(() => _teamLoad(), 80);
+    // Sin setTimeout: SCM_CHART difiere el render hasta que el canvas sea visible.
+    _teamLoad();
   });
 
   // Sprint 32: Dashboard de objeciones
