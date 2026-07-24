@@ -1777,8 +1777,14 @@ function buildWeeklyReportData() {
         const t = c.ts ? new Date(c.ts).getTime() : 0;
         if (t >= fromTs && t < toTs) {
           callsWeek++;
-          if (['answered_interested', 'answered_not_interested', 'scheduled_with_admin'].includes(c.outcome)) callsAnsweredWeek++;
+          // 2026-07-24: "atendida" = definición canónica del CALL METRICS CORE
+          // (incluye hung_up/callback_later — antes lista a mano de 3 outcomes
+          // y el mail semanal no cuadraba con los dashboards).
+          if (COLD_CALL_CONNECT_OUTCOMES.has(String(c.outcome || ''))) callsAnsweredWeek++;
           if (c.outcome === 'scheduled_with_admin') callsScheduledWeek++;
+          // deadWeek = EVENTOS de la semana (llamadas que terminaron en número
+          // muerto). Distinto del KPI "Números muertos" del Comando, que es
+          // ESTADO actual (phoneStatus) — no es un bug, son métricas distintas.
           if (['wrong_number', 'invalid_number'].includes(c.outcome)) callsDeadWeek++;
         }
       }
@@ -1825,7 +1831,7 @@ function buildWeeklyReportHtml(data) {
   const card = (label, value, color = '#9D85F2') => `<div style="background:#161922;border:1px solid #262B3B;border-radius:10px;padding:14px 16px;flex:1;min-width:140px;"><div style="font-size:11px;color:#7E8494;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px;">${label}</div><div style="font-size:22px;color:${color};font-weight:700;">${value}</div></div>`;
   const rowsSetter = perSetter.map(s => `<tr style="border-bottom:1px solid #262B3B;"><td style="padding:8px 12px;color:#E5E7E2;font-weight:600;">${s.name}</td><td style="padding:8px 12px;">${s.leadsAsignados}</td><td style="padding:8px 12px;">${s.conexiones}</td><td style="padding:8px 12px;">${s.llamadas}</td><td style="padding:8px 12px;color:#4ADE80;font-weight:600;">${s.agendadosLlamada}</td></tr>`).join('') ||
     `<tr><td colspan="5" style="padding:14px;text-align:center;color:#7E8494;">Sin actividad en la semana.</td></tr>`;
-  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">💬 WhatsApp</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Conexiones nuevas', wsp.conexionesNew)}${card('Respondieron (total)', wsp.respondieronTotal)}${card('Interesados (total)', wsp.interesadosTotal, '#4ADE80')}${card('Agendados (total)', wsp.agendadosTotal, '#4ADE80')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Números muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por setter</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Setter</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Conexiones</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
+  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">💬 WhatsApp</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Conexiones nuevas', wsp.conexionesNew)}${card('Respondieron (total)', wsp.respondieronTotal)}${card('Interesados (total)', wsp.interesadosTotal, '#4ADE80')}${card('Agendados (total)', wsp.agendadosTotal, '#4ADE80')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Llamadas a núm. muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por setter</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Setter</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Conexiones</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
 }
 
 async function sendWeeklyReport(toEmail, dataOverride = null) {
@@ -6534,13 +6540,9 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
 // por país, por setter. Range: today | week | month | all. Admin/supervisor only.
 app.get('/api/setters/objection-analytics', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const range = (req.query.range || 'month').toString();
-  const now = Date.now();
-  let cutoff = 0;
-  // Audit 2026-07-08: 'today' era una ventana móvil de 24hs (incluía ayer);
-  // ahora es "desde la medianoche" en la TZ de negocio, como el resto.
-  if (range === 'today') cutoff = _bizStartOfDay(now);
-  else if (range === 'week') cutoff = now - 7 * 24 * 3600 * 1000;
-  else if (range === 'month') cutoff = now - 30 * 24 * 3600 * 1000;
+  // 2026-07-24: rango canónico (_ccResolveRange) — week/month cortan a
+  // medianoche TZ negocio, no ventana móvil (misma "semana" en toda la app).
+  const cutoff = ['today', 'week', 'month'].includes(range) ? _ccResolveRange(range).fromTs : 0;
   // 'all' → cutoff = 0
 
   const data = loadSettersData();
@@ -10006,14 +10008,19 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
         if (!agg) { agg = { total: 0, hoy: 0, interesados: 0, agendados: 0 }; _callAgg.set(sid, agg); }
         agg.total++;
         const cts = c.ts ? new Date(c.ts).getTime() : 0;
+        // 2026-07-24: "atendida" = COLD_CALL_CONNECT_OUTCOMES (definición canónica
+        // del CALL METRICS CORE) — antes acá se usaba una lista a mano de 3
+        // outcomes (sin hung_up/callback_later) y el Comando mostraba menos
+        // atendidas que Mi rendimiento/Equipo para las mismas llamadas.
+        const outcome = String(c.outcome || '');
         if (cts >= todayStart && cts < todayEnd) {
           callsToday++;
           agg.hoy++;
-          if (['answered_interested', 'answered_not_interested', 'scheduled_with_admin'].includes(c.outcome)) answeredToday++;
+          if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) answeredToday++;
         }
-        if (c.outcome === 'answered_interested') { callsWithInterested++; agg.interesados++; }
-        if (['answered_interested', 'answered_not_interested'].includes(c.outcome)) callsWithAnswered++;
-        if (c.outcome === 'scheduled_with_admin') { callsScheduledWithAdmin++; agg.agendados++; }
+        if (outcome === 'answered_interested') { callsWithInterested++; agg.interesados++; }
+        if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) callsWithAnswered++;
+        if (outcome === 'scheduled_with_admin') { callsScheduledWithAdmin++; agg.agendados++; }
       }
     }
   }
@@ -13081,7 +13088,10 @@ app.get("/api/telnyx/real-costs", requireAuth, requireRole("admin", "supervisor"
     byCountry[iso].calls++;
     byCountry[iso].minutes += s.billedSec / 60;
     byCountry[iso].costUSD += s.cost;
-    const day = s.startedAt ? s.startedAt.substring(0, 10) : "????-??-??";
+    // 2026-07-24: fecha en TZ de negocio (antes substring del ISO = fecha UTC
+    // de Telnyx → las llamadas nocturnas caían en el día siguiente del chart).
+    const _dayTs = s.startedAt ? new Date(s.startedAt).getTime() : 0;
+    const day = _dayTs ? _bizDayStr(_dayTs) : "????-??-??";
     if (!byDay[day]) byDay[day] = { day, calls: 0, minutes: 0, costUSD: 0 };
     byDay[day].calls++;
     byDay[day].minutes += s.billedSec / 60;
@@ -13425,11 +13435,9 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   const role = req.auth?.user?.role;
   if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
   const range = (req.query.range || 'month').toString();
-  const now = Date.now();
-  let fromTs = 0;
-  if (range === 'today') fromTs = _bizStartOfDay(now); // medianoche TZ de negocio
-  else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
-  else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
+  // 2026-07-24: rango canónico (_ccResolveRange) — antes week/month eran
+  // ventana móvil `now - N días` y este panel no cuadraba con cold-call-metrics.
+  const fromTs = ['today', 'week', 'month'].includes(range) ? _ccResolveRange(range).fromTs : 0;
   const data = loadSettersData();
   // Recolectar todas las calls Telnyx en rango
   const _effUserMap = _buildUserSetterMap(); // atribución por quién llamó
@@ -13463,21 +13471,28 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   // - Ratio atendidas: outcomes que indican atención (answered_*, scheduled_*, voicemail, callback)
   // - Ratio agendadas: scheduled_with_admin / atendidas
   // - Ratio interesado: answered_interested / atendidas
-  const attendedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'voicemail', 'callback_later'];
-  const reachedOutcomes = ['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']; // hablaste con humano
+  // 2026-07-24 (CALL METRICS CORE): "atendida"/"hablaste con humano" usan la
+  // definición canónica COLD_CALL_CONNECT_OUTCOMES — antes este endpoint tenía
+  // DOS listas propias ("attended" con voicemail y sin hung_up; "reached" sin
+  // hung_up) que no cuadraban ni entre sí ni con el resto de la app. El buzón,
+  // lo único que "attended" agregaba, va como ratio propio (voicemailPct).
   // Mismo umbral que /cold-call-metrics (COLD_CALL_CONV_MIN_S) para que ambos
   // dashboards reporten la misma definición de "pasó el opener" (audit #2).
+  const _isConnect = (c) => COLD_CALL_CONNECT_OUTCOMES.has(String(c.outcome || ''));
   const openerPassedCount = calls.filter(c => (c.duration || 0) >= COLD_CALL_CONV_MIN_S).length;
-  const attendedCount = calls.filter(c => attendedOutcomes.includes(c.outcome)).length;
-  const reachedCount = calls.filter(c => reachedOutcomes.includes(c.outcome)).length;
+  const connectsCount = calls.filter(_isConnect).length;
+  const voicemailCount = (byOutcome.voicemail?.count || 0);
   const scheduledCount = (byOutcome.scheduled_with_admin?.count || 0);
-  const interestedCount = (byOutcome.answered_interested?.count || 0) + scheduledCount;
+  // Interesado-O-agendado (intención). NO es el "appointments" del funnel
+  // canónico (ese cuenta solo scheduled_with_admin) — de ahí el nombre largo.
+  const interestedOrScheduledCount = (byOutcome.answered_interested?.count || 0) + scheduledCount;
   const ratios = {
     openerPassedPct: total > 0 ? Math.round((openerPassedCount / total) * 100) : 0,
-    attendedPct: total > 0 ? Math.round((attendedCount / total) * 100) : 0,
-    reachedHumanPct: total > 0 ? Math.round((reachedCount / total) * 100) : 0,
-    scheduledFromReachedPct: reachedCount > 0 ? Math.round((scheduledCount / reachedCount) * 100) : 0,
-    interestedFromReachedPct: reachedCount > 0 ? Math.round((interestedCount / reachedCount) * 100) : 0,
+    attendedPct: total > 0 ? Math.round((connectsCount / total) * 100) : 0, // = reachedHumanPct (canónico)
+    reachedHumanPct: total > 0 ? Math.round((connectsCount / total) * 100) : 0,
+    voicemailPct: total > 0 ? Math.round((voicemailCount / total) * 100) : 0,
+    scheduledFromReachedPct: connectsCount > 0 ? Math.round((scheduledCount / connectsCount) * 100) : 0,
+    interestedFromReachedPct: connectsCount > 0 ? Math.round((interestedOrScheduledCount / connectsCount) * 100) : 0,
     scheduledFromTotalPct: total > 0 ? Math.round((scheduledCount / total) * 100) : 0,
   };
   // Por país
@@ -13487,7 +13502,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     if (!byCountry[k]) byCountry[k] = { calls: 0, scheduled: 0, reached: 0 };
     byCountry[k].calls++;
     if (c.outcome === 'scheduled_with_admin') byCountry[k].scheduled++;
-    if (reachedOutcomes.includes(c.outcome)) byCountry[k].reached++;
+    if (_isConnect(c)) byCountry[k].reached++;
   }
   const countriesArr = Object.entries(byCountry).map(([country, v]) => ({
     country, calls: v.calls,
@@ -13502,7 +13517,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     const h = _bizHour(new Date(c.ts).getTime());
     if (!byHour[h]) byHour[h] = { calls: 0, reached: 0, scheduled: 0 };
     byHour[h].calls++;
-    if (reachedOutcomes.includes(c.outcome)) byHour[h].reached++;
+    if (_isConnect(c)) byHour[h].reached++;
     if (c.outcome === 'scheduled_with_admin') byHour[h].scheduled++;
   }
   const hoursArr = Object.entries(byHour).map(([h, v]) => ({
@@ -13517,7 +13532,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
     const d = _bizDayOfWeek(new Date(c.ts).getTime());
     if (!byDayOfWeek[d]) byDayOfWeek[d] = { calls: 0, reached: 0, scheduled: 0 };
     byDayOfWeek[d].calls++;
-    if (reachedOutcomes.includes(c.outcome)) byDayOfWeek[d].reached++;
+    if (_isConnect(c)) byDayOfWeek[d].reached++;
     if (c.outcome === 'scheduled_with_admin') byDayOfWeek[d].scheduled++;
   }
   const daysArr = Object.entries(byDayOfWeek).map(([d, v]) => ({
@@ -13530,7 +13545,7 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   // answered = outcomes de conexión real (un humano levantó o la llamada se completó).
   // abandoned = el resto (no atendió, buzón, inválido, equivocado, sin disposición).
   // Telnyx aplica recargo si supera ~20% al cierre de mes → lo exponemos para gestionarlo.
-  const answeredCount = calls.filter(c => COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)).length;
+  const answeredCount = connectsCount; // canónico — misma cifra que reached/attended
   const abandonedCount = total - answeredCount;
   const abandonedPct = total > 0 ? Math.round((abandonedCount / total) * 100) : 0;
   res.json({
@@ -13550,7 +13565,12 @@ app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
       over: abandonedPct >= 20,
     },
     breakdown: {
-      openerPassedCount, attendedCount, reachedCount, scheduledCount, interestedCount,
+      openerPassedCount,
+      // attendedCount y reachedCount quedan como alias del connects canónico
+      // (compat frontend); interestedCount idem de interestedOrScheduledCount.
+      attendedCount: connectsCount, reachedCount: connectsCount, connectsCount,
+      voicemailCount, scheduledCount,
+      interestedCount: interestedOrScheduledCount, interestedOrScheduledCount,
     },
     byOutcome,
     byCountry: countriesArr,
@@ -13566,11 +13586,9 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
   const role = req.auth?.user?.role;
   if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
   const range = (req.query.range || 'month').toString();
-  const now = Date.now();
-  let fromTs = 0;
-  if (range === 'today') fromTs = _bizStartOfDay(now); // medianoche TZ de negocio
-  else if (range === 'week') fromTs = now - 7 * 24 * 60 * 60 * 1000;
-  else if (range === 'month') fromTs = now - 30 * 24 * 60 * 60 * 1000;
+  // 2026-07-24: rango canónico (_ccResolveRange) — week/month cortan a
+  // medianoche TZ negocio, no ventana móvil.
+  const fromTs = ['today', 'week', 'month'].includes(range) ? _ccResolveRange(range).fromTs : 0;
   const settersData = loadSettersData();
   const scriptsData = loadCallScripts();
   const scriptsById = {};
@@ -14527,14 +14545,11 @@ app.post('/api/telnyx/scripts/reset-to-seed', requireAuth, requireRole('admin'),
 // Devuelve breakdown por setter y por país, además de totales.
 app.get('/api/telnyx/metrics', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   const range = String(req.query.range || 'month');
-  const now = Date.now();
+  // 2026-07-24: rango canónico (_ccResolveRange) — week/month cortan a
+  // medianoche TZ negocio, no ventana móvil (misma "semana" en toda la app).
   let sinceTs = 0;
-  if (range === 'today') {
-    sinceTs = _bizStartOfDay(); // medianoche en TZ de negocio, no del server
-  } else if (range === 'week') {
-    sinceTs = now - 7 * 24 * 60 * 60 * 1000;
-  } else if (range === 'month') {
-    sinceTs = now - 30 * 24 * 60 * 60 * 1000;
+  if (['today', 'week', 'month'].includes(range)) {
+    sinceTs = _ccResolveRange(range).fromTs;
   } else if (range !== 'all') {
     return res.status(400).json({ error: 'range debe ser today, week, month o all.' });
   }

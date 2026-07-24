@@ -60,6 +60,11 @@ let tsToday = 0;        // hoy, hace un rato
 let tsLateNight = 0;    // ayer 23:30 TZ negocio (= hoy 02:30 UTC) — trampa de TZ
 let ts3d = 0;           // hace 3 días
 let ts10d = 0;          // hace 10 días (fuera de 7d, dentro de 30d)
+let tsLastWeekA = 0;    // miércoles de la semana pasada (para el reporte semanal)
+let tsLastWeekB = 0;
+// Fuente de verdad del fixture para los cross-checks que dependen del día de
+// la semana en que corre el test (weekly): TODAS las llamadas {ts, outcome}.
+const FIXTURE_CALLS = [];
 
 beforeAll(async () => {
   const a = await request(app).post("/api/auth/login").send({ email: "admin-mc@local.test", password: "mcpass1234" });
@@ -75,6 +80,11 @@ beforeAll(async () => {
   tsLateNight = dayStart - 30 * 60000; // ayer 23:30 AR
   ts3d = dayStart - 3 * oneDay + 10 * 3600000; // hace 3 días a las 10:00
   ts10d = dayStart - 10 * oneDay + 10 * 3600000;
+  // Semana PASADA completa (ventana del reporte semanal: [lunes pasado, este lunes)).
+  const dow = M._bizDayOfWeek(dayStart) || 7;
+  const thisMonday = dayStart - (dow - 1) * oneDay;
+  tsLastWeekA = thisMonday - 5 * oneDay + 15 * 3600000; // miércoles pasado 15:00
+  tsLastWeekB = tsLastWeekA + 3600000;
 
   // Fixture: TODOS los outcomes, duraciones a ambos lados de 30s, borde de día
   // TZ, lead reasignado con llamadas ajenas, user borrado en `by`, calendar
@@ -114,12 +124,16 @@ beforeAll(async () => {
           { ts: iso(ts3d), outcome: "answered_interested", by: "u_a", channel: "telnyx_webrtc", duration: 31 },
         ],
       },
-      // Llamada de un user BORRADO (u_ghost no existe en auth) → sin atribuir.
+      // Llamadas de un user BORRADO (u_ghost no existe en auth) → sin atribuir.
+      // Las dos de la semana pasada alimentan el cross-check del reporte semanal
+      // sin ensuciar la atribución de A/B (ghost no cuenta para nadie).
       l4: {
         num: 4, name: "L4", phone: "+521555000004", assignedTo: "s_b",
         conexion: "sin_wsp", estado: "sin_contactar",
         callLog: [
           { ts: iso(tsToday), outcome: "answered_interested", by: "u_ghost", channel: "telnyx_webrtc", duration: 90 },
+          { ts: iso(tsLastWeekA), outcome: "hung_up", by: "u_ghost", channel: "telnyx_webrtc", duration: 12 },
+          { ts: iso(tsLastWeekB), outcome: "no_answer", by: "u_ghost", channel: "telnyx_webrtc", duration: 0 },
         ],
       },
       // Llamada vieja de B (hace 10 días — fuera de 7d, dentro de 30d).
@@ -146,8 +160,22 @@ beforeAll(async () => {
     ],
     sessions: [],
   }, null, 2));
+
+  // Aplanar el fixture recién escrito → fuente de verdad para los cross-checks
+  // cuya ventana depende del día en que corre el test (weekly, all-time).
+  const written = JSON.parse(fs.readFileSync(path.join(tmpData, "setters.json"), "utf8"));
+  for (const l of Object.values(written.leads)) {
+    for (const c of (l.callLog || [])) {
+      FIXTURE_CALLS.push({ ts: new Date(c.ts).getTime(), outcome: c.outcome, channel: c.channel || "" });
+    }
+  }
 });
 afterAll(() => { try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {} });
+
+// Réplica local de la definición canónica (si el canon cambia, estos tests
+// tienen que fallar hasta que se actualicen A PROPÓSITO).
+const CANON_CONNECTS = new Set(["answered_interested", "answered_not_interested", "scheduled_with_admin", "callback_later", "hung_up"]);
+const isConnect = (o) => CANON_CONNECTS.has(o);
 
 // Números esperados de s_a en 7d (todo el fixture menos ts10d, que es de u_b):
 // dials = 6 (l1) + 1 (l2) + 2 (l3, reasignado pero llamó A) = 9
@@ -217,6 +245,49 @@ describe("A · consistencia cruzada — mismos números en todos los endpoints",
     for (const k of ["dials", "connects", "conversations", "appointments", "deals", "revenue"]) {
       expect(sum(k), `suma de buckets.${k} != totals`).toBe(r.body.metrics[k]);
     }
+  });
+});
+
+describe("A · Comando, semanal y effectiveness alineados al canon (Ola 3)", () => {
+  it("A3: Comando — atendidas canónicas == cold-call-metrics (global, hoy y por SDR)", async () => {
+    const cmd = await request(app).get("/api/setters/command").set("Cookie", adminCookie);
+    expect(cmd.status).toBe(200);
+    const ccmAll = await request(app).get("/api/setters/cold-call-metrics?period=all").set("Cookie", adminCookie);
+    expect(cmd.body.callTotals.totalLlamadas).toBe(ccmAll.body.metrics.dials);
+    expect(cmd.body.callTotals.atendidasHistorico, "atendidasHistorico del Comando difiere de connects canónicos").toBe(ccmAll.body.metrics.connects);
+    const ccmToday = await request(app).get("/api/setters/cold-call-metrics?period=today").set("Cookie", adminCookie);
+    expect(cmd.body.callTotals.llamadasHoy).toBe(ccmToday.body.metrics.dials);
+    const expectedPct = ccmToday.body.metrics.dials > 0
+      ? ((ccmToday.body.metrics.connects / ccmToday.body.metrics.dials) * 100).toFixed(1) : "0.0";
+    expect(cmd.body.callTotals.pctAtendidasHoy, "pctAtendidasHoy no usa la definición canónica").toBe(expectedPct);
+    const rowA = cmd.body.callsPerSetter.find((s) => s.id === "s_a");
+    const ccmA = await request(app).get("/api/setters/cold-call-metrics?setter=s_a&period=all").set("Cookie", adminCookie);
+    expect(rowA.totalLlamadas).toBe(ccmA.body.metrics.dials);
+  });
+  it("A4: reporte semanal — answeredWeek con la definición canónica (hung_up cuenta)", async () => {
+    const r = await request(app).get("/api/admin/weekly-report/preview").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    const dow = M._bizDayOfWeek(dayStart) || 7;
+    const thisMonday = dayStart - (dow - 1) * oneDay;
+    const lastMonday = thisMonday - 7 * oneDay;
+    const inWeek = FIXTURE_CALLS.filter((c) => c.ts >= lastMonday && c.ts < thisMonday);
+    expect(r.body.data.calls.totalWeek).toBe(inWeek.length);
+    expect(r.body.data.calls.answeredWeek).toBe(inWeek.filter((c) => isConnect(c.outcome)).length);
+    // El hung_up de la semana pasada está garantizado en ventana → answeredWeek > 0.
+    expect(r.body.data.calls.answeredWeek).toBeGreaterThan(0);
+  });
+  it("A5: effectiveness — reached == attended == answered (una sola definición) + voicemailPct", async () => {
+    const r = await request(app).get("/api/telnyx/cold-call-effectiveness?range=all").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    const telnyx = FIXTURE_CALLS.filter((c) => c.channel === "telnyx_webrtc");
+    expect(r.body.totals.calls).toBe(telnyx.length);
+    const expConnects = telnyx.filter((c) => isConnect(c.outcome)).length;
+    expect(r.body.breakdown.connectsCount).toBe(expConnects);
+    expect(r.body.breakdown.reachedCount, "reached difiere del canon").toBe(expConnects);
+    expect(r.body.breakdown.attendedCount, "attended difiere del canon").toBe(expConnects);
+    expect(r.body.abandoned.answered).toBe(expConnects);
+    expect(r.body.ratios.attendedPct).toBe(r.body.ratios.reachedHumanPct);
+    expect(typeof r.body.ratios.voicemailPct).toBe("number");
   });
 });
 
