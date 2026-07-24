@@ -5040,7 +5040,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
@@ -7017,7 +7017,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
-              ${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
+              ${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
             ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
