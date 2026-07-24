@@ -183,4 +183,39 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     ];
     expect(clean(raw, "setter", prompt).length).toBe(1);
   });
+
+  // Modo lax (2026-07-24): rescate cuando el medidor del browser confirmó voz
+  // real pero la limpieza estricta vació el canal (caso real: audio telefónico
+  // de línea pobre puntúa como "silencio" para Whisper y el filtro de métricas
+  // se comía la conversación entera).
+  it("lax conserva segmentos con métricas pobres que el modo estricto descarta", () => {
+    const raw = [
+      seg({ start: 0, end: 3, text: "¿Sí, dígame? ¿De parte de quién?", no_speech_prob: 0.7, avg_logprob: -0.6, compression_ratio: 1.3 }),
+      seg({ start: 4, end: 8, text: "El doctor no se encuentra ahora.", no_speech_prob: 0.65, avg_logprob: -0.5, compression_ratio: 1.2 }),
+    ];
+    expect(clean(raw, "lead")).toEqual([]); // estricto: todo puntúa como silencio
+    const out = clean(raw, "lead", "", { lax: true });
+    expect(out.map((s) => s.text)).toEqual(["¿Sí, dígame? ¿De parte de quién?", "El doctor no se encuentra ahora."]);
+  });
+
+  it("lax IGUAL filtra el eco del prompt y colapsa loops", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = [
+      seg({ start: 0, end: 3, text: "Llamada telefónica en español de un vendedor a una clínica dental.", no_speech_prob: 0.3, avg_logprob: -0.3 }),
+      seg({ start: 4, end: 6, text: "Vale, un momento.", no_speech_prob: 0.7, avg_logprob: -0.6 }),
+      seg({ start: 6, end: 8, text: "Vale, un momento.", no_speech_prob: 0.7, avg_logprob: -0.6 }),
+    ];
+    const out = clean(raw, "lead", prompt, { lax: true });
+    expect(out.map((s) => s.text)).toEqual(["Vale, un momento."]); // eco afuera, loop colapsado
+    expect(out[0].end).toBe(8);
+  });
+
+  it("lax con canal que colapsa a eco del prompt repetido -> vacío igual", () => {
+    const prompt = "Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.";
+    const raw = Array.from({ length: 4 }, (_, i) => seg({
+      start: i, end: i + 1, text: "reactivación de pacientes",
+      no_speech_prob: 0.2, avg_logprob: -0.3,
+    }));
+    expect(clean(raw, "lead", prompt, { lax: true })).toEqual([]);
+  });
 });

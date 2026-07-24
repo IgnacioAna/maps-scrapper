@@ -14021,7 +14021,16 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // 2026-06-26: el bug era transcripts tipo "Reactivación de pacientes." × 30 en
 // llamadas de buzón. Whisper inventa sobre silencio: esos segmentos tienen
 // no_speech_prob alto + avg_logprob muy bajo, o compression_ratio alto.
-function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
+// opts.lax (2026-07-24): modo rescate — SOLO filtra eco del prompt y colapsa
+// loops; NO aplica los filtros por métricas (no_speech_prob / avg_logprob /
+// compression_ratio) ni el vaciado por "parece silencio". Se usa cuando el
+// medidor de nivel del browser (recMeta.activePct) CONFIRMÓ que el canal tuvo
+// voz real: en ese caso, si la limpieza estricta vació el canal, se estaba
+// comiendo habla verdadera (audio telefónico de línea pobre puntúa como
+// "silencio/alucinación" para Whisper) — caso real 2026-07-23: canales con
+// 12-46% de actividad medida salían con 0 segmentos.
+function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {}) {
+  const lax = !!opts.lax;
   const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
   // Eco del prompt POR SEGMENTO (bug 2026-07-13): Whisper puede devolver el prompt
   // partido en varios segmentos distintos ("Llamada telefónica en español de un
@@ -14057,8 +14066,8 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
     _cr: typeof s.compression_ratio === 'number' ? s.compression_ratio : 0,
   })).filter((s) => s.text)
     .filter((s) => !_isPromptEchoSeg(s.text))           // eco del prompt (por segmento)
-    .filter((s) => !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación
-    .filter((s) => s._cr < 2.4);                        // segmento repetitivo
+    .filter((s) => lax || !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación (skip en lax)
+    .filter((s) => lax || s._cr < 2.4);                 // segmento repetitivo (skip en lax)
   // Colapsa loops: la misma frase repetida N veces (clásico de Whisper en
   // silencio) se junta en una sola extendiendo el rango temporal.
   const deduped = [];
@@ -14082,7 +14091,9 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText) {
     const avgNsp = segs.reduce((a, s) => a + s._nsp, 0) / segs.length;
     const avgAlp = segs.reduce((a, s) => a + s._alp, 0) / segs.length;
     const looksLikeSilence = avgNsp >= 0.35 || avgAlp <= -0.55;
-    if (isPromptEcho || looksLikeSilence) return [];
+    // En lax el vaciado por métricas de silencio no aplica (el medidor ya
+    // confirmó voz real); el eco del prompt se vacía SIEMPRE (es alucinación segura).
+    if (isPromptEcho || (!lax && looksLikeSilence)) return [];
   }
   return deduped.map(({ _nsp, _alp, _cr, ...rest }) => rest);
 }
@@ -14155,8 +14166,16 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
   // texto colapsa a un eco del prompt (se le pasa promptText). El prompt corto
   // mejora la transcripción de términos del rubro y nombres.
   const WHISPER_PROMPT = 'Llamada telefónica en español de un vendedor a una clínica dental. Términos frecuentes: reactivación de pacientes, agenda, turnos, reseñas de Google.';
+  // Diagnóstico ASR por canal: qué devolvió Whisper crudo, qué quedó tras la
+  // limpieza, si hubo rescate lax, y una muestra de lo descartado (con métricas).
+  // Se persiste en transcript.asrDebug → el próximo transcript raro se lee, no se adivina.
+  const asrDebug = {};
   const transcribe = async (b64, speakerLabel) => {
     if (!b64) return [];
+    // % de tiempo con señal medido por el browser en el mixer de ESTE canal
+    // (ground truth de que hubo audio real — viene en recMeta).
+    const activePct = typeof recMetaClean?.[speakerLabel + 'ActivePct'] === 'number'
+      ? recMetaClean[speakerLabel + 'ActivePct'] : null;
     try {
       const buf = Buffer.from(b64, 'base64');
       // Whisper limit es 25MB. Para audios webm opus, 25MB son ~3hs. Phase 6
@@ -14187,10 +14206,39 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
         await new Promise((r) => setTimeout(r, 2000));
         result = await openaiClient.audio.transcriptions.create(reqOpts);
       }
-      const cleaned = _cleanWhisperSegments(result.segments, speakerLabel, WHISPER_PROMPT);
-      if ((result.segments || []).length >= 3 && cleaned.length === 0) {
+      const raw = result.segments || [];
+      let cleaned = _cleanWhisperSegments(raw, speakerLabel, WHISPER_PROMPT);
+      let laxUsed = false;
+      // Rescate por medición (2026-07-24): la limpieza estricta vació el canal
+      // pero el medidor del browser dice que hubo voz real (activePct alto) →
+      // la limpieza se comió habla verdadera con métricas pobres (línea
+      // telefónica mala), no silencio. Re-limpiar en modo lax: solo eco del
+      // prompt + colapso de loops. Caso real 2026-07-23: canales con 12-46% de
+      // actividad medida salían con 0 segmentos del filtro estricto.
+      if (cleaned.length === 0 && raw.length > 0 && typeof activePct === 'number' && activePct >= 8) {
+        cleaned = _cleanWhisperSegments(raw, speakerLabel, WHISPER_PROMPT, { lax: true });
+        laxUsed = cleaned.length > 0;
+        if (laxUsed) console.log(`[transcribe] ${speakerLabel}: rescate lax (activePct=${activePct}, raw=${raw.length} → ${cleaned.length} segs)`);
+      }
+      if (raw.length >= 3 && cleaned.length === 0) {
         console.log(`[transcribe] ${speakerLabel}: descartado por alucinación de silencio/buzón`);
       }
+      asrDebug[speakerLabel] = {
+        raw: raw.length,
+        kept: cleaned.length,
+        ...(laxUsed ? { lax: true } : {}),
+        ...(typeof result.duration === 'number' ? { audioS: Math.round(result.duration) } : {}),
+        // Muestra de lo que Whisper devolvió y no sobrevivió — solo cuando el
+        // canal quedó vacío o hizo falta rescate (si no, no ocupa espacio).
+        ...((cleaned.length === 0 || laxUsed) && raw.length > 0 ? {
+          rawSample: raw.slice(0, 4).map((s) => ({
+            t: String(s.text || '').trim().slice(0, 80),
+            nsp: Math.round((s.no_speech_prob || 0) * 100) / 100,
+            alp: Math.round((s.avg_logprob || 0) * 100) / 100,
+            cr: Math.round((s.compression_ratio || 0) * 100) / 100,
+          })),
+        } : {}),
+      };
       return cleaned;
     } catch (e) {
       console.error(`[transcribe] ${speakerLabel} Whisper error:`, e?.message || e);
@@ -14244,6 +14292,7 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
           whisperModel: 'whisper-1',
           language: 'es',
           ...(recMetaClean ? { recMeta: recMetaClean } : {}),
+          ...(Object.keys(asrDebug).length ? { asrDebug } : {}),
         };
         return { savedIdx: idx };
       });
