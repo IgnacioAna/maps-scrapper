@@ -10021,6 +10021,11 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const todayEnd = todayStart + 86400000;
   const callLeads = allLeads.filter(l => l.conexion === 'sin_wsp'); // cola "Llamadas" (para leadsEnLlamadas/números muertos)
   const cmdUserMap = _buildUserSetterMap();
+  // 2026-07-24: período opcional para el bloque de llamadas (?period=today|
+  // week|month|... — rango canónico). Default 'all' = comportamiento histórico.
+  // Los contadores "hoy" son de hoy SIEMPRE, independiente del período.
+  const cmdPeriod = String(req.query.period || 'all').toLowerCase();
+  const fromP = ['today', 'week', 'month', '7d', '30d', 'thismonth'].includes(cmdPeriod) ? _ccResolveRange(cmdPeriod).fromTs : 0;
   let totalCalls = 0, callsToday = 0, answeredToday = 0;
   let callsWithAnswered = 0, callsWithInterested = 0, callsScheduledWithAdmin = 0;
   let phoneDead = 0;
@@ -10028,11 +10033,9 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   for (const l of allLeads) {
     if (Array.isArray(l.callLog)) {
       for (const c of l.callLog) {
-        totalCalls++;
         const sid = _callSetterId(c, l, cmdUserMap);
         let agg = _callAgg.get(sid);
         if (!agg) { agg = { total: 0, hoy: 0, interesados: 0, agendados: 0 }; _callAgg.set(sid, agg); }
-        agg.total++;
         const cts = c.ts ? new Date(c.ts).getTime() : 0;
         // 2026-07-24: "atendida" = COLD_CALL_CONNECT_OUTCOMES (definición canónica
         // del CALL METRICS CORE) — antes acá se usaba una lista a mano de 3
@@ -10044,6 +10047,9 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
           agg.hoy++;
           if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) answeredToday++;
         }
+        if (fromP && (!cts || cts < fromP)) continue; // el resto respeta el período
+        totalCalls++;
+        agg.total++;
         if (outcome === 'answered_interested') { callsWithInterested++; agg.interesados++; }
         if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) callsWithAnswered++;
         if (outcome === 'scheduled_with_admin') { callsScheduledWithAdmin++; agg.agendados++; }
@@ -10092,6 +10098,7 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
       pctCalificacion: calificados > 0 ? ((interesados / calificados) * 100).toFixed(1) : '0.0'
     },
     callTotals: {
+      period: cmdPeriod,
       leadsEnLlamadas: callLeads.length,
       totalLlamadas: totalCalls,
       llamadasHoy: callsToday,

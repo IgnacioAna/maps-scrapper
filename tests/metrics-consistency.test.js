@@ -263,6 +263,11 @@ describe("A · Comando, semanal y effectiveness alineados al canon (Ola 3)", () 
     const rowA = cmd.body.callsPerSetter.find((s) => s.id === "s_a");
     const ccmA = await request(app).get("/api/setters/cold-call-metrics?setter=s_a&period=all").set("Cookie", adminCookie);
     expect(rowA.totalLlamadas).toBe(ccmA.body.metrics.dials);
+    // ?period=week en el Comando filtra el bloque de llamadas con el rango canónico
+    const cmdW = await request(app).get("/api/setters/command?period=week").set("Cookie", adminCookie);
+    const ccmW = await request(app).get("/api/setters/cold-call-metrics?period=week").set("Cookie", adminCookie);
+    expect(cmdW.body.callTotals.totalLlamadas).toBe(ccmW.body.metrics.dials);
+    expect(cmdW.body.callTotals.atendidasHistorico).toBe(ccmW.body.metrics.connects);
   });
   it("A4: reporte semanal — answeredWeek con la definición canónica (hung_up cuenta)", async () => {
     const r = await request(app).get("/api/admin/weekly-report/preview").set("Cookie", adminCookie);

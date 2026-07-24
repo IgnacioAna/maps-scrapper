@@ -9356,21 +9356,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Centro de Comando ──
     async function loadCommandCenter() {
       try {
-        const resp = await fetch(apiUrl('/api/setters/command'));
+        // 2026-07-24: el bloque de llamadas respeta el período elegido
+        // (seg-control #cmd-calls-period). Default 'all' = histórico.
+        const resp = await fetch(apiUrl('/api/setters/command?period=' + encodeURIComponent(window._cmdCallsPeriod || 'all')));
         const data = await resp.json();
         const t = data.totals;
         variantsList = data.perVariant || [];
 
-        // Stats generales
+        // Stats generales de la base (2026-07-24: se retiraron las métricas de
+        // la era WhatsApp — Mensajes/Conexiones/Apertura/Calificados. Los
+        // estados interesado/agendado siguen: hoy los alimentan las llamadas).
         document.getElementById('cmd-stats').innerHTML =
           '<div class="stat-card"><span class="stat-num">' + t.total + '</span><span class="stat-label">Total Leads</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + (t.mensajes || 0) + '</span><span class="stat-label">Mensajes</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + t.conexiones + '</span><span class="stat-pct-sub">' + t.pctConexion + '%</span><span class="stat-label">Conexiones</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + t.respondieron + '</span><span class="stat-pct-sub">' + t.pctApertura + '%</span><span class="stat-label">Apertura</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + (t.calificados || 0) + '</span><span class="stat-pct-sub">' + t.pctCalificacion + '%</span><span class="stat-label">Calificados</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + t.interesados + '</span><span class="stat-label">Interesados</span></div>' +
-          '<div class="stat-card stat-card-accent"><span class="stat-num">' + t.agendados + '</span><span class="stat-label">Agendados</span></div>' +
-          '<div class="stat-card"><span class="stat-num">' + t.sinWsp + '</span><span class="stat-label">Sin WSP</span></div>';
+          '<div class="stat-card"><span class="stat-num">' + t.interesados + '</span><span class="stat-label">Interesados (estado)</span></div>' +
+          '<div class="stat-card stat-card-accent"><span class="stat-num">' + t.agendados + '</span><span class="stat-label">Agendados (estado)</span></div>';
 
         // Stats de llamadas
         const ct = data.callTotals || {};
@@ -10169,6 +10168,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
     if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
+    // Período del bloque Llamadas del Comando (2026-07-24) — re-fetchea con ?period=.
+    window._cmdCallsPeriod = 'all';
+    document.getElementById('cmd-calls-period')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      const p = btn.dataset.period || 'all';
+      if (p === window._cmdCallsPeriod) return;
+      window._cmdCallsPeriod = p;
+      document.querySelectorAll('#cmd-calls-period .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
+      loadCommandCenter();
+    });
 
     // ─── Distribución de leads (Phase 14: el pool) ──────────────────
     async function loadPoolView() {
@@ -16603,9 +16613,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           card('📞', 'Total llamadas', totals.calls || 0, `${totals.minutes || 0} min · $${(totals.costUSD || 0).toFixed(2)}`, 'var(--accent)') +
           card(ab.over ? '🚨' : '⚖️', 'Tasa de abandono', `${ab.pct || 0}%`, `${ab.abandoned || 0} no atendidas / ${totals.calls || 0} · Telnyx cobra si > ${ab.threshold || 20}%`, abColor, 'Llamadas terminadas antes de que atiendan (no atendió, buzón, inválido). Telnyx aplica recargo si supera 20% al cierre de mes. Bajalo: validá números antes de discar y llamá en horario hábil.') +
           card('🎯', 'Ratio opener (>30s)', `${ratios.openerPassedPct || 0}%`, `Target: 70%+ — ${d.breakdown?.openerPassedCount || 0} pasaron`, openerColor, 'Si está debajo de 70%, hay algo roto en la apertura. Cambiá script.') +
-          card('👋', 'Hablaste con humano', `${ratios.reachedHumanPct || 0}%`, `${d.breakdown?.reachedCount || 0} contactados`, '#7dd3fc', 'Llamadas donde realmente hablaste con el decisor o respondieron (excluye buzón, no atendió).') +
-          card('📅', 'Agendadas / contactados', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, '#5bb974', 'De los que hablaron con vos, cuántos terminaron agendando.') +
-          card('✅', 'Interesados / contactados', `${ratios.interestedFromReachedPct || 0}%`, `${d.breakdown?.interestedCount || 0} interesados`, '#FFB341');
+          card('👋', 'Atendidas', `${ratios.reachedHumanPct || 0}%`, `${d.breakdown?.reachedCount || 0} atendidas · buzón ${ratios.voicemailPct || 0}%`, '#7dd3fc', 'Definición canónica de "atendida" — la MISMA que Mi rendimiento, Equipo y Comando (levantó el teléfono, aunque corte enseguida). El buzón va aparte.') +
+          card('📅', 'Agendadas / atendidas', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, '#5bb974', 'De los que atendieron, cuántos terminaron agendando.') +
+          card('✅', 'Interés / atendidas', `${ratios.interestedFromReachedPct || 0}%`, `${d.breakdown?.interestedCount || 0} interesados o agendados`, '#FFB341', 'Interesado O agendado sobre atendidas (métrica de intención — no es el "Agendadas" del funnel).');
       }
       // Por país
       const ulCountries = document.getElementById('tlx-eff-countries');
@@ -16801,27 +16811,34 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   // Wire eventos de la vista
+  // 2026-07-24: el analytics pesado (metrics/effectiveness/real-costs) vive en
+  // el drawer colapsable #tlx-analytics-drawer que arranca CERRADO — antes se
+  // fetcheaba igual al abrir la vista y el interval de 30s seguía pegándole a
+  // la API de Telnyx con el drawer cerrado, sin que nada fuera visible.
+  const _tlxDrawerOpen = () => !!document.getElementById('tlx-analytics-drawer')?.open;
+  const _tlxLoadAnalytics = () => { _tlxLoadRealCosts(); _tlxLoadMetrics(); _tlxLoadEffectiveness(); };
   document.querySelector('[data-target="view-telnyx-config"]')?.addEventListener('click', () => {
     setTimeout(() => {
       _tlxLoadConfig();
       _tlxLoadBalance();
-      _tlxLoadRealCosts();
-      _tlxLoadMetrics();
-      _tlxLoadEffectiveness();      // Sprint 9: KPIs cold calling
       _tlxLoadScriptsAdmin();
-      // Auto-refresh metrics + efectividad cada 30s mientras la vista esté visible
+      if (_tlxDrawerOpen()) _tlxLoadAnalytics();
+      // Auto-refresh cada 30s SOLO con la vista visible Y el drawer abierto.
       if (_tlxMetricsRefreshTimer) clearInterval(_tlxMetricsRefreshTimer);
       _tlxMetricsRefreshTimer = setInterval(() => {
         const view = document.getElementById('view-telnyx-config');
-        if (view && !view.classList.contains('hidden')) {
-          _tlxLoadMetrics();
-          _tlxLoadEffectiveness();
-        } else {
+        if (!view || view.classList.contains('hidden')) {
           clearInterval(_tlxMetricsRefreshTimer);
           _tlxMetricsRefreshTimer = null;
+          return;
         }
+        if (_tlxDrawerOpen()) { _tlxLoadMetrics(); _tlxLoadEffectiveness(); }
       }, 30000);
     }, 50);
+  });
+  // Al abrir el drawer por primera vez, cargar el analytics.
+  document.getElementById('tlx-analytics-drawer')?.addEventListener('toggle', (e) => {
+    if (e.target.open) _tlxLoadAnalytics();
   });
 
   document.getElementById('tlx-metrics-range')?.addEventListener('change', _tlxLoadMetrics);

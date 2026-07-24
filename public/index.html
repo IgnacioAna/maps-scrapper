@@ -1902,8 +1902,14 @@
 
         <!-- Sección de métricas de llamadas (admin) -->
         <div id="cmd-calls-section" style="padding:0 32px; margin-top:8px;">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
             <span style="font-size:11px; font-weight:600; letter-spacing:0.5px; color:var(--text-tertiary); text-transform:uppercase;">Llamadas</span>
+            <div class="seg-control" id="cmd-calls-period">
+              <button class="seg-btn" data-period="today">Hoy</button>
+              <button class="seg-btn" data-period="7d">7 días</button>
+              <button class="seg-btn" data-period="30d">30 días</button>
+              <button class="seg-btn active" data-period="all">Todo</button>
+            </div>
             <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
           </div>
           <div class="setter-stats" id="cmd-call-stats"></div>
