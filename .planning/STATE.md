@@ -30,10 +30,11 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   WSP con Ignacio excluido, round-trip export/import de reports.json.
   REP-01/02/03 marcados completos en REQUIREMENTS.md.
 
-**Próximo paso:** `/gsd-plan-phase 20` — el contexto de la Phase 20 ya
-está capturado (2026-07-25, `20-CONTEXT.md`: bloqueo de discado en vivo +
-cola recordatorio no bloqueante + auto-marca de no-contactos + histórico
-de cero + auditoría pasiva anti-falso).
+**Próximo paso:** `/gsd-execute-phase 20` — Phase 20 PLANIFICADA
+(2026-07-25): 3 planes en 2 waves (20-01 backend pendientes+auto-marca+
+audit → 20-02 tests ∥ 20-03 frontend enforcement), checker PASSED tras 1
+iteración (3 gates de calibración corregidos; el gate de vitest se
+verificó por ejecución real). Contexto en `20-CONTEXT.md` (D-01..D-06).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
