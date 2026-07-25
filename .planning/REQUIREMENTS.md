@@ -14,15 +14,19 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### REP — Reportes automáticos
 
-- [ ] **REP-01**: El cron del reporte semanal corre sin crash y sin
+- [x] **REP-01**: El cron del reporte semanal corre sin crash y sin
   duplicados. Fix del `now` sin declarar (index.js:1861, :1870 →
   `new Date(nowTs)`) + test de regresión del cron (día/hora/TZ de
-  negocio/anti-duplicado) — hoy no existe ninguno.
-- [ ] **REP-02**: El reporte sale a múltiples destinatarios configurables
+  negocio/anti-duplicado) — hoy no existe ninguno. *(19-01 fix +
+  19-02 tests, 2026-07-25)*
+- [x] **REP-02**: El reporte sale a múltiples destinatarios configurables
   (lista, no un solo `ADMIN_EMAIL`). Resend ya acepta array en `to`.
-- [ ] **REP-03**: El semanal no muestra acumulados históricos bajo un
+  *(REPORT_EMAILS CSV, 19-01 + tests 19-02, 2026-07-25)*
+- [x] **REP-03**: El semanal no muestra acumulados históricos bajo un
   encabezado que dice "semana" (index.js:1821) — corregir la sección
   WhatsApp o quitarla (hoy el embudo WSP está en cero de punta a punta).
+  *(sección WSP eliminada, data del CALL METRICS CORE, 19-01 + tests
+  19-02, 2026-07-25)*
 - [ ] **REP-04**: Existe el reporte diario (`buildDailyReportData()` — hoy
   todas las ventanas son de semana ISO) con SOLO métricas con señal:
   **llamadas · atendidas · minutos hablados · última actividad**.

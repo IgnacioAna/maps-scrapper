@@ -68,12 +68,16 @@ encabezado "semana" (index.js:1821) con un embudo WSP hoy en cero.
 **Plans:** 2 planes (planificado 2026-07-25)
 
 Plans:
-- [ ] 19-01-PLAN.md — Fix del cron (ReferenceError `now`) + destinatarios
+- [x] 19-01-PLAN.md — Fix del cron (ReferenceError `now`) + destinatarios
   configurables (REPORT_EMAILS) + data del reporte al CALL METRICS CORE
   sin sección WSP + exclusión Ignacio/Paula + persistencia reports.json
-  en los 4 lugares
-- [ ] 19-02-PLAN.md — tests/weekly-report.test.js (regresión del cron:
+  en los 4 lugares *(EXECUTED 2026-07-25 — commits 2a41048/be1445d/b13d051)*
+- [x] 19-02-PLAN.md — tests/weekly-report.test.js (regresión del cron:
   día/hora/TZ/anti-dup + shape + export/import) + suite completa verde
+  *(EXECUTED 2026-07-25 — commit 79b5d26, 12 tests nuevos, suite 848/848)*
+
+**Phase 19: COMPLETE (2/2 planes)** — pendiente del user: `RESEND_API_KEY`
+(y opcional `REPORT_EMAILS`) en Railway para que el mail salga en prod.
 
 ---
 

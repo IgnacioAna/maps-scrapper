@@ -14,17 +14,21 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 19 — Encender el reporte semanal (en ejecución)
-- **Plan:** 19-01 EXECUTED (fix backend, commits 2a41048/be1445d/b13d051,
-  90/90 tests afectados verdes) — sigue 19-02 (tests de regresión)
-- **Status:** Executing — wave 1 completa, SUMMARY en
-  `.planning/phases/19-encender-reporte-semanal/19-01-SUMMARY.md`
-- **Last activity:** 2026-07-25 — 19-01 ejecutado: cron sin ReferenceError
-  (REP-01), REPORT_EMAILS multi-destinatario (REP-02), data del CALL METRICS
-  CORE sin sección WSP + Ignacio/Paula excluidos (REP-03), reports.json en
-  persistencia de 4 lugares + BACKUP_FILES
+- **Phase:** 19 — Encender el reporte semanal — **COMPLETE (2/2 planes)**
+- **Plan:** 19-02 EXECUTED (tests de regresión, commit 79b5d26 —
+  tests/weekly-report.test.js con 12 tests; suite completa **848/848**
+  verde, cero flakies). 19-01 EXECUTED antes (2a41048/be1445d/b13d051).
+- **Status:** Phase 19 cerrada sin deuda de tests — SUMMARYs en
+  `.planning/phases/19-encender-reporte-semanal/19-0{1,2}-SUMMARY.md`
+- **Last activity:** 2026-07-25 — 19-02 ejecutado: regresión del cron
+  (ventana lunes-8am TZ negocio, anti-dup del bug de los 16 mails, caso
+  TZ lunes 23:00 AR, fallo-no-persiste), REPORT_EMAILS CSV, shape sin
+  WSP con Ignacio excluido, round-trip export/import de reports.json.
+  REP-01/02/03 marcados completos en REQUIREMENTS.md.
 
-**Próximo paso:** ejecutar 19-02 (tests de regresión del reporte semanal).
+**Próximo paso:** siguiente phase del milestone (20 — Disposición
+obligatoria, o la que el user priorice; 21 requiere la prueba del JID
+de grupo).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
@@ -34,7 +38,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 
 | # | Phase | Reqs | Status |
 |---|-------|------|--------|
-| 19 | Encender el reporte semanal | REP-01..03 | Planned (2 planes, ready to execute) |
+| 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Pending (adelantada a pedido del user) |
 | 21 | Reporte diario + canal WhatsApp | REP-04..10 | Pending (prueba JID de grupo = primera tarea) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
