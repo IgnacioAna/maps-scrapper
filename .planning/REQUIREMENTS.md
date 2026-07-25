@@ -1,114 +1,159 @@
-# SCM — Requirements
+# SCM — Requirements · Milestone v2.0 "Gestión por excepción"
 
-> Bootstrap manual desde docs existentes (2026-04-27).
-> Source of truth para el contenido detallado: `PROJECT.md` (sección
-> Requirements) — este archivo es el índice trazable phase ↔ REQ.
+> Definidos 2026-07-25. Los requirements de v1.x (bloques WAM-*, PNL-*,
+> A-*..E-*, F-*) quedaron superseded — lo shippeado está resumido en
+> `MILESTONES.md` y detallado en `CLAUDE.md`.
 
----
-
-## v1 Requirements
-
-### Validated (en producción)
-
-Ver `PROJECT.md` → Requirements → Validated. Bloques `WAM-*` (wa-multi)
-y `PNL-*` (panel Railway) cubren el sistema operativo actual.
-
-### Active — Bloque A (cierre primera versión)
-
-- [ ] **A-01** Llenar `response-bank.json` con contenido real SCM (elevator
-  pitch, 5-7 objeciones comunes, qué nunca decir, modalidad + rangos de
-  precio)
-- [ ] **A-02** Probar end-to-end con tester (mensajes reales → IA Inbox
-  los captura y clasifica)
-- [ ] **A-03** Onboarding de un setter real (instalar wa-multi v2, escanear
-  QR, mandar 10-20 mensajes reales)
-- [ ] **A-04** Recolectar feedback del primer día de uso real y ajustar
-  lo que rompa
-
-### Active — Bloque B (UX para setters)
-
-- [ ] **B-01** Refactor wa-multi: ventana única con sidebar de cuentas,
-  cada cuenta como `<webview>`, layout estilo WAWarmer 1.1.2, subir cap
-  a 5 cuentas concurrentes, preservar send flow OS-level
-- [ ] **B-02** Notificación visual de inbound (badge rojo en sidebar de
-  cuenta + en menú IA Inbox)
-- [ ] **B-03** Banco de respuestas editable desde panel (tabla CRUD por
-  intent, con preview, sin tener que tocar JSON)
-- [ ] **B-04** Métricas por setter en dashboard (enviados / respondieron /
-  agendados en últimas 24h y 7d)
-- [ ] **B-05** Inbox unificado por setter (todas sus conversaciones
-  activas, no solo respuestas pendientes)
-
-### Active — Bloque C (GHL-ready)
-
-- [ ] **C-01** Webhooks outbound desde el panel:
-  - Pantalla admin para configurar URLs y eventos
-  - Eventos: `lead.created`, `message.sent`, `message.received`,
-    `lead.status.changed`, `lead.replied`, `lead.qualified`
-  - Payload schema-compatible GHL (firstName, lastName, phone, email,
-    customFields)
-  - Hoy sin destino — el día que se decida integrar GHL, se le pega la URL
-
-### Active — Bloque C.5 (extensión Chrome "Pegar como humano")
-
-- [ ] **C5-01** Extensión Chrome MV3 que reemplaza paste en
-  `web.whatsapp.com` por typing humano
-  - Naturalismo máximo: delay random 50-150ms + pausas en puntuación +
-    typos ocasionales con backspace + pausas de "pensar"
-  - Trade-off conocido: mensaje de 200 chars puede tardar 30-40s
-- [ ] **C5-02** Hotkey `Ctrl+Espacio` con marker `__SCM_TYPE__:` obligatorio
-  - Sin marker → toast "Falta marker SCM" y abortar
-  - Ctrl+V nativo se preserva intacto
-- [ ] **C5-03** Botón "Copiar con marker" en panel SCM (dependencia
-  bloqueante para uso real, mini cambio en `view-faqs` y/o variantes)
-- [ ] **C5-04** Distribución vía ZIP unpacked (drag-drop a
-  chrome://extensions/, no Web Store)
-- [ ] **C5-05** UI: mini badge flotante con progreso (`Tipeando... X/Y`)
-- [ ] **C5-06** Cancelación: Esc cancela + cualquier tecla pausa la
-  extensión (no pisa lo que el setter empieza a escribir manualmente)
-
-### Active — Bloque D (mejora de IA, futuro)
-
-- [ ] **D-01** Conectar Claude API o GPT-4o-mini para respuestas
-  contextuales (reemplaza plantillas estáticas del banco para los casos
-  donde el matching no alcanza)
-- [ ] **D-02** Settings: master switch IA (`enabled`), modo (`log-only` /
-  `suggest` / `auto-reply`), horario laboral (default 10-19h), provider,
-  API key
-- [ ] **D-03** Mode `auto-reply` para intents seguros (saludo,
-  descalificado): IA responde sin esperar al setter
-
-### Active — Bloque E (llamadas con IA, futuro lejano)
-
-- [ ] **E-01** Integración con Vapi / Bland / Retell para llamar leads
-  que respondieron pero no avanzaron por chat
-- [ ] **E-02** Pipeline: IA llama, califica, agenda → pasa lead caliente
-  al setter humano para cerrar
+**Regla transversal:** toda métrica nueva DERIVA del CALL METRICS CORE
+(`globalThis.__callCore`, index.js ~5620) — jamás re-implementar el funnel
+inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ---
 
-## Out of Scope
+## v2.0 Requirements
 
-- Replicar features de GHL (calendar, email sequences, pipelines complejos)
-  → consumir de GHL vía webhooks (C-01) si se necesita
-- Inbound forms / landing pages → modelo 100% cold outbound
-- Pago / checkout → cierre comercial humano fuera del sistema
-- CRM avanzado para clínicas clientes → eso lo hace GHL en los subaccounts
-- Multi-tenant para otras agencias → sistema interno SCM exclusivo
+### REP — Reportes automáticos
+
+- [ ] **REP-01**: El cron del reporte semanal corre sin crash y sin
+  duplicados. Fix del `now` sin declarar (index.js:1861, :1870 →
+  `new Date(nowTs)`) + test de regresión del cron (día/hora/TZ de
+  negocio/anti-duplicado) — hoy no existe ninguno.
+- [ ] **REP-02**: El reporte sale a múltiples destinatarios configurables
+  (lista, no un solo `ADMIN_EMAIL`). Resend ya acepta array en `to`.
+- [ ] **REP-03**: El semanal no muestra acumulados históricos bajo un
+  encabezado que dice "semana" (index.js:1821) — corregir la sección
+  WhatsApp o quitarla (hoy el embudo WSP está en cero de punta a punta).
+- [ ] **REP-04**: Existe el reporte diario (`buildDailyReportData()` — hoy
+  todas las ventanas son de semana ISO) con SOLO métricas con señal:
+  **llamadas · atendidas · minutos hablados · última actividad**.
+  Excepciones arriba (primera línea = quién no trabajó hoy), comparación
+  vs ayer, nombres de pila. Nada de métricas en cero (agendados/shows/
+  deals quedan fuera hasta que tengan datos).
+- [ ] **REP-05**: Builder de **texto plano** para WhatsApp según el molde
+  acordado (sin tablas, sin alineación monoespaciada — se rompe en
+  celular; lo importante en las primeras 2 líneas por el preview de la
+  notificación). El molde se valida con el user leyéndolo en su celular
+  con datos reales ANTES de fijarlo.
+- [ ] **REP-06**: El reporte llega al **grupo de WhatsApp** de los 3
+  socios. Primera tarea: prueba en vivo del JID de grupo contra el
+  handler existente (verificado en código: usa deeplink
+  `web.whatsapp.com/send?phone=` → casi seguro falla). Plan B: repack de
+  wa-multi con envío a grupo (búsqueda por nombre + typing OS-level;
+  `out/` ES el source, NUNCA `npm run build`). Plan C: 3 DMs
+  individuales (funciona hoy). Plan D: solo email.
+- [ ] **REP-07**: Fallback a email si la desktop está offline, con guard
+  de alcanzabilidad (`isUserOnline`) ANTES de emitir — `sendToUser`
+  (src/wa/gateway.js) devuelve `true` con room vacía; no confiar en él.
+- [ ] **REP-08**: Cola de reportes pendientes persistida en `DATA_DIR`:
+  guard por **período cubierto** (no "hace cuánto mandé"), consolidación
+  (N diarios pendientes → 1 solo mensaje acumulado con detalle por día en
+  una línea), expiración de diarios (propuesta 3 días — confirmar con el
+  user), el semanal nunca se consolida ni expira, espaciado 30-60s entre
+  mensajes distintos (NO aplicar caps de warming — es un grupo propio, no
+  outreach frío). Copiar el patrón de `scheduledMessagesTick`
+  (index.js:5126), NO reusar el módulo (atado a leadId/setterId).
+- [ ] **REP-09**: El reporte incluye **solo las vendedoras nuevas** —
+  `setter_ignacio` y `setter_paula_kroff` fuera. Reusar
+  `ADMIN_ONLY_SETTER_IDS` (index.js:5588) + `_filterSettersVisible`
+  (index.js:5609); no escribir un filtro nuevo.
+- [ ] **REP-10**: El sesgo del canal manual (78 llamadas `channel='manual'`
+  sin `duration` → nunca cuentan como conversación) y las ~15 llamadas sin
+  atribuir (users borrados, intencional) se manejan explícitamente en el
+  reporte (separar canales o anotar la limitación) — no se ocultan ni se
+  dejan cuadrar mal en silencio.
+
+### DISP — Disposición obligatoria
+
+- [ ] **DISP-01**: Marcar la disposición de cada llamada es obligatorio.
+  La forma exacta se resuelve en discuss-phase (modal bloqueante que no
+  deja discar la siguiente vs cola de pendientes al inicio de sesión vs
+  ambas) — la decisión de fondo ya está tomada por el user.
+- [ ] **DISP-02**: Las llamadas ya colgadas sin marcar al momento de
+  activar la regla tienen un tratamiento definido (no quedan en limbo).
+- [ ] **DISP-03**: El enforcement no empuja a marcar cualquier cosa para
+  sacárselo de encima (una disposición falsa contamina más que un hueco:
+  el hueco se ve, el dato falso no). Respeta la ventana de 10 minutos del
+  audio (public/app.js:7530): diferir la disposición pierde el transcript
+  de esa llamada — el diseño debe tenerlo en cuenta.
+
+### COACH — Coaching por vendedora
+
+- [ ] **COACH-01** *(gate de la phase)*: Verificar en producción que la
+  ronda 8 de Whisper (boost del canal del cliente, commit `a9e4886`)
+  recuperó los turnos perdidos: leer `transcript.asrDebug` +
+  `recMeta.leadActivePct` de llamadas posteriores al 25/07 ANTES de
+  automatizar el análisis. Si el canal del cliente sigue a medias, el
+  analizador puntuaría con confianza sobre diálogos incompletos. ⚠️ NO
+  reintroducir `WHISPER_PROMPT` (falló 2 veces; marca en index.js:14378).
+- [ ] **COACH-02**: El análisis de coaching (`/analyze`, index.js:13678)
+  se dispara automáticamente post-transcripción, en el mismo hook donde
+  ya corre `_autoDispositionLLM` (index.js:14525). Respeta el cache
+  existente (`call.mercuryAnalysis`) para no re-cobrar.
+- [ ] **COACH-03**: Endpoint de agregación de `mercuryAnalysis` por
+  `setterId` y período: promedio de `score`, % de `passedOpener`,
+  `ruleViolations` más frecuentes, patrón de `biggestMistake`.
+- [ ] **COACH-04**: Cola semanal de 3-5 llamadas concretas a escuchar
+  (nombre, fecha, motivo devuelto por el análisis) — entra como sección
+  del reporte semanal. Es el P0 #6 de la Phase 12
+  (`.planning/phases/12-sdr-operating-system/PLAN.md` — leerlo antes de
+  planificar, no re-derivar decisiones ya tomadas ahí).
+- [ ] **COACH-05**: Tests del subsistema de análisis — hoy es el único
+  subsistema grande del repo sin un solo test, y es la capa que juzga el
+  trabajo de personas reales.
+- [ ] **COACH-06**: Decisión a levantar en discuss-phase: ¿las vendedoras
+  ven su propio análisis? (hoy admin/supervisor only — un scorecard que
+  la evaluada no puede ver es vigilancia; uno que sí, es coaching).
+
+### ALERT — Notificación por excepción
+
+- [ ] **ALERT-01**: Las alertas `high` que ya calcula team-performance
+  (index.js:9772 — drop %, inactividad, apertura baja, never_touched) se
+  notifican de verdad (WhatsApp por el canal de REP-06/07, o email
+  inmediato/digest) — hoy solo pintan pantalla.
+- [ ] **ALERT-02**: Anti-spam/dedupe — la misma alerta no se notifica
+  todos los días; estado persistido de qué se notificó y cuándo.
+- [ ] **ALERT-03**: Cada tipo de alerta tiene un responsable definido de
+  los 3 socios (a decidir con el user en discuss-phase). Un grupo de tres
+  que ve la misma alerta y asume que otro va a actuar es peor que una
+  sola persona notificada.
+
+---
+
+## Future Requirements (deferred)
+
+- Shows/no-shows y deals en los reportes — cuando `lead.asistio` y
+  `calendarioEstado='ganada'` empiecen a tener datos reales.
+- Biblioteca general de llamadas del equipo (hoy privacidad por SDR).
+- Scorecard visible para las vendedoras (si COACH-06 se decide que no
+  en esta pasada).
+- Reactivación del canal WhatsApp de prospección (Phases 7-8 parkeadas).
+
+## Out of Scope (v2.0)
+
+- **Orquestador de agentes / Stripe / GoHighLevel** — no justificado por
+  los datos (1 agendado en 603 llamadas). Si reaparece antes de que
+  19–22 corran con datos reales: decirlo, no construirlo.
+- **Persistir audio de llamadas** — decisión de diseño existente; solo
+  transcript.
+- **Medir "horas trabajadas"** — no hay fuente honesta; a lo sumo proxy
+  de span primera→última llamada etiquetado como proxy.
+- **Dashboards nuevos** — el principio del milestone es lo contrario:
+  el sistema habla, nadie entra a mirar.
 
 ---
 
 ## Traceability
 
-| Phase | Requirements | Status |
-|-------|--------------|--------|
-| 1 (Bloque A) | A-01..A-04 | Active — depende del usuario |
-| 2 (Bloque B) | B-01..B-05 | Active |
-| 3 (Bloque C) | C-01 | Active |
-| 3.5 (Bloque C.5) | C5-01..C5-06 | Active — CONTEXT.md ya capturado |
-| 4 (Bloque D) | D-01..D-03 | Active — futuro |
-| 5 (Bloque E) | E-01..E-02 | Active — futuro lejano |
+| REQ | Phase |
+|-----|-------|
+| REP-01, REP-02, REP-03 | 19 |
+| DISP-01, DISP-02, DISP-03 | 20 |
+| REP-04, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10 | 21 |
+| COACH-01, COACH-02, COACH-03, COACH-04, COACH-05, COACH-06 | 22 |
+| ALERT-01, ALERT-02, ALERT-03 | 23 |
+
+✓ 22/22 requirements mapeados — 100% cobertura.
 
 ---
 
-*Last updated: 2026-04-27 — bootstrap GSD.*
+*Last updated: 2026-07-25 — milestone v2.0.*
