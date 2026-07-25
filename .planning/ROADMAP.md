@@ -65,6 +65,16 @@ encabezado "semana" (index.js:1821) con un embudo WSP hoy en cero.
 
 **UI hint:** no (backend + tests). Sin cache-buster.
 
+**Plans:** 2 planes (planificado 2026-07-25)
+
+Plans:
+- [ ] 19-01-PLAN.md — Fix del cron (ReferenceError `now`) + destinatarios
+  configurables (REPORT_EMAILS) + data del reporte al CALL METRICS CORE
+  sin sección WSP + exclusión Ignacio/Paula + persistencia reports.json
+  en los 4 lugares
+- [ ] 19-02-PLAN.md — tests/weekly-report.test.js (regresión del cron:
+  día/hora/TZ/anti-dup + shape + export/import) + suite completa verde
+
 ---
 
 ## Phase 20 — Disposición obligatoria
@@ -233,4 +243,4 @@ phase.
 ---
 
 *Last updated: 2026-07-25 — roadmap v2.0 (5 phases, numeración continúa
-de la 18).*
+de la 18). Phase 19 planificada (2 planes).*
