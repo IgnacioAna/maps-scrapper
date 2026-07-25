@@ -1755,71 +1755,50 @@ function saveReportsState(state) {
 
 function buildWeeklyReportData() {
   const settersData = loadSettersData();
-  const allLeads = Object.values(settersData.leads || {});
-  const calendar = settersData.calendar || [];
-  // Audit 2026-07-08: semana en TZ de negocio (antes cortaba en la medianoche
-  // UTC del server → la semana arrancaba el domingo 21:00 local).
+  // Regla milestone v2.0: solo vendedoras nuevas — Ignacio y Paula (admin-only)
+  // fuera de todo reporte. Mismo pseudo-set que usa el supervisor sin lista.
+  const visibleSet = _SUPERVISOR_EXCLUSION_SET;
+  const calendar = (settersData.calendar || []).filter(e => !ADMIN_ONLY_SETTER_IDS.has(e.setterId));
+  // Semana pasada completa (lunes a lunes) en TZ de negocio (audit 2026-07-08).
   const nowTs = Date.now();
   const todayStart = _bizStartOfDay(nowTs);
   const dayOfWeek = _bizDayOfWeek(todayStart) || 7;
-  const thisMonday = todayStart - (dayOfWeek - 1) * 24 * 60 * 60 * 1000;
-  const lastMondayTs = thisMonday - 7 * 24 * 60 * 60 * 1000;
-  const fromTs = lastMondayTs;
+  const thisMonday = todayStart - (dayOfWeek - 1) * 86400000;
+  const fromTs = thisMonday - 7 * 86400000;
   const toTs = thisMonday;
-  const conexionesNew = allLeads.filter(l => {
-    const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0;
-    return l.conexion === 'enviada' && t >= fromTs && t < toTs;
-  }).length;
-  let callsWeek = 0, callsAnsweredWeek = 0, callsScheduledWeek = 0, callsDeadWeek = 0;
-  for (const l of allLeads) {
-    if (Array.isArray(l.callLog)) {
-      for (const c of l.callLog) {
-        const t = c.ts ? new Date(c.ts).getTime() : 0;
-        if (t >= fromTs && t < toTs) {
-          callsWeek++;
-          // 2026-07-24: "atendida" = definición canónica del CALL METRICS CORE
-          // (incluye hung_up/callback_later — antes lista a mano de 3 outcomes
-          // y el mail semanal no cuadraba con los dashboards).
-          if (COLD_CALL_CONNECT_OUTCOMES.has(String(c.outcome || ''))) callsAnsweredWeek++;
-          if (c.outcome === 'scheduled_with_admin') callsScheduledWeek++;
-          // deadWeek = EVENTOS de la semana (llamadas que terminaron en número
-          // muerto). Distinto del KPI "Números muertos" del Comando, que es
-          // ESTADO actual (phoneStatus) — no es un bug, son métricas distintas.
-          if (['wrong_number', 'invalid_number'].includes(c.outcome)) callsDeadWeek++;
-        }
-      }
-    }
-  }
+  // CALL METRICS CORE (regla v2.0): jamás re-implementar el funnel inline.
+  const calls = _ccCollectCalls(settersData, { visibleSet });
+  const agg = _ccFunnelAggregate(calls, calendar, fromTs, toTs, { visibleSet });
+  const weekCalls = calls.filter(c => c.ts >= fromTs && c.ts < toTs);
+  // deadWeek = EVENTOS de la semana (llamadas que terminaron en número muerto).
+  // Distinto del KPI "Números muertos" del Comando (estado phoneStatus actual).
+  const callsDeadWeek = weekCalls.filter(c => c.outcome === 'wrong_number' || c.outcome === 'invalid_number').length;
   const calRealized = calendar.filter(e => { const t = e.fecha ? new Date(e.fecha).getTime() : 0; return e.calendarioEstado === 'realizada' && t >= fromTs && t < toTs; }).length;
   const calNoShow = calendar.filter(e => { const t = e.fecha ? new Date(e.fecha).getTime() : 0; return e.calendarioEstado === 'no_show' && t >= fromTs && t < toTs; }).length;
   const calPendingNow = calendar.filter(e => e.calendarioEstado === 'pendiente').length;
-  const calOverdueNow = calendar.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < Date.now()).length;
-  // Llamadas por setter atribuidas por quién LLAMÓ (entry.by), no dueño actual.
-  const _wkUserMap = _buildUserSetterMap();
-  const _wkCalls = new Map(); // setterId → { llamadas, agendadas }
-  for (const l of allLeads) {
-    if (!Array.isArray(l.callLog)) continue;
-    for (const c of l.callLog) {
-      const t = c.ts ? new Date(c.ts).getTime() : 0;
-      if (t < fromTs || t >= toTs) continue;
-      const sid = _callSetterId(c, l, _wkUserMap);
-      if (!sid) continue;
-      let w = _wkCalls.get(sid);
-      if (!w) { w = { llamadas: 0, agendadas: 0 }; _wkCalls.set(sid, w); }
-      w.llamadas++;
-      if (c.outcome === 'scheduled_with_admin') w.agendadas++;
-    }
-  }
-  const perSetter = (settersData.setters || []).map(s => {
-    const myLeads = allLeads.filter(l => l.assignedTo === s.id);
-    const conexionesSetter = myLeads.filter(l => { const t = l.lastContactAt ? new Date(l.lastContactAt).getTime() : 0; return l.conexion === 'enviada' && t >= fromTs && t < toTs; }).length;
-    const w = _wkCalls.get(s.id) || { llamadas: 0, agendadas: 0 };
-    return { name: s.name, leadsAsignados: myLeads.length, conexiones: conexionesSetter, llamadas: w.llamadas, agendadosLlamada: w.agendadas };
-  }).filter(s => s.conexiones > 0 || s.llamadas > 0);
+  const calOverdueNow = calendar.filter(e => e.calendarioEstado === 'pendiente' && e.fecha && new Date(e.fecha).getTime() < nowTs).length;
+  const allLeads = Object.values(settersData.leads || {});
+  // Por SDR: llamadas de la semana atribuidas por quién llamó (entries ya vienen
+  // pre-atribuidas de _ccCollectCalls). Sin columna WSP (embudo muerto, REP-03).
+  const perSetter = _filterSettersVisible(settersData.setters || [], visibleSet).map(s => {
+    const w = weekCalls.filter(c => c.setterId === s.id);
+    return {
+      name: s.name,
+      leadsAsignados: allLeads.filter(l => l.assignedTo === s.id).length,
+      llamadas: w.length,
+      atendidas: w.filter(c => COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)).length,
+      agendadosLlamada: w.filter(c => c.outcome === 'scheduled_with_admin').length,
+    };
+  }).filter(s => s.llamadas > 0);
   return {
-    period: { from: _bizDayStr(lastMondayTs), to: _bizDayStr(thisMonday - 1) },
-    wsp: { conexionesNew, respondieronTotal: allLeads.filter(l => l.respondio).length, interesadosTotal: allLeads.filter(l => l.interes === 'si').length, agendadosTotal: allLeads.filter(l => l.estado === 'agendado').length },
-    calls: { totalWeek: callsWeek, answeredWeek: callsAnsweredWeek, scheduledWeek: callsScheduledWeek, deadWeek: callsDeadWeek, pctAtendidas: callsWeek > 0 ? ((callsAnsweredWeek / callsWeek) * 100).toFixed(1) : '0.0' },
+    period: { from: _bizDayStr(fromTs), to: _bizDayStr(toTs - 1) },
+    calls: {
+      totalWeek: agg.dials,
+      answeredWeek: agg.connects,
+      scheduledWeek: agg.appointments,
+      deadWeek: callsDeadWeek,
+      pctAtendidas: agg.dials > 0 ? agg.rates.connectRate.toFixed(1) : '0.0',
+    },
     calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
     perSetter,
     leadsTotal: allLeads.length
@@ -1827,11 +1806,11 @@ function buildWeeklyReportData() {
 }
 
 function buildWeeklyReportHtml(data) {
-  const { period, wsp, calls, calendar: cal, perSetter, leadsTotal } = data;
+  const { period, calls, calendar: cal, perSetter, leadsTotal } = data;
   const card = (label, value, color = '#9D85F2') => `<div style="background:#161922;border:1px solid #262B3B;border-radius:10px;padding:14px 16px;flex:1;min-width:140px;"><div style="font-size:11px;color:#7E8494;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px;">${label}</div><div style="font-size:22px;color:${color};font-weight:700;">${value}</div></div>`;
-  const rowsSetter = perSetter.map(s => `<tr style="border-bottom:1px solid #262B3B;"><td style="padding:8px 12px;color:#E5E7E2;font-weight:600;">${s.name}</td><td style="padding:8px 12px;">${s.leadsAsignados}</td><td style="padding:8px 12px;">${s.conexiones}</td><td style="padding:8px 12px;">${s.llamadas}</td><td style="padding:8px 12px;color:#4ADE80;font-weight:600;">${s.agendadosLlamada}</td></tr>`).join('') ||
+  const rowsSetter = perSetter.map(s => `<tr style="border-bottom:1px solid #262B3B;"><td style="padding:8px 12px;color:#E5E7E2;font-weight:600;">${s.name}</td><td style="padding:8px 12px;">${s.leadsAsignados}</td><td style="padding:8px 12px;">${s.llamadas}</td><td style="padding:8px 12px;">${s.atendidas}</td><td style="padding:8px 12px;color:#4ADE80;font-weight:600;">${s.agendadosLlamada}</td></tr>`).join('') ||
     `<tr><td colspan="5" style="padding:14px;text-align:center;color:#7E8494;">Sin actividad en la semana.</td></tr>`;
-  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">💬 WhatsApp</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Conexiones nuevas', wsp.conexionesNew)}${card('Respondieron (total)', wsp.respondieronTotal)}${card('Interesados (total)', wsp.interesadosTotal, '#4ADE80')}${card('Agendados (total)', wsp.agendadosTotal, '#4ADE80')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Llamadas a núm. muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por setter</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Setter</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Conexiones</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
+  return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Llamadas a núm. muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por SDR</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">SDR</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Atendidas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
 }
 
 // Destinatarios del reporte (REP-02): env REPORT_EMAILS (CSV) > ADMIN_EMAIL >

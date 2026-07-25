@@ -667,7 +667,7 @@ describe("admin · weekly report", () => {
     expect(r.body.data.period).toBeDefined();
     expect(r.body.data.period.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(r.body.data.period.to).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(r.body.data.wsp).toBeDefined();
+    expect(r.body.data.wsp).toBeUndefined(); // REP-03: sección WSP eliminada del semanal
     expect(r.body.data.calls).toBeDefined();
     expect(r.body.data.calendar).toBeDefined();
     expect(Array.isArray(r.body.data.perSetter)).toBe(true);
