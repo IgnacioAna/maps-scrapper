@@ -14349,7 +14349,10 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       // el mixer). lvlMax = RMS máximo; activePct = % de muestras con señal.
       // Distingue "se grabó silencio" (bug de captura) de "había audio y Whisper
       // lo descartó" (problema de ASR) sin adivinar.
-      'setterLvlMax', 'leadLvlMax', 'setterActivePct', 'leadActivePct']) {
+      'setterLvlMax', 'leadLvlMax', 'setterActivePct', 'leadActivePct',
+      // 2026-07-25: ganancia aplicada al canal del cliente en la grabación
+      // (boost frontend) — para interpretar los niveles medidos post-boost.
+      'leadBoost']) {
       if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
     }
     for (const k of ['setterRecError', 'leadRecError', 'v']) {

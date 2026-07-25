@@ -7346,7 +7346,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const wrapper = new MediaStream([track]);
           const src = _recCtx.createMediaStreamSource(wrapper);
-          src.connect(ch.dest);
+          src.connect(ch.inlet || ch.dest);
           // Quirk conocido de Chromium: un track REMOTO (WebRTC) puede entregar
           // silencio a Web Audio si ningún media element lo consume. El <audio>
           // principal consume el stream original, pero por las dudas colgamos un
@@ -7399,9 +7399,24 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         _recCtx = new (window.AudioContext || window.webkitAudioContext)();
         _recCtx.resume?.().catch(() => {});
+        // Canal setter: mic directo al destination (nivel ya sano).
+        const setterDest = _recCtx.createMediaStreamDestination();
+        // Canal lead con BOOST (2026-07-25): el audio telefónico entrante llega
+        // con nivel muy bajo al mixer (lvlMax 0.03-0.13 medido en llamadas
+        // reales — el SDR lo escucha bien porque su parlante compensa, pero
+        // Whisper pierde turnos con señal tan débil). Pre-gain fijo + compresor
+        // de seguridad para no saturar cuando el canal ya viene fuerte. Los
+        // sources se conectan a `inlet` (la entrada del boost); el medidor y el
+        // recorder quedan DESPUÉS → recMeta refleja lo que se graba de verdad.
+        const leadDest = _recCtx.createMediaStreamDestination();
+        const leadGain = _recCtx.createGain();
+        leadGain.gain.value = 2.5;
+        const leadComp = _recCtx.createDynamicsCompressor();
+        leadGain.connect(leadComp);
+        leadComp.connect(leadDest);
         _recChannels = {
-          setter: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
-          lead: { dest: _recCtx.createMediaStreamDestination(), bound: new Map() },
+          setter: { dest: setterDest, inlet: setterDest, bound: new Map() },
+          lead: { dest: leadDest, inlet: leadGain, bound: new Map() },
         };
         // Medidor de nivel por canal (2026-07-23): mide EN VIVO si al mixer le
         // llega señal de verdad. Va al recMeta → distingue "se grabó silencio"
@@ -7412,7 +7427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           _recCtx.createMediaStreamSource(ch.dest.stream).connect(ch.analyser);
           ch.lvlMax = 0; ch.lvlSamples = 0; ch.lvlActive = 0;
         }
-        _recMeta = { startedAt: Date.now(), v: (typeof _myAppVersion === 'string' ? _myAppVersion : '') };
+        _recMeta = { startedAt: Date.now(), v: (typeof _myAppVersion === 'string' ? _myAppVersion : ''), leadBoost: leadGain.gain.value };
         _setterRecorder = new MediaRecorder(_recChannels.setter.dest.stream, { mimeType, audioBitsPerSecond: 32000 });
         _setterRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) _setterChunks.push(e.data); };
         _setterRecorder.onerror = (e) => { if (_recMeta) _recMeta.setterRecError = String(e?.error?.name || e?.error || 'error'); };
