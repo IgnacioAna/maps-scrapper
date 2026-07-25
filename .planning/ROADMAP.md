@@ -117,6 +117,22 @@ tomada; la forma NO — no decidir por cuenta propia):**
 
 **UI hint:** yes (Power Dialer + view-calls) → cache-buster obligatorio.
 
+**Plans:** 3 planes (planificado 2026-07-25)
+
+Plans:
+- [ ] 20-01-PLAN.md — Backend: registro server-side de llamadas pendientes
+  (pending_calls.json, se crea al iniciar la llamada) + call-disposition
+  extendido (auto-marca no_answer con snapshot + corrección 15 min +
+  resolución de pendientes) + GET disposition-audit (D-06, deriva del CALL
+  METRICS CORE) + persistencia en los 5 lugares
+- [ ] 20-02-PLAN.md — tests/disposition-enforcement.test.js (~16 tests:
+  RBAC pendientes, resolución, auto-marca/corrección, auditoría, export
+  round-trip) + suite completa verde
+- [ ] 20-03-PLAN.md — Frontend: gate de discado en vivo + banner (D-01),
+  auto-marca de no-contactos corregible (D-03, condición conservadora
+  sin-active y sin-committedRemote), franja de pendientes NO bloqueante
+  (D-02), auditoría en Equipo (D-06), cache-buster v=20260725b + preview
+
 ---
 
 ## Phase 21 — Reporte diario + canal WhatsApp
