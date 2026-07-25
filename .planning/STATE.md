@@ -14,15 +14,14 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 19 — Encender el reporte semanal (no iniciada)
-- **Plan:** —
-- **Status:** Requirements y roadmap definidos, listo para planificar
-- **Last activity:** 2026-07-25 — Milestone v2.0 iniciado
-  (`/gsd-new-milestone`)
+- **Phase:** 19 — Encender el reporte semanal (planificada)
+- **Plan:** 2 planes en 2 waves (19-01 fix backend, 19-02 tests de regresión)
+- **Status:** Ready to execute — verificación del plan-checker PASSED
+  (1 iteración de revisión: 3 gates grep recalibrados contra el archivo real)
+- **Last activity:** 2026-07-25 — Phase 19 planificada (`/gsd-plan-phase 19`,
+  sin research ni discuss — contexto ya verificado en roadmap)
 
-**Próximo paso:** `/gsd-discuss-phase 19` (o `/gsd-plan-phase 19` directo
-— la 19 es chica y sin grises: fix de 2 líneas + multi-destinatario +
-tests de regresión del cron).
+**Próximo paso:** `/gsd-execute-phase 19`
 
 ---
 
@@ -30,7 +29,7 @@ tests de regresión del cron).
 
 | # | Phase | Reqs | Status |
 |---|-------|------|--------|
-| 19 | Encender el reporte semanal | REP-01..03 | Pending |
+| 19 | Encender el reporte semanal | REP-01..03 | Planned (2 planes, ready to execute) |
 | 20 | Disposición obligatoria | DISP-01..03 | Pending (adelantada a pedido del user) |
 | 21 | Reporte diario + canal WhatsApp | REP-04..10 | Pending (prueba JID de grupo = primera tarea) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
