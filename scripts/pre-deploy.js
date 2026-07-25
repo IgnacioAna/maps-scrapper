@@ -181,6 +181,9 @@ async function main() {
     // Audit scraper 2026-07-11: los batches son leads ya PAGADOS con créditos
     // SerpAPI — sin esto, un container nuevo de Railway los perdía.
     ['scrapeBatches', 'scrape_batches.json'],
+    // Phase 19: estado del reporte semanal — sin esto un container nuevo re-manda
+    // el mail de una semana ya reportada.
+    ['reports', 'reports.json'],
   ];
   for (const [key, fname] of extras) {
     saveFile(fname, data[key]);

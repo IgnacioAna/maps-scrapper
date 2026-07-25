@@ -2116,6 +2116,10 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
     // ya PAGADOS con créditos SerpAPI que solo vivían en el volumen. Un container
     // nuevo de Railway los perdía (mismo bug histórico que faqs/mercury/telnyx).
     try { scrapeBatches = loadScrapeBatches(); } catch {}
+    // Phase 19: estado del reporte semanal (lastWeeklyReportAt) — sin esto, un
+    // container nuevo de Railway re-manda el mail de una semana ya reportada.
+    let reports = null;
+    try { reports = loadReportsState(); } catch {}
     res.json({
       exportedAt: new Date().toISOString(),
       history,
@@ -2130,7 +2134,8 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
       telnyxEvents,
       callScripts,
       scheduledMessages,
-      scrapeBatches
+      scrapeBatches,
+      reports
     });
   } catch (e) {
     console.error('Export error:', e);
@@ -2149,7 +2154,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
       history, auth, setters, faqs, training,
       mercuryConfig, mercuryGenerations, alertConfig,
       telnyxConfig, telnyxEvents, callScripts, scheduledMessages,
-      scrapeBatches,
+      scrapeBatches, reports,
     } = req.body || {};
 
     // Validacion de shape ANTES de tocar nada. Un payload malo no debe llegar
@@ -2208,12 +2213,15 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (scrapeBatches !== undefined && (!scrapeBatches || typeof scrapeBatches !== 'object' || !Array.isArray(scrapeBatches.batches))) {
       errors.push('scrapeBatches.batches debe ser array');
     }
+    if (reports !== undefined && (!reports || typeof reports !== 'object' || Array.isArray(reports))) {
+      errors.push('reports debe ser objeto');
+    }
     const hasAny = history !== undefined || auth !== undefined || setters !== undefined ||
       faqs !== undefined || training !== undefined || mercuryConfig !== undefined ||
       mercuryGenerations !== undefined || alertConfig !== undefined ||
       telnyxConfig !== undefined || telnyxEvents !== undefined ||
       callScripts !== undefined || scheduledMessages !== undefined ||
-      scrapeBatches !== undefined;
+      scrapeBatches !== undefined || reports !== undefined;
     if (!hasAny) {
       errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training/mercuryConfig/mercuryGenerations/alertConfig/telnyxConfig/telnyxEvents/callScripts/scheduledMessages');
     }
@@ -2237,6 +2245,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (callScripts) { saveCallScripts(callScripts); restored.push('callScripts'); }
     if (scheduledMessages) { saveScheduledMessages(scheduledMessages); restored.push('scheduledMessages'); }
     if (scrapeBatches) { saveScrapeBatches(scrapeBatches); restored.push('scrapeBatches'); }
+    if (reports) { saveReportsState(reports); restored.push('reports'); }
     res.json({ ok: true, message: 'Data importada correctamente', restored, backup: backup?.path || null });
   } catch (e) {
     console.error('Import error:', e);
@@ -4022,7 +4031,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json', 'reports.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -4075,7 +4084,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json', 'reports.json'];
 
 function makeBackup(reason = 'auto') {
   try {
