@@ -1834,9 +1834,29 @@ function buildWeeklyReportHtml(data) {
   return `<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#0F1115;font-family:-apple-system,sans-serif;color:#E5E7E2;"><div style="max-width:680px;margin:0 auto;"><h1 style="color:#9D85F2;font-size:24px;margin:0 0 4px;">📊 Reporte semanal SCM</h1><p style="color:#B4B8C2;margin:0 0 24px;font-size:14px;">Semana del <strong>${period.from}</strong> al <strong>${period.to}</strong></p><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">💬 WhatsApp</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Conexiones nuevas', wsp.conexionesNew)}${card('Respondieron (total)', wsp.respondieronTotal)}${card('Interesados (total)', wsp.interesadosTotal, '#4ADE80')}${card('Agendados (total)', wsp.agendadosTotal, '#4ADE80')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📞 Llamadas (semana)</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Total', calls.totalWeek)}${card('% Atendidas', calls.pctAtendidas + '%')}${card('Agendadas con vos', calls.scheduledWeek, '#4ADE80')}${card('Llamadas a núm. muertos', calls.deadWeek, '#F87171')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">📅 Calendario</h3><div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;">${card('Realizadas (semana)', cal.realized, '#4ADE80')}${card('No-shows (semana)', cal.noShow, '#FBBF24')}${card('Pendientes (ahora)', cal.pendingNow)}${card('Atrasadas (ahora)', cal.overdueNow, cal.overdueNow > 0 ? '#F87171' : '#9D85F2')}</div><h3 style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin:24px 0 10px;color:#7E8494;">👤 Por setter</h3><table style="width:100%;border-collapse:collapse;background:#161922;border:1px solid #262B3B;border-radius:10px;overflow:hidden;font-size:13px;"><thead><tr style="background:#11141B;"><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Setter</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Leads</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Conexiones</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Llamadas</th><th style="padding:10px 12px;text-align:left;color:#7E8494;font-size:11px;">Agendados</th></tr></thead><tbody>${rowsSetter}</tbody></table><p style="color:#565C6E;font-size:12px;margin-top:32px;padding-top:16px;border-top:1px solid #262B3B;">Reporte automático · ${leadsTotal} leads totales</p></div></body></html>`;
 }
 
-async function sendWeeklyReport(toEmail, dataOverride = null) {
+// Destinatarios del reporte (REP-02): env REPORT_EMAILS (CSV) > ADMIN_EMAIL >
+// primer admin activo de auth.json. Editable sin deploy desde Railway Variables.
+function _reportRecipients() {
+  const csv = String(process.env.REPORT_EMAILS || '').trim();
+  let list = csv
+    ? csv.split(',').map(s => s.trim()).filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))
+    : [];
+  if (!list.length && process.env.ADMIN_EMAIL) list = [process.env.ADMIN_EMAIL];
+  if (!list.length) {
+    try {
+      const admin = (loadAuthData().users || []).find(u => u.role === 'admin' && u.status === 'active');
+      if (admin?.email) list = [admin.email];
+    } catch {}
+  }
+  return list;
+}
+
+async function sendWeeklyReport(toEmails, dataOverride = null) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
+  // REP-02: acepta string O array (retro-compatible con el endpoint manual).
+  const to = (Array.isArray(toEmails) ? toEmails : [toEmails]).filter(Boolean);
+  if (!to.length) return { sent: false, reason: 'Sin destinatarios' };
   const data = dataOverride || buildWeeklyReportData();
   const html = buildWeeklyReportHtml(data);
   const fromEmail = process.env.INVITE_FROM_EMAIL || 'SCM Dental Setting App <onboarding@resend.dev>';
@@ -1844,7 +1864,7 @@ async function sendWeeklyReport(toEmail, dataOverride = null) {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: fromEmail, to: [toEmail], subject: `📊 Reporte semanal SCM · ${data.period.from} - ${data.period.to}`, html })
+      body: JSON.stringify({ from: fromEmail, to, subject: `📊 Reporte semanal SCM · ${data.period.from} - ${data.period.to}`, html })
     });
     if (resp.ok) { const body = await resp.json(); return { sent: true, id: body.id }; }
     const err = await resp.json().catch(() => ({}));
@@ -1852,31 +1872,31 @@ async function sendWeeklyReport(toEmail, dataOverride = null) {
   } catch (e) { return { sent: false, reason: e.message }; }
 }
 
-function maybeRunWeeklyReportCron() {
+// REP-01 (2026-07-25): fix del ReferenceError (`now` no existía — solo nowTs) que
+// duplicaba el mail cada tick horario del lunes o mataba el cron. nowTs y sendFn
+// son inyectables para los tests (patrón campaignEngineTick, regla #72).
+async function maybeRunWeeklyReportCron(nowTs = Date.now(), sendFn = sendWeeklyReport) {
   // Lunes 8am en TZ de negocio (antes era TZ del server = UTC → 5am AR).
-  const nowTs = Date.now();
-  if (_bizDayOfWeek(nowTs) !== 1 || _bizHour(nowTs) < 8) return;
+  if (_bizDayOfWeek(nowTs) !== 1 || _bizHour(nowTs) < 8) return { ran: false, reason: 'fuera_de_ventana' };
   const state = loadReportsState();
-  const last = state.lastWeeklyReportAt ? new Date(state.lastWeeklyReportAt) : null;
-  if (last && (now.getTime() - last.getTime()) < 6 * 24 * 60 * 60 * 1000) return;
-  let adminEmail = process.env.ADMIN_EMAIL;
-  if (!adminEmail) {
-    try { const admin = (loadAuthData().users || []).find(u => u.role === 'admin' && u.status === 'active'); adminEmail = admin?.email; }
-    catch {}
+  const last = state.lastWeeklyReportAt ? new Date(state.lastWeeklyReportAt).getTime() : 0;
+  if (last && (nowTs - last) < 6 * 24 * 60 * 60 * 1000) return { ran: false, reason: 'ya_enviado' };
+  const recipients = _reportRecipients();
+  if (!recipients.length) { console.warn('Weekly report skipped: sin destinatarios'); return { ran: false, reason: 'sin_destinatarios' }; }
+  const result = await sendFn(recipients);
+  if (result.sent) {
+    state.lastWeeklyReportAt = new Date(nowTs).toISOString();
+    state.lastWeeklyReportTo = recipients;
+    saveReportsState(state);
+    console.log(`📨 Reporte semanal enviado a ${recipients.join(', ')}`);
+    return { ran: true, sent: true, to: recipients };
   }
-  if (!adminEmail) { console.warn('Weekly report skipped: no admin email'); return; }
-  sendWeeklyReport(adminEmail).then(result => {
-    if (result.sent) {
-      state.lastWeeklyReportAt = now.toISOString();
-      state.lastWeeklyReportTo = adminEmail;
-      saveReportsState(state);
-      console.log(`📨 Reporte semanal enviado a ${adminEmail}`);
-    } else { console.warn('Weekly report failed:', result.reason); }
-  });
+  console.warn('Weekly report failed:', result.reason);
+  return { ran: true, sent: false, reason: result.reason };
 }
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(maybeRunWeeklyReportCron, 60 * 60 * 1000);
-  setTimeout(maybeRunWeeklyReportCron, 60 * 1000);
+  setInterval(() => maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message)), 60 * 60 * 1000);
+  setTimeout(() => maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message)), 60 * 1000);
 }
 
 app.get('/api/admin/weekly-report/preview', requireAuth, requireRole('admin'), (_req, res) => {
@@ -1885,16 +1905,23 @@ app.get('/api/admin/weekly-report/preview', requireAuth, requireRole('admin'), (
 });
 
 app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), async (req, res) => {
-  const toEmail = req.body?.to || process.env.ADMIN_EMAIL || req.auth?.user?.email;
-  if (!toEmail) return res.status(400).json({ error: 'No hay email destinatario.' });
-  const result = await sendWeeklyReport(toEmail);
+  // REP-02: multi-destinatario con validación de formato (solo admin llega acá).
+  const raw = req.body?.to;
+  const to = raw
+    ? (Array.isArray(raw) ? raw : [raw]).map(s => String(s).trim()).filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))
+    : _reportRecipients();
+  if (!to.length) return res.status(400).json({ error: 'No hay email destinatario.' });
+  const result = await sendWeeklyReport(to);
   if (!result.sent) return res.status(500).json(result);
   const state = loadReportsState();
   state.lastWeeklyReportAt = new Date().toISOString();
-  state.lastWeeklyReportTo = toEmail;
+  state.lastWeeklyReportTo = to;
   saveReportsState(state);
-  res.json({ ok: true, ...result, to: toEmail });
+  res.json({ ok: true, ...result, to });
 });
+
+// Expuestos para tests (patrón __callCore / __metricsAudit).
+globalThis.__weeklyReport = { maybeRunWeeklyReportCron, buildWeeklyReportData, buildWeeklyReportHtml, sendWeeklyReport, loadReportsState, saveReportsState, getReportsFile, _reportRecipients };
 
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
