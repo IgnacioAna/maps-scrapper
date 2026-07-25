@@ -30,9 +30,10 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   WSP con Ignacio excluido, round-trip export/import de reports.json.
   REP-01/02/03 marcados completos en REQUIREMENTS.md.
 
-**Próximo paso:** siguiente phase del milestone (20 — Disposición
-obligatoria, o la que el user priorice; 21 requiere la prueba del JID
-de grupo).
+**Próximo paso:** `/gsd-plan-phase 20` — el contexto de la Phase 20 ya
+está capturado (2026-07-25, `20-CONTEXT.md`: bloqueo de discado en vivo +
+cola recordatorio no bloqueante + auto-marca de no-contactos + histórico
+de cero + auditoría pasiva anti-falso).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
