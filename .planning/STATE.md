@@ -18,8 +18,12 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 - **Plan:** 19-02 EXECUTED (tests de regresión, commit 79b5d26 —
   tests/weekly-report.test.js con 12 tests; suite completa **848/848**
   verde, cero flakies). 19-01 EXECUTED antes (2a41048/be1445d/b13d051).
-- **Status:** Phase 19 cerrada sin deuda de tests — SUMMARYs en
-  `.planning/phases/19-encender-reporte-semanal/19-0{1,2}-SUMMARY.md`
+- **Status:** Phase 19 cerrada sin deuda de tests — VERIFICATION **passed
+  8/8 must-haves** (`19-VERIFICATION.md`), code review 0 críticos / 3
+  warnings advisory (`19-REVIEW.md`, candidatos de hardening para Phase
+  21: envío manual mid-week suprime el lunes, fallback silencioso de
+  REPORT_EMAILS, anti-dup sin guard in-memory ante fallo de disco).
+  SUMMARYs en `.planning/phases/19-encender-reporte-semanal/`
 - **Last activity:** 2026-07-25 — 19-02 ejecutado: regresión del cron
   (ventana lunes-8am TZ negocio, anti-dup del bug de los 16 mails, caso
   TZ lunes 23:00 AR, fallo-no-persiste), REPORT_EMAILS CSV, shape sin
