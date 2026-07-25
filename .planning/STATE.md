@@ -14,14 +14,19 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 19 — Encender el reporte semanal (planificada)
-- **Plan:** 2 planes en 2 waves (19-01 fix backend, 19-02 tests de regresión)
-- **Status:** Ready to execute — verificación del plan-checker PASSED
-  (1 iteración de revisión: 3 gates grep recalibrados contra el archivo real)
-- **Last activity:** 2026-07-25 — Phase 19 planificada (`/gsd-plan-phase 19`,
-  sin research ni discuss — contexto ya verificado en roadmap)
+- **Phase:** 19 — Encender el reporte semanal (en ejecución)
+- **Plan:** 19-01 EXECUTED (fix backend, commits 2a41048/be1445d/b13d051,
+  90/90 tests afectados verdes) — sigue 19-02 (tests de regresión)
+- **Status:** Executing — wave 1 completa, SUMMARY en
+  `.planning/phases/19-encender-reporte-semanal/19-01-SUMMARY.md`
+- **Last activity:** 2026-07-25 — 19-01 ejecutado: cron sin ReferenceError
+  (REP-01), REPORT_EMAILS multi-destinatario (REP-02), data del CALL METRICS
+  CORE sin sección WSP + Ignacio/Paula excluidos (REP-03), reports.json en
+  persistencia de 4 lugares + BACKUP_FILES
 
-**Próximo paso:** `/gsd-execute-phase 19`
+**Próximo paso:** ejecutar 19-02 (tests de regresión del reporte semanal).
+**Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
+en Railway → Variables — sin la key el cron no manda nada.
 
 ---
 
