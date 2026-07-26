@@ -1,6 +1,6 @@
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-07-25.
+> Estado vivo del proyecto. Actualización: 2026-07-26.
 
 ---
 
@@ -27,20 +27,28 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
-- **Last activity:** 2026-07-26 — Phase 20 ejecutada completa (waves 1-2,
+- **Last activity:** 2026-07-26 — (1) Phase 20 ejecutada completa (waves 1-2,
   preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
   push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
   `20260725c`, los 3 endpoints nuevos responden 401 (vivos). ⚠️ El push
   incluyó también la **Phase 19 completa**, que nunca había llegado a
   producción — el cron del reporte semanal recién ahora corre en prod.
+  (2) **Phase 21 discutida** — `21-CONTEXT.md` + `21-DISCUSSION-LOG.md`
+  escritos (29 decisiones D-01..D-29, listo para planificar).
 
 **Próximo paso:** UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
 una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
-aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE → `/gsd-discuss-phase 21`.
+aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE. La Phase 21 ya tiene
+contexto: `/gsd-plan-phase 21`.
 **Decisión del user (2026-07-26):** `RESEND_API_KEY` NO es prioridad — el
-reporte va al grupo de WhatsApp (Phase 21) y las invitaciones se mandan
-copiando el link a mano. El email queda como fallback si la prueba del JID
-de grupo falla.
+reporte diario va al grupo de WhatsApp y **NO tiene fallback a email**
+(Phase 21 D-04, acota REP-07); el email queda cableado y apagado. Las
+invitaciones se mandan copiando el link a mano.
+**Hallazgo de la Phase 21 (verificado en código, corrige el roadmap):** el
+JID del grupo NO destraba nada — el desktop maneja WhatsApp Web como una
+persona vía deeplink `send?phone=` y WhatsApp no tiene equivalente para
+grupos. La solución es elegir el grupo de una lista una vez y guardar su
+identificador (Phase 21 D-03).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
@@ -52,7 +60,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | Pending (prueba JID de grupo = primera tarea) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | Context gathered (2026-07-26, 29 decisiones) — listo para plan |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -91,14 +99,19 @@ Contra HEAD `a9e4886`:
   pendientes vs ambas); tratamiento de llamadas viejas sin marcar; cómo
   evitar disposiciones falsas; interacción con la ventana de 10 min del
   audio.
-- **Phase 21**: N de expiración de diarios pendientes (propuesta: 3 días);
-  validación del molde de mensaje con el user en el celular.
+- ~~**Phase 21**~~: RESUELTA en `21-CONTEXT.md` (2026-07-26, 29 decisiones).
+  Expiración de diarios = 3 días. El molde quedó elegido con datos reales y
+  se valida definitivamente en el celular con el primer envío real.
 - **Phase 22**: ¿las vendedoras ven su propio scorecard? (hoy
   admin/supervisor only — sin verlo es vigilancia, viéndolo es coaching).
 - **Phase 23**: quién de los 3 socios actúa ante cada tipo de alerta.
-- **Acción del user pendiente**: crear el grupo de WhatsApp con los 2
-  socios y avisar (para la prueba de la Phase 21); cargar
-  `RESEND_API_KEY` en Railway (fallback email).
+- **Acciones del user pendientes (bloquean la prueba en vivo de la Phase 21,
+  NO la construcción)**: (1) conseguir un número de WhatsApp NUEVO dedicado y
+  registrarlo; (2) crear el grupo con los 2 socios — **cerrado, sin las
+  vendedoras**; (3) abrir `wa-multi-portable-v0.5.10`, escanear el QR con ese
+  número, elegir el grupo de la lista y dejar la app abierta.
+  `RESEND_API_KEY` dejó de ser necesaria para el diario (decisión D-04: sin
+  fallback a email); sigue haciendo falta para el mail semanal.
 
 ---
 
@@ -139,4 +152,4 @@ Contra HEAD `a9e4886`:
 
 ---
 
-*Last updated: 2026-07-25.*
+*Last updated: 2026-07-26.*
