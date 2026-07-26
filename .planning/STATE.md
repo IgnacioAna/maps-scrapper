@@ -194,8 +194,28 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   Equipo (commits `e808f4d`, `f53c845`, `c1041e1`; 111 checks verdes,
   cache-buster `v=20260726a`) — ola 4 cerrada.
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — falta **solo 21-07** (prueba
-en vivo con el user, `autonomous: false`).
+**Code review de la fase: `issues_found` — 3 BLOCKER + 16 warnings**
+(`21-REVIEW.md`, commit `6b54588`, depth standard, 9 archivos). Los 3 blockers
+rompen el canal justo en el escenario principal, así que **hay que correr
+`/gsd-code-review-fix 21` ANTES de la prueba en vivo 21-07**:
+- **CR-01** el guard de alcanzabilidad confunde el desktop con una pestaña del
+  panel (`isUserConnected` mira el Map `presence`, que también se puebla con
+  sockets de cookie desde `public/wa.js`) → con wa-multi cerrado dice "Desktop
+  conectada", emite a una room sin handler y quema `sendAttempts` hasta `failed`.
+- **CR-02** el picker guarda el JID del chat ABIERTO, no del elegido → si había
+  otro grupo abierto, el grupo correcto queda con `jid-mismatch` permanente y no
+  hay endpoint para limpiar `groupJid`.
+- **CR-03** el `queueId` se reusa entre intentos y el desktop no responde al
+  dedupear → tras un timeout de 150s el grupo puede recibir el reporte DOS veces
+  y confesarse como bache un reporte entregado.
+Warnings notables: WR-01 off-by-one de la escalada D-16 (dispara al 6º día hábil,
+no al 5º), WR-04 TOCTOU del lock de `send-now` (doble POST = doble envío),
+WR-11 `data/reports.json` está gitignored → `seedVolumeFromRepo` no tiene qué
+sembrar y un volumen recreado pierde `config.transport` en silencio.
+
+**Próximo paso:** `/gsd-code-review-fix 21`, y después **solo 21-07** (prueba
+en vivo con el user, `autonomous: false`). La preparación física del user
+(número, grupo, QR, fijar el chat) se puede hacer en paralelo a los fixes.
 Para la prueba en vivo ya no hace falta esperar a las 23:00: el botón
 **"Mandar ahora"** del bloque "Reporte diario · WhatsApp" en Centro de Comando
 manda en el acto (y funciona incluso con el interruptor de pausa puesto, por
