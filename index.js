@@ -1796,16 +1796,22 @@ function buildWeeklyReportData() {
   // fuera de todo reporte. Mismo pseudo-set que usa el supervisor sin lista.
   const visibleSet = _SUPERVISOR_EXCLUSION_SET;
   const calendar = (settersData.calendar || []).filter(e => !ADMIN_ONLY_SETTER_IDS.has(e.setterId));
-  // Semana pasada completa (lunes a lunes) en TZ de negocio (audit 2026-07-08).
+  // D-13 (2026-07-26): el semanal pasó de "la semana pasada completa" a "la
+  // semana que TERMINA hoy" (lunes → ahora), porque ahora sale el DOMINGO 23:00
+  // junto al último diario, no el lunes a la mañana. Un solo momento y un solo
+  // reporte por las dos vías (mail HTML detallado + corto al grupo de WhatsApp).
   const nowTs = Date.now();
   const todayStart = _bizStartOfDay(nowTs);
-  const dayOfWeek = _bizDayOfWeek(todayStart) || 7;
+  const dayOfWeek = _bizDayOfWeek(todayStart) || 7;      // domingo = 7
   const thisMonday = todayStart - (dayOfWeek - 1) * 86400000;
-  const fromTs = thisMonday - 7 * 86400000;
-  const toTs = thisMonday;
+  const fromTs = thisMonday;
+  const toTs = Math.min(nowTs, thisMonday + 7 * 86400000);
+  const prevFromTs = thisMonday - 7 * 86400000;
+  const prevToTs = thisMonday;
   // CALL METRICS CORE (regla v2.0): jamás re-implementar el funnel inline.
   const calls = _ccCollectCalls(settersData, { visibleSet });
   const agg = _ccFunnelAggregate(calls, calendar, fromTs, toTs, { visibleSet });
+  const aggPrev = _ccFunnelAggregate(calls, calendar, prevFromTs, prevToTs, { visibleSet });
   const weekCalls = calls.filter(c => c.ts >= fromTs && c.ts < toTs);
   // deadWeek = EVENTOS de la semana (llamadas que terminaron en número muerto).
   // Distinto del KPI "Números muertos" del Comando (estado phoneStatus actual).
@@ -1817,16 +1823,28 @@ function buildWeeklyReportData() {
   const allLeads = Object.values(settersData.leads || {});
   // Por SDR: llamadas de la semana atribuidas por quién llamó (entries ya vienen
   // pre-atribuidas de _ccCollectCalls). Sin columna WSP (embudo muerto, REP-03).
-  const perSetter = _filterSettersVisible(settersData.setters || [], visibleSet).map(s => {
+  const visibleSetters = _filterSettersVisible(settersData.setters || [], visibleSet);
+  const perSetter = visibleSetters.map(s => {
     const w = weekCalls.filter(c => c.setterId === s.id);
+    // Minutos por el CORE (totalDurationS suma solo atendidas) — igual que el
+    // diario, jamás recalculados al margen (regla #157).
+    const a = _ccFunnelAggregate(w, [], fromTs, toTs);
     return {
       name: s.name,
       leadsAsignados: allLeads.filter(l => l.assignedTo === s.id).length,
       llamadas: w.length,
       atendidas: w.filter(c => COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)).length,
       agendadosLlamada: w.filter(c => c.outcome === 'scheduled_with_admin').length,
+      minutos: Math.round(a.totalDurationS / 60),                                  // D-20
+      interesados: w.filter(c => c.outcome === 'answered_interested').length,       // D-20
     };
   }).filter(s => s.llamadas > 0);
+  // D-15/D-20: mismos criterios que el diario — visible, NO oculta, cero llamadas
+  // históricas. Sale sola de la lista al hacer su primera llamada.
+  const neverStarted = visibleSetters
+    .filter(s => s.hidden !== true && !calls.some(c => c.setterId === s.id))
+    .map(s => _reportSafeName(s.name));
+  const prevInterested = calls.filter(c => c.ts >= prevFromTs && c.ts < prevToTs && c.outcome === 'answered_interested').length;
   return {
     period: { from: _bizDayStr(fromTs), to: _bizDayStr(toTs - 1) },
     calls: {
@@ -1835,9 +1853,16 @@ function buildWeeklyReportData() {
       scheduledWeek: agg.appointments,
       deadWeek: callsDeadWeek,
       pctAtendidas: agg.dials > 0 ? agg.rates.connectRate.toFixed(1) : '0.0',
+      // Extensión ADITIVA para el corto de WhatsApp (D-20). Ninguna clave de
+      // Phase 19 se quita ni se renombra: buildWeeklyReportHtml las usa.
+      minutes: Math.round(agg.totalDurationS / 60),
+      interested: weekCalls.filter(c => c.outcome === 'answered_interested').length,
     },
     calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
     perSetter,
+    neverStarted,
+    // Semana anterior completa, para la línea de comparación del corto (D-20).
+    previous: { dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate, interested: prevInterested },
     leadsTotal: allLeads.length
   };
 }
@@ -1857,6 +1882,10 @@ function _reportRecipients() {
   let list = csv
     ? csv.split(',').map(s => s.trim()).filter(s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s))
     : [];
+  // WR-02 (19-REVIEW): el error típico es separar con `;` en vez de `,` — el CSV
+  // queda con un solo token inválido, la lista vacía, y el reporte cae a
+  // ADMIN_EMAIL SIN aviso. El equipo cree que le llega a la lista configurada.
+  if (csv && !list.length) console.warn(`REPORT_EMAILS seteada pero sin emails válidos ("${csv}") — fallback a ADMIN_EMAIL`);
   if (!list.length && process.env.ADMIN_EMAIL) list = [process.env.ADMIN_EMAIL];
   if (!list.length) {
     try {
@@ -1864,7 +1893,7 @@ function _reportRecipients() {
       if (admin?.email) list = [admin.email];
     } catch {}
   }
-  return list;
+  return [...new Set(list)];   // WR-02: dedup antes de mandárselo a Resend
 }
 
 async function sendWeeklyReport(toEmails, dataOverride = null) {
@@ -1888,36 +1917,82 @@ async function sendWeeklyReport(toEmails, dataOverride = null) {
   } catch (e) { return { sent: false, reason: e.message }; }
 }
 
+// WR-03 (19-REVIEW): guard gemelo EN MEMORIA del período ya cubierto.
+// `saveReportsState` traga los errores de escritura (catch + warn). Si el Railway
+// Volume falla justo un domingo, el guard de disco no persiste y cada tick horario
+// re-mandaría — el bug de los 16 mails, esta vez también contra el grupo de
+// WhatsApp de los socios. El guard de disco sigue siendo el principal (sobrevive
+// al restart); este cubre el fallo de disco dentro del proceso.
+// `_dailyPeriodSentMem` lo usa `maybeRunDailyReportCron` (bloque Phase 21).
+let _weeklyPeriodSentMem = '';
+let _dailyPeriodSentMem = '';
+
 // REP-01 (2026-07-25): fix del ReferenceError (`now` no existía — solo nowTs) que
 // duplicaba el mail cada tick horario del lunes o mataba el cron. nowTs y sendFn
 // son inyectables para los tests (patrón campaignEngineTick, regla #72).
+//
+// D-13 (2026-07-26): la ventana se mudó de LUNES 8am a DOMINGO 23:00 — el mismo
+// momento que el último diario de la semana. Un solo momento y un solo reporte
+// por las dos vías: mail HTML detallado (Resend) + versión corta al grupo.
+//
+// WR-01 (19-REVIEW): el anti-duplicado pasó de "ventana de 6 días" a guard por
+// PERÍODO CUBIERTO (D-28). Con la ventana, un envío manual de prueba cualquier día
+// entre miércoles y domingo suprimía SILENCIOSAMENTE el automático — justo el
+// reporte que la fase vino a encender. El endpoint manual ya no toca este guard.
 async function maybeRunWeeklyReportCron(nowTs = Date.now(), sendFn = sendWeeklyReport) {
-  // Lunes 8am en TZ de negocio (antes era TZ del server = UTC → 5am AR).
-  if (_bizDayOfWeek(nowTs) !== 1 || _bizHour(nowTs) < 8) return { ran: false, reason: 'fuera_de_ventana' };
-  const state = loadReportsState();
-  const last = state.lastWeeklyReportAt ? new Date(state.lastWeeklyReportAt).getTime() : 0;
-  if (last && (nowTs - last) < 6 * 24 * 60 * 60 * 1000) return { ran: false, reason: 'ya_enviado' };
+  // Domingo 23:00 en TZ de negocio (_bizDayOfWeek: domingo = 0).
+  if (_bizDayOfWeek(nowTs) !== 0 || _bizHour(nowTs) < 23) return { ran: false, reason: 'fuera_de_ventana' };
+  const periodKey = _bizDayStr(nowTs);   // el domingo que cierra la semana (D-28)
+  if (_weeklyPeriodSentMem === periodKey) return { ran: false, reason: 'ya_enviado' };
+  const state = _reportStateDefaults(loadReportsState());
+  if (state.config.paused) return { ran: false, reason: 'pausado' };
+  if (state.weeklyState.lastWeeklyPeriodKey === periodKey) return { ran: false, reason: 'ya_enviado' };
+  // UN solo snapshot de datos para las dos vías: el mail y el mensaje del grupo
+  // describen exactamente los mismos números.
+  const data = buildWeeklyReportData();
   const recipients = _reportRecipients();
-  if (!recipients.length) { console.warn('Weekly report skipped: sin destinatarios'); return { ran: false, reason: 'sin_destinatarios' }; }
-  const result = await sendFn(recipients);
-  if (result.sent) {
-    // Phase 21: la escritura va por el mutex (regla #19). Este handler tiene un
-    // `await sendFn` entre el load y el save, así que un saveReportsState(state)
-    // con el snapshot viejo pisaría la cola de envío que el tick escribió
-    // mientras Resend respondía.
-    await mutateReportsState((s) => {
+  let result = { sent: false, reason: 'sin_destinatarios' };
+  if (recipients.length) result = await sendFn(recipients, data);
+  else console.warn('Weekly report: sin destinatarios de mail — el corto igual va al grupo');
+  // D-04: el canal del grupo NO depende del email — el corto se encola aunque el
+  // mail falle. El guard de período de enqueueReportMessage (kind+periodKey sobre
+  // queue+history) es el que garantiza UN solo mensaje al grupo por semana.
+  // Phase 21: la escritura va por el mutex (regla #19). Este handler tiene un
+  // `await sendFn` entre el load y el save, así que un saveReportsState(state) con
+  // el snapshot viejo pisaría la cola que el tick escribió mientras Resend respondía.
+  const enq = await mutateReportsState((s) => {
+    const r = enqueueReportMessage(s, {
+      kind: 'weekly', periodKey, dayStr: periodKey,
+      text: buildWeeklyReportTextShort(data, { emailSent: !!result.sent }),
+    });
+    if (result.sent) {
+      // El período se consume SOLO con el mail entregado: si Resend falló, el
+      // próximo tick reintenta el mail (y el corto ya está encolado, así que el
+      // grupo no recibe dos). Semántica heredada de Phase 19, ahora por período.
+      s.weeklyState.lastWeeklyPeriodKey = periodKey;
       s.lastWeeklyReportAt = new Date(nowTs).toISOString();
       s.lastWeeklyReportTo = recipients;
-    });
+    }
+    return r;
+  });
+  const queued = !!(enq && enq.queued);
+  if (result.sent) {
+    _weeklyPeriodSentMem = periodKey;                             // WR-03
     console.log(`📨 Reporte semanal enviado a ${recipients.join(', ')}`);
-    return { ran: true, sent: true, to: recipients };
+    return { ran: true, sent: true, to: recipients, periodKey, queued };
   }
   console.warn('Weekly report failed:', result.reason);
-  return { ran: true, sent: false, reason: result.reason };
+  return { ran: true, sent: false, reason: result.reason, periodKey, queued };
 }
+// UN solo registro de timers para los crons de reporte. El diario se suma acá
+// (bloque Phase 21) y corre DESPUÉS del semanal en el mismo tick: el domingo el
+// diario le cede el lugar al semanal (D-13) y se autoexcluye solo.
 if (process.env.NODE_ENV !== 'test') {
-  setInterval(() => maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message)), 60 * 60 * 1000);
-  setTimeout(() => maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message)), 60 * 1000);
+  const _reportCrons = async () => {
+    await maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message));
+  };
+  setInterval(() => { _reportCrons(); }, 60 * 60 * 1000);
+  setTimeout(() => { _reportCrons(); }, 60 * 1000);
 }
 
 app.get('/api/admin/weekly-report/preview', requireAuth, requireRole('admin'), (_req, res) => {
@@ -1934,16 +2009,26 @@ app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), asy
   if (!to.length) return res.status(400).json({ error: 'No hay email destinatario.' });
   const result = await sendWeeklyReport(to);
   if (!result.sent) return res.status(500).json(result);
+  // WR-01: este envío es una PRUEBA — NO consume el período del automático. Antes
+  // escribía `lastWeeklyReportAt`, que era el guard del cron, así que probar el
+  // mail un miércoles suprimía silenciosamente el reporte del domingo siguiente.
+  // Se registra aparte, solo para trazabilidad.
   // Phase 21: por el mutex — hay un await antes del save (ver comentario en el cron).
   await mutateReportsState((s) => {
-    s.lastWeeklyReportAt = new Date().toISOString();
-    s.lastWeeklyReportTo = to;
+    s.lastManualWeeklySendAt = new Date().toISOString();
+    s.lastManualWeeklySendTo = to;
   });
   res.json({ ok: true, ...result, to });
 });
 
 // Expuestos para tests (patrón __callCore / __metricsAudit).
-globalThis.__weeklyReport = { maybeRunWeeklyReportCron, buildWeeklyReportData, buildWeeklyReportHtml, sendWeeklyReport, loadReportsState, saveReportsState, getReportsFile, _reportRecipients };
+globalThis.__weeklyReport = {
+  maybeRunWeeklyReportCron, buildWeeklyReportData, buildWeeklyReportHtml, sendWeeklyReport,
+  loadReportsState, saveReportsState, getReportsFile, _reportRecipients,
+  // Seam de test: el guard en memoria de WR-03 sobrevive a borrar reports.json, así
+  // que sin esto dos tests con la misma fecha se contaminarían entre sí.
+  _resetPeriodMem: () => { _weeklyPeriodSentMem = ''; _dailyPeriodSentMem = ''; },
+};
 
 // ── Phase 21: reporte diario ──
 // Builder del reporte DIARIO (REP-04..REP-10) + los builders de texto plano que
@@ -2145,8 +2230,80 @@ function buildConsolidatedReportText(lines, { gapNote = '', neverStarted = [] } 
   return gapNote ? `${gapNote}\n\n${text}` : text;
 }
 
+// D-13/D-20: el semanal TAMBIÉN va al grupo, en el mismo lenguaje que el diario
+// (texto plano, *negrita*, _cursiva_, cero emojis). El mail HTML detallado sale
+// aparte, en el mismo momento; esto es lo que se lee en el preview de la
+// notificación del celular sin abrir nada.
+//
+// REGLA DE MANTENIMIENTO: igual que buildDailyReportText, la redacción del
+// mensaje vive SOLO acá — el texto no se concatena en ningún otro lado.
+// La nota de baches (D-05) NO se recibe acá a propósito: la antepone el tick de
+// la cola para TODO envío; hacerlo también acá la duplicaría.
+function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
+  const d = data || {};
+  const c = d.calls || {};
+  const prev = d.previous || {};
+  const pct = (n) => Math.round(Number(n) || 0);
+  // 'DD/MM' de un 'YYYY-MM-DD' (el label completo es 'mié 22/07' → últimos 5).
+  const dm = (dayStr) => {
+    const ts = Date.parse(`${String(dayStr || '').slice(0, 10)}T12:00:00Z`);
+    return Number.isNaN(ts) ? '' : _reportDayLabel(ts).slice(-5);
+  };
+  const from = dm(d.period?.from);
+  const to = dm(d.period?.to);
+  // El molde validado por el user comprime el mes cuando la semana no lo cruza:
+  // "*Semana 20–26/07*", no "*Semana 20/07–26/07*".
+  const range = (from && to && from.slice(-2) === to.slice(-2))
+    ? `${from.slice(0, 2)}–${to}`
+    : [from, to].filter(Boolean).join('–');
+  const head = [`*Semana ${range}*`];
+  if ((c.totalWeek || 0) === 0) {
+    // Semana entera sin una sola llamada: se dice en una línea, no con seis
+    // ceros (mismo criterio que D-11 en el diario).
+    head.push('Equipo sin llamadas en la semana');
+  } else {
+    const teamSegs = [`${c.totalWeek} llam`, `${c.answeredWeek} at (${pct(c.pctAtendidas)}%)`];
+    if ((c.minutes || 0) > 0) teamSegs.push(`${c.minutes} min`);
+    head.push(`Equipo ${teamSegs.join(' · ')}`);
+    const intSegs = [];
+    if ((c.interested || 0) > 0) intSegs.push(`${c.interested} interesados`);
+    // ⚠️ D-20 — EXCEPCIÓN CONSCIENTE a la regla "nada de métricas en cero": la
+    // línea de reuniones agendadas SE MUESTRA aunque sea 0. Que haya 32
+    // interesados y 0 reuniones es justamente LA noticia (el embudo se corta
+    // antes del cierre). Elegido explícitamente por el user: NO meterla en el
+    // filtro de ceros "optimizando" el mensaje.
+    intSegs.push(`${c.scheduledWeek || 0} reuniones agendadas`);
+    head.push(intSegs.join(' · '));
+  }
+  const rows = (d.perSetter || [])
+    .filter(s => (s.llamadas || 0) > 0)
+    .slice()
+    .sort((a, b) => (b.llamadas || 0) - (a.llamadas || 0))
+    .map(s => {
+      const segs = [`${s.llamadas} llam`, `${s.atendidas} at`];
+      if ((s.minutos || 0) > 0) segs.push(`${s.minutos} min`);
+      if ((s.interesados || 0) > 0) segs.push(`${s.interesados} int`);
+      return `*${_reportSafeName(s.name)}* ${segs.join(' · ')}`;
+    });
+  const prevSegs = [`${prev.dials} llam`, `${prev.connects} at (${pct(prev.connectRate)}%)`];
+  if ((prev.interested || 0) > 0) prevSegs.push(`${prev.interested} int`);
+  const foot = [
+    (prev.dials || 0) > 0 ? `_Semana anterior: ${prevSegs.join(' · ')}_` : '',
+    (d.neverStarted || []).length ? `_Sin arrancar: ${d.neverStarted.join(', ')}_` : '',
+    // Solo si el mail SALIÓ de verdad: sin RESEND_API_KEY (o con Resend caído) la
+    // línea mandaría a los socios a buscar un mail que no existe (D-04: el canal
+    // del grupo no depende del email).
+    emailSent ? '_Detalle completo en el mail._' : '',
+  ].filter(Boolean);
+  const body = [...head];
+  if (rows.length) body.push('', ...rows);
+  if (foot.length) body.push('', ...foot);
+  return body.join('\n');
+}
+
 // Expuestos para tests (patrón __weeklyReport / __callCore).
 globalThis.__dailyReport = { buildDailyReportData, buildDailyReportText, buildDailyReportLine, buildConsolidatedReportText, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
+Object.assign(globalThis.__weeklyReport, { buildWeeklyReportTextShort });
 
 // ── Phase 21: cola de envío al grupo de WhatsApp ──
 // REP-06/07/08 + D-02/D-05/D-06/D-26/D-27/D-28. El transporte es GENÉRICO desde
