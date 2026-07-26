@@ -27,17 +27,22 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   WhatsApp o quitarla (hoy el embudo WSP está en cero de punta a punta).
   *(sección WSP eliminada, data del CALL METRICS CORE, 19-01 + tests
   19-02, 2026-07-25)*
-- [ ] **REP-04**: Existe el reporte diario (`buildDailyReportData()` — hoy
+- [x] **REP-04**: Existe el reporte diario (`buildDailyReportData()` — hoy
   todas las ventanas son de semana ISO) con SOLO métricas con señal:
   **llamadas · atendidas · minutos hablados · última actividad**.
   Excepciones arriba (primera línea = quién no trabajó hoy), comparación
   vs ayer, nombres de pila. Nada de métricas en cero (agendados/shows/
   deals quedan fuera hasta que tengan datos).
+  *(21-01, 2026-07-26 — derivado del CALL METRICS CORE; "última actividad"
+  vive en la línea de escalada por D-25)*
 - [ ] **REP-05**: Builder de **texto plano** para WhatsApp según el molde
   acordado (sin tablas, sin alineación monoespaciada — se rompe en
   celular; lo importante en las primeras 2 líneas por el preview de la
   notificación). El molde se valida con el user leyéndolo en su celular
   con datos reales ANTES de fijarlo.
+  *(builder HECHO en 21-01, 2026-07-26 — `buildDailyReportText`, verificado
+  contra el snapshot de producción del 22/07. Queda abierto SOLO el paso de
+  validación del user en su celular → plan 21-07)*
 - [ ] **REP-06**: El reporte llega al **grupo de WhatsApp** de los 3
   socios. Primera tarea: prueba en vivo del JID de grupo contra el
   handler existente (verificado en código: usa deeplink
@@ -56,15 +61,20 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   mensajes distintos (NO aplicar caps de warming — es un grupo propio, no
   outreach frío). Copiar el patrón de `scheduledMessagesTick`
   (index.js:5126), NO reusar el módulo (atado a leadId/setterId).
-- [ ] **REP-09**: El reporte incluye **solo las vendedoras nuevas** —
+- [x] **REP-09**: El reporte incluye **solo las vendedoras nuevas** —
   `setter_ignacio` y `setter_paula_kroff` fuera. Reusar
   `ADMIN_ONLY_SETTER_IDS` (index.js:5588) + `_filterSettersVisible`
   (index.js:5609); no escribir un filtro nuevo.
-- [ ] **REP-10**: El sesgo del canal manual (78 llamadas `channel='manual'`
+  *(21-01, 2026-07-26 — `_SUPERVISOR_EXCLUSION_SET` + `_filterSettersVisible`,
+  sin filtro nuevo; los setters `hidden` también quedan fuera)*
+- [x] **REP-10**: El sesgo del canal manual (78 llamadas `channel='manual'`
   sin `duration` → nunca cuentan como conversación) y las ~15 llamadas sin
   atribuir (users borrados, intencional) se manejan explícitamente en el
   reporte (separar canales o anotar la limitación) — no se ocultan ni se
   dejan cuadrar mal en silencio.
+  *(21-01, 2026-07-26 — línea "N llamadas cargadas a mano — sin minutos"
+  (solo con 5+ o >10% del día) + "N llamadas sin atribuir"; se suma la línea
+  de discadas sin marcar por nombre, D-23)*
 
 ### DISP — Disposición obligatoria
 

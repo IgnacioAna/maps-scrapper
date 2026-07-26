@@ -14,8 +14,18 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **PLANIFICADA: 7 planes
-  en 5 olas, listos para ejecutar.** Artefactos:
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 1/7
+  planes ejecutados.**
+  - **21-01 EXECUTED (2026-07-26)** — builder del reporte diario + textos.
+    Commits `a303114` (datos + helpers + `now` inyectable en
+    `_ccResolveRange` + `leaveUntil`), `81142ab` (molde D-19 / línea de día /
+    consolidado), `199bf40` (28 tests). Suite **892/892**.
+    Verificado contra el snapshot real de producción: el mensaje del mié
+    22/07 sale con la estructura exacta de D-19 (13 llam · 8 at · 21 min,
+    Judith/Teresa en la alerta, Dalia/Adela/Melissa en "Sin arrancar").
+    Superficie para los planes siguientes: `globalThis.__dailyReport`.
+    Detalle en `21-01-SUMMARY.md`.
+  - Artefactos de planificación:
   `21-CONTEXT.md` (29 decisiones), `21-RESEARCH.md` (transporte wa-multi),
   `21-PATTERNS.md` (analogía por superficie), `21-UI-SPEC.md` (aprobado 6/6
   por gsd-ui-checker), `21-01..21-07-PLAN.md`.
@@ -54,10 +64,13 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   (2) **Phase 21 discutida** — `21-CONTEXT.md` + `21-DISCUSSION-LOG.md`
   escritos (29 decisiones D-01..D-29). (3) **Phase 21 planificada** —
   research del transporte + mapa de patrones + UI-SPEC verificado + 7 planes
-  verificados (commits `a451157`, `8298c24`).
+  verificados (commits `a451157`, `8298c24`). (4) **21-01 ejecutado**: el
+  builder del reporte diario ya arma el mensaje del molde D-19 con datos
+  reales (commits `a303114`, `81142ab`, `199bf40`; suite 892/892).
 
-**Próximo paso:** `/gsd-execute-phase 21` (las olas 1 y 2 corren 2 planes en
-paralelo cada una; el plan 21-07 espera al user).
+**Próximo paso:** seguir `/gsd-execute-phase 21` — falta 21-05 (ola 1,
+desktop wa-multi), después la ola 2 (21-02 cola + 21-06 picker), 21-03
+(cron), 21-04 (panel) y 21-07 con el user.
 Pendiente aparte: UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
 una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
 aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE.
@@ -81,7 +94,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | Context gathered (2026-07-26, 29 decisiones) — listo para plan |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 1/7 planes** (21-01 EXECUTED 2026-07-26; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -170,6 +183,21 @@ Contra HEAD `a9e4886`:
 6. **`remoteElement` en `newCall(options)`**
 7. **Ringback fake con Web Audio API**
 8. **Manual attach del remoteStream con retry**
+
+---
+
+## Decisiones de ejecución (Phase 21)
+
+- **21-01:** el % del reporte se imprime ENTERO (62%, no 61.5%) para igualar
+  el molde validado; el dato conserva la precisión del CALL METRICS CORE. Los
+  minutos son los del CORE (`totalDurationS`, solo llamadas atendidas) — el
+  borrador de D-19 mostraba 23 min donde el CORE da 21 para el mismo día, y
+  manda el CORE (regla #157).
+- **21-01:** `setter.leaveUntil` es campo propio (no se reusa `hidden`, que no
+  vence); los setters `hidden` quedan fuera de TODAS las listas del reporte,
+  incluida "Sin arrancar".
+- **21-01:** las discadas sin marcar (`pending_calls.json`) se muestran por
+  nombre pero NUNCA suman a `dials` — una sola forma de contar llamadas.
 
 ---
 

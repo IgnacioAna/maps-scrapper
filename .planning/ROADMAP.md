@@ -191,9 +191,11 @@ _Ayer: 141 llam · 24 at (17%)_
 **Plans:** 7 planes en 5 olas (planificado 2026-07-26)
 
 Plans:
-- [ ] 21-01-PLAN.md — builder de datos del diario (CALL METRICS CORE, TZ de
+- [x] 21-01-PLAN.md — builder de datos del diario (CALL METRICS CORE, TZ de
   negocio, REP-09/REP-10) + builders de texto plano con el molde D-19 +
-  consolidado + tests *(ola 1)*
+  consolidado + tests *(ola 1)* — **EXECUTED 2026-07-26** (3 tareas, 28 tests,
+  suite 892/892; verificado contra el snapshot real de producción: el mensaje
+  del 22/07 sale con la estructura exacta de D-19)
 - [ ] 21-02-PLAN.md — cola persistida en reports.json (sin archivo nuevo):
   guard por período, estado `sending` con correlación real, reintentos,
   consolidación, expiración, historial, fallback a mensajes individuales +
@@ -301,4 +303,4 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas).*
+Phase 21 planificada (7 planes, 5 olas) — 1/7 ejecutados (21-01).*
