@@ -105,14 +105,17 @@ None — gate, auto-marca, franja y auditoría están cableados a los endpoints 
 
 ## Preview checklist (a-f)
 
-**Status: PENDIENTE — delegado al orquestador** (este executor no tiene herramientas de browser). Checklist a ejecutar en preview (`DATA_DIR=tmp/preview-data`, nota #15 de CLAUDE.md):
+**Status: EJECUTADO por el orquestador (2026-07-26, preview con `DATA_DIR=tmp/preview-data`, pass admin reseteada solo ahí — nota #15). Resultado: 6/6 PASS.**
 
-- [ ] a. Login admin → view-calls carga sin errores de consola.
-- [ ] b. Consola: `window._leadStoreApply` existe; simular gate (vía flujo o exponiendo temporalmente los helpers) → banner visible con el texto correcto → `_startTelnyxCall('<leadId real>')` retorna con toast de bloqueo (0 llamadas iniciadas).
-- [ ] c. Sembrar `tmp/preview-data/pending_calls.json` con 2 registros del setter del admin → recargar → franja "Tenés 2 llamadas sin marcar" visible, expandible, botón Marcar navega y foca el dropdown → marcar una → POST sale con `pendingCallId` → franja pasa a 1.
-- [ ] d. Equipo: sembrar callLog con no_answer duration 45 y answered_interested duration 5 → auditoría muestra 2 sospechosas con reglas correctas y % marcada coherente.
-- [ ] e. Power Dialer abre, atajos 1-9 y S/C/B responden, autopiloto togglea (A) — success criterion 3.
-- [ ] f. `fetch('/app.js?v=20260725b')` devuelve el archivo nuevo (cache-buster efectivo).
+- [x] a. Login admin OK → view-calls carga, cero errores de consola (chequeado al inicio y al final de toda la sesión de pruebas).
+- [x] b. `window._leadStoreApply` y `window._startTelnyxCall` existen. Gate simulado vía el path de RESTORE real (localStorage `scm_dispo_gate_user_admin_ignacio` + pendiente server-side + reload): banner visible con "Marcá el resultado de la llamada a Smile & Care para seguir discando" + botón "Ir a marcar"; `_startTelnyxCall(<otro leadId>)` retornó en <500ms sin iniciar llamada (el guard corta antes del fetch de credenciales). Bonus verificado: la franja EXCLUYE el pendiente cubierto por el gate (2 pendientes → franja muestra 1).
+- [x] c. 2 pendientes sembrados → franja "Tenés 2 llamadas sin marcar", expandible (item con nombre · hora · duración m:ss), botón Marcar navega a view-calls y foca el SELECT de la row correcta (`focusedInRow` confirmado). Disposición no_answer desde ese select → pendiente resuelto server-side (GET pending-calls → 0), franja se oculta, y el callLog entry heredó la meta del record (duration 40s del pendiente aparece en la auditoría como longNoContact — prueba de que viajó `pendingCallId` + `telnyxCallMeta` del stash).
+  - Hallazgo de fixture (no bug): un pendiente sembrado sobre un lead de tarifa roja (+598 UY, filtrado de la cola por #155) no encuentra su row — en prod no ocurre porque un pendiente solo nace de una llamada recién discada (lead llamable). Edge teórico documentado abajo.
+- [x] d. Sospechosas sembradas (no_answer 45s + answered_interested 5s) → `disposition-audit` las devuelve con reglas correctas (`longNoContact`/`shortConnect`) y la sección "Auditoría de disposiciones" en Equipo renderiza tabla por SDR con % marcada, top outcomes y `<details>` de samples (con la data real del preview además detecta 7 sospechosas históricas de Judith). pctMarked 100 con 0 pendientes — coherente.
+- [x] e. Power Dialer abre, S avanza lead, B retrocede al mismo, A togglea autopiloto (localStorage `pd_autopilot_*` 0↔1, dejado en 0), Esc cierra. Atajos 1-9 post-cuelgue no ejercitables sin llamada real, pero `_pdKeyOutcomes` intacto por grep (1 definición, mismo array de 9) y el handler no se tocó.
+- [x] f. `app.js?v=20260725b` y `style.css?v=20260725a` son exactamente lo que sirve el server (verificado en los tags del DOM cargado).
+
+**Edge teórico anotado (no bloqueante):** si un lead con pendiente se vuelve no-llamable DESPUÉS de la llamada (p.ej. DNC manual), el botón Marcar de la franja no encuentra la row (la cola lo filtra). El pendiente igual expira solo a los 14 días por el prune. Candidato de hardening menor para una fase futura.
 
 ## User Setup Required
 
