@@ -1939,6 +1939,139 @@ app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), asy
 // Expuestos para tests (patrón __callCore / __metricsAudit).
 globalThis.__weeklyReport = { maybeRunWeeklyReportCron, buildWeeklyReportData, buildWeeklyReportHtml, sendWeeklyReport, loadReportsState, saveReportsState, getReportsFile, _reportRecipients };
 
+// ── Phase 21: reporte diario ──
+// Builder del reporte DIARIO (REP-04..REP-10) + los builders de texto plano que
+// viajan al grupo de WhatsApp. Todo deriva del CALL METRICS CORE (regla #157) y
+// corta el día con los helpers `_biz*` (regla #113).
+// ⚠️ TDZ: este bloque vive acá arriba pero usa consts definidas más abajo
+// (ADMIN_ONLY_SETTER_IDS, COLD_CALL_*, los `_cc*`). Es seguro porque solo se
+// evalúan al LLAMAR la función (igual que buildWeeklyReportData). NUNCA invocar
+// buildDailyReportData en el top level del módulo.
+
+// Días HÁBILES (lun-vie, TZ negocio) transcurridos desde `lastTs` hasta el día
+// de `nowTs`, sin contar el día de la última llamada ni el día de hoy.
+// D-16: a los 5 hábiles seguidos sin llamar, la vendedora ESCALA.
+function _reportWeekdaysSince(lastTs, nowTs) {
+  if (!lastTs) return 0;
+  const oneDay = 86400000;
+  let cur = _bizStartOfDay(lastTs) + oneDay;
+  const today = _bizStartOfDay(nowTs);
+  let n = 0;
+  while (cur < today && n < 400) {
+    const dow = _bizDayOfWeek(cur);
+    if (dow >= 1 && dow <= 5) n++;
+    cur += oneDay;
+  }
+  return n;
+}
+// D-18: ¿está de licencia HOY? `leaveUntil` es 'YYYY-MM-DD' inclusive; al vencer
+// vuelve sola (comparación de strings de día en TZ de negocio, sin timers).
+function _reportOnLeave(setter, nowTs) {
+  const until = String(setter?.leaveUntil || '').slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(until)) return false;
+  return _bizDayStr(nowTs) <= until;
+}
+// Nombre seguro para un mensaje de texto plano: sin saltos de línea (romperían
+// la estructura del mensaje) y acotado. T-21-01.
+function _reportSafeName(name) {
+  return String(name || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 40);
+}
+// 'mié 22/07' en TZ de negocio, sin punto final (Intl mete '.' en es-AR).
+function _reportDayLabel(ts) {
+  const d = new Date(ts + _bizOffsetMs(ts));
+  const dias = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  const dd = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  return `${dias[d.getUTCDay()]} ${dd}/${mm}`;
+}
+
+// Datos del reporte de UN día (por default, hoy). `nowTs` y `dayTs` son
+// inyectables para testear sin reloj real (patrón maybeRunWeeklyReportCron).
+function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
+  const settersData = loadSettersData();
+  // REP-09: solo vendedoras nuevas — Ignacio y Paula (admin-only) fuera de todo
+  // reporte. Mismo pseudo-set que usa el supervisor sin lista (regla #144).
+  const visibleSet = _SUPERVISOR_EXCLUSION_SET;
+  const calendar = (settersData.calendar || []).filter(e => !ADMIN_ONLY_SETTER_IDS.has(e.setterId));
+  const dayStr = _bizDayStr(dayTs);
+  // Rango del CORE: from/to iguales = ese día completo, capado a `now`
+  // (hoy → [medianoche, ahora]; día pasado → el día entero).
+  const { fromTs, toTs } = _ccResolveRange('custom', { from: dayStr, to: dayStr, now: nowTs });
+  const prevStr = _bizDayStr(fromTs - 86400000);
+  const prev = _ccResolveRange('custom', { from: prevStr, to: prevStr, now: nowTs });
+
+  const allCalls = _ccCollectCalls(settersData, { visibleSet });
+  const telnyxCalls = _ccCollectCalls(settersData, { visibleSet, channel: 'telnyx_webrtc' });
+  const dayCalls = allCalls.filter(c => c.ts >= fromTs && c.ts < toTs);
+  const agg = _ccFunnelAggregate(allCalls, calendar, fromTs, toTs, { visibleSet });
+  const aggPrev = _ccFunnelAggregate(allCalls, calendar, prev.fromTs, prev.toTs, { visibleSet });
+
+  // Vendedoras en alcance: visibles (REP-09) y NO ocultas (setter.hidden = fuera
+  // del sistema operativo; si no, un setter oculto sin llamadas quedaría para
+  // siempre en la línea "Sin arrancar").
+  const setters = _filterSettersVisible(settersData.setters || [], visibleSet)
+    .filter(s => s.hidden !== true);
+
+  const perSetter = [];
+  const neverStarted = [];
+  const idleToday = [];
+  const escalated = [];
+  const onLeave = [];
+  const interested = [];
+  for (const s of setters) {
+    const name = _reportSafeName(s.name);
+    const mine = dayCalls.filter(c => c.setterId === s.id);
+    const a = _ccFunnelAggregate(mine, [], fromTs, toTs);
+    const int = mine.filter(c => c.outcome === 'answered_interested').length;
+    if (a.dials > 0) {
+      perSetter.push({ id: s.id, name, dials: a.dials, connects: a.connects, minutes: Math.round(a.totalDurationS / 60) });
+      if (int > 0) interested.push({ name, count: int });      // D-21
+      continue;
+    }
+    const everTs = allCalls.reduce((mx, c) => (c.setterId === s.id && c.ts > mx ? c.ts : mx), 0);
+    if (!everTs) { neverStarted.push(name); continue; }         // D-15
+    if (_reportOnLeave(s, nowTs)) { onLeave.push(name); continue; }  // D-18
+    const wd = _reportWeekdaysSince(everTs, nowTs);
+    if (wd >= 5) escalated.push({ name, days: Math.floor((_bizStartOfDay(nowTs) - _bizStartOfDay(everTs)) / 86400000) }); // D-16 + D-25
+    else idleToday.push(name);                                  // D-14 + D-17
+  }
+  perSetter.sort((a, b) => b.dials - a.dials);
+
+  // D-22 — sesgo del canal manual: llamada sin minutos. Complemento del CORE.
+  const manualCalls = dayCalls.length - telnyxCalls.filter(c => c.ts >= fromTs && c.ts < toTs).length;
+  const manualFlag = manualCalls >= 5 || (agg.dials > 0 && manualCalls / agg.dials > 0.10);
+  // REP-10 — llamadas de users borrados: suman al total del equipo pero no caen
+  // en ninguna fila (_callSetterId → '', el pseudo-set las deja pasar).
+  const unattributed = dayCalls.filter(c => !c.setterId).length;
+
+  // D-23 — discadas sin marcar HOY, por nombre. NO se suman a dials (regla
+  // transversal del milestone: una sola forma de contar llamadas).
+  const nameById = new Map(setters.map(s => [s.id, _reportSafeName(s.name)]));
+  const unmarkedBy = new Map();
+  try {
+    for (const p of (loadPendingCalls().pending || [])) {
+      const ts = Date.parse(p.startedAt || '') || 0;
+      if (!ts || ts < fromTs || ts >= toTs) continue;
+      if (!nameById.has(p.setterId)) continue;
+      unmarkedBy.set(p.setterId, (unmarkedBy.get(p.setterId) || 0) + 1);
+    }
+  } catch {}
+  const unmarked = [...unmarkedBy.entries()]
+    .map(([sid, count]) => ({ name: nameById.get(sid), count }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    dayStr, dayLabel: _reportDayLabel(fromTs), period: { fromTs, toTs },
+    team: { dials: agg.dials, connects: agg.connects, connectRate: agg.rates.connectRate, minutes: Math.round(agg.totalDurationS / 60) },
+    yesterday: { dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate },
+    perSetter, neverStarted, idleToday, escalated, onLeave, interested,
+    manualCalls, manualFlag, unattributed, unmarked,
+  };
+}
+
+// Expuestos para tests (patrón __weeklyReport / __callCore).
+globalThis.__dailyReport = { buildDailyReportData, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
+
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
   if (!name || !email || !role) return res.status(400).json({ error: 'Nombre, email y rol son requeridos.' });
@@ -5465,6 +5598,15 @@ app.patch('/api/setters/team/:id', requireAuth, requireRole('admin'), (req, res)
   if (req.body.activeVariantId !== undefined) setter.activeVariantId = req.body.activeVariantId;
   if (req.body.name) setter.name = req.body.name;
   if (req.body.hidden !== undefined) setter.hidden = !!req.body.hidden;
+  // D-18: licencia con fecha de vencimiento ('YYYY-MM-DD' o null para quitarla).
+  // NO se reusa `hidden` a propósito: hidden no vence y olvidarse de revertirlo
+  // borra a una persona del reporte para siempre.
+  if (req.body.leaveUntil !== undefined) {
+    const v = String(req.body.leaveUntil || '').slice(0, 10);
+    if (req.body.leaveUntil === null || v === '') setter.leaveUntil = null;
+    else if (/^\d{4}-\d{2}-\d{2}$/.test(v)) setter.leaveUntil = v;
+    else return res.status(400).json({ error: 'leaveUntil debe ser YYYY-MM-DD o null.' });
+  }
   saveSettersData(data);
   res.json({ setter });
 });
@@ -5787,8 +5929,12 @@ function _bizDateStrToTs(str) {
 //   all       → [0, ahora]
 //   from/to   → custom YYYY-MM-DD inclusivo en TZ negocio (ignora period)
 // Aliases retro-compat: week→7d, month→30d.
-function _ccResolveRange(period, { from, to } = {}) {
-  const now = Date.now();
+// `now` inyectable (default Date.now()) para que los builders de reportes se
+// puedan testear sin reloj real, SIN duplicar la semántica de rango fuera del
+// CORE (regla #157). Ningún call site existente lo pasa → cero cambio de
+// comportamiento.
+function _ccResolveRange(period, { from, to, now: nowIn } = {}) {
+  const now = nowIn || Date.now();
   const oneDay = 86400000;
   if (from && to) {
     const fromTs = _bizDateStrToTs(from);
@@ -10152,6 +10298,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     return {
       id: s.id,
       name: s.name,
+      leaveUntil: s.leaveUntil || null,   // D-18: badge "de licencia" en el panel
       current,
       previous,
       deltas,
