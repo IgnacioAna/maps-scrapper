@@ -14,25 +14,24 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 20 — Disposición obligatoria — 2/3 planes EXECUTED
-- **Plan:** 20-02 EXECUTED (commit 8f37ace):
-  `tests/disposition-enforcement.test.js` — 16 tests de regresión sobre
-  los 3 endpoints de 20-01 (pendientes/RBAC, resolución, auto-marca y
-  corrección, auditoría D-06, export/import round-trip). Suite completa
-  **864/864 verde** (base 848 + 16 nuevos), cero tests pre-existentes
-  modificados, cero bugs encontrados en 20-01. SUMMARY en
-  `20-02-SUMMARY.md`. (20-01: commits a99047f/730e749/c8329e1, ver
-  `20-01-SUMMARY.md`.)
-- **Status:** Backend del enforcement blindado por regresión. El registro
-  arranca vacío post-deploy (D-05); NO existe `data/pending_calls.json`
-  en el repo.
-- **Last activity:** 2026-07-26 — 20-02 ejecutado (16/16 tests a la
-  primera, suite 864/864).
+- **Phase:** 20 — Disposición obligatoria — 3/3 planes EXECUTED
+- **Plan:** 20-03 EXECUTED (commits c9c3f0c/f0e8385/77c7f1e):
+  enforcement frontend completo — gate `_dispoGate` en `_startTelnyxCall`
+  con banner (D-01), auto-marca `no_answer` conservadora
+  (`enteredActive||committedRemote`) corregible 15 min (D-03), franja
+  `#dispo-pending-strip` NO bloqueante (D-02), auditoría de disposiciones
+  en Equipo con `apiUrl()` (D-06). Cache-busters: app.js `v=20260725b`,
+  style.css `v=20260725a`. Suite **864/864 verde**. SUMMARY en
+  `20-03-SUMMARY.md`. (20-01: a99047f/730e749/c8329e1; 20-02: 8f37ace.)
+- **Status:** Phase 20 con código completo. **Checklist de preview a-f
+  PENDIENTE** (delegado al orquestador — ver sección homónima del
+  20-03-SUMMARY). Buffer de 10 min y cadena de grabación intactos (D-04).
+- **Last activity:** 2026-07-26 — 20-03 ejecutado (3 tasks, 3 commits,
+  gates automatizados OK).
 
-**Próximo paso:** 20-03 (frontend enforcement: gate en
-`_startTelnyxCall`, franja de pendientes, auto-marca en
-`_handleCallDisposition` — bumpear cache-buster). Contexto en
-`20-CONTEXT.md` (D-01..D-06).
+**Próximo paso:** correr el checklist de preview a-f de 20-03 y, si pasa,
+verificación de fase / deploy (las SDRs recargan el tab una vez; regla
+arranca de cero — D-05).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
@@ -43,7 +42,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 | # | Phase | Reqs | Status |
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
-| 20 | Disposición obligatoria | DISP-01..03 | Pending (adelantada a pedido del user) |
+| 20 | Disposición obligatoria | DISP-01..03 | Código completo 3/3 (2026-07-26) — preview checklist pendiente |
 | 21 | Reporte diario + canal WhatsApp | REP-04..10 | Pending (prueba JID de grupo = primera tarea) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
