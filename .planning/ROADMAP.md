@@ -184,6 +184,39 @@ _Ayer: 141 llam · 24 at (17%)_
 
 **UI hint:** mínima (quizás config de destinatarios en Comando).
 
+**Plans:** 7 planes en 5 olas (planificado 2026-07-26)
+
+Plans:
+- [ ] 21-01-PLAN.md — builder de datos del diario (CALL METRICS CORE, TZ de
+  negocio, REP-09/REP-10) + builders de texto plano con el molde D-19 +
+  consolidado + tests *(ola 1)*
+- [ ] 21-02-PLAN.md — cola persistida en reports.json (sin archivo nuevo):
+  guard por período, estado `sending` con correlación real, reintentos,
+  consolidación, expiración, historial, fallback a mensajes individuales +
+  listeners de socket con authz + tests *(ola 2)*
+- [ ] 21-03-PLAN.md — cron diario 23:00 (D-10..D-12), semanal mudado al
+  domingo 23:00 con versión corta al grupo (D-13/D-20), endpoints admin
+  status/config/send-now + WR-01/WR-02/WR-03 del 19-REVIEW + tests *(ola 3)*
+- [ ] 21-04-PLAN.md — panel: bloque de config del canal en Comando (D-29) +
+  licencia por vendedora en Equipo (D-18) + cache-buster *(ola 4)*
+- [ ] 21-05-PLAN.md — desktop wa-multi: envío a chat de GRUPO con verificación
+  previa + handler `report:send-message` con dedupe y validación *(ola 1)*
+- [ ] 21-06-PLAN.md — desktop wa-multi: picker del grupo en el preload (D-03) +
+  repack a v0.5.11 + README *(ola 2)*
+- [ ] 21-07-PLAN.md — prueba en vivo con el user: primer envío real al grupo,
+  validación del molde en el celular (REP-05), supuestos del research
+  confirmados o refutados, UAT de los días siguientes *(ola 5, no autónomo)*
+
+**Nota sobre el molde:** el de arriba es el borrador del roadmap; el molde
+vigente es el de `21-CONTEXT.md` D-19/D-20, validado con datos reales de
+producción (sin emojis, la excepción va ANTES del título, y el semanal corto
+sale por el mismo canal).
+
+**Nota sobre REP-07:** acotado por D-04 — no hay fallback a email. Lo que queda
+del requirement es el guard de alcanzabilidad (`isUserOnline` antes de emitir,
+porque `sendToUser` devuelve `true` con la room vacía). El email queda cableado
+y apagado detrás de config.
+
 ---
 
 ## Phase 22 — Coaching por vendedora
@@ -262,5 +295,6 @@ phase.
 
 ---
 
-*Last updated: 2026-07-25 — roadmap v2.0 (5 phases, numeración continúa
-de la 18). Phase 19 planificada (2 planes).*
+*Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
+de la 18). Phase 19 planificada (2 planes);
+Phase 21 planificada (7 planes, 5 olas).*
