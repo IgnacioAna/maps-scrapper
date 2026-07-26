@@ -14,24 +14,26 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 20 — Disposición obligatoria — 3/3 planes EXECUTED
-- **Plan:** 20-03 EXECUTED (commits c9c3f0c/f0e8385/77c7f1e):
-  enforcement frontend completo — gate `_dispoGate` en `_startTelnyxCall`
-  con banner (D-01), auto-marca `no_answer` conservadora
-  (`enteredActive||committedRemote`) corregible 15 min (D-03), franja
-  `#dispo-pending-strip` NO bloqueante (D-02), auditoría de disposiciones
-  en Equipo con `apiUrl()` (D-06). Cache-busters: app.js `v=20260725b`,
-  style.css `v=20260725a`. Suite **864/864 verde**. SUMMARY en
-  `20-03-SUMMARY.md`. (20-01: a99047f/730e749/c8329e1; 20-02: 8f37ace.)
-- **Status:** Phase 20 con código completo. **Checklist de preview a-f
-  PENDIENTE** (delegado al orquestador — ver sección homónima del
-  20-03-SUMMARY). Buffer de 10 min y cadena de grabación intactos (D-04).
-- **Last activity:** 2026-07-26 — 20-03 ejecutado (3 tasks, 3 commits,
-  gates automatizados OK).
+- **Phase:** 20 — Disposición obligatoria — 3/3 planes EXECUTED +
+  verificados. **Preview checklist a-f: 6/6 PASS** (documentado en
+  20-03-SUMMARY). Code review: 1 critical **CR-01 FIXED** (`84ebf4a` —
+  re-discar el mismo lead ya invalida la ventana de correctsAutoMarked;
+  cache-buster app.js → `v=20260725c`), 4 warnings advisory + 4 info en
+  `20-REVIEW.md` (candidatos de hardening: stash de franja sin expiración
+  WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
+  WR-03, cancel race WR-04).
+- **Status:** VERIFICATION **human_needed 14/15** (`20-VERIFICATION.md`):
+  todo lo automatizable verificado (endpoints, guard, bifurcación
+  enteredActive||committedRemote, D-04 intacto por diff, suite
+  **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
+  Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
+- **Last activity:** 2026-07-26 — Phase 20 ejecutada completa (waves 1-2,
+  preview checklist, review + fix CR-01, verificación).
 
-**Próximo paso:** correr el checklist de preview a-f de 20-03 y, si pasa,
-verificación de fase / deploy (las SDRs recargan el tab una vez; regla
-arranca de cero — D-05).
+**Próximo paso:** deploy (pre-deploy → push a main) + UAT humano de
+`20-HUMAN-UAT.md` (las SDRs recargan el tab una vez; la regla arranca de
+cero — D-05). Al aprobar el UAT: marcar Phase 20 COMPLETE y seguir con
+`/gsd-discuss-phase 21`.
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
@@ -42,7 +44,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 | # | Phase | Reqs | Status |
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
-| 20 | Disposición obligatoria | DISP-01..03 | Código completo 3/3 (2026-07-26) — preview checklist pendiente |
+| 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
 | 21 | Reporte diario + canal WhatsApp | REP-04..10 | Pending (prueba JID de grupo = primera tarea) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
