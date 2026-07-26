@@ -5274,6 +5274,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // (tras una disposition con modal, el avance optimista ocurre antes de que
         // loadCallsView traiga la nueva entry; acá se corrige el conteo).
         if (_pd?.active) _pdRenderToday();
+        // Phase 20 (D-02): franja de pendientes — fire-and-forget, no bloquea
+        // el render de la lista.
+        _dispoLoadPendingStrip();
       } catch (e) { console.error(e); }
     }
 
@@ -7388,10 +7391,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Se llama en CADA disposición exitosa (los 5 POST + la auto-marca):
-    // limpia el gate y refresca la franja de pendientes (Task 2, optional).
+    // limpia el gate y refresca la franja de pendientes.
     function _dispoAfterSaved(leadId) {
       _dispoGateClear(leadId);
       if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
+      if (_dispoStripPending && _dispoStripPending.leadId === leadId) _dispoStripPending = null;
       if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
     }
 
@@ -7399,10 +7403,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     // correctsAutoMarked: corrige la auto-marca dentro de la ventana de 15 min
     // (defensa doble: el backend valida la misma ventana y responde 409 si el
     // flag viajó fuera de ella).
+    // pendingCallId + telnyxCallMeta del RECORD: cuando el SDR resuelve desde
+    // la franja de pendientes, el callLog de esa llamada vieja conserva
+    // duration/fromNumber reales (la auditoría D-06 puede cruzar duración).
+    // Los call sites mergean el enforcement PRIMERO y la meta fresca de
+    // _consumeTelnyxMeta DESPUÉS — si hay meta fresca, pisa la del record.
     function _dispoEnforcementBody(leadId) {
       const body = {};
       if (_lastAutoMark && _lastAutoMark.leadId === leadId && (Date.now() - _lastAutoMark.at) < 15 * 60 * 1000) {
         body.correctsAutoMarked = true;
+      }
+      if (_dispoStripPending && _dispoStripPending.leadId === leadId) {
+        body.pendingCallId = _dispoStripPending.pendingId;
+        const m = _dispoStripPending.meta || {};
+        if (m.durationSecs != null || m.fromNumber || m.startedAt) {
+          body.telnyxCallMeta = { durationSecs: m.durationSecs ?? 0, fromNumber: m.fromNumber || null, startedAt: m.startedAt || null, endedAt: m.endedAt || null };
+        }
       }
       return body;
     }
@@ -7468,6 +7484,72 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Server inaccesible: no re-armamos el gate a ciegas (bloquearía el
         // discado sin datos); el pendiente igual existe server-side.
       }
+    }
+
+    // ── Phase 20 (D-02): franja de pendientes NO bloqueante ──
+    // RECORDATORIO, jamás bloqueo. Decisión explícita del user: "el criterio
+    // lo tiene que manejar el SDR... si no se va a ver muy trabado por el
+    // sistema para poder tomar decisiones". La franja NO deshabilita nada,
+    // NO intercepta _startTelnyxCall y NO abre modales sola.
+    let _dispoStripPending = null;  // { pendingId, leadId, meta } — seteado al resolver desde la franja
+    let _dispoStripCache = [];      // pendientes propios (cache del último GET)
+    let _dispoStripExpanded = false;
+
+    async function _dispoLoadPendingStrip() {
+      const el = document.getElementById('dispo-pending-strip');
+      if (!el) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/pending-calls'), { credentials: 'include' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const mySetter = currentUser?.setterId || '';
+        _dispoStripCache = (d.pending || []).filter(p => {
+          // Solo los PROPIOS (también para admin/supervisor: los ajenos se ven
+          // en la auditoría de Equipo, no acá).
+          if (p.setterId !== mySetter) return false;
+          // El pendiente cubierto por el gate activo ya tiene banner propio.
+          if (_dispoGate && _dispoGate.leadId === p.leadId &&
+              (!_dispoGate.startedAt || !p.startedAt || new Date(_dispoGate.startedAt).getTime() === new Date(p.startedAt).getTime())) return false;
+          return true;
+        });
+        _dispoStripRender();
+      } catch { /* fire-and-forget: la franja es un recordatorio, nunca bloquea el flujo */ }
+    }
+
+    function _dispoStripRender() {
+      const el = document.getElementById('dispo-pending-strip');
+      if (!el) return;
+      const n = _dispoStripCache.length;
+      if (!n) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+      const fmtDur = (s) => (typeof s === 'number' && s > 0) ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '—';
+      const fmtHora = (iso) => iso ? new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '—';
+      el.innerHTML = `
+        <div class="dispo-strip-head">
+          <span>Tenés ${n} llamada${n === 1 ? '' : 's'} sin marcar</span>
+          <button type="button" id="dispo-strip-toggle">${_dispoStripExpanded ? 'Ocultar' : 'Resolver'}</button>
+        </div>
+        ${_dispoStripExpanded ? `<div class="dispo-strip-list">${_dispoStripCache.map(p => `
+          <div class="dispo-strip-item">
+            <span>${escHtml(p.leadName || p.leadId)} · ${fmtHora(p.startedAt)} · ${fmtDur(p.durationSecs)}</span>
+            <button type="button" data-pending="${escHtml(p.id)}">Marcar</button>
+          </div>`).join('')}</div>` : ''}`;
+      el.classList.remove('hidden');
+      el.querySelector('#dispo-strip-toggle')?.addEventListener('click', () => { _dispoStripExpanded = !_dispoStripExpanded; _dispoStripRender(); });
+      el.querySelectorAll('[data-pending]').forEach(btn => btn.addEventListener('click', () => _dispoStripGoResolve(btn.getAttribute('data-pending'))));
+    }
+
+    // Lleva al SDR al dropdown NORMAL de disposición del lead (reusa el 100%
+    // del flujo existente, modales incluidos — acá NO se postea nada). Stashea
+    // el record para que _dispoEnforcementBody adjunte pendingCallId + meta.
+    function _dispoStripGoResolve(pendingId) {
+      const p = _dispoStripCache.find(x => x.id === pendingId);
+      if (!p) return;
+      _dispoStripPending = {
+        pendingId: p.id,
+        leadId: p.leadId,
+        meta: { durationSecs: p.durationSecs ?? null, fromNumber: p.fromNumber || null, startedAt: p.startedAt || null, endedAt: p.endedAt || null },
+      };
+      _dispoFocusLeadRow(p.leadId);
     }
 
     // ───────────────────────────────────────────────────────────────
