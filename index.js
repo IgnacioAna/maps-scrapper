@@ -9067,6 +9067,116 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   res.json({ ok: true, lead, calendarEntry, resolvedPendingId });
 });
 
+// ── Phase 20 (D-06): auditoría PASIVA de disposiciones ──
+// GET /api/setters/disposition-audit?period=today|7d|30d|all&setter=<id>
+// Admin/supervisor only (scoping Phase 18, espejo team-performance). Deriva
+// TODO del CALL METRICS CORE (_ccCollectCalls + _ccResolveRange) — regla del
+// milestone: JAMÁS re-implementar el funnel inline. Por SDR: distribución de
+// outcomes, llamadas sospechosas (duración vs resultado) y % de llamadas
+// marcadas (success criterion 2 del ROADMAP: telnyxDials / (telnyxDials +
+// pendientes del rango)). Cero fricción al marcar — solo lectura.
+app.get('/api/setters/disposition-audit', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') {
+    return res.status(403).json({ error: 'Solo admin/supervisor.' });
+  }
+  const data = loadSettersData();
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  let scopedSetters = _filterSettersVisible(data.setters || [], visibleSet);
+  const requestedSetter = String(req.query.setter || '');
+  if (requestedSetter) {
+    if (!_setterIsVisible(requestedSetter, visibleSet)) {
+      return res.status(403).json({ error: 'Setter no visible.' });
+    }
+    scopedSetters = scopedSetters.filter((s) => s.id === requestedSetter);
+  }
+
+  const { period, fromTs, toTs } = _ccResolveRange(req.query.period || '7d');
+
+  // Entries pre-atribuidas por quién llamó (CORE). Segunda pasada con filtro
+  // de channel para el % marcado (las entries del CORE no exponen channel).
+  const allCalls = _ccCollectCalls(data, { visibleSet })
+    .filter((c) => c.ts >= fromTs && c.ts < toTs);
+  const telnyxCalls = _ccCollectCalls(data, { visibleSet, channel: 'telnyx_webrtc' })
+    .filter((c) => c.ts >= fromTs && c.ts < toTs);
+  const callsBySetter = new Map();
+  for (const c of allCalls) {
+    if (!callsBySetter.has(c.setterId)) callsBySetter.set(c.setterId, []);
+    callsBySetter.get(c.setterId).push(c);
+  }
+  const telnyxDialsBySetter = new Map();
+  for (const c of telnyxCalls) {
+    telnyxDialsBySetter.set(c.setterId, (telnyxDialsBySetter.get(c.setterId) || 0) + 1);
+  }
+
+  // Pendientes del rango por setter (las ÚNICAS llamadas sin marcar que el
+  // sistema conoce: la auto-marca cubre no-contactos, el gate el flujo en vivo).
+  const pcState = loadPendingCalls();
+  const pendingBySetter = new Map();
+  for (const p of (Array.isArray(pcState.pending) ? pcState.pending : [])) {
+    const ts = Date.parse(p.startedAt || '') || 0;
+    if (!ts || ts < fromTs || ts >= toTs) continue;
+    pendingBySetter.set(p.setterId, (pendingBySetter.get(p.setterId) || 0) + 1);
+  }
+
+  // Umbrales del cruce duración-vs-resultado (Claude's discretion del CONTEXT).
+  const _SUSP_NO_CONTACT = new Set(['no_answer', 'voicemail']);
+  const _SUSP_STRONG_CONNECT = new Set(['answered_interested', 'scheduled_with_admin']);
+  const _pctMarked = (telnyxDials, pendingCount) =>
+    (telnyxDials + pendingCount === 0 ? null : Math.round((100 * telnyxDials) / (telnyxDials + pendingCount)));
+
+  const bySetter = [];
+  let totalDials = 0, totalPending = 0, totalTelnyx = 0;
+  for (const s of scopedSetters) {
+    const entries = callsBySetter.get(s.id) || [];
+    const pendingCount = pendingBySetter.get(s.id) || 0;
+    if (entries.length === 0 && pendingCount === 0) continue; // sin filas en cero
+    const byOutcome = {};
+    let longNoContact = 0, shortConnect = 0;
+    const samples = [];
+    for (const c of entries) {
+      byOutcome[c.outcome] = (byOutcome[c.outcome] || 0) + 1;
+      // Entries sin duration (channel manual) quedan afuera: duration=0 no
+      // pasa ninguno de los dos umbrales — no hay dato para cruzar.
+      let rule = '';
+      if (_SUSP_NO_CONTACT.has(c.outcome) && c.duration >= 31) { longNoContact++; rule = 'longNoContact'; }
+      else if (_SUSP_STRONG_CONNECT.has(c.outcome) && c.duration > 0 && c.duration < 10) { shortConnect++; rule = 'shortConnect'; }
+      if (rule && samples.length < 10) {
+        samples.push({
+          leadId: c.leadId,
+          leadName: data.leads[c.leadId]?.name || '',
+          ts: new Date(c.ts).toISOString(),
+          outcome: c.outcome,
+          duration: c.duration,
+          rule,
+        });
+      }
+    }
+    const telnyxDials = telnyxDialsBySetter.get(s.id) || 0;
+    totalDials += entries.length;
+    totalPending += pendingCount;
+    totalTelnyx += telnyxDials;
+    bySetter.push({
+      setterId: s.id,
+      name: s.name || '',
+      dials: entries.length,
+      byOutcome,
+      suspicious: { longNoContact, shortConnect, total: longNoContact + shortConnect, samples },
+      pendingCount,
+      pctMarked: _pctMarked(telnyxDials, pendingCount),
+    });
+  }
+  bySetter.sort((a, b) => b.dials - a.dials);
+
+  res.json({
+    period,
+    from: new Date(fromTs).toISOString(),
+    to: new Date(toTs).toISOString(),
+    bySetter,
+    totals: { dials: totalDials, pending: totalPending, pctMarked: _pctMarked(totalTelnyx, totalPending) },
+  });
+});
+
 // ── Placeholder de calendario (cold call followup) ──
 // Cuando el prospect dice "mandame mail y coordinamos", en vez de mandar
 // un mail que se ignora, mandamos un EVENTO DE CALENDARIO tentativo (.ics).
