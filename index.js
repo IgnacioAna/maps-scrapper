@@ -1753,6 +1753,43 @@ function saveReportsState(state) {
   try { fs.writeFileSync(getReportsFile(), JSON.stringify(state, null, 2)); } catch (e) { console.warn('No pude guardar reports state:', e.message); }
 }
 
+// ── Phase 20: registro server-side de llamadas pendientes de disposición ──
+// pending_calls.json = { pending: [ { id: 'pc_<leadId>_<startedAtMs>', leadId,
+//   leadName, setterId, userId, startedAt (ISO), endedAt (ISO|null),
+//   durationSecs (num), fromNumber (str), reachedActive (bool),
+//   createdAt (ISO), updatedAt (ISO) } ] }
+// Cada llamada iniciada crea un registro acá (POST /api/setters/pending-calls);
+// SOLO el endpoint de disposición lo resuelve (o una cancelación acotada a
+// 2 min). Es la fuente de verdad de "esta llamada existió y no está marcada"
+// (D-01/D-02). El registro arranca VACÍO post-deploy: cero reconstrucción de
+// llamadas históricas (D-05). Handlers que lo usan son SYNC (load→modify→save
+// sin awaits) → atómicos por event loop, sin mutex (regla #19 de CLAUDE.md).
+function getPendingCallsFile() {
+  const dir = (typeof DATA_DIR !== 'undefined' && DATA_DIR) || (process.env.DATA_DIR || (fs.existsSync('/data') ? '/data' : path.join(process.cwd(), 'data')));
+  return path.join(dir, 'pending_calls.json');
+}
+function loadPendingCalls() {
+  try {
+    const f = getPendingCallsFile();
+    if (!fs.existsSync(f)) return { pending: [] };
+    const parsed = JSON.parse(fs.readFileSync(f, 'utf8'));
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.pending)) return { pending: [] };
+    return parsed;
+  } catch { return { pending: [] }; }
+}
+function savePendingCalls(state) {
+  try {
+    const list = Array.isArray(state?.pending) ? state.pending : [];
+    // Prune: registros con más de 14 días quedan afuera (una llamada sin marcar
+    // de hace 2 semanas ya no es accionable — coherente con D-05).
+    const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    let pruned = list.filter((p) => (Date.parse(p?.createdAt || '') || 0) >= cutoff);
+    // Cap FIFO 300: conservar los más nuevos (threat T-20-07 — growth acotado).
+    if (pruned.length > 300) pruned = pruned.slice(-300);
+    fs.writeFileSync(getPendingCallsFile(), JSON.stringify({ ...state, pending: pruned }, null, 2));
+  } catch (e) { console.warn('No pude guardar pending calls:', e.message); }
+}
+
 function buildWeeklyReportData() {
   const settersData = loadSettersData();
   // Regla milestone v2.0: solo vendedoras nuevas — Ignacio y Paula (admin-only)
@@ -2120,6 +2157,10 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
     // container nuevo de Railway re-manda el mail de una semana ya reportada.
     let reports = null;
     try { reports = loadReportsState(); } catch {}
+    // Phase 20: registro de llamadas pendientes de disposición — sin esto, un
+    // container nuevo de Railway perdería la cola de llamadas sin marcar.
+    let pending_calls = null;
+    try { pending_calls = loadPendingCalls(); } catch {}
     res.json({
       exportedAt: new Date().toISOString(),
       history,
@@ -2135,7 +2176,8 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
       callScripts,
       scheduledMessages,
       scrapeBatches,
-      reports
+      reports,
+      pending_calls
     });
   } catch (e) {
     console.error('Export error:', e);
@@ -2154,7 +2196,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
       history, auth, setters, faqs, training,
       mercuryConfig, mercuryGenerations, alertConfig,
       telnyxConfig, telnyxEvents, callScripts, scheduledMessages,
-      scrapeBatches, reports,
+      scrapeBatches, reports, pending_calls,
     } = req.body || {};
 
     // Validacion de shape ANTES de tocar nada. Un payload malo no debe llegar
@@ -2216,12 +2258,15 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (reports !== undefined && (!reports || typeof reports !== 'object' || Array.isArray(reports))) {
       errors.push('reports debe ser objeto');
     }
+    if (pending_calls !== undefined && (!pending_calls || typeof pending_calls !== 'object' || !Array.isArray(pending_calls.pending))) {
+      errors.push('pending_calls.pending debe ser array');
+    }
     const hasAny = history !== undefined || auth !== undefined || setters !== undefined ||
       faqs !== undefined || training !== undefined || mercuryConfig !== undefined ||
       mercuryGenerations !== undefined || alertConfig !== undefined ||
       telnyxConfig !== undefined || telnyxEvents !== undefined ||
       callScripts !== undefined || scheduledMessages !== undefined ||
-      scrapeBatches !== undefined || reports !== undefined;
+      scrapeBatches !== undefined || reports !== undefined || pending_calls !== undefined;
     if (!hasAny) {
       errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training/mercuryConfig/mercuryGenerations/alertConfig/telnyxConfig/telnyxEvents/callScripts/scheduledMessages');
     }
@@ -2246,6 +2291,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (scheduledMessages) { saveScheduledMessages(scheduledMessages); restored.push('scheduledMessages'); }
     if (scrapeBatches) { saveScrapeBatches(scrapeBatches); restored.push('scrapeBatches'); }
     if (reports) { saveReportsState(reports); restored.push('reports'); }
+    if (pending_calls) { savePendingCalls(pending_calls); restored.push('pending_calls'); }
     res.json({ ok: true, message: 'Data importada correctamente', restored, backup: backup?.path || null });
   } catch (e) {
     console.error('Import error:', e);
@@ -4031,7 +4077,7 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json', 'reports.json']) {
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json', 'reports.json', 'pending_calls.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -4084,7 +4130,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json', 'reports.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json', 'reports.json', 'pending_calls.json'];
 
 function makeBackup(reason = 'auto') {
   try {
@@ -8488,6 +8534,97 @@ app.post('/api/admin/delete-by-country', requireAuth, requireRole('admin'), (req
     saveSettersData(data);
   }
   res.json({ ok: true, deleted: ids.length, backup: backup?.dir || null, sample });
+});
+
+// ── Phase 20: llamadas pendientes de disposición (D-01/D-02) ──
+// El frontend registra la llamada al INICIARLA (sobrevive crash del tab) y
+// mergea endedAt/durationSecs/reachedActive al colgar. UPSERT por id
+// ('pc_<leadId>_<startedAtMs>'). `canceled:true` elimina el registro SOLO si
+// la llamada nunca terminó (endedAt null) y tiene <2 min de creada — fuera de
+// esa ventana se ignora (T-20-02: no se puede vaciar la cola para inflar el
+// % marcado). setterId/userId SIEMPRE de req.auth, jamás del body (T-20-01).
+// Handler SYNC (regla #19). Ruta estática — va antes que cualquier /:param.
+app.post('/api/setters/pending-calls', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const { leadId, startedAt, endedAt, durationSecs, reachedActive, canceled } = req.body || {};
+  const lead = data.leads?.[leadId];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  const startedMs = Date.parse(startedAt || '');
+  if (!startedMs || Number.isNaN(startedMs)) return res.status(400).json({ error: 'startedAt inválido.' });
+  // Ownership: mismo criterio exacto que call-disposition (sin reasignar acá —
+  // el "tomar" un callback compartido pasa recién al marcar la disposición).
+  const _isSetter = req.auth?.user?.role === 'setter';
+  const _isOwner = lead.assignedTo === req.auth?.user?.setterId;
+  const _isSharedDue = !!lead.callbackShared && !!lead.callbackAt && new Date(lead.callbackAt).getTime() <= Date.now();
+  if (_isSetter && !_isOwner && !_isSharedDue) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+
+  const id = 'pc_' + leadId + '_' + startedMs;
+  const state = loadPendingCalls();
+  const nowIso = new Date().toISOString();
+  const idx = state.pending.findIndex((p) => p.id === id);
+
+  if (canceled === true) {
+    // Solo borra llamadas que "nunca existieron": sin endedAt y <2 min de vida.
+    let removed = false;
+    if (idx !== -1) {
+      const rec = state.pending[idx];
+      const age = Date.now() - (Date.parse(rec.createdAt || '') || 0);
+      if (rec.endedAt == null && age < 2 * 60 * 1000) {
+        state.pending.splice(idx, 1);
+        savePendingCalls(state);
+        removed = true;
+      }
+    }
+    return res.json({ ok: true, removed });
+  }
+
+  const cleanDuration = Math.max(0, Math.min(parseInt(durationSecs, 10) || 0, 3600));
+  const endedIso = (endedAt !== undefined && Date.parse(endedAt || '')) ? new Date(Date.parse(endedAt)).toISOString() : null;
+  if (idx !== -1) {
+    // Merge: solo los campos de cierre de llamada (+updatedAt).
+    const rec = state.pending[idx];
+    if (endedIso) rec.endedAt = endedIso;
+    if (durationSecs !== undefined) rec.durationSecs = cleanDuration;
+    if (reachedActive !== undefined) rec.reachedActive = !!reachedActive;
+    rec.updatedAt = nowIso;
+  } else {
+    state.pending.push({
+      id,
+      leadId,
+      leadName: lead.name || '',
+      setterId: req.auth?.user?.setterId || '',
+      userId: req.auth?.user?.id || '',
+      startedAt: new Date(startedMs).toISOString(),
+      endedAt: endedIso,
+      durationSecs: cleanDuration,
+      fromNumber: String(req.body?.fromNumber || '').slice(0, 30),
+      reachedActive: !!reachedActive,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
+  }
+  savePendingCalls(state);
+  res.json({ ok: true, id });
+});
+
+// GET: setter ve SOLO sus pendientes; admin/supervisor los visibles (Phase 18,
+// espejo team-performance: _visibleSetterIds). ?setter=<id> filtra a uno.
+app.get('/api/setters/pending-calls', requireAuth, (req, res) => {
+  const state = loadPendingCalls();
+  let list = Array.isArray(state.pending) ? state.pending : [];
+  const user = req.auth?.user || {};
+  if (user.role === 'setter') {
+    list = list.filter((p) => p.setterId === user.setterId);
+  } else {
+    const visibleSet = _visibleSetterIds(user);
+    if (visibleSet) list = list.filter((p) => visibleSet.has(p.setterId));
+    const requested = String(req.query.setter || '');
+    if (requested) list = list.filter((p) => p.setterId === requested);
+  }
+  list = [...list].sort((a, b) => (Date.parse(b.startedAt || '') || 0) - (Date.parse(a.startedAt || '') || 0));
+  res.json({ pending: list });
 });
 
 // Disposition de una llamada — endpoint específico de Llamadas.

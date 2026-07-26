@@ -184,6 +184,9 @@ async function main() {
     // Phase 19: estado del reporte semanal — sin esto un container nuevo re-manda
     // el mail de una semana ya reportada.
     ['reports', 'reports.json'],
+    // Phase 20: cola de llamadas pendientes de disposición — sin esto un
+    // container nuevo de Railway la perdería.
+    ['pending_calls', 'pending_calls.json'],
   ];
   for (const [key, fname] of extras) {
     saveFile(fname, data[key]);
