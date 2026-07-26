@@ -2384,6 +2384,252 @@ globalThis.__reportQueue = {
   consts: { REPORT_QUEUE_CAP, REPORT_HISTORY_CAP, REPORT_DAILY_EXPIRY_DAYS, REPORT_SEND_TIMEOUT_MS, REPORT_MAX_ATTEMPTS },
 };
 
+// Busca un item por id en la cola O en el historial (el prune migra terminales).
+function _reportFindItem(state, id) {
+  if (!id) return null;
+  return (state.queue || []).find((i) => i && i.id === id)
+    || (state.history || []).find((i) => i && i.id === id)
+    || null;
+}
+
+// El tick de la cola — corre cada 60s en producción. `nowTs` inyectable para
+// testear expiración y timeouts sin fake timers.
+//
+// ⚠️ DIFERENCIA CLAVE con scheduledMessagesTick (index.js, el analog que se copió):
+// ese marca `status='sent'` INMEDIATAMENTE al emitir, sin esperar confirmación —
+// fire-and-forget optimista que hace imposible saber si un mensaje salió (T-21-09).
+// Acá el item queda en `sending` hasta que llega `report:send-result` correlacionado
+// por queueId, o hasta que vence REPORT_SEND_TIMEOUT_MS. NUNCA se marca `sent`
+// desde este tick.
+//
+// El presupuesto de reintentos cuenta EMISIONES reales (`sendAttempts`), NO las
+// vueltas con el desktop apagado (`attempts`): si contara esas, 20 minutos offline
+// lo quemarían y el primer fallo real tras reconectar sería definitivo.
+async function reportQueueTick(nowTs = Date.now()) {
+  return mutateReportsState((state) => {
+    const nowIso = new Date(nowTs).toISOString();
+    _reportExpireStale(state, nowTs);   // 1. diarios de +3 días (D-26)
+    // 2. Timeout de lo que quedó en vuelo (desktop colgado, socket perdido).
+    const inFlight = [];
+    for (const it of state.queue) {
+      if (!it || it.status !== 'sending') continue;
+      const started = Date.parse(it.sendingAt || '') || 0;
+      if (started && (nowTs - started) < REPORT_SEND_TIMEOUT_MS) { inFlight.push(it); continue; }
+      it.lastFailureReason = 'timeout';
+      it.consolidatedInto = null;
+      it.confessedIds = [];
+      it.sendingAt = null;
+      const retry = (it.sendAttempts || 0) < REPORT_MAX_ATTEMPTS;
+      it.status = retry ? 'pending' : 'failed';
+      if (!retry) it.failedAt = nowIso;
+    }
+    // 3. Un solo envío en vuelo → con el tick de 60s da el espaciado >=60s de
+    //    REP-08 (sin caps de warming: es un grupo propio, no outreach frío).
+    if (inFlight.length) return { emitted: false, reason: 'envio_en_vuelo', queueId: inFlight[0].id };
+    if (state.config.paused) return { emitted: false, reason: 'pausado' };
+    // 4. Próximo pendiente (FIFO por createdAt).
+    const pendings = state.queue
+      .filter((it) => it && it.status === 'pending')
+      .sort((a, b) => (Date.parse(a.createdAt || '') || 0) - (Date.parse(b.createdAt || '') || 0));
+    if (!pendings.length) return { emitted: false, reason: 'cola_vacia' };
+    const first = pendings[0];
+    // 5. Consolidación (D-26): N diarios apilados salen en UN solo mensaje.
+    //    'weekly'/'custom'/'dm' NUNCA se consolidan.
+    // 5b. Nota de baches (D-05): se aplica a TODO envío, no solo al consolidado —
+    //    el caso más frecuente es 1 diario pendiente tras un día fallado.
+    const gapNote = _reportGapNote(state, nowTs);
+    let group = [first];
+    let text = '';
+    if (first.kind === 'daily') {
+      const dailies = pendings
+        .filter((it) => it.kind === 'daily')
+        .sort((a, b) => String(a.dayStr || '').localeCompare(String(b.dayStr || '')));
+      if (dailies.length > 1) {
+        group = dailies;
+        // gapNote va DENTRO del builder acá: prependerla además la duplicaría.
+        text = buildConsolidatedReportText(dailies.map((it) => it.line || it.text).filter(Boolean), { gapNote });
+      }
+    }
+    if (!text) {
+      text = String(first.text || '');
+      if (gapNote) text = `${gapNote}\n\n${text}`;
+    }
+    // 6. ¿Hay grupo configurado? Sin destino el item espera (no falla).
+    const t = _reportTransportReady(state);
+    if (!t.ok) {
+      first.lastFailureReason = t.reason;
+      first.lastAttemptAt = nowIso;
+      return { emitted: false, reason: t.reason, queueId: first.id };
+    }
+    // 7. Guard de alcanzabilidad (REP-07) ANTES de emitir.
+    const gw = globalThis.__waGateway;
+    if (!(gw && typeof gw.isUserConnected === 'function' && gw.isUserConnected(t.userId))) {
+      first.attempts = (first.attempts || 0) + 1;
+      first.lastAttemptAt = nowIso;
+      first.lastFailureReason = 'desktop offline';
+      return { emitted: false, reason: 'desktop offline', queueId: first.id };
+    }
+    const target = first.kind === 'dm'
+      ? { kind: 'dm', phone: String(first.phone || '') }
+      : { kind: 'group', groupName: t.groupName, groupJid: t.groupJid || null };
+    const confessedIds = _reportGapItems(state).map((i) => i.id);
+    // 8. Emitir. ⚠️ sendToUser hace io.to(room).emit y devuelve `true` con la room
+    //    VACÍA: NO es señal de entrega. La entrega la confirma report:send-result.
+    try {
+      gw.sendToUser(t.userId, 'report:send-message', { queueId: first.id, accountId: t.accountId, text, target });
+    } catch (err) {
+      first.attempts = (first.attempts || 0) + 1;
+      first.lastAttemptAt = nowIso;
+      first.lastFailureReason = String(err?.message || err).slice(0, 200);
+      return { emitted: false, reason: 'error_de_emision', queueId: first.id };
+    }
+    for (const it of group) {
+      it.status = 'sending';
+      it.sendingAt = nowIso;
+      it.lastAttemptAt = nowIso;
+      it.attempts = (it.attempts || 0) + 1;
+      it.sendAttempts = (it.sendAttempts || 0) + 1;
+      it.lastFailureReason = null;
+      it.consolidatedInto = it.id === first.id ? null : first.id;
+    }
+    first.lastText = text;
+    first.confessedIds = confessedIds;
+    return { emitted: true, queueId: first.id, consolidated: group.length, text, target };
+  });
+}
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => reportQueueTick().catch((e) => console.warn('[report-queue] tick:', e.message)), 60 * 1000);
+  setTimeout(() => reportQueueTick().catch(() => {}), 15000);
+}
+
+// Resultado correlacionado del desktop (contrato congelado en 21-05-SUMMARY.md).
+// Los acks de Socket.IO no sirven acá: sendToUser emite a una ROOM y los acks solo
+// existen en emits directos — por eso el resultado viene como evento separado.
+async function handleReportSendResult(payload = {}, user = null) {
+  const queueId = String(payload?.queueId || '');
+  if (!queueId) return { ok: false, reason: 'sin_queueId' };
+  return mutateReportsState((state) => {
+    const t = state.config.transport;
+    // Authz (T-21-06): un evento falso podría marcar como entregado un reporte
+    // que nunca salió. Solo el admin o el user que sostiene el transporte.
+    if (!(user && (user.role === 'admin' || (t.userId && user.id === t.userId)))) {
+      console.warn(`[report-queue] send-result rechazado: user ${user?.id || '?'} (${user?.role || '?'}) no es el transporte configurado`);
+      return { ok: false, reason: 'no_autorizado' };
+    }
+    // Idempotente ante replays / wa-multi abierto en dos máquinas (T-21-12): si el
+    // item no existe o ya no está en vuelo, se ignora en silencio.
+    const item = (state.queue || []).find((i) => i && i.id === queueId);
+    if (!item || item.status !== 'sending') return { ok: false, reason: 'item_no_en_vuelo' };
+    const nowIso = new Date().toISOString();
+    const sentAt = Date.parse(payload.sentAt || '') ? new Date(payload.sentAt).toISOString() : nowIso;
+    const siblings = (state.queue || []).filter((i) => i && i.consolidatedInto === item.id && i.status === 'sending');
+    const reason = payload.reason ? String(payload.reason).slice(0, 60) : null;
+    item.method = payload.method ? String(payload.method).slice(0, 40) : null;
+    item.matchedName = payload.matchedName ? String(payload.matchedName).slice(0, 120) : null;
+    item.matchedJid = payload.matchedJid ? String(payload.matchedJid).slice(0, 80) : null;
+    item.lastFailureReason = reason;
+
+    if (payload.ok === true) {
+      for (const it of [item, ...siblings]) {
+        it.status = 'sent';
+        it.sentAt = sentAt;
+        it.sendingAt = null;
+      }
+      // Los baches que este mensaje confesó quedan sellados recién ahora (D-05).
+      for (const id of (item.confessedIds || [])) {
+        const gi = _reportFindItem(state, id);
+        if (gi && !gi.confessedAt) gi.confessedAt = sentAt;
+      }
+      item.confessedIds = [];
+      // Backfill del JID (D-03): hasta el primer envío real la verificación del
+      // desktop es solo por nombre.
+      if (item.matchedJid && /^[\w.-]+@g\.us$/.test(item.matchedJid) && !t.groupJid) {
+        t.groupJid = item.matchedJid;
+        t.jidCapturedAt = sentAt;
+      }
+      return { ok: true, status: 'sent', consolidated: siblings.length + 1, groupJid: t.groupJid };
+    }
+
+    const markFailed = () => {
+      for (const it of [item, ...siblings]) {
+        it.status = 'failed';
+        it.failedAt = nowIso;
+        it.sendingAt = null;
+        it.consolidatedInto = null;
+      }
+    };
+    const requeue = () => {
+      for (const it of [item, ...siblings]) {
+        it.status = 'pending';
+        it.sendingAt = null;
+        it.consolidatedInto = null;
+      }
+      item.confessedIds = [];
+    };
+
+    if (reason === 'group-not-found') {
+      // D-02: el SERVER orquesta el fallback — un item 'dm' por teléfono, cada uno
+      // con su propio timeout y espaciado. Más fácil de diagnosticar que meter la
+      // cadena dentro del desktop (21-RESEARCH.md Q5).
+      markFailed();
+      const baseText = item.lastText || item.text || '';
+      let dmQueued = 0;
+      _reportDmFallback().forEach((phone, i) => {
+        const r = enqueueReportMessage(state, {
+          kind: 'dm', periodKey: `${item.periodKey || item.id}_dm${i}`, dayStr: item.dayStr,
+          text: baseText, phone, parentId: item.id,
+        });
+        if (r.queued) dmQueued++;
+      });
+      return { ok: true, status: 'failed', reason, dmQueued };
+    }
+    if (reason === 'account-not-connected') {
+      // No se resuelve solo: alguien tiene que reescanear el QR. La nota de D-05
+      // lo dice con ese texto.
+      item.sendAttempts = REPORT_MAX_ATTEMPTS;
+      markFailed();
+      return { ok: true, status: 'failed', reason };
+    }
+    if ((item.sendAttempts || 0) < REPORT_MAX_ATTEMPTS) {
+      requeue();
+      return { ok: true, status: 'pending', reason };
+    }
+    markFailed();
+    return { ok: true, status: 'failed', reason };
+  });
+}
+
+// Setup del canal (D-03): el picker del desktop reporta qué grupo se eligió.
+async function handleReportGroupConfigured(payload = {}, user = null) {
+  // Authz (T-21-07): SOLO admin. Cambiar el destino del reporte es cambiar a quién
+  // le llegan datos nominales de empleadas.
+  if (!user || user.role !== 'admin') {
+    console.warn(`[report-queue] group-configured rechazado: user ${user?.id || '?'} (${user?.role || '?'}) no es admin`);
+    return { ok: false, reason: 'no_autorizado' };
+  }
+  const accountId = String(payload?.accountId || '').trim();
+  const groupName = String(payload?.groupName || '').replace(/[\r\n]+/g, ' ').trim();
+  const jid = payload?.groupJid == null ? '' : String(payload.groupJid).trim();
+  if (!accountId || accountId.length > 64) return { ok: false, reason: 'accountId_invalido' };
+  if (!groupName || groupName.length > 100) return { ok: false, reason: 'groupName_invalido' };
+  if (jid && !/^[\w.-]+@g\.us$/.test(jid)) return { ok: false, reason: 'groupJid_invalido' };
+  return mutateReportsState((state) => {
+    const nowIso = new Date().toISOString();
+    const t = state.config.transport;
+    t.userId = user.id;
+    t.accountId = accountId;
+    t.groupName = groupName;
+    t.groupJid = jid || null;
+    t.jidCapturedAt = jid ? nowIso : null;
+    t.configuredAt = nowIso;
+    t.configuredBy = user.id;
+    console.log(`[report-queue] canal configurado: "${groupName}" (${accountId}) por ${user.id}`);
+    return { ok: true, transport: { ...t } };
+  });
+}
+
+Object.assign(globalThis.__reportQueue, { reportQueueTick, handleReportSendResult, handleReportGroupConfigured, _reportFindItem });
+
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
   if (!name || !email || !role) return res.status(400).json({ error: 'Nombre, email y rol son requeridos.' });
@@ -16141,6 +16387,12 @@ mountWa(app, server, {
   loginLimiter, // Audit 2026-06-20: para rate-limitear /api/auth/desktop-login
   userIdFromSetterId: userIdFromSetterIdHelper,
   markLeadContacted: markLeadContactedHelper,
+  // Phase 21 — eventos del canal de reportes que reporta el desktop wa-multi.
+  // La authz de cada uno vive en su handler (T-21-06 / T-21-07).
+  onReportEvent: (type, payload, user) =>
+    (type === 'send-result' ? handleReportSendResult(payload, user)
+      : type === 'group-configured' ? handleReportGroupConfigured(payload, user)
+        : Promise.resolve()),
   // Phase 7 — el motor de campañas necesita leer leads + variantes (viven acá).
   getSettersData: () => loadSettersData(),
   // Phase 7 — marca un lead como "respondió" cuando una campaña detecta inbound,

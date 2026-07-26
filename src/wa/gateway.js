@@ -306,6 +306,30 @@ export function initGateway(httpServer, deps) {
       }
     });
 
+    // Phase 21 — canal de reportes al grupo. El resultado del envío NO es un ack
+    // de Socket.IO (sendToUser hace broadcast a room y los acks solo existen en
+    // emits directos): viene como evento separado correlacionado por queueId.
+    // La authz vive en index.js (donde está el estado de la cola), NO acá —
+    // mismo criterio que lead:contacted, que delega en deps.markLeadContacted.
+    socket.on("report:send-result", async (payload = {}) => {
+      try {
+        if (typeof deps.onReportEvent === "function") {
+          await deps.onReportEvent("send-result", payload, user);
+        }
+      } catch (err) {
+        console.error("[wa-gateway] report:send-result error:", err?.message || err);
+      }
+    });
+    socket.on("report:group-configured", async (payload = {}) => {
+      try {
+        if (typeof deps.onReportEvent === "function") {
+          await deps.onReportEvent("group-configured", payload, user);
+        }
+      } catch (err) {
+        console.error("[wa-gateway] report:group-configured error:", err?.message || err);
+      }
+    });
+
     socket.on("disconnect", () => {
       const cur = presence.get(user.id);
       if (!cur) return;
