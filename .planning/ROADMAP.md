@@ -196,10 +196,12 @@ Plans:
   consolidado + tests *(ola 1)* — **EXECUTED 2026-07-26** (3 tareas, 28 tests,
   suite 892/892; verificado contra el snapshot real de producción: el mensaje
   del 22/07 sale con la estructura exacta de D-19)
-- [ ] 21-02-PLAN.md — cola persistida en reports.json (sin archivo nuevo):
+- [x] 21-02-PLAN.md — cola persistida en reports.json (sin archivo nuevo):
   guard por período, estado `sending` con correlación real, reintentos,
   consolidación, expiración, historial, fallback a mensajes individuales +
-  listeners de socket con authz + tests *(ola 2)*
+  listeners de socket con authz + tests *(ola 2)* — **EXECUTED 2026-07-26**
+  (3 tareas, 26 tests, suite 918/918; el `sent` optimista del analog quedó
+  fuera y la mutación que lo reintroduce rompe 10 tests)
 - [ ] 21-03-PLAN.md — cron diario 23:00 (D-10..D-12), semanal mudado al
   domingo 23:00 con versión corta al grupo (D-13/D-20), endpoints admin
   status/config/send-now + WR-01/WR-02/WR-03 del 19-REVIEW + tests *(ola 3)*
@@ -306,4 +308,4 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas) — 2/7 ejecutados (21-01, 21-05).*
+Phase 21 planificada (7 planes, 5 olas) — 3/7 ejecutados (21-01, 21-05, 21-02).*

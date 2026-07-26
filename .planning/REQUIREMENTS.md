@@ -50,10 +50,18 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   wa-multi con envío a grupo (búsqueda por nombre + typing OS-level;
   `out/` ES el source, NUNCA `npm run build`). Plan C: 3 DMs
   individuales (funciona hoy). Plan D: solo email.
-- [ ] **REP-07**: Fallback a email si la desktop está offline, con guard
+  *(las dos mitades están CONSTRUIDAS: transporte del desktop en 21-05
+  (Plan B, con Plan C como fallback automático) y cola/emisión del server en
+  21-02. Queda abierto SOLO el primer envío real al grupo → plan 21-07)*
+- [x] **REP-07**: Fallback a email si la desktop está offline, con guard
   de alcanzabilidad (`isUserOnline`) ANTES de emitir — `sendToUser`
   (src/wa/gateway.js) devuelve `true` con room vacía; no confiar en él.
-- [ ] **REP-08**: Cola de reportes pendientes persistida en `DATA_DIR`:
+  *(21-02, 2026-07-26 — el guard corre antes de emitir y `sendToUser` no se usa
+  como señal de éxito en ningún punto: el item queda `pending` y reintenta. El
+  fallback a email quedó CANCELADO por D-04 (cableado y apagado:
+  `config.backupEmails` se persiste sin lector); lo que sí sale ante grupo no
+  encontrado son DMs individuales, D-02)*
+- [x] **REP-08**: Cola de reportes pendientes persistida en `DATA_DIR`:
   guard por **período cubierto** (no "hace cuánto mandé"), consolidación
   (N diarios pendientes → 1 solo mensaje acumulado con detalle por día en
   una línea), expiración de diarios (propuesta 3 días — confirmar con el
@@ -61,6 +69,12 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   mensajes distintos (NO aplicar caps de warming — es un grupo propio, no
   outreach frío). Copiar el patrón de `scheduledMessagesTick`
   (index.js:5126), NO reusar el módulo (atado a leadId/setterId).
+  *(21-02, 2026-07-26 — todo en `reports.json` (sin archivo nuevo): guard por
+  período cubierto sobre `queue`+`history`, consolidación con una línea por día,
+  expiración a 3 días con el semanal exento, espaciado por "un solo envío en
+  vuelo" + tick de 60s. Se copió el esqueleto de `scheduledMessagesTick` PERO se
+  eliminó su `status='sent'` optimista: el item queda `sending` hasta el
+  resultado correlacionado por `queueId`. 26 tests)*
 - [x] **REP-09**: El reporte incluye **solo las vendedoras nuevas** —
   `setter_ignacio` y `setter_paula_kroff` fuera. Reusar
   `ADMIN_ONLY_SETTER_IDS` (index.js:5588) + `_filterSettersVisible`
@@ -170,4 +184,4 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ---
 
-*Last updated: 2026-07-25 — milestone v2.0.*
+*Last updated: 2026-07-26 — milestone v2.0 (REP-07 y REP-08 completos en 21-02).*

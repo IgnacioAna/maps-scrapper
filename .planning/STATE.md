@@ -14,8 +14,25 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 2/7
-  planes ejecutados (ola 1 completa).**
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 3/7
+  planes ejecutados (ola 1 completa + 21-02 de la ola 2).**
+  - **21-02 EXECUTED (2026-07-26)** — cola de envío al grupo. Commits
+    `a0acab2` (esquema en `reports.json` + `mutateReportsState` + prune con
+    cap que nunca descarta pendientes + expiración D-26 + `enqueueReportMessage`
+    genérico con guard D-28 + `_reportGapNote` + `_reportDmFallback`),
+    `aadc9a1` (`reportQueueTick`: guard `isUserConnected` ANTES de emitir,
+    estado `sending` hasta el resultado correlacionado por `queueId`, un solo
+    envío en vuelo = espaciado ≥60s, consolidación de diarios, nota de baches
+    en TODO envío; `handleReportSendResult`/`handleReportGroupConfigured` con
+    authz T-21-06/T-21-07 + backfill del `groupJid`; listeners
+    `report:send-result`/`report:group-configured` en el gateway vía
+    `deps.onReportEvent`), `10f2a4f` (26 tests). Suite **918/918**.
+    **CERO archivos JSON nuevos**: todo vive en `reports.json` (regla
+    #21/#128), round-trip export/import testeado.
+    Superficie para los planes siguientes: `globalThis.__reportQueue`
+    (incluye `consts`). Detalle y contrato de uso en `21-02-SUMMARY.md`.
+    ⚠️ El evento nunca viajó por un socket real (gateway doble en los tests);
+    lo verificado es que el payload cumple el contrato congelado de 21-05.
   - **21-01 EXECUTED (2026-07-26)** — builder del reporte diario + textos.
     Commits `a303114` (datos + helpers + `now` inyectable en
     `_ccResolveRange` + `leaveUntil`), `81142ab` (molde D-19 / línea de día /
@@ -87,10 +104,16 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   (5) **21-05 ejecutado**: el desktop wa-multi ya sabe mandar a un chat de
   GRUPO con verificación previa y resultado correlacionado (commits
   `6614be4`, `b3a1f2e`) — ola 1 cerrada.
+  (6) **21-02 ejecutado**: la cola de envío al grupo ya transporta cualquier
+  texto con reintentos, consolidación y confesión de baches (commits
+  `a0acab2`, `aadc9a1`, `10f2a4f`; suite 918/918).
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — ola 1 COMPLETA (21-01 +
-21-05); sigue la ola 2 (21-02 cola + 21-06 picker/repack), después 21-03
-(cron), 21-04 (panel) y 21-07 con el user.
+**Próximo paso:** seguir `/gsd-execute-phase 21` — falta 21-06 (picker del
+grupo en el preload + repack v0.5.11) para cerrar la ola 2, después 21-03
+(cron diario + endpoints admin), 21-04 (panel) y 21-07 con el user.
+Para D-02 (fallback por DM) el user puede cargar `REPORT_DM_FALLBACK` en
+Railway (CSV de hasta 5 teléfonos E.164); sin esa var el fallback no sale por
+DM pero el bache se confiesa igual.
 Pendiente aparte: UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
 una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
 aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE.
@@ -114,7 +137,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 2/7 planes** (21-01 + 21-05 EXECUTED 2026-07-26, ola 1 completa; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con el transporte del desktop listo) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 3/7 planes** (21-01 + 21-05 + 21-02 EXECUTED 2026-07-26; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con transporte desktop + cola server listos, REP-07/08 completos del lado server) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -233,7 +256,28 @@ Contra HEAD `a9e4886`:
   desktop van `--allow-empty` con el detalle en el mensaje. No se forzó
   `git add -f`: meter el árbol del desktop (con binarios) contradice una
   decisión explícita del `.gitignore`.
+- **21-02:** los items terminales **MIGRAN** de `queue` a `history` (una sola
+  copia por id) en vez de vivir en las dos listas como decía el plan: con el
+  item duplicado, sellar `confessedAt` en una copia y no en la otra haría que
+  la nota de baches (D-05) se repitiera en cada mensaje para siempre.
+  `REPORT_QUEUE_CAP` quedó como guard contra crecimiento patológico (>200
+  vivos), no como recorte normal — los pendientes nunca se descartan.
+- **21-02:** dos contadores por item: `attempts` (todas las vueltas, sube
+  también con el desktop apagado) y `sendAttempts` (emisiones reales). El
+  presupuesto `REPORT_MAX_ATTEMPTS` mira `sendAttempts`; si mirara `attempts`,
+  20 minutos offline lo agotarían y el primer fallo real tras reconectar sería
+  definitivo — justo el escenario principal de la fase.
+- **21-02:** los 2 writers de `reports.json` de Phase 19
+  (`maybeRunWeeklyReportCron` y `POST /api/admin/weekly-report/send`) pasaron
+  al mutex: tenían `await` entre load y save, y con el estado nuevo del archivo
+  eso significaba pisar la cola entera mientras Resend respondía (regla #19).
+- **21-02:** `config.paused` ya se honra en el tick (el esquema lo declaraba y
+  nadie lo leía). 21-04 solo cablea el interruptor de D-29.
+- **21-02:** `dailyState.lastDailyPeriodKey` / `weeklyState.lastWeeklyPeriodKey`
+  existen en el esquema pero NADIE las escribe: el guard de D-28 se implementó
+  escaneando `queue`+`history` por `kind`+`periodKey` (más fuerte, no depende de
+  que el cron acierte el orden). Quedan para el bookkeeping de 21-03 si le sirven.
 
 ---
 
-*Last updated: 2026-07-26.*
+*Last updated: 2026-07-26 (21-02 ejecutado).*
