@@ -5198,6 +5198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.loadHoyView = loadHoyView;
 
     async function loadCallsView() {
+      // Phase 20: restore del gate tras refresh (one-shot, valida contra el server).
+      if (!_dispoGateRestoreDone) { _dispoGateRestoreDone = true; _dispoGateRestore().catch(() => {}); }
       const setter = document.getElementById('calls-setter-select').value;
       // App call-only: la vista Llamadas SIEMPRE muestra los leads accionables
       // (con teléfono, no terminales), no solo los marcados sin_wsp. El viejo
@@ -5444,6 +5446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se cancela si el usuario interactúa (llamar/saltar/disposition/Esc) o
     // si ya hay una llamada Telnyx activa (panel visible).
     function _pdStartAutopilotCountdown() {
+      if (_dispoGate) return; // Phase 20 (D-01): no armar un countdown que va a chocar con el guard de _startTelnyxCall
       _pdCancelAutopilot();
       const panel = document.getElementById('telnyx-call-panel');
       if (panel && panel.style.display !== 'none' && panel.style.display !== '') return; // ya hay llamada
@@ -7307,6 +7310,167 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false, scriptIdsUsed: [] };
 
     // ───────────────────────────────────────────────────────────────
+    // Phase 20: disposición obligatoria (D-01/D-02/D-03)
+    // Gate en vivo: mientras haya una llamada recién colgada CON contacto sin
+    // marcar, no se disca otra (banner persistente, sin modal que tape la
+    // pantalla). El server igual registra el pendiente (pending-calls) al
+    // INICIAR cada llamada — el gate es UX, la fuente de verdad es el backend.
+    // ───────────────────────────────────────────────────────────────
+    let _dispoGate = null;      // { leadId, leadName, startedAt } | null
+    let _lastAutoMark = null;   // { leadId, at } — habilita correctsAutoMarked 15 min
+    let _dispoGateBanner = null; // div del banner (creado una sola vez)
+    let _dispoGateRestoreDone = false;
+
+    const _dispoGateStorageKey = () => 'scm_dispo_gate_' + (currentUser?.id || 'anon');
+
+    function _dispoGateEnsureBanner() {
+      if (_dispoGateBanner) return _dispoGateBanner;
+      const div = document.createElement('div');
+      div.id = 'dispo-gate-banner';
+      div.className = 'dispo-gate-banner';
+      // Posicionamiento crítico inline (los estilos visuales viven en style.css).
+      div.style.cssText = 'position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:9000; display:none;';
+      document.body.appendChild(div);
+      _dispoGateBanner = div;
+      return div;
+    }
+
+    function _dispoGateRenderBanner() {
+      const el = _dispoGateEnsureBanner();
+      if (!_dispoGate) { el.style.display = 'none'; el.innerHTML = ''; return; }
+      el.innerHTML = `<span>Marcá el resultado de la llamada a <strong>${escHtml(_dispoGate.leadName || 'tu último lead')}</strong> para seguir discando</span><button type="button" id="dispo-gate-go">Ir a marcar</button>`;
+      el.style.display = 'flex';
+      el.querySelector('#dispo-gate-go')?.addEventListener('click', () => _dispoFocusLeadRow(_dispoGate?.leadId));
+    }
+
+    // Pulso visual del banner (mismo espíritu que el flash de la call-row).
+    function _dispoGateFlashBanner() {
+      if (!_dispoGate) return;
+      const el = _dispoGateEnsureBanner();
+      el.classList.add('dispo-flash');
+      setTimeout(() => el.classList.remove('dispo-flash'), 400);
+    }
+
+    // Navega a Llamadas + scroll + focus al select de disposición del lead.
+    // Mismo retry-pattern que _focusDispositionRow de _onTelnyxCallEnded.
+    function _dispoFocusLeadRow(leadId) {
+      if (!leadId) return;
+      try { _callsForceShow.add(leadId); } catch {}
+      if (!document.querySelector('#view-calls:not(.hidden)')) {
+        document.querySelector('[data-target="view-calls"]')?.click();
+      }
+      renderCallsList();
+      let tries = 0;
+      const go = () => {
+        const row = document.querySelector(`.call-row[data-id="${leadId}"]`);
+        if (!row) { if (++tries < 12) setTimeout(go, 400); return; }
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.transition = 'box-shadow 0.4s';
+        row.style.boxShadow = '0 0 0 3px var(--accent)';
+        setTimeout(() => { row.style.boxShadow = ''; }, 2000);
+        const sel = row.querySelector('select');
+        if (sel) setTimeout(() => sel.focus(), 400);
+      };
+      go();
+    }
+
+    function _dispoGateSet(leadId, leadName, startedAtIso) {
+      _dispoGate = { leadId, leadName: leadName || '', startedAt: startedAtIso || null };
+      try { localStorage.setItem(_dispoGateStorageKey(), JSON.stringify(_dispoGate)); } catch {}
+      _dispoGateRenderBanner();
+    }
+
+    function _dispoGateClear(leadId) {
+      if (leadId && _dispoGate && _dispoGate.leadId !== leadId) return;
+      _dispoGate = null;
+      try { localStorage.removeItem(_dispoGateStorageKey()); } catch {}
+      _dispoGateRenderBanner();
+    }
+
+    // Se llama en CADA disposición exitosa (los 5 POST + la auto-marca):
+    // limpia el gate y refresca la franja de pendientes (Task 2, optional).
+    function _dispoAfterSaved(leadId) {
+      _dispoGateClear(leadId);
+      if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
+      if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
+    }
+
+    // Campos extra del enforcement para el body de call-disposition.
+    // correctsAutoMarked: corrige la auto-marca dentro de la ventana de 15 min
+    // (defensa doble: el backend valida la misma ventana y responde 409 si el
+    // flag viajó fuera de ella).
+    function _dispoEnforcementBody(leadId) {
+      const body = {};
+      if (_lastAutoMark && _lastAutoMark.leadId === leadId && (Date.now() - _lastAutoMark.at) < 15 * 60 * 1000) {
+        body.correctsAutoMarked = true;
+      }
+      return body;
+    }
+
+    // D-03: auto-marca DETERMINÍSTICA de no-contacto (no confundir con
+    // _autoDispositionLLM, que es la sugerencia IA post-transcript).
+    // NO llama _flushPendingTranscription a propósito (D-04): el buffer de
+    // audio conserva su timer propio de 10 min; si el SDR corrige a un outcome
+    // con conversación, el flujo normal de corrección lo flushea o descarta.
+    async function _autoMarkNoAnswer(leadId) {
+      try {
+        const telnyxMeta = _consumeTelnyxMeta(leadId);
+        const body = { outcome: 'no_answer', autoMarked: true, ...(telnyxMeta && { telnyxCallMeta: telnyxMeta }) };
+        const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        // _leadStore: escritura única → sincroniza lista + Power Dialer (regla #105).
+        if (data.lead) _leadStoreApply(leadId, data.lead);
+        _dispoAfterSaved(leadId);
+        _lastAutoMark = { leadId, at: Date.now() };
+        renderCallsList();
+        renderCallsStats();
+        window.showToast?.('No atendió — marcado automático. Corregilo si hubo contacto (ej. Buzón).', { type: 'info', duration: 5000 });
+        // Replicar el post-save del Power Dialer (#151): autopilot avanza,
+        // manual queda en la tarjeta con banner hasta que el SDR decida.
+        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
+          if (_pd.autopilot) { _pdAdvance(); }
+          else { _pd.holdCurrent = true; _pd.holdOutcome = 'No atendió (auto)'; _pdRender(); }
+        }
+      } catch (e) {
+        // Red caída u error del server: fallback al gate manual — la llamada
+        // no queda en limbo, el SDR la marca a mano.
+        console.warn('[dispo] auto-marca falló, cae al gate manual:', e?.message);
+        const lead = _callsLeadsById.get(leadId);
+        _dispoGateSet(leadId, lead?.name || '', null);
+      }
+    }
+
+    // Restore tras refresh: si el localStorage dice que quedó un gate armado,
+    // validar contra el server (¿sigue pendiente?) antes de re-armarlo.
+    async function _dispoGateRestore() {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(_dispoGateStorageKey()) || 'null'); } catch {}
+      if (!saved?.leadId) return;
+      try {
+        const r = await fetch(apiUrl('/api/setters/pending-calls'), { credentials: 'include' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        const match = (d.pending || []).find(p => p.leadId === saved.leadId &&
+          (!saved.startedAt || !p.startedAt || new Date(p.startedAt).getTime() === new Date(saved.startedAt).getTime()));
+        if (match) {
+          _dispoGateSet(saved.leadId, saved.leadName || match.leadName || '', saved.startedAt || match.startedAt || null);
+        } else {
+          // Ya se marcó en otro tab / se resolvió → limpiar el residuo.
+          try { localStorage.removeItem(_dispoGateStorageKey()); } catch {}
+        }
+      } catch {
+        // Server inaccesible: no re-armamos el gate a ciegas (bloquearía el
+        // discado sin datos); el pendiente igual existe server-side.
+      }
+    }
+
+    // ───────────────────────────────────────────────────────────────
     // Phase 6 Sprint 7: Transcripción Whisper post-llamada
     // Grabamos 2 streams separados (setter mic + lead audio) en memoria del
     // browser. Al colgar, los mandamos como base64 al backend. NO se persiste
@@ -7949,6 +8113,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast?.('Ya tenés una llamada activa', { type: 'warn' });
         return;
       }
+      // Phase 20 (D-01): con una llamada recién colgada sin marcar, NINGÚN
+      // punto de discado inicia otra (lista, Hoy, Power Dialer, autopiloto,
+      // tecla C, alt-contact, Ctrl+K y ad-hoc — todos pasan por acá). Incluye
+      // re-discar el mismo lead: marcar toma 1 clic con memoria fresca.
+      if (_dispoGate) {
+        window.showToast?.('Marcá el resultado de la llamada a ' + (_dispoGate.leadName || 'tu último lead') + ' antes de discar otra', { type: 'warn', duration: 4000 });
+        _dispoGateFlashBanner();
+        return;
+      }
       const fromNum = _telnyx.pickNumberForDestination(dialPhone);
       if (!fromNum) {
         window.showToast?.('No hay número saliente configurado para este destino. Admin debe agregar uno en Centralita Telnyx.', { type: 'error', duration: 6000 });
@@ -7988,6 +8161,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       _telnyxCallState.leadId = leadId;
       _telnyxCallState.fromNumber = fromNum.phone;
       _telnyxCallState.muted = false;
+      // Phase 20: reset ANTES del try — si ensureClient falla, el catch no debe
+      // cancelar un pendiente que quedó de una llamada anterior.
+      _telnyxCallState.pendingRegistered = false;
       _telnyxCallState.scriptIdsUsed = []; // Sprint 12: tracking A/B
       _currentCallLead = lead;
       // Pre-cargar scripts si no están en cache (no bloquea la llamada)
@@ -8065,6 +8241,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const call = _telnyx.client.newCall(_callOpts);
         _telnyx.activeCall = call;
         _telnyxCallState.startedAt = Date.now();
+        // Phase 20 (D-02): registrar el pendiente server-side apenas arranca la
+        // llamada — sobrevive crash/cierre del tab. Los ad-hoc no crean pendiente
+        // ni disposición (no hay lead real); el gate igual les aplica al iniciar.
+        if (!lead._isManualDial) {
+          _telnyxCallState.pendingRegistered = true;
+          fetch(apiUrl('/api/setters/pending-calls'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadId, startedAt: new Date(_telnyxCallState.startedAt).toISOString(), fromNumber: fromNum.phone }),
+          }).catch(() => {});
+        }
         _telnyxCallState.answeredAt = 0;      // se setea al atender (200 OK) → talk-time
         _telnyxCallState.enteredActive = false; // control del ringback/attach (1 sola vez)
         _telnyxCallState.committedRemote = false; // ya conmutamos al audio real del carrier?
@@ -8095,6 +8283,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 60000);
       } catch (e) {
         console.error('[telnyx] startCall failed:', e);
+        // Phase 20: si el pendiente ya se registró, cancelarlo — la llamada
+        // nunca existió (el backend solo borra registros <2 min sin endedAt).
+        if (_telnyxCallState.pendingRegistered && _telnyxCallState.startedAt) {
+          fetch(apiUrl('/api/setters/pending-calls'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadId, startedAt: new Date(_telnyxCallState.startedAt).toISOString(), canceled: true }),
+          }).catch(() => {});
+          _telnyxCallState.pendingRegistered = false;
+        }
         _closeTelnyxCallPanel();
         window.showToast?.('No se pudo iniciar la llamada: ' + e.message, { type: 'error', duration: 6000 });
       }
@@ -8112,6 +8311,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       // usado para el gate de la disposition.
       const durationSecs = _telnyxCallState.startedAt ? Math.floor((Date.now() - _telnyxCallState.startedAt) / 1000) : 0;
       const attemptedSecs = durationSecs;
+      // Phase 20 (D-03): señal de contacto calculada ACÁ (con _telnyxCallState
+      // aún vivo). enteredActive || committedRemote — NO solo 'active': este
+      // carrier entrega llamadas ATENDIDAS por early-media sin señalizar
+      // 'active' (ver comentario de arriba); auto-marcar esas como no_answer
+      // corrompería el dato (contra el espíritu de D-06). D-03 conservador:
+      // solo se auto-marca cuando NO hubo ni 'active' ni voz sostenida.
+      const reachedContact = !!(_telnyxCallState.enteredActive || _telnyxCallState.committedRemote);
+      const _dispoStartedAtIso = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
+      const _dispoWasRegistered = !!_telnyxCallState.pendingRegistered;
       _setTelnyxCallStatus('Finalizando…', 'ending');
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
@@ -8135,6 +8343,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       setTimeout(() => {
         _closeTelnyxCallPanel();
+        // Phase 20: llamada fallida (ni llegó a sonar 1s) → cancelar el
+        // pendiente registrado al iniciar. Hoy tampoco pide disposición.
+        const _dispoReal = !!(leadId && !_callsLeadsById.get(leadId)?._isManualDial);
+        if (_dispoReal && attemptedSecs < 1 && _dispoWasRegistered && _dispoStartedAtIso) {
+          fetch(apiUrl('/api/setters/pending-calls'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadId, startedAt: _dispoStartedAtIso, canceled: true }),
+          }).catch(() => {});
+        }
         // Disparar disposition automática si hubo INTENTO (sonó al menos 1s), aunque
         // no atiendan — el SDR igual tiene que marcar No atendió/Buzón. (Antes
         // usaba durationSecs, que ahora es talk-time y sería 0 en no-contacto.)
@@ -8158,6 +8377,27 @@ document.addEventListener('DOMContentLoaded', async () => {
           };
           _pendingTelnyxCallMetadata[leadId] = _metaObj;
           if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
+          // Phase 20: upsert del pendiente con los datos de cierre reales y
+          // bifurcación — sin contacto → auto-marca (D-03); con contacto →
+          // gate hasta que el SDR marque a mano (D-01).
+          if (_dispoReal) {
+            if (_dispoStartedAtIso) {
+              fetch(apiUrl('/api/setters/pending-calls'), {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadId, startedAt: _dispoStartedAtIso, endedAt: _metaObj.endedAt, durationSecs, reachedActive: reachedContact }),
+              }).catch(() => {});
+            }
+            if (!reachedContact) {
+              _autoMarkNoAnswer(leadId);
+            } else {
+              // Hubo contacto real: el SDR marca a mano y hasta que marque no
+              // disca otra (D-01). El foco al dropdown de abajo queda como está
+              // (sirve para corregir/marcar con las teclas 1-9 del shortcut).
+              _dispoGateSet(leadId, _callsLeadsById.get(leadId)?.name || '', _dispoStartedAtIso);
+            }
+          }
           // Scroll + flash + open al dropdown de disposition.
           // Audit 2026-07-06: si la llamada se hizo desde HOY, saltamos a Llamadas —
           // antes el toast decía "marcá el resultado abajo" pero el dropdown vivía en
@@ -8622,7 +8862,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Outcomes directos. Si hay metadata pendiente de una llamada Telnyx,
         // adjuntarla al payload para que el backend la persista en callLog.
         const telnyxMeta = _consumeTelnyxMeta(leadId);
-        const body = { outcome };
+        // Phase 20: enforcement primero, meta fresca después (si hay, pisa la
+        // vieja del pendiente de la franja — la fresca siempre gana).
+        const body = { outcome, ..._dispoEnforcementBody(leadId) };
         if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
         // Nota rápida del Power Dialer (input pd-call-note). Solo existe en el
         // dialer; en la vista normal de Llamadas no está y queda vacío.
@@ -8636,6 +8878,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify(body)
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
         // Transcripción diferida: recién acá sabemos el outcome. Buzón/no atendió
         // descartan el audio; conversaciones reales suben a Whisper (fire-and-forget).
         _flushPendingTranscription(leadId, outcome).catch(e => console.warn('[transcribe]', e?.message));
@@ -8765,9 +9008,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared })
+            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared, ..._dispoEnforcementBody(leadId) })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
           _flushPendingTranscription(leadId, 'callback_later').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista del cache ANTES de cerrar el modal. El poller del
           // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
@@ -8902,7 +9146,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             notes: note,
             objectionTags: withTags ? [...selectedTags] : [],
             disqualifyReason: document.getElementById('call-obj-reason')?.value || '',
-            doNotCall: !!document.getElementById('call-obj-dnc')?.checked
+            doNotCall: !!document.getElementById('call-obj-dnc')?.checked,
+            // Phase 20: enforcement primero — la meta fresca de abajo pisa la vieja.
+            ..._dispoEnforcementBody(leadId)
           };
           // Adjuntar telnyxMeta si hay
           const telnyxMeta = _consumeTelnyxMeta(leadId);
@@ -8912,6 +9158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
           _flushPendingTranscription(leadId, 'answered_not_interested').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista: 'No interesado' descarta el lead en el backend; el
           // poller del Power Dialer mira lead.estado para avanzar al siguiente.
@@ -8981,10 +9228,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify({
               outcome: 'scheduled_with_admin',
               notes: notas,
-              scheduled: { fecha: new Date(fecha).toISOString(), nombre }
+              scheduled: { fecha: new Date(fecha).toISOString(), nombre },
+              ..._dispoEnforcementBody(leadId)
             })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
           _flushPendingTranscription(leadId, 'scheduled_with_admin').catch(e => console.warn('[transcribe]', e?.message));
           confirmed = true;
           observer?.disconnect();
@@ -9003,11 +9252,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (modal.classList.contains('hidden') && !confirmed) {
             observer.disconnect();
             try {
-              await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+              const fbResp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ outcome: fallbackOnCancel })
+                body: JSON.stringify({ outcome: fallbackOnCancel, ..._dispoEnforcementBody(leadId) })
               });
+              if (fbResp.ok) _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
               _flushPendingTranscription(leadId, fallbackOnCancel).catch(err => console.warn('[transcribe]', err?.message));
               await loadCallsView();
             } catch (e) { console.warn('[schedule-fallback]', e.message); }
