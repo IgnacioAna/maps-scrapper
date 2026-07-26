@@ -1990,6 +1990,7 @@ async function maybeRunWeeklyReportCron(nowTs = Date.now(), sendFn = sendWeeklyR
 if (process.env.NODE_ENV !== 'test') {
   const _reportCrons = async () => {
     await maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message));
+    await maybeRunDailyReportCron().catch(e => console.warn('daily cron:', e.message));
   };
   setInterval(() => { _reportCrons(); }, 60 * 60 * 1000);
   setTimeout(() => { _reportCrons(); }, 60 * 1000);
@@ -2583,12 +2584,18 @@ async function reportQueueTick(nowTs = Date.now()) {
     // 3. Un solo envío en vuelo → con el tick de 60s da el espaciado >=60s de
     //    REP-08 (sin caps de warming: es un grupo propio, no outreach frío).
     if (inFlight.length) return { emitted: false, reason: 'envio_en_vuelo', queueId: inFlight[0].id };
-    if (state.config.paused) return { emitted: false, reason: 'pausado' };
     // 4. Próximo pendiente (FIFO por createdAt).
+    //    `config.paused` pausa el envío AUTOMÁTICO — así lo dice el interruptor de
+    //    D-29 y su copy ("Envío automático pausado"). Los manuales (`custom`, que es
+    //    lo que encola "Mandar ahora") y los DM de respaldo SÍ salen: si la pausa
+    //    los bloqueara, el botón quedaría inutilizado justo cuando más se lo
+    //    necesita — probar el canal antes de reactivar (decisión 1 del 21-UI-SPEC).
+    const paused = !!state.config.paused;
     const pendings = state.queue
       .filter((it) => it && it.status === 'pending')
+      .filter((it) => !paused || it.kind === 'custom' || it.kind === 'dm')
       .sort((a, b) => (Date.parse(a.createdAt || '') || 0) - (Date.parse(b.createdAt || '') || 0));
-    if (!pendings.length) return { emitted: false, reason: 'cola_vacia' };
+    if (!pendings.length) return { emitted: false, reason: paused ? 'pausado' : 'cola_vacia' };
     const first = pendings[0];
     // 5. Consolidación (D-26): N diarios apilados salen en UN solo mensaje.
     //    'weekly'/'custom'/'dm' NUNCA se consolidan.
@@ -2786,6 +2793,185 @@ async function handleReportGroupConfigured(payload = {}, user = null) {
 }
 
 Object.assign(globalThis.__reportQueue, { reportQueueTick, handleReportSendResult, handleReportGroupConfigured, _reportFindItem });
+
+// ── Phase 21: cron del reporte diario + panel de config (D-29) ──
+// D-10: 23:00 hora de negocio (BUSINESS_TZ = AR/UY) = 20:00 en México. Corte
+// ÚNICO para todo el equipo: el sistema no guarda el país de cada vendedora y
+// esperar a la más occidental empujaría el mensaje a la madrugada. Dato de
+// referencia: el histórico no tiene NINGUNA llamada después de las 21:00 AR.
+// D-11: lunes a viernes SIEMPRE, aun con el equipo entero en cero — un día hábil
+// sin una sola llamada es LA noticia, y sale como UNA línea ("Hoy no llamó
+// nadie"), no como seis ceros.
+// D-12: sábado solo si hubo actividad (el histórico tiene cero llamadas todos los
+// fines de semana; un mensaje vacío entrena al grupo a no leer).
+// D-13: el domingo el diario le cede el lugar al semanal.
+async function maybeRunDailyReportCron(nowTs = Date.now()) {
+  const dow = _bizDayOfWeek(nowTs);
+  if (dow === 0) return { ran: false, reason: 'domingo_semanal' };
+  if (_bizHour(nowTs) < 23) return { ran: false, reason: 'fuera_de_ventana' };
+  const periodKey = _bizDayStr(nowTs);
+  if (_dailyPeriodSentMem === periodKey) return { ran: false, reason: 'ya_enviado' };   // WR-03
+  return mutateReportsState((state) => {
+    if (state.config.paused) return { ran: false, reason: 'pausado' };
+    if (state.dailyState.lastDailyPeriodKey === periodKey) return { ran: false, reason: 'ya_enviado' };
+    const data = buildDailyReportData(nowTs);
+    if (dow === 6 && data.team.dials === 0) {            // D-12
+      state.dailyState.lastDailyPeriodKey = periodKey;   // no reintentar toda la noche
+      _dailyPeriodSentMem = periodKey;
+      return { ran: false, reason: 'finde_sin_actividad' };
+    }
+    const r = enqueueReportMessage(state, {
+      kind: 'daily', periodKey, dayStr: data.dayStr,
+      text: buildDailyReportText(data),
+      line: buildDailyReportLine(data),                  // D-26: la usa la consolidación
+    });
+    if (!r.queued) return { ran: false, reason: r.reason };
+    state.dailyState.lastDailyPeriodKey = periodKey;     // D-28
+    _dailyPeriodSentMem = periodKey;                     // WR-03
+    return { ran: true, queued: true, periodKey, id: r.id };
+  });
+}
+
+// Items vivos de la cola (lo que el panel muestra como "N en cola").
+function _reportQueueCount(state) {
+  return (state.queue || []).filter((i) => i && (i.status === 'pending' || i.status === 'sending')).length;
+}
+// Forma canónica del estado del canal — la comparten el GET status y el PUT config
+// (la UI refresca con la respuesta del PUT, así que tienen que ser idénticas).
+function _reportPanelStatus(state) {
+  const t = state.config.transport || {};
+  const gw = globalThis.__waGateway;
+  const last = [...(state.history || []), ...(state.queue || [])]
+    .filter((i) => i && (i.status === 'sent' || i.status === 'failed'))
+    .sort((a, b) => (Date.parse(b.sentAt || b.failedAt || '') || 0) - (Date.parse(a.sentAt || a.failedAt || '') || 0))[0] || null;
+  return {
+    groupConfigured: !!(t.groupName && t.accountId && t.userId),
+    groupName: t.groupName || null,
+    // T-21-17: el JID no viaja al browser — el identificador del destino no le hace
+    // falta al panel, solo saber si ya se capturó.
+    jidCaptured: !!t.groupJid,
+    lastSent: last ? { at: last.sentAt || last.failedAt, periodLabel: last.dayStr || last.periodKey, status: last.status } : null,
+    queueCount: _reportQueueCount(state),
+    desktopOnline: !!(t.userId && gw && typeof gw.isUserConnected === 'function' && gw.isUserConnected(t.userId)),
+    paused: !!state.config.paused,
+    backupEmails: state.config.backupEmails || [],
+  };
+}
+
+// T-21-13: los 3 endpoints son admin-only, igual que /api/admin/weekly-report/*.
+// Todo supervisor es scoped desde la nota #144 → ninguno los alcanza.
+app.get('/api/admin/daily-report/status', requireAuth, requireRole('admin'), (_req, res) => {
+  try { res.json(_reportPanelStatus(_reportStateDefaults(loadReportsState()))); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/admin/daily-report/config — body { backupEmails?: string[], paused?: bool }
+// ⚠️ `backupEmails` es el fallback del DIARIO, hoy APAGADO por D-04: se persiste
+// para que encenderlo después sea configuración y no construcción. NO es
+// REPORT_EMAILS (esa env var gobierna el mail del SEMANAL, que sí sale hoy).
+app.put('/api/admin/daily-report/config', requireAuth, requireRole('admin'), async (req, res) => {
+  const body = req.body || {};
+  if (body.paused !== undefined && typeof body.paused !== 'boolean') {
+    return res.status(400).json({ error: 'paused debe ser booleano.' });
+  }
+  let emails = null;
+  if (body.backupEmails !== undefined) {
+    if (!Array.isArray(body.backupEmails)) return res.status(400).json({ error: 'backupEmails debe ser un array.' });
+    if (body.backupEmails.length > 10) return res.status(400).json({ error: 'Máximo 10 mails de respaldo.' });
+    // T-21-16: cada entrada validada; cualquier cosa que no sea un email → 400.
+    // Nunca se interpolan en HTML ni en comandos.
+    const clean = [];
+    for (const raw of body.backupEmails) {
+      if (typeof raw !== 'string') return res.status(400).json({ error: 'backupEmails debe contener strings.' });
+      const e = raw.trim();
+      if (!e) continue;
+      if (e.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return res.status(400).json({ error: `Email inválido: ${e.slice(0, 60)}` });
+      if (!clean.includes(e)) clean.push(e);
+    }
+    emails = clean;
+  }
+  try {
+    const status = await mutateReportsState((s) => {
+      if (body.paused !== undefined) s.config.paused = body.paused;
+      if (emails) s.config.backupEmails = emails;
+      return _reportPanelStatus(s);
+    });
+    res.json({ ok: true, ...status });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/daily-report/send-now — D-29. Arma el reporte con los datos de
+// HOY hasta este momento y lo manda YA. Es la vía de la prueba en vivo del canal.
+// Techo de espera del request: el tipeo OS-level de un mensaje largo puede tardar
+// más de un minuto y no tiene sentido dejar una conexión HTTP colgada esperándolo
+// (el cliente espera 60s, siempre más que el server — ver 21-UI-SPEC).
+const REPORT_SEND_NOW_WAIT_MS = Math.max(1000, Number(process.env.REPORT_SEND_NOW_WAIT_MS) || 25000);
+const REPORT_SEND_NOW_POLL_MS = 1000;
+app.post('/api/admin/daily-report/send-now', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    // T-21-14: lock de UN solo envío en vuelo. El backend no confía en el
+    // `disabled` del botón — un doble click no puede spamear al grupo.
+    const pre = _reportStateDefaults(loadReportsState());
+    if ((pre.queue || []).some((i) => i && i.status === 'sending')) {
+      return res.json({ ok: true, status: 'queued', reason: 'busy', queueCount: _reportQueueCount(pre) });
+    }
+    // Ignora `config.paused` a propósito (decisión 1 del 21-UI-SPEC): si el admin
+    // pausó el automático y quiere probar el canal, el botón tiene que funcionar.
+    const data = buildDailyReportData();
+    // kind:'custom', NO 'daily': una prueba manual jamás suprime el envío
+    // automático de ese período (WR-01 generalizado) ni participa de la
+    // consolidación de diarios (D-26). La `line` se guarda igual, por si acaso.
+    const periodKey = `manual_${new Date().toISOString()}`;
+    const enq = await mutateReportsState((s) => enqueueReportMessage(s, {
+      kind: 'custom', periodKey, dayStr: data.dayStr,
+      text: buildDailyReportText(data), line: buildDailyReportLine(data),
+    }));
+    if (!enq || !enq.queued) return res.status(500).json({ ok: false, status: 'failed', reason: enq?.reason || 'no_encolado' });
+    const myId = enq.id;
+    // Avanzar la cola en el acto — no esperar hasta 60s al próximo tick.
+    await reportQueueTick().catch(() => {});
+    // Esperar el resultado del item PROPIO (buscado por id, nunca "el primero de
+    // la cola") con polling de 1s.
+    // `pending` + un motivo que no se resuelve solo (sin grupo configurado, o el
+    // desktop apagado) se responde en el acto: esperar 25s no cambiaría nada.
+    const stuck = (it) => it && it.status === 'pending' && (it.lastFailureReason === 'sin_grupo' || it.lastFailureReason === 'desktop offline');
+    const deadline = Date.now() + REPORT_SEND_NOW_WAIT_MS;
+    let state = _reportStateDefaults(loadReportsState());
+    let item = _reportFindItem(state, myId);
+    while (item && !stuck(item) && (item.status === 'pending' || item.status === 'sending') && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, REPORT_SEND_NOW_POLL_MS));
+      // ⚠️ reportQueueTick procesa UN item por vuelta, elegido FIFO sobre TODA la
+      // cola — no sobre el que se acaba de encolar. Si había otro `pending` de
+      // antes (un diario que esperó con el desktop apagado), la primera vuelta
+      // procesó ESE y el propio sigue `pending`: hay que tickear en CADA vuelta
+      // para que la cola avance hasta el propio.
+      if (item.status === 'pending') await reportQueueTick().catch(() => {});
+      state = _reportStateDefaults(loadReportsState());
+      item = _reportFindItem(state, myId);
+    }
+    const queueCount = _reportQueueCount(state);
+    const groupName = state.config.transport?.groupName || null;
+    // Ninguna rama puede quedar sin `status`: la cadena termina en un else.
+    if (item && item.status === 'sent') {
+      if (item.method === 'dm') return res.json({ ok: true, status: 'sent_via_dm', sentAt: item.sentAt });
+      return res.json({ ok: true, status: 'sent', sentAt: item.sentAt, groupName });
+    }
+    if (item && item.status === 'failed') {
+      // group-not-found ya encoló los DM de respaldo (D-02): para el admin es
+      // "quedó en camino", no un fallo.
+      if (item.lastFailureReason === 'group-not-found') return res.json({ ok: true, status: 'queued', reason: 'fallback_dm', queueCount });
+      return res.json({ ok: true, status: 'failed', reason: item.lastFailureReason || 'error' });
+    }
+    if (item && item.lastFailureReason === 'sin_grupo') return res.json({ ok: true, status: 'queued', reason: 'sin_grupo', queueCount });
+    if (item && item.lastFailureReason === 'desktop offline') return res.json({ ok: true, status: 'queued', reason: 'offline', queueCount });
+    // Sigue en `sending` (o en `pending` porque la cola estaba ocupada con items
+    // previos) al vencer la espera: para el admin la lectura es la misma —
+    // "quedó en camino".
+    return res.json({ ok: true, status: 'queued', reason: 'sending', queueCount });
+  } catch (e) { res.status(500).json({ ok: false, status: 'failed', error: e.message }); }
+});
+
+Object.assign(globalThis.__dailyReport, { maybeRunDailyReportCron, _reportPanelStatus });
 
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
