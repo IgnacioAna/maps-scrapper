@@ -2069,8 +2069,74 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
   };
 }
 
+// D-19: el molde exacto validado por el user con datos reales de producción.
+// El orden NO es estético: el preview de la notificación de WhatsApp muestra las
+// primeras líneas, así que lo primero que se lee SIN abrir el mensaje es quién
+// no trabajó. Cada línea del pie se arma como `string | ''` y se filtra —
+// "nada de métricas en cero" (regla transversal del milestone v2.0).
+// Formato WhatsApp: *negrita*, _cursiva_, cero emojis (preferencia del user).
+//
+// REGLA DE MANTENIMIENTO: cambiar la redacción o el orden del mensaje = editar
+// ESTA función, nada más. El molde sigue siendo PRELIMINAR hasta que el user lo
+// lea en su celular (REP-05) — por eso el texto no se concatena en ningún otro
+// lado del código.
+function buildDailyReportText(data, { gapNote = '' } = {}) {
+  const d = data;
+  const head = d.team.dials === 0
+    ? '*Hoy no llamó nadie*'                                          // D-11
+    : (d.idleToday.length
+        ? `*Sin actividad hoy: ${d.idleToday.join(', ')}*`            // D-14
+        : '*Todas trabajaron hoy*');
+  const rows = d.perSetter.map(s => {
+    const segs = [`${s.dials} llam`, `${s.connects} at`];
+    if (s.minutes > 0) segs.push(`${s.minutes} min`);                 // sin minutos en cero
+    return `*${s.name}* ${segs.join(' · ')}`;
+  });
+  const teamSegs = [`${d.team.dials} llam`, `${d.team.connects} at (${d.team.connectRate}%)`];
+  if (d.team.minutes > 0) teamSegs.push(`${d.team.minutes} min`);
+  const foot = [
+    d.team.dials > 0 ? `_Equipo ${teamSegs.join(' · ')}_` : '',
+    // D-19 + discreción: la comparación solo aparece si AYER hubo llamadas
+    // (el primer día no hay ayer; el lunes no compara contra el sábado en cero).
+    d.yesterday.dials > 0 ? `_Ayer ${d.yesterday.dials} llam · ${d.yesterday.connects} at (${d.yesterday.connectRate}%)_` : '',
+    d.interested.length ? `_Interesados: ${d.interested.map(i => `${i.name} ${i.count}`).join(', ')}_` : '',     // D-21
+    d.unmarked.length ? `_Sin marcar hoy: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',      // D-23
+    d.manualFlag ? `_${d.manualCalls} llamadas cargadas a mano — sin minutos_` : '',                             // D-22
+    d.unattributed > 0 ? `_${d.unattributed} llamadas sin atribuir_` : '',                                       // REP-10
+    ...d.escalated.map(e => `_${e.name}: ${e.days} días sin llamar_`),                                           // D-16
+    ...d.onLeave.map(n => `_${n}: de licencia_`),                                                                // D-18
+    d.neverStarted.length ? `_Sin arrancar: ${d.neverStarted.join(', ')}_` : '',                                 // D-15
+  ].filter(Boolean);
+  const body = [head, `Reporte diario · ${d.dayLabel}`];
+  if (rows.length) body.push('', ...rows);
+  if (foot.length) body.push('', ...foot);
+  const text = body.join('\n');
+  // D-05: el próximo mensaje que SÍ sale confiesa los baches, arriba de todo.
+  return gapNote ? `${gapNote}\n\n${text}` : text;
+}
+
+// Una línea por día para el mensaje consolidado (D-26). La cola la guarda junto
+// al texto al encolar, así consolidar no depende de recomputar días viejos.
+function buildDailyReportLine(data) {
+  const d = data;
+  if (d.team.dials === 0) return `*${d.dayLabel}* sin llamadas`;
+  const segs = [`${d.team.dials} llam`, `${d.team.connects} at`];
+  if (d.team.minutes > 0) segs.push(`${d.team.minutes} min`);
+  const tail = d.idleToday.length ? ` · sin actividad: ${d.idleToday.join(', ')}` : '';
+  return `*${d.dayLabel}* ${segs.join(' · ')}${tail}`;
+}
+
+// D-26: con la desktop apagada N días, al reconectar sale UN mensaje con una
+// línea por día — no N mensajes.
+function buildConsolidatedReportText(lines, { gapNote = '', neverStarted = [] } = {}) {
+  const body = [`*Reporte acumulado · ${lines.length} días*`, '', ...lines];
+  if (neverStarted.length) body.push('', `_Sin arrancar: ${neverStarted.join(', ')}_`);
+  const text = body.join('\n');
+  return gapNote ? `${gapNote}\n\n${text}` : text;
+}
+
 // Expuestos para tests (patrón __weeklyReport / __callCore).
-globalThis.__dailyReport = { buildDailyReportData, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
+globalThis.__dailyReport = { buildDailyReportData, buildDailyReportText, buildDailyReportLine, buildConsolidatedReportText, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
 
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
