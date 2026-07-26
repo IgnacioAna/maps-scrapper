@@ -14,8 +14,29 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 4/7
-  planes ejecutados (olas 1 y 2 completas).**
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 5/7
+  planes ejecutados (olas 1, 2 y 3 completas).**
+  - **21-03 EXECUTED (2026-07-26)** — el automatismo encendido. Commits
+    `560c295` (semanal mudado a **domingo 23:00** con ventana corrida a "la
+    semana que TERMINA hoy" (D-13), `buildWeeklyReportTextShort` con el molde
+    D-20 literal, extensión ADITIVA de `buildWeeklyReportData`
+    (`calls.minutes/interested`, `perSetter.minutos/interesados`, `previous`,
+    `neverStarted`), y los 3 hardening del `19-REVIEW`: **WR-01** el envío
+    manual ya no suprime el automático — guard por PERÍODO en vez de ventana
+    de 6 días, `lastManualWeeklySendAt` aparte; **WR-02** warn + dedup de
+    `REPORT_EMAILS`; **WR-03** guard gemelo en memoria contra fallos de
+    escritura del Volume), `bf56577` (`maybeRunDailyReportCron`: 23:00 hora de
+    negocio, lun-vie SIEMPRE aunque el equipo esté en cero, sábado solo con
+    actividad, domingo cede al semanal; UN solo registro de timers
+    `_reportCrons`; los 3 endpoints admin `/api/admin/daily-report/{status,
+    config,send-now}`) y `8174fab` (21 tests nuevos + `weekly-report`
+    reescrito a la ventana nueva). Suite **945/945**.
+    **Verificado por mutación** (el gate RED no era alcanzable con este orden
+    de tasks): 6 mutaciones en 2 rondas → 7/21 y 14/39 tests rojos.
+    Detalle en `21-03-SUMMARY.md`.
+    ⚠️ Ningún cron corrió con el reloj real (todo con `nowTs` inyectado) y el
+    `status:'sent'` de "Mandar ahora" no se ejercitó end-to-end (necesita el
+    `report:send-result` del desktop) — eso es 21-07.
   - **21-06 EXECUTED (2026-07-26)** — picker del grupo + repack v0.5.11.
     Commits `261765a` (`detectors.allChats()` = `unreadChats()` sin el filtro
     de badge, cap 40; overlay `#scm-report-group-picker` dentro de WhatsApp
@@ -141,10 +162,16 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   de WhatsApp sin copiar ningún identificador, y existe el binario
   `wa-multi-portable-v0.5.11` con todo el canal adentro (commits `261765a`,
   `ad5fb79`) — ola 2 cerrada.
+  (8) **21-03 ejecutado**: el reporte ya sale SOLO — diario a las 23:00 con las
+  reglas de día, semanal el domingo 23:00 por las dos vías, sin duplicados por
+  período, y los 3 endpoints del panel listos (commits `560c295`, `bf56577`,
+  `8174fab`; suite 945/945) — ola 3 cerrada.
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — faltan 21-03 (cron diario +
-endpoints admin), 21-04 (panel de config) y 21-07 (prueba en vivo con el user,
-`autonomous: false`).
+**Próximo paso:** seguir `/gsd-execute-phase 21` — faltan 21-04 (panel de
+config, ola 4) y 21-07 (prueba en vivo con el user, `autonomous: false`).
+Para la prueba en vivo ya no hace falta esperar a las 23:00: el
+`POST /api/admin/daily-report/send-now` manda en el acto (y funciona incluso
+con el interruptor de pausa puesto, por decisión del UI-SPEC).
 Para D-02 (fallback por DM) el user puede cargar `REPORT_DM_FALLBACK` en
 Railway (CSV de hasta 5 teléfonos E.164); sin esa var el fallback no sale por
 DM pero el bache se confiesa igual.
@@ -171,7 +198,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 4/7 planes** (21-01 + 21-05 + 21-02 + 21-06 EXECUTED 2026-07-26, olas 1 y 2 completas; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con transporte desktop + cola server + setup del grupo + binario v0.5.11 listos, REP-07/08 completos del lado server) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 5/7 planes** (21-01 + 21-05 + 21-02 + 21-06 + 21-03 EXECUTED 2026-07-26, olas 1-3 completas; REP-04/09/10 completos, REP-05 builder + molde corto hechos y pendientes de validación del user, REP-06 con transporte desktop + cola server + setup del grupo + binario v0.5.11 listos, REP-07/08 completos del lado server, automatismo (crons 23:00) + endpoints del panel listos) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -313,6 +340,31 @@ Contra HEAD `a9e4886`:
   existen en el esquema pero NADIE las escribe: el guard de D-28 se implementó
   escaneando `queue`+`history` por `kind`+`periodKey` (más fuerte, no depende de
   que el cron acierte el orden). Quedan para el bookkeeping de 21-03 si le sirven.
+  → **21-03 las usa**: son el guard de entrada de los dos crons (más un gemelo
+  en memoria, WR-03). El de `enqueueReportMessage` quedó como segunda línea.
+- **21-03:** `config.paused` pausa lo **AUTOMÁTICO**, no los manuales: el tick
+  sigue emitiendo items `kind:'custom'`/`'dm'` con la pausa puesta. Si no, el
+  botón "Mandar ahora" quedaba inutilizado justo en su caso de uso (probar el
+  canal antes de reactivar, decisión 1 del `21-UI-SPEC`). Sin pendientes
+  emitibles sigue devolviendo `reason:'pausado'`.
+- **21-03:** el período del semanal se consume **solo cuando el mail salió**. El
+  corto al grupo se encola siempre (D-04) y su unicidad la garantiza el guard de
+  `enqueueReportMessage`; así el mail conserva el reintento de Phase 19 sin que
+  el grupo reciba dos mensajes del mismo período.
+- **21-03:** el encabezado del semanal corto comprime el mes cuando la semana no
+  lo cruza (`*Semana 20–26/07*`), como el molde literal que el user validó, en
+  vez del `DD/MM–DD/MM` que describía el texto del plan. Semana entera sin
+  llamadas → una línea (`Equipo sin llamadas en la semana`), mismo criterio que
+  D-11 en el diario.
+- **21-03:** `send-now` corta la espera en el acto si el motivo no se resuelve
+  solo (`sin_grupo` / `desktop offline`); los casos ambiguos agotan el techo
+  (`REPORT_SEND_NOW_WAIT_MS`, env, default 25s) y devuelven `queued/sending`.
+  Ninguna rama puede responder sin `status`.
+- **21-03:** la ventana nueva del semanal rompió 8 tests (7 de
+  `weekly-report` + A4 de `metrics-consistency`, que afirmaba la ventana vieja).
+  Se movieron los **fixtures**, no la feature — y los del semanal pasaron a
+  offsets NEGATIVOS desde `now` (`now - 60000`): con la ventana capada a `now`,
+  una hora fija del día habría hecho el test flaky según la hora de la corrida.
 - **21-06:** antes de repackear se **diffeó** el `out/` de trabajo contra el
   archivo extraído del asar de v0.5.10 para confirmar el linaje. El preload
   tenía mtime del **Jun 10** (era v0.5.9) y v0.5.10 se armó el **Jun 12**: si
@@ -338,4 +390,5 @@ Contra HEAD `a9e4886`:
 
 ---
 
-*Last updated: 2026-07-26 (21-06 ejecutado — olas 1 y 2 completas).*
+*Last updated: 2026-07-26 (21-03 ejecutado — olas 1, 2 y 3 completas; el reporte
+ya sale solo, falta el panel de config y la prueba en vivo).*

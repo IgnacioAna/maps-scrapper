@@ -41,7 +41,9 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   notificación). El molde se valida con el user leyéndolo en su celular
   con datos reales ANTES de fijarlo.
   *(builder HECHO en 21-01, 2026-07-26 — `buildDailyReportText`, verificado
-  contra el snapshot de producción del 22/07. Queda abierto SOLO el paso de
+  contra el snapshot de producción del 22/07; el molde corto del SEMANAL
+  (`buildWeeklyReportTextShort`, D-20) se sumó en 21-03 y coincide línea por
+  línea con el texto que el user aprobó. Queda abierto SOLO el paso de
   validación del user en su celular → plan 21-07)*
 - [ ] **REP-06**: El reporte llega al **grupo de WhatsApp** de los 3
   socios. Primera tarea: prueba en vivo del JID de grupo contra el
@@ -75,6 +77,10 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   vuelo" + tick de 60s. Se copió el esqueleto de `scheduledMessagesTick` PERO se
   eliminó su `status='sent'` optimista: el item queda `sending` hasta el
   resultado correlacionado por `queueId`. 26 tests)*
+  *(21-03, 2026-07-26 — los dos crons escriben además el período cubierto en
+  `dailyState`/`weeklyState` con un guard gemelo en memoria (WR-03): un fallo de
+  escritura del Railway Volume ya no puede re-mandar. Una prueba manual
+  (`send-now`, `kind:'custom'`) NUNCA consume el período del automático)*
 - [x] **REP-09**: El reporte incluye **solo las vendedoras nuevas** —
   `setter_ignacio` y `setter_paula_kroff` fuera. Reusar
   `ADMIN_ONLY_SETTER_IDS` (index.js:5588) + `_filterSettersVisible`
@@ -184,4 +190,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ---
 
-*Last updated: 2026-07-26 — milestone v2.0 (REP-07 y REP-08 completos en 21-02).*
+*Last updated: 2026-07-26 — milestone v2.0 (REP-07 y REP-08 completos en 21-02;
+21-03 encendió los crons y sumó el molde corto del semanal — REP-05 y REP-06
+siguen abiertos solo por el primer envío real y la validación del user, plan
+21-07).*

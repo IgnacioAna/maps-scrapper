@@ -308,6 +308,9 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas) — 4/7 ejecutados (21-01, 21-05, 21-02,
-21-06 · olas 1 y 2 completas; binario `wa-multi-portable-v0.5.11` con el canal
-de reportes adentro).*
+Phase 21 planificada (7 planes, 5 olas) — **5/7 ejecutados** (21-01, 21-05,
+21-02, 21-06, 21-03 · olas 1, 2 y 3 completas; binario
+`wa-multi-portable-v0.5.11` con el canal de reportes adentro y los crons de las
+23:00 encendidos: criterios 1, 4, 5 y 6 de la Phase 21 cubiertos del lado
+server, más el 7 con tests). Faltan 21-04 (panel de config) y 21-07 (prueba en
+vivo, `autonomous: false`).*
