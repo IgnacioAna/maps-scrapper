@@ -2626,8 +2626,17 @@ async function reportQueueTick(nowTs = Date.now()) {
       return { emitted: false, reason: t.reason, queueId: first.id };
     }
     // 7. Guard de alcanzabilidad (REP-07) ANTES de emitir.
+    //    ⚠️ Tiene que ser `isDesktopConnected`, NO `isUserConnected`: ese último
+    //    cuenta también las pestañas del navegador (wa.js abre un socket por
+    //    cookie para cualquier user logueado, y el user del transporte es el mismo
+    //    admin que tiene el panel abierto). Con el browser abierto y wa-multi
+    //    CERRADO el guard pasaba, se emitía a una room donde nadie escucha, el item
+    //    quedaba `sending` y a los 150s el timeout quemaba una emisión real del
+    //    presupuesto — 20 vueltas y el reporte `failed` con el desktop solo apagado,
+    //    que es el escenario principal de la fase (CR-01).
+    //    Sin el helper NO se emite: mejor `pending` que quemar sendAttempts.
     const gw = globalThis.__waGateway;
-    if (!(gw && typeof gw.isUserConnected === 'function' && gw.isUserConnected(t.userId))) {
+    if (!(gw && typeof gw.isDesktopConnected === 'function' && gw.isDesktopConnected(t.userId))) {
       first.attempts = (first.attempts || 0) + 1;
       first.lastAttemptAt = nowIso;
       first.lastFailureReason = 'desktop offline';
@@ -2852,7 +2861,11 @@ function _reportPanelStatus(state) {
     jidCaptured: !!t.groupJid,
     lastSent: last ? { at: last.sentAt || last.failedAt, periodLabel: last.dayStr || last.periodKey, status: last.status } : null,
     queueCount: _reportQueueCount(state),
-    desktopOnline: !!(t.userId && gw && typeof gw.isUserConnected === 'function' && gw.isUserConnected(t.userId)),
+    // CR-01: el mismo guard que usa el tick. Con `isUserConnected` el panel decía
+    // "Desktop ahora: conectada" (y el chip "Al día") con la computadora apagada,
+    // porque contaba la pestaña del navegador del propio admin — mentía en el único
+    // dato que existe para diagnosticar el canal.
+    desktopOnline: !!(t.userId && gw && typeof gw.isDesktopConnected === 'function' && gw.isDesktopConnected(t.userId)),
     paused: !!state.config.paused,
     backupEmails: state.config.backupEmails || [],
   };

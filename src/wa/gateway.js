@@ -120,10 +120,18 @@ export function initGateway(httpServer, deps) {
     let p = presence.get(user.id);
     const wasOffline = !p || p.sockets.size === 0;
     if (!p) {
-      p = { sockets: new Set(), lastSeen: Date.now(), role: user.role, name: user.name };
+      p = { sockets: new Set(), desktopSockets: new Set(), lastSeen: Date.now(), role: user.role, name: user.name };
       presence.set(user.id, p);
     }
     p.sockets.add(socket.id);
+    // Phase 21 (CR-01): el desktop wa-multi y una pestaña del navegador NO son lo
+    // mismo. `wa.js` abre un socket por cookie para CUALQUIER user logueado, y el
+    // user que sostiene el transporte del reporte (config.transport.userId) es
+    // justo el admin que tiene el panel abierto: sin separar las dos fuentes,
+    // "desktop conectada" era true con wa-multi CERRADO y la cola emitía al vacío
+    // quemando el presupuesto de reintentos. `source` ya lo distingue en el io.use.
+    if (!p.desktopSockets) p.desktopSockets = new Set();
+    if (user.source === "desktop") p.desktopSockets.add(socket.id);
     p.lastSeen = Date.now();
 
     if (user.role !== "admin") {
@@ -334,6 +342,7 @@ export function initGateway(httpServer, deps) {
       const cur = presence.get(user.id);
       if (!cur) return;
       cur.sockets.delete(socket.id);
+      cur.desktopSockets?.delete(socket.id);   // Phase 21 (CR-01)
       cur.lastSeen = Date.now();
       if (cur.sockets.size === 0 && user.role !== "admin") {
         io.to("admins").emit("admin:presence-update", { userId: user.id, online: false });
@@ -352,6 +361,16 @@ export function getIO() {
 export function isUserOnline(userId) {
   const p = presence.get(userId);
   return !!(p && p.sockets.size > 0);
+}
+
+// Phase 21 (CR-01): ¿hay una app de ESCRITORIO (wa-multi) conectada por este user?
+// `isUserOnline` incluye las pestañas del navegador — para decidir si mandar un
+// comando que solo el desktop sabe ejecutar (tipear en WhatsApp Web) hace falta
+// este guard, no ese. Sin esto el reporte se emite a una room donde solo escucha
+// un browser sin handler y el intento se cuenta como emisión real.
+export function isDesktopConnected(userId) {
+  const p = presence.get(userId);
+  return !!(p && p.desktopSockets && p.desktopSockets.size > 0);
 }
 
 export function getPresenceList() {
@@ -378,6 +397,7 @@ export function exposeGlobals() {
   globalThis.__waGateway = {
     sendToUser,
     isUserConnected: isUserOnline,
+    isDesktopConnected,
     getPresenceList,
   };
 }

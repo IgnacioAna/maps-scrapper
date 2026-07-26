@@ -101,11 +101,14 @@ function reset(extra = {}) {
     W.saveReportsState({ config: { paused: false, backupEmails: [], transport: { ...TRANSPORT } }, queue: [], history: [], ...extra });
   }
 }
-// Gateway doble: nunca se toca un socket real.
-function mkGateway(online = true) {
+// Gateway doble: nunca se toca un socket real. `isDesktopConnected` (no
+// `isUserConnected`) es lo que el tick consulta antes de emitir — CR-01: una
+// pestaña del navegador NO es el desktop wa-multi.
+function mkGateway(online = true, browserOnly = false) {
   const emitted = [];
   const gw = {
-    isUserConnected: () => online,
+    isUserConnected: () => online || browserOnly,
+    isDesktopConnected: () => online,
     sendToUser: (userId, event, payload) => { emitted.push({ userId, event, payload }); return true; },
     getPresenceList: () => [],
   };

@@ -51,6 +51,7 @@ fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({
 
 const { app } = await import("../index.js");
 const Q = globalThis.__reportQueue;
+const DR = globalThis.__dailyReport;   // _reportPanelStatus (CR-01: mismo guard que el tick)
 const MAX = Q.consts.REPORT_MAX_ATTEMPTS;
 const TIMEOUT_MS = Q.consts.REPORT_SEND_TIMEOUT_MS;
 
@@ -100,12 +101,17 @@ function mkItem(o = {}) {
   };
 }
 
-// Gateway doble: nunca se toca un socket real. `isUserConnected` es lo único que
-// el tick puede consultar antes de emitir, y `sendToUser` captura el evento.
-function mkGateway(online = true) {
+// Gateway doble: nunca se toca un socket real. `isDesktopConnected` es lo que el
+// tick consulta antes de emitir (CR-01: `isUserConnected` incluye las pestañas del
+// navegador y el user del transporte es el mismo admin que tiene el panel abierto),
+// y `sendToUser` captura el evento.
+// `browserOnly:true` modela el escenario del blocker: navegador abierto, wa-multi
+// CERRADO.
+function mkGateway(online = true, browserOnly = false) {
   const emitted = [];
   const gw = {
-    isUserConnected: () => online,
+    isUserConnected: () => online || browserOnly,
+    isDesktopConnected: () => online,
     sendToUser: (userId, event, payload) => { emitted.push({ userId, event, payload }); return true; },
     getPresenceList: () => [],
   };
@@ -191,6 +197,44 @@ describe("guard de alcanzabilidad — nada se marca sent sin confirmación (REP-
     expect(r).toMatchObject({ emitted: false, reason: "sin_grupo" });
     expect(findItem("it_sg").status).toBe("pending");
     expect(gw.emitted.length).toBe(0);
+  });
+
+  // CR-01 (21-REVIEW): el navegador del propio admin abre un socket por cookie
+  // (wa.js, para cualquier user logueado) y `config.transport.userId` ES ese admin.
+  // Con `isUserConnected` el guard pasaba con wa-multi CERRADO: se emitía a una room
+  // sin handler, el item quedaba `sending` y el timeout de 150s quemaba una emisión
+  // real del presupuesto. 20 vueltas → `failed` con la computadora solo apagada.
+  it("browser abierto + desktop CERRADO: no emite y NO quema sendAttempts", async () => {
+    seed({ queue: [mkItem({ id: "it_browser" })] });
+    globalThis.__waGateway = mkGateway(false, true);   // isUserConnected true, isDesktopConnected false
+    const r = await Q.reportQueueTick(NOW);
+    expect(r).toMatchObject({ emitted: false, reason: "desktop offline" });
+    const it = findItem("it_browser");
+    expect(it.status).toBe("pending");
+    expect(it.sendAttempts).toBe(0);   // ← el presupuesto intacto (decisión 2 de 21-02)
+    expect(it.attempts).toBe(1);
+    expect(globalThis.__waGateway.emitted.length).toBe(0);
+  });
+
+  it("gateway sin isDesktopConnected: NO emite (fallback conservador)", async () => {
+    seed({ queue: [mkItem({ id: "it_legacy_gw" })] });
+    const legacy = mkGateway(true);
+    delete legacy.isDesktopConnected;                  // gateway viejo / parcialmente cargado
+    globalThis.__waGateway = legacy;
+    const r = await Q.reportQueueTick(NOW);
+    expect(r).toMatchObject({ emitted: false, reason: "desktop offline" });
+    expect(findItem("it_legacy_gw").sendAttempts).toBe(0);
+    expect(legacy.emitted.length).toBe(0);
+  });
+
+  it("el panel reporta desktopOnline por el MISMO guard que el tick", async () => {
+    seed({ queue: [] });
+    globalThis.__waGateway = mkGateway(false, true);   // solo browser
+    const st1 = DR._reportPanelStatus(Q._reportStateDefaults(read()));
+    expect(st1.desktopOnline).toBe(false);
+    globalThis.__waGateway = mkGateway(true);          // desktop de verdad
+    const st2 = DR._reportPanelStatus(Q._reportStateDefaults(read()));
+    expect(st2.desktopOnline).toBe(true);
   });
 });
 
