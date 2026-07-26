@@ -47,7 +47,7 @@ patterns-established:
 requirements-completed: []   # REP-06 se comparte con 21-02/03/05/06/07: se marca cuando el mensaje llegue al grupo real (21-07)
 
 # Metrics
-duration: 25min
+duration: 23min
 completed: 2026-07-26
 ---
 
@@ -57,9 +57,9 @@ completed: 2026-07-26
 
 ## Performance
 
-- **Duration:** ~25 min
-- **Started:** 2026-07-26T22:40:00Z
-- **Completed:** 2026-07-26T23:05:00Z
+- **Duration:** ~23 min
+- **Started:** 2026-07-26T22:45:20Z
+- **Completed:** 2026-07-26T23:07:44Z
 - **Tasks:** 3/3
 - **Files modified:** 2 (`public/index.html`, `public/app.js`) + `deferred-items.md`
 
