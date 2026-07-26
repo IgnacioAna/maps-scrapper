@@ -28,12 +28,19 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
 - **Last activity:** 2026-07-26 — Phase 20 ejecutada completa (waves 1-2,
-  preview checklist, review + fix CR-01, verificación).
+  preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
+  push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
+  `20260725c`, los 3 endpoints nuevos responden 401 (vivos). ⚠️ El push
+  incluyó también la **Phase 19 completa**, que nunca había llegado a
+  producción — el cron del reporte semanal recién ahora corre en prod.
 
-**Próximo paso:** deploy (pre-deploy → push a main) + UAT humano de
-`20-HUMAN-UAT.md` (las SDRs recargan el tab una vez; la regla arranca de
-cero — D-05). Al aprobar el UAT: marcar Phase 20 COMPLETE y seguir con
-`/gsd-discuss-phase 21`.
+**Próximo paso:** UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
+una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
+aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE → `/gsd-discuss-phase 21`.
+**Decisión del user (2026-07-26):** `RESEND_API_KEY` NO es prioridad — el
+reporte va al grupo de WhatsApp (Phase 21) y las invitaciones se mandan
+copiando el link a mano. El email queda como fallback si la prueba del JID
+de grupo falla.
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
