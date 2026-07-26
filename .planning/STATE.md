@@ -14,27 +14,26 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 19 — Encender el reporte semanal — **COMPLETE (2/2 planes)**
-- **Plan:** 19-02 EXECUTED (tests de regresión, commit 79b5d26 —
-  tests/weekly-report.test.js con 12 tests; suite completa **848/848**
-  verde, cero flakies). 19-01 EXECUTED antes (2a41048/be1445d/b13d051).
-- **Status:** Phase 19 cerrada sin deuda de tests — VERIFICATION **passed
-  8/8 must-haves** (`19-VERIFICATION.md`), code review 0 críticos / 3
-  warnings advisory (`19-REVIEW.md`, candidatos de hardening para Phase
-  21: envío manual mid-week suprime el lunes, fallback silencioso de
-  REPORT_EMAILS, anti-dup sin guard in-memory ante fallo de disco).
-  SUMMARYs en `.planning/phases/19-encender-reporte-semanal/`
-- **Last activity:** 2026-07-25 — 19-02 ejecutado: regresión del cron
-  (ventana lunes-8am TZ negocio, anti-dup del bug de los 16 mails, caso
-  TZ lunes 23:00 AR, fallo-no-persiste), REPORT_EMAILS CSV, shape sin
-  WSP con Ignacio excluido, round-trip export/import de reports.json.
-  REP-01/02/03 marcados completos en REQUIREMENTS.md.
+- **Phase:** 20 — Disposición obligatoria — wave 1 EXECUTED (1/3 planes)
+- **Plan:** 20-01 EXECUTED (commits a99047f/730e749/c8329e1): registro
+  server-side de llamadas pendientes (`pending_calls.json` + POST/GET
+  `/api/setters/pending-calls`, persistencia en los 5 lugares),
+  call-disposition extendido (autoMarked solo no_answer + snapshot
+  preCadence + corrección `correctsAutoMarked` 15 min + resolución de
+  pendientes por pendingCallId→startedAt→más reciente) y GET
+  `/api/setters/disposition-audit` (D-06, derivado del CALL METRICS
+  CORE). SUMMARY en `20-01-SUMMARY.md`.
+- **Status:** Gates verdes: `metrics-consistency` 18/18 sin cambios,
+  `disposition-dnc`+`call-cadence` 11/11, node --check OK. El registro
+  arranca vacío post-deploy (D-05); NO existe `data/pending_calls.json`
+  en el repo.
+- **Last activity:** 2026-07-26 — 20-01 ejecutado (3 tasks, 3 commits
+  atómicos, cero desviaciones del plan).
 
-**Próximo paso:** `/gsd-execute-phase 20` — Phase 20 PLANIFICADA
-(2026-07-25): 3 planes en 2 waves (20-01 backend pendientes+auto-marca+
-audit → 20-02 tests ∥ 20-03 frontend enforcement), checker PASSED tras 1
-iteración (3 gates de calibración corregidos; el gate de vitest se
-verificó por ejecución real). Contexto en `20-CONTEXT.md` (D-01..D-06).
+**Próximo paso:** wave 2 de la Phase 20 — 20-02 (tests backend) ∥ 20-03
+(frontend enforcement: gate en `_startTelnyxCall`, franja de pendientes,
+auto-marca en `_handleCallDisposition`). Contexto en `20-CONTEXT.md`
+(D-01..D-06).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
