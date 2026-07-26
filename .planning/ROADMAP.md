@@ -308,4 +308,6 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas) — 3/7 ejecutados (21-01, 21-05, 21-02).*
+Phase 21 planificada (7 planes, 5 olas) — 4/7 ejecutados (21-01, 21-05, 21-02,
+21-06 · olas 1 y 2 completas; binario `wa-multi-portable-v0.5.11` con el canal
+de reportes adentro).*

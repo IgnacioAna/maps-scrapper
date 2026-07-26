@@ -14,8 +14,36 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 3/7
-  planes ejecutados (ola 1 completa + 21-02 de la ola 2).**
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 4/7
+  planes ejecutados (olas 1 y 2 completas).**
+  - **21-06 EXECUTED (2026-07-26)** — picker del grupo + repack v0.5.11.
+    Commits `261765a` (`detectors.allChats()` = `unreadChats()` sin el filtro
+    de badge, cap 40; overlay `#scm-report-group-picker` dentro de WhatsApp
+    Web: botón "Grupo de reportes" → lista de chats → click →
+    `send('report-group-selected', {groupName, groupJid})` por el canal IPC
+    que el main ya escuchaba desde 21-05; JID best-effort del `data-id`, si
+    no se puede va `null` y el server lo backfillea; recordatorio de FIJAR el
+    chat; filas con `createElement`+`textContent`, cero `innerHTML` → T-21-29)
+    y `ad5fb79` (repack: copia del portable, backup del asar, extract con
+    `@electron/asar@3` v3.4.1, copia de los 2 archivos, bump a 0.5.11, pack;
+    README + referencia canónica del CONTEXT).
+    **Artefacto (gitignored, NO está en git):**
+    `wa-multi/versiones/wa-multi-portable-v0.5.11/wa-multi-win32-x64/wa-multi.exe`
+    · asar 104.152.630 B · backup
+    `wa-multi/backups/app.asar-v0510-pre0511-20260726.bak` (md5 == asar de
+    v0.5.10, que quedó intacto como rollback).
+    Verificación del asar: re-extraído con **md5 idéntico** al `out/` de
+    trabajo, `node --check` OK adentro, **13.546 entradas en ambos asars
+    (mismo set exacto)**, aritmética de bytes exacta (+24.824 = +4 header
+    padded + 24.820 de los 2 archivos → ningún otro archivo cambió) y fuse
+    `EnableEmbeddedAsarIntegrityValidation` = **off** (el asar repackeado
+    boota). **NO se corrió build** (2 de 8 archivos de `out/` con mtime de
+    hoy, los otros 6 en Jun 1). Picker verificado con el código REAL extraído
+    del archivo contra un DOM stub: **17/17 PASS** (no hay jsdom; no se
+    instaló nada). Suite **918/918**. Detalle en `21-06-SUMMARY.md`.
+    ⚠️ Sin verificar en vivo (queda para 21-07): pin en fila 0 (A1), `@g.us`
+    en el `data-id` (A2) y si la sesión del login/WhatsApp sobrevive al
+    cambio de carpeta de versión (A4).
   - **21-02 EXECUTED (2026-07-26)** — cola de envío al grupo. Commits
     `a0acab2` (esquema en `reports.json` + `mutateReportsState` + prune con
     cap que nunca descarta pendientes + expiración D-26 + `enqueueReportMessage`
@@ -73,8 +101,10 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   - **Bloquea la prueba en vivo (plan 21-07, `autonomous: false`), NO la
     construcción:** el user tiene que (a) conseguir un número nuevo y
     registrar WhatsApp, (b) crear el grupo cerrado con los 2 socios (sin
-    vendedoras, D-24), (c) abrir wa-multi, escanear el QR y **fijar (pin) el
-    grupo** — el pin es lo que hace que el envío sobreviva a un rename.
+    vendedoras, D-24), (c) abrir **`wa-multi-portable-v0.5.11`** (¡ya no la
+    v0.5.10!), escanear el QR, clickear el botón **"Grupo de reportes"** abajo
+    a la izquierda de la ventana de WhatsApp, elegir el grupo y **fijarlo
+    (pin)** — el pin es lo que hace que el envío sobreviva a un rename.
   - Los planes 21-01..21-06 se ejecutan y verifican HOY, sin número ni grupo.
 - **Phase 20:** Disposición obligatoria — 3/3 planes EXECUTED +
   verificados. **Preview checklist a-f: 6/6 PASS** (documentado en
@@ -107,10 +137,14 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   (6) **21-02 ejecutado**: la cola de envío al grupo ya transporta cualquier
   texto con reintentos, consolidación y confesión de baches (commits
   `a0acab2`, `aadc9a1`, `10f2a4f`; suite 918/918).
+  (7) **21-06 ejecutado**: el user ya puede elegir el grupo desde la ventana
+  de WhatsApp sin copiar ningún identificador, y existe el binario
+  `wa-multi-portable-v0.5.11` con todo el canal adentro (commits `261765a`,
+  `ad5fb79`) — ola 2 cerrada.
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — falta 21-06 (picker del
-grupo en el preload + repack v0.5.11) para cerrar la ola 2, después 21-03
-(cron diario + endpoints admin), 21-04 (panel) y 21-07 con el user.
+**Próximo paso:** seguir `/gsd-execute-phase 21` — faltan 21-03 (cron diario +
+endpoints admin), 21-04 (panel de config) y 21-07 (prueba en vivo con el user,
+`autonomous: false`).
 Para D-02 (fallback por DM) el user puede cargar `REPORT_DM_FALLBACK` en
 Railway (CSV de hasta 5 teléfonos E.164); sin esa var el fallback no sale por
 DM pero el bache se confiesa igual.
@@ -137,7 +171,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 3/7 planes** (21-01 + 21-05 + 21-02 EXECUTED 2026-07-26; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con transporte desktop + cola server listos, REP-07/08 completos del lado server) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 4/7 planes** (21-01 + 21-05 + 21-02 + 21-06 EXECUTED 2026-07-26, olas 1 y 2 completas; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con transporte desktop + cola server + setup del grupo + binario v0.5.11 listos, REP-07/08 completos del lado server) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -185,8 +219,10 @@ Contra HEAD `a9e4886`:
 - **Acciones del user pendientes (bloquean la prueba en vivo de la Phase 21,
   NO la construcción)**: (1) conseguir un número de WhatsApp NUEVO dedicado y
   registrarlo; (2) crear el grupo con los 2 socios — **cerrado, sin las
-  vendedoras**; (3) abrir `wa-multi-portable-v0.5.10`, escanear el QR con ese
-  número, elegir el grupo de la lista y dejar la app abierta.
+  vendedoras**; (3) abrir `wa-multi-portable-v0.5.11` (repackeado en 21-06;
+  la v0.5.10 queda como rollback), escanear el QR con ese número, elegir el
+  grupo con el botón "Grupo de reportes", **fijar ese chat** y dejar la app
+  abierta.
   `RESEND_API_KEY` dejó de ser necesaria para el diario (decisión D-04: sin
   fallback a email); sigue haciendo falta para el mail semanal.
 
@@ -277,7 +313,29 @@ Contra HEAD `a9e4886`:
   existen en el esquema pero NADIE las escribe: el guard de D-28 se implementó
   escaneando `queue`+`history` por `kind`+`periodKey` (más fuerte, no depende de
   que el cron acierte el orden). Quedan para el bookkeeping de 21-03 si le sirven.
+- **21-06:** antes de repackear se **diffeó** el `out/` de trabajo contra el
+  archivo extraído del asar de v0.5.10 para confirmar el linaje. El preload
+  tenía mtime del **Jun 10** (era v0.5.9) y v0.5.10 se armó el **Jun 12**: si
+  v0.5.10 hubiera tocado el preload, copiar el de trabajo encima habría
+  borrado ese cambio en silencio. Resultado: preload = v0.5.10 + 130 líneas
+  agregadas y **0 quitadas**; main = v0.5.10 + los 2 reemplazos documentados
+  de 21-05. **Regla para repacks futuros: diffear primero, copiar después.**
+- **21-06:** un repack NO se verifica por grep de 2 strings. Se verifica por
+  md5 de los archivos re-extraídos contra el `out/` de trabajo + `asar list`
+  comparado contra el backup (13.546 entradas, mismo set) + aritmética de
+  bytes del contenedor. Extra útil: el fuse
+  `EnableEmbeddedAsarIntegrityValidation` del exe está en **off**, así que un
+  asar repackeado siempre boota en esta build (es lo que hizo funcionar los
+  repacks de v0.5.9 y v0.5.10).
+- **21-06:** el picker no guarda nada del lado desktop (ni localStorage): la
+  fuente de verdad del grupo es `reports.json` en el server y duplicarla
+  crearía dos estados que pueden divergir. El overlay es un formulario de una
+  sola vez, no un display de estado.
+- **21-06:** los criterios de aceptación que se medían con
+  `git status --porcelain wa-multi/...` no sirven (carpeta gitignored): la
+  prueba de que no se corrió `npm run build` se hace con **mtimes de todo
+  `out/`** (2 de 8 archivos de hoy, 6 en Jun 1).
 
 ---
 
-*Last updated: 2026-07-26 (21-02 ejecutado).*
+*Last updated: 2026-07-26 (21-06 ejecutado — olas 1 y 2 completas).*
