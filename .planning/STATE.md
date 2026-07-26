@@ -14,26 +14,25 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 20 — Disposición obligatoria — wave 1 EXECUTED (1/3 planes)
-- **Plan:** 20-01 EXECUTED (commits a99047f/730e749/c8329e1): registro
-  server-side de llamadas pendientes (`pending_calls.json` + POST/GET
-  `/api/setters/pending-calls`, persistencia en los 5 lugares),
-  call-disposition extendido (autoMarked solo no_answer + snapshot
-  preCadence + corrección `correctsAutoMarked` 15 min + resolución de
-  pendientes por pendingCallId→startedAt→más reciente) y GET
-  `/api/setters/disposition-audit` (D-06, derivado del CALL METRICS
-  CORE). SUMMARY en `20-01-SUMMARY.md`.
-- **Status:** Gates verdes: `metrics-consistency` 18/18 sin cambios,
-  `disposition-dnc`+`call-cadence` 11/11, node --check OK. El registro
+- **Phase:** 20 — Disposición obligatoria — 2/3 planes EXECUTED
+- **Plan:** 20-02 EXECUTED (commit 8f37ace):
+  `tests/disposition-enforcement.test.js` — 16 tests de regresión sobre
+  los 3 endpoints de 20-01 (pendientes/RBAC, resolución, auto-marca y
+  corrección, auditoría D-06, export/import round-trip). Suite completa
+  **864/864 verde** (base 848 + 16 nuevos), cero tests pre-existentes
+  modificados, cero bugs encontrados en 20-01. SUMMARY en
+  `20-02-SUMMARY.md`. (20-01: commits a99047f/730e749/c8329e1, ver
+  `20-01-SUMMARY.md`.)
+- **Status:** Backend del enforcement blindado por regresión. El registro
   arranca vacío post-deploy (D-05); NO existe `data/pending_calls.json`
   en el repo.
-- **Last activity:** 2026-07-26 — 20-01 ejecutado (3 tasks, 3 commits
-  atómicos, cero desviaciones del plan).
+- **Last activity:** 2026-07-26 — 20-02 ejecutado (16/16 tests a la
+  primera, suite 864/864).
 
-**Próximo paso:** wave 2 de la Phase 20 — 20-02 (tests backend) ∥ 20-03
-(frontend enforcement: gate en `_startTelnyxCall`, franja de pendientes,
-auto-marca en `_handleCallDisposition`). Contexto en `20-CONTEXT.md`
-(D-01..D-06).
+**Próximo paso:** 20-03 (frontend enforcement: gate en
+`_startTelnyxCall`, franja de pendientes, auto-marca en
+`_handleCallDisposition` — bumpear cache-buster). Contexto en
+`20-CONTEXT.md` (D-01..D-06).
 **Pendiente del user:** cargar `RESEND_API_KEY` (y opcional `REPORT_EMAILS`)
 en Railway → Variables — sin la key el cron no manda nada.
 
