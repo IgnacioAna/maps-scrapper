@@ -14,7 +14,25 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 20 — Disposición obligatoria — 3/3 planes EXECUTED +
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **PLANIFICADA: 7 planes
+  en 5 olas, listos para ejecutar.** Artefactos:
+  `21-CONTEXT.md` (29 decisiones), `21-RESEARCH.md` (transporte wa-multi),
+  `21-PATTERNS.md` (analogía por superficie), `21-UI-SPEC.md` (aprobado 6/6
+  por gsd-ui-checker), `21-01..21-07-PLAN.md`.
+  - **Verificación de planes: PASSED** (gsd-plan-checker, sin bloqueantes).
+    Las 2 advertencias se corrigieron en los propios planes antes de cerrar:
+    la nota de baches de D-05 ahora aplica a TODO envío y no solo al
+    consolidado (21-02), y `send-now` avanza la cola en cada vuelta del
+    polling buscando su propio item, con rama definida para "sigue pending"
+    (21-03).
+  - Cobertura: REP-04..REP-10 7/7 · decisiones D-01..D-29 29/29.
+  - **Bloquea la prueba en vivo (plan 21-07, `autonomous: false`), NO la
+    construcción:** el user tiene que (a) conseguir un número nuevo y
+    registrar WhatsApp, (b) crear el grupo cerrado con los 2 socios (sin
+    vendedoras, D-24), (c) abrir wa-multi, escanear el QR y **fijar (pin) el
+    grupo** — el pin es lo que hace que el envío sobreviva a un rename.
+  - Los planes 21-01..21-06 se ejecutan y verifican HOY, sin número ni grupo.
+- **Phase 20:** Disposición obligatoria — 3/3 planes EXECUTED +
   verificados. **Preview checklist a-f: 6/6 PASS** (documentado en
   20-03-SUMMARY). Code review: 1 critical **CR-01 FIXED** (`84ebf4a` —
   re-discar el mismo lead ya invalida la ventana de correctsAutoMarked;
@@ -34,12 +52,15 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   incluyó también la **Phase 19 completa**, que nunca había llegado a
   producción — el cron del reporte semanal recién ahora corre en prod.
   (2) **Phase 21 discutida** — `21-CONTEXT.md` + `21-DISCUSSION-LOG.md`
-  escritos (29 decisiones D-01..D-29, listo para planificar).
+  escritos (29 decisiones D-01..D-29). (3) **Phase 21 planificada** —
+  research del transporte + mapa de patrones + UI-SPEC verificado + 7 planes
+  verificados (commits `a451157`, `8298c24`).
 
-**Próximo paso:** UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
+**Próximo paso:** `/gsd-execute-phase 21` (las olas 1 y 2 corren 2 planes en
+paralelo cada una; el plan 21-07 espera al user).
+Pendiente aparte: UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
 una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
-aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE. La Phase 21 ya tiene
-contexto: `/gsd-plan-phase 21`.
+aprobar el UAT: `/gsd-verify-work 20` → marcar COMPLETE.
 **Decisión del user (2026-07-26):** `RESEND_API_KEY` NO es prioridad — el
 reporte diario va al grupo de WhatsApp y **NO tiene fallback a email**
 (Phase 21 D-04, acota REP-07); el email queda cableado y apagado. Las

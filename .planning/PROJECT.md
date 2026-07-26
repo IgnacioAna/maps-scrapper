@@ -66,9 +66,15 @@ que escuchar. Si el reporte llega pero igual hay que entrar a mirar para
 entender algo, el milestone falló.
 
 **Decisiones ya tomadas (no re-litigar):**
-- Canal primario = **grupo de WhatsApp** (Ignacio + 2 socios). Email =
-  fallback obligatorio, no canal principal. La razón es la conversación:
-  el grupo es donde se discute el reporte.
+- Canal primario = **grupo de WhatsApp** (Ignacio + 2 socios). La razón es
+  la conversación: el grupo es donde se discute el reporte.
+  ⚠️ **Actualizado el 2026-07-26 por la decisión D-04 de la Phase 21:** el
+  email NO es fallback del diario. Si la máquina que sostiene el canal está
+  apagada, el reporte queda en cola y espera; no sale por mail. El envío por
+  email queda cableado y apagado detrás de una bandera, para que encenderlo
+  después sea configuración y no construcción. Esto acota REP-07 a su guard
+  de alcanzabilidad. (El reporte semanal detallado SÍ sigue saliendo por
+  mail — eso no cambió.)
 - **Disposición obligatoria** — la forma exacta (modal bloqueante vs cola
   de pendientes) se discute en discuss-phase de la Phase 20.
 - **Alcance = solo vendedoras nuevas** — `setter_ignacio` y

@@ -139,8 +139,11 @@ Plans:
 
 **Goal:** todos los días llega al grupo de WhatsApp de los 3 socios un
 reporte corto, legible en el preview de la notificación, con las
-excepciones arriba. Si la desktop está apagada, sale por email y/o queda
-en cola consolidada.
+excepciones arriba. Si la desktop está apagada, el reporte queda en cola
+y sale consolidado al reconectar.
+*(Corregido 2026-07-26 por D-04: la redacción original decía "sale por email
+y/o queda en cola". No hay fallback a email — el email queda cableado y
+apagado detrás de una bandera. Ver la nota sobre REP-07 al pie.)*
 
 **Requirements:** REP-04, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10
 
@@ -169,8 +172,9 @@ _Ayer: 141 llam · 24 at (17%)_
 ```
 
 **Success criteria:**
-1. El diario llega solo, todos los días, al grupo (o fallback email si la
-   desktop está offline) — sin intervención de nadie.
+1. El diario llega solo, todos los días hábiles, al grupo — sin
+   intervención de nadie. Con la desktop offline queda en cola (D-04: sin
+   fallback a email); fin de semana solo si hubo actividad (D-12).
 2. La primera línea después del título es quién no trabajó hoy.
 3. Solo métricas con señal (llamadas · atendidas · minutos · última
    actividad) + comparación vs ayer; cero filas de ceros.
