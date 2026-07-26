@@ -96,17 +96,34 @@ lleva padding vertical extra (ver HTML actualizado abajo).
 **4 tamaños declarados, sin quinto** (10-11 / 12.5 / 15 se usan en
 prosa; 13px NO se declara como rol nuevo — ver nota siguiente).
 
-⚠️ **Los botones NO llevan `font-size` inline en esta fase.**
-`.btn-primary`, `.btn-secondary` y `.btn-table-action` ya heredan
-`var(--text-sm)` = 13px de su propia clase (`style.css:502-509`) — ese
-13px es el default global de TODO botón del sistema, no una decisión
-tipográfica de esta fase, así que no se repite inline en ningún botón
-nuevo (`#cmd-report-send-now-btn`, `#team-leave-cancel`,
-`#team-leave-save`, `#cmd-report-backup-emails-save`, el botón de
-licencia con `.btn-sm`). Si el HTML de este documento en algún punto
-anterior mostraba `style="font-size:13px;"` en un botón, era redundante
-con lo que la clase ya aplica — se quitó (ver `## Registro de
-correcciones`, Block 3).
+⚠️ **Los botones NO llevan `font-size` inline en esta fase — pero SOLO
+si arrastran la clase base `.btn`.** El `font-size: var(--text-sm)` =
+13px lo declara el selector agrupado `.btn, .pill-btn,
+`.btn-table-action`` (`style.css:502-509`). **`.btn-primary`
+(`style.css:524-530`) y `.btn-secondary` (`style.css:534-538`) son
+bloques de regla SEPARADOS que solo aportan `background`/`color`/
+`border-color` — no heredan ningún `font-size`.** Un botón con
+`class="btn-primary"` a secas cae al font default del navegador, no a
+Geist/13px.
+
+Por eso, todo botón nuevo de esta fase que use una variante lleva la
+clase base junto a la variante: `class="btn btn-primary"` /
+`class="btn btn-secondary"`, replicando el patrón ya existente en
+`index.html:1513`, `:1570` y `:1597`. Los que usan `.btn-table-action`
+no la necesitan (esa clase SÍ está en el selector agrupado).
+
+Con la clase base presente, el 13px es el default global de todo botón
+del sistema — no una decisión tipográfica de esta fase — y por eso no se
+repite inline en ningún botón nuevo (`#cmd-report-send-now-btn`,
+`#team-leave-cancel`, `#team-leave-save`,
+`#cmd-report-backup-emails-save`, el botón de licencia con `.btn-sm`).
+
+⚠️ **Contrato para el executor:** si por cualquier motivo se decide NO
+poner la clase base `.btn`, entonces el `style="font-size:13px;"` inline
+es OBLIGATORIO — es lo que hacen las ~13 instancias standalone que ya
+existen en `index.html` (`#tlx-cfg-save`, `#team-cfg-save`,
+`#team-cfg-cancel`, `#myp-refresh`, …). Lo que NO es aceptable es
+variante sin clase base y sin inline: eso rompe la tipografía.
 
 No hay rol "Display" en esta fase — no hay headline grande, es un bloque
 de configuración chico dentro de una vista existente.
@@ -187,8 +204,8 @@ Verificado contra `public/style.css` antes de escribir este documento:
 |---|---|---|
 | `.admin-variable-panel` | "Base de Datos de Leads Scrapeados" (`index.html:1984`) | Wrapper del bloque nuevo — mismo patrón `padding:16px; border:1px solid var(--border-color); border-radius:16px; margin:20px 32px` |
 | `.chip` + `.chip-success/.chip-warning/.chip-danger/.chip-neutral` | definidas en `style.css:1426-1455`, usadas en `#tlx-cfg-status` (Telnyx) | Chip de estado del canal |
-| `.btn-primary` | botones CTA en todo el panel (`tlx-cfg-save`, `tlx-num-add-btn`) | **Únicamente** el botón "Mandar ahora" (ver `## Color` — acento reservado) |
-| `.btn-secondary` | `team-refresh`, `myp-refresh`, `#team-cfg-cancel` | Botón "Cancelar" del modal de licencia (`#team-leave-cancel`) y botón **"Guardar licencia"** (`#team-leave-save` — deliberadamente NO `.btn-primary` pese a que su sibling `#team-cfg-save` sí lo usa, ver `## Color`) |
+| `.btn` **+** `.btn-primary` | `#faq-new-btn` (`index.html:1513`), `_faqSave` (`:1570`), `#faq-import-submit-btn` (`:1597`) | **Únicamente** el botón "Mandar ahora" (ver `## Color` — acento reservado). **La clase base `.btn` es obligatoria** — sin ella no hay `font-size` (ver `## Typography`) |
+| `.btn` **+** `.btn-secondary` | mismo patrón `btn + variante` de `index.html:1513/1570/1597` | Botón "Cancelar" del modal de licencia (`#team-leave-cancel`) y botón **"Guardar licencia"** (`#team-leave-save` — deliberadamente NO `.btn-primary` pese a que su sibling `#team-cfg-save` sí lo usa, ver `## Color`). **Clase base `.btn` obligatoria** |
 | `.btn-table-action` | `cmd-clear-btn`, `history-bulk-delete-btn` | Botón **"Guardar mails"** (`#cmd-report-backup-emails-save`) y botón "Quitar licencia" (+ `color:var(--danger)` inline, igual que sus vecinos) |
 | `.btn-table-action.btn-sm` | combo declarado en `style.css:562-563` (`height:26px; font-size:var(--text-xs); padding:0 var(--space-3)`) | Botón "+ Licencia" / "Editar licencia" en Equipo — evita inventar padding/height ad-hoc |
 | `.setter-input` | `invite-name`, `invite-email` | Input de mails de respaldo |
@@ -272,7 +289,7 @@ mirar, y el primer lugar donde mirar es acá).
   </div>
 
   <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
-    <button id="cmd-report-send-now-btn" class="btn-primary">Mandar ahora</button>
+    <button id="cmd-report-send-now-btn" class="btn btn-primary">Mandar ahora</button>
   </div>
 </section>
 ```
@@ -499,8 +516,8 @@ Mismo chrome que `#team-config-modal` (overlay fixed + `.card`):
     <div style="display:flex; justify-content:space-between; gap:8px;">
       <button id="team-leave-clear" class="btn-table-action" style="color:var(--danger);">Quitar licencia</button>
       <div style="display:flex; gap:8px;">
-        <button id="team-leave-cancel" class="btn-secondary">Cancelar</button>
-        <button id="team-leave-save" class="btn-secondary">Guardar licencia</button>
+        <button id="team-leave-cancel" class="btn btn-secondary">Cancelar</button>
+        <button id="team-leave-save" class="btn btn-secondary">Guardar licencia</button>
       </div>
     </div>
   </div>
@@ -718,8 +735,7 @@ tal cual o ajustar con criterio, sin volver a preguntarle al user:
    Documentada la divergencia deliberada respecto a su sibling
    `#team-cfg-save` (ver `## Color`).
 3. **Typography** — se sacó el `font-size` inline redundante de los
-   botones (heredan 13px de su clase, no es una decisión nueva de esta
-   fase); `#team-leave-title` de 16px (sin token) a 15px (`--text-md`);
+   botones; `#team-leave-title` de 16px (sin token) a 15px (`--text-md`);
    los 4 valores `font-size:12px` sueltos se consolidaron a 12.5px
    (rol "Body" ya declarado). El documento sigue declarando 4 tamaños,
    ninguno nuevo.
@@ -735,6 +751,27 @@ Además (no bloqueante): timeout del cliente de "mandar ahora" subido de
 Q5 (45-60s); colores hardcodeados `rgba(255,200,40,...)` del hint de
 setup reemplazados por `var(--warning)`/`var(--warning-soft)` y
 declarados en la tabla de Color.
+
+### Segunda pasada del checker — 1 regresión corregida
+
+El fix del punto 3 se apoyaba en una premisa FALSA: que `.btn-primary` y
+`.btn-secondary` heredaban `font-size` de su propia clase. **No lo
+hacen** — verificado en `public/style.css`: el `font-size: var(--text-sm)`
+lo declara únicamente el selector agrupado `.btn, .pill-btn,
+.btn-table-action` (`:502-509`); `.btn-primary` (`:524-530`) y
+`.btn-secondary` (`:534-538`) son bloques separados que solo aportan
+color/fondo/borde. Quitar el inline de un botón `class="btn-primary"` a
+secas lo tiraba al font default del navegador.
+
+**Corregido:** los 3 botones afectados (`#cmd-report-send-now-btn`,
+`#team-leave-cancel`, `#team-leave-save`) ahora llevan la clase base
+junto a la variante — `class="btn btn-primary"` / `class="btn
+btn-secondary"` — replicando el patrón que ya existe en
+`index.html:1513/1570/1597`. Así heredan el 13px de verdad, sin inline y
+sin agregar un quinto tamaño al type scale. `#cmd-report-backup-emails-save`
+no estaba afectado: `.btn-table-action` SÍ está en el selector agrupado.
+La sección `## Typography` y el inventario de clases quedaron actualizados
+con el contrato explícito para el executor.
 
 ---
 
