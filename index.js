@@ -2092,13 +2092,17 @@ function buildDailyReportText(data, { gapNote = '' } = {}) {
     if (s.minutes > 0) segs.push(`${s.minutes} min`);                 // sin minutos en cero
     return `*${s.name}* ${segs.join(' · ')}`;
   });
-  const teamSegs = [`${d.team.dials} llam`, `${d.team.connects} at (${d.team.connectRate}%)`];
+  // El molde validado muestra el % ENTERO ("62%", no "61.5%"): un decimal en un
+  // mensaje que se lee de un vistazo es ruido. El dato conserva la precisión del
+  // CORE (data.team.connectRate) — el redondeo es solo de presentación.
+  const pct = (n) => Math.round(Number(n) || 0);
+  const teamSegs = [`${d.team.dials} llam`, `${d.team.connects} at (${pct(d.team.connectRate)}%)`];
   if (d.team.minutes > 0) teamSegs.push(`${d.team.minutes} min`);
   const foot = [
     d.team.dials > 0 ? `_Equipo ${teamSegs.join(' · ')}_` : '',
     // D-19 + discreción: la comparación solo aparece si AYER hubo llamadas
     // (el primer día no hay ayer; el lunes no compara contra el sábado en cero).
-    d.yesterday.dials > 0 ? `_Ayer ${d.yesterday.dials} llam · ${d.yesterday.connects} at (${d.yesterday.connectRate}%)_` : '',
+    d.yesterday.dials > 0 ? `_Ayer ${d.yesterday.dials} llam · ${d.yesterday.connects} at (${pct(d.yesterday.connectRate)}%)_` : '',
     d.interested.length ? `_Interesados: ${d.interested.map(i => `${i.name} ${i.count}`).join(', ')}_` : '',     // D-21
     d.unmarked.length ? `_Sin marcar hoy: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',      // D-23
     d.manualFlag ? `_${d.manualCalls} llamadas cargadas a mano — sin minutos_` : '',                             // D-22
