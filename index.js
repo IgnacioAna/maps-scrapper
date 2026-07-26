@@ -8677,7 +8677,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.callbackShared = false;
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -8700,6 +8700,36 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // Asegurar arrays/campos
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
+
+  // Phase 20 (D-03): corrección de una auto-marca. Solo se puede corregir el
+  // ÚLTIMO entry del callLog, solo si fue auto-marcado (autoMarked===true) y
+  // solo dentro de los 15 min (T-20-03: no se puede fabricar historia). El
+  // entry nuevo REEMPLAZA al auto-marcado → 1 llamada = 1 entry, los dials no
+  // se duplican y los efectos de cadencia fantasma se deshacen vía preCadence.
+  let _correctedEntry = null;
+  if (correctsAutoMarked === true) {
+    const _last = lead.callLog[lead.callLog.length - 1];
+    const _lastTs = _last ? (Date.parse(_last.ts || '') || 0) : 0;
+    if (!_last || _last.autoMarked !== true || (Date.now() - _lastTs) > 15 * 60 * 1000) {
+      return res.status(409).json({ error: 'No hay auto-marca reciente para corregir.' });
+    }
+    _correctedEntry = lead.callLog.pop();
+    const _pc = _correctedEntry.preCadence;
+    if (_pc && typeof _pc === 'object') {
+      // Restaurar el estado pre-auto-marca: deshace auto-descarte, callbackAt
+      // de cadencia, cadenceStep, etc.
+      lead.estado = _pc.estado;
+      lead.callbackAt = _pc.callbackAt;
+      lead.cadenceStep = _pc.cadenceStep;
+      lead.cadenceExhausted = _pc.cadenceExhausted;
+      lead.autoDiscarded = _pc.autoDiscarded;
+      lead.autoDiscardReason = _pc.autoDiscardReason;
+      lead.phoneStatus = _pc.phoneStatus;
+      lead.lastContactAt = _pc.lastContactAt;
+    }
+    // La auto-marca ya había sumado su intento; el flujo normal lo re-suma.
+    lead.callAttempts = Math.max(0, (lead.callAttempts || 1) - 1);
+  }
 
   // Phase 6: metadata Telnyx. Si la llamada fue por WebRTC, agregamos
   // duration, fromNumber, costo estimado al callLog.
@@ -8846,6 +8876,40 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   }
 
   if (cleanReason) logEntry.disqualifyReason = cleanReason; // Phase 17
+
+  // Phase 20 (D-03): auto-marca de no-contacto. SOLO la combinación
+  // autoMarked + outcome no_answer se acepta — con cualquier otro outcome el
+  // flag se ignora (T-20-04: nadie puede etiquetar un connect de "automático").
+  // El snapshot preCadence guarda el estado del lead ANTES del switch y de la
+  // cadencia, para que una corrección dentro de los 15 min pueda deshacer los
+  // efectos (si nunca se corrige, queda como dato inerte en el entry).
+  if (autoMarked === true && outcome === 'no_answer' && correctsAutoMarked !== true) {
+    logEntry.autoMarked = true;
+    logEntry.preCadence = {
+      estado: lead.estado,
+      callbackAt: lead.callbackAt || '',
+      cadenceStep: lead.cadenceStep || 0,
+      cadenceExhausted: !!lead.cadenceExhausted,
+      autoDiscarded: !!lead.autoDiscarded,
+      autoDiscardReason: lead.autoDiscardReason || '',
+      phoneStatus: lead.phoneStatus || '',
+      lastContactAt: lead.lastContactAt || '',
+    };
+  }
+
+  // Phase 20 (D-03): el entry de corrección HEREDA la identidad de la llamada
+  // original: ts (la llamada ocurrió a esa hora — las métricas bucketean por
+  // ts) + metadata Telnyx — SALVO que el body traiga su propio telnyxCallMeta
+  // (raro en corrección), en cuyo caso gana el body.
+  if (_correctedEntry) {
+    logEntry.ts = _correctedEntry.ts;
+    if (!(telnyxCallMeta && typeof telnyxCallMeta === 'object')) {
+      for (const f of ['duration', 'fromNumber', 'channel', 'cost', 'costCountry', 'costTariffKey', 'quickNote', 'scriptIdsUsed']) {
+        if (_correctedEntry[f] !== undefined) logEntry[f] = _correctedEntry[f];
+      }
+    }
+  }
+
   lead.callLog.push(logEntry);
   // Sprint 37: cap callLog a últimas 500 entries para prevenir crecimiento
   // descontrolado si un lead recibe miles de no_answer (rare pero posible).
@@ -8971,8 +9035,36 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     }
   }
 
+  // Phase 20: resolver (eliminar) EXACTAMENTE UN registro pendiente de este
+  // lead. Prioridad: pendingCallId del body (validando que sea de ESTE lead —
+  // T-20-06) → match por startedAt del telnyxCallMeta → el más reciente del
+  // lead. Silencioso si no hay ninguno. En el flujo de corrección NO se
+  // resuelve nada (la auto-marca original ya resolvió el suyo).
+  let resolvedPendingId = null;
+  if (!_correctedEntry) {
+    try {
+      const pcState = loadPendingCalls();
+      const pcList = Array.isArray(pcState.pending) ? pcState.pending : [];
+      const pcMine = pcList.filter((p) => p.leadId === req.params.id);
+      let pcTarget = null;
+      if (pendingCallId) pcTarget = pcMine.find((p) => p.id === pendingCallId) || null;
+      if (!pcTarget && telnyxCallMeta && typeof telnyxCallMeta === 'object' && telnyxCallMeta.startedAt) {
+        const metaMs = Date.parse(telnyxCallMeta.startedAt) || 0;
+        if (metaMs) pcTarget = pcMine.find((p) => (Date.parse(p.startedAt || '') || 0) === metaMs) || null;
+      }
+      if (!pcTarget && pcMine.length) {
+        pcTarget = pcMine.reduce((a, b) => ((Date.parse(b.startedAt || '') || 0) > (Date.parse(a.startedAt || '') || 0) ? b : a));
+      }
+      if (pcTarget) {
+        pcState.pending = pcList.filter((p) => p.id !== pcTarget.id);
+        savePendingCalls(pcState);
+        resolvedPendingId = pcTarget.id;
+      }
+    } catch {}
+  }
+
   saveSettersData(data);
-  res.json({ ok: true, lead, calendarEntry });
+  res.json({ ok: true, lead, calendarEntry, resolvedPendingId });
 });
 
 // ── Placeholder de calendario (cold call followup) ──
