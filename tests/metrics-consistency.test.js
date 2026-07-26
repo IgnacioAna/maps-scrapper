@@ -274,12 +274,18 @@ describe("A · Comando, semanal y effectiveness alineados al canon (Ola 3)", () 
     expect(r.status).toBe(200);
     const dow = M._bizDayOfWeek(dayStart) || 7;
     const thisMonday = dayStart - (dow - 1) * oneDay;
-    const lastMonday = thisMonday - 7 * oneDay;
-    const inWeek = FIXTURE_CALLS.filter((c) => c.ts >= lastMonday && c.ts < thisMonday);
+    // ⚠️ D-13 (Phase 21): el semanal pasó a cubrir la semana que TERMINA hoy
+    // ([este lunes, ahora]) porque ahora sale el domingo 23:00, no el lunes 8am.
+    // Antes esta ventana era [lunes pasado, este lunes).
+    const inWeek = FIXTURE_CALLS.filter((c) => c.ts >= thisMonday && c.ts < Date.now());
     expect(r.body.data.calls.totalWeek).toBe(inWeek.length);
     expect(r.body.data.calls.answeredWeek).toBe(inWeek.filter((c) => isConnect(c.outcome)).length);
-    // El hung_up de la semana pasada está garantizado en ventana → answeredWeek > 0.
+    // Las llamadas de HOY del fixture incluyen answered_interested → siempre > 0,
+    // cualquiera sea el día de la semana en que corra la suite.
     expect(r.body.data.calls.answeredWeek).toBeGreaterThan(0);
+    // La semana anterior queda en `previous` (extensión aditiva de D-20).
+    const inPrev = FIXTURE_CALLS.filter((c) => c.ts >= thisMonday - 7 * oneDay && c.ts < thisMonday);
+    expect(r.body.data.previous.dials).toBe(inPrev.length);
   });
   it("A5: effectiveness — reached == attended == answered (una sola definición) + voicemailPct", async () => {
     const r = await request(app).get("/api/telnyx/cold-call-effectiveness?range=all").set("Cookie", adminCookie);
