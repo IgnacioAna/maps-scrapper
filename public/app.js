@@ -8323,6 +8323,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const call = _telnyx.client.newCall(_callOpts);
         _telnyx.activeCall = call;
         _telnyxCallState.startedAt = Date.now();
+        // Phase 20 (CR-01): una llamada NUEVA al mismo lead invalida la ventana
+        // de corrección de la auto-marca anterior — sino la disposición de esta
+        // llamada viajaría con correctsAutoMarked y el backend borraría el dial
+        // legítimo de la llamada previa (2 llamadas reales → 1 entry).
+        if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
         // Phase 20 (D-02): registrar el pendiente server-side apenas arranca la
         // llamada — sobrevive crash/cierre del tab. Los ad-hoc no crean pendiente
         // ni disposición (no hay lead real); el gate igual les aplica al iniciar.
