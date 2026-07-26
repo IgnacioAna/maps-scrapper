@@ -9937,6 +9937,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await loadUsersPanel();
       } catch (e) { console.error(e); }
+
+      // Phase 21 (D-29): estado del canal del reporte diario. Fire-and-forget y
+      // FUERA del try de arriba: si el status falla no puede tumbar el resto del
+      // Centro de Comando, y si el Comando falla el panel igual se pinta.
+      _cmdLoadReportPanel().catch(() => {});
     }
 
     async function loadUsersPanel() {
@@ -10530,6 +10535,198 @@ document.addEventListener('DOMContentLoaded', async () => {
       window._cmdCallsPeriod = p;
       document.querySelectorAll('#cmd-calls-period .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
       loadCommandCenter();
+    });
+
+    // ─── Phase 21 (D-29): estado y control del canal del reporte diario ──
+    // Bloque #cmd-daily-report-panel de view-command (admin-only en el HTML y en
+    // los 3 endpoints del backend). Todos los fetches por apiUrl() (regla #146).
+    // Es el único lugar donde se ve por qué un reporte no salió, y el botón
+    // "Mandar ahora" es la vía de la prueba en vivo sin esperar a las 23:00.
+    let _cmdReportSending = false;
+    // El estado de error pisa el recuadro de detalle con textContent (copy del
+    // UI-SPEC). Si el fetch después vuelve a funcionar hay que reponer las 4
+    // filas o el panel queda muerto hasta un F5 (los ids ya no existirían).
+    // Markup estático, sin interpolación: no hay superficie de XSS.
+    const _CMD_REPORT_DETAIL_HTML =
+      '<div>Grupo destino: <strong id="cmd-report-group-name" style="color:var(--text-primary);">—</strong></div>' +
+      '<div>Último envío: <span id="cmd-report-last-sent">—</span></div>' +
+      '<div>En cola: <span id="cmd-report-queue-count">—</span></div>' +
+      '<div>Desktop ahora: <span id="cmd-report-desktop-status">—</span></div>';
+
+    function _cmdReportPaint(d) {
+      const det = document.getElementById('cmd-report-status-detail');
+      if (det && !document.getElementById('cmd-report-group-name')) det.innerHTML = _CMD_REPORT_DETAIL_HTML;
+      const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+      // T-21-19: `groupName` lo elige una persona en WhatsApp → textContent
+      // SIEMPRE, nunca innerHTML.
+      set('cmd-report-group-name', d.groupName || 'Sin configurar');
+      set('cmd-report-last-sent', d.lastSent
+        ? new Date(d.lastSent.at).toLocaleString() + ' · ' + (d.lastSent.periodLabel || '') + ' · ' + (d.lastSent.status === 'sent' ? 'OK' : 'falló')
+        : '—');
+      set('cmd-report-queue-count', String(d.queueCount ?? 0));
+      set('cmd-report-desktop-status', d.desktopOnline ? 'conectada' : 'desconectada');
+      const hint = document.getElementById('cmd-report-setup-hint');
+      if (hint) hint.classList.toggle('hidden', !!d.groupConfigured);
+      const emails = document.getElementById('cmd-report-backup-emails');
+      if (emails && document.activeElement !== emails) emails.value = (d.backupEmails || []).join(', ');
+      const pause = document.getElementById('cmd-report-pause-toggle');
+      if (pause) pause.checked = !!d.paused;
+      const btn = document.getElementById('cmd-report-send-now-btn');
+      // Sin grupo elegido no hay a dónde mandar. No se pisa el disabled mientras
+      // un envío está en vuelo.
+      if (btn && !_cmdReportSending) btn.disabled = !d.groupConfigured;
+      // Chip de estado: precedencia determinística, el PRIMERO que matchea gana.
+      const chip = document.getElementById('cmd-report-status-chip');
+      if (!chip) return;
+      let cls = 'chip chip-success', txt = 'Al día';
+      if (!d.groupConfigured) { cls = 'chip chip-neutral'; txt = 'Sin configurar'; }
+      else if (!d.desktopOnline) { cls = 'chip chip-danger'; txt = 'Desktop desconectado'; }
+      else if (d.paused === true) { cls = 'chip chip-warning'; txt = 'Pausado'; }
+      else if (d.queueCount > 0) { cls = 'chip chip-warning'; txt = d.queueCount + ' en cola'; }
+      else if (d.lastSent && d.lastSent.status === 'failed') { cls = 'chip chip-danger'; txt = 'Último envío falló'; }
+      chip.className = cls;
+      chip.textContent = txt;
+    }
+
+    async function _cmdLoadReportPanel() {
+      const chip = document.getElementById('cmd-report-status-chip');
+      if (!chip) return;
+      try {
+        const r = await fetch(apiUrl('/api/admin/daily-report/status'));
+        if (!r.ok) throw new Error('status ' + r.status);
+        const d = await r.json();
+        window._cmdReportStatus = d;
+        _cmdReportPaint(d);
+      } catch (e) {
+        chip.className = 'chip chip-danger';
+        chip.textContent = 'Sin datos';
+        const det = document.getElementById('cmd-report-status-detail');
+        if (det) det.textContent = 'No se pudo cargar el estado del canal. Recargá la página; si sigue, el server puede estar caído.';
+      }
+    }
+
+    // Auto-guarda en onchange (patrón del checkbox "Activo" de números Telnyx —
+    // un interruptor no necesita botón "Guardar" aparte). La pausa frena SOLO lo
+    // automático: "Mandar ahora" sigue funcionando (decisión 1 del UI-SPEC).
+    document.getElementById('cmd-report-pause-toggle')?.addEventListener('change', async (e) => {
+      const cb = e.target;
+      const paused = !!cb.checked;
+      cb.disabled = true;
+      try {
+        const r = await fetch(apiUrl('/api/admin/daily-report/config'), {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paused }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        _cmdReportPaint(d);
+        window.showToast?.(paused ? 'Envío automático pausado.' : 'Envío automático reanudado.', { type: paused ? 'warn' : 'success' });
+      } catch (err) {
+        cb.checked = !paused;   // el server no lo guardó: el interruptor no puede mentir
+        window.showToast?.('No se pudo guardar la pausa: ' + err.message, { type: 'error' });
+      } finally { cb.disabled = false; }
+    });
+
+    // Texto libre → guardado explícito (a diferencia del checkbox).
+    document.getElementById('cmd-report-backup-emails-save')?.addEventListener('click', async () => {
+      const input = document.getElementById('cmd-report-backup-emails');
+      const out = document.getElementById('cmd-report-backup-emails-result');
+      const btn = document.getElementById('cmd-report-backup-emails-save');
+      const backupEmails = String(input?.value || '').split(',').map((s) => s.trim()).filter(Boolean);
+      if (out) { out.style.color = 'var(--text-secondary)'; out.textContent = 'Guardando…'; }
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch(apiUrl('/api/admin/daily-report/config'), {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backupEmails }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+        _cmdReportPaint(d);
+        if (out) out.textContent = 'Guardado.';
+      } catch (err) {
+        if (out) { out.style.color = 'var(--danger)'; out.textContent = err.message; }
+      } finally { if (btn) btn.disabled = false; }
+    });
+
+    // Toast de cada motivo de "quedó en cola" — el genérico ("la computadora está
+    // apagada") mentiría en los otros casos que devuelve el backend.
+    const _CMD_REPORT_QUEUED_MSG = {
+      offline: 'La computadora con WhatsApp está apagada ahora. El reporte quedó en cola — sale solo apenas reconecte.',
+      sin_grupo: 'Todavía no se eligió un grupo desde wa-multi. Abrí la app de escritorio, iniciá sesión con el número dedicado y elegí el grupo de socios de la lista.',
+      busy: 'Ya hay un envío en curso. Esperá a que termine.',
+      sending: 'Se está enviando: el mensaje se tipea como una persona y puede tardar un minuto. Mirá el grupo.',
+      fallback_dm: 'Grupo no encontrado — se está mandando a los 3 socios por separado.',
+    };
+    // 60s: el server responde a lo sumo a los 25s (REPORT_SEND_NOW_WAIT_MS), así
+    // que el cliente NUNCA se rinde antes que el server.
+    const CMD_REPORT_SEND_TIMEOUT_MS = 60000;
+
+    // Máquina de estados: IDLE → CONFIRMING → SENDING → SUCCESS/QUEUED/FAILED/UNKNOWN → IDLE.
+    // Es un envío REAL a un grupo con personas reales: askConfirm obligatorio,
+    // botón deshabilitado mientras está en vuelo y refetch del estado al terminar
+    // (la defensa dura es el lock server-side, T-21-20).
+    document.getElementById('cmd-report-send-now-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('cmd-report-send-now-btn');
+      if (!btn || btn.disabled || _cmdReportSending) return;
+      // CONFIRMING — cancelar/Esc vuelve a IDLE sin disparar ningún request.
+      const ok = await window.askConfirm({
+        title: 'Mandar reporte ahora',
+        message: 'Esto arma el reporte con los datos de HOY hasta este momento y lo manda YA al grupo de WhatsApp de los socios (o a los 3 por separado si el grupo no aparece). No se puede deshacer. ¿Confirmás?',
+        confirmLabel: 'Sí, mandar ahora',
+        cancelLabel: 'Cancelar',
+        danger: true,
+      });
+      if (!ok) return;
+      // SENDING
+      _cmdReportSending = true;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span> Enviando…';
+      let timer = null;
+      try {
+        const req = fetch(apiUrl('/api/admin/daily-report/send-now'), { method: 'POST' }).then(async (r) => {
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) return { status: d.status || 'failed', reason: d.reason || d.error || ('HTTP ' + r.status) };
+          return d;
+        });
+        const timeout = new Promise((resolve) => {
+          timer = setTimeout(() => resolve({ status: '__timeout__' }), CMD_REPORT_SEND_TIMEOUT_MS);
+        });
+        const d = await Promise.race([req, timeout]);
+        if (d.status === 'sent' || d.status === 'sent_via_dm') {
+          // SUCCESS (con matiz si salió por DM: el grupo no apareció).
+          window.showToast?.(d.status === 'sent'
+            ? 'Reporte enviado al grupo.'
+            : 'Grupo no encontrado — se mandó por WhatsApp a los 3 socios por separado.',
+            { type: d.status === 'sent' ? 'success' : 'warn', duration: 5000 });
+          btn.textContent = 'Enviado';
+          btn.style.color = 'var(--success)';
+          await new Promise((r) => setTimeout(r, 2500));
+          btn.style.color = '';
+        } else if (d.status === 'queued') {
+          // QUEUED — no fue un éxito: sin label temporal, vuelve a IDLE en el acto.
+          window.showToast?.(_CMD_REPORT_QUEUED_MSG[d.reason] || _CMD_REPORT_QUEUED_MSG.offline, { type: 'warn', duration: 7000 });
+        } else if (d.status === '__timeout__') {
+          // UNKNOWN — puede haberse enviado igual: el copy disuade el reintento reflejo.
+          window.showToast?.('No llegó confirmación a tiempo. Fijate en el grupo antes de mandar de nuevo — puede que se haya enviado igual.', { type: 'warn', duration: 8000 });
+        } else {
+          // FAILED
+          window.showToast?.(d.reason === 'account-not-connected'
+            ? 'El número dedicado no está conectado a WhatsApp — hay que escanear el QR de nuevo.'
+            : 'No se pudo enviar. Probá de nuevo en un momento.',
+            { type: 'error', duration: 7000 });
+        }
+      } catch (err) {
+        window.showToast?.('No se pudo enviar. Probá de nuevo en un momento.', { type: 'error', duration: 6000 });
+      } finally {
+        if (timer) clearTimeout(timer);
+        btn.textContent = 'Mandar ahora';
+        btn.style.color = '';
+        _cmdReportSending = false;
+        btn.disabled = false;
+        // El estado real lo manda el server, nunca la actualización optimista.
+        await _cmdLoadReportPanel().catch(() => {});
+      }
     });
 
     // ─── Distribución de leads (Phase 14: el pool) ──────────────────
@@ -14968,6 +15165,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
         assignedBadge = ` <span title="Total asignados al SDR (no del periodo). ${untouched} nunca discados por nadie (callLog vacío)." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin llamar` : ''}</span>`;
       }
+      // Phase 21 (D-18): licencia con fecha de vencimiento. El badge lo ve todo el
+      // que ve Equipo (admin + supervisor); EDITAR es admin only (condicionado en
+      // el template: data-roles no aplica a HTML inyectado por JS).
+      // La vigencia se compara como STRING de día, igual que el backend
+      // (_reportOnLeave): `new Date('YYYY-MM-DD')` es medianoche UTC y contra la
+      // medianoche local daría el último día de licencia como vencido en AR.
+      const leaveUntilStr = String(s.leaveUntil || '').slice(0, 10);
+      const _todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      const onLeave = /^\d{4}-\d{2}-\d{2}$/.test(leaveUntilStr) && _todayStr <= leaveUntilStr;
+      const leaveBadge = onLeave
+        ? ` <span style="font-size:10px; padding:2px 6px; background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border-default); border-radius:6px; vertical-align:middle;">Licencia hasta ${leaveUntilStr.slice(8, 10)}/${leaveUntilStr.slice(5, 7)}</span>`
+        : '';
+      const leaveEditBtn = currentUser?.role === 'admin'
+        ? ` <button type="button" class="btn-table-action btn-sm" style="margin-left:4px;" data-leave-btn>${onLeave ? 'Editar licencia' : '+ Licencia'}</button>`
+        : '';
       const initial = String(s.name || '?').trim().charAt(0).toUpperCase() || '?';
       const tr = document.createElement('tr');
       const zebra = idx % 2 === 1 ? 'background:rgba(255,255,255,0.012);' : '';
@@ -14979,7 +15191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="padding:14px 10px; font-weight:500; color:var(--text-primary);">
           <div style="display:flex; align-items:center; gap:10px;">
             <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
-            <span class="t-name"></span>${alertBadge}${assignedBadge}
+            <span class="t-name"></span>${alertBadge}${assignedBadge}${leaveBadge}${leaveEditBtn}
           </div>
         </td>
         ${_teamCell(c.dials, _teamFmtDelta(s.deltas.dials), vsAvg('dials', c.dials))}
@@ -14993,6 +15205,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="padding:14px 10px; text-align:right; color:var(--text-secondary); font-size:12px; white-space:nowrap;">${lastAct}</td>
       `;
       tr.querySelector('.t-name').textContent = s.name;
+      // El handler se cablea acá (no con onclick inline) por el mismo motivo por
+      // el que el nombre va con textContent: un apóstrofo en el nombre reventaría
+      // el string JS del atributo.
+      const leaveBtnEl = tr.querySelector('[data-leave-btn]');
+      if (leaveBtnEl) leaveBtnEl.addEventListener('click', (ev) => {
+        ev.stopPropagation();   // el click de la fila abre el drilldown
+        window._teamOpenLeaveModal(s.id, s.name, leaveUntilStr || null);
+      });
       tr.addEventListener('click', () => _teamDrilldown(s.id));
       tbody.appendChild(tr);
     });
@@ -15458,6 +15678,67 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('team-config-modal').style.display = 'none';
       _teamLoad();
     } catch (e) { alert('Error: ' + e.message); }
+  });
+
+  // ── Phase 21 (D-18): licencia por SDR con fecha de vencimiento ──
+  // Vive en Equipo porque es un atributo POR SDR, no configuración del canal.
+  // Editar es admin only (mismo criterio que "Umbrales de alerta"); el badge lo
+  // ve también el supervisor. Al vencer la fecha vuelve sola: nadie tiene que
+  // acordarse de desmarcarla (por eso NO se reusa `hidden`, que no vence).
+  let _teamLeaveSetterId = null;
+  function _teamLeaveClose() {
+    const m = document.getElementById('team-leave-modal');
+    if (m) m.style.display = 'none';
+    _teamLeaveSetterId = null;
+  }
+  window._teamOpenLeaveModal = function _teamOpenLeaveModal(setterId, name, currentLeaveUntil) {
+    const m = document.getElementById('team-leave-modal');
+    if (!m) return;
+    _teamLeaveSetterId = setterId;
+    const title = document.getElementById('team-leave-title');
+    if (title) title.textContent = 'Licencia — ' + (name || '');   // textContent: el nombre nunca se interpola en HTML
+    const input = document.getElementById('team-leave-until');
+    if (input) input.value = String(currentLeaveUntil || '').slice(0, 10);
+    const clear = document.getElementById('team-leave-clear');
+    if (clear) clear.style.display = currentLeaveUntil ? 'inline-flex' : 'none';   // sin licencia no hay nada que quitar
+    m.style.display = 'flex';
+    setTimeout(() => input?.focus(), 80);
+  };
+  async function _teamLeaveSave(leaveUntil) {
+    if (!_teamLeaveSetterId) return;
+    const id = _teamLeaveSetterId;
+    try {
+      // apiUrl() OBLIGATORIO (regla #146): view-team la ve un supervisor scoped.
+      const r = await fetch(apiUrl('/api/setters/team/' + encodeURIComponent(id)), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ leaveUntil }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      _teamLeaveClose();
+      window.showToast?.(leaveUntil ? 'Licencia guardada.' : 'Licencia quitada.', { type: 'success' });
+      _teamLoad();
+    } catch (e) {
+      window.showToast?.('No se pudo guardar la licencia: ' + e.message, { type: 'error', duration: 5000 });
+    }
+  }
+  document.getElementById('team-leave-save')?.addEventListener('click', () => {
+    const v = String(document.getElementById('team-leave-until')?.value || '').slice(0, 10);
+    // Guardar en blanco QUITA la licencia en el backend ('' → null): decirle
+    // "Licencia guardada." sería mentira. Se pide la fecha o se usa "Quitar".
+    if (!v) { window.showToast?.('Elegí una fecha de vencimiento (o usá "Quitar licencia").', { type: 'warn' }); return; }
+    _teamLeaveSave(v);
+  });
+  // Sin askConfirm: quitar la licencia es reversible y de bajo impacto.
+  document.getElementById('team-leave-clear')?.addEventListener('click', () => _teamLeaveSave(null));
+  document.getElementById('team-leave-cancel')?.addEventListener('click', _teamLeaveClose);
+  document.getElementById('team-leave-modal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'team-leave-modal') _teamLeaveClose();
+  });
+  document.addEventListener('keydown', (e) => {
+    const m = document.getElementById('team-leave-modal');
+    if (m && m.style.display === 'flex' && e.key === 'Escape') { e.preventDefault(); _teamLeaveClose(); }
   });
 
   // ── Historial de scrapes (admin only) ──
