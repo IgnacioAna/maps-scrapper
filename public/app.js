@@ -15225,8 +15225,73 @@ document.addEventListener('DOMContentLoaded', async () => {
       _teamRenderChart(d);
       _teamRenderFunnels(d);
       _teamRenderTable(d);
+      // Phase 20 (D-06): auditoría pasiva de disposiciones (fire-and-forget).
+      _teamLoadDispoAudit(period);
     } catch (e) {
       alert('Error cargando equipo: ' + e.message);
+    }
+  }
+
+  // Phase 20 (D-06): auditoría pasiva — distribución de resultados por SDR,
+  // % de llamadas marcadas y sospechosas (cruce duración vs outcome).
+  // apiUrl() OBLIGATORIO (regla #146: un fetch crudo acá rompe "Ver como" y el
+  // scoping de supervisor — ya mordió dos veces).
+  async function _teamLoadDispoAudit(period) {
+    const wrap = document.getElementById('team-dispo-audit');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    try {
+      // team-period usa day/week/month → mapear a los rangos de _ccResolveRange.
+      const map = { day: 'today', week: '7d', month: '30d' };
+      const p = map[period] || '7d';
+      const r = await fetch(apiUrl('/api/setters/disposition-audit?period=' + encodeURIComponent(p)), { credentials: 'include' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const d = await r.json();
+      const rows = d.bySetter || [];
+      if (!rows.length) return; // sin data → nada de tablas vacías
+      const _lbl = (o) => (typeof callOutcomeLabel === 'function') ? callOutcomeLabel(o) : o;
+      const _ruleLabel = (rule) => rule === 'longNoContact' ? 'no-contacto >30s' : 'contacto <10s';
+      const _distHtml = (byOutcome) => Object.entries(byOutcome || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([o, n]) => `${escHtml(_lbl(o))} ${n}`)
+        .join(' · ') || '—';
+      const _suspHtml = (s) => {
+        const total = s?.total || 0;
+        if (!total) return '<span style="color:var(--text-tertiary);">0</span>';
+        const samples = (s.samples || []).map(x =>
+          `<li style="padding:3px 0; border-bottom:1px solid var(--border-subtle);">${escHtml(x.leadName || x.leadId)} · ${new Date(x.ts).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })} · ${escHtml(_lbl(x.outcome))} · ${x.duration}s · <span style="color:#f0b43c;">${_ruleLabel(x.rule)}</span></li>`).join('');
+        return `<details><summary style="cursor:pointer; color:#f0b43c; font-weight:600;">${total}</summary><ul style="list-style:none; margin:6px 0 0; padding:0; font-size:11.5px; color:var(--text-secondary);">${samples}</ul></details>`;
+      };
+      wrap.innerHTML = `
+        <section style="margin-top:22px;">
+          <h3 style="margin:0 0 4px; font-size:14px; color:var(--text-primary);">Auditoría de disposiciones <span class="muted" style="font-size:11px; font-weight:400;">· período seleccionado</span></h3>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+              <thead>
+                <tr style="text-align:left; border-bottom:1px solid var(--border-subtle);">
+                  <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">SDR</th>
+                  <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Llamadas</th>
+                  <th style="padding:9px 10px; text-align:right; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);" title="Llamadas Telnyx marcadas / (marcadas + pendientes del rango)">% marcada</th>
+                  <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Distribución</th>
+                  <th style="padding:9px 10px; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);" title="Cruce duración vs resultado">Sospechosas</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows.map(s => `<tr style="border-bottom:1px solid var(--border-subtle);">
+                  <td style="padding:9px 10px; color:var(--text-primary); font-weight:600;">${escHtml(s.name || s.setterId)}</td>
+                  <td style="padding:9px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.dials}</td>
+                  <td style="padding:9px 10px; text-align:right; font-variant-numeric:tabular-nums;">${s.pctMarked == null ? '—' : s.pctMarked + '%'}</td>
+                  <td style="padding:9px 10px; color:var(--text-secondary);">${_distHtml(s.byOutcome)}</td>
+                  <td style="padding:9px 10px;">${_suspHtml(s.suspicious)}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted" style="margin:8px 0 0; font-size:11px;">Las llamadas del canal manual no tienen duración y no entran al cruce.</p>
+        </section>`;
+    } catch (e) {
+      console.warn('[team] disposition-audit:', e?.message);
     }
   }
 
