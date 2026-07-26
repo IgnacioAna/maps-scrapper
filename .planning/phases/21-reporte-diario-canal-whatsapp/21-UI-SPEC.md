@@ -11,6 +11,8 @@ created: 2026-07-26
 
 > Contrato visual e interacción para el reporte diario + canal WhatsApp.
 > Generado por gsd-ui-researcher, verificado por gsd-ui-checker.
+> **Revisión 2026-07-26:** 4 issues bloqueantes de coherencia interna
+> corregidos (ver `## Registro de correcciones` al final).
 
 **Alcance deliberadamente chico.** Esta fase es mayormente backend (builder
 del reporte, cola, canal de envío). La superficie de UI son DOS
@@ -54,18 +56,31 @@ Declared values (multiples of 4 — son los tokens ya definidos en
 
 | Token | Value | Usage en esta fase |
 |-------|-------|-------|
-| `--space-1` | 4px | gap entre chip y texto |
-| `--space-2` | 8px | gap entre controles inline (checkbox + label) |
+| `--space-1` | 4px | gap entre chip y texto, `margin-left` del botón de licencia |
+| `--space-2` | 8px | gap entre controles inline (checkbox + label, botones del modal) |
 | `--space-3` | 12px | gap entre campos del grid de configuración |
-| `--space-4` | 16px | padding del panel (`.admin-variable-panel`) |
+| `--space-4` | 16px | padding del panel (`.admin-variable-panel`), `margin-bottom` de bloques internos |
 | `--space-5` | 20px | margin-top/bottom del panel dentro de `view-command` |
 | `--space-6` | 24px | separación entre panel y la sección siguiente (Equipo) |
 
-Exceptions: ninguna. Todo el bloque nuevo usa `--space-*` o los valores
-inline que ya usan sus vecinos directos (`.admin-variable-panel` en
-`index.html:1984` usa `padding:16px; margin-top:20px; margin-bottom:20px`
-— inline, no la clase pura — se replica igual por consistencia visual
-con el vecino inmediato).
+**Exceptions (declaradas, cada una es reuso literal de un vecino real —
+verificado por grep antes de escribir esta tabla, no son valores
+inventados):**
+
+| Valor | Dónde se usa acá | Vecino que se replica |
+|---|---|---|
+| `padding:12px 14px` | `#cmd-report-status-detail` | `_tlxRenderNumbers` li (`app.js:16818`), `#invite-visible-setters` (`index.html:1865`) — es EL patrón estándar de "caja de info" de todo el panel admin |
+| `padding:10px 14px` | `#cmd-report-setup-hint` | `#history-dedup-result` (`index.html:2012`), `#tlx-balance-alert` (`index.html:2881`) |
+| `margin-bottom:14px` | header del bloque, grid de config, `#cmd-report-setup-hint` | header de la card Telnyx (`index.html:2773`), header de Mercury Review (`index.html:3050`) — el separador estándar entre header y cuerpo de una card |
+| `padding:8px 10px` | input `#team-leave-until` | **sibling directo**: `#team-cfg-drop`/`#team-cfg-inact`/`#team-cfg-apertura` dentro de `#team-config-modal` (`index.html:2661-2673`) — mismo modal-chrome, mismo input |
+| `padding:2px 6px` (badge inline) | `leaveBadge` en Equipo | **réplica exacta** de `assignedBadge` en `_teamRenderTable` (`app.js:14969`) — micro-padding de badge, no forma parte de la escala macro de layout |
+
+**Normalizado (sin exception, se llevó a un valor sin precedente
+justificado):** el grid de configuración usaba `align-items:end` +
+`padding-bottom:9px` en el label del checkbox para alinear baselines —
+no hay ningún vecino en el proyecto con ese valor. Se sacaron los dos:
+el grid usa alineación default (`stretch`) y el label del checkbox no
+lleva padding vertical extra (ver HTML actualizado abajo).
 
 ---
 
@@ -73,10 +88,25 @@ con el vecino inmediato).
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Heading (título del bloque, `<h3>`) | 15px (`--text-md`) | 600 semibold | 1.3 |
-| Body (texto explicativo, filas de estado) | 12.5px (entre `--text-xs` 11px y `--text-sm` 13px, valor que ya usan los vecinos: `cmd-brief-recon-result`, tooltips de Comando) | 400 regular | 1.5 |
+| Heading (título del bloque/modal, `<h3>`) | 15px (`--text-md`) | 600 semibold | 1.3 |
+| Body (texto explicativo, filas de estado, subtítulos, labels de checkbox/fecha) | 12.5px (entre `--text-xs` 11px y `--text-sm` 13px, valor que ya usan `cmd-brief-recon-result` y `#tlx-cfg-env-banner`/`#tlx-balance-alert`, `index.html:2782`/`2881`) | 400 regular | 1.5 |
 | Label (kicker uppercase, labels de campo) | 11px (`--text-xs`) | 600 semibold | 1.2, `letter-spacing: 0.3-0.5px` |
-| Chip / badge | 10-11px (`--text-2xs`/`--text-xs`, según `.chip`) | 600 semibold, uppercase | 1 |
+| Chip / badge | 10-11px (`--text-2xs`/`--text-xs`, según `.chip` o inline en badges de `_teamRenderTable`) | 600 semibold, uppercase (chips) / normal (badges inline) | 1 |
+
+**4 tamaños declarados, sin quinto** (10-11 / 12.5 / 15 se usan en
+prosa; 13px NO se declara como rol nuevo — ver nota siguiente).
+
+⚠️ **Los botones NO llevan `font-size` inline en esta fase.**
+`.btn-primary`, `.btn-secondary` y `.btn-table-action` ya heredan
+`var(--text-sm)` = 13px de su propia clase (`style.css:502-509`) — ese
+13px es el default global de TODO botón del sistema, no una decisión
+tipográfica de esta fase, así que no se repite inline en ningún botón
+nuevo (`#cmd-report-send-now-btn`, `#team-leave-cancel`,
+`#team-leave-save`, `#cmd-report-backup-emails-save`, el botón de
+licencia con `.btn-sm`). Si el HTML de este documento en algún punto
+anterior mostraba `style="font-size:13px;"` en un botón, era redundante
+con lo que la clase ya aplica — se quitó (ver `## Registro de
+correcciones`, Block 3).
 
 No hay rol "Display" en esta fase — no hay headline grande, es un bloque
 de configuración chico dentro de una vista existente.
@@ -89,17 +119,30 @@ de configuración chico dentro de una vista existente.
 |------|-------|-------|
 | Dominant (60%) | `var(--bg-app)` `#0F1115` | fondo de `view-command` (ya existente, no se toca) |
 | Secondary (30%) | `var(--bg-surface)` `#161922` / `var(--bg-app)` para el sub-panel de estado | fondo de `.admin-variable-panel` y del recuadro de estado del canal |
-| Accent (10%) | `var(--accent)` `#9D85F2` | **RESERVADO exclusivamente para el botón "Mandar ahora"** (`.btn-primary`) — es la única superficie de acento nueva de esta fase |
+| Accent (10%) | `var(--accent)` `#9D85F2` | **RESERVADO exclusivamente para el botón "Mandar ahora"** (`.btn-primary`) — es la ÚNICA superficie de acento nueva de esta fase |
 | Destructive | `var(--danger)` `#F87171` | chip de estado "Desktop desconectado" / "Último envío falló" (`.chip-danger`) y el botón "Quitar licencia" (texto en `--danger`, estilo `.btn-table-action` con `color:var(--danger)`, igual que `cmd-clear-btn`/`history-bulk-delete-btn`) |
+| Warning (semántico, no cuenta contra 60/30/10 — mismo criterio que Destructive) | `var(--warning)` `#FBBF24` / `var(--warning-soft)` | `#cmd-report-setup-hint` (grupo sin configurar) y chips `chip-warning` ("Pausado" / "{N} en cola") |
 
 **Accent reservado para:** el botón `#cmd-report-send-now-btn` ("Mandar
-ahora") ÚNICAMENTE. Ningún otro elemento nuevo usa `--accent`: el botón
-"Guardar" usa `.btn-secondary` (gris), los chips de estado usan los
-semánticos (`success`/`warning`/`danger`/`neutral`, nunca `chip-accent`),
-el checkbox de pausa no lleva acento, y el badge/botón de "Licencia" en
-Equipo usa `chip-neutral` + `.btn-table-action` neutro. Esto respeta la
-disciplina cromática documentada en `CLAUDE.md` ("violeta sólo para
-acentos, no para textos").
+ahora") ÚNICAMENTE. Ningún otro elemento nuevo usa `--accent`: los
+botones "Guardar mails" y "Guardar licencia" usan `.btn-table-action` /
+`.btn-secondary` respectivamente (grises, nunca `--accent`), los chips
+de estado usan los semánticos (`success`/`warning`/`danger`/`neutral`,
+nunca `chip-accent`), el checkbox de pausa no lleva acento, y el
+badge/botón de "Licencia" en Equipo usa un badge inline neutro +
+`.btn-table-action.btn-sm`.
+
+⚠️ **Nota sobre `#team-leave-save`:** deliberadamente usa
+`.btn-secondary` y NO `.btn-primary`, aunque su sibling literal dentro
+de la misma vista — `#team-cfg-save` ("Guardar (admin)" del modal
+"Umbrales de alerta", `index.html:2678`) — sí usa `.btn-primary`. Esa
+elección es anterior a esta fase y no se toca acá. Para el contrato de
+ESTA fase se prefiere NO sumar una segunda superficie de acento, para
+que "acento = mandar al grupo" siga siendo una lectura inequívoca de
+riesgo real, en vez de diluirse en cualquier botón de guardado.
+
+Esto respeta la disciplina cromática documentada en `CLAUDE.md`
+("violeta sólo para acentos, no para textos").
 
 ---
 
@@ -113,6 +156,14 @@ acentos, no para textos").
 | Error state (panel no carga) | "No se pudo cargar el estado del canal. Recargá la página; si sigue, el server puede estar caído." |
 | Error state (send-now falla) | "No se pudo enviar. Probá de nuevo en un momento." |
 | Destructive confirmation | **"Mandar ahora"**: modal `askConfirm` — título "Mandar reporte ahora", mensaje "Esto arma el reporte con los datos de HOY hasta este momento y lo manda YA al grupo de WhatsApp de los socios (o a los 3 por separado si el grupo no aparece). No se puede deshacer. ¿Confirmás?", confirmLabel "Sí, mandar ahora", cancelLabel "Cancelar" |
+| Botón guardar (mails de respaldo) | **"Guardar mails"** (verbo + sustantivo — NO "Guardar" pelado) |
+| Botón guardar (licencia) | **"Guardar licencia"** (verbo + sustantivo — NO "Guardar" pelado) |
+
+Ambos labels califican el verbo con el sustantivo del dato que guardan,
+siguiendo la convención real del proyecto (`Guardar credenciales`,
+`Guardar routing`, `Guardar umbral`, `Guardar prompt`) — "Guardar" a
+secas es la excepción minoritaria (`#team-cfg-save` = "Guardar (admin)",
+un caso previo a esta fase que no se replica).
 
 Ver `## Copy exacto por estado` más abajo para el resto de strings
 (toasts, chips, badges) — todos son literales, no parafrasear.
@@ -135,10 +186,11 @@ Verificado contra `public/style.css` antes de escribir este documento:
 | Clase / patrón | Dónde ya se usa | Cómo se reusa acá |
 |---|---|---|
 | `.admin-variable-panel` | "Base de Datos de Leads Scrapeados" (`index.html:1984`) | Wrapper del bloque nuevo — mismo patrón `padding:16px; border:1px solid var(--border-color); border-radius:16px; margin:20px 32px` |
-| `.chip` + `.chip-success/.chip-warning/.chip-danger/.chip-neutral` | definidas en `style.css:1426-1455`, usadas en `#tlx-cfg-status` (Telnyx) | Chip de estado del canal + badge de "licencia" en Equipo |
-| `.btn-primary` | botones CTA en todo el panel (`tlx-cfg-save`, `tlx-num-add-btn`) | Botón "Mandar ahora" |
-| `.btn-secondary` | `team-refresh`, `myp-refresh` | Botón "Guardar" de mails de respaldo |
-| `.btn-table-action` (+ `color:var(--danger)` inline) | `cmd-clear-btn`, `history-bulk-delete-btn` | Botón "Licencia" / "Quitar licencia" en Equipo |
+| `.chip` + `.chip-success/.chip-warning/.chip-danger/.chip-neutral` | definidas en `style.css:1426-1455`, usadas en `#tlx-cfg-status` (Telnyx) | Chip de estado del canal |
+| `.btn-primary` | botones CTA en todo el panel (`tlx-cfg-save`, `tlx-num-add-btn`) | **Únicamente** el botón "Mandar ahora" (ver `## Color` — acento reservado) |
+| `.btn-secondary` | `team-refresh`, `myp-refresh`, `#team-cfg-cancel` | Botón "Cancelar" del modal de licencia (`#team-leave-cancel`) y botón **"Guardar licencia"** (`#team-leave-save` — deliberadamente NO `.btn-primary` pese a que su sibling `#team-cfg-save` sí lo usa, ver `## Color`) |
+| `.btn-table-action` | `cmd-clear-btn`, `history-bulk-delete-btn` | Botón **"Guardar mails"** (`#cmd-report-backup-emails-save`) y botón "Quitar licencia" (+ `color:var(--danger)` inline, igual que sus vecinos) |
+| `.btn-table-action.btn-sm` | combo declarado en `style.css:562-563` (`height:26px; font-size:var(--text-xs); padding:0 var(--space-3)`) | Botón "+ Licencia" / "Editar licencia" en Equipo — evita inventar padding/height ad-hoc |
 | `.setter-input` | `invite-name`, `invite-email` | Input de mails de respaldo |
 | `<input type="checkbox">` + `<label>` inline (sin componente "switch") | Telnyx números, campo "Activo" (`app.js:16824-16827`) | Checkbox de pausa — el proyecto NO tiene un componente toggle-switch, así que no se inventa uno |
 | `.loader` | botones en estado "cargando" (`cmd-validate-numbers-btn`, etc.) | Spinner del botón "Mandar ahora" mientras envía |
@@ -181,7 +233,7 @@ mirar, y el primer lugar donde mirar es acá).
   <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
     <div>
       <h3 style="margin:0 0 4px; font-size:15px;">Reporte diario · WhatsApp</h3>
-      <p style="margin:0; color:var(--text-secondary); font-size:12px;">
+      <p style="margin:0; color:var(--text-secondary); font-size:12.5px;">
         Todos los días a las 23:00 se manda solo, al grupo de WhatsApp de
         los socios. Esta sección es para configurarlo y para probarlo sin
         esperar a la hora.
@@ -197,30 +249,30 @@ mirar, y el primer lugar donde mirar es acá).
     <div>Desktop ahora: <span id="cmd-report-desktop-status">—</span></div>
   </div>
 
-  <div id="cmd-report-setup-hint" class="hidden" style="margin-bottom:14px; padding:10px 14px; background:rgba(255,200,40,0.08); border:1px solid rgba(255,200,40,0.25); border-radius:8px; font-size:12px; color:var(--text-secondary);">
+  <div id="cmd-report-setup-hint" class="hidden" style="margin-bottom:14px; padding:10px 14px; background:var(--warning-soft); border:1px solid var(--warning); border-radius:8px; font-size:12.5px; color:var(--text-secondary);">
     Necesitás elegir el grupo desde la app de escritorio (wa-multi) antes
     de poder mandar. Ver <code>21-CONTEXT.md</code> § "Acciones del user".
   </div>
 
-  <div style="display:grid; gap:12px; grid-template-columns:2fr 1fr; margin-bottom:14px; align-items:end;">
+  <div style="display:grid; gap:12px; grid-template-columns:2fr 1fr; margin-bottom:14px;">
     <label style="display:flex; flex-direction:column; gap:4px;">
       <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">
         Mails de respaldo <span style="opacity:.6; text-transform:none;">(apagado — D-04, no se usa mientras el diario no tenga fallback a email)</span>
       </span>
       <div style="display:flex; gap:8px;">
         <input type="text" id="cmd-report-backup-emails" class="setter-input" placeholder="mail1@dominio.com, mail2@dominio.com">
-        <button id="cmd-report-backup-emails-save" class="btn-table-action" style="white-space:nowrap;">Guardar</button>
+        <button id="cmd-report-backup-emails-save" class="btn-table-action" style="white-space:nowrap;">Guardar mails</button>
       </div>
       <span id="cmd-report-backup-emails-result" style="font-size:11px; color:var(--text-secondary);"></span>
     </label>
-    <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-secondary); cursor:pointer; padding-bottom:9px;">
+    <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
       <input type="checkbox" id="cmd-report-pause-toggle">
       Pausar envío automático (diario y semanal)
     </label>
   </div>
 
   <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
-    <button id="cmd-report-send-now-btn" class="btn-primary" style="font-size:13px;">Mandar ahora</button>
+    <button id="cmd-report-send-now-btn" class="btn-primary">Mandar ahora</button>
   </div>
 </section>
 ```
@@ -248,9 +300,9 @@ en `true`, `showToast('Envío automático reanudado.', {type:'success'})`
 si quedó en `false`. **La pausa NO afecta al botón "Mandar ahora"** —
 decisión explícita (ver `## Decisiones de esta fase`).
 
-**Mails de respaldo**: input de texto libre (CSV) + botón "Guardar"
-explícito (no auto-save — texto libre se beneficia de un guardado
-explícito, distinto del checkbox). Click → `PUT
+**Mails de respaldo**: input de texto libre (CSV) + botón **"Guardar
+mails"** explícito (no auto-save — texto libre se beneficia de un
+guardado explícito, distinto del checkbox). Click → `PUT
 /api/admin/daily-report/config` con `{backupEmails: [...]}` (split por
 coma, trim, filtrar vacíos) → feedback inline en
 `#cmd-report-backup-emails-result` ("Guardado." en `--text-secondary`,
@@ -275,7 +327,7 @@ IDLE ──click──> CONFIRMING ──cancela──> IDLE
                      │
                      ├──desktop offline──> QUEUED ──toast──> IDLE
                      ├──error genérico──> FAILED ──toast──> IDLE
-                     └──timeout 25s sin respuesta──> UNKNOWN ──toast──> IDLE
+                     └──timeout 60s sin respuesta──> UNKNOWN ──toast──> IDLE
 ```
 
 ### Estado `IDLE`
@@ -299,9 +351,16 @@ IDLE ──click──> CONFIRMING ──cancela──> IDLE
 - `btn.innerHTML = '<span class="loader"></span> Enviando…'` (clase
   `.loader` ya existente, spinner del sistema)
 - Dispara `POST /api/admin/daily-report/send-now` con timeout cliente de
-  25s (`Promise.race` contra un `setTimeout` — si no hay respuesta del
-  server en ese lapso, tratar como `UNKNOWN`, NO como `FAILED`: el envío
-  puede haber salido igual, no hay que sugerir reintentar a ciegas)
+  **60s** (`Promise.race` contra un `setTimeout` — si no hay respuesta
+  del server en ese lapso, tratar como `UNKNOWN`, NO como `FAILED`: el
+  envío puede haber salido igual, no hay que sugerir reintentar a
+  ciegas). **60s, no 25s** — alineado a la ventana server-side de
+  45-60s que recomienda `21-RESEARCH.md` (Q5): un cold-start real de
+  WhatsApp Web puede tardar ~21s SOLO en el polling del composer
+  (`21-RESEARCH.md:147`), y el escenario típico de "mandar ahora" es
+  justo una PC recién prendida — con 25s el timeout del cliente
+  dispararía `UNKNOWN` casi siempre en el caso legítimo más común. El
+  cliente nunca debe rendirse antes de que el server lo haga.
 
 ### Estado `SUCCESS` (`status === 'sent'`)
 - `showToast('Reporte enviado al grupo.', {type:'success'})`
@@ -323,7 +382,7 @@ IDLE ──click──> CONFIRMING ──cancela──> IDLE
 - `showToast('No se pudo enviar. Probá de nuevo en un momento.', {type:'error'})`
 - botón vuelve a `IDLE` inmediatamente
 
-### Estado `UNKNOWN` (timeout cliente, sin respuesta del server en 25s)
+### Estado `UNKNOWN` (timeout cliente, sin respuesta del server en 60s)
 - `showToast('No llegó confirmación a tiempo. Fijate en el grupo antes de mandar de nuevo — puede que se haya enviado igual.', {type:'warn'})`
 - botón vuelve a `IDLE` (habilitado, para no dejarlo trabado, pero el
   copy disuade explícitamente el reintento reflejo — cumple el hard
@@ -408,14 +467,17 @@ Dentro del `<td>` del nombre, después de `assignedBadge`, agregar:
 const leaveUntil = s.leaveUntil ? new Date(s.leaveUntil) : null;
 const onLeave = leaveUntil && leaveUntil >= new Date(new Date().toDateString());
 const leaveBadge = onLeave
-  ? ` <span style="font-size:10px; padding:2px 7px; background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border-default); border-radius:6px; vertical-align:middle;">Licencia hasta ${leaveUntil.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</span>`
+  ? ` <span style="font-size:10px; padding:2px 6px; background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border-default); border-radius:6px; vertical-align:middle;">Licencia hasta ${leaveUntil.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})}</span>`
   : '';
 const leaveEditBtn = currentUser.role === 'admin'
-  ? ` <button class="btn-table-action" style="font-size:10px; padding:1px 7px; height:20px; margin-left:4px;" onclick="event.stopPropagation(); window._teamOpenLeaveModal('${s.id}', '${escHtml(s.name)}', ${s.leaveUntil ? `'${s.leaveUntil}'` : 'null'})">${onLeave ? 'Editar licencia' : '+ Licencia'}</button>`
+  ? ` <button class="btn-table-action btn-sm" style="margin-left:4px;" onclick="event.stopPropagation(); window._teamOpenLeaveModal('${s.id}', '${escHtml(s.name)}', ${s.leaveUntil ? `'${s.leaveUntil}'` : 'null'})">${onLeave ? 'Editar licencia' : '+ Licencia'}</button>`
   : '';
 ```
 ...e insertarlos en el template de `tr.innerHTML` después de
-`${alertBadge}${assignedBadge}`.
+`${alertBadge}${assignedBadge}`. `padding:2px 6px` en `leaveBadge` es
+réplica exacta de `assignedBadge` (`app.js:14969`) — mismo micro-padding
+de badge inline. `leaveEditBtn` usa la clase `.btn-sm` ya declarada
+(`style.css:562-563`) en vez de padding/height ad-hoc.
 
 ### Modal nuevo — `#team-leave-modal` (en `index.html`, junto a `#team-config-modal`)
 
@@ -424,26 +486,34 @@ Mismo chrome que `#team-config-modal` (overlay fixed + `.card`):
 ```html
 <div id="team-leave-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
   <div class="card" style="width:min(360px, 90vw); padding:20px;">
-    <h3 id="team-leave-title" style="margin:0 0 6px 0; font-size:16px;">Licencia</h3>
-    <p class="muted" style="margin:0 0 14px; font-size:12px; line-height:1.5;">
+    <h3 id="team-leave-title" style="margin:0 0 6px 0; font-size:15px;">Licencia</h3>
+    <p class="muted" style="margin:0 0 14px; font-size:12.5px; line-height:1.5;">
       Mientras esté de licencia, sale de la línea de "sin actividad hoy"
       del reporte y aparece al pie como "de licencia". Vuelve sola al
       vencer la fecha — no hace falta acordarse de sacarla.
     </p>
-    <label style="display:flex; flex-direction:column; gap:4px; font-size:12px; margin-bottom:16px;">
+    <label style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin-bottom:16px;">
       <span class="muted">De licencia hasta</span>
       <input id="team-leave-until" type="date" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
     </label>
     <div style="display:flex; justify-content:space-between; gap:8px;">
       <button id="team-leave-clear" class="btn-table-action" style="color:var(--danger);">Quitar licencia</button>
       <div style="display:flex; gap:8px;">
-        <button id="team-leave-cancel" class="btn-secondary" style="font-size:13px;">Cancelar</button>
-        <button id="team-leave-save" class="btn-primary" style="font-size:13px;">Guardar</button>
+        <button id="team-leave-cancel" class="btn-secondary">Cancelar</button>
+        <button id="team-leave-save" class="btn-secondary">Guardar licencia</button>
       </div>
     </div>
   </div>
 </div>
 ```
+
+`font-size:15px` en `#team-leave-title` **difiere a propósito** del
+`<h3>` de su sibling `#team-config-modal` ("Umbrales de alerta",
+`index.html` usa `font-size:16px` ahí) — 16px no tiene token `--text-*`
+en el design system (10/11/13/15/17); esta fase se mantiene
+estrictamente sobre tokens declarados y usa 15px (`--text-md`, mismo
+rol "Heading" que el resto del documento) en vez de repetir el 16px
+suelto del vecino.
 
 `#team-leave-clear` solo se muestra (`display:flex` vs `none`) cuando el
 setter ya tiene `leaveUntil` seteado — si no, ocultarlo (no hay nada que
@@ -507,10 +577,13 @@ Comando por otra razón):
 2. **Fallo de desktop en un "mandar ahora" manual encola, no descarta.**
    Mismo mecanismo de cola que el automático (D-05/D-08, guard por
    período cubierto) — evita una segunda vía de pérdida de reportes.
-3. **Timeout del cliente (25s) es un estado `UNKNOWN` distinto de
-   `FAILED`** — evita que el copy empuje a un reintento reflejo cuando
+3. **Timeout del cliente = 60s, alineado a la ventana server-side de
+   45-60s de `21-RESEARCH.md` (Q5)**, y es un estado `UNKNOWN` distinto
+   de `FAILED` — evita que el copy empuje a un reintento reflejo cuando
    en realidad no se sabe si salió o no (honra el hard constraint
-   anti-spam incluso en el caso ambiguo).
+   anti-spam incluso en el caso ambiguo), y evita falsos `UNKNOWN` en el
+   escenario más común de la prueba en vivo (PC recién prendida,
+   cold-start de WhatsApp Web ~21s solo en el polling del composer).
 4. **El campo "mails de respaldo" de este panel es DISTINTO de
    `REPORT_EMAILS`** (env var ya usada por el semanal desde Phase 19).
    Es el fallback del DIARIO, hoy apagado por D-04. No unificar los dos
@@ -523,6 +596,9 @@ Comando por otra razón):
    desktop). Si en el futuro se quiere permitir re-elegir el grupo
    desde el panel, es un flujo nuevo (trigger al desktop para que
    vuelva a mostrar la lista) — no construido acá, no pedido por D-29.
+6. **`#team-leave-save` usa `.btn-secondary`, no `.btn-primary`** —
+   aunque su sibling `#team-cfg-save` sí usa acento, esta fase prefiere
+   no sumar una segunda superficie de acento nueva (ver `## Color`).
 
 ---
 
@@ -548,11 +624,12 @@ Comando por otra razón):
 | Confirm — mensaje | "Esto arma el reporte con los datos de HOY hasta este momento y lo manda YA al grupo de WhatsApp de los socios (o a los 3 por separado si el grupo no aparece). No se puede deshacer. ¿Confirmás?" |
 | Confirm — botón confirmar | "Sí, mandar ahora" |
 | Confirm — botón cancelar | "Cancelar" |
+| Comando — botón guardar mails | **"Guardar mails"** |
 | Equipo — badge activo | "Licencia hasta DD/MM" |
 | Equipo — botón (sin licencia) | "+ Licencia" |
 | Equipo — botón (con licencia) | "Editar licencia" |
 | Equipo — modal, subtítulo | "Mientras esté de licencia, sale de la línea de \"sin actividad hoy\" del reporte y aparece al pie como \"de licencia\". Vuelve sola al vencer la fecha — no hace falta acordarse de sacarla." |
-| Equipo — botón guardar | "Guardar" |
+| Equipo — botón guardar | **"Guardar licencia"** |
 | Equipo — botón quitar | "Quitar licencia" |
 | Equipo — toast guardado | "Licencia guardada." |
 | Equipo — toast quitado | "Licencia quitada." |
@@ -564,7 +641,8 @@ Comando por otra razón):
 Esta fase toca `public/app.js` (funciones + listeners nuevos) y
 `public/index.html` (el bloque nuevo + el modal de licencia). **No
 toca** `public/style.css` (cero clases nuevas, ver `## Reuso de
-componentes`).
+componentes` — incluso el fix de colores hardcodeados del hint de setup
+usa tokens `var(--warning)`/`var(--warning-soft)` ya existentes).
 
 - Actual: `<script type="module" src="/app.js?v=20260725c"></script>`
   (`index.html:3388`)
@@ -614,6 +692,49 @@ tal cual o ajustar con criterio, sin volver a preguntarle al user:
    requirement; queda como nota de hardening para el backend, no bloquea
    la UI (el disable client-side durante el propio request ya cubre el
    caso de un solo tab).
+4. **Timeout de 60s del cliente vs. ventana server-side** — el server
+   podría, en teoría, tardar más de 60s en un caso extremo (primer
+   envío del día, `21-RESEARCH.md:690-691` menciona que el timeout
+   server-side "podría necesitar ser mayor para el primer envío del
+   día"). Si el planner/executor del backend fija un timeout
+   server-side mayor a 60s, el timeout cliente de este documento debe
+   subir en la misma proporción — mantener ambos alineados, nunca el
+   cliente por debajo del server.
+
+---
+
+## Registro de correcciones (revisión gsd-ui-checker, 2026-07-26)
+
+4 issues bloqueantes corregidos tras la primera pasada del checker:
+
+1. **Copywriting** — "Guardar" pelado en 2 botones → **"Guardar mails"**
+   (`#cmd-report-backup-emails-save`) y **"Guardar licencia"**
+   (`#team-leave-save`), consistente con la convención real del
+   proyecto (`Guardar credenciales`, `Guardar routing`, `Guardar
+   umbral`, `Guardar prompt`).
+2. **Color** — `#team-leave-save` pasó de `.btn-primary` a
+   `.btn-secondary` (opción (a) recomendada por el checker), para que
+   `--accent` siga reservado exclusivamente al botón "Mandar ahora".
+   Documentada la divergencia deliberada respecto a su sibling
+   `#team-cfg-save` (ver `## Color`).
+3. **Typography** — se sacó el `font-size` inline redundante de los
+   botones (heredan 13px de su clase, no es una decisión nueva de esta
+   fase); `#team-leave-title` de 16px (sin token) a 15px (`--text-md`);
+   los 4 valores `font-size:12px` sueltos se consolidaron a 12.5px
+   (rol "Body" ya declarado). El documento sigue declarando 4 tamaños,
+   ninguno nuevo.
+4. **Spacing** — la tabla de excepciones ahora lista y justifica CADA
+   valor no-múltiplo-de-4 del HTML citando su vecino real (`padding:12px
+   14px`, `padding:10px 14px`, `margin-bottom:14px`, `padding:8px 10px`,
+   badge `padding:2px 6px`); el único valor sin precedente
+   (`padding-bottom:9px` + `align-items:end`) se normalizó/eliminó del
+   HTML en vez de justificarse.
+
+Además (no bloqueante): timeout del cliente de "mandar ahora" subido de
+25s a 60s, alineado a la recomendación server-side de `21-RESEARCH.md`
+Q5 (45-60s); colores hardcodeados `rgba(255,200,40,...)` del hint de
+setup reemplazados por `var(--warning)`/`var(--warning-soft)` y
+declarados en la tabla de Color.
 
 ---
 
