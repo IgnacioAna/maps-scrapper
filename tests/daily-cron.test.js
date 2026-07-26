@@ -359,7 +359,8 @@ describe('endpoints del panel — "Mandar ahora" (D-29 + T-21-14/T-21-18)', () =
     expect(sent[0].payload.target).toMatchObject({ kind: "group", groupName: "Socios SCM" });
     expect(sent[0].payload.text).toContain("Reporte diario ·");
     // El item propio quedó en vuelo esperando el resultado del desktop.
-    const mine = (read().queue || []).find((i) => i.id === sent[0].payload.queueId);
+    // CR-03: el queueId emitido es el id de INTENTO (`<itemId>#<n>`).
+    const mine = (read().queue || []).find((i) => i.id === String(sent[0].payload.queueId).split("#")[0]);
     expect(mine.kind).toBe("custom");
     expect(mine.status).toBe("sending");
   });
@@ -419,7 +420,7 @@ describe('endpoints del panel — "Mandar ahora" (D-29 + T-21-14/T-21-18)', () =
     expect(r.body.reason).toBe("sending");
     const sent = gw.emitted.filter((e) => e.event === "report:send-message");
     expect(sent.length).toBe(1);
-    expect(sent[0].payload.queueId).toBe("rpt_viejo");      // salió el más viejo
+    expect(sent[0].payload.queueId).toBe("rpt_viejo#1");    // salió el más viejo (CR-03: #intento)
     // El item de la prueba manual NO se perdió: sigue en cola, esperando su turno.
     const mine = (read().queue || []).find((i) => i.kind === "custom");
     expect(mine).toBeTruthy();

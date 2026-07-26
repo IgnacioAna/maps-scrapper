@@ -247,7 +247,7 @@ describe("emisión y correlación — el item queda en sending, jamás en sent",
     const ev = gw.emitted[0];
     expect(ev.event).toBe("report:send-message");
     expect(ev.userId).toBe("u_admin");
-    expect(ev.payload.queueId).toBe("it_emit");
+    expect(ev.payload.queueId).toBe("it_emit#1");   // CR-03: correlación POR INTENTO
     expect(ev.payload.accountId).toBe("acc_reportes");
     expect(ev.payload.text).toContain("Reporte diario");
     expect(ev.payload.target).toEqual({ kind: "group", groupName: "Socios SCM", groupJid: null });
@@ -285,6 +285,21 @@ describe("emisión y correlación — el item queda en sending, jamás en sent",
     const r = await Q.handleReportSendResult({ queueId: "it_spoof", ok: true, method: "pinned-row0" }, SETTER);
     expect(r).toMatchObject({ ok: false, reason: "no_autorizado" });
     expect(findItem("it_spoof").status).toBe("sending");
+  });
+
+  // WR-09: el guard corre FUERA del mutex. Adentro, mutateReportsState escribe
+  // SIEMPRE — un emisor en loop forzaba una reescritura completa de reports.json
+  // (más un warn) por evento rechazado, serializando el mutex con el tick.
+  it("un resultado rechazado NO reescribe reports.json (write amplification)", async () => {
+    // Se escribe a mano un JSON que el normalizador SÍ cambiaría si entrara al
+    // mutex (sin config/queue/history): si el archivo queda igual, no hubo save.
+    fs.writeFileSync(REPORTS, JSON.stringify({ lastWeeklyReportAt: "2026-07-19T11:00:00.000Z" }, null, 2));
+    const before = fs.readFileSync(REPORTS, "utf8");
+    for (let i = 0; i < 5; i++) {
+      const r = await Q.handleReportSendResult({ queueId: `spam_${i}`, ok: true }, SETTER);
+      expect(r).toMatchObject({ ok: false, reason: "no_autorizado" });
+    }
+    expect(fs.readFileSync(REPORTS, "utf8")).toBe(before);
   });
 
   it("queueId inexistente no lanza y no cambia nada", async () => {
@@ -339,6 +354,83 @@ describe("fallos del envío", () => {
     await Q.reportQueueTick(NOW + 60000);
     expect(gw.emitted.length).toBe(2);
     expect(findItem("it_retry").sendAttempts).toBe(2);
+  });
+
+  // ── CR-03 (21-REVIEW): el queueId se reusaba entre intentos ──
+  it("cada reintento emite un attemptId distinto (#1, #2)", async () => {
+    seed({ queue: [mkItem({ id: "it_att" })] });
+    await Q.reportQueueTick(NOW);
+    expect(gw.emitted[0].payload.queueId).toBe("it_att#1");
+    await Q.handleReportSendResult({ queueId: "it_att#1", ok: false, reason: "composer-not-found" }, ADMIN);
+    await Q.reportQueueTick(NOW + 60000);
+    expect(gw.emitted[1].payload.queueId).toBe("it_att#2");
+  });
+
+  it("un ok TARDÍO (el item ya volvió a pending por timeout) cierra el item en vez de descartarse", async () => {
+    // El desktop tardó más que REPORT_SEND_TIMEOUT_MS pero el mensaje SÍ salió.
+    // Antes: `item_no_en_vuelo` → reporte entregado registrado como no entregado,
+    // confesado como bache en el próximo mensaje, y el mismo texto tipeado de nuevo.
+    seed({ queue: [mkItem({ id: "it_late" })] });
+    await Q.reportQueueTick(NOW);
+    const attempt = gw.emitted[0].payload.queueId;
+    await Q.reportQueueTick(NOW + TIMEOUT_MS + 1000);          // timeout → pending
+    expect(findItem("it_late").status).not.toBe("sent");
+    const r = await Q.handleReportSendResult({ queueId: attempt, ok: true, method: "pinned-row0" }, ADMIN);
+    expect(r).toMatchObject({ ok: true, status: "sent" });
+    expect(findItem("it_late").status).toBe("sent");
+    // Y no vuelve a salir en las vueltas siguientes.
+    const before = gw.emitted.length;
+    await Q.reportQueueTick(NOW + TIMEOUT_MS + 120000);
+    expect(gw.emitted.length).toBe(before);
+  });
+
+  it("un ok tardío del consolidado cierra a los 3 hermanos (lastGroupIds)", async () => {
+    seed({ queue: [
+      mkItem({ id: "g1", dayStr: "2026-07-24", periodKey: "2026-07-24" }),
+      mkItem({ id: "g2", dayStr: "2026-07-25", periodKey: "2026-07-25" }),
+      mkItem({ id: "g3", dayStr: "2026-07-26", periodKey: "2026-07-26" }),
+    ] });
+    const r0 = await Q.reportQueueTick(NOW);
+    expect(r0.consolidated).toBe(3);
+    await Q.reportQueueTick(NOW + TIMEOUT_MS + 1000);          // timeout: consolidatedInto se limpia
+    await Q.handleReportSendResult({ queueId: "g1#1", ok: true, method: "pinned-row0" }, ADMIN);
+    const sent = read().history.filter((i) => i.status === "sent").map((i) => i.id).sort();
+    expect(sent).toEqual(["g1", "g2", "g3"]);
+    expect(read().queue.length).toBe(0);
+  });
+
+  it("un fallo de un intento VIEJO no toca el intento en vuelo", async () => {
+    seed({ queue: [mkItem({ id: "it_stale" })] });
+    await Q.reportQueueTick(NOW);
+    await Q.reportQueueTick(NOW + TIMEOUT_MS + 1000);          // timeout → pending
+    await Q.reportQueueTick(NOW + TIMEOUT_MS + 61000);         // re-emite (#2)
+    expect(gw.emitted[1].payload.queueId).toBe("it_stale#2");
+    expect(findItem("it_stale").status).toBe("sending");
+    const r = await Q.handleReportSendResult({ queueId: "it_stale#1", ok: false, reason: "composer-not-found" }, ADMIN);
+    expect(r).toMatchObject({ ok: false, reason: "item_no_en_vuelo" });
+    expect(findItem("it_stale").status).toBe("sending");       // el #2 sigue en vuelo
+  });
+
+  it("reason 'duplicate' no requeuea ni quema presupuesto (WR-03)", async () => {
+    seed({ queue: [mkItem({ id: "it_dup" })] });
+    await Q.reportQueueTick(NOW);
+    const r = await Q.handleReportSendResult({ queueId: "it_dup#1", ok: false, reason: "duplicate" }, ADMIN);
+    expect(r).toMatchObject({ ok: false, reason: "duplicado_ignorado" });
+    const it = findItem("it_dup");
+    expect(it.status).toBe("sending");
+    expect(it.sendAttempts).toBe(1);
+  });
+
+  it("invalid-payload es terminal: no gasta 20 intentos en los mismos bytes", async () => {
+    seed({ queue: [mkItem({ id: "it_bad" })] });
+    await Q.reportQueueTick(NOW);
+    const r = await Q.handleReportSendResult({ queueId: "it_bad#1", ok: false, reason: "invalid-payload" }, ADMIN);
+    expect(r).toMatchObject({ ok: true, status: "failed" });
+    const it = findItem("it_bad");
+    expect(it.status).toBe("failed");
+    expect(it.sendAttempts).toBe(MAX);
+    await Q.reportQueueTick(NOW + 60000);
+    expect(gw.emitted.length).toBe(1);
   });
 
   it("timeout: lo que quedó en vuelo vuelve a pending, y agotado el presupuesto queda failed", async () => {

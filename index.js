@@ -2575,7 +2575,11 @@ async function reportQueueTick(nowTs = Date.now()) {
       if (started && (nowTs - started) < REPORT_SEND_TIMEOUT_MS) { inFlight.push(it); continue; }
       it.lastFailureReason = 'timeout';
       it.consolidatedInto = null;
-      it.confessedIds = [];
+      // CR-03: `confessedIds` NO se borra acá. El líder los recalcula en CADA
+      // emisión, así que borrarlos era redundante — y si el resultado del intento
+      // que venció llega tarde con ok:true (el mensaje SÍ salió), el sello de los
+      // baches (D-05) tiene que poder aplicarse igual, o el próximo mensaje repite
+      // una confesión de algo que se entregó.
       it.sendingAt = null;
       const retry = (it.sendAttempts || 0) < REPORT_MAX_ATTEMPTS;
       it.status = retry ? 'pending' : 'failed';
@@ -2648,8 +2652,16 @@ async function reportQueueTick(nowTs = Date.now()) {
     const confessedIds = _reportGapItems(state).map((i) => i.id);
     // 8. Emitir. ⚠️ sendToUser hace io.to(room).emit y devuelve `true` con la room
     //    VACÍA: NO es señal de entrega. La entrega la confirma report:send-result.
+    //    CR-03: el id de correlación es POR INTENTO (`<itemId>#<n>`), no el id del
+    //    item. Con el id del item repetido en cada reintento, el dedupe del desktop
+    //    (TTL 15 min por queueId) tragaba las re-emisiones EN SILENCIO: el server
+    //    esperaba 150s a ciegas, contaba una emisión real, y al vencer el TTL el
+    //    reporte se tipeaba de nuevo en el grupo (mensaje duplicado a los socios).
+    //    El desktop dedupea por intento y, por ITEM, recuerda lo que ya tipeó OK
+    //    para re-confirmarlo sin volver a escribir.
+    const attemptId = `${first.id}#${(first.sendAttempts || 0) + 1}`;
     try {
-      gw.sendToUser(t.userId, 'report:send-message', { queueId: first.id, accountId: t.accountId, text, target });
+      gw.sendToUser(t.userId, 'report:send-message', { queueId: attemptId, accountId: t.accountId, text, target });
     } catch (err) {
       first.attempts = (first.attempts || 0) + 1;
       first.lastAttemptAt = nowIso;
@@ -2667,7 +2679,12 @@ async function reportQueueTick(nowTs = Date.now()) {
     }
     first.lastText = text;
     first.confessedIds = confessedIds;
-    return { emitted: true, queueId: first.id, consolidated: group.length, text, target };
+    first.attemptId = attemptId;
+    // Los hermanos consolidados de ESTE intento: si el resultado llega tarde (con el
+    // líder ya devuelto a `pending` por timeout), `consolidatedInto` ya se limpió y
+    // sin esta lista el ok cerraría solo al líder — los otros días saldrían otra vez.
+    first.lastGroupIds = group.map((i) => i.id);
+    return { emitted: true, queueId: first.id, attemptId, consolidated: group.length, text, target };
   });
 }
 if (process.env.NODE_ENV !== 'test') {
@@ -2675,28 +2692,72 @@ if (process.env.NODE_ENV !== 'test') {
   setTimeout(() => reportQueueTick().catch(() => {}), 15000);
 }
 
+// WR-09: throttle del warn de authz rechazada (ver handleReportSendResult).
+let _reportAuthzWarnAt = 0;
+// Reasons que NO se resuelven reintentando los MISMOS bytes: consumen el
+// presupuesto de golpe en vez de gastar 20 emisiones para terminar igual.
+// `composer-not-found` queda AFUERA a propósito: WR-07 mostró que ese es
+// justamente el reason que puede ser un falso negativo de un envío exitoso, y
+// hacerlo terminal convertiría un reporte entregado en un fallo permanente.
+const REPORT_TERMINAL_REASONS = new Set(['account-not-connected', 'invalid-payload']);
+
 // Resultado correlacionado del desktop (contrato congelado en 21-05-SUMMARY.md).
 // Los acks de Socket.IO no sirven acá: sendToUser emite a una ROOM y los acks solo
 // existen en emits directos — por eso el resultado viene como evento separado.
 async function handleReportSendResult(payload = {}, user = null) {
   const queueId = String(payload?.queueId || '');
   if (!queueId) return { ok: false, reason: 'sin_queueId' };
+  // CR-03: el queueId que viaja es el id de INTENTO (`<itemId>#<n>`). El item se
+  // resuelve por el prefijo; un desktop viejo que mande el id pelado sigue
+  // funcionando (tolerancia deliberada: el binario de la máquina del user puede
+  // quedar atrás de un deploy del server).
+  const itemId = queueId.split('#')[0];
+  // WR-03: el desktop contesta `duplicate` cuando dedupea la MISMA orden (socket
+  // re-entregado). Eso NO es un fallo: la orden sigue procesándose. Cortar acá
+  // evita requeuear y quemar presupuesto por una re-entrega.
+  if (payload.reason === 'duplicate') return { ok: false, reason: 'duplicado_ignorado' };
+  // Authz (T-21-06): un evento falso podría marcar como entregado un reporte que
+  // nunca salió. Solo el admin o el user que sostiene el transporte.
+  // WR-09: el guard corre FUERA del mutex. Adentro, `mutateReportsState` hace
+  // `saveReportsState` SIEMPRE, sin importar lo que devuelva el mutator: cualquier
+  // user autenticado con un socket abierto (una SDR con el panel abierto) podía
+  // emitir `report:send-result` en loop y forzar una reescritura completa de
+  // reports.json + un warn por evento, serializando además el mutex que comparte
+  // con el tick y los crons. `handleReportGroupConfigured` ya validaba antes del
+  // mutex: la asimetría era el bug.
+  const tPre = _reportStateDefaults(loadReportsState()).config.transport;
+  if (!(user && (user.role === 'admin' || (tPre.userId && user.id === tPre.userId)))) {
+    // Log THROTTLEADO (1 por minuto): sin esto, un emisor en loop inunda los logs
+    // de Railway, que son el único rastro de auditoría del canal.
+    if (Date.now() - _reportAuthzWarnAt > 60000) {
+      _reportAuthzWarnAt = Date.now();
+      console.warn(`[report-queue] send-result rechazado: user ${user?.id || '?'} (${user?.role || '?'}) no es el transporte configurado`);
+    }
+    return { ok: false, reason: 'no_autorizado' };
+  }
   return mutateReportsState((state) => {
     const t = state.config.transport;
-    // Authz (T-21-06): un evento falso podría marcar como entregado un reporte
-    // que nunca salió. Solo el admin o el user que sostiene el transporte.
-    if (!(user && (user.role === 'admin' || (t.userId && user.id === t.userId)))) {
-      console.warn(`[report-queue] send-result rechazado: user ${user?.id || '?'} (${user?.role || '?'}) no es el transporte configurado`);
-      return { ok: false, reason: 'no_autorizado' };
-    }
-    // Idempotente ante replays / wa-multi abierto en dos máquinas (T-21-12): si el
-    // item no existe o ya no está en vuelo, se ignora en silencio.
-    const item = (state.queue || []).find((i) => i && i.id === queueId);
-    if (!item || item.status !== 'sending') return { ok: false, reason: 'item_no_en_vuelo' };
+    // Idempotente ante replays / wa-multi abierto en dos máquinas (T-21-12).
+    // CR-03: se busca también en `history` porque un `ok` TARDÍO (el desktop tardó
+    // más que el timeout de 150s y el mensaje SÍ salió) puede llegar cuando el item
+    // ya migró a terminal. Descartarlo dejaba un reporte entregado registrado como
+    // no entregado, que además se confesaba como bache en el próximo mensaje (D-05).
+    const item = _reportFindItem(state, itemId);
+    if (!item) return { ok: false, reason: 'item_no_en_vuelo' };
     const nowIso = new Date().toISOString();
     const sentAt = Date.parse(payload.sentAt || '') ? new Date(payload.sentAt).toISOString() : nowIso;
-    const siblings = (state.queue || []).filter((i) => i && i.consolidatedInto === item.id && i.status === 'sending');
+    const groupIds = Array.isArray(item.lastGroupIds) ? item.lastGroupIds : [];
+    const siblings = (state.queue || []).filter((i) => i && i.id !== item.id
+      && ((i.consolidatedInto === item.id && i.status === 'sending')
+        || (groupIds.includes(i.id) && i.status !== 'sent')));
     const reason = payload.reason ? String(payload.reason).slice(0, 60) : null;
+    // ¿El resultado corresponde al intento EN CURSO? Un `#n` viejo (el server ya
+    // timeouteó y re-emitió) no puede requeuear el intento nuevo que está en vuelo.
+    const sameAttempt = !queueId.includes('#') || !item.attemptId || queueId === item.attemptId;
+    if (payload.ok !== true && !(item.status === 'sending' && sameAttempt)) {
+      return { ok: false, reason: 'item_no_en_vuelo' };
+    }
+    if (payload.ok === true && item.status === 'sent') return { ok: false, reason: 'item_no_en_vuelo' };
     item.method = payload.method ? String(payload.method).slice(0, 40) : null;
     item.matchedName = payload.matchedName ? String(payload.matchedName).slice(0, 120) : null;
     item.matchedJid = payload.matchedJid ? String(payload.matchedJid).slice(0, 80) : null;
@@ -2756,9 +2817,12 @@ async function handleReportSendResult(payload = {}, user = null) {
       });
       return { ok: true, status: 'failed', reason, dmQueued };
     }
-    if (reason === 'account-not-connected') {
-      // No se resuelve solo: alguien tiene que reescanear el QR. La nota de D-05
-      // lo dice con ese texto.
+    if (REPORT_TERMINAL_REASONS.has(reason)) {
+      // `account-not-connected`: no se resuelve solo, alguien tiene que reescanear
+      // el QR (la nota de D-05 lo dice con ese texto).
+      // `invalid-payload` (CR-03): el desktop rechazó el mensaje por contrato (texto
+      // vacío/>4000 chars, target desconocido, teléfono de DM inválido). Reintentar
+      // los mismos bytes 20 veces da exactamente el mismo resultado.
       item.sendAttempts = REPORT_MAX_ATTEMPTS;
       markFailed();
       return { ok: true, status: 'failed', reason };
