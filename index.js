@@ -1901,9 +1901,14 @@ async function maybeRunWeeklyReportCron(nowTs = Date.now(), sendFn = sendWeeklyR
   if (!recipients.length) { console.warn('Weekly report skipped: sin destinatarios'); return { ran: false, reason: 'sin_destinatarios' }; }
   const result = await sendFn(recipients);
   if (result.sent) {
-    state.lastWeeklyReportAt = new Date(nowTs).toISOString();
-    state.lastWeeklyReportTo = recipients;
-    saveReportsState(state);
+    // Phase 21: la escritura va por el mutex (regla #19). Este handler tiene un
+    // `await sendFn` entre el load y el save, así que un saveReportsState(state)
+    // con el snapshot viejo pisaría la cola de envío que el tick escribió
+    // mientras Resend respondía.
+    await mutateReportsState((s) => {
+      s.lastWeeklyReportAt = new Date(nowTs).toISOString();
+      s.lastWeeklyReportTo = recipients;
+    });
     console.log(`📨 Reporte semanal enviado a ${recipients.join(', ')}`);
     return { ran: true, sent: true, to: recipients };
   }
@@ -1929,10 +1934,11 @@ app.post('/api/admin/weekly-report/send', requireAuth, requireRole('admin'), asy
   if (!to.length) return res.status(400).json({ error: 'No hay email destinatario.' });
   const result = await sendWeeklyReport(to);
   if (!result.sent) return res.status(500).json(result);
-  const state = loadReportsState();
-  state.lastWeeklyReportAt = new Date().toISOString();
-  state.lastWeeklyReportTo = to;
-  saveReportsState(state);
+  // Phase 21: por el mutex — hay un await antes del save (ver comentario en el cron).
+  await mutateReportsState((s) => {
+    s.lastWeeklyReportAt = new Date().toISOString();
+    s.lastWeeklyReportTo = to;
+  });
   res.json({ ok: true, ...result, to });
 });
 
@@ -2141,6 +2147,242 @@ function buildConsolidatedReportText(lines, { gapNote = '', neverStarted = [] } 
 
 // Expuestos para tests (patrón __weeklyReport / __callCore).
 globalThis.__dailyReport = { buildDailyReportData, buildDailyReportText, buildDailyReportLine, buildConsolidatedReportText, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
+
+// ── Phase 21: cola de envío al grupo de WhatsApp ──
+// REP-06/07/08 + D-02/D-05/D-06/D-26/D-27/D-28. El transporte es GENÉRICO desde
+// acá (D-06): acepta cualquier texto, no solo reportes — la Phase 23 (alertas)
+// lo reusa sin reabrir este código.
+//
+// TODO el estado vive en `reports.json` (regla #21/#128: CERO archivos JSON
+// nuevos). `reports.json` ya está registrado en los 5 lugares —
+// /api/admin/export-data, /api/admin/import-data, seedVolumeFromRepo,
+// BACKUP_FILES y scripts/pre-deploy.js— así que el esquema extendido viaja solo.
+// Un archivo nuevo obligaría a repetir ese registro y un olvido lo borraría en
+// el próximo redeploy de Railway.
+//
+// reports.json (extiende Phase 19, aditivo — el normalizador no pisa nada):
+// {
+//   lastWeeklyReportAt, lastWeeklyReportTo,          // Phase 19
+//   config: {
+//     paused: false,
+//     backupEmails: [],                              // D-04: se persiste, hoy apagado
+//     transport: { userId, accountId, groupName, groupJid, jidCapturedAt,
+//                  configuredAt, configuredBy }
+//   },
+//   dailyState:  { lastDailyPeriodKey: '' },         // 'YYYY-MM-DD' TZ negocio (D-28)
+//   weeklyState: { lastWeeklyPeriodKey: '' },        // 'YYYY-MM-DD' del domingo cubierto (D-28)
+//   queue:   [ item ],                               // pending | sending (los terminales migran)
+//   history: [ item ],                               // últimos 30 terminales (D-27)
+// }
+// item = { id, kind: 'daily'|'weekly'|'custom'|'dm', periodKey, dayStr, text,
+//          line, phone, parentId, status, attempts, sendAttempts, confessedAt,
+//          confessedIds, consolidatedInto, lastText,
+//          createdAt, sendingAt, sentAt, failedAt, expiredAt, lastAttemptAt,
+//          lastFailureReason, method, matchedName, matchedJid }
+const REPORT_QUEUE_CAP = 200;          // guard de último recurso (T-21-10)
+const REPORT_HISTORY_CAP = 30;         // D-27
+const REPORT_DAILY_EXPIRY_DAYS = 3;    // D-26 — el semanal NUNCA expira
+const REPORT_SEND_TIMEOUT_MS = 150000; // 2,5 min: cold start de WhatsApp Web (~21s
+                                       // de polling del composer) + tipeo OS-level
+                                       // letra por letra de un mensaje de ~400 chars
+const REPORT_MAX_ATTEMPTS = 20;
+const REPORT_TERMINAL_STATUSES = new Set(['sent', 'failed', 'expired']);
+
+// Completa las claves que falten SIN pisar las existentes: Phase 19 escribió
+// reports.json cuando nada de esto existía, y un volumen viejo llega así.
+function _reportStateDefaults(state) {
+  const s = (state && typeof state === 'object' && !Array.isArray(state)) ? state : {};
+  if (!s.config || typeof s.config !== 'object') s.config = {};
+  if (typeof s.config.paused !== 'boolean') s.config.paused = false;
+  if (!Array.isArray(s.config.backupEmails)) s.config.backupEmails = [];
+  const t = (s.config.transport && typeof s.config.transport === 'object') ? s.config.transport : {};
+  s.config.transport = {
+    userId: t.userId || '',
+    accountId: t.accountId || '',
+    groupName: t.groupName || '',
+    groupJid: t.groupJid || null,
+    jidCapturedAt: t.jidCapturedAt || null,
+    configuredAt: t.configuredAt || null,
+    configuredBy: t.configuredBy || '',
+  };
+  if (!s.dailyState || typeof s.dailyState !== 'object') s.dailyState = {};
+  if (typeof s.dailyState.lastDailyPeriodKey !== 'string') s.dailyState.lastDailyPeriodKey = '';
+  if (!s.weeklyState || typeof s.weeklyState !== 'object') s.weeklyState = {};
+  if (typeof s.weeklyState.lastWeeklyPeriodKey !== 'string') s.weeklyState.lastWeeklyPeriodKey = '';
+  if (!Array.isArray(s.queue)) s.queue = [];
+  if (!Array.isArray(s.history)) s.history = [];
+  return s;
+}
+
+// Cap FIFO con el mismo mecanismo que saveScheduledMessages: separar por status
+// ANTES de cortar, para que un recorte NUNCA descarte pendientes.
+// Los terminales se MUEVEN a `history` (no se duplican): si el mismo item viviera
+// en las dos listas, marcar `confessedAt` en una copia y no en la otra haría que
+// la nota de baches (D-05) se repitiera para siempre.
+function _reportPrune(state) {
+  const s = state;
+  const live = [];
+  const terminal = [];
+  for (const it of (Array.isArray(s.queue) ? s.queue : [])) {
+    if (!it || typeof it !== 'object') continue;
+    (REPORT_TERMINAL_STATUSES.has(it.status) ? terminal : live).push(it);
+  }
+  if (terminal.length) {
+    const byId = new Map();
+    for (const it of [...(Array.isArray(s.history) ? s.history : []), ...terminal]) {
+      if (it && it.id) byId.set(it.id, it);
+    }
+    s.history = [...byId.values()];
+  }
+  if (s.history.length > REPORT_HISTORY_CAP) s.history = s.history.slice(-REPORT_HISTORY_CAP);
+  if (live.length > REPORT_QUEUE_CAP) {
+    // Solo se llega acá con la cola patológicamente inflada (>200 pendientes =
+    // ~7 meses sin poder entregar nada). Se conservan los más nuevos.
+    console.warn(`[report-queue] cola con ${live.length} items vivos: recorto a ${REPORT_QUEUE_CAP}`);
+    s.queue = live.slice(-REPORT_QUEUE_CAP);
+  } else {
+    s.queue = live;
+  }
+  return s;
+}
+
+// Mutex (regla #19): el tick emite y espera entre el load y el save, así que un
+// loadReportsState() → await → saveReportsState() naive perdería escrituras.
+// Calcado de mutateSettersData.
+let _reportsMutex = Promise.resolve();
+async function mutateReportsState(mutator) {
+  const next = _reportsMutex.then(async () => {
+    const state = _reportStateDefaults(loadReportsState());
+    const result = await Promise.resolve(mutator(state));
+    saveReportsState(_reportPrune(state));
+    return result;
+  });
+  // Si este mutator falla, no envenenamos la cola para los próximos.
+  _reportsMutex = next.catch(() => {});
+  return next;
+}
+
+// D-26: un diario pendiente de más de 3 días ya lo cubre el semanal.
+// `kind:'weekly'` queda excluido EXPLÍCITAMENTE: nunca expira ni se consolida.
+function _reportExpireStale(state, nowTs = Date.now()) {
+  const cutoff = _bizDayStr(nowTs - REPORT_DAILY_EXPIRY_DAYS * 86400000);
+  let expired = 0;
+  for (const it of (state.queue || [])) {
+    if (!it || it.status !== 'pending' || it.kind !== 'daily') continue;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(it.dayStr || ''))) continue;
+    if (it.dayStr >= cutoff) continue;
+    it.status = 'expired';
+    it.expiredAt = new Date(nowTs).toISOString();
+    expired++;
+  }
+  return expired;
+}
+
+// Items que fallaron o expiraron y todavía no se confesaron (D-05). Se buscan en
+// queue Y history porque el prune migra los terminales.
+function _reportGapItems(state) {
+  const seen = new Set();
+  const out = [];
+  for (const it of [...(state.queue || []), ...(state.history || [])]) {
+    if (!it || !it.id || seen.has(it.id)) continue;
+    if (it.status !== 'failed' && it.status !== 'expired') continue;
+    if (it.confessedAt) continue;
+    // Un item 'dm' es el respaldo de otro que ya se confiesa por su cuenta.
+    if (it.kind === 'dm') continue;
+    seen.add(it.id);
+    out.push(it);
+  }
+  return out.sort((a, b) => String(a.dayStr || '').localeCompare(String(b.dayStr || '')));
+}
+
+// D-05: "_No pude enviar el reporte de jue 24/07 y vie 25/07._". Devuelve '' si no
+// hay baches. El sello `confessedAt` NO se pone acá — lo pone el resultado del
+// envío recién cuando el mensaje que lleva la nota sale OK; si falla, el próximo
+// intento la vuelve a llevar.
+function _reportGapNote(state, nowTs = Date.now()) {
+  const items = _reportGapItems(state);
+  if (!items.length) return '';
+  const labels = [];
+  for (const it of items) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(it.dayStr || ''))) continue;
+    const label = _reportDayLabel(Date.parse(`${it.dayStr}T12:00:00Z`));
+    if (!labels.includes(label)) labels.push(label);
+  }
+  let note;
+  if (labels.length === 1) note = `_No pude enviar el reporte de ${labels[0]}._`;
+  else if (labels.length > 1) note = `_No pude enviar el reporte de ${labels.slice(0, -1).join(', ')} y ${labels[labels.length - 1]}._`;
+  else note = '_No pude enviar el reporte anterior._';
+  // Este fallo no se resuelve solo: alguien tiene que reescanear el QR.
+  if (items.some((it) => it.lastFailureReason === 'account-not-connected')) {
+    note += ' _La cuenta de WhatsApp perdió la sesión: hay que volver a escanear el QR._';
+  }
+  return note;
+}
+
+// D-06: encolado GENÉRICO — cualquier texto, no solo reportes. Recibe el `state`
+// ya normalizado (el llamador envuelve en mutateReportsState).
+function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr = '', text = '', line = '', phone = '', parentId = null } = {}) {
+  const s = _reportStateDefaults(state);
+  const body = String(text || '');
+  if (!body.trim()) return { queued: false, reason: 'texto_vacio' };
+  const key = String(periodKey || '');
+  // D-28: guard por PERÍODO CUBIERTO, no por "hace cuánto mandé". Un período ya
+  // entregado (o en camino) no se re-manda por ningún canal.
+  if (key) {
+    const dup = [...s.queue, ...s.history].find((it) => it && it.kind === kind
+      && String(it.periodKey || '') === key
+      && (it.status === 'pending' || it.status === 'sending' || it.status === 'sent'));
+    if (dup) return { queued: false, reason: 'periodo_ya_cubierto', id: dup.id };
+  }
+  const item = {
+    id: `rpt_${kind}_${key || 'adhoc'}_${Date.now()}`,
+    kind, periodKey: key, dayStr: String(dayStr || ''),
+    text: body, line: String(line || ''), phone: String(phone || ''), parentId: parentId || null,
+    status: 'pending', attempts: 0, sendAttempts: 0,
+    confessedAt: null, confessedIds: [], consolidatedInto: null, lastText: '',
+    createdAt: new Date().toISOString(),
+    sendingAt: null, sentAt: null, failedAt: null, expiredAt: null, lastAttemptAt: null,
+    lastFailureReason: null, method: null, matchedName: null, matchedJid: null,
+  };
+  s.queue.push(item);
+  return { queued: true, id: item.id };
+}
+
+// ¿Hay a dónde mandar? Sin grupo configurado el item queda pendiente (no falla):
+// el panel de D-29 / el picker del desktop lo completan y el tick lo levanta solo.
+function _reportTransportReady(state) {
+  const t = (state && state.config && state.config.transport) || {};
+  const userId = String(t.userId || '').trim();
+  const accountId = String(t.accountId || '').trim();
+  const groupName = String(t.groupName || '').trim();
+  const base = { userId, accountId, groupName, groupJid: t.groupJid || null };
+  if (!userId || !accountId || !groupName) return { ok: false, reason: 'sin_grupo', ...base };
+  return { ok: true, reason: null, ...base };
+}
+
+// D-02: teléfonos del respaldo por DM. Se resuelve por env var y NO por UI a
+// propósito: el panel de D-29 no tiene campo para esto y el precedente del
+// proyecto para listas de destinatarios es REPORT_EMAILS (Phase 19).
+function _reportDmFallback() {
+  const csv = String(process.env.REPORT_DM_FALLBACK || '').trim();
+  if (!csv) return [];
+  const out = [];
+  for (const raw of csv.split(',')) {
+    const p = raw.trim();
+    if (!/^\+?\d{8,15}$/.test(p)) continue;
+    if (!out.includes(p)) out.push(p);
+    if (out.length >= 5) break;
+  }
+  return out;
+}
+
+// Expuestos para tests (patrón __weeklyReport / __dailyReport). El tick y los
+// handlers de socket se suman más abajo.
+globalThis.__reportQueue = {
+  enqueueReportMessage, mutateReportsState, _reportStateDefaults, _reportPrune,
+  _reportExpireStale, _reportGapNote, _reportGapItems, _reportTransportReady, _reportDmFallback,
+  consts: { REPORT_QUEUE_CAP, REPORT_HISTORY_CAP, REPORT_DAILY_EXPIRY_DAYS, REPORT_SEND_TIMEOUT_MS, REPORT_MAX_ATTEMPTS },
+};
 
 app.post('/api/auth/invites', requireAuth, requireRole('admin'), async (req, res) => {
   const { name, email, role, sendEmail } = req.body || {};
