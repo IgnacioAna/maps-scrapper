@@ -202,18 +202,26 @@ Plans:
   listeners de socket con authz + tests *(ola 2)* — **EXECUTED 2026-07-26**
   (3 tareas, 26 tests, suite 918/918; el `sent` optimista del analog quedó
   fuera y la mutación que lo reintroduce rompe 10 tests)
-- [ ] 21-03-PLAN.md — cron diario 23:00 (D-10..D-12), semanal mudado al
+- [x] 21-03-PLAN.md — cron diario 23:00 (D-10..D-12), semanal mudado al
   domingo 23:00 con versión corta al grupo (D-13/D-20), endpoints admin
-  status/config/send-now + WR-01/WR-02/WR-03 del 19-REVIEW + tests *(ola 3)*
-- [ ] 21-04-PLAN.md — panel: bloque de config del canal en Comando (D-29) +
-  licencia por vendedora en Equipo (D-18) + cache-buster *(ola 4)*
+  status/config/send-now + WR-01/WR-02/WR-03 del 19-REVIEW + tests *(ola 3)* —
+  **EXECUTED 2026-07-26** (3 tareas, 21 tests nuevos, suite 945/945; verificado
+  por mutación: 7/21 y 14/39 rojos con el código roto a propósito)
+- [x] 21-04-PLAN.md — panel: bloque de config del canal en Comando (D-29) +
+  licencia por vendedora en Equipo (D-18) + cache-buster *(ola 4)* —
+  **EXECUTED 2026-07-26** (3 tareas, cero clases CSS nuevas, cache-buster
+  `app.js v=20260726a`; checklist a-f del plan 6/6 PASS y **111 checks / 0 fail**
+  — 33 contra el preview con `DATA_DIR` aislado + 78 corriendo el código real de
+  `app.js` contra un DOM stub, sin browser en el entorno)
 - [x] 21-05-PLAN.md — desktop wa-multi: envío a chat de GRUPO con verificación
   previa + handler `report:send-message` con dedupe y validación *(ola 1)* —
   **EXECUTED 2026-07-26** (2 tareas, `node --check` OK, suite 892/892; contrato
   de eventos congelado en `21-05-SUMMARY.md` para la ola 2). Los commits van
   `--allow-empty`: `wa-multi/` está gitignored en este repo
-- [ ] 21-06-PLAN.md — desktop wa-multi: picker del grupo en el preload (D-03) +
-  repack a v0.5.11 + README *(ola 2)*
+- [x] 21-06-PLAN.md — desktop wa-multi: picker del grupo en el preload (D-03) +
+  repack a v0.5.11 + README *(ola 2)* — **EXECUTED 2026-07-26** (2 tareas;
+  picker verificado con el código real extraído del asar contra un DOM stub
+  17/17, repack verificado por md5 + `asar list` + aritmética de bytes)
 - [ ] 21-07-PLAN.md — prueba en vivo con el user: primer envío real al grupo,
   validación del molde en el celular (REP-05), supuestos del research
   confirmados o refutados, UAT de los días siguientes *(ola 5, no autónomo)*
@@ -308,9 +316,11 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas) — **5/7 ejecutados** (21-01, 21-05,
-21-02, 21-06, 21-03 · olas 1, 2 y 3 completas; binario
-`wa-multi-portable-v0.5.11` con el canal de reportes adentro y los crons de las
-23:00 encendidos: criterios 1, 4, 5 y 6 de la Phase 21 cubiertos del lado
-server, más el 7 con tests). Faltan 21-04 (panel de config) y 21-07 (prueba en
-vivo, `autonomous: false`).*
+Phase 21 planificada (7 planes, 5 olas) — **6/7 ejecutados** (21-01, 21-05,
+21-02, 21-06, 21-03, 21-04 · olas 1 a 4 completas; binario
+`wa-multi-portable-v0.5.11` con el canal de reportes adentro, los crons de las
+23:00 encendidos y el panel de config/diagnóstico del canal en Centro de Comando:
+criterios 1, 4, 5 y 6 de la Phase 21 cubiertos del lado server, más el 7 con
+tests). **Falta solo 21-07** (prueba en vivo con el user, `autonomous: false`) —
+para dispararla no hay que esperar a las 23:00: el botón "Mandar ahora" del
+Centro de Comando manda en el acto.*

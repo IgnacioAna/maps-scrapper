@@ -54,7 +54,10 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   individuales (funciona hoy). Plan D: solo email.
   *(las dos mitades están CONSTRUIDAS: transporte del desktop en 21-05
   (Plan B, con Plan C como fallback automático) y cola/emisión del server en
-  21-02. Queda abierto SOLO el primer envío real al grupo → plan 21-07)*
+  21-02. 21-04 sumó la superficie de panel: el bloque "Reporte diario ·
+  WhatsApp" del Centro de Comando muestra el estado del canal y el botón
+  **"Mandar ahora"** dispara el envío sin esperar a las 23:00 — es el disparador
+  de la prueba. Queda abierto SOLO el primer envío real al grupo → plan 21-07)*
 - [x] **REP-07**: Fallback a email si la desktop está offline, con guard
   de alcanzabilidad (`isUserOnline`) ANTES de emitir — `sendToUser`
   (src/wa/gateway.js) devuelve `true` con room vacía; no confiar en él.
@@ -191,6 +194,6 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 ---
 
 *Last updated: 2026-07-26 — milestone v2.0 (REP-07 y REP-08 completos en 21-02;
-21-03 encendió los crons y sumó el molde corto del semanal — REP-05 y REP-06
-siguen abiertos solo por el primer envío real y la validación del user, plan
-21-07).*
+21-03 encendió los crons y sumó el molde corto del semanal; 21-04 agregó el panel
+del canal con el botón "Mandar ahora" — REP-05 y REP-06 siguen abiertos solo por
+el primer envío real y la validación del user en su celular, plan 21-07).*

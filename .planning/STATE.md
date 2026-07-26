@@ -14,8 +14,31 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 5/7
-  planes ejecutados (olas 1, 2 y 3 completas).**
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 6/7
+  planes ejecutados (olas 1, 2, 3 y 4 completas). Falta solo 21-07 (prueba en
+  vivo con el user, `autonomous: false`).**
+  - **21-04 EXECUTED (2026-07-26)** — el panel del canal. Commits `e808f4d`
+    (`#cmd-daily-report-panel` en `view-command`, admin-only, arriba de todo:
+    chip de estado, detalle grupo/último envío/cola/desktop, hint de setup,
+    mails de respaldo, interruptor de pausa y CTA "Mandar ahora" +
+    `#team-leave-modal` + **cache-buster `app.js v=20260726a`**;
+    `style.css` NO se tocó: cero clases CSS nuevas, todo del inventario del
+    UI-SPEC), `f53c845` (`_cmdLoadReportPanel`/`_cmdReportPaint` con el chip por
+    **precedencia determinística** de 6 estados; pausa con auto-guardado que se
+    REVIERTE si el server no confirmó; mails con feedback inline; máquina de
+    estados de "Mandar ahora" IDLE→CONFIRMING→SENDING→SUCCESS/QUEUED/FAILED/
+    UNKNOWN→IDLE con `askConfirm` obligatorio, timeout de **cliente 60s** (el
+    server corta a los 25s) y refetch del estado real al terminar; badge
+    `Licencia hasta DD/MM` + `window._teamOpenLeaveModal` en Equipo, D-18) y
+    `c1041e1` (evidencia de verificación + `deferred-items.md`).
+    **Checklist a-f del plan 6/6 PASS · 111 checks / 0 fail**: 33 contra el
+    preview con `DATA_DIR` aislado (HTML servido, los 3 endpoints, 403 de
+    supervisor en los 4, 401 anónimo, `send-now` end-to-end →
+    `{queued, sin_grupo}`) + 78 corriendo **el código REAL extraído de
+    `public/app.js` contra un DOM stub** (no hay browser ni jsdom en el entorno;
+    mismo método que el picker de 21-06). Detalle en `21-04-SUMMARY.md`.
+    ⚠️ `status:'sent'` sigue sin ejercitarse contra WhatsApp real (necesita el
+    `report:send-result` del desktop) y nada se vio en un browser de verdad.
   - **21-03 EXECUTED (2026-07-26)** — el automatismo encendido. Commits
     `560c295` (semanal mudado a **domingo 23:00** con ventana corrida a "la
     semana que TERMINA hoy" (D-13), `buildWeeklyReportTextShort` con el molde
@@ -166,12 +189,22 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   reglas de día, semanal el domingo 23:00 por las dos vías, sin duplicados por
   período, y los 3 endpoints del panel listos (commits `560c295`, `bf56577`,
   `8174fab`; suite 945/945) — ola 3 cerrada.
+  (9) **21-04 ejecutado**: el admin ya tiene el bloque del canal en Centro de
+  Comando (estado + pausa + mails + **"Mandar ahora"**) y la licencia por SDR en
+  Equipo (commits `e808f4d`, `f53c845`, `c1041e1`; 111 checks verdes,
+  cache-buster `v=20260726a`) — ola 4 cerrada.
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — faltan 21-04 (panel de
-config, ola 4) y 21-07 (prueba en vivo con el user, `autonomous: false`).
-Para la prueba en vivo ya no hace falta esperar a las 23:00: el
-`POST /api/admin/daily-report/send-now` manda en el acto (y funciona incluso
-con el interruptor de pausa puesto, por decisión del UI-SPEC).
+**Próximo paso:** seguir `/gsd-execute-phase 21` — falta **solo 21-07** (prueba
+en vivo con el user, `autonomous: false`).
+Para la prueba en vivo ya no hace falta esperar a las 23:00: el botón
+**"Mandar ahora"** del bloque "Reporte diario · WhatsApp" en Centro de Comando
+manda en el acto (y funciona incluso con el interruptor de pausa puesto, por
+decisión del UI-SPEC). El bloque arranca con el chip **"Sin configurar"** y el
+botón deshabilitado hasta que el desktop elija el grupo — es el diagnóstico de
+qué falta, no un error.
+⚠️ Al deployar: los tabs abiertos siguen con `app.js?v=20260725c` hasta que
+recarguen (el banner de versión avisa solo, #152). Recargar una vez antes de la
+prueba en vivo.
 Para D-02 (fallback por DM) el user puede cargar `REPORT_DM_FALLBACK` en
 Railway (CSV de hasta 5 teléfonos E.164); sin esa var el fallback no sale por
 DM pero el bache se confiesa igual.
@@ -198,7 +231,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 5/7 planes** (21-01 + 21-05 + 21-02 + 21-06 + 21-03 EXECUTED 2026-07-26, olas 1-3 completas; REP-04/09/10 completos, REP-05 builder + molde corto hechos y pendientes de validación del user, REP-06 con transporte desktop + cola server + setup del grupo + binario v0.5.11 listos, REP-07/08 completos del lado server, automatismo (crons 23:00) + endpoints del panel listos) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 6/7 planes** (21-01 + 21-05 + 21-02 + 21-06 + 21-03 + 21-04 EXECUTED 2026-07-26, olas 1-4 completas; REP-04/09/10 completos, REP-05 builder + molde corto hechos y pendientes de validación del user, REP-06 con transporte desktop + cola server + setup del grupo + binario v0.5.11 + panel de config/diagnóstico listos, REP-07/08 completos del lado server. Falta solo 21-07: prueba en vivo con el user) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -387,8 +420,38 @@ Contra HEAD `a9e4886`:
   `git status --porcelain wa-multi/...` no sirven (carpeta gitignored): la
   prueba de que no se corrió `npm run build` se hace con **mtimes de todo
   `out/`** (2 de 8 archivos de hoy, 6 en Jun 1).
+- **21-04:** los botones de una tabla generada por JS NO llevan `onclick` con el
+  nombre interpolado. Un valor de atributo se **decodifica como HTML antes de
+  evaluarse como JS**: `escHtml("O'Brien")` → `O&#39;Brien` → el parser JS ve
+  `'O'Brien'` y tira `SyntaxError` (botón muerto para esa fila, no XSS). El
+  handler se cablea con `addEventListener` sobre el nodo — mismo motivo por el
+  que `_teamRenderTable` ya pintaba el nombre con `textContent`.
+- **21-04:** las fechas tipo `'YYYY-MM-DD'` NO se comparan con `Date` en el
+  frontend. `new Date('2026-07-26')` es medianoche **UTC** y contra la medianoche
+  **local** el último día de una licencia se lee como vencido en AR (UTC-3) —
+  panel y reporte diciendo cosas distintas de la misma persona. Se compara el
+  string de día, inclusive, igual que `_reportOnLeave` del backend; el `DD/MM`
+  del badge sale de `slice`.
+- **21-04:** si un estado de error pinta con `textContent` sobre un contenedor
+  que tiene ids adentro, el pintado siguiente tiene que poder **reponer el
+  esqueleto** (markup constante, sin interpolación) — si no, un 500 transitorio
+  deja el bloque muerto hasta un F5 porque todos los `getElementById` devuelven
+  `null` para siempre.
+- **21-04:** un interruptor booleano del panel se **revierte** si el server no
+  confirmó el guardado. Un checkbox que dice "pausado" sobre un canal que sigue
+  mandando es peor que no tener el checkbox.
+- **21-04:** cada `reason` que devuelve el backend merece su propio texto. El
+  `queued` genérico ("la computadora está apagada") habría mentido en los 4
+  casos nuevos de 21-03 (`sin_grupo`, `busy`, `sending`, `fallback_dm`) —
+  incluido el peor: mandar a prender una computadora que ya está prendida
+  mientras el mensaje se está tipeando.
+- **21-04:** sin browser ni jsdom en el entorno, la UI se verifica extrayendo el
+  bloque REAL de `public/app.js` por marcadores de texto y corriéndolo contra un
+  DOM stub (mismo método que el picker de 21-06). Verifica el código que se
+  commitea, no una copia — y atrapó los 5 bugs de esta sesión.
 
 ---
 
-*Last updated: 2026-07-26 (21-03 ejecutado — olas 1, 2 y 3 completas; el reporte
-ya sale solo, falta el panel de config y la prueba en vivo).*
+*Last updated: 2026-07-26 (21-04 ejecutado — olas 1 a 4 completas; el reporte
+sale solo Y el admin ya puede diagnosticar el canal, pausarlo y mandarlo en el
+acto. Falta solo la prueba en vivo con el user).*
