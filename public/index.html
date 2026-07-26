@@ -1846,6 +1846,56 @@
           <h2>Centro de Comando</h2>
         </div>
 
+        <!-- Phase 21 (D-29): configuración y diagnóstico del canal del reporte
+             diario. Es lo primero que ve el admin al entrar: si el reporte no
+             llegó, este es el único lugar donde se ve por qué. -->
+        <section id="cmd-daily-report-panel" class="admin-variable-panel"
+          data-roles="admin" style="margin:20px 32px; padding:16px; border-radius:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0 0 4px; font-size:15px;">Reporte diario · WhatsApp</h3>
+              <p style="margin:0; color:var(--text-secondary); font-size:12.5px;">
+                Todos los días a las 23:00 se manda solo, al grupo de WhatsApp de
+                los socios. Esta sección es para configurarlo y para probarlo sin
+                esperar a la hora.
+              </p>
+            </div>
+            <span id="cmd-report-status-chip" class="chip chip-neutral">—</span>
+          </div>
+
+          <div id="cmd-report-status-detail" style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px; font-size:12.5px; color:var(--text-secondary);">
+            <div>Grupo destino: <strong id="cmd-report-group-name" style="color:var(--text-primary);">—</strong></div>
+            <div>Último envío: <span id="cmd-report-last-sent">—</span></div>
+            <div>En cola: <span id="cmd-report-queue-count">—</span></div>
+            <div>Desktop ahora: <span id="cmd-report-desktop-status">—</span></div>
+          </div>
+
+          <div id="cmd-report-setup-hint" class="hidden" style="margin-bottom:14px; padding:10px 14px; background:var(--warning-soft); border:1px solid var(--warning); border-radius:8px; font-size:12.5px; color:var(--text-secondary);">
+            Necesitás elegir el grupo desde la app de escritorio (wa-multi) antes de poder mandar.
+          </div>
+
+          <div style="display:grid; gap:12px; grid-template-columns:2fr 1fr; margin-bottom:14px;">
+            <label style="display:flex; flex-direction:column; gap:4px;">
+              <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">
+                Mails de respaldo <span style="opacity:.6; text-transform:none;">(apagado — D-04, no se usa mientras el diario no tenga fallback a email)</span>
+              </span>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="cmd-report-backup-emails" class="setter-input" placeholder="mail1@dominio.com, mail2@dominio.com">
+                <button id="cmd-report-backup-emails-save" class="btn-table-action" style="white-space:nowrap;">Guardar mails</button>
+              </div>
+              <span id="cmd-report-backup-emails-result" style="font-size:11px; color:var(--text-secondary);"></span>
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-secondary); cursor:pointer;">
+              <input type="checkbox" id="cmd-report-pause-toggle">
+              Pausar envío automático (diario y semanal)
+            </label>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+            <button id="cmd-report-send-now-btn" class="btn btn-primary">Mandar ahora</button>
+          </div>
+        </section>
+
         <!-- EQUIPO: invitaciones (solo admin) + tabla de usuarios (admin y supervisor) -->
         <section class="admin-users-panel" data-roles="admin,supervisor" style="padding:0 32px; margin-bottom:20px;">
           <div style="display:flex; align-items:center; gap:10px; margin:8px 0 12px;">
@@ -2679,6 +2729,31 @@
             </div>
           </div>
         </div>
+
+        <!-- Phase 21 (D-18): licencia por SDR con fecha de vencimiento.
+             Ver el badge: admin + supervisor. Editar: admin only (el botón se
+             condiciona en _teamRenderTable — data-roles no aplica a HTML de JS). -->
+        <div id="team-leave-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center;">
+          <div class="card" style="width:min(360px, 90vw); padding:20px;">
+            <h3 id="team-leave-title" style="margin:0 0 6px 0; font-size:15px;">Licencia</h3>
+            <p class="muted" style="margin:0 0 14px; font-size:12.5px; line-height:1.5;">
+              Mientras esté de licencia, sale de la línea de "sin actividad hoy"
+              del reporte y aparece al pie como "de licencia". Vuelve sola al
+              vencer la fecha — no hace falta acordarse de sacarla.
+            </p>
+            <label style="display:flex; flex-direction:column; gap:4px; font-size:12.5px; margin-bottom:16px;">
+              <span class="muted">De licencia hasta</span>
+              <input id="team-leave-until" type="date" style="padding:8px 10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary);">
+            </label>
+            <div style="display:flex; justify-content:space-between; gap:8px;">
+              <button id="team-leave-clear" class="btn-table-action" style="color:var(--danger);">Quitar licencia</button>
+              <div style="display:flex; gap:8px;">
+                <button id="team-leave-cancel" class="btn btn-secondary">Cancelar</button>
+                <button id="team-leave-save" class="btn btn-secondary">Guardar licencia</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Revisión IA (solo admin) -->
@@ -3385,7 +3460,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260725c"></script>
+  <script type="module" src="/app.js?v=20260726a"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
