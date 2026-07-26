@@ -14,8 +14,8 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
 
 ## Current Position
 
-- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 1/7
-  planes ejecutados.**
+- **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 2/7
+  planes ejecutados (ola 1 completa).**
   - **21-01 EXECUTED (2026-07-26)** — builder del reporte diario + textos.
     Commits `a303114` (datos + helpers + `now` inyectable en
     `_ccResolveRange` + `leaveUntil`), `81142ab` (molde D-19 / línea de día /
@@ -25,6 +25,23 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
     Judith/Teresa en la alerta, Dalia/Adela/Melissa en "Sin arrancar").
     Superficie para los planes siguientes: `globalThis.__dailyReport`.
     Detalle en `21-01-SUMMARY.md`.
+  - **21-05 EXECUTED (2026-07-26)** — transporte a grupo en el desktop
+    wa-multi. Commits `6614be4` (sendReportToGroup: fila fijada o búsqueda,
+    verificación de header/JID ANTES de tipear, confirmación por burbujas
+    salientes, Shift+Enter para los saltos de línea) y `b3a1f2e` (handler
+    `report:send-message` con dedupe por queueId + validación de payload,
+    rama DM del fallback D-02, relay `report:group-configured`,
+    auto-apertura al bootear). `node --check` OK, suite 892/892.
+    **El contrato de eventos para la ola 2 está congelado en
+    `21-05-SUMMARY.md`** (`report:send-message` / `report:send-result` /
+    `report:group-configured`).
+    ⚠️ Los 2 commits son `--allow-empty`: `wa-multi/` está **gitignored**
+    (`.gitignore:32`, 0 archivos trackeados desde siempre). El cambio vive
+    en `wa-multi/src-v058-work/out/main/index.js` y NO está versionado
+    hasta que 21-06 lo empaquete en el `app.asar`.
+    Sin verificar en vivo (queda para 21-07): pin en fila 0 (A1), `@g.us`
+    en `data-id` (A2), selectores de la caja de búsqueda (A3, nunca
+    probados) y Shift+Enter en el composer.
   - Artefactos de planificación:
   `21-CONTEXT.md` (29 decisiones), `21-RESEARCH.md` (transporte wa-multi),
   `21-PATTERNS.md` (analogía por superficie), `21-UI-SPEC.md` (aprobado 6/6
@@ -67,9 +84,12 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   verificados (commits `a451157`, `8298c24`). (4) **21-01 ejecutado**: el
   builder del reporte diario ya arma el mensaje del molde D-19 con datos
   reales (commits `a303114`, `81142ab`, `199bf40`; suite 892/892).
+  (5) **21-05 ejecutado**: el desktop wa-multi ya sabe mandar a un chat de
+  GRUPO con verificación previa y resultado correlacionado (commits
+  `6614be4`, `b3a1f2e`) — ola 1 cerrada.
 
-**Próximo paso:** seguir `/gsd-execute-phase 21` — falta 21-05 (ola 1,
-desktop wa-multi), después la ola 2 (21-02 cola + 21-06 picker), 21-03
+**Próximo paso:** seguir `/gsd-execute-phase 21` — ola 1 COMPLETA (21-01 +
+21-05); sigue la ola 2 (21-02 cola + 21-06 picker/repack), después 21-03
 (cron), 21-04 (panel) y 21-07 con el user.
 Pendiente aparte: UAT humano de `20-HUMAN-UAT.md` (las SDRs recargan el tab
 una vez — el banner de versión avisa; la regla arranca de cero, D-05). Al
@@ -94,7 +114,7 @@ en Railway → Variables — sin la key el cron no manda nada.
 |---|-------|------|--------|
 | 19 | Encender el reporte semanal | REP-01..03 | **COMPLETE** (2/2 planes, 2026-07-25) |
 | 20 | Disposición obligatoria | DISP-01..03 | Ejecutada 3/3 + verificada (human_needed — UAT en prod pendiente, 2026-07-26) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 1/7 planes** (21-01 EXECUTED 2026-07-26; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user) |
+| 21 | Reporte diario + canal WhatsApp | REP-04..10 | **En ejecución 2/7 planes** (21-01 + 21-05 EXECUTED 2026-07-26, ola 1 completa; REP-04/09/10 completos, REP-05 builder hecho y pendiente de validación del user, REP-06 con el transporte del desktop listo) |
 | 22 | Coaching por vendedora | COACH-01..06 | Pending (gate: verificación Whisper ronda 8) |
 | 23 | Notificación por excepción | ALERT-01..03 | Pending |
 
@@ -198,6 +218,21 @@ Contra HEAD `a9e4886`:
   incluida "Sin arrancar".
 - **21-01:** las discadas sin marcar (`pending_calls.json`) se muestran por
   nombre pero NUNCA suman a `dials` — una sola forma de contar llamadas.
+- **21-05:** los saltos de línea del reporte se tipean con **Shift+Enter**
+  (`osShiftEnter`): un `\n` mandado como evento `char` en WhatsApp Web
+  dispara el ENVÍO y habría partido el reporte en 6-8 mensajes sueltos. El
+  mismo tratamiento se aplicó al tipeo de `sendMessageInWindowInner` (por
+  ahí sale el fallback por DM); el camino de una sola línea quedó idéntico,
+  así que los followups no cambian.
+- **21-05:** ante `jid-mismatch` en la fila fijada se prueba igual el
+  fallback de búsqueda por nombre (el research §Q2 lo describe justo para
+  "si el pin se rompe"). Nunca se tipea en un chat sin verificar.
+- **21-05:** el envío al grupo NO consume `DAILY_SEND_CAP` (80/día) — es un
+  grupo propio, no outreach frío. `enqueueSend` sí se respeta.
+- **21-05:** `wa-multi/` está gitignored, así que los commits de tarea del
+  desktop van `--allow-empty` con el detalle en el mensaje. No se forzó
+  `git add -f`: meter el árbol del desktop (con binarios) contradice una
+  decisión explícita del `.gitignore`.
 
 ---
 

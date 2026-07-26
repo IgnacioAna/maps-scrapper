@@ -205,8 +205,11 @@ Plans:
   status/config/send-now + WR-01/WR-02/WR-03 del 19-REVIEW + tests *(ola 3)*
 - [ ] 21-04-PLAN.md — panel: bloque de config del canal en Comando (D-29) +
   licencia por vendedora en Equipo (D-18) + cache-buster *(ola 4)*
-- [ ] 21-05-PLAN.md — desktop wa-multi: envío a chat de GRUPO con verificación
-  previa + handler `report:send-message` con dedupe y validación *(ola 1)*
+- [x] 21-05-PLAN.md — desktop wa-multi: envío a chat de GRUPO con verificación
+  previa + handler `report:send-message` con dedupe y validación *(ola 1)* —
+  **EXECUTED 2026-07-26** (2 tareas, `node --check` OK, suite 892/892; contrato
+  de eventos congelado en `21-05-SUMMARY.md` para la ola 2). Los commits van
+  `--allow-empty`: `wa-multi/` está gitignored en este repo
 - [ ] 21-06-PLAN.md — desktop wa-multi: picker del grupo en el preload (D-03) +
   repack a v0.5.11 + README *(ola 2)*
 - [ ] 21-07-PLAN.md — prueba en vivo con el user: primer envío real al grupo,
@@ -303,4 +306,4 @@ phase.
 
 *Last updated: 2026-07-26 — roadmap v2.0 (5 phases, numeración continúa
 de la 18). Phase 19 planificada (2 planes);
-Phase 21 planificada (7 planes, 5 olas) — 1/7 ejecutados (21-01).*
+Phase 21 planificada (7 planes, 5 olas) — 2/7 ejecutados (21-01, 21-05).*
