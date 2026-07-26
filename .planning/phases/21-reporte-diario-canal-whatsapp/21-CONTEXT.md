@@ -318,7 +318,9 @@ NO incluye: análisis IA de transcripciones (Phase 22), alertas por excepción
 - `wa-multi/README.txt` — historial de repacks (v0.5.9, v0.5.10) y el
   procedimiento correcto (patch del `app.asar`, NUNCA `npm run build`).
   Binario actual:
-  `wa-multi/versiones/wa-multi-portable-v0.5.10/wa-multi-win32-x64/wa-multi.exe`.
+  `wa-multi/versiones/wa-multi-portable-v0.5.11/wa-multi-win32-x64/wa-multi.exe`
+  (repackeado en el plan 21-06 con el código de Phase 21; el v0.5.10 queda como
+  rollback junto a `backups/app.asar-v0510-pre0511-20260726.bak`).
 
 ### Tests
 - `tests/metrics-consistency.test.js` — la garantía anti-regresión del CALL
@@ -397,8 +399,10 @@ NO incluye: análisis IA de transcripciones (Phase 22), alertas por excepción
 1. Conseguir un número nuevo y registrar WhatsApp con él.
 2. Crear el grupo con los 2 socios (**cerrado, sin las vendedoras** — D-24) y
    agregar el número nuevo.
-3. Abrir `wa-multi-portable-v0.5.10/wa-multi-win32-x64/wa-multi.exe`, escanear
-   el QR con el número nuevo, elegir el grupo de la lista y dejar la app abierta.
+3. Abrir `wa-multi-portable-v0.5.11/wa-multi-win32-x64/wa-multi.exe`, escanear
+   el QR con el número nuevo, elegir el grupo con el botón "Grupo de reportes"
+   (abajo a la izquierda de la ventana de WhatsApp), **fijar ese chat en
+   WhatsApp** (clic derecho → Fijar) y dejar la app abierta.
 
 </specifics>
 
