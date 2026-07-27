@@ -261,6 +261,69 @@ El caso inverso (dar 1s de más cuando no hacía falta) se revisó y no aparece:
 
 **Lo único que sigue sin probar es el tipeo real contra WhatsApp con la ventana oculta.** El 1s es una apuesta razonable — cubre el orden de magnitud de un primer frame + foco — pero **no está medido contra el caso real**. Si el reporte nocturno saliera cortado o vacío con la ventana escondida, la palanca es subir ese `1000` (y, si aun así fallara, mostrar la ventana sin re-ocultarla las noches de reporte).
 
+## Addendum 2 (2026-07-27): el envío fallaba sobre el grupo CORRECTO
+
+**Prueba en vivo con el user: `group-not-found` sobre "Patient Flow", que era el grupo bien.** No es un problema de la bandeja; es un bug del transporte (21-05) que la prueba destapó.
+
+### Cómo se diagnosticó (no se adivinó)
+
+Se bajó `/api/admin/export-data` de producción y se leyó `reports.json`. El registro del intento decía:
+
+```
+matchedName: "haz clic aquí para ver la información del grupo"
+```
+
+Eso es el **tooltip** del encabezado del chat, no el nombre. `_reportReadOpenChat` leía `#main header span[title]` y tomaba el atributo `title` — que en la build del user es el texto de "ver info del grupo". Se comparaba contra "Patient Flow", no matcheaba y **abortaba sin tipear** (comportamiento correcto de WR-05 sobre un dato de entrada malo). El mismo bug hacía que el picker nunca capturara el JID: `jidCaptured:false` en prod, y sin JID no había segunda línea de defensa.
+
+### El fix
+
+`_reportReadOpenChat` junta **todos** los textos del encabezado (`span[title]`, `h1`, `h2`, `[role=button] span`, `span[dir=auto]`, `title` y `textContent` de cada uno, más el `textContent` del header entero) en `names[]`; `_reportVerifyChat` itera y acepta si **cualquiera** matchea, con la regla de WR-05 intacta dentro del loop (igualdad normalizada, o `a.includes(b)` con `b.length >= 6`, nunca al revés). `name` sobrevive solo para logs, eligiendo el primero que no parezca tooltip. El preload quedó simétrico (`openChatHeaderName()` → `openChatHeaderNames()`).
+
+No debilita la defensa: **todos esos textos son del MISMO chat abierto**, así que no habilita terminar en otra conversación — que es lo que WR-05 protege.
+
+### Mi revisión del fix (3 puntos pedidos)
+
+| Punto | Resultado |
+|---|---|
+| (a) el `for` sobre `cands` | **Correcto.** Todos los caminos retornan (`a===b` → ok; `b.length>=6 && a.includes(b)` → ok; fin del loop → `group-not-found`). La rama del JID intacta y con prioridad. Los guards `!b` y `!cands.length` preservan la semántica del `!a \|\| !b` viejo |
+| (b) otros lectores del header | **Ninguno pendiente.** 0 referencias a `openChatHeaderName` (singular) en los dos archivos. Las líneas 285/316 del preload usan `span[title]` sobre **filas de la lista de chats**, donde ese atributo sí es el nombre del chat (`unreadChats`/`allChats`) — correcto que no cambien |
+| (c) tamaño de `names[]` | **Capado a 20 entradas** en los dos archivos (`MAX_NAMES`), simétrico. Con el cap de 200 chars por entrada, el techo del IPC queda en ~4KB |
+
+**Riesgo residual documentado (no se cambió):** `pushName(hdr.textContent)` mete el encabezado entero concatenado, que en un grupo incluye el subtítulo con la lista de miembros. En teoría, abrir **otro** grupo cuyo subtítulo contenga el nombre del grupo de reportes (≥6 chars) verificaría. Requiere una conjunción improbable **y solo aplica al primer envío**: apenas hay `groupJid` persistido, la rama del JID corta antes (y este mismo fix es el que hace que el picker capture el JID). No se tocó el diseño porque fue validado contra producción; si se quisiera cerrar del todo, es una línea: usar `hdr.textContent` solo cuando los selectores específicos no devolvieron nada.
+
+### Verificación (harness 49/49)
+
+13 tests nuevos que ejecutan el **JS real que corre dentro de WhatsApp Web** (extraído del template del source, no retipeado) contra un DOM stub, más `_reportVerifyChat` real:
+
+- **el caso exacto de producción**: `title` = tooltip y `textContent` = "Patient Flow" → **verifica** (y el mismo input con el código viejo → `group-not-found`, o sea que el test reproduce el bug)
+- otro chat abierto **no** verifica · mínimo de 6 chars vigente · nunca al revés (header más corto no matchea) · `groupName` vacío nunca verifica
+- el JID manda cuando existe de los dos lados (`jid-mismatch`)
+- cap de 20 entradas · >200 chars afuera · dedupe · sin header no explota · acentos/mayúsculas
+- JID y burbujas se siguen leyendo igual (WR-07 sin regresión) · preload simétrico y sin referencias al nombre viejo
+
+⚠️ El harness tenía un bug **propio** (no del código bajo prueba): `new Function("return " + js)` con `js` empezando en newline dispara **ASI** y devuelve `undefined`. Resuelto con `.trim()`; sin eso, 9 tests "fallaban" por el stub.
+
+### Repack #5 — y una verificación mejor
+
+| Chequeo | Resultado |
+|---|---|
+| Linaje antes de copiar | main: 44 agregadas / **9 quitadas**; preload: 29 / **5** — y las quitadas son **exactamente** las del código viejo del header (`span[title]` único, firma de `openChatHeaderName`, el `const a =` y las 2 líneas de match que ahora viven dentro del `for`). Los otros 5 archivos de `out/` con md5 idéntico al asar |
+| md5 re-extraídos vs `out/` | idénticos (`03d1e57e…` main, `2b2d5f8d…` preload) |
+| `node --check` dentro del asar | exit 0 los dos |
+| `asar list` vs backup | 13.546 entradas, **0 diferencias** |
+| **Tamaños archivo por archivo** (método nuevo) | de 12.273 archivos, **exactamente 2** cambiaron de tamaño (`main/index.js` +2.120, `preload/whatsapp.js` +1.074) y su suma **+3.194 == el delta total del asar** |
+| Bandeja + respiro + Phase 21 adentro | `createTray` ×2, `withRestoredVisibility` ×4, `_scmForceClose` ×3, `sleep(wasHidden` ×1, `sendReportToGroup` ×5, picker ×3 |
+| Fuse de integridad | OFF → bootea |
+
+**El método de verificación mejoró acá.** La aritmética agregada que venía usando dio "NO CUADRA" (3.194 vs 2.251 esperados) — y la culpa era del *baseline recordado*, no del repack: usé 38.269 como tamaño previo del preload (el working tree tras el fix del coordinador) cuando dentro del asar anterior estaba el de 21-06 (37.326), porque el repack #4 solo había copiado `main/index.js`. En vez de ajustar el número a mano, se pasó a **parsear el header JSON del asar y comparar el tamaño de los 12.273 archivos uno por uno**: no depende de ningún baseline que yo recuerde y detecta un cambio en *cualquier* archivo, no solo en los dos que toqué. **Para los próximos repacks, este es el chequeo.**
+
+| Artefacto | Datos |
+|---|---|
+| `app.asar` vigente | `104.175.424` bytes · md5 **`b40ed17ca263d01dab324a09464f0682`** |
+| **Backup para rollback** | `wa-multi/backups/app.asar-v0511-pre-headerfix-20260727.bak` · `104.172.230` bytes · md5 `98ccf86f04b44cd8f5e522d4f9f7c967` (= bandeja + respiro, sin el fix del nombre) |
+
+**Suite del server: 992/992** (67 files). De paso, **`WR-12` ya no falla**: confirma retrospectivamente el diagnóstico de la ronda anterior — era el time-bomb de la hora (domingo 26/07 después de las 23:00), no una regresión.
+
 ## User Setup Required
 
 Nada nuevo. Al abrir el `.exe` (misma ruta de siempre, ver arriba):
@@ -281,18 +344,20 @@ Nada nuevo. Al abrir el `.exe` (misma ruta de siempre, ver arriba):
 
 ## Self-Check: PASSED
 
-*(actualizado tras el Addendum — repack #4)*
+*(actualizado tras el Addendum 2 — repack #5)*
 
-- `wa-multi/src-v058-work/out/main/index.js` — FOUND (97.207 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `electron.Tray` 1, `wasHidden` 4, 0 etiquetas `v0.5.12`)
-- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.172.230 B · md5 `98ccf86f04b44cd8f5e522d4f9f7c967`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
+- `wa-multi/src-v058-work/out/main/index.js` — FOUND (99.327 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `electron.Tray` 1, `wasHidden` 4, `MAX_NAMES` 2, 0 etiquetas `v0.5.12`)
+- `wa-multi/src-v058-work/out/preload/whatsapp.js` — FOUND (38.400 B; `node --check` exit 0; `openChatHeaderNames` 2, `openChatHeaderName` singular **0**, `MAX_NAMES` 2)
+- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.175.424 B · md5 `b40ed17ca263d01dab324a09464f0682`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
 - `.../v0.5.11/wa-multi-win32-x64/wa-multi.exe` — FOUND (sin tocar)
-- `wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak` — FOUND (104.171.132 B · md5 `62fcec2a…`, == el asar previo)
+- `wa-multi/backups/app.asar-v0511-pre-headerfix-20260727.bak` — FOUND (104.172.230 B · md5 `98ccf86f…`, == el asar previo)
+- `wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak` — FOUND (104.171.132 B · md5 `62fcec2a…`)
 - `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` — FOUND (104.161.712 B · md5 `92e90a70…`; los 4 backups anteriores intactos)
 - `wa-multi/versiones/wa-multi-portable-v0.5.10/wa-multi-win32-x64/wa-multi.exe` — FOUND (rollback alternativo disponible)
 - `wa-multi/README.txt` — FOUND (sección del re-repack + nota de `npm run build` corregida)
 - `.planning/phases/21-reporte-diario-canal-whatsapp/21-EXTRA-tray-SUMMARY.md` — FOUND
 - commits `90e56a7`, `2d9ca99` — FOUND en `git log`
-- temporales `_asar-extract-tray` / `_asar-verify-tray` / `_asar-extract-sd` / `_asar-verify-sd` — AUSENTES
-- `out/` NO regenerado: solo `main/index.js` con mtime de esta sesión (los otros 6 en Jun 1, el preload en el 21-06 de las 21:01)
-- harness de lógica **36/36** (29 de la bandeja + 7 del respiro de `bringToFront`) · mutación: con el código previo el test de la minimizada **falla** · suite del server **972/972 (66 files)**
-- commit del addendum: `2ee88f0` (código + repack #4) — FOUND en `git log`
+- temporales `_asar-extract-*` / `_asar-verify-*` (tray, sd, hf) — AUSENTES
+- `out/` NO regenerado: solo `main/index.js` y `preload/whatsapp.js` con mtime de esta sesión; los otros 6 archivos siguen en Jun 1
+- harness de lógica **49/49** (29 bandeja + 7 respiro de `bringToFront` + 13 del header) · mutaciones: con el código previo fallan el test de la minimizada **y** el del tooltip · suite del server **992/992 (67 files)**
+- commits: `2ee88f0` (respiro + repack #4), `602ade3` (fix del header + repack #5) — FOUND en `git log`
