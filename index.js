@@ -2607,10 +2607,12 @@ function _reportExpireStale(state, nowTs = Date.now()) {
 
 // Items que fallaron o expiraron y todavía no se confesaron (D-05). Se buscan en
 // queue Y history porque el prune migra los terminales.
-function _reportGapItems(state, { skipIds = [], skipDayStrs = [] } = {}) {
+function _reportGapItems(state, { skipIds = [], skipDayStrs = [], skipSame = {} } = {}) {
   const seen = new Set();
   const skip = new Set(skipIds.filter(Boolean));
   const skipDays = new Set(skipDayStrs.filter(Boolean));
+  const skipSameKind = String(skipSame.kind || '');
+  const skipSamePeriod = String(skipSame.periodKey || '');
   const out = [];
   for (const it of [...(state.queue || []), ...(state.history || [])]) {
     if (!it || !it.id || seen.has(it.id)) continue;
@@ -2621,6 +2623,10 @@ function _reportGapItems(state, { skipIds = [], skipDayStrs = [] } = {}) {
     // este mensaje lleva ese contenido — se saltean por dayStr (los sella el
     // confessedIds del envío OK, así no reaparecen).
     if (it.dayStr && skipDays.has(it.dayStr)) continue;
+    // Un intento FALLIDO del MISMO reporte (mismo kind+periodKey) no es un bache
+    // del mensaje que lo está reentregando. Caso real: el semanal del 26/07 falló
+    // por el bug del header; al reenviarlo, el mensaje se confesaba a sí mismo.
+    if (skipSameKind && it.kind === skipSameKind && String(it.periodKey || "") === skipSamePeriod) continue;
     if (it.status !== 'failed' && it.status !== 'expired') continue;
     if (it.confessedAt) continue;
     // Un item 'dm' es el respaldo de otro que ya se confiesa por su cuenta.
@@ -2639,8 +2645,8 @@ function _reportGapItems(state, { skipIds = [], skipDayStrs = [] } = {}) {
 // real: en `group-not-found` el item padre se marca `failed` y se encolan los DM con su
 // mismo texto — cuando el tick emitía cada DM, la nota salía diciendo "_No pude enviar
 // el reporte de jue 24/07._" ARRIBA del reporte de jue 24/07 que ese DM está entregando.
-function _reportGapNote(state, nowTs = Date.now(), { skipIds = [], skipDayStrs = [] } = {}) {
-  const items = _reportGapItems(state, { skipIds, skipDayStrs });
+function _reportGapNote(state, nowTs = Date.now(), { skipIds = [], skipDayStrs = [], skipSame = {} } = {}) {
+  const items = _reportGapItems(state, { skipIds, skipDayStrs, skipSame });
   if (!items.length) return '';
   const labels = [];
   for (const it of items) {
@@ -2803,7 +2809,7 @@ async function reportQueueTick(nowTs = Date.now()) {
     const skipDayStrs = first.kind === 'weekly' ? [] : (first.kind === 'daily'
       ? pendings.filter((it) => it.kind === 'daily').map((it) => it.dayStr).filter(Boolean)
       : [first.dayStr].filter(Boolean));
-    const gapNote = _reportGapNote(state, nowTs, { skipIds, skipDayStrs });
+    const gapNote = _reportGapNote(state, nowTs, { skipIds, skipDayStrs, skipSame: { kind: first.kind, periodKey: String(first.periodKey || "") } });
     let group = [first];
     let text = '';
     if (first.kind === 'daily') {
@@ -3226,6 +3232,38 @@ app.put('/api/admin/daily-report/config', requireAuth, requireRole('admin'), asy
       return _reportPanelStatus(s);
     });
     res.json({ ok: true, ...status });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/weekly-report/send-to-group — encola el SEMANAL corto al grupo.
+// `/api/admin/weekly-report/send` (Phase 19) manda solo el MAIL; esto es la vía
+// del canal de WhatsApp. Caso que lo motivó (2026-07-27): el semanal del 20–26/07
+// murió con el bug del header y no había forma de reenviarlo — el cron ya pasó y
+// solo corre los domingos 23:00.
+//
+// `week`: 'last' (default) = la semana que cerró el domingo pasado · 'current' =
+// la semana en curso hasta ahora. El reloj se INYECTA (los builders lo aceptan):
+// con 'last' hay que pararse DENTRO de esa semana, porque la ventana se capa en
+// el reloj recibido.
+app.post('/api/admin/weekly-report/send-to-group', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const week = String(req.body?.week || 'last');
+    if (!['last', 'current'].includes(week)) return res.status(400).json({ error: "week debe ser 'last' o 'current'." });
+    const now = Date.now();
+    const todayStart = _bizStartOfDay(now);
+    const thisMonday = todayStart - ((_bizDayOfWeek(todayStart) || 7) - 1) * 86400000;
+    // Domingo 23:59 de la semana pasada: dentro de la ventana y después del corte
+    // de las 23:00, así el contenido es la semana COMPLETA.
+    const clock = week === 'last' ? thisMonday - 60000 : now;
+    const data = buildWeeklyReportData(clock);
+    const periodKey = data.period?.to || _bizDayStr(clock);
+    const text = buildWeeklyReportTextShort(data, { emailSent: false });
+    const r = await mutateReportsState((state) => enqueueReportMessage(state, {
+      kind: 'weekly', periodKey, dayStr: periodKey, text,
+    }));
+    if (!r.queued) return res.json({ ok: false, queued: false, reason: r.reason, periodKey, period: data.period });
+    await reportQueueTick().catch(() => {});
+    res.json({ ok: true, queued: true, id: r.id, periodKey, period: data.period, preview: text.slice(0, 400) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -577,6 +577,26 @@ describe("nota de baches — D-05 aplica a TODO envío", () => {
     expect(findItem("c_f2").confessedAt).toBeTruthy();
   });
 
+  it("un reintento del MISMO reporte no se confiesa a sí mismo (semanal reenviado)", async () => {
+    // Caso real: el semanal del 26/07 falló por el bug del header. Al reenviarlo,
+    // el mensaje que ENTREGA esa semana se confesaba a sí mismo como bache.
+    seed({
+      queue: [mkItem({ id: "wk_retry", kind: "weekly", dayStr: YESTERDAY, periodKey: YESTERDAY })],
+      history: [mkItem({ id: "wk_old", kind: "weekly", dayStr: YESTERDAY, periodKey: YESTERDAY, status: "failed", lastFailureReason: "group-not-found" })],
+    });
+    const r = await Q.reportQueueTick(NOW);
+    expect(r.emitted).toBe(true);
+    expect(gw.emitted[0].payload.text).not.toContain("No pude enviar");
+    // Pero un bache de OTRO período sí se confiesa.
+    seed({
+      queue: [mkItem({ id: "wk_retry2", kind: "weekly", dayStr: YESTERDAY, periodKey: YESTERDAY })],
+      history: [mkItem({ id: "d_otro", dayStr: OLD4, periodKey: OLD4, status: "failed", lastFailureReason: "group-not-found" })],
+    });
+    gw.emitted.length = 0;
+    await Q.reportQueueTick(NOW);
+    expect(gw.emitted[0].payload.text).toContain("No pude enviar");
+  });
+
   it("cancel-queued: vacía la cola, no confiesa y el guard de período no revive nada", async () => {
     seed({ queue: [
       mkItem({ id: "cq_1", dayStr: TODAY, periodKey: TODAY }),

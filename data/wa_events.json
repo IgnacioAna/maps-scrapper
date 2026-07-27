@@ -1,6 +1,114 @@
 {
   "events": [
     {
+      "id": "ev_1785189486206_ol42cd",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Patient Flow",
+        "contactName": "Patient Flow",
+        "contactPhone": null,
+        "message": "Voy viendo",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T21:58:06.206Z"
+    },
+    {
+      "id": "ev_1785189486093_y3f2js",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:58:06.093Z"
+    },
+    {
+      "id": "ev_1785189485958_vwbhsj",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Patient Flow",
+            "phone": null,
+            "lastMessage": "Voy viendo",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T21:58:05.958Z"
+    },
+    {
+      "id": "ev_1785189311184_x9ekwx",
+      "type": "report-group-selected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "groupName": "Patient Flow",
+        "groupJid": null
+      },
+      "createdAt": "2026-07-27T21:55:11.184Z"
+    },
+    {
+      "id": "ev_1785189307055_95fqhs",
+      "type": "report-group-selected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "groupName": "Patient Flow",
+        "groupJid": null
+      },
+      "createdAt": "2026-07-27T21:55:07.055Z"
+    },
+    {
+      "id": "ev_1785189299762_ixufr1",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:54:59.762Z"
+    },
+    {
+      "id": "ev_1785189295695_hdvzh1",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:54:55.695Z"
+    },
+    {
+      "id": "ev_1785189295571_lkmij9",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T21:54:55.571Z"
+    },
+    {
+      "id": "ev_1785189272659_3xf70o",
+      "type": "window-closed",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:54:32.659Z"
+    },
+    {
       "id": "ev_1785188065387_b0qcv9",
       "type": "connected",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5892,111 +6000,6 @@
         "url": "https://web.whatsapp.com/send?phone=51959177536&text=Qu%C3%A9%20tal%2C%20bastante%20actividad%20en%20la%20cl%C3%ADnica"
       },
       "createdAt": "2026-06-05T18:16:33.350Z"
-    },
-    {
-      "id": "ev_1780683392658_vckb1m",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:32.658Z"
-    },
-    {
-      "id": "ev_1780683383710_zcjqlh",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:16:23.710Z"
-    },
-    {
-      "id": "ev_1780683378143_ti5oqr",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Beadent",
-        "contactName": "Beadent",
-        "contactPhone": null,
-        "message": "¡Hola! Paso por aquí para ver si necesitas ayuda con algo en particular. Si tienes alguna consulta sobre nuestros servicios dentales, cuenta conmigo. ¿En qué te puedo apoyar hoy?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:16:18.143Z"
-    },
-    {
-      "id": "ev_1780683378128_a9erms",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:18.128Z"
-    },
-    {
-      "id": "ev_1780683378114_b9kjiy",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Beadent",
-            "phone": null,
-            "lastMessage": "¡Hola! Paso por aquí para ver si necesitas ayuda con algo en particular. Si tienes alguna consulta sobre nuestros servicios dentales, cuenta conmigo. ¿En qué te puedo apoyar hoy?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:16:18.114Z"
-    },
-    {
-      "id": "ev_1780683378094_dhklg1",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:18.094Z"
-    },
-    {
-      "id": "ev_1780683375036_h10bjh",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:15.036Z"
-    },
-    {
-      "id": "ev_1780683374975_hhvudx",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51997532983&text=Hola%2C%20a%20full%20hoy%20por%20Arequipa%20con%20todo"
-      },
-      "createdAt": "2026-06-05T18:16:14.975Z"
-    },
-    {
-      "id": "ev_1780683374273_gfihmh",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:14.273Z"
     }
   ]
 }
