@@ -2137,7 +2137,14 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
     const everTs = allCalls.reduce((mx, c) => (c.setterId === s.id && c.ts > mx ? c.ts : mx), 0);
     if (!everTs) { neverStarted.push(name); continue; }         // D-15
     if (_reportOnLeave(s, nowTs)) { onLeave.push(name); continue; }  // D-18
-    const wd = _reportWeekdaysSince(everTs, nowTs);
+    // WR-01 (21-REVIEW): `_reportWeekdaysSince` cuenta los hábiles ESTRICTAMENTE
+    // entre el día de la última llamada y hoy (excluye los dos extremos), pero HOY
+    // también es un día sin llamar — si llegó hasta acá es porque `a.dials === 0`.
+    // Sin sumarlo, la escalada de D-16 ("5 días hábiles seguidos sin llamar")
+    // disparaba al 6to: última llamada lun 20/07 → el lun 27/07, que es el 5to hábil
+    // sin llamar (21, 22, 23, 24, 27), daba 4 y no escalaba.
+    const dow = _bizDayOfWeek(nowTs);
+    const wd = _reportWeekdaysSince(everTs, nowTs) + (dow >= 1 && dow <= 5 ? 1 : 0);
     if (wd >= 5) escalated.push({ name, days: Math.floor((_bizStartOfDay(nowTs) - _bizStartOfDay(everTs)) / 86400000) }); // D-16 + D-25
     else idleToday.push(name);                                  // D-14 + D-17
   }

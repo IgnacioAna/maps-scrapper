@@ -225,6 +225,44 @@ describe("estados de vendedora — D-14/D-15/D-16/D-18", () => {
     expect(D._reportWeekdaysSince(TODAY - 10 * DAY, NOW23)).toBe(7);   // 9 días → 7 hábiles
   });
 
+  // WR-01 (21-REVIEW): el helper cuenta los hábiles ESTRICTAMENTE entre la última
+  // llamada y hoy, pero HOY también es un día sin llamar. Sin sumarlo, D-16 ("5 días
+  // hábiles seguidos") disparaba al 6to. Hoy es MIÉRCOLES 22/07 en este fixture, así
+  // que los 5 hábiles sin llamar son 16, 17, 20, 21 y 22.
+  it("WR-01: escala en el 5to día hábil sin llamar, no en el 6to", () => {
+    const mkSetters = (lastCallDay) => ({
+      setters: [{ id: "s_bren", name: "Brenda" }, { id: "s_ter", name: "Teresa" }],
+      leads: {
+        ...lead("l_bren", BRENDA_TODAY),
+        ...lead("l_ter", [call(lastCallDay + 10 * HOUR, "no_answer", "u_ter", 0)]),
+      },
+    });
+    // Última llamada MIÉ 15/07 → 16, 17, 20, 21 + hoy 22 = 5to hábil → ESCALA.
+    writeFixture(mkSetters(TODAY - 7 * DAY));
+    const quinto = D.buildDailyReportData(NOW23);
+    expect(quinto.escalated).toEqual([{ name: "Teresa", days: 7 }]);
+    expect(quinto.idleToday).not.toContain("Teresa");
+    // Última llamada JUE 16/07 → 17, 20, 21 + hoy 22 = 4to hábil → todavía NO.
+    writeFixture(mkSetters(TODAY - 6 * DAY));
+    const cuarto = D.buildDailyReportData(NOW23);
+    expect(cuarto.escalated).toEqual([]);
+    expect(cuarto.idleToday).toEqual(["Teresa"]);
+  });
+
+  it("WR-01: el fin de semana no suma día hábil (sábado no adelanta la escalada)", () => {
+    // sáb 25/07 23:30 AR. Última llamada vie 17/07 → hábiles entre: 20,21,22,23,24 = 5
+    // y el sábado NO suma. La escalada ya venía dada por esos 5.
+    const SAT23 = Date.UTC(2026, 6, 26, 2, 30, 0);
+    const satStart = M._bizStartOfDay(SAT23);
+    expect(M._bizDayOfWeek(satStart)).toBe(6);
+    writeFixture({
+      setters: [{ id: "s_ter", name: "Teresa" }],
+      leads: lead("l_ter", [call(satStart - 8 * DAY + 10 * HOUR, "no_answer", "u_ter", 0)]),
+    });
+    const d = D.buildDailyReportData(SAT23);
+    expect(d.escalated).toEqual([{ name: "Teresa", days: 8 }]);
+  });
+
   it("D-18: licencia vigente saca de la alerta; vencida la devuelve sola", () => {
     const setters = SETTERS.map((s) => (s.id === "s_jud" ? { ...s, leaveUntil: "2026-07-25" } : s));
     writeFixture({ setters, leads: { ...lead("l_bren", BRENDA_TODAY), ...lead("l_jud", JUDITH_YEST), ...lead("l_ter", TERESA_OLD) } });
