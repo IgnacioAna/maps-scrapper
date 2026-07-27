@@ -324,6 +324,58 @@ No debilita la defensa: **todos esos textos son del MISMO chat abierto**, así q
 
 **Suite del server: 992/992** (67 files). De paso, **`WR-12` ya no falla**: confirma retrospectivamente el diagnóstico de la ronda anterior — era el time-bomb de la hora (domingo 26/07 después de las 23:00), no una regresión.
 
+## Addendum 3 (2026-07-27 tarde): el duplicado que CR-03 temía — confirmación + anti-retipeo
+
+**Segunda prueba en vivo: el fix del header FUNCIONÓ (mensaje en el grupo, verificación por nombre, tipeo entero con Shift+Enter). Pero el desktop no pudo CONFIRMAR el éxito → reportó fallo → el server reintentó → re-tipeó el mismo reporte en el grupo.** El user lo vio tipeándose y canceló; el item quedó en loop (`sendAttempts 3/20`, `lastFailureReason: timeout`) hasta el `cancel-queued` del server.
+
+### Diagnóstico (datos de prod + código)
+
+- `matchedJid: null` en **todos** los items — incluso los verificados por nombre con éxito — y `jidCapturedAt: null` tras un open exitoso → **`data-id` no existe en el DOM actual de WhatsApp Web**. Verificado contra el código: la confirmación del paso 8 dependía de `[data-id^="true_"]` (fallback `div.message-out`); sin eso, un envío exitoso daba "no salió ninguna burbuja" → `ok:false`.
+- Y el agujero estructural: **`_reportMarkSent` (la memoria CR-03) solo se grababa cuando la confirmación daba ok** — justo la que estaba rota. Retry sin frenos → duplicados.
+
+### Los 3 fixes
+
+**1. Confirmación por 4 señales** (`_reportConfirmOutcome`, pura y testeada; las históricas primero):
+`new-bubble-id` → `bubble-count` (ampliado a `[class*="message-out"]`) → **`text-in-chat`** (la primera línea del reporte, normalizada sin marcadores `*_~` porque el chat los renderiza, aparece en el `#main`) → **`composer-emptied`** (el composer tenía el reporte tipeado y tras el Enter quedó vacío; vacío-a-vacío NO es señal).
+**Trade-off documentado en el código:** `composer-emptied` puede dar falso ÉXITO (algo externo vació el composer). Se acepta a propósito: el falso-fallo produce duplicados tipeados en el grupo de los socios (pasó en vivo); el falso-éxito produce a lo sumo un reporte faltante, visible y re-disparable con "Mandar ahora". Entre mentir "no salió" y mentir "salió", lo segundo es el fallo barato.
+
+**2. Anti-retipeo defensivo** (la red para CUALQUIER futura falla de confirmación):
+- La marca "ya tipeé este item" (`_reportMarkTyped`, TTL 90 min, cap 200) se graba **antes del Enter** vía `opts.onTyped` — no después de la confirmación.
+- En el handler: retry de un item marcado → `sendReportToGroup(..., {reconfirmOnly: true})` — **nunca retipea**. Re-verifica el chat (misma localización pinned/search + verify) y: texto en el chat → ok `reconfirmed` · texto en el composer sin enviar (crash entre tipeo y Enter) → dispara SOLO el Enter → ok · no encontrado → **ok igual, deliberado**: el peor caso pasa a ser "un reporte sin confirmar" en vez de "N duplicados"; queda logueado y con `method: 'reconfirmed'` auditable en `reports.json`.
+- Límite conocido: el camino **DM** (fallback D-02) no tiene la marca — reusa `sendMessageInWindow` compartido con followups y meter el hook ahí es invasivo. El DM solo corre si el grupo falló, a ≤5 socios.
+
+**3. JID best-effort ampliado** (main `idOf` + preload `readOpenChatJid`): prefijo histórico `true_/false_` primero; si no matchea, regex laxa **anclada a dígitos en las puntas** (`\d[\d\-]{4,}\d@g.us|…`). El anclaje no es cosmético: la primera versión (`[\w.\-]{6,}`) capturaba prefijos basura (`msg-123…@g.us` entero) — **un JID persistido con basura da `jid-mismatch` permanente (CR-02), y lo atrapó el test que ejecuta el JS real del browser**, no el grep estructural. Sin `data-id` en el DOM sigue sin haber fuente confiable: queda best-effort documentado; la verificación por nombre ya funciona en vivo.
+
+### Verificación (harness **63/63**)
+
+14 tests nuevos: el **escenario exacto de prod** (sin data-id, sin message-out, texto en el chat → confirmado; antes daba "no salió" → retipeo) · composer-emptied con y sin baseline · señales históricas primero · los 2 casos de NO-confirmación · fragmento (formato WA, cap 64, WR-08) · tipeado-vs-renderizado · marca typed (mark/TTL/cap) · estructura del gate (marca ANTES del Enter, `reconfirmOnly` no pasa por `osTypeText`, las 3 salidas del reconfirm responden ok, `markSent` sigue solo con ok) · **JID laxo ejecutado contra el JS real del browser** (formato nuevo, histórico, y sin id-like → null).
+
+### Repack #6
+
+Backup con retry anti-lock (el user podía tener el `.exe` abierto): **no hubo lock** — backup y pack salieron al primer intento.
+
+| Chequeo | Resultado |
+|---|---|
+| Linaje | main 197 agregadas / 20 quitadas, preload 12 / 2 — las quitadas son exactamente la confirmación vieja, el `idOf` estricto y las firmas sin `opts`; los otros 5 archivos md5 idéntico |
+| md5 re-extraídos vs `out/` | idénticos (`681bc036…` main, `6c34e566…` preload) |
+| `node --check` dentro del asar | exit 0 los dos |
+| `asar list` vs backup | 13.546 entradas, 0 diferencias |
+| **Diff por archivo del header JSON** (método del #5) | de 12.273 archivos, exactamente 2 cambiaron (`main` +10.660, `preload` +601), suma **+11.261 == delta total** |
+| Ronda 2 adentro | `reconfirmOnly` ×7, `_reportMarkTyped` ×2, `_reportConfirmOutcome` ×3, `composer-emptied` ×3 |
+| Todo lo anterior intacto | bandeja ×2, `withRestoredVisibility` ×4, `sleep(wasHidden` ×1, `openChatHeaderNames` ×2 |
+| Fuse de integridad | OFF → bootea |
+
+| Artefacto | Datos |
+|---|---|
+| `app.asar` vigente | `104.186.685` bytes · md5 **`c5de2f6ddbae9e9f31382a2f783b36e8`** |
+| **Backup para rollback** | `wa-multi/backups/app.asar-v0511-pre-confirmfix-20260727.bak` · `104.175.424` bytes · md5 `b40ed17c…` (= fix del header, sin la confirmación nueva) |
+
+**Suite del server: 996/996** (67 files; el total subió 992→996 por tests nuevos del user en paralelo — todos verdes).
+
+### Operativo (estado que dejó el coordinador)
+
+El canal quedó **EN PAUSA** en prod con la cola vacía; "Mandar ahora" (`custom`) sigue funcionando para probar. El cron de las 23:00 encola el diario pero no sale hasta despausar. **Para la próxima prueba: pedir al user que cierre y reabra el `.exe`** (el asar nuevo solo carga al reiniciar), mandar un "Mandar ahora" y mirar: (a) el mensaje llega UNA vez, (b) `reports.json` lo marca `sent` con señal en el log del desktop, (c) si vuelve a fallar la confirmación, el retry debe entrar con `method: 'reconfirmed'` — nunca un segundo tipeo.
+
 ## User Setup Required
 
 Nada nuevo. Al abrir el `.exe` (misma ruta de siempre, ver arriba):
@@ -344,20 +396,21 @@ Nada nuevo. Al abrir el `.exe` (misma ruta de siempre, ver arriba):
 
 ## Self-Check: PASSED
 
-*(actualizado tras el Addendum 2 — repack #5)*
+*(actualizado tras el Addendum 3 — repack #6)*
 
-- `wa-multi/src-v058-work/out/main/index.js` — FOUND (99.327 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `electron.Tray` 1, `wasHidden` 4, `MAX_NAMES` 2, 0 etiquetas `v0.5.12`)
-- `wa-multi/src-v058-work/out/preload/whatsapp.js` — FOUND (38.400 B; `node --check` exit 0; `openChatHeaderNames` 2, `openChatHeaderName` singular **0**, `MAX_NAMES` 2)
-- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.175.424 B · md5 `b40ed17ca263d01dab324a09464f0682`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
+- `wa-multi/src-v058-work/out/main/index.js` — FOUND (109.987 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `wasHidden` 4, `MAX_NAMES` 2, `reconfirmOnly` 7, `_reportConfirmOutcome` 3, `_reportMarkTyped` 2)
+- `wa-multi/src-v058-work/out/preload/whatsapp.js` — FOUND (39.001 B; `node --check` exit 0; `openChatHeaderNames` 2, singular **0**, regex laxa anclada a dígitos)
+- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.186.685 B · md5 `c5de2f6ddbae9e9f31382a2f783b36e8`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
 - `.../v0.5.11/wa-multi-win32-x64/wa-multi.exe` — FOUND (sin tocar)
-- `wa-multi/backups/app.asar-v0511-pre-headerfix-20260727.bak` — FOUND (104.172.230 B · md5 `98ccf86f…`, == el asar previo)
+- `wa-multi/backups/app.asar-v0511-pre-confirmfix-20260727.bak` — FOUND (104.175.424 B · md5 `b40ed17c…`, == el asar previo)
+- `wa-multi/backups/app.asar-v0511-pre-headerfix-20260727.bak` — FOUND (104.172.230 B · md5 `98ccf86f…`)
 - `wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak` — FOUND (104.171.132 B · md5 `62fcec2a…`)
-- `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` — FOUND (104.161.712 B · md5 `92e90a70…`; los 4 backups anteriores intactos)
+- `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` — FOUND (104.161.712 B · md5 `92e90a70…`; los backups más viejos intactos)
 - `wa-multi/versiones/wa-multi-portable-v0.5.10/wa-multi-win32-x64/wa-multi.exe` — FOUND (rollback alternativo disponible)
 - `wa-multi/README.txt` — FOUND (sección del re-repack + nota de `npm run build` corregida)
 - `.planning/phases/21-reporte-diario-canal-whatsapp/21-EXTRA-tray-SUMMARY.md` — FOUND
 - commits `90e56a7`, `2d9ca99` — FOUND en `git log`
-- temporales `_asar-extract-*` / `_asar-verify-*` (tray, sd, hf) — AUSENTES
+- temporales `_asar-extract-*` / `_asar-verify-*` (tray, sd, hf, cf) — AUSENTES
 - `out/` NO regenerado: solo `main/index.js` y `preload/whatsapp.js` con mtime de esta sesión; los otros 6 archivos siguen en Jun 1
-- harness de lógica **49/49** (29 bandeja + 7 respiro de `bringToFront` + 13 del header) · mutaciones: con el código previo fallan el test de la minimizada **y** el del tooltip · suite del server **992/992 (67 files)**
-- commits: `2ee88f0` (respiro + repack #4), `602ade3` (fix del header + repack #5) — FOUND en `git log`
+- harness de lógica **63/63** (29 bandeja + 7 respiro + 13 header + 14 confirmación/anti-retipeo) · mutaciones con poder de detección: minimizada, tooltip, y **el JID laxo sin anclar** (capturaba prefijos basura — lo atrapó el test ejecutado, no el grep) · suite del server **996/996 (67 files)**
+- commits: `2ee88f0` (respiro + repack #4), `602ade3` (header + repack #5), `5632da9` (confirmación + repack #6) — FOUND en `git log`
