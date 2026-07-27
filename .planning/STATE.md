@@ -194,28 +194,42 @@ transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
   Equipo (commits `e808f4d`, `f53c845`, `c1041e1`; 111 checks verdes,
   cache-buster `v=20260726a`) — ola 4 cerrada.
 
-**Code review de la fase: `issues_found` — 3 BLOCKER + 16 warnings**
-(`21-REVIEW.md`, commit `6b54588`, depth standard, 9 archivos). Los 3 blockers
-rompen el canal justo en el escenario principal, así que **hay que correr
-`/gsd-code-review-fix 21` ANTES de la prueba en vivo 21-07**:
-- **CR-01** el guard de alcanzabilidad confunde el desktop con una pestaña del
-  panel (`isUserConnected` mira el Map `presence`, que también se puebla con
-  sockets de cookie desde `public/wa.js`) → con wa-multi cerrado dice "Desktop
-  conectada", emite a una room sin handler y quema `sendAttempts` hasta `failed`.
-- **CR-02** el picker guarda el JID del chat ABIERTO, no del elegido → si había
-  otro grupo abierto, el grupo correcto queda con `jid-mismatch` permanente y no
-  hay endpoint para limpiar `groupJid`.
-- **CR-03** el `queueId` se reusa entre intentos y el desktop no responde al
-  dedupear → tras un timeout de 150s el grupo puede recibir el reporte DOS veces
-  y confesarse como bache un reporte entregado.
-Warnings notables: WR-01 off-by-one de la escalada D-16 (dispara al 6º día hábil,
-no al 5º), WR-04 TOCTOU del lock de `send-now` (doble POST = doble envío),
-WR-11 `data/reports.json` está gitignored → `seedVolumeFromRepo` no tiene qué
-sembrar y un volumen recreado pierde `config.transport` en silencio.
+**Code review de la fase: `issues_found` — 3 BLOCKER + 16 warnings
+→ 19/19 ARREGLADOS** (`21-REVIEW.md` commit `6b54588`; `21-REVIEW-FIX.md`
+commit `3b48a20`, 14 commits de fix + repack `fffa455`). Suite **972/972**
+(27 tests nuevos; los 4 flaky de `wa-campaign-engine` también pasaron).
+Cache-buster → `app.js v=20260726b` (WR-15). Los 3 blockers eran:
+- **CR-01** el guard de alcanzabilidad confundía el desktop con una pestaña del
+  panel (`isUserConnected` miraba el Map `presence`, que también se puebla con
+  sockets de cookie desde `public/wa.js`) → con wa-multi cerrado decía "Desktop
+  conectada" y quemaba `sendAttempts` hasta `failed`. **Fix:** `presence` guarda
+  `desktopSockets` + `isDesktopConnected` (el `io.use` ya marcaba
+  `source:'desktop'|'browser'`, solo no se persistía). Sin el helper NO se emite.
+- **CR-02** el picker guardaba el JID del chat ABIERTO, no del elegido → el grupo
+  correcto quedaba con `jid-mismatch` permanente. **Fix:** el JID se manda solo si
+  el header del chat abierto coincide con el nombre elegido; 2 `jid-mismatch`
+  consecutivos des-fijan `groupJid` solos, + `PUT /config {groupJid:null}`.
+- **CR-03** el `queueId` se reusaba entre intentos y el desktop no respondía al
+  dedupear → el grupo podía recibir el reporte DOS veces. **Fix:** correlación por
+  intento (`<itemId>#<n>`), un `ok` tardío CIERRA el item, y el desktop recuerda
+  por item lo ya tipeado para re-confirmar sin volver a escribir.
+Dos decisiones de criterio del fixer, ambas correctas y documentadas:
+`composer-not-found` quedó **retryable** (el review pedía terminal, pero WR-07
+prueba que es el reason que puede ser falso negativo de un envío EXITOSO — se
+agregó `invalid-payload` como terminal de verdad); y **`data/reports.json` sigue
+gitignored** a propósito: `queue`/`history` guardan el TEXTO de los reportes =
+nombres y métricas individuales de las vendedoras (D-24), commitearlo dejaría
+datos nominales de empleadas en el historial de git para siempre. Se corrigió el
+comentario que afirmaba lo contrario. **Consecuencia asumida: si el volumen de
+Railway se recrea, se pierde `config.transport` y hay que reelegir el grupo desde
+wa-multi (2 min).** ⏳ Pendiente para el cierre de fase: anotar esto en CLAUDE.md.
 
-**Próximo paso:** `/gsd-code-review-fix 21`, y después **solo 21-07** (prueba
-en vivo con el user, `autonomous: false`). La preparación física del user
-(número, grupo, QR, fijar el chat) se puede hacer en paralelo a los fixes.
+**Próximo paso:** **solo 21-07** (prueba en vivo con el user, `autonomous: false`).
+⚠️ Si el `.exe` de wa-multi está abierto, CERRARLO y volver a abrirlo: el
+`app.asar` se re-empaquetó con los fixes del desktop (mismo v0.5.11, contenido
+distinto — md5 `92e90a70…`, 104.161.712 B; rollback en
+`wa-multi/backups/app.asar-v0511-pre-reviewfix-20260726.bak`). Sin reabrir, la
+prueba corre con CR-02 y CR-03 todavía adentro.
 Para la prueba en vivo ya no hace falta esperar a las 23:00: el botón
 **"Mandar ahora"** del bloque "Reporte diario · WhatsApp" en Centro de Comando
 manda en el acto (y funciona incluso con el interruptor de pausa puesto, por
@@ -223,8 +237,8 @@ decisión del UI-SPEC). El bloque arranca con el chip **"Sin configurar"** y el
 botón deshabilitado hasta que el desktop elija el grupo — es el diagnóstico de
 qué falta, no un error.
 ⚠️ Al deployar: los tabs abiertos siguen con `app.js?v=20260725c` hasta que
-recarguen (el banner de versión avisa solo, #152). Recargar una vez antes de la
-prueba en vivo.
+recarguen (el nuevo es `v=20260726b`; el banner de versión avisa solo, #152).
+Recargar una vez antes de la prueba en vivo.
 Para D-02 (fallback por DM) el user puede cargar `REPORT_DM_FALLBACK` en
 Railway (CSV de hasta 5 teléfonos E.164); sin esa var el fallback no sale por
 DM pero el bache se confiesa igual.
