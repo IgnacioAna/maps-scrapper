@@ -305,6 +305,25 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
     expect(d.perSetter.some((s) => s.name === "Ignacio")).toBe(false);
   });
 
+  // WR-12 (21-REVIEW): `maybeRunWeeklyReportCron(nowTs)` usaba el reloj inyectado para
+  // la ventana y el `periodKey`, pero `buildWeeklyReportData()` resolvía la semana con
+  // `Date.now()` — el periodKey y el contenido podían describir semanas distintas.
+  it("WR-12: buildWeeklyReportData acepta nowTs y los datos se mueven con él", () => {
+    const actual = W.buildWeeklyReportData(SUN23);          // dom 26/07 23:00 AR
+    expect(actual.period).toEqual({ from: "2026-07-20", to: "2026-07-26" });
+    expect(actual.calls.totalWeek).toBe(3);
+    expect(actual.previous.dials).toBe(1);                   // la del viernes 17/07
+
+    // Con el reloj del domingo ANTERIOR, la llamada del viernes 17/07 pasa a ser la
+    // semana ACTUAL y las 3 de esta semana quedan en el futuro (fuera de la ventana).
+    const anterior = W.buildWeeklyReportData(PREVSUN);       // dom 19/07 23:00 AR
+    expect(anterior.period).toEqual({ from: "2026-07-13", to: "2026-07-19" });
+    expect(anterior.calls.totalWeek).toBe(1);
+    expect(anterior.calls.interested).toBe(1);
+    // Y el corto describe ESA semana, no la del reloj real.
+    expect(W.buildWeeklyReportTextShort(anterior).startsWith("*Semana 13–19/07*")).toBe(true);
+  });
+
   it("extensión aditiva D-20: minutos, interesados y sin arrancar", () => {
     const d = W.buildWeeklyReportData();
     expect(d.calls.minutes).toBe(1);                 // 60s + 5s atendidos → 1 min

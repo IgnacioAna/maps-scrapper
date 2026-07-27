@@ -1790,7 +1790,12 @@ function savePendingCalls(state) {
   } catch (e) { console.warn('No pude guardar pending calls:', e.message); }
 }
 
-function buildWeeklyReportData() {
+// WR-12 (21-REVIEW): `nowTs` inyectable, igual que `buildDailyReportData(nowTs, dayTs)`.
+// `maybeRunWeeklyReportCron(nowTs)` usaba el reloj inyectado para la ventana horaria y
+// para el `periodKey`, pero los DATOS salían de `Date.now()`: con un `nowTs` inyectado
+// (backfill, reenvío diferido, tests) el periodKey y el contenido del mail podían
+// describir semanas distintas.
+function buildWeeklyReportData(nowTs = Date.now()) {
   const settersData = loadSettersData();
   // Regla milestone v2.0: solo vendedoras nuevas — Ignacio y Paula (admin-only)
   // fuera de todo reporte. Mismo pseudo-set que usa el supervisor sin lista.
@@ -1800,7 +1805,6 @@ function buildWeeklyReportData() {
   // semana que TERMINA hoy" (lunes → ahora), porque ahora sale el DOMINGO 23:00
   // junto al último diario, no el lunes a la mañana. Un solo momento y un solo
   // reporte por las dos vías (mail HTML detallado + corto al grupo de WhatsApp).
-  const nowTs = Date.now();
   const todayStart = _bizStartOfDay(nowTs);
   const dayOfWeek = _bizDayOfWeek(todayStart) || 7;      // domingo = 7
   const thisMonday = todayStart - (dayOfWeek - 1) * 86400000;
@@ -1948,8 +1952,9 @@ async function maybeRunWeeklyReportCron(nowTs = Date.now(), sendFn = sendWeeklyR
   if (state.config.paused) return { ran: false, reason: 'pausado' };
   if (state.weeklyState.lastWeeklyPeriodKey === periodKey) return { ran: false, reason: 'ya_enviado' };
   // UN solo snapshot de datos para las dos vías: el mail y el mensaje del grupo
-  // describen exactamente los mismos números.
-  const data = buildWeeklyReportData();
+  // describen exactamente los mismos números. WR-12: con el MISMO reloj que la
+  // ventana y el periodKey.
+  const data = buildWeeklyReportData(nowTs);
   const recipients = _reportRecipients();
   let result = { sent: false, reason: 'sin_destinatarios' };
   if (recipients.length) result = await sendFn(recipients, data);
