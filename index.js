@@ -3073,12 +3073,6 @@ const REPORT_SEND_NOW_WAIT_MS = Math.max(1000, Number(process.env.REPORT_SEND_NO
 const REPORT_SEND_NOW_POLL_MS = 1000;
 app.post('/api/admin/daily-report/send-now', requireAuth, requireRole('admin'), async (req, res) => {
   try {
-    // T-21-14: lock de UN solo envío en vuelo. El backend no confía en el
-    // `disabled` del botón — un doble click no puede spamear al grupo.
-    const pre = _reportStateDefaults(loadReportsState());
-    if ((pre.queue || []).some((i) => i && i.status === 'sending')) {
-      return res.json({ ok: true, status: 'queued', reason: 'busy', queueCount: _reportQueueCount(pre) });
-    }
     // Ignora `config.paused` a propósito (decisión 1 del 21-UI-SPEC): si el admin
     // pausó el automático y quiere probar el canal, el botón tiene que funcionar.
     const data = buildDailyReportData();
@@ -3086,12 +3080,30 @@ app.post('/api/admin/daily-report/send-now', requireAuth, requireRole('admin'), 
     // automático de ese período (WR-01 generalizado) ni participa de la
     // consolidación de diarios (D-26). La `line` se guarda igual, por si acaso.
     const periodKey = `manual_${new Date().toISOString()}`;
-    const enq = await mutateReportsState((s) => enqueueReportMessage(s, {
-      kind: 'custom', periodKey, dayStr: data.dayStr,
-      text: buildDailyReportText(data),
-      textDelayed: buildDailyReportText(data, { delayed: true }),   // WR-02
-      line: buildDailyReportLine(data),
-    }));
+    // T-21-14: lock de UN solo envío en vuelo. El backend no confía en el `disabled`
+    // del botón — un doble click no puede spamear al grupo.
+    // WR-04 (21-REVIEW): el chequeo estaba ANTES, con un `loadReportsState()` fuera
+    // del mutex — un TOCTOU. Dos POST casi simultáneos (doble click que le gana al
+    // `disabled`, un retry del navegador, dos pestañas del panel) leían el mismo
+    // snapshot sin `sending`, los dos encolaban un `custom`, y el segundo salía
+    // después: el grupo recibía el reporte DOS veces. Ahora el chequeo y el encolado
+    // pasan por la MISMA vuelta del mutex, así que son atómicos entre sí. Se cuenta
+    // también el `custom` pendiente: el segundo click llega antes de que el tick haya
+    // podido poner nada en `sending`.
+    const enq = await mutateReportsState((s) => {
+      const busy = (s.queue || []).some((i) => i && (i.status === 'sending'
+        || (i.kind === 'custom' && i.status === 'pending')));
+      if (busy) return { queued: false, reason: 'busy', queueCount: _reportQueueCount(s) };
+      return enqueueReportMessage(s, {
+        kind: 'custom', periodKey, dayStr: data.dayStr,
+        text: buildDailyReportText(data),
+        textDelayed: buildDailyReportText(data, { delayed: true }),   // WR-02
+        line: buildDailyReportLine(data),
+      });
+    });
+    if (enq && !enq.queued && enq.reason === 'busy') {
+      return res.json({ ok: true, status: 'queued', reason: 'busy', queueCount: enq.queueCount || 0 });
+    }
     if (!enq || !enq.queued) return res.status(500).json({ ok: false, status: 'failed', reason: enq?.reason || 'no_encolado' });
     const myId = enq.id;
     // Avanzar la cola en el acto — no esperar hasta 60s al próximo tick.

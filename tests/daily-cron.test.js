@@ -377,6 +377,22 @@ describe('endpoints del panel — "Mandar ahora" (D-29 + T-21-14/T-21-18)', () =
     expect(rd).toEqual({ ran: false, reason: "pausado" });
   });
 
+  // WR-04 (21-REVIEW): el lock leía el estado con un `loadReportsState()` FUERA del
+  // mutex. Dos POST casi simultáneos (doble click que le gana al `disabled`, un retry
+  // del navegador, dos pestañas del panel) leían el mismo snapshot sin `sending`, los
+  // dos encolaban un `custom` y el grupo recibía el reporte DOS veces.
+  it("WR-04: dos POST simultáneos encolan UN solo mensaje", async () => {
+    reset({ config: { paused: false, backupEmails: [], transport: { ...TRANSPORT } } });
+    globalThis.__waGateway = mkGateway(false);   // desktop offline: nada llega a 'sending'
+    const post = () => request(app).post("/api/admin/daily-report/send-now").set("Cookie", adminCookie).send({});
+    const [a, b] = await Promise.all([post(), post()]);
+    expect(a.body.ok).toBe(true);
+    expect(b.body.ok).toBe(true);
+    expect(live("custom").length).toBe(1);      // ← el grupo recibe UNO, no dos
+    const reasons = [a.body.reason, b.body.reason].sort();
+    expect(reasons).toContain("busy");          // el segundo se rechaza explícitamente
+  });
+
   it("T-21-14: con un envío ya en vuelo responde busy y NO encola otro", async () => {
     const nowIso = new Date().toISOString();
     reset({
