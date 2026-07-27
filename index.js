@@ -1889,7 +1889,14 @@ function buildWeeklyReportData(nowTs = Date.now()) {
     neverStarted,
     unmarked,
     // Semana anterior completa, para la línea de comparación del corto (D-20).
-    previous: { dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate, interested: prevInterested },
+    // `from`/`to` de la semana previa: el corto los IMPRIME. "Semana anterior" a
+    // secas es ambiguo cuando el reporte se manda con atraso — el lector no sabe
+    // si es la anterior a la reportada o la anterior a hoy (pasó: 2026-07-27).
+    previous: {
+      dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate,
+      interested: prevInterested,
+      from: _bizDayStr(prevFromTs), to: _bizDayStr(prevToTs - 1),
+    },
     leadsTotal: allLeads.length
   };
 }
@@ -2399,9 +2406,10 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
   const to = dm(d.period?.to);
   // El molde validado por el user comprime el mes cuando la semana no lo cruza:
   // "*Semana 20–26/07*", no "*Semana 20/07–26/07*".
-  const range = (from && to && from.slice(-2) === to.slice(-2))
-    ? `${from.slice(0, 2)}–${to}`
-    : [from, to].filter(Boolean).join('–');
+  const mkRange = (a, b) => (a && b && a.slice(-2) === b.slice(-2))
+    ? `${a.slice(0, 2)}–${b}`
+    : [a, b].filter(Boolean).join('–');
+  const range = mkRange(from, to);
   const head = [`*Semana ${range}*`];
   if ((c.totalWeek || 0) === 0) {
     // Semana entera sin una sola llamada: se dice en una línea, no con seis
@@ -2430,13 +2438,23 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
       const segs = [`${s.llamadas} llam`, `${s.atendidas} at`];
       if ((s.minutos || 0) > 0) segs.push(`${s.minutos} min`);
       if ((s.activeMinutes || 0) > 0) segs.push(`${_reportDuration(s.activeMinutes)} activa`);
-      if ((s.interesados || 0) > 0) segs.push(`${s.interesados} int`);
       return `*${_reportSafeName(s.name)}* ${segs.join(' · ')}`;
     });
+  // Interesados en su propia línea, como el diario. Con 5 segmentos la fila de
+  // cada vendedora wrappeaba en el celular y el bloque se veía apelmazado
+  // (feedback leído en el grupo, 2026-07-27).
+  const intBySetter = (d.perSetter || [])
+    .filter(s => (s.interesados || 0) > 0)
+    .sort((a, b) => (b.interesados || 0) - (a.interesados || 0))
+    .map(s => `${_reportSafeName(s.name)} ${s.interesados}`)
+    .join(', ');
   const prevSegs = [`${prev.dials} llam`, `${prev.connects} at (${pct(prev.connectRate)}%)`];
   if ((prev.interested || 0) > 0) prevSegs.push(`${prev.interested} int`);
   const foot = [
-    (prev.dials || 0) > 0 ? `_Semana anterior: ${prevSegs.join(' · ')}_` : '',
+    // Interesados en su propia linea (como el diario): con 5 segmentos la fila
+    // de cada vendedora wrappeaba en el celular — feedback del grupo, 2026-07-27.
+    intBySetter ? `_Interesados: ${intBySetter}_` : '',
+    (prev.dials || 0) > 0 ? `_Semana ${mkRange(dm(prev.from), dm(prev.to))}: ${prevSegs.join(' · ')}_` : '',
     // D-23 acumulado de la semana (bajó del diario el 2026-07-27).
     (d.unmarked || []).length ? `_Sin marcar en la semana: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',
     (d.neverStarted || []).length ? `_Sin arrancar: ${d.neverStarted.join(', ')}_` : '',
@@ -2631,6 +2649,13 @@ function _reportGapItems(state, { skipIds = [], skipDayStrs = [], skipSame = {} 
     if (it.confessedAt) continue;
     // Un item 'dm' es el respaldo de otro que ya se confiesa por su cuenta.
     if (it.kind === 'dm') continue;
+    // Un 'custom' es un envío MANUAL ("Mandar ahora"). Si falla, NO hay reporte
+    // perdido: el admin vio el error en el panel en ese momento, y el contenido
+    // del día lo entrega igual el cron de las 23:00. Confesarlo hacía que el
+    // mensaje dijera "No pude enviar el reporte de lun 27/07" por dos pruebas
+    // manuales de esa tarde — el reporte de ese día ni siquiera existía todavía
+    // (caso real 2026-07-27, visto en el grupo). Baches = 'daily' y 'weekly'.
+    if (it.kind === 'custom') continue;
     seen.add(it.id);
     out.push(it);
   }

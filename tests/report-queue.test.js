@@ -571,10 +571,14 @@ describe("nota de baches — D-05 aplica a TODO envío", () => {
     const lbl = globalThis.__dailyReport._reportDayLabel;
     expect(text).toContain(`No pude enviar el reporte de ${lbl(Date.parse(YESTERDAY + "T12:00:00Z"))}.`);
     expect(text).not.toContain(`${lbl(Date.parse(TODAY + "T12:00:00Z"))}._`);
-    // Al salir OK, TAMBIÉN los del mismo día quedan sellados (no reaparecen nunca).
+    // 2026-07-27: los 'custom' (envíos MANUALES) dejaron de ser baches — el admin
+    // vio el error en el panel y el contenido del día lo entrega el cron igual. No se
+    // confiesan NI se sellan: simplemente no son un reporte perdido.
     await Q.handleReportSendResult({ queueId: "d_hoy_ok", ok: true, method: "pinned-row0" }, ADMIN);
-    expect(findItem("c_f1").confessedAt).toBeTruthy();
-    expect(findItem("c_f2").confessedAt).toBeTruthy();
+    expect(findItem("c_f1").confessedAt).toBe(null);
+    expect(findItem("c_f2").confessedAt).toBe(null);
+    // Y no reaparecen nunca: un envío posterior tampoco los nombra.
+    expect(Q._reportGapNote(Q._reportStateDefaults(read()), NOW)).toBe("");
   });
 
   it("un reintento del MISMO reporte no se confiesa a sí mismo (semanal reenviado)", async () => {

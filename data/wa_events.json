@@ -1,6 +1,123 @@
 {
   "events": [
     {
+      "id": "ev_1785190083186_nt6asg",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Patient Flow",
+        "contactName": "Patient Flow",
+        "contactPhone": null,
+        "message": "ahi  mando el de la semana pasada",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": false
+      },
+      "createdAt": "2026-07-27T22:08:03.186Z"
+    },
+    {
+      "id": "ev_1785190083160_5tq7ua",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T22:08:03.160Z"
+    },
+    {
+      "id": "ev_1785190083094_nyjyxq",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Patient Flow",
+            "phone": null,
+            "lastMessage": "ahi  mando el de la semana pasada",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T22:08:03.094Z"
+    },
+    {
+      "id": "ev_1785190040044_vsp33j",
+      "type": "outgoing-sent",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-07-27T22:07:20.044Z"
+    },
+    {
+      "id": "ev_1785189990434_v4oqmm",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T22:06:30.434Z"
+    },
+    {
+      "id": "ev_1785189986919_fucqom",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T22:06:26.919Z"
+    },
+    {
+      "id": "ev_1785189986892_v2k9q8",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T22:06:26.892Z"
+    },
+    {
+      "id": "ev_1785189985631_9kufgu",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T22:06:25.631Z"
+    },
+    {
+      "id": "ev_1785189853260_xphxxr",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T22:04:13.260Z"
+    },
+    {
+      "id": "ev_1785189853195_c7o5hb",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": []
+      },
+      "createdAt": "2026-07-27T22:04:13.195Z"
+    },
+    {
       "id": "ev_1785189486206_ol42cd",
       "type": "ai-classified-inbound",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5858,148 +5975,6 @@
         "via": "enter"
       },
       "createdAt": "2026-06-05T18:17:39.461Z"
-    },
-    {
-      "id": "ev_1780683437071_z47ky3",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:17:17.071Z"
-    },
-    {
-      "id": "ev_1780683412191_5ghuaj",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:16:52.191Z"
-    },
-    {
-      "id": "ev_1780683403789_su03o4",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:16:43.789Z"
-    },
-    {
-      "id": "ev_1780683396708_p2p5ls",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51968078090",
-        "contactName": "",
-        "contactPhone": "+51968078090",
-        "message": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:16:36.708Z"
-    },
-    {
-      "id": "ev_1780683396694_92vdej",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51925240282",
-        "contactName": "",
-        "contactPhone": "+51925240282",
-        "message": "Hola buenas tardes",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:16:36.694Z"
-    },
-    {
-      "id": "ev_1780683396682_4ot45k",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:36.682Z"
-    },
-    {
-      "id": "ev_1780683396669_ew6ti0",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 2,
-        "total": 2,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51925240282",
-            "lastMessage": "Hola buenas tardes",
-            "unreadCount": 1
-          },
-          {
-            "name": "",
-            "phone": "+51968078090",
-            "lastMessage": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:16:36.669Z"
-    },
-    {
-      "id": "ev_1780683396653_af5qj4",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:36.653Z"
-    },
-    {
-      "id": "ev_1780683393390_jrt1c0",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:33.390Z"
-    },
-    {
-      "id": "ev_1780683393350_0y9fb4",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51959177536&text=Qu%C3%A9%20tal%2C%20bastante%20actividad%20en%20la%20cl%C3%ADnica"
-      },
-      "createdAt": "2026-06-05T18:16:33.350Z"
     }
   ]
 }

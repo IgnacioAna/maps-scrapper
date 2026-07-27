@@ -418,9 +418,16 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
     // al menos una llamada) se sumó el 2026-07-26 a pedido del user, en el diario
     // y en el semanal con el MISMO criterio. Las 3 llamadas del fixture caen en 2
     // bloques distintos → 30min.
-    expect(t).toContain(`*Vendedora* 3 llam · 2 at · 1 min · ${W._reportDuration ? W._reportDuration(d.perSetter[0].activeMinutes) : ""} activa · 1 int`);
+    // 2026-07-27: los interesados salieron de la fila (wrappeaba en el celular) y
+    // van en su propia línea del pie, igual que en el diario.
+    expect(t).toContain(`*Vendedora* 3 llam · 2 at · 1 min · ${W._reportDuration(d.perSetter[0].activeMinutes)} activa`);
+    expect(t).toContain("_Interesados: Vendedora 1_");
+    // La semana previa se nombra con FECHAS, no como "Semana anterior" (ambiguo
+    // cuando el reporte sale con atraso).
+    expect(t).not.toContain("Semana anterior");
+    expect(t).toMatch(/_Semana \d{2}[–-]\d{2}\/\d{2}: 1 llam/);
     expect(t).toContain(" activa");   // también en la línea del equipo
-    expect(t).toContain("_Semana anterior: 1 llam · 1 at (100%) · 1 int_");
+    expect(t).toMatch(/_Semana [\d–\-/]+: 1 llam · 1 at \(100%\) · 1 int_/);
     expect(t).toContain("_Sin arrancar: Nueva_");
     expect(t).toContain("_Detalle completo en el mail._");
     expect(t).not.toContain("Ignacio");
