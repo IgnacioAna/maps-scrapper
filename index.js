@@ -2193,13 +2193,25 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
 // ESTA función, nada más. El molde sigue siendo PRELIMINAR hasta que el user lo
 // lea en su celular (REP-05) — por eso el texto no se concatena en ningún otro
 // lado del código.
-function buildDailyReportText(data, { gapNote = '' } = {}) {
+// WR-02 (21-REVIEW): `delayed:true` reemplaza el "hoy" del encabezado por el día del
+// reporte. El texto se congela al ENCOLAR, así que un diario que sale días después
+// (el caso más frecuente tras un día fallado, y justo el escenario para el que existe
+// la cola) decía "Sin actividad hoy: Judith" arriba de "Reporte diario · jue 24/07".
+// El molde de D-19 para el envío del MISMO día queda intacto: el user validó ese texto.
+function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
   const d = data;
-  const head = d.team.dials === 0
-    ? '*Hoy no llamó nadie*'                                          // D-11
-    : (d.idleToday.length
-        ? `*Sin actividad hoy: ${d.idleToday.join(', ')}*`            // D-14
-        : '*Todas trabajaron hoy*');
+  const dl = d.dayLabel;
+  const head = delayed
+    ? (d.team.dials === 0
+        ? `*${dl}: no llamó nadie*`                                   // D-11
+        : (d.idleToday.length
+            ? `*Sin actividad ${dl}: ${d.idleToday.join(', ')}*`      // D-14
+            : `*Todas trabajaron · ${dl}*`))
+    : (d.team.dials === 0
+        ? '*Hoy no llamó nadie*'                                      // D-11
+        : (d.idleToday.length
+            ? `*Sin actividad hoy: ${d.idleToday.join(', ')}*`        // D-14
+            : '*Todas trabajaron hoy*'));
   const rows = d.perSetter.map(s => {
     const segs = [`${s.dials} llam`, `${s.connects} at`];
     if (s.minutes > 0) segs.push(`${s.minutes} min`);                 // sin minutos en cero
@@ -2503,7 +2515,11 @@ function _reportGapNote(state, nowTs = Date.now()) {
 
 // D-06: encolado GENÉRICO — cualquier texto, no solo reportes. Recibe el `state`
 // ya normalizado (el llamador envuelve en mutateReportsState).
-function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr = '', text = '', line = '', phone = '', parentId = null } = {}) {
+// `textDelayed` (WR-02): el MISMO reporte redactado para salir un día después ("*jue
+// 24/07: no llamó nadie*" en vez de "*Hoy no llamó nadie*"). El texto se congela al
+// encolar y la cola existe justamente para entregarlo tarde; guardar las dos
+// redacciones es más barato y más honesto que recomputar datos de días viejos.
+function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr = '', text = '', textDelayed = '', line = '', phone = '', parentId = null } = {}) {
   const s = _reportStateDefaults(state);
   const body = String(text || '');
   if (!body.trim()) return { queued: false, reason: 'texto_vacio' };
@@ -2519,7 +2535,8 @@ function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr =
   const item = {
     id: `rpt_${kind}_${key || 'adhoc'}_${Date.now()}`,
     kind, periodKey: key, dayStr: String(dayStr || ''),
-    text: body, line: String(line || ''), phone: String(phone || ''), parentId: parentId || null,
+    text: body, textDelayed: String(textDelayed || ''), line: String(line || ''),
+    phone: String(phone || ''), parentId: parentId || null,
     status: 'pending', attempts: 0, sendAttempts: 0,
     confessedAt: null, confessedIds: [], consolidatedInto: null, lastText: '',
     createdAt: new Date().toISOString(),
@@ -2643,7 +2660,11 @@ async function reportQueueTick(nowTs = Date.now()) {
       }
     }
     if (!text) {
-      text = String(first.text || '');
+      // WR-02: si este reporte NO es del día de hoy, sale la redacción con el día
+      // explícito. Sin esto un diario de jue 24/07 entregado el sábado decía "Sin
+      // actividad hoy: Judith" arriba de "Reporte diario · jue 24/07".
+      const stale = !!(first.dayStr && first.dayStr !== _bizDayStr(nowTs));
+      text = String((stale && first.textDelayed) || first.text || '');
       if (gapNote) text = `${gapNote}\n\n${text}`;
     }
     // 6. ¿Hay grupo configurado? Sin destino el item espera (no falla).
@@ -2948,6 +2969,7 @@ async function maybeRunDailyReportCron(nowTs = Date.now()) {
     const r = enqueueReportMessage(state, {
       kind: 'daily', periodKey, dayStr: data.dayStr,
       text: buildDailyReportText(data),
+      textDelayed: buildDailyReportText(data, { delayed: true }),   // WR-02
       line: buildDailyReportLine(data),                  // D-26: la usa la consolidación
     });
     if (!r.queued) return { ran: false, reason: r.reason };
@@ -3066,7 +3088,9 @@ app.post('/api/admin/daily-report/send-now', requireAuth, requireRole('admin'), 
     const periodKey = `manual_${new Date().toISOString()}`;
     const enq = await mutateReportsState((s) => enqueueReportMessage(s, {
       kind: 'custom', periodKey, dayStr: data.dayStr,
-      text: buildDailyReportText(data), line: buildDailyReportLine(data),
+      text: buildDailyReportText(data),
+      textDelayed: buildDailyReportText(data, { delayed: true }),   // WR-02
+      line: buildDailyReportLine(data),
     }));
     if (!enq || !enq.queued) return res.status(500).json({ ok: false, status: 'failed', reason: enq?.reason || 'no_encolado' });
     const myId = enq.id;

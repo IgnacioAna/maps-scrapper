@@ -414,6 +414,35 @@ describe("texto del reporte — molde D-19", () => {
     expect(txt).toContain("*Brenda* 2 llam · 0 at");
   });
 
+  // WR-02 (21-REVIEW): el texto se congela al encolar y la cola existe para
+  // entregarlo tarde. Con "hoy" fijo, un diario de jue 24/07 entregado el sábado
+  // decía "Sin actividad hoy: Judith" arriba de "Reporte diario · jue 24/07".
+  it("WR-02: delayed reemplaza 'hoy' por el día del reporte", () => {
+    canonicalFixture();
+    const d = D.buildDailyReportData(NOW23);
+    const hoy = D.buildDailyReportText(d);
+    const tarde = D.buildDailyReportText(d, { delayed: true });
+    expect(hoy.split("\n")[0]).toBe("*Sin actividad hoy: Judith*");
+    expect(tarde.split("\n")[0]).toBe("*Sin actividad mié 22/07: Judith*");
+    expect(tarde).not.toContain("hoy");                 // ninguna línea miente
+    expect(tarde.split("\n")[1]).toBe("Reporte diario · mié 22/07");
+    // El resto del cuerpo es idéntico (solo cambia el encabezado).
+    expect(tarde.split("\n").slice(2).join("\n")).toBe(hoy.split("\n").slice(2).join("\n"));
+  });
+
+  it("WR-02: los otros dos encabezados también dejan de decir 'hoy'", () => {
+    // Equipo entero en cero (D-11).
+    writeFixture({ setters: [{ id: "s_bren", name: "Brenda" }], leads: lead("l_bren", [call(TODAY - 30 * DAY, "no_answer", "u_bren", 0)]) });
+    const cero = D.buildDailyReportData(NOW23);
+    expect(D.buildDailyReportText(cero).split("\n")[0]).toBe("*Hoy no llamó nadie*");
+    expect(D.buildDailyReportText(cero, { delayed: true }).split("\n")[0]).toBe("*mié 22/07: no llamó nadie*");
+    // Todas trabajaron.
+    writeFixture({ setters: [{ id: "s_bren", name: "Brenda" }], leads: lead("l_bren", BRENDA_TODAY) });
+    const todas = D.buildDailyReportData(NOW23);
+    expect(D.buildDailyReportText(todas).split("\n")[0]).toBe("*Todas trabajaron hoy*");
+    expect(D.buildDailyReportText(todas, { delayed: true }).split("\n")[0]).toBe("*Todas trabajaron · mié 22/07*");
+  });
+
   it("D-05: la nota de baches va arriba de todo", () => {
     canonicalFixture();
     const d = D.buildDailyReportData(NOW23);

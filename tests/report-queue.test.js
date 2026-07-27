@@ -475,6 +475,30 @@ describe("consolidación y expiración (D-26)", () => {
     expect(read().history.filter((i) => i.status === "sent").length).toBe(3);
   });
 
+  // WR-02: un diario que sale días después usa la redacción con el día explícito.
+  it("un diario de un día PASADO se emite con textDelayed, no con el 'hoy' congelado", async () => {
+    seed({ queue: [mkItem({
+      id: "d_ayer", dayStr: YESTERDAY, periodKey: YESTERDAY,
+      text: "*Sin actividad hoy: Judith*\nReporte diario · sáb 25/07",
+      textDelayed: "*Sin actividad sáb 25/07: Judith*\nReporte diario · sáb 25/07",
+    })] });
+    const r = await Q.reportQueueTick(NOW);
+    expect(r.emitted).toBe(true);
+    const text = gw.emitted[0].payload.text;
+    expect(text).toContain("*Sin actividad sáb 25/07: Judith*");
+    expect(text).not.toContain("hoy");
+  });
+
+  it("el diario de HOY sí usa el texto con 'hoy' (el molde validado de D-19)", async () => {
+    seed({ queue: [mkItem({
+      id: "d_hoy_ok", dayStr: TODAY, periodKey: TODAY,
+      text: "*Sin actividad hoy: Judith*\nReporte diario · dom 26/07",
+      textDelayed: "*Sin actividad dom 26/07: Judith*\nReporte diario · dom 26/07",
+    })] });
+    await Q.reportQueueTick(NOW);
+    expect(gw.emitted[0].payload.text).toContain("*Sin actividad hoy: Judith*");
+  });
+
   it("el diario de hace 4 días expira; el semanal de hace un mes NO", async () => {
     seed({ queue: [
       mkItem({ id: "d_old", dayStr: OLD4, periodKey: OLD4 }),
