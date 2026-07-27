@@ -11402,6 +11402,13 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
       id: s.id,
       name: s.name,
       leaveUntil: s.leaveUntil || null,   // D-18: badge "de licencia" en el panel
+      // WR-15 (21-REVIEW): la vigencia se resuelve ACÁ, en BUSINESS_TZ, con el mismo
+      // helper que usa el reporte. El frontend la calculaba con
+      // `new Date().getTimezoneOffset()` — la zona del NAVEGADOR — así que para un admin
+      // con la máquina en otro huso el badge aparecía o desaparecía un día antes o
+      // después que el criterio del reporte: justo la incoherencia panel-vs-reporte que
+      // el auto-fix #2 de 21-04 decía cerrar.
+      onLeave: _reportOnLeave(s, Date.now()),
       current,
       previous,
       deltas,

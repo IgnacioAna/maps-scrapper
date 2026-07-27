@@ -15168,12 +15168,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 21 (D-18): licencia con fecha de vencimiento. El badge lo ve todo el
       // que ve Equipo (admin + supervisor); EDITAR es admin only (condicionado en
       // el template: data-roles no aplica a HTML inyectado por JS).
-      // La vigencia se compara como STRING de día, igual que el backend
-      // (_reportOnLeave): `new Date('YYYY-MM-DD')` es medianoche UTC y contra la
-      // medianoche local daría el último día de licencia como vencido en AR.
+      // WR-15: la vigencia la resuelve el BACKEND (`_reportOnLeave` en BUSINESS_TZ) y
+      // acá solo se pinta. La versión anterior comparaba contra el día del NAVEGADOR
+      // (`new Date().getTimezoneOffset()`), así que con la máquina del admin en otro
+      // huso el badge podía aparecer o desaparecer un día antes o después que el
+      // criterio del reporte.
       const leaveUntilStr = String(s.leaveUntil || '').slice(0, 10);
-      const _todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-      const onLeave = /^\d{4}-\d{2}-\d{2}$/.test(leaveUntilStr) && _todayStr <= leaveUntilStr;
+      const onLeave = !!s.onLeave;
       const leaveBadge = onLeave
         ? ` <span style="font-size:10px; padding:2px 6px; background:var(--bg-elevated); color:var(--text-secondary); border:1px solid var(--border-default); border-radius:6px; vertical-align:middle;">Licencia hasta ${leaveUntilStr.slice(8, 10)}/${leaveUntilStr.slice(5, 7)}</span>`
         : '';

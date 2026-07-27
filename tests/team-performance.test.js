@@ -243,3 +243,48 @@ describe("Alert config", () => {
     expect(team.body.alertConfig.followupsTodayThreshold).toBe(30);
   });
 });
+
+// WR-15 (21-REVIEW): la vigencia de la licencia (D-18) la resolvía el FRONTEND
+// comparando contra el día del NAVEGADOR (`new Date().getTimezoneOffset()`), mientras
+// el reporte usa BUSINESS_TZ (`_reportOnLeave`). Para un admin con la máquina en otro
+// huso el badge aparecía/desaparecía un día antes o después que el criterio del
+// reporte. Ahora el backend manda el booleano ya resuelto.
+describe("D-18 licencia — onLeave resuelto en el backend (WR-15)", () => {
+  const M = globalThis.__metricsAudit;
+  const ONE = 24 * 60 * 60 * 1000;
+  const bizDay = (ts) => M._bizDayStr(ts);
+  const perSetter = async (id) => {
+    const r = await request(app).get("/api/setters/team-performance?period=day").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    return r.body.perSetter.find((s) => s.id === id);
+  };
+
+  it("licencia futura → onLeave true; vencida → false; el último día INCLUSIVE → true", async () => {
+    const set = (v) => request(app).patch("/api/setters/team/setter_a").set("Cookie", adminCookie).send({ leaveUntil: v });
+
+    await set(bizDay(Date.now() + 3 * ONE));
+    let s = await perSetter("setter_a");
+    expect(s.onLeave).toBe(true);
+    expect(s.leaveUntil).toBe(bizDay(Date.now() + 3 * ONE));
+
+    // Hoy en TZ de negocio: `leaveUntil` es inclusive, así que sigue de licencia.
+    await set(bizDay(Date.now()));
+    s = await perSetter("setter_a");
+    expect(s.onLeave).toBe(true);
+
+    await set(bizDay(Date.now() - ONE));
+    s = await perSetter("setter_a");
+    expect(s.onLeave).toBe(false);
+    expect(s.leaveUntil).toBe(bizDay(Date.now() - ONE));   // el dato sigue viajando
+
+    await set(null);
+    s = await perSetter("setter_a");
+    expect(s.onLeave).toBe(false);
+    expect(s.leaveUntil).toBe(null);
+  });
+
+  it("un setter sin licencia trae onLeave false (no undefined)", async () => {
+    const s = await perSetter("setter_c");
+    expect(s.onLeave).toBe(false);
+  });
+});
