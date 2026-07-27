@@ -2579,13 +2579,20 @@ function _reportExpireStale(state, nowTs = Date.now()) {
 
 // Items que fallaron o expiraron y todavía no se confesaron (D-05). Se buscan en
 // queue Y history porque el prune migra los terminales.
-function _reportGapItems(state, { skipIds = [] } = {}) {
+function _reportGapItems(state, { skipIds = [], skipDayStrs = [] } = {}) {
   const seen = new Set();
   const skip = new Set(skipIds.filter(Boolean));
+  const skipDays = new Set(skipDayStrs.filter(Boolean));
   const out = [];
   for (const it of [...(state.queue || []), ...(state.history || [])]) {
     if (!it || !it.id || seen.has(it.id)) continue;
     if (skip.has(it.id)) continue;
+    // Caso real 2026-07-27: el primer mensaje que llegó al grupo decía "No pude
+    // enviar el reporte de dom 26/07 y lun 27/07" ... entregando el reporte del
+    // lun 27/07. Los intentos FALLIDOS previos del MISMO día no son un bache si
+    // este mensaje lleva ese contenido — se saltean por dayStr (los sella el
+    // confessedIds del envío OK, así no reaparecen).
+    if (it.dayStr && skipDays.has(it.dayStr)) continue;
     if (it.status !== 'failed' && it.status !== 'expired') continue;
     if (it.confessedAt) continue;
     // Un item 'dm' es el respaldo de otro que ya se confiesa por su cuenta.
@@ -2604,8 +2611,8 @@ function _reportGapItems(state, { skipIds = [] } = {}) {
 // real: en `group-not-found` el item padre se marca `failed` y se encolan los DM con su
 // mismo texto — cuando el tick emitía cada DM, la nota salía diciendo "_No pude enviar
 // el reporte de jue 24/07._" ARRIBA del reporte de jue 24/07 que ese DM está entregando.
-function _reportGapNote(state, nowTs = Date.now(), { skipIds = [] } = {}) {
-  const items = _reportGapItems(state, { skipIds });
+function _reportGapNote(state, nowTs = Date.now(), { skipIds = [], skipDayStrs = [] } = {}) {
+  const items = _reportGapItems(state, { skipIds, skipDayStrs });
   if (!items.length) return '';
   const labels = [];
   for (const it of items) {
@@ -2762,7 +2769,13 @@ async function reportQueueTick(nowTs = Date.now()) {
     // WR-16: el propio item (y su padre, si es un DM de respaldo) NO se confiesan a sí
     // mismos — ese contenido es justo lo que este mensaje está entregando.
     const skipIds = [first.id, first.parentId].filter(Boolean);
-    const gapNote = _reportGapNote(state, nowTs, { skipIds });
+    // Los días cuyo CONTENIDO viaja en este mensaje no se confiesan como bache
+    // (intentos fallidos previos del mismo día). El semanal queda afuera a
+    // propósito: entrega un resumen, no el detalle del diario fallido.
+    const skipDayStrs = first.kind === 'weekly' ? [] : (first.kind === 'daily'
+      ? pendings.filter((it) => it.kind === 'daily').map((it) => it.dayStr).filter(Boolean)
+      : [first.dayStr].filter(Boolean));
+    const gapNote = _reportGapNote(state, nowTs, { skipIds, skipDayStrs });
     let group = [first];
     let text = '';
     if (first.kind === 'daily') {
@@ -3185,6 +3198,32 @@ app.put('/api/admin/daily-report/config', requireAuth, requireRole('admin'), asy
       return _reportPanelStatus(s);
     });
     res.json({ ok: true, ...status });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/daily-report/cancel-queued — vacía la cola a mano. Caso real
+// 2026-07-27 (primera prueba en vivo): un item quedó en loop — el mensaje SALIÓ
+// al grupo pero el desktop no pudo confirmarlo, así que el server lo reintentaba
+// y el desktop lo RE-TIPEABA, hasta 20 veces. No había forma de frenarlo: la
+// pausa deja pasar 'custom' a propósito (fix #1 de 21-03) y no existía ningún
+// cancel. Los cancelados NO se confiesan como bache (confessedAt sellado): el
+// admin los mató a propósito, típicamente porque el contenido YA está en el grupo.
+app.post('/api/admin/daily-report/cancel-queued', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const r = await mutateReportsState((state) => {
+      let canceled = 0;
+      const nowIso = new Date().toISOString();
+      for (const it of (state.queue || [])) {
+        if (!it || REPORT_TERMINAL_STATUSES.has(it.status)) continue;
+        it.status = 'failed';
+        it.lastFailureReason = 'canceled_by_admin';
+        it.failedAt = nowIso;
+        it.confessedAt = it.confessedAt || nowIso;
+        canceled++;
+      }
+      return { canceled };
+    });
+    res.json({ ok: true, canceled: r.canceled });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

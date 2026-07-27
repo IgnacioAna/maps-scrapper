@@ -554,6 +554,58 @@ describe("consolidación y expiración (D-26)", () => {
 });
 
 describe("nota de baches — D-05 aplica a TODO envío", () => {
+  it("los fallos previos del MISMO día NO se confiesan en el mensaje que entrega ese día (caso real 2026-07-27)", async () => {
+    seed({
+      queue: [mkItem({ id: "d_hoy_ok", dayStr: TODAY, periodKey: TODAY })],
+      history: [
+        // Dos intentos manuales de HOY que fallaron con el binario viejo + el diario de AYER perdido.
+        mkItem({ id: "c_f1", kind: "custom", dayStr: TODAY, periodKey: TODAY + "_m1", status: "failed", lastFailureReason: "group-not-found" }),
+        mkItem({ id: "c_f2", kind: "custom", dayStr: TODAY, periodKey: TODAY + "_m2", status: "failed", lastFailureReason: "group-not-found" }),
+        mkItem({ id: "d_ayer", dayStr: YESTERDAY, periodKey: YESTERDAY, status: "failed", lastFailureReason: "group-not-found" }),
+      ],
+    });
+    const r = await Q.reportQueueTick(NOW);
+    expect(r.emitted).toBe(true);
+    const text = gw.emitted[0].payload.text;
+    // Confiesa AYER (contenido perdido de verdad) pero NO el día que este mensaje entrega.
+    const lbl = globalThis.__dailyReport._reportDayLabel;
+    expect(text).toContain(`No pude enviar el reporte de ${lbl(Date.parse(YESTERDAY + "T12:00:00Z"))}.`);
+    expect(text).not.toContain(`${lbl(Date.parse(TODAY + "T12:00:00Z"))}._`);
+    // Al salir OK, TAMBIÉN los del mismo día quedan sellados (no reaparecen nunca).
+    await Q.handleReportSendResult({ queueId: "d_hoy_ok", ok: true, method: "pinned-row0" }, ADMIN);
+    expect(findItem("c_f1").confessedAt).toBeTruthy();
+    expect(findItem("c_f2").confessedAt).toBeTruthy();
+  });
+
+  it("cancel-queued: vacía la cola, no confiesa y el guard de período no revive nada", async () => {
+    seed({ queue: [
+      mkItem({ id: "cq_1", dayStr: TODAY, periodKey: TODAY }),
+      mkItem({ id: "cq_2", kind: "custom", dayStr: TODAY, periodKey: TODAY + "_m", status: "sending", sendingAt: new Date(NOW).toISOString() }),
+    ] });
+    const r = await request(app).post("/api/admin/daily-report/cancel-queued").set("Cookie", adminCookie);
+    expect(r.status).toBe(200);
+    expect(r.body.canceled).toBe(2);
+    for (const id of ["cq_1", "cq_2"]) {
+      const it = findItem(id);
+      expect(it.status).toBe("failed");
+      expect(it.lastFailureReason).toBe("canceled_by_admin");
+      expect(it.confessedAt).toBeTruthy();   // cancelado a propósito: sin nota de baches
+    }
+    // La cola queda sin nada emitible y la nota de baches queda vacía.
+    const tick = await Q.reportQueueTick(NOW + 60000);
+    expect(tick.emitted).toBe(false);
+    expect(Q._reportGapNote(Q._reportStateDefaults(read()), NOW)).toBe("");
+    // Un resultado tardío del envío cancelado no revienta nada.
+    const late = await Q.handleReportSendResult({ queueId: "cq_2", ok: false, reason: "composer-not-found" }, ADMIN);
+    expect(late.ok).toBe(false);
+  });
+
+  it("cancel-queued exige admin", async () => {
+    const r = await request(app).post("/api/admin/daily-report/cancel-queued");
+    expect([401, 403]).toContain(r.status);
+  });
+
+
   it("tras una expiración, el siguiente envío exitoso la lleva arriba y sella confessedAt", async () => {
     seed({
       queue: [mkItem({ id: "d_hoy", dayStr: TODAY, periodKey: TODAY })],

@@ -10775,6 +10775,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Es un envío REAL a un grupo con personas reales: askConfirm obligatorio,
     // botón deshabilitado mientras está en vuelo y refetch del estado al terminar
     // (la defensa dura es el lock server-side, T-21-20).
+    // Vaciar cola — el freno de mano del canal (caso real 2026-07-27: un item en
+    // loop re-tipeaba el mismo reporte en el grupo y no había forma de pararlo
+    // desde el panel; la pausa no frena los envíos manuales, a propósito).
+    document.getElementById('cmd-report-cancel-queue-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('cmd-report-cancel-queue-btn');
+      if (!btn || btn.disabled) return;
+      const ok = await window.askConfirm({
+        title: 'Vaciar la cola de reportes',
+        message: 'Cancela TODO lo que está en cola o en vuelo (incluido un envío que se esté tipeando ahora). Los reportes cancelados no se reenvían ni se confiesan como bache. ¿Confirmás?',
+        confirmLabel: 'Sí, vaciar',
+        cancelLabel: 'No',
+        danger: true,
+      });
+      if (!ok) return;
+      btn.disabled = true;
+      try {
+        const r = await fetch(apiUrl('/api/admin/daily-report/cancel-queued'), { method: 'POST' });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+        window.showToast?.(d.canceled ? `Cola vaciada: ${d.canceled} mensaje(s) cancelado(s).` : 'La cola ya estaba vacía.', { type: 'success', duration: 5000 });
+      } catch (err) {
+        window.showToast?.('No se pudo vaciar la cola: ' + err.message, { type: 'error', duration: 6000 });
+      } finally {
+        btn.disabled = false;
+        await _cmdLoadReportPanel().catch(() => {});
+      }
+    });
+
     document.getElementById('cmd-report-send-now-btn')?.addEventListener('click', async () => {
       const btn = document.getElementById('cmd-report-send-now-btn');
       if (!btn || btn.disabled || _cmdReportSending) return;
