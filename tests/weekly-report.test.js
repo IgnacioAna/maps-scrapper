@@ -85,6 +85,10 @@ const mkSend = (result = { sent: true }) => {
 const queued = (kind = "weekly") => (W.loadReportsState().queue || []).filter((i) => i.kind === kind);
 
 let adminCookie = "";
+// Reloj del fixture a nivel módulo: WR-12 inyecta relojes derivados de ESTE mismo
+// valor, así el dato y el reloj inyectado nunca se separan (ver el comentario largo
+// de ese test).
+const FIXTURE_NOW = Date.now();
 
 beforeAll(async () => {
   const a = await request(app).post("/api/auth/login").send({ email: "admin-wr@local.test", password: "wrpass1234" });
@@ -94,7 +98,7 @@ beforeAll(async () => {
   // ahora]) + una de la semana anterior para que `previous` no quede vacío.
   // Se usan offsets NEGATIVOS desde `now`: cualquier hora futura del día quedaría
   // fuera de la ventana (toTs está capado a `now`).
-  const now = Date.now();
+  const now = FIXTURE_NOW;
   const todayStart = M._bizStartOfDay(now);
   const thisMonday = todayStart - ((M._bizDayOfWeek(todayStart) || 7) - 1) * 86400000;
   const thisWeekTs = now - 60000;                 // hace un minuto
@@ -308,20 +312,41 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
   // WR-12 (21-REVIEW): `maybeRunWeeklyReportCron(nowTs)` usaba el reloj inyectado para
   // la ventana y el `periodKey`, pero `buildWeeklyReportData()` resolvía la semana con
   // `Date.now()` — el periodKey y el contenido podían describir semanas distintas.
+  //
+  // ⚠️ Este test usaba los relojes ABSOLUTOS SUN23/PREVSUN (dom 26/07 23:00 y dom
+  // 19/07 23:00) contra un fixture cuyos timestamps son RELATIVOS a `Date.now()`.
+  // Los dos relojes solo coinciden mientras la corrida caiga dentro de la semana
+  // 20–26/07 y antes de las 23:00 del domingo: pasado ese borde, las llamadas del
+  // fixture quedan en el FUTURO respecto del reloj inyectado y el test falla para
+  // siempre (no era flaky — se rompió el 26/07 a las 23:00). Ahora los dos relojes
+  // salen de la misma base relativa, así que el test es determinístico cualquier
+  // día y a cualquier hora. Sigue probando lo mismo: que los datos se muevan con
+  // el reloj inyectado y no con el real.
   it("WR-12: buildWeeklyReportData acepta nowTs y los datos se mueven con él", () => {
-    const actual = W.buildWeeklyReportData(SUN23);          // dom 26/07 23:00 AR
-    expect(actual.period).toEqual({ from: "2026-07-20", to: "2026-07-26" });
-    expect(actual.calls.totalWeek).toBe(3);
-    expect(actual.previous.dials).toBe(1);                   // la del viernes 17/07
+    const semanaAnteriorTs = FIXTURE_NOW - 7 * 86400000;
 
-    // Con el reloj del domingo ANTERIOR, la llamada del viernes 17/07 pasa a ser la
+    const actual = W.buildWeeklyReportData(FIXTURE_NOW);
+    expect(actual.period.to).toBe(M._bizDayStr(FIXTURE_NOW));
+    expect(actual.calls.totalWeek).toBe(3);
+    expect(actual.previous.dials).toBe(1);                   // la del viernes anterior
+
+    // Con el reloj de la semana ANTERIOR, la llamada del viernes pasado pasa a ser la
     // semana ACTUAL y las 3 de esta semana quedan en el futuro (fuera de la ventana).
-    const anterior = W.buildWeeklyReportData(PREVSUN);       // dom 19/07 23:00 AR
-    expect(anterior.period).toEqual({ from: "2026-07-13", to: "2026-07-19" });
+    const anterior = W.buildWeeklyReportData(semanaAnteriorTs);
+    expect(anterior.period.to).toBe(M._bizDayStr(semanaAnteriorTs));
+    expect(anterior.period.to < actual.period.to).toBe(true);
     expect(anterior.calls.totalWeek).toBe(1);
     expect(anterior.calls.interested).toBe(1);
-    // Y el corto describe ESA semana, no la del reloj real.
-    expect(W.buildWeeklyReportTextShort(anterior).startsWith("*Semana 13–19/07*")).toBe(true);
+    // Y el corto describe ESA semana, no la del reloj real. Se afirma sobre el día
+    // de CIERRE y no sobre el encabezado entero a propósito: el formato comprime el
+    // mes cuando la semana no lo cruza ("Semana 13–19/07") y lo repite cuando sí
+    // ("Semana 27/07–02/08"), así que reimplementar el formato acá solo agrega una
+    // segunda fuente de verdad que se desincroniza.
+    const dd = (s) => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+    const short = W.buildWeeklyReportTextShort(anterior);
+    expect(short.startsWith("*Semana ")).toBe(true);
+    expect(short).toContain(dd(anterior.period.to));
+    expect(short).not.toContain(dd(actual.period.to));
   });
 
   it("extensión aditiva D-20: minutos, interesados y sin arrancar", () => {
