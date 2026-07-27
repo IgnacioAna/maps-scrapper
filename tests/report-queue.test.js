@@ -315,6 +315,17 @@ describe("emisión y correlación — el item queda en sending, jamás en sent",
 });
 
 describe("fallos del envío", () => {
+  it("group-not-found SIN REPORT_DM_FALLBACK → cero DMs (el toast del panel decía que salían — caso real 2026-07-27)", async () => {
+    process.env.REPORT_DM_FALLBACK = "";   // regla #121: definida-vacía
+    seed({ queue: [mkItem({ id: "it_gnf0" })] });
+    await Q.reportQueueTick(NOW);
+    const r = await Q.handleReportSendResult({ queueId: "it_gnf0", ok: false, reason: "group-not-found" }, ADMIN);
+    expect(r).toMatchObject({ ok: true, status: "failed", dmQueued: 0 });
+    expect(findItem("it_gnf0").status).toBe("failed");
+    expect(read().queue.filter((i) => i.kind === "dm").length).toBe(0);
+  });
+
+
   it("group-not-found con REPORT_DM_FALLBACK → 3 items dm con parentId (D-02)", async () => {
     process.env.REPORT_DM_FALLBACK = "+5491111111111, +5491122222222,+5491133333333";
     seed({ queue: [mkItem({ id: "it_gnf" })] });

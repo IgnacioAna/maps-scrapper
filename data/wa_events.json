@@ -1,6 +1,748 @@
 {
   "events": [
     {
+      "id": "ev_1785186724644_bjocpo",
+      "type": "window-closed",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:12:04.644Z"
+    },
+    {
+      "id": "ev_1785186481464_u9tdd2",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T21:08:01.464Z"
+    },
+    {
+      "id": "ev_1785186481443_1pznji",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:08:01.443Z"
+    },
+    {
+      "id": "ev_1785186481427_y8cyex",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T21:08:01.427Z"
+    },
+    {
+      "id": "ev_1785186481405_p4kiz7",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:08:01.405Z"
+    },
+    {
+      "id": "ev_1785186478465_frpvta",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:58.465Z"
+    },
+    {
+      "id": "ev_1785186478425_gs8bqe",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T21:07:58.425Z"
+    },
+    {
+      "id": "ev_1785186477907_s7q4g5",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:57.907Z"
+    },
+    {
+      "id": "ev_1785186454593_6ybbol",
+      "type": "report-group-selected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "groupName": "Patient Flow",
+        "groupJid": null
+      },
+      "createdAt": "2026-07-27T21:07:34.593Z"
+    },
+    {
+      "id": "ev_1785186453014_bkvm5w",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T21:07:33.027Z"
+    },
+    {
+      "id": "ev_1785186452970_lb04io",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:32.970Z"
+    },
+    {
+      "id": "ev_1785186452919_rlbr46",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T21:07:32.919Z"
+    },
+    {
+      "id": "ev_1785186452867_in8coo",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:32.867Z"
+    },
+    {
+      "id": "ev_1785186448885_yp79a8",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:28.885Z"
+    },
+    {
+      "id": "ev_1785186448810_trsl0r",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T21:07:28.810Z"
+    },
+    {
+      "id": "ev_1785186438127_c66qjw",
+      "type": "window-closed",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:07:18.127Z"
+    },
+    {
+      "id": "ev_1785185910885_85rus6",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:58:30.885Z"
+    },
+    {
+      "id": "ev_1785185910869_cq8cr8",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:30.869Z"
+    },
+    {
+      "id": "ev_1785185910854_pdun0a",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:58:30.854Z"
+    },
+    {
+      "id": "ev_1785185910837_bx8tb6",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:30.837Z"
+    },
+    {
+      "id": "ev_1785185907837_wjr08g",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:27.837Z"
+    },
+    {
+      "id": "ev_1785185907802_wsz954",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:58:27.802Z"
+    },
+    {
+      "id": "ev_1785185907359_an380b",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:27.359Z"
+    },
+    {
+      "id": "ev_1785185893009_z2usdz",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:58:13.009Z"
+    },
+    {
+      "id": "ev_1785185892989_m10dc7",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:12.989Z"
+    },
+    {
+      "id": "ev_1785185892968_aenlic",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:58:12.968Z"
+    },
+    {
+      "id": "ev_1785185892949_180zew",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:12.949Z"
+    },
+    {
+      "id": "ev_1785185889806_2h60cf",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:09.806Z"
+    },
+    {
+      "id": "ev_1785185889782_bovkvn",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:58:09.782Z"
+    },
+    {
+      "id": "ev_1785185889189_a88ma7",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:58:09.189Z"
+    },
+    {
+      "id": "ev_1785185871529_9497rp",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:57:51.529Z"
+    },
+    {
+      "id": "ev_1785185871509_48yc9t",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:51.509Z"
+    },
+    {
+      "id": "ev_1785185871488_vkyf81",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:57:51.488Z"
+    },
+    {
+      "id": "ev_1785185871469_inyy95",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:51.469Z"
+    },
+    {
+      "id": "ev_1785185867431_wdvaef",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:47.431Z"
+    },
+    {
+      "id": "ev_1785185867397_fy4h25",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:57:47.397Z"
+    },
+    {
+      "id": "ev_1785185866696_ibse39",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:46.696Z"
+    },
+    {
+      "id": "ev_1785185853959_s6mo2c",
+      "type": "report-group-selected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "groupName": "Patient Flow",
+        "groupJid": null
+      },
+      "createdAt": "2026-07-27T20:57:33.959Z"
+    },
+    {
+      "id": "ev_1785185847110_08lit3",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:57:27.110Z"
+    },
+    {
+      "id": "ev_1785185847089_1kc7yr",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:27.089Z"
+    },
+    {
+      "id": "ev_1785185846949_8sgox4",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:57:26.949Z"
+    },
+    {
+      "id": "ev_1785185846860_5bvj6x",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:26.860Z"
+    },
+    {
+      "id": "ev_1785185842558_po6mdq",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:57:22.558Z"
+    },
+    {
+      "id": "ev_1785185813051_28qevq",
+      "type": "qr-visible",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:56:53.051Z"
+    },
+    {
+      "id": "ev_1785185812505_umy0gp",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:56:52.505Z"
+    },
+    {
+      "id": "ev_1785185812480_jr4qi7",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:56:52.480Z"
+    },
+    {
+      "id": "ev_1785185771223_jtjxww",
+      "type": "window-closed",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:56:11.223Z"
+    },
+    {
+      "id": "ev_1785185754271_p0q7iq",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:55:54.271Z"
+    },
+    {
+      "id": "ev_1785185754256_ajv4h4",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:55:54.256Z"
+    },
+    {
+      "id": "ev_1785185754235_heare9",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:55:54.235Z"
+    },
+    {
+      "id": "ev_1785185754216_5agem5",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:55:54.216Z"
+    },
+    {
+      "id": "ev_1785185750662_sns461",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:55:50.662Z"
+    },
+    {
+      "id": "ev_1785185750619_yd9uwf",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:55:50.619Z"
+    },
+    {
+      "id": "ev_1785185749946_tvfthp",
+      "type": "logged-out",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:55:49.946Z"
+    },
+    {
+      "id": "ev_1785185689666_l5wt87",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "WhatsApp Business",
+        "contactName": "WhatsApp Business",
+        "contactPhone": null,
+        "message": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-27T20:54:49.666Z"
+    },
+    {
+      "id": "ev_1785185689647_7t4lwa",
+      "type": "response-received",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:54:49.647Z"
+    },
+    {
+      "id": "ev_1785185689628_7z1ns8",
+      "type": "inbound-message",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "WhatsApp Business",
+            "phone": null,
+            "lastMessage": "Te damos la bienvenida a WhatsApp Business \n\nFelicitaciones por llevar tu empresa al próximo nivel. Ahora puedes acceder a nuestras valiosas herramientas gratuitas, como mensajes automáticos, catálogos y pedidos, que te ayudarán con lo siguiente:\n\n Llegar a más clientes\n\n Responder más rápido\n\n Aumentar tus ventas\n\nPara empezar y obtener más información, ve a la pestaña Herramientas.",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-27T20:54:49.628Z"
+    },
+    {
+      "id": "ev_1785185689602_v6fffa",
+      "type": "connected",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:54:49.602Z"
+    },
+    {
+      "id": "ev_1785185686774_w2aqxn",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:54:46.774Z"
+    },
+    {
+      "id": "ev_1785185645362_jn27wi",
+      "type": "qr-visible",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:54:05.362Z"
+    },
+    {
+      "id": "ev_1785185644877_8u482h",
+      "type": "loading",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T20:54:04.877Z"
+    },
+    {
+      "id": "ev_1785185644807_fq74j5",
+      "type": "dom-ready",
+      "accountId": "wa_1777831276977_qxby1z",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T20:54:04.807Z"
+    },
+    {
       "id": "ev_1785115305808_qwkgua",
       "type": "window-closed",
       "accountId": "wa_1780449217500_93p5b4",
@@ -5399,770 +6141,6 @@
         "via": "enter"
       },
       "createdAt": "2026-06-05T18:10:05.645Z"
-    },
-    {
-      "id": "ev_1780682998366_813sf2",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51968078090",
-        "contactName": "",
-        "contactPhone": "+51968078090",
-        "message": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:09:58.366Z"
-    },
-    {
-      "id": "ev_1780682998354_y9dwcb",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:58.354Z"
-    },
-    {
-      "id": "ev_1780682998336_wwqcvx",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51968078090",
-            "lastMessage": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:09:58.336Z"
-    },
-    {
-      "id": "ev_1780682998320_msce3g",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:58.320Z"
-    },
-    {
-      "id": "ev_1780682995066_vbkygl",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:55.066Z"
-    },
-    {
-      "id": "ev_1780682995046_m6kte5",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51936358805&text=Buenas%2C%20d%C3%ADa%20movidito"
-      },
-      "createdAt": "2026-06-05T18:09:55.046Z"
-    },
-    {
-      "id": "ev_1780682994634_gordcw",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:54.634Z"
-    },
-    {
-      "id": "ev_1780682987271_lqwnv5",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:09:47.271Z"
-    },
-    {
-      "id": "ev_1780682983921_vktjdl",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51947770598",
-        "contactName": "",
-        "contactPhone": "+51947770598",
-        "message": "Hola! Le saluda Clínica Odontologica Zea \n\nGracias por tu mensaje. En este momento no estamos disponibles, pero puedes dejarnos tu consulta y te responderemos tan pronto como sea posible.\n\n¡Agradecemos tu paciencia y te contactaremos pronto!",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:09:43.921Z"
-    },
-    {
-      "id": "ev_1780682983907_6bm3sz",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:43.907Z"
-    },
-    {
-      "id": "ev_1780682983896_jfjiuj",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51947770598",
-            "lastMessage": "Hola! Le saluda Clínica Odontologica Zea \n\nGracias por tu mensaje. En este momento no estamos disponibles, pero puedes dejarnos tu consulta y te responderemos tan pronto como sea posible.\n\n¡Agradecemos tu paciencia y te contactaremos pronto!",
-            "unreadCount": 2
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:09:43.896Z"
-    },
-    {
-      "id": "ev_1780682983881_ve4018",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:43.881Z"
-    },
-    {
-      "id": "ev_1780682980879_v0mop8",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:40.879Z"
-    },
-    {
-      "id": "ev_1780682980866_lxqujm",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51973582917&text=Hola%2C%20muy%20activa%20la%20semana"
-      },
-      "createdAt": "2026-06-05T18:09:40.866Z"
-    },
-    {
-      "id": "ev_1780682979949_78c86h",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:39.949Z"
-    },
-    {
-      "id": "ev_1780682969027_etaqcv",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:09:29.027Z"
-    },
-    {
-      "id": "ev_1780682963142_fzb8e3",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:23.142Z"
-    },
-    {
-      "id": "ev_1780682960016_058pll",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:20.016Z"
-    },
-    {
-      "id": "ev_1780682960003_9lio37",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51935931737&text=Hola%2C%20como%20sigue%20la%20jornada"
-      },
-      "createdAt": "2026-06-05T18:09:20.003Z"
-    },
-    {
-      "id": "ev_1780682959474_ykdlb2",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:19.474Z"
-    },
-    {
-      "id": "ev_1780682952717_m79lu5",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51968078090",
-        "contactName": "",
-        "contactPhone": "+51968078090",
-        "message": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:09:12.717Z"
-    },
-    {
-      "id": "ev_1780682952705_qfbn6a",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:12.705Z"
-    },
-    {
-      "id": "ev_1780682952685_j2zge7",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51968078090",
-            "lastMessage": "Gracias por comunicarte con Studio Dental. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:09:12.685Z"
-    },
-    {
-      "id": "ev_1780682947900_raq901",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:09:07.900Z"
-    },
-    {
-      "id": "ev_1780682943948_b0jp9t",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:03.948Z"
-    },
-    {
-      "id": "ev_1780682940703_3s1qzy",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:00.703Z"
-    },
-    {
-      "id": "ev_1780682940672_ftjes5",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51968078090&text=Hola%2C%20c%C3%B3mo%20va%20la%20semana%20para%20la%20cl%C3%ADnica"
-      },
-      "createdAt": "2026-06-05T18:09:00.672Z"
-    },
-    {
-      "id": "ev_1780682940022_rj1k8f",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:09:00.022Z"
-    },
-    {
-      "id": "ev_1780682933127_ww1679",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:08:53.127Z"
-    },
-    {
-      "id": "ev_1780682930845_u9fzsl",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:50.845Z"
-    },
-    {
-      "id": "ev_1780682927780_ept8dz",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:47.780Z"
-    },
-    {
-      "id": "ev_1780682927761_4ygork",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51942483845&text=Buen%20d%C3%ADa%2C%20como%20los%20est%C3%A1%20tratando%20el%20mes"
-      },
-      "createdAt": "2026-06-05T18:08:47.761Z"
-    },
-    {
-      "id": "ev_1780682927069_ysfpfm",
-      "type": "logged-out",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:47.069Z"
-    },
-    {
-      "id": "ev_1780682925314_bzfzrb",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51947770598",
-        "contactName": "",
-        "contactPhone": "+51947770598",
-        "message": "Hola! Le saluda Clínica Odontologica Zea \n\nGracias por tu mensaje. En este momento no estamos disponibles, pero puedes dejarnos tu consulta y te responderemos tan pronto como sea posible.\n\n¡Agradecemos tu paciencia y te contactaremos pronto!",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:08:45.314Z"
-    },
-    {
-      "id": "ev_1780682925301_6glpf4",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:45.301Z"
-    },
-    {
-      "id": "ev_1780682925289_zo5myh",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51947770598",
-            "lastMessage": "Hola! Le saluda Clínica Odontologica Zea \n\nGracias por tu mensaje. En este momento no estamos disponibles, pero puedes dejarnos tu consulta y te responderemos tan pronto como sea posible.\n\n¡Agradecemos tu paciencia y te contactaremos pronto!",
-            "unreadCount": 2
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:08:45.289Z"
-    },
-    {
-      "id": "ev_1780682919429_rx39sp",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:08:39.429Z"
-    },
-    {
-      "id": "ev_1780682910323_e1z5zb",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:30.323Z"
-    },
-    {
-      "id": "ev_1780682907288_iw1xcn",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:27.288Z"
-    },
-    {
-      "id": "ev_1780682907271_0gwhz5",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51947770598&text="
-      },
-      "createdAt": "2026-06-05T18:08:27.271Z"
-    },
-    {
-      "id": "ev_1780682906114_yyrtqq",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:08:26.114Z"
-    },
-    {
-      "id": "ev_1780682694433_myfvyu",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Cliente Dr. Pablo D’Alessandro",
-        "contactName": "Cliente Dr. Pablo D’Alessandro",
-        "contactPhone": null,
-        "message": "Más corto, eso de si tiene un aurgencia o molestia... Ya habría llamado...",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:04:54.433Z"
-    },
-    {
-      "id": "ev_1780682694415_kfc6xo",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:04:54.415Z"
-    },
-    {
-      "id": "ev_1780682694384_mdgohn",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Cliente Dr. Pablo D’Alessandro",
-            "phone": null,
-            "lastMessage": "Más corto, eso de si tiene un aurgencia o molestia... Ya habría llamado...",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:04:54.384Z"
-    },
-    {
-      "id": "ev_1780682635747_cazhxx",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:03:55.747Z"
-    },
-    {
-      "id": "ev_1780682632539_bwkirv",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:03:52.539Z"
-    },
-    {
-      "id": "ev_1780682608546_36ymj9",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Cliente Dr. Pablo D’Alessandro",
-        "contactName": "Cliente Dr. Pablo D’Alessandro",
-        "contactPhone": null,
-        "message": "El mensaje es este:\n\nHola {{1}}, soy Sofía del consultorio del Dr. Pablo D'Alessandro.\nLe escribo tan solo para recordarle que han pasado seis meses desde su último tratamiento, si considera oportuno un nuevo control, lo agendamos. De lo contrario nos volvemos a comunicar en 6 meses para realizar un chequeo anual y revisar que esté todo en orden.\nQue tengas un lindo día.",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:03:28.546Z"
-    },
-    {
-      "id": "ev_1780682608530_uhg1xc",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:03:28.530Z"
-    },
-    {
-      "id": "ev_1780682608508_qehlpv",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Cliente Dr. Pablo D’Alessandro",
-            "phone": null,
-            "lastMessage": "El mensaje es este:\n\nHola {{1}}, soy Sofía del consultorio del Dr. Pablo D'Alessandro.\nLe escribo tan solo para recordarle que han pasado seis meses desde su último tratamiento, si considera oportuno un nuevo control, lo agendamos. De lo contrario nos volvemos a comunicar en 6 meses para realizar un chequeo anual y revisar que esté todo en orden.\nQue tengas un lindo día.",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:03:28.508Z"
-    },
-    {
-      "id": "ev_1780682592345_nve15k",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:03:12.345Z"
-    },
-    {
-      "id": "ev_1780682575998_v3yql6",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:55.998Z"
-    },
-    {
-      "id": "ev_1780682571094_q4bq6e",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:51.094Z"
-    },
-    {
-      "id": "ev_1780682558273_vi4vfz",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:38.273Z"
-    },
-    {
-      "id": "ev_1780682544675_8df7vk",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:24.675Z"
-    },
-    {
-      "id": "ev_1780682533738_vpi40e",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:13.738Z"
-    },
-    {
-      "id": "ev_1780682527449_qysqat",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:02:07.449Z"
-    },
-    {
-      "id": "ev_1780682508164_efuwg8",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:01:48.164Z"
-    },
-    {
-      "id": "ev_1780682482101_k97dhz",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:01:22.101Z"
-    },
-    {
-      "id": "ev_1780682458823_8n1dlk",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:00:58.823Z"
-    },
-    {
-      "id": "ev_1780682452219_ocy56k",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:00:52.219Z"
-    },
-    {
-      "id": "ev_1780682420892_5zhkay",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51959876787",
-        "contactName": "",
-        "contactPhone": "+51959876787",
-        "message": "Hola que tal",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:00:20.892Z"
-    },
-    {
-      "id": "ev_1780682420869_3tcr0b",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Clinica ReVal",
-        "contactName": "Clinica ReVal",
-        "contactPhone": null,
-        "message": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:00:20.869Z"
     }
   ]
 }

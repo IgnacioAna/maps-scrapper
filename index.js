@@ -3259,9 +3259,15 @@ app.post('/api/admin/daily-report/send-now', requireAuth, requireRole('admin'), 
       return res.json({ ok: true, status: 'sent', sentAt: item.sentAt, groupName });
     }
     if (item && item.status === 'failed') {
-      // group-not-found ya encoló los DM de respaldo (D-02): para el admin es
-      // "quedó en camino", no un fallo.
-      if (item.lastFailureReason === 'group-not-found') return res.json({ ok: true, status: 'queued', reason: 'fallback_dm', queueCount });
+      // "Se manda a los socios por separado" (D-02) SOLO es verdad si hay números
+      // en REPORT_DM_FALLBACK. Caso real 2026-07-27: la env var estaba vacía,
+      // ningún DM se encoló, y el panel igual decía "se está mandando a los 3
+      // socios por separado" — el admin creyó que el reporte había salido cuando
+      // no salió nada. Sin números, group-not-found es un fallo y se dice.
+      if (item.lastFailureReason === 'group-not-found') {
+        if (_reportDmFallback().length) return res.json({ ok: true, status: 'queued', reason: 'fallback_dm', queueCount });
+        return res.json({ ok: true, status: 'failed', reason: 'group-not-found' });
+      }
       return res.json({ ok: true, status: 'failed', reason: item.lastFailureReason || 'error' });
     }
     if (item && item.lastFailureReason === 'sin_grupo') return res.json({ ok: true, status: 'queued', reason: 'sin_grupo', queueCount });

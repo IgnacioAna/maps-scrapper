@@ -1,28 +1,6 @@
 {
   "accounts": [
     {
-      "id": "wa_1777831276977_qxby1z",
-      "label": "Delfina",
-      "phone": "+5492216125935",
-      "status": "QR_PENDING",
-      "assignment": {
-        "kind": "setter",
-        "refId": "setter_ignacio"
-      },
-      "routineId": null,
-      "notes": "",
-      "routineStartedAt": "2026-05-03T18:09:39.090Z",
-      "pauseUntil": null,
-      "staggerOffsetMs": 2349994,
-      "dailyKey": "2026-05-03",
-      "msgsSentToday": 0,
-      "responsesToday": 0,
-      "pendingCount": 0,
-      "deliveryFails": 0,
-      "lastBannedAt": null,
-      "createdAt": "2026-05-03T18:01:16.977Z"
-    },
-    {
       "id": "wa_1780449217500_93p5b4",
       "label": "Sofia",
       "phone": "+5492213185932",
@@ -68,6 +46,28 @@
       "geo": null,
       "proxyLastTest": null,
       "createdAt": "2026-06-11T15:06:03.457Z"
+    },
+    {
+      "id": "wa_1785185792141_4h0rso",
+      "label": "Agente Reportes",
+      "phone": "+5492954605238",
+      "status": "CONNECTED",
+      "assignment": null,
+      "routineId": null,
+      "notes": "",
+      "routineStartedAt": null,
+      "pauseUntil": null,
+      "staggerOffsetMs": 0,
+      "dailyKey": null,
+      "msgsSentToday": 0,
+      "responsesToday": 0,
+      "pendingCount": 0,
+      "deliveryFails": 0,
+      "lastBannedAt": null,
+      "proxy": null,
+      "geo": null,
+      "proxyLastTest": null,
+      "createdAt": "2026-07-27T20:56:32.141Z"
     }
   ],
   "policy": {

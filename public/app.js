@@ -10819,11 +10819,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           // UNKNOWN — puede haberse enviado igual: el copy disuade el reintento reflejo.
           window.showToast?.('No llegó confirmación a tiempo. Fijate en el grupo antes de mandar de nuevo — puede que se haya enviado igual.', { type: 'warn', duration: 8000 });
         } else {
-          // FAILED
-          window.showToast?.(d.reason === 'account-not-connected'
-            ? 'El número dedicado no está conectado a WhatsApp — hay que escanear el QR de nuevo.'
-            : 'No se pudo enviar. Probá de nuevo en un momento.',
-            { type: 'error', duration: 7000 });
+          // FAILED — copy por motivo. 'group-not-found' dice la verdad completa:
+          // NO salió nada, ni al grupo ni por privado (sin REPORT_DM_FALLBACK no
+          // hay a quién mandarle el DM).
+          const _CMD_REPORT_FAIL_MSG = {
+            'account-not-connected': 'El número dedicado no está conectado a WhatsApp — hay que escanear el QR de nuevo.',
+            'group-not-found': 'No pude confirmar que el chat abierto sea el grupo, así que NO se envió nada — tampoco por privado (no hay números de respaldo configurados). Revisá que el grupo siga elegido en wa-multi y reintentá.',
+          };
+          window.showToast?.(_CMD_REPORT_FAIL_MSG[d.reason] || 'No se pudo enviar. Probá de nuevo en un momento.',
+            { type: 'error', duration: 8000 });
         }
       } catch (err) {
         window.showToast?.('No se pudo enviar. Probá de nuevo en un momento.', { type: 'error', duration: 6000 });

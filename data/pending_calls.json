@@ -1,3 +1,46 @@
 {
-  "pending": []
+  "pending": [
+    {
+      "id": "pc_l_clnicadentalamig_34963222522_1785163667219",
+      "leadId": "l_clnicadentalamig_34963222522",
+      "leadName": "Clínica Dental Amigó",
+      "setterId": "setter_judith_mendez",
+      "userId": "user_setter_1783767580868",
+      "startedAt": "2026-07-27T14:47:47.219Z",
+      "endedAt": "2026-07-27T14:47:58.482Z",
+      "durationSecs": 10,
+      "fromNumber": "",
+      "reachedActive": false,
+      "createdAt": "2026-07-27T14:49:34.178Z",
+      "updatedAt": "2026-07-27T14:49:34.178Z"
+    },
+    {
+      "id": "pc_l_alexordoezodontologa_5753044268_1785176888843",
+      "leadId": "l_alexordoezodontologa_5753044268",
+      "leadName": "Alex Ordoñez Odontología",
+      "setterId": "setter_teresa_chun",
+      "userId": "user_setter_1784654946168",
+      "startedAt": "2026-07-27T18:28:08.843Z",
+      "endedAt": "2026-07-27T18:28:11.549Z",
+      "durationSecs": 2,
+      "fromNumber": "",
+      "reachedActive": false,
+      "createdAt": "2026-07-27T18:28:34.635Z",
+      "updatedAt": "2026-07-27T18:28:34.635Z"
+    },
+    {
+      "id": "pc_l_ostotal_5753607728_1785177054602",
+      "leadId": "l_ostotal_5753607728",
+      "leadName": "Ostotal",
+      "setterId": "setter_teresa_chun",
+      "userId": "user_setter_1784654946168",
+      "startedAt": "2026-07-27T18:30:54.602Z",
+      "endedAt": "2026-07-27T18:30:57.233Z",
+      "durationSecs": 2,
+      "fromNumber": "",
+      "reachedActive": false,
+      "createdAt": "2026-07-27T18:31:20.068Z",
+      "updatedAt": "2026-07-27T18:31:20.068Z"
+    }
+  ]
 }
