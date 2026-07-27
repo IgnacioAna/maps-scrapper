@@ -575,6 +575,56 @@ describe("setup del canal — report:group-configured (T-21-07)", () => {
     expect(ok.ok).toBe(true);
     expect(read().config.transport.groupName).toBe("Socios SCM");
   });
+
+  // CR-02: sin esto, un groupJid equivocado (el picker lo leía del chat ABIERTO,
+  // que puede no ser el elegido) dejaba el canal muerto para siempre: la
+  // verificación por JID rechaza el grupo correcto y no había forma de limpiarlo.
+  it("2 jid-mismatch seguidos des-fijan el groupJid y vuelven a verificar por nombre", async () => {
+    seed({
+      config: { transport: { ...TRANSPORT, groupJid: "120363OTRO@g.us", jidCapturedAt: new Date(NOW).toISOString() } },
+      queue: [mkItem({ id: "it_jm" })],
+    });
+    await Q.reportQueueTick(NOW);
+    await Q.handleReportSendResult({ queueId: "it_jm#1", ok: false, reason: "jid-mismatch" }, ADMIN);
+    expect(read().config.transport.groupJid).toBe("120363OTRO@g.us");   // 1ra: se aguanta
+    expect(read().config.transport.jidMismatchCount).toBe(1);
+    await Q.reportQueueTick(NOW + 60000);
+    await Q.handleReportSendResult({ queueId: "it_jm#2", ok: false, reason: "jid-mismatch" }, ADMIN);
+    const t = read().config.transport;
+    expect(t.groupJid).toBe(null);                                      // 2da: se des-fija
+    expect(t.jidCapturedAt).toBe(null);
+    expect(t.groupName).toBe("Socios SCM");                             // el nombre NO se toca
+    // El siguiente intento sale sin JID → el desktop verifica por nombre.
+    await Q.reportQueueTick(NOW + 120000);
+    const last = gw.emitted[gw.emitted.length - 1];
+    expect(last.payload.target).toEqual({ kind: "group", groupName: "Socios SCM", groupJid: null });
+  });
+
+  it("un reason distinto corta la racha de jid-mismatch", async () => {
+    seed({
+      config: { transport: { ...TRANSPORT, groupJid: "120363X@g.us" } },
+      queue: [mkItem({ id: "it_jm2" })],
+    });
+    await Q.reportQueueTick(NOW);
+    await Q.handleReportSendResult({ queueId: "it_jm2#1", ok: false, reason: "jid-mismatch" }, ADMIN);
+    await Q.reportQueueTick(NOW + 60000);
+    await Q.handleReportSendResult({ queueId: "it_jm2#2", ok: false, reason: "composer-not-found" }, ADMIN);
+    expect(read().config.transport.jidMismatchCount).toBe(0);
+    expect(read().config.transport.groupJid).toBe("120363X@g.us");
+  });
+
+  it("PUT /config con groupJid:null limpia el JID (y solo acepta null)", async () => {
+    seed({ config: { transport: { ...TRANSPORT, groupJid: "120363Y@g.us", jidCapturedAt: new Date(NOW).toISOString() } } });
+    const bad = await request(app).put("/api/admin/daily-report/config").set("Cookie", adminCookie).send({ groupJid: "120363Z@g.us" });
+    expect(bad.status).toBe(400);
+    expect(read().config.transport.groupJid).toBe("120363Y@g.us");
+    const ok = await request(app).put("/api/admin/daily-report/config").set("Cookie", adminCookie).send({ groupJid: null });
+    expect(ok.status).toBe(200);
+    expect(ok.body.jidCaptured).toBe(false);
+    const t = read().config.transport;
+    expect(t.groupJid).toBe(null);
+    expect(t.groupName).toBe("Socios SCM");   // el grupo configurado sigue ahí
+  });
 });
 
 describe("caps y persistencia (D-27, regla #21)", () => {

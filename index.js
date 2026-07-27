@@ -2360,6 +2360,9 @@ function _reportStateDefaults(state) {
     groupName: t.groupName || '',
     groupJid: t.groupJid || null,
     jidCapturedAt: t.jidCapturedAt || null,
+    // CR-02: `jid-mismatch` consecutivos con un JID persistido que quedó viejo (o
+    // que el picker capturó del chat equivocado) bloqueaban el canal PARA SIEMPRE.
+    jidMismatchCount: Number(t.jidMismatchCount) || 0,
     configuredAt: t.configuredAt || null,
     configuredBy: t.configuredBy || '',
   };
@@ -2781,6 +2784,8 @@ async function handleReportSendResult(payload = {}, user = null) {
         t.groupJid = item.matchedJid;
         t.jidCapturedAt = sentAt;
       }
+      t.jidMismatchCount = 0;   // CR-02: el JID verificó, la racha se corta
+
       return { ok: true, status: 'sent', consolidated: siblings.length + 1, groupJid: t.groupJid };
     }
 
@@ -2800,6 +2805,25 @@ async function handleReportSendResult(payload = {}, user = null) {
       }
       item.confessedIds = [];
     };
+
+    // CR-02: auto-des-fijado del JID. `jid-mismatch` significa "el chat abierto NO
+    // es el grupo configurado": o el pin se rompió, o el JID persistido quedó viejo,
+    // o el picker lo capturó de OTRO chat que estaba abierto. En los dos últimos
+    // casos el JID nunca va a verificar y el canal queda muerto en silencio (con
+    // `jidCaptured: true` en el panel, que apunta al lado contrario). A la segunda
+    // vez consecutiva se borra y la verificación vuelve al nombre — que es como
+    // funciona antes del primer envío, no un modo degradado nuevo.
+    if (reason === 'jid-mismatch') {
+      t.jidMismatchCount = (Number(t.jidMismatchCount) || 0) + 1;
+      if (t.groupJid && t.jidMismatchCount >= 2) {
+        console.warn(`[report-queue] ${t.jidMismatchCount} jid-mismatch seguidos: des-fijo groupJid (${t.groupJid}) y vuelvo a verificar por nombre`);
+        t.groupJid = null;
+        t.jidCapturedAt = null;
+        t.jidMismatchCount = 0;
+      }
+    } else {
+      t.jidMismatchCount = 0;
+    }
 
     if (reason === 'group-not-found') {
       // D-02: el SERVER orquesta el fallback — un item 'dm' por teléfono, cada uno
@@ -2942,7 +2966,8 @@ app.get('/api/admin/daily-report/status', requireAuth, requireRole('admin'), (_r
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// PUT /api/admin/daily-report/config — body { backupEmails?: string[], paused?: bool }
+// PUT /api/admin/daily-report/config — body { backupEmails?: string[], paused?: bool,
+//                                              groupJid?: null }
 // ⚠️ `backupEmails` es el fallback del DIARIO, hoy APAGADO por D-04: se persiste
 // para que encenderlo después sea configuración y no construcción. NO es
 // REPORT_EMAILS (esa env var gobierna el mail del SEMANAL, que sí sale hoy).
@@ -2951,6 +2976,13 @@ app.put('/api/admin/daily-report/config', requireAuth, requireRole('admin'), asy
   if (body.paused !== undefined && typeof body.paused !== 'boolean') {
     return res.status(400).json({ error: 'paused debe ser booleano.' });
   }
+  // CR-02: única forma manual de des-fijar el JID. El JID NO se puede SETEAR por
+  // acá (eso solo lo hace el picker o el backfill del primer envío): `null` es el
+  // único valor aceptado, y el reintento vuelve a verificar por nombre.
+  if (body.groupJid !== undefined && body.groupJid !== null && body.groupJid !== '') {
+    return res.status(400).json({ error: 'groupJid solo se puede limpiar (null) desde acá.' });
+  }
+  const clearJid = body.groupJid !== undefined;
   let emails = null;
   if (body.backupEmails !== undefined) {
     if (!Array.isArray(body.backupEmails)) return res.status(400).json({ error: 'backupEmails debe ser un array.' });
@@ -2971,6 +3003,11 @@ app.put('/api/admin/daily-report/config', requireAuth, requireRole('admin'), asy
     const status = await mutateReportsState((s) => {
       if (body.paused !== undefined) s.config.paused = body.paused;
       if (emails) s.config.backupEmails = emails;
+      if (clearJid) {                                   // CR-02
+        s.config.transport.groupJid = null;
+        s.config.transport.jidCapturedAt = null;
+        s.config.transport.jidMismatchCount = 0;
+      }
       return _reportPanelStatus(s);
     });
     res.json({ ok: true, ...status });
