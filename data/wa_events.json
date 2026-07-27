@@ -1,6 +1,74 @@
 {
   "events": [
     {
+      "id": "ev_1785188065387_b0qcv9",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:34:25.387Z"
+    },
+    {
+      "id": "ev_1785188062488_q5y7k8",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:34:22.488Z"
+    },
+    {
+      "id": "ev_1785188062450_6tqg9t",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T21:34:22.450Z"
+    },
+    {
+      "id": "ev_1785188061237_w3c1kt",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:34:21.237Z"
+    },
+    {
+      "id": "ev_1785187969775_ocz2q3",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:32:49.775Z"
+    },
+    {
+      "id": "ev_1785187964815_c8new5",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:32:44.815Z"
+    },
+    {
+      "id": "ev_1785187964778_ufwz07",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T21:32:44.778Z"
+    },
+    {
+      "id": "ev_1785187963458_ehmp51",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T21:32:43.458Z"
+    },
+    {
       "id": "ev_1785187848221_vm0rnx",
       "type": "connected",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5929,103 +5997,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-06-05T18:16:14.273Z"
-    },
-    {
-      "id": "ev_1780683366286_d74bxo",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:16:06.286Z"
-    },
-    {
-      "id": "ev_1780683363625_v1ki3y",
-      "type": "connected",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:03.625Z"
-    },
-    {
-      "id": "ev_1780683361319_oslmo5",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Beadent",
-        "contactName": "Beadent",
-        "contactPhone": null,
-        "message": "¡Hola! Paso por aquí para ver si necesitas ayuda con algo en particular. Si tienes alguna consulta sobre nuestros servicios dentales, cuenta conmigo. ¿En qué te puedo apoyar hoy?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:16:01.319Z"
-    },
-    {
-      "id": "ev_1780683361304_sw8jt3",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:01.304Z"
-    },
-    {
-      "id": "ev_1780683361288_unx9h1",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Beadent",
-            "phone": null,
-            "lastMessage": "¡Hola! Paso por aquí para ver si necesitas ayuda con algo en particular. Si tienes alguna consulta sobre nuestros servicios dentales, cuenta conmigo. ¿En qué te puedo apoyar hoy?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:16:01.288Z"
-    },
-    {
-      "id": "ev_1780683360442_9xy5ex",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:16:00.442Z"
-    },
-    {
-      "id": "ev_1780683360369_p5c7pe",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51980473355&text=Buen%20d%C3%ADa%2C%20como%20est%C3%A1%20todo%20por%20ah%C3%AD"
-      },
-      "createdAt": "2026-06-05T18:16:00.369Z"
-    },
-    {
-      "id": "ev_1780683359621_00g537",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:15:59.621Z"
     }
   ]
 }

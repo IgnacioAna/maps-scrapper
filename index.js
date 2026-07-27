@@ -1850,6 +1850,25 @@ function buildWeeklyReportData(nowTs = Date.now()) {
     .filter(s => s.hidden !== true && !calls.some(c => c.setterId === s.id))
     .map(s => _reportSafeName(s.name));
   const prevInterested = calls.filter(c => c.ts >= prevFromTs && c.ts < prevToTs && c.outcome === 'answered_interested').length;
+
+  // D-23 en el SEMANAL (2026-07-27): discadas sin marcar. Salió del diario —
+  // ahí era ruido de todos los días — y vive acá, donde el acumulado de la semana
+  // sí es una conversación ("marcaste 40 veces y no cargaste el resultado").
+  // Mismo criterio que el diario: NO se suman a dials, se cuentan aparte.
+  const _wkNameById = new Map(visibleSetters.map(s => [s.id, _reportSafeName(s.name)]));
+  const _wkUnmarked = new Map();
+  try {
+    for (const p of (loadPendingCalls().pending || [])) {
+      const ts = Date.parse(p.startedAt || '') || 0;
+      if (!ts || ts < fromTs || ts >= toTs) continue;
+      if (!_wkNameById.has(p.setterId)) continue;
+      _wkUnmarked.set(p.setterId, (_wkUnmarked.get(p.setterId) || 0) + 1);
+    }
+  } catch {}
+  const unmarked = [..._wkUnmarked.entries()]
+    .map(([sid, count]) => ({ name: _wkNameById.get(sid), count }))
+    .sort((a, b) => b.count - a.count);
+
   return {
     period: { from: _bizDayStr(fromTs), to: _bizDayStr(toTs - 1) },
     calls: {
@@ -1868,6 +1887,7 @@ function buildWeeklyReportData(nowTs = Date.now()) {
     calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
     perSetter,
     neverStarted,
+    unmarked,
     // Semana anterior completa, para la línea de comparación del corto (D-20).
     previous: { dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate, interested: prevInterested },
     leadsTotal: allLeads.length
@@ -2314,8 +2334,14 @@ function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
     // que hay que stockear. Va como línea propia y no en la fila de cada una
     // porque incluye a las que hoy no llamaron (que no tienen fila).
     (d.pending || []).length ? `_Por llamar: ${d.pending.map(p => `${p.name} ${p.count}`).join(', ')}_` : '',
-    d.unmarked.length ? `_Sin marcar hoy: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',      // D-23
-    d.manualFlag ? `_${d.manualCalls} llamadas cargadas a mano — sin minutos_` : '',                             // D-22
+    // D-23 "Sin marcar" salió del DIARIO el 2026-07-27 (pedido del user tras leer
+    // el primer mensaje real): es ruido operativo del día a día, no una excepción
+    // que amerite mirar el celular. Vive en el SEMANAL, donde el acumulado sí dice
+    // algo. El dato `d.unmarked` se sigue calculando (lo usa el panel).
+    // D-22 — el texto dice QUÉ significa: "cargadas a mano" no se entendía. Son
+    // resultados marcados sin que el discador hiciera la llamada, así que no
+    // aportan minutos y hunden el promedio de conversación sin explicación.
+    d.manualFlag ? `_${d.manualCalls} llamadas marcadas sin usar el discador (no suman minutos)_` : '',          // D-22
     d.unattributed > 0 ? `_${d.unattributed} llamadas sin atribuir_` : '',                                       // REP-10
     ...d.escalated.map(e => `_${e.name}: ${e.days} días sin llamar_`),                                           // D-16
     ...d.onLeave.map(n => `_${n}: de licencia_`),                                                                // D-18
@@ -2411,6 +2437,8 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
   if ((prev.interested || 0) > 0) prevSegs.push(`${prev.interested} int`);
   const foot = [
     (prev.dials || 0) > 0 ? `_Semana anterior: ${prevSegs.join(' · ')}_` : '',
+    // D-23 acumulado de la semana (bajó del diario el 2026-07-27).
+    (d.unmarked || []).length ? `_Sin marcar en la semana: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',
     (d.neverStarted || []).length ? `_Sin arrancar: ${d.neverStarted.join(', ')}_` : '',
     // Solo si el mail SALIÓ de verdad: sin RESEND_API_KEY (o con Resend caído) la
     // línea mandaría a los socios a buscar un mail que no existe (D-04: el canal

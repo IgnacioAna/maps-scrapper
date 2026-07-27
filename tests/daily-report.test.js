@@ -305,14 +305,14 @@ describe("señales del día — D-21/D-22/D-23 y REP-10", () => {
     const d = D.buildDailyReportData(NOW23);
     expect(d.manualCalls).toBe(1);
     expect(d.manualFlag).toBe(true);
-    expect(D.buildDailyReportText(d)).toContain("_1 llamadas cargadas a mano — sin minutos_");
+    expect(D.buildDailyReportText(d)).toContain("_1 llamadas marcadas sin usar el discador (no suman minutos)_");
 
     // Un día todo por Telnyx: sin bandera y sin línea.
     canonicalFixture();
     const limpio = D.buildDailyReportData(NOW23);
     expect(limpio.manualCalls).toBe(0);
     expect(limpio.manualFlag).toBe(false);
-    expect(D.buildDailyReportText(limpio)).not.toContain("cargadas a mano");
+    expect(D.buildDailyReportText(limpio)).not.toContain("sin usar el discador");
   });
 
   it("D-23: las discadas sin marcar salen por nombre y NO suman a las llamadas", () => {
@@ -330,12 +330,14 @@ describe("señales del día — D-21/D-22/D-23 y REP-10", () => {
     const d = D.buildDailyReportData(NOW23);
     expect(d.unmarked).toEqual([{ name: "Teresa", count: 2 }, { name: "Judith", count: 1 }]);
     expect(d.team.dials).toBe(4); // el conteo canónico NO se toca
-    expect(D.buildDailyReportText(d)).toContain("_Sin marcar hoy: Teresa 2, Judith 1_");
+    // 2026-07-27: el DATO se sigue calculando (lo usa el panel y el semanal) pero
+    // NO se imprime en el diario — pedido del user tras leer el primer mensaje real.
+    expect(D.buildDailyReportText(d)).not.toContain("Sin marcar");
 
     canonicalFixture();
     const sinPendientes = D.buildDailyReportData(NOW23);
     expect(sinPendientes.unmarked).toEqual([]);
-    expect(D.buildDailyReportText(sinPendientes)).not.toContain("Sin marcar hoy");
+    expect(D.buildDailyReportText(sinPendientes)).not.toContain("Sin marcar");
   });
 
   it("REP-10: llamadas de un user borrado suman al equipo pero no caen en ninguna fila", () => {

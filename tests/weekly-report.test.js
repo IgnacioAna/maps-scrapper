@@ -387,6 +387,26 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
     expect(html).toContain("Vendedora");
   });
 
+  it("D-23 bajó del diario al semanal: sin marcar acumulado de la semana", () => {
+    // El fixture de pending_calls se escribe al vuelo: el loader lee de disco.
+    fs.writeFileSync(path.join(tmpData, "pending_calls.json"), JSON.stringify({ pending: [
+      { id: "p1", leadId: "l1", setterId: "s_v", startedAt: iso(FIXTURE_THIS_WEEK), endedAt: null },
+      { id: "p2", leadId: "l2", setterId: "s_v", startedAt: iso(FIXTURE_THIS_WEEK - 1000), endedAt: null },
+      // De la semana ANTERIOR → fuera de la ventana.
+      { id: "p3", leadId: "l3", setterId: "s_v", startedAt: iso(FIXTURE_PREV_WEEK_END), endedAt: null },
+      // Setter admin-only → jamás en el reporte (REP-09).
+      { id: "p4", leadId: "l4", setterId: "setter_ignacio", startedAt: iso(FIXTURE_THIS_WEEK), endedAt: null },
+    ] }, null, 2));
+    const d = W.buildWeeklyReportData(FIXTURE_NOW);
+    expect(d.unmarked).toEqual([{ name: "Vendedora", count: 2 }]);
+    expect(W.buildWeeklyReportTextShort(d)).toContain("_Sin marcar en la semana: Vendedora 2_");
+    // Sin pendientes, la línea no aparece (regla de cero métricas en cero).
+    fs.writeFileSync(path.join(tmpData, "pending_calls.json"), JSON.stringify({ pending: [] }, null, 2));
+    const limpio = W.buildWeeklyReportData(FIXTURE_NOW);
+    expect(limpio.unmarked).toEqual([]);
+    expect(W.buildWeeklyReportTextShort(limpio)).not.toContain("Sin marcar");
+  });
+
   it("buildWeeklyReportTextShort: molde D-20 con datos reales del fixture", () => {
     const d = W.buildWeeklyReportData();
     const t = W.buildWeeklyReportTextShort(d, { emailSent: true });
