@@ -330,6 +330,23 @@ describe("fallos del envío", () => {
     const r2 = await Q.reportQueueTick(NOW + 60000);
     expect(r2.emitted).toBe(true);
     expect(gw.emitted[1].payload.target).toEqual({ kind: "dm", phone: "+5491111111111" });
+    // WR-16: el DM NO puede confesar el bache que él mismo está entregando — el padre
+    // `failed` es justamente el reporte que va adentro de este mensaje.
+    expect(gw.emitted[1].payload.text).not.toContain("No pude enviar");
+  });
+
+  it("WR-16: un bache AJENO sí se confiesa en el DM de respaldo", async () => {
+    process.env.REPORT_DM_FALLBACK = "+5491111111111";
+    seed({
+      queue: [mkItem({ id: "it_gnf2", dayStr: TODAY, periodKey: TODAY })],
+      history: [mkItem({ id: "d_viejo", dayStr: OLD4, periodKey: OLD4, status: "expired" })],
+    });
+    await Q.reportQueueTick(NOW);
+    await Q.handleReportSendResult({ queueId: "it_gnf2#1", ok: false, reason: "group-not-found" }, ADMIN);
+    await Q.reportQueueTick(NOW + 60000);
+    const dmText = gw.emitted[1].payload.text;
+    expect(dmText).toContain("mié 22/07");          // el bache de OTRO día sí va
+    expect(dmText).not.toContain("dom 26/07");      // el propio, no
   });
 
   it("account-not-connected → failed definitivo, sin reintento", async () => {
@@ -473,6 +490,20 @@ describe("consolidación y expiración (D-26)", () => {
     await Q.handleReportSendResult({ queueId: "d1", ok: true, method: "pinned-row0" }, ADMIN);
     expect(read().queue.length).toBe(0);
     expect(read().history.filter((i) => i.status === "sent").length).toBe(3);
+  });
+
+  // WR-16: `buildConsolidatedReportText` aceptaba `neverStarted` y NINGÚN llamador lo
+  // pasaba, así que el consolidado perdía la línea de D-15.
+  it("el consolidado lleva la línea 'Sin arrancar' del día más reciente (D-15)", async () => {
+    seed({ queue: [
+      mkItem({ id: "n1", dayStr: "2026-07-25", periodKey: "2026-07-25", neverStarted: ["Dalia"] }),
+      mkItem({ id: "n2", dayStr: "2026-07-26", periodKey: "2026-07-26", neverStarted: ["Dalia", "Melissa"] }),
+    ] });
+    await Q.reportQueueTick(NOW);
+    const text = gw.emitted[0].payload.text;
+    expect(text).toContain("*Reporte acumulado · 2 días*");
+    expect(text).toContain("_Sin arrancar: Dalia, Melissa_");     // el del día más nuevo
+    expect(text.match(/Sin arrancar/g).length).toBe(1);
   });
 
   // WR-02: un diario que sale días después usa la redacción con el día explícito.

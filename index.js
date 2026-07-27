@@ -2479,11 +2479,13 @@ function _reportExpireStale(state, nowTs = Date.now()) {
 
 // Items que fallaron o expiraron y todavía no se confesaron (D-05). Se buscan en
 // queue Y history porque el prune migra los terminales.
-function _reportGapItems(state) {
+function _reportGapItems(state, { skipIds = [] } = {}) {
   const seen = new Set();
+  const skip = new Set(skipIds.filter(Boolean));
   const out = [];
   for (const it of [...(state.queue || []), ...(state.history || [])]) {
     if (!it || !it.id || seen.has(it.id)) continue;
+    if (skip.has(it.id)) continue;
     if (it.status !== 'failed' && it.status !== 'expired') continue;
     if (it.confessedAt) continue;
     // Un item 'dm' es el respaldo de otro que ya se confiesa por su cuenta.
@@ -2498,8 +2500,12 @@ function _reportGapItems(state) {
 // hay baches. El sello `confessedAt` NO se pone acá — lo pone el resultado del
 // envío recién cuando el mensaje que lleva la nota sale OK; si falla, el próximo
 // intento la vuelve a llevar.
-function _reportGapNote(state, nowTs = Date.now()) {
-  const items = _reportGapItems(state);
+// WR-16: `skipIds` excluye los baches que el mensaje que se está emitiendo ES. El caso
+// real: en `group-not-found` el item padre se marca `failed` y se encolan los DM con su
+// mismo texto — cuando el tick emitía cada DM, la nota salía diciendo "_No pude enviar
+// el reporte de jue 24/07._" ARRIBA del reporte de jue 24/07 que ese DM está entregando.
+function _reportGapNote(state, nowTs = Date.now(), { skipIds = [] } = {}) {
+  const items = _reportGapItems(state, { skipIds });
   if (!items.length) return '';
   const labels = [];
   for (const it of items) {
@@ -2524,7 +2530,7 @@ function _reportGapNote(state, nowTs = Date.now()) {
 // 24/07: no llamó nadie*" en vez de "*Hoy no llamó nadie*"). El texto se congela al
 // encolar y la cola existe justamente para entregarlo tarde; guardar las dos
 // redacciones es más barato y más honesto que recomputar datos de días viejos.
-function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr = '', text = '', textDelayed = '', line = '', phone = '', parentId = null } = {}) {
+function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr = '', text = '', textDelayed = '', line = '', neverStarted = [], phone = '', parentId = null } = {}) {
   const s = _reportStateDefaults(state);
   const body = String(text || '');
   if (!body.trim()) return { queued: false, reason: 'texto_vacio' };
@@ -2541,6 +2547,8 @@ function enqueueReportMessage(state, { kind = 'custom', periodKey = '', dayStr =
     id: `rpt_${kind}_${key || 'adhoc'}_${Date.now()}`,
     kind, periodKey: key, dayStr: String(dayStr || ''),
     text: body, textDelayed: String(textDelayed || ''), line: String(line || ''),
+    // WR-16: D-15 para el mensaje consolidado — la línea "Sin arrancar" del día.
+    neverStarted: Array.isArray(neverStarted) ? neverStarted.slice(0, 20).map((n) => String(n || '')) : [],
     phone: String(phone || ''), parentId: parentId || null,
     status: 'pending', attempts: 0, sendAttempts: 0,
     confessedAt: null, confessedIds: [], consolidatedInto: null, lastText: '',
@@ -2651,7 +2659,10 @@ async function reportQueueTick(nowTs = Date.now()) {
     //    'weekly'/'custom'/'dm' NUNCA se consolidan.
     // 5b. Nota de baches (D-05): se aplica a TODO envío, no solo al consolidado —
     //    el caso más frecuente es 1 diario pendiente tras un día fallado.
-    const gapNote = _reportGapNote(state, nowTs);
+    // WR-16: el propio item (y su padre, si es un DM de respaldo) NO se confiesan a sí
+    // mismos — ese contenido es justo lo que este mensaje está entregando.
+    const skipIds = [first.id, first.parentId].filter(Boolean);
+    const gapNote = _reportGapNote(state, nowTs, { skipIds });
     let group = [first];
     let text = '';
     if (first.kind === 'daily') {
@@ -2661,7 +2672,14 @@ async function reportQueueTick(nowTs = Date.now()) {
       if (dailies.length > 1) {
         group = dailies;
         // gapNote va DENTRO del builder acá: prependerla además la duplicaría.
-        text = buildConsolidatedReportText(dailies.map((it) => it.line || it.text).filter(Boolean), { gapNote });
+        // WR-16: `neverStarted` (D-15) se guarda en el item al encolar y se toma del
+        // día MÁS RECIENTE del grupo. Antes el parámetro existía y ningún llamador lo
+        // pasaba, así que el mensaje consolidado perdía la línea "Sin arrancar".
+        const last = dailies[dailies.length - 1];
+        text = buildConsolidatedReportText(dailies.map((it) => it.line || it.text).filter(Boolean), {
+          gapNote,
+          neverStarted: Array.isArray(last.neverStarted) ? last.neverStarted : [],
+        });
       }
     }
     if (!text) {
@@ -2976,6 +2994,7 @@ async function maybeRunDailyReportCron(nowTs = Date.now()) {
       text: buildDailyReportText(data),
       textDelayed: buildDailyReportText(data, { delayed: true }),   // WR-02
       line: buildDailyReportLine(data),                  // D-26: la usa la consolidación
+      neverStarted: data.neverStarted,                   // WR-16: D-15 en el consolidado
     });
     if (!r.queued) return { ran: false, reason: r.reason };
     state.dailyState.lastDailyPeriodKey = periodKey;     // D-28
