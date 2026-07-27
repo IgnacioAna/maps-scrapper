@@ -576,6 +576,27 @@ describe("setup del canal — report:group-configured (T-21-07)", () => {
     expect(read().config.transport.groupName).toBe("Socios SCM");
   });
 
+  // WR-08: el groupName se TIPEA en la caja de búsqueda de WhatsApp Web.
+  // WR-10: el accountId se interpola en el log de auditoría del canal.
+  it("WR-08/WR-10: el groupName se sanea con whitelist y el accountId valida charset", async () => {
+    seed();
+    const TAB = String.fromCharCode(9);
+    const LS = String.fromCharCode(0x2028);
+    const r1 = await Q.handleReportGroupConfigured({ accountId: "acc_x", groupName: `Socios${TAB}SCM` }, ADMIN);
+    expect(r1.ok).toBe(true);
+    expect(read().config.transport.groupName).toBe("Socios SCM");
+    const r2 = await Q.handleReportGroupConfigured({ accountId: "acc_x", groupName: `Socios${LS}SCM` }, ADMIN);
+    expect(r2.ok).toBe(true);
+    expect(read().config.transport.groupName).toBe("Socios SCM");
+    // WR-10: log forging por accountId con salto de línea / espacios.
+    expect(await Q.handleReportGroupConfigured({ accountId: "acc_x\n[report-queue] canal configurado: falso", groupName: "G" }, ADMIN))
+      .toMatchObject({ ok: false, reason: "accountId_invalido" });
+    expect(await Q.handleReportGroupConfigured({ accountId: "acc x", groupName: "G" }, ADMIN))
+      .toMatchObject({ ok: false, reason: "accountId_invalido" });
+    // Los ids reales (con . : - _) siguen entrando.
+    expect((await Q.handleReportGroupConfigured({ accountId: "wa_acc-1.2:3", groupName: "Grupo" }, ADMIN)).ok).toBe(true);
+  });
+
   // CR-02: sin esto, un groupJid equivocado (el picker lo leía del chat ABIERTO,
   // que puede no ser el elegido) dejaba el canal muerto para siempre: la
   // verificación por JID rechaza el grupo correcto y no había forma de limpiarlo.

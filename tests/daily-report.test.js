@@ -398,6 +398,37 @@ describe("texto del reporte — molde D-19", () => {
     expect(lines).not.toContain("_Equipo 999 llam_");
     expect(lines[0]).toBe("*Sin actividad hoy: Judith _Equipo 999 llam_*");
   });
+
+  // WR-08 (21-REVIEW): el texto termina en `sendInputEvent({type:'char'})` por
+  // carácter. Un TAB en el nombre de una SDR se tipeaba como char de tabulación y
+  // Chromium puede moverle el FOCO fuera del composer: el resto del mensaje se
+  // escribe en otro elemento y el click al botón de enviar manda un truncado.
+  // U+2028/U+2029 tampoco los separa `split(/\r?\n/)`. El nombre del setter es texto
+  // libre sin validación (PATCH /api/setters/team/:id no limita charset).
+  it("WR-08: TAB, U+2028/U+2029 y otros controles no llegan al tipeo OS-level", () => {
+    const TAB = String.fromCharCode(9);
+    const LS = String.fromCharCode(0x2028);
+    const PS = String.fromCharCode(0x2029);
+    const VT = String.fromCharCode(11);
+    const NEL = String.fromCharCode(0x85);
+    expect(D._reportSafeName(`Ju${TAB}dith`)).toBe("Ju dith");
+    expect(D._reportSafeName(`Ju${LS}dith`)).toBe("Ju dith");
+    expect(D._reportSafeName(`Ju${PS}dith`)).toBe("Ju dith");
+    expect(D._reportSafeName(`Ju${VT}dith`)).toBe("Ju dith");
+    expect(D._reportSafeName(`Ju${NEL}dith`)).toBe("Ju dith");
+    expect(D._reportSafeName("Ju\r\ndith")).toBe("Ju dith");     // no deja doble espacio
+    expect(D._reportSafeName("  Brenda  ")).toBe("Brenda");
+    // Y por el mensaje completo: ningún carácter de control sobrevive.
+    writeFixture({
+      setters: [{ id: "s_bren", name: `Bren${TAB}da` }, { id: "s_jud", name: `Judith${LS}x` }],
+      leads: { ...lead("l_bren", BRENDA_TODAY), ...lead("l_jud", JUDITH_YEST) },
+    });
+    const txt = D.buildDailyReportText(D.buildDailyReportData(NOW23));
+    expect(txt).toContain("Bren da");
+    expect(txt).toContain("Judith x");
+    // Solo quedan los \n que pone el molde: cero controles, cero separadores Unicode.
+    expect(new RegExp("[\\u0000-\\u0009\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]").test(txt)).toBe(false);
+  });
 });
 
 describe("consolidado — D-26", () => {

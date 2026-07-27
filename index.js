@@ -2063,10 +2063,24 @@ function _reportOnLeave(setter, nowTs) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(until)) return false;
   return _bizDayStr(nowTs) <= until;
 }
-// Nombre seguro para un mensaje de texto plano: sin saltos de línea (romperían
-// la estructura del mensaje) y acotado. T-21-01.
+// Texto seguro para un mensaje que se convierte en PULSACIONES DE TECLADO reales
+// sobre WhatsApp Web (`sendInputEvent({type:'char'})` por carácter). T-21-01.
+//
+// WR-08 (21-REVIEW): la versión anterior era una blacklist de `[\r\n]`, y el nombre
+// de una SDR (o del grupo) es texto libre sin validación de charset
+// (`PATCH /api/setters/team/:id` acepta cualquier string). Un TAB colado ahí se
+// tipeaba como char de tabulación y Chromium puede tratarlo como Tab: mueve el foco
+// FUERA del composer, el resto del mensaje se escribe en otro elemento y el click al
+// botón de enviar manda un mensaje truncado. `split(/\r?\n/)` tampoco separa
+// U+2028/U+2029. Ahora es una WHITELIST: fuera todos los controles C0/C1 y los
+// separadores de línea Unicode, con el rango en notación escapada.
+const REPORT_UNSAFE_CHARS_RE = new RegExp('[\\u0000-\\u001f\\u007f-\\u009f\\u2028\\u2029]+', 'g');
+function _reportSafeText(s, max = 0) {
+  const clean = String(s == null ? '' : s).replace(REPORT_UNSAFE_CHARS_RE, ' ').replace(/\s+/g, ' ').trim();
+  return max > 0 ? clean.slice(0, max) : clean;
+}
 function _reportSafeName(name) {
-  return String(name || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 40);
+  return _reportSafeText(name, 40);
 }
 // 'mié 22/07' en TZ de negocio, sin punto final (Intl mete '.' en es-AR).
 function _reportDayLabel(ts) {
@@ -2869,9 +2883,16 @@ async function handleReportGroupConfigured(payload = {}, user = null) {
     return { ok: false, reason: 'no_autorizado' };
   }
   const accountId = String(payload?.accountId || '').trim();
-  const groupName = String(payload?.groupName || '').replace(/[\r\n]+/g, ' ').trim();
+  // WR-08: el groupName se TIPEA en la caja de búsqueda de WhatsApp Web (fallback
+  // search-by-name) — mismo saneo whitelist que los nombres del reporte. Sin cap acá:
+  // el largo se valida abajo (un nombre gigante se RECHAZA, no se trunca en silencio).
+  const groupName = _reportSafeText(payload?.groupName);
   const jid = payload?.groupJid == null ? '' : String(payload.groupJid).trim();
-  if (!accountId || accountId.length > 64) return { ok: false, reason: 'accountId_invalido' };
+  // WR-10: `accountId` se interpola crudo en el console.log de "canal configurado",
+  // que es el único rastro de auditoría de quién cambió el destino del reporte. Sin
+  // validar charset, un salto de línea inyectaba líneas falsas en los logs de Railway
+  // (log forging). El formato real de los ids de cuenta entra de sobra en este set.
+  if (!/^[\w.:-]{1,64}$/.test(accountId)) return { ok: false, reason: 'accountId_invalido' };
   if (!groupName || groupName.length > 100) return { ok: false, reason: 'groupName_invalido' };
   if (jid && !/^[\w.-]+@g\.us$/.test(jid)) return { ok: false, reason: 'groupJid_invalido' };
   return mutateReportsState((state) => {
