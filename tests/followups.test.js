@@ -41,6 +41,14 @@ const NOW = Date.now();
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 const ago = (ms) => new Date(NOW - ms).toISOString();
+// 'Vencido AYER' es un bucket de CALENDARIO (el endpoint compara contra
+// startOfYesterday/startOfToday), no un offset de horas: con `ago(49 * HOUR)` el
+// vencimiento cae en anteayer si la suite corre antes de la 1am, y el test se
+// pone rojo ~1 hora por día. Se ancla al mediodía de ayer, que está en el bucket
+// correcto a cualquier hora. La TZ local coincide con BUSINESS_TZ acá (dev en AR,
+// CI con TZ=America/Argentina/Buenos_Aires, ver nota #130).
+const _todayStart = (() => { const d = new Date(NOW); d.setHours(0, 0, 0, 0); return d.getTime(); })();
+const YEST_NOON = _todayStart - 12 * HOUR;
 
 // Casos:
 // - lead_no_fu: con WSP enviado, ningún checkbox tildado → NO aparece.
@@ -74,7 +82,7 @@ fs.writeFileSync(
         num: 3, name: "Yesterday", phone: "+3", assignedTo: "setter_fu",
         estado: "contactado", conexion: "enviada", respondio: true, calificado: false, interes: null,
         followUps: { '24hs': true, '48hs': false, '72hs': false, '7d': false, '15d': false },
-        followUpStartedAt: ago(49 * HOUR),
+        followUpStartedAt: new Date(YEST_NOON - 24 * HOUR).toISOString(),
         notes: [], importedAt: ago(3 * DAY), lastContactAt: ago(49 * HOUR), interactions: [],
       },
       lead_72h_overdue: {

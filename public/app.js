@@ -9706,6 +9706,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ── Centro de Comando ──
+    // Tabla "Por SDR" del bloque de llamadas. Se separó del loader para poder
+    // re-renderizar con el toggle de SDRs inactivos sin volver a pegarle al
+    // backend. Lee de window._cmdCallsPerSetter / _cmdCallTotals.
+    function _cmdRenderSettersTable() {
+      const callsBody = document.getElementById('cmd-calls-per-setter-body');
+      if (!callsBody) return;
+      const rows = window._cmdCallsPerSetter || [];
+      const ct = window._cmdCallTotals || {};
+      const hideIdle = !!document.getElementById('cmd-hide-idle-setters')?.checked;
+      const idle = rows.filter((s) => (s.totalLlamadas || 0) === 0);
+      const shown = hideIdle ? rows.filter((s) => (s.totalLlamadas || 0) > 0) : rows;
+
+      // Semáforo del stock: cuando "le quedan" baja, hay que reponerle leads.
+      const stockCell = (n) => {
+        const v = Number(n) || 0;
+        if (v === 0) return '<td class="cmd-cell-num"><span class="cmd-stock is-empty">0 · sin stock</span></td>';
+        if (v < 50) return '<td class="cmd-cell-num"><span class="cmd-stock is-low">' + v + ' · reponer</span></td>';
+        if (v < 150) return '<td class="cmd-cell-num"><span class="cmd-stock is-mid">' + v + '</span></td>';
+        return '<td class="cmd-cell-num">' + v + '</td>';
+      };
+
+      if (shown.length === 0) {
+        callsBody.innerHTML = '<tr><td colspan="11" style="padding:18px; text-align:center; color:var(--text-tertiary);">No hay actividad de llamadas todavía.</td></tr>';
+      } else {
+        callsBody.innerHTML = shown.map((s) =>
+          '<tr style="border-bottom:1px solid var(--border-subtle);">' +
+          '<td style="padding:10px; font-weight:600;">' + escHtml(s.name) + '</td>' +
+          '<td class="cmd-cell-num cmd-cell-strong">' + (s.callable || 0) + '</td>' +
+          stockCell(s.pendientes) +
+          // "Marcó" = veces que discó (con reintentos). Entre paréntesis, a
+          // cuántos leads distintos: 181 marcadas sobre 72 leads dice que
+          // reintenta mucho; 72 sobre 72, que no insiste.
+          '<td class="cmd-cell-num">' + (s.totalLlamadas || 0) +
+            ((s.leadsMarcados || 0) > 0 ? ' <span class="cmd-cell-sub">(' + s.leadsMarcados + ' leads)</span>' : '') + '</td>' +
+          '<td class="cmd-cell-num">' + (s.llamadasHoy || 0) + '</td>' +
+          '<td class="cmd-cell-num">' + (s.atendidas || 0) + '</td>' +
+          '<td class="cmd-cell-num cmd-cell-strong">' + (s.conversaciones || 0) + '</td>' +
+          '<td class="cmd-cell-num">' + (s.interesados || 0) + '</td>' +
+          '<td class="cmd-cell-num" style="color:var(--success); font-weight:600;">' + (s.agendados || 0) + '</td>' +
+          '<td class="cmd-cell-num" style="color:var(--accent);">' + (s.pctConversion || '0.0') + '%</td>' +
+          '</tr>'
+        ).join('');
+      }
+
+      // Fila del pool: sin esto la suma de la tabla nunca cierra contra el KPI.
+      if ((ct.unassignedTotal || 0) > 0) {
+        callsBody.innerHTML +=
+          '<tr class="cmd-row-pool">' +
+          '<td style="padding:10px; font-weight:600;">Sin asignar (pool)</td>' +
+          '<td class="cmd-cell-num cmd-cell-strong">' + (ct.unassignedCallable || 0) + '</td>' +
+          // Sin dueño, "le quedan" = los que nadie discó nunca (igual criterio
+          // que la vista Distribución; los ya discados siguen siendo llamables
+          // pero no son stock virgen).
+          '<td class="cmd-cell-num">' + (ct.unassignedUntouched ?? ct.unassignedCallable ?? 0) + '</td>' +
+          '<td class="cmd-cell-num" colspan="8">' + (ct.unassignedTotal || 0) + ' leads sin dueño · repartir desde Distribución</td>' +
+          '</tr>';
+      }
+
+      const note = document.getElementById('cmd-idle-setters-note');
+      if (note) {
+        if (hideIdle && idle.length > 0) {
+          const leads = idle.reduce((sum, s) => sum + (s.asignados || 0), 0);
+          const callable = idle.reduce((sum, s) => sum + (s.callable || 0), 0);
+          note.textContent = idle.length + (idle.length === 1 ? ' SDR sin llamadas' : ' SDRs sin llamadas')
+            + ' · ' + leads + ' leads asignados (' + callable + ' llamables): '
+            + idle.map((s) => s.name).join(', ');
+          note.classList.remove('hidden');
+        } else {
+          note.textContent = '';
+          note.classList.add('hidden');
+        }
+      }
+    }
+
     async function loadCommandCenter() {
       try {
         // 2026-07-24: el bloque de llamadas respeta el período elegido
@@ -9723,42 +9797,61 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<div class="stat-card"><span class="stat-num">' + t.interesados + '</span><span class="stat-label">Interesados (estado)</span></div>' +
           '<div class="stat-card stat-card-accent"><span class="stat-num">' + t.agendados + '</span><span class="stat-label">Agendados (estado)</span></div>';
 
-        // Stats de llamadas
+        // Stats de llamadas (rediseño 2026-07-26: dos grupos rotulados — el de
+        // actividad respeta el seg-control de período, el de estado de la base
+        // es SIEMPRE actual. Antes convivían mezclados y no se sabía cuál era
+        // cuál.) Tiles con el lenguaje de Mi rendimiento (.myp-tile).
         const ct = data.callTotals || {};
+        window._cmdCallTotals = ct;
+        const _cmdTile = (label, num, sub, accent, title) =>
+          '<div class="myp-tile cmd-tile"' + (accent ? ' style="--tile-accent:' + accent + ';"' : '') +
+          (title ? ' title="' + escHtml(title) + '"' : '') + '>' +
+          '<span class="myp-tile-label">' + escHtml(label) + '</span>' +
+          '<span class="myp-tile-num' + (accent ? ' is-accent' : '') + '">' + num + '</span>' +
+          '<span class="cmd-tile-sub">' + (sub || '') + '</span>' +
+          '</div>';
+
+        const _cmdPeriodLabels = { today: 'hoy', '7d': 'últimos 7 días', '30d': 'últimos 30 días', all: 'todo el histórico' };
+        const _cmdPerLabel = document.getElementById('cmd-period-label');
+        if (_cmdPerLabel) _cmdPerLabel.textContent = _cmdPeriodLabels[window._cmdCallsPeriod] || 'todo el histórico';
+
+        const _llamadas = ct.totalLlamadas || 0;
+        const _atendidas = ct.atendidasHistorico || 0;
+        const _pctAtendidas = _llamadas > 0 ? ((_atendidas / _llamadas) * 100).toFixed(1) : '0.0';
         const callStatsEl = document.getElementById('cmd-call-stats');
         if (callStatsEl) {
+          const _convers = ct.conversacionesHistorico || 0;
+          const _pctConvers = _atendidas > 0 ? ((_convers / _atendidas) * 100).toFixed(1) : '0.0';
           callStatsEl.innerHTML =
-            '<div class="stat-card"><span class="stat-num">' + (ct.leadsEnLlamadas || 0) + '</span><span class="stat-label">Leads en Llamadas</span></div>' +
-            '<div class="stat-card"><span class="stat-num">' + (ct.totalLlamadas || 0) + '</span><span class="stat-label">Total llamadas</span></div>' +
-            '<div class="stat-card"><span class="stat-num">' + (ct.llamadasHoy || 0) + '</span><span class="stat-pct-sub">' + (ct.pctAtendidasHoy || '0.0') + '% atendidas</span><span class="stat-label">Llamadas hoy</span></div>' +
-            '<div class="stat-card"><span class="stat-num">' + (ct.atendidasHistorico || 0) + '</span><span class="stat-label">Atendidas (total)</span></div>' +
-            '<div class="stat-card"><span class="stat-num">' + (ct.interesadosHistorico || 0) + '</span><span class="stat-label">Interesados</span></div>' +
-            '<div class="stat-card stat-card-accent"><span class="stat-num">' + (ct.agendadosConAdmin || 0) + '</span><span class="stat-pct-sub">' + (ct.pctConversion || '0.0') + '% conv.</span><span class="stat-label">Agendados con Ignacio</span></div>' +
-            '<div class="stat-card"><span class="stat-num" style="color:var(--warning);">' + (ct.agendamientoPendientes || 0) + '</span><span class="stat-label">Pendientes (cola)</span></div>' +
-            '<div class="stat-card"><span class="stat-num" style="color:var(--success);">' + (ct.agendamientoRealizados || 0) + '</span><span class="stat-label">Realizados</span></div>' +
-            '<div class="stat-card"><span class="stat-num" style="color:var(--danger);">' + (ct.numerosMuertos || 0) + '</span><span class="stat-pct-sub">' + (ct.pctNumerosMuertos || '0.0') + '%</span><span class="stat-label">Números muertos</span></div>';
+            _cmdTile('Marcadas', _llamadas, 'veces que se discó', '',
+              'Total de discados del equipo, contando los reintentos al mismo lead.') +
+            _cmdTile('Atendieron', _atendidas, _pctAtendidas + '% de las marcadas', '#7dd3fc',
+              'Levantaron el teléfono, aunque hayan cortado enseguida (definición canónica, la misma que Mi rendimiento y Equipo).') +
+            _cmdTile('Conversaciones', _convers, _pctConvers + '% de las atendidas', '#A97DEE',
+              'Con cuántas personas se habló de verdad: atendieron y la charla duró 30 segundos o más, o terminó agendando.') +
+            _cmdTile('Interesados', ct.interesadosHistorico || 0, 'dijeron que sí', '#FFB341') +
+            _cmdTile('Agendados', ct.agendadosConAdmin || 0, (ct.pctConversion || '0.0') + '% de las atendidas', '#5bb974') +
+            _cmdTile('Marcadas hoy', ct.llamadasHoy || 0, (ct.pctAtendidasHoy || '0.0') + '% atendieron', '');
         }
 
-        // Tabla por SDR (calls)
-        const callsBody = document.getElementById('cmd-calls-per-setter-body');
-        if (callsBody) {
-          const callsPerSetter = data.callsPerSetter || [];
-          if (callsPerSetter.length === 0) {
-            callsBody.innerHTML = '<tr><td colspan="7" style="padding:18px; text-align:center; color:var(--text-tertiary);">No hay actividad de llamadas todavía.</td></tr>';
-          } else {
-            callsBody.innerHTML = callsPerSetter.map(s =>
-              '<tr style="border-bottom:1px solid var(--border-subtle);">' +
-              '<td style="padding:10px; font-weight:600;">' + escHtml(s.name) + '</td>' +
-              '<td style="padding:10px;">' + s.leadsAsignados + '</td>' +
-              '<td style="padding:10px;">' + s.totalLlamadas + '</td>' +
-              '<td style="padding:10px;">' + s.llamadasHoy + '</td>' +
-              '<td style="padding:10px;">' + s.interesados + '</td>' +
-              '<td style="padding:10px; color:var(--success); font-weight:600;">' + s.agendados + '</td>' +
-              '<td style="padding:10px; color:var(--accent);">' + s.pctConversion + '%</td>' +
-              '</tr>'
-            ).join('');
-          }
+        const baseStatsEl = document.getElementById('cmd-base-stats');
+        if (baseStatsEl) {
+          const _pool = ct.unassignedCallable || 0;
+          baseStatsEl.innerHTML =
+            _cmdTile('Para llamar (equipo)', ct.callableTotal || 0, 'cola real de todos los SDRs', '#9D85F2',
+              'Leads discables AHORA. Mismo criterio que la cola de cada SDR y que la vista Distribución.') +
+            _cmdTile('Sin asignar (pool)', _pool, (ct.unassignedTotal || 0) + ' en total sin dueño', _pool > 0 ? '#FFB341' : '',
+              'Leads llamables que todavía no tienen SDR. Es el stock disponible para repartir desde Distribución.') +
+            _cmdTile('Números muertos', ct.numerosMuertos || 0, (ct.pctNumerosMuertos || '0.0') + '% de la cola', '#f85149') +
+            _cmdTile('Reuniones pendientes', ct.agendamientoPendientes || 0, 'en cola de agenda', '#FFB341') +
+            _cmdTile('Reuniones realizadas', ct.agendamientoRealizados || 0,
+              (ct.agendamientoNoShows || 0) + ' no-show', '#5bb974');
         }
+
+        // Tabla por SDR (calls). Las 3 primeras columnas responden la pregunta
+        // operativa: cuántos tiene para llamar, cuántos llamó y cuánto le queda.
+        window._cmdCallsPerSetter = data.callsPerSetter || [];
+        _cmdRenderSettersTable();
 
         // Badge total de leads
         const totalBadge = document.getElementById('setter-leads-total-badge');
@@ -10526,7 +10619,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdMenuItem = document.querySelector('[data-target="view-command"]');
     if (cmdMenuItem) cmdMenuItem.addEventListener('click', () => { loadCommandCenter(); loadHistoryPanel(); });
     // Período del bloque Llamadas del Comando (2026-07-24) — re-fetchea con ?period=.
-    window._cmdCallsPeriod = 'all';
+    // 2026-07-26: default 30 días para hablar el mismo idioma que la vista
+    // Equipo (que abre en 'month'). Con 'all' los dos paneles no cuadraban y
+    // parecía un bug de métricas.
+    window._cmdCallsPeriod = '30d';
     document.getElementById('cmd-calls-period')?.addEventListener('click', (e) => {
       const btn = e.target.closest('.seg-btn');
       if (!btn) return;
@@ -10536,6 +10632,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('#cmd-calls-period .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
       loadCommandCenter();
     });
+
+    // Toggle "Ocultar SDRs sin llamadas" (2026-07-26). Client-side: re-pinta la
+    // tabla sin volver a pedir data. Preferencia por user, como el sort de Llamadas.
+    const _cmdIdleToggle = document.getElementById('cmd-hide-idle-setters');
+    if (_cmdIdleToggle) {
+      const _cmdIdleKey = 'cmd_hide_idle_' + (currentUser?.id || 'anon');
+      const _saved = localStorage.getItem(_cmdIdleKey);
+      if (_saved !== null) _cmdIdleToggle.checked = _saved === '1';
+      _cmdIdleToggle.addEventListener('change', () => {
+        localStorage.setItem(_cmdIdleKey, _cmdIdleToggle.checked ? '1' : '0');
+        _cmdRenderSettersTable();
+      });
+    }
 
     // ─── Phase 21 (D-29): estado y control del canal del reporte diario ──
     // Bloque #cmd-daily-report-panel de view-command (admin-only en el HTML y en
@@ -10741,7 +10850,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // real que el SDR ve en su cola de Llamadas. El total asignado (que
         // incluye números muertos/terminales/interesados/callbacks) queda como
         // tooltip informativo, no como columna.
-        const setterHeader = `<tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">SDR</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Llamables</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Sin tocar</th></tr>`;
+        const setterHeader = `<tr style="border-bottom:1px solid var(--border-subtle);"><th style="padding:6px 10px; text-align:left; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">SDR</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Llamables</th><th style="padding:6px 10px; text-align:right; font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;" title="Llamables que el dueño todavía no abrió — mismo criterio que 'le quedan' en el Centro de Comando">Por llamar</th></tr>`;
         const setterRows = setterHeader + (d.bySetter || []).map(s => {
           const callable = (typeof s.callable === 'number') ? s.callable : s.total;
           const gap = s.total - callable;
@@ -10763,7 +10872,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         sumEl.innerHTML = `
           <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:16px;">
             ${kpi('Total leads', d.total)}
-            ${kpi('Sin asignar (pool)', d.unassigned.total, d.unassigned.untouched + ' sin tocar')}
+            ${kpi('Sin asignar (pool)', d.unassigned.total, d.unassigned.untouched + ' por llamar')}
             ${kpi('SDRs con leads', (d.bySetter || []).length)}
           </div>
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Prioridad de re-contacto (orden en que conviene distribuir)</div>
@@ -14409,8 +14518,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     const total = d.assigned.total;
-    const sinc = d.assigned.sinContactar;
-    const trabajados = Math.max(0, total - sinc);
+    const sinc = d.assigned.sinContactar;   // llamables que todavía no abrió
+    // `llamados` viene del backend: ya no se deriva por resta, porque
+    // total - sinContactar incluiría los no llamables (muertos/DNC/tarifa roja).
+    const trabajados = typeof d.assigned.llamados === 'number'
+      ? d.assigned.llamados
+      : Math.max(0, total - sinc);
     const pctTrab = total > 0 ? Math.round((trabajados / total) * 100) : 0;
     asg.innerHTML = `
       <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
@@ -14421,7 +14534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="flex:1; min-width:200px;">
           <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:11.5px; margin-bottom:6px;">
             <span style="color:var(--success); font-weight:600;" title="Leads de la cartera que este SDR ya discó alguna vez (atribución por quién llamó)">${trabajados.toLocaleString()} con llamadas propias</span>
-            <span style="color:var(--text-tertiary);" title="El dueño actual nunca los discó">${sinc.toLocaleString()} sin llamar</span>
+            <span style="color:var(--text-tertiary);" title="Llamables que el dueño actual todavía no abrió — mismo criterio que Equipo, Distribución y el Centro de Comando (descuenta números muertos, no-llamar, tarifa cara y callbacks a futuro)">${sinc.toLocaleString()} por llamar</span>
           </div>
           <div style="height:6px; border-radius:999px; background:rgba(255,255,255,0.06); overflow:hidden;">
             <div style="height:100%; width:${pctTrab}%; border-radius:999px; background:linear-gradient(90deg, rgba(74,222,128,0.55), var(--success)); transition:width 0.7s cubic-bezier(0.22,1,0.36,1);"></div>
@@ -15163,7 +15276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ratio = untouched / totalAssigned;
         const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
         const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
-        assignedBadge = ` <span title="Total asignados al SDR (no del periodo). ${untouched} nunca discados por nadie (callLog vacío)." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} sin llamar` : ''}</span>`;
+        assignedBadge = ` <span title="Total asignados al SDR (no del período). ${untouched} llamables que todavía no abrió — el mismo número que 'le quedan' en el Centro de Comando (descuenta números muertos, no-llamar, tarifa cara y callbacks a futuro)." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} por llamar` : ''}</span>`;
       }
       // Phase 21 (D-18): licencia con fecha de vencimiento. El badge lo ve todo el
       // que ve Equipo (admin + supervisor); EDITAR es admin only (condicionado en

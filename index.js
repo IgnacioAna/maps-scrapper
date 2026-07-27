@@ -1841,6 +1841,7 @@ function buildWeeklyReportData(nowTs = Date.now()) {
       agendadosLlamada: w.filter(c => c.outcome === 'scheduled_with_admin').length,
       minutos: Math.round(a.totalDurationS / 60),                                  // D-20
       interesados: w.filter(c => c.outcome === 'answered_interested').length,       // D-20
+      activeMinutes: _reportActiveMinutes(w),                                       // tiempo trabajando (mismo criterio que el diario)
     };
   }).filter(s => s.llamadas > 0);
   // D-15/D-20: mismos criterios que el diario — visible, NO oculta, cero llamadas
@@ -1861,6 +1862,8 @@ function buildWeeklyReportData(nowTs = Date.now()) {
       // Phase 19 se quita ni se renombra: buildWeeklyReportHtml las usa.
       minutes: Math.round(agg.totalDurationS / 60),
       interested: weekCalls.filter(c => c.outcome === 'answered_interested').length,
+      // Horas-persona de la semana: suma de las vendedoras, igual que el diario.
+      activeMinutes: perSetter.reduce((t, s) => t + (s.activeMinutes || 0), 0),
     },
     calendar: { realized: calRealized, noShow: calNoShow, pendingNow: calPendingNow, overdueNow: calOverdueNow },
     perSetter,
@@ -2087,6 +2090,37 @@ function _reportSafeText(s, max = 0) {
 function _reportSafeName(name) {
   return _reportSafeText(name, 40);
 }
+// Tiempo ACTIVA: bloques de 15 minutos con al menos una llamada. NO es la ventana
+// entre la primera y la última llamada (esa da 11h por discar a las 8 y a las 19)
+// ni el tiempo con el panel abierto (eso no se guarda: `lastSeen` en auth.json es
+// un timestamp que se pisa, sin historial de sesiones).
+//
+// Decisión consciente: una llamada suelta cuenta el bloque ENTERO. Alrededor de cada
+// llamada hay preparación, carga del resultado y el hueco hasta la siguiente, así que
+// contarla como 1 minuto subestimaría el trabajo. El sesgo va hacia arriba y es parejo
+// para todas — sirve para comparar entre vendedoras y contra sí mismas, no como reloj
+// de fichaje.
+//
+// Tamaño del bloque: 30 min (el user lo subió de 15 el 2026-07-26 — "15 min es muy
+// poco"). Cambiar esta constante mueve TODOS los números de "activa" del histórico:
+// es una definición, no un dato guardado, así que se recalcula cada vez que se pide.
+const REPORT_ACTIVE_BUCKET_MS = 30 * 60000;
+function _reportActiveMinutes(calls) {
+  const buckets = new Set();
+  for (const c of (calls || [])) {
+    if (!c || !Number.isFinite(c.ts)) continue;
+    buckets.add(Math.floor(c.ts / REPORT_ACTIVE_BUCKET_MS));
+  }
+  return buckets.size * (REPORT_ACTIVE_BUCKET_MS / 60000);
+}
+// '2h15' / '45min'. Compacto a propósito: va en una línea que ya tiene 3 datos.
+function _reportDuration(mins) {
+  const m = Math.max(0, Math.round(Number(mins) || 0));
+  if (m < 60) return `${m}min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r ? `${h}h${String(r).padStart(2, '0')}` : `${h}h`;
+}
 // 'mié 22/07' en TZ de negocio, sin punto final (Intl mete '.' en es-AR).
 function _reportDayLabel(ts) {
   const d = new Date(ts + _bizOffsetMs(ts));
@@ -2123,6 +2157,31 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
   const setters = _filterSettersVisible(settersData.setters || [], visibleSet)
     .filter(s => s.hidden !== true);
 
+  // Stock por vendedora — "le quedan por llamar" (pedido del user 2026-07-26,
+  // para reponerles leads sin entrar al panel). MISMO criterio que Comando /
+  // Equipo / Distribución: `_leadPendingForOwner` = llamable AHORA (sin números
+  // muertos, DNC, tarifa roja ni callbacks a futuro) Y no discado por el dueño
+  // ACTUAL. No es la cartera cruda: la brecha entre las dos son leads que nunca
+  // se van a llamar.
+  //
+  // Se calcula sobre TODAS las vendedoras en alcance, no solo las que llamaron
+  // hoy: la que no llamó y no tiene stock es justamente el caso que hay que ver.
+  const _dailyUserMap = _buildUserSetterMap();
+  const _dailyLeads = Object.values(settersData.leads || {});
+  const pendingBySetter = {};
+  for (const s of setters) pendingBySetter[s.id] = 0;
+  for (const l of _dailyLeads) {
+    const sid = l.assignedTo;
+    if (!sid || !(sid in pendingBySetter)) continue;
+    if (_leadPendingForOwner(l, sid, _dailyUserMap, nowTs)) pendingBySetter[sid]++;
+  }
+  // El stock se computa acá pero la LISTA final se arma abajo, después de saber
+  // quién nunca arrancó: a esas ya las nombra su propia línea y repetirlas con su
+  // stock es ruido (el molde no repite nombres entre líneas).
+  const _pendingAll = setters
+    .map(s => ({ id: s.id, name: _reportSafeName(s.name), count: pendingBySetter[s.id] || 0 }))
+    .sort((a, b) => a.count - b.count);   // la que menos stock tiene, primero
+
   const perSetter = [];
   const neverStarted = [];
   const idleToday = [];
@@ -2135,7 +2194,7 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
     const a = _ccFunnelAggregate(mine, [], fromTs, toTs);
     const int = mine.filter(c => c.outcome === 'answered_interested').length;
     if (a.dials > 0) {
-      perSetter.push({ id: s.id, name, dials: a.dials, connects: a.connects, minutes: Math.round(a.totalDurationS / 60) });
+      perSetter.push({ id: s.id, name, dials: a.dials, connects: a.connects, minutes: Math.round(a.totalDurationS / 60), activeMinutes: _reportActiveMinutes(mine) });
       if (int > 0) interested.push({ name, count: int });      // D-21
       continue;
     }
@@ -2178,11 +2237,26 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
     .map(([sid, count]) => ({ name: nameById.get(sid), count }))
     .sort((a, b) => b.count - a.count);
 
+  // Stock final: sin las que nunca arrancaron (su línea propia ya las nombra) y
+  // sin las de licencia (no hay a quién reponerle). Queda la lista accionable.
+  const _neverSet = new Set(neverStarted);
+  const _leaveSet = new Set(onLeave);
+  const pending = _pendingAll
+    .filter(p => !_neverSet.has(p.name) && !_leaveSet.has(p.name))
+    .map(({ name, count }) => ({ name, count }));
+
   return {
     dayStr, dayLabel: _reportDayLabel(fromTs), period: { fromTs, toTs },
-    team: { dials: agg.dials, connects: agg.connects, connectRate: agg.rates.connectRate, minutes: Math.round(agg.totalDurationS / 60) },
+    // activeMinutes del equipo = SUMA de las vendedoras, no la unión de bloques:
+    // trabajan en paralelo, así que la unión (tiempo de pared) escondería que dos
+    // personas estuvieron 2h cada una. Lo que se quiere leer son horas-persona.
+    team: {
+      dials: agg.dials, connects: agg.connects, connectRate: agg.rates.connectRate,
+      minutes: Math.round(agg.totalDurationS / 60),
+      activeMinutes: perSetter.reduce((t, s) => t + (s.activeMinutes || 0), 0),
+    },
     yesterday: { dials: aggPrev.dials, connects: aggPrev.connects, connectRate: aggPrev.rates.connectRate },
-    perSetter, neverStarted, idleToday, escalated, onLeave, interested,
+    perSetter, pending, neverStarted, idleToday, escalated, onLeave, interested,
     manualCalls, manualFlag, unattributed, unmarked,
   };
 }
@@ -2220,6 +2294,7 @@ function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
   const rows = d.perSetter.map(s => {
     const segs = [`${s.dials} llam`, `${s.connects} at`];
     if (s.minutes > 0) segs.push(`${s.minutes} min`);                 // sin minutos en cero
+    if (s.activeMinutes > 0) segs.push(`${_reportDuration(s.activeMinutes)} activa`);
     return `*${s.name}* ${segs.join(' · ')}`;
   });
   // El molde validado muestra el % ENTERO ("62%", no "61.5%"): un decimal en un
@@ -2228,12 +2303,17 @@ function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
   const pct = (n) => Math.round(Number(n) || 0);
   const teamSegs = [`${d.team.dials} llam`, `${d.team.connects} at (${pct(d.team.connectRate)}%)`];
   if (d.team.minutes > 0) teamSegs.push(`${d.team.minutes} min`);
+  if (d.team.activeMinutes > 0) teamSegs.push(`${_reportDuration(d.team.activeMinutes)} activa`);
   const foot = [
     d.team.dials > 0 ? `_Equipo ${teamSegs.join(' · ')}_` : '',
     // D-19 + discreción: la comparación solo aparece si AYER hubo llamadas
     // (el primer día no hay ayer; el lunes no compara contra el sábado en cero).
     d.yesterday.dials > 0 ? `_Ayer ${d.yesterday.dials} llam · ${d.yesterday.connects} at (${pct(d.yesterday.connectRate)}%)_` : '',
     d.interested.length ? `_Interesados: ${d.interested.map(i => `${i.name} ${i.count}`).join(', ')}_` : '',     // D-21
+    // Stock para reponer. Ordenado de MENOS a más: la primera de la lista es la
+    // que hay que stockear. Va como línea propia y no en la fila de cada una
+    // porque incluye a las que hoy no llamaron (que no tienen fila).
+    (d.pending || []).length ? `_Por llamar: ${d.pending.map(p => `${p.name} ${p.count}`).join(', ')}_` : '',
     d.unmarked.length ? `_Sin marcar hoy: ${d.unmarked.map(u => `${u.name} ${u.count}`).join(', ')}_` : '',      // D-23
     d.manualFlag ? `_${d.manualCalls} llamadas cargadas a mano — sin minutos_` : '',                             // D-22
     d.unattributed > 0 ? `_${d.unattributed} llamadas sin atribuir_` : '',                                       // REP-10
@@ -2256,6 +2336,7 @@ function buildDailyReportLine(data) {
   if (d.team.dials === 0) return `*${d.dayLabel}* sin llamadas`;
   const segs = [`${d.team.dials} llam`, `${d.team.connects} at`];
   if (d.team.minutes > 0) segs.push(`${d.team.minutes} min`);
+  if (d.team.activeMinutes > 0) segs.push(`${_reportDuration(d.team.activeMinutes)} activa`);
   const tail = d.idleToday.length ? ` · sin actividad: ${d.idleToday.join(', ')}` : '';
   return `*${d.dayLabel}* ${segs.join(' · ')}${tail}`;
 }
@@ -2303,6 +2384,7 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
   } else {
     const teamSegs = [`${c.totalWeek} llam`, `${c.answeredWeek} at (${pct(c.pctAtendidas)}%)`];
     if ((c.minutes || 0) > 0) teamSegs.push(`${c.minutes} min`);
+    if ((c.activeMinutes || 0) > 0) teamSegs.push(`${_reportDuration(c.activeMinutes)} activa`);
     head.push(`Equipo ${teamSegs.join(' · ')}`);
     const intSegs = [];
     if ((c.interested || 0) > 0) intSegs.push(`${c.interested} interesados`);
@@ -2321,6 +2403,7 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
     .map(s => {
       const segs = [`${s.llamadas} llam`, `${s.atendidas} at`];
       if ((s.minutos || 0) > 0) segs.push(`${s.minutos} min`);
+      if ((s.activeMinutes || 0) > 0) segs.push(`${_reportDuration(s.activeMinutes)} activa`);
       if ((s.interesados || 0) > 0) segs.push(`${s.interesados} int`);
       return `*${_reportSafeName(s.name)}* ${segs.join(' · ')}`;
     });
@@ -2341,8 +2424,8 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
 }
 
 // Expuestos para tests (patrón __weeklyReport / __callCore).
-globalThis.__dailyReport = { buildDailyReportData, buildDailyReportText, buildDailyReportLine, buildConsolidatedReportText, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName };
-Object.assign(globalThis.__weeklyReport, { buildWeeklyReportTextShort });
+globalThis.__dailyReport = { buildDailyReportData, buildDailyReportText, buildDailyReportLine, buildConsolidatedReportText, _reportWeekdaysSince, _reportOnLeave, _reportDayLabel, _reportSafeName, _reportActiveMinutes, _reportDuration };
+Object.assign(globalThis.__weeklyReport, { buildWeeklyReportTextShort, _reportDuration });
 
 // ── Phase 21: cola de envío al grupo de WhatsApp ──
 // REP-06/07/08 + D-02/D-05/D-06/D-26/D-27/D-28. El transporte es GENÉRICO desde
@@ -7190,21 +7273,29 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
   {
     const userMap = _buildUserSetterMap();
     const attrSet = setterId ? new Set([setterId]) : (visibleSet || new Set((data.setters || []).map((s) => s.id)));
-    let total = 0, sinContactar = 0, shows = 0, noShows = 0;
+    let total = 0, sinContactar = 0, llamados = 0, shows = 0, noShows = 0;
+    const _cmNow = Date.now();
     for (const id in (data.leads || {})) {
       const lead = data.leads[id];
       const mine = setterId ? lead.assignedTo === setterId : (!visibleSet || visibleSet.has(lead.assignedTo));
       if (!mine) continue;
       total++;
       const log = Array.isArray(lead.callLog) ? lead.callLog : [];
-      if (!log.some((e) => attrSet.has(_callSetterId(e, lead, userMap)))) sinContactar++;
+      const called = log.some((e) => attrSet.has(_callSetterId(e, lead, userMap)));
+      if (called) llamados++;
+      // 2026-07-26: "por llamar" = llamable AHORA y sin abrir. Los que nunca se
+      // van a poder discar (muertos/DNC/tarifa roja) ya no inflan el número —
+      // misma definición que Equipo, Distribución y el Centro de Comando.
+      else if (_leadIsCallableNow(lead, _cmNow)) sinContactar++;
       const ats = lead.asistioAt ? new Date(lead.asistioAt).getTime() : 0;
       if (ats >= fromTs && ats < toTs) {
         if (lead.asistio === true) shows++;
         else if (lead.asistio === false) noShows++;
       }
     }
-    extra.assigned = { total, sinContactar };
+    // `llamados` explícito: el front ya no puede derivarlo por resta (total -
+    // sinContactar incluiría los no llamables que nunca se discaron).
+    extra.assigned = { total, sinContactar, llamados };
     extra.showRate = {
       shows, noShows,
       pctShow: (shows + noShows) > 0 ? Number(((shows / (shows + noShows)) * 100).toFixed(1)) : 0,
@@ -8824,6 +8915,16 @@ function _leadIsCallableNow(l, now) {
   if (last === 'callback_later') return false;
   return true;
 }
+// 2026-07-26 (criterio del user): "sin llamar / le quedan" = leads que el SDR
+// PUEDE discar y todavía no abrió. Antes cada vista lo contaba a su manera:
+// Equipo/Mi rendimiento contaban la cartera cruda (Teresa: 602) y el Comando
+// los llamables (276) — 326 de esa brecha son números muertos, DNC y tarifa
+// roja que nunca se van a llamar. Definición ÚNICA para las 4 vistas
+// (Equipo, Mi rendimiento, Distribución, Comando): llamable AHORA + no discado
+// por su dueño actual (criterio #139, la herencia no cuenta como trabajo).
+function _leadPendingForOwner(l, sid, userMap, now) {
+  return _leadIsCallableNow(l, now) && !_setterCalledLead(l, sid, userMap);
+}
 
 app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervisor'), (req, res) => {
   // Phase 18: gestión de pool no disponible para supervisor scoped (no es "mi equipo").
@@ -8832,9 +8933,10 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
   const leads = Object.values(data.leads || {});
   const _now = Date.now();
   const _psUserMap = _buildUserSetterMap();
-  // "Sin llamar" SIN asignar = nadie lo discó (no hay dueño). Por SDR = el DUEÑO
-  // actual no lo llamó (2026-07-13, arranca-de-cero al reasignar).
-  const isUntouchedGlobal = (l) => !(Array.isArray(l.callLog) && l.callLog.length > 0);
+  // "Sin llamar" SIN asignar = llamable y nadie lo discó (no hay dueño). Por SDR
+  // = llamable y el DUEÑO actual no lo llamó (2026-07-13 arranca-de-cero al
+  // reasignar + 2026-07-26 solo llamables, ver _leadPendingForOwner).
+  const isUntouchedGlobal = (l) => _leadIsCallableNow(l, _now) && !(Array.isArray(l.callLog) && l.callLog.length > 0);
   const settersById = {};
   for (const s of (data.setters || [])) settersById[s.id] = s.name || s.id;
 
@@ -8853,7 +8955,9 @@ app.get('/api/setters/pool-summary', requireAuth, requireRole('admin', 'supervis
       if (!bySetter[sid]) bySetter[sid] = { id: sid, name: settersById[sid] || sid, total: 0, callable: 0, untouched: 0, orphanSetter: !settersById[sid] };
       bySetter[sid].total++;
       if (_leadIsCallableNow(l, _now)) bySetter[sid].callable++;
-      if (!_setterCalledLead(l, sid, _psUserMap)) bySetter[sid].untouched++;
+      // 2026-07-26: "sin tocar" = llamable + no discado por su dueño (misma
+      // definición que "le quedan" del Comando y el badge de Equipo).
+      if (_leadPendingForOwner(l, sid, _psUserMap, _now)) bySetter[sid].untouched++;
     }
     const c = (l.country || 'Sin país').trim() || 'Sin país';
     byCountry[c] = (byCountry[c] || 0) + 1;
@@ -11202,11 +11306,14 @@ app.get("/api/setters/performance", requireAuth, (req, res) => {
   // distinto de totals.total que es "tocó N en el período". Sin esto el panel solo
   // mostraba los tocados y parecía que el setter tenía muchos menos leads.
   const assignedTotal = filtered.length;
-  // "Sin llamar" = el/los setter(s) de esta vista no lo llamaron todavía (2026-07-13,
-  // arranca-de-cero al reasignar). Individual = el dueño; equipo/supervisor = ningún
-  // setter del set atribuido lo llamó. Nunca lastContactAt (legacy WhatsApp).
+  // "Por llamar" = llamables que el/los setter(s) de esta vista todavía no
+  // abrieron (2026-07-26, misma definición que Equipo/Distribución/Comando —
+  // ver _leadPendingForOwner). Individual = el dueño; equipo/supervisor =
+  // ningún setter del set atribuido lo llamó. Nunca lastContactAt (legacy WSP).
+  const _perfNow = Date.now();
   const assignedSinContactar = filtered.filter((l) =>
-    !(Array.isArray(l.callLog) && l.callLog.some((e) => attr.setterIds.has(_callSetterId(e, l, attr.userMap))))
+    _leadIsCallableNow(l, _perfNow)
+    && !(Array.isArray(l.callLog) && l.callLog.some((e) => attr.setterIds.has(_callSetterId(e, l, attr.userMap))))
   ).length;
 
   res.json({
@@ -11360,6 +11467,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     }
   }
 
+  const _tpNow = Date.now(); // para _leadPendingForOwner (callbacks a futuro)
   const perSetter = scopedSetters.map((s) => {
     const setterLeads = leadsBySetter.get(s.id) || [];
     const setterCalls = callsBySetter.get(s.id) || [];
@@ -11370,10 +11478,11 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     // Ultima actividad ATRIBUIDA al setter (llamadas por `by` + interactions suyas).
     const lastActivity = lastActivityBySetter.get(s.id) || 0;
     const totalAssigned = setterLeads.length;
-    // "Sin llamar" = el DUEÑO ACTUAL no lo llamó todavía (2026-07-13). Un lead
-    // reasignado arranca de cero para el nuevo SDR: las llamadas de un SDR anterior
-    // NO cuentan como trabajo suyo (quedan como historial al abrir el lead).
-    const untouchedAssigned = setterLeads.filter(l => !_setterCalledLead(l, s.id, userMap)).length;
+    // "Por llamar" = llamables que el DUEÑO ACTUAL todavía no abrió (2026-07-26,
+    // `_leadPendingForOwner`). Un lead reasignado arranca de cero para el nuevo
+    // SDR, y los que nunca se van a poder discar (muertos/DNC/tarifa roja) no
+    // cuentan: es el mismo número que "le quedan" en el Centro de Comando.
+    const untouchedAssigned = setterLeads.filter(l => _leadPendingForOwner(l, s.id, userMap, _tpNow)).length;
 
     // Follow-ups del día (dueToday + dueYesterday) — para columna del panel Equipo.
     const followupsToday = _countFollowupsForBadge(setterLeads);
@@ -11407,7 +11516,7 @@ app.get("/api/setters/team-performance", requireAuth, requireRole("admin", "supe
     }
     // Untouched aunque haya algo de actividad: si tiene >50% sin tocar, alerta media
     if (totalAssigned >= cfg.minTotalForAlert && lastActivity > 0 && untouchedAssigned / totalAssigned >= 0.5) {
-      alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) sin llamar todavía.` });
+      alerts.push({ type: "high_untouched", severity: "medium", message: `${untouchedAssigned} de ${totalAssigned} leads (${Math.round(untouchedAssigned/totalAssigned*100)}%) llamables sin abrir todavía.` });
     }
     // Funnel de llamadas: si hizo bastantes llamadas pero atiende muy poco, alerta
     // (tasa de atención baja vs el umbral configurado, reusado de aperturaPctMin).
@@ -11655,15 +11764,54 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   const cmdPeriod = String(req.query.period || 'all').toLowerCase();
   const fromP = ['today', 'week', 'month', '7d', '30d', 'thismonth'].includes(cmdPeriod) ? _ccResolveRange(cmdPeriod).fromTs : 0;
   let totalCalls = 0, callsToday = 0, answeredToday = 0;
-  let callsWithAnswered = 0, callsWithInterested = 0, callsScheduledWithAdmin = 0;
+  let callsWithAnswered = 0, callsConversations = 0, callsWithInterested = 0, callsScheduledWithAdmin = 0;
   let phoneDead = 0;
-  const _callAgg = new Map(); // setterId (quién llamó) → { total, hoy, interesados, agendados }
+  // 2026-07-26: stock de trabajo por SDR — la pregunta operativa del admin es
+  // "¿a quién tengo que stockear de leads?". El criterio es el MISMO que ve el
+  // SDR en su cola (`_leadIsCallableNow`, réplica del filtro de /leads/sin-wsp
+  // + exclusiones del front). El conteo viejo (`conexion==='sin_wsp'`) fallaba
+  // por los dos lados: contaba muertos/DNC/tarifa roja/callbacks futuros que el
+  // discado descarta, y se perdía los leads que el pool dejó en flujo Setteo
+  // (el dialer los disca igual desde include=callable).
+  const _nowStock = Date.now();
+  const _stockAgg = new Map(); // setterId (dueño) → { asignados, callable, llamados, pendientes }
+  let unassignedTotal = 0, unassignedCallable = 0, unassignedUntouched = 0, callableTotal = 0;
+  const _callAgg = new Map(); // setterId (quién llamó) → { total, hoy, atendidas, interesados, agendados }
   for (const l of allLeads) {
+    // ── stock por dueño actual (independiente del período) ──
+    const ownerId = l.assignedTo || '';
+    const isCallable = _leadIsCallableNow(l, _nowStock);
+    if (isCallable) callableTotal++;
+    if (!ownerId) {
+      unassignedTotal++;
+      if (isCallable) {
+        unassignedCallable++;
+        // Sin dueño no hay "su dueño no lo abrió": el equivalente es que NADIE
+        // lo haya discado (mismo criterio que pool-summary.unassigned.untouched).
+        if (!(Array.isArray(l.callLog) && l.callLog.length > 0)) unassignedUntouched++;
+      }
+    } else {
+      let st = _stockAgg.get(ownerId);
+      if (!st) { st = { asignados: 0, callable: 0, llamados: 0, pendientes: 0 }; _stockAgg.set(ownerId, st); }
+      st.asignados++;
+      // "llamó" = el DUEÑO ACTUAL discó este lead (criterio #139: la herencia de
+      // un SDR anterior no cuenta como trabajo propio).
+      const calledByOwner = _setterCalledLead(l, ownerId, cmdUserMap);
+      if (calledByOwner) st.llamados++;
+      if (isCallable) {
+        st.callable++;
+        if (!calledByOwner) st.pendientes++; // stock virgen = lo que le queda por abrir
+      }
+    }
     if (Array.isArray(l.callLog)) {
+      // Leads DISTINTOS marcados dentro del período, por SDR: "marcó 118 veces
+      // sobre 79 leads". Se acumula por lead (un Set de sids) y se vuelca al
+      // final, para no contar dos veces al mismo lead por sus reintentos.
+      const _sidsEsteLead = new Set();
       for (const c of l.callLog) {
         const sid = _callSetterId(c, l, cmdUserMap);
         let agg = _callAgg.get(sid);
-        if (!agg) { agg = { total: 0, hoy: 0, interesados: 0, agendados: 0 }; _callAgg.set(sid, agg); }
+        if (!agg) { agg = { total: 0, hoy: 0, atendidas: 0, conversaciones: 0, interesados: 0, agendados: 0, leadsPeriodo: 0 }; _callAgg.set(sid, agg); }
         const cts = c.ts ? new Date(c.ts).getTime() : 0;
         // 2026-07-24: "atendida" = COLD_CALL_CONNECT_OUTCOMES (definición canónica
         // del CALL METRICS CORE) — antes acá se usaba una lista a mano de 3
@@ -11678,9 +11826,24 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
         if (fromP && (!cts || cts < fromP)) continue; // el resto respeta el período
         totalCalls++;
         agg.total++;
+        _sidsEsteLead.add(sid);
         if (outcome === 'answered_interested') { callsWithInterested++; agg.interesados++; }
-        if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) callsWithAnswered++;
+        if (COLD_CALL_CONNECT_OUTCOMES.has(outcome)) {
+          callsWithAnswered++; agg.atendidas++;
+          // "Conversación" con la definición canónica del CALL METRICS CORE
+          // (_ccFunnelAggregate): atendió Y habló >= 30s, o terminó agendando
+          // (agendar implica conversación aunque el canal manual no registre
+          // duración). Mismas constantes — no es una regla nueva.
+          const dur = Number(c.duration || 0);
+          if (dur >= COLD_CALL_CONV_MIN_S || COLD_CALL_APPOINTMENT_OUTCOMES.has(outcome)) {
+            callsConversations++; agg.conversaciones++;
+          }
+        }
         if (outcome === 'scheduled_with_admin') { callsScheduledWithAdmin++; agg.agendados++; }
+      }
+      for (const sid of _sidsEsteLead) {
+        const agg = _callAgg.get(sid);
+        if (agg) agg.leadsPeriodo++;
       }
     }
   }
@@ -11702,17 +11865,29 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
   }
   const callsPerSetter = data.setters.map(s => {
     const leads = _callLeadsBySetter.get(s.id) || [];
-    const agg = _callAgg.get(s.id) || { total: 0, hoy: 0, interesados: 0, agendados: 0 };
+    const agg = _callAgg.get(s.id) || { total: 0, hoy: 0, atendidas: 0, conversaciones: 0, interesados: 0, agendados: 0, leadsPeriodo: 0 };
+    const st = _stockAgg.get(s.id) || { asignados: 0, callable: 0, llamados: 0, pendientes: 0 };
     return {
       id: s.id, name: s.name,
-      leadsAsignados: leads.length,
-      totalLlamadas: agg.total,
+      leadsAsignados: leads.length, // legacy (cola sin_wsp) — se conserva por compat
+      asignados: st.asignados,      // cartera completa del SDR
+      callable: st.callable,        // "para llamar": lo que ve en su cola AHORA
+      leadsLlamados: st.llamados,   // leads distintos que ÉL discó (histórico, alimenta `pendientes`)
+      leadsMarcados: agg.leadsPeriodo, // leads distintos marcados DENTRO del período
+      pendientes: st.pendientes,    // llamables que todavía no abrió (stock virgen)
+      totalLlamadas: agg.total,   // veces que MARCÓ (incluye reintentos al mismo lead)
       llamadasHoy: agg.hoy,
+      atendidas: agg.atendidas,
+      conversaciones: agg.conversaciones, // atendidas de >=30s o que terminaron agendando
       interesados: agg.interesados,
       agendados: agg.agendados,
-      pctConversion: agg.total > 0 ? ((agg.agendados / agg.total) * 100).toFixed(1) : '0.0'
+      // 2026-07-26: el % de la fila usa el MISMO denominador que la card de
+      // arriba (agendados / atendidas). Antes dividía por totalLlamadas → dos
+      // definiciones de "% conversión" en la misma pantalla (contra el canon
+      // del CALL METRICS CORE).
+      pctConversion: agg.atendidas > 0 ? ((agg.agendados / agg.atendidas) * 100).toFixed(1) : '0.0'
     };
-  }).filter(s => s.leadsAsignados > 0 || s.totalLlamadas > 0);
+  }).filter(s => s.asignados > 0 || s.leadsAsignados > 0 || s.totalLlamadas > 0);
 
   res.json({
     totals: { total, conexiones, respondieron, calificados, interesados, agendados, sinWsp,
@@ -11727,11 +11902,18 @@ app.get('/api/setters/command', requireAuth, requireRole('admin', 'supervisor'),
     },
     callTotals: {
       period: cmdPeriod,
-      leadsEnLlamadas: callLeads.length,
+      leadsEnLlamadas: callLeads.length, // legacy (cola sin_wsp) — se conserva por compat
+      // Stock real de trabajo (mismo criterio que la cola del SDR y que la
+      // vista Distribución/pool-summary). No depende del período.
+      callableTotal,
+      unassignedTotal,
+      unassignedCallable,
+      unassignedUntouched,
       totalLlamadas: totalCalls,
       llamadasHoy: callsToday,
       pctAtendidasHoy: callsToday > 0 ? ((answeredToday / callsToday) * 100).toFixed(1) : '0.0',
       atendidasHistorico: callsWithAnswered,
+      conversacionesHistorico: callsConversations,
       interesadosHistorico: callsWithInterested,
       agendadosConAdmin: callsScheduledWithAdmin,
       numerosMuertos: phoneDead,

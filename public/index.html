@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%239D85F2%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%239D85F2%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%237C5DDB%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260725a">
+  <link rel="stylesheet" href="/style.css?v=20260726a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1960,70 +1960,115 @@
             <div class="seg-control" id="cmd-calls-period">
               <button class="seg-btn" data-period="today">Hoy</button>
               <button class="seg-btn" data-period="7d">7 días</button>
-              <button class="seg-btn" data-period="30d">30 días</button>
-              <button class="seg-btn active" data-period="all">Todo</button>
+              <button class="seg-btn active" data-period="30d">30 días</button>
+              <button class="seg-btn" data-period="all">Todo</button>
             </div>
             <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
           </div>
-          <div class="setter-stats" id="cmd-call-stats"></div>
-          <div style="overflow-x:auto; margin-top:14px;">
+          <!-- Grupo 1: actividad del período (respeta el seg-control) -->
+          <div class="cmd-group-label">Actividad · <span id="cmd-period-label">todo el histórico</span></div>
+          <div class="cmd-tiles" id="cmd-call-stats"></div>
+
+          <!-- Grupo 2: estado de la base — SIEMPRE actual, no depende del período -->
+          <div class="cmd-group-label">Estado de la base <span class="cmd-group-note">(ahora, no depende del período)</span></div>
+          <div class="cmd-tiles" id="cmd-base-stats"></div>
+
+          <div class="cmd-table-head">
+            <span class="cmd-group-label" style="margin:0;">Por SDR</span>
+            <label class="cmd-toggle">
+              <input type="checkbox" id="cmd-hide-idle-setters" checked>
+              Ocultar SDRs sin llamadas
+            </label>
+          </div>
+          <div style="overflow-x:auto;">
             <table style="width:100%; border-collapse:collapse; font-size:13px;" id="cmd-calls-per-setter-table">
               <thead>
                 <tr style="text-align:left; border-bottom:1px solid var(--border-subtle); color:var(--text-tertiary); font-size:11px; text-transform:uppercase; letter-spacing:0.5px;">
                   <th style="padding:8px 10px;">SDR</th>
-                  <th style="padding:8px 10px;">Leads en Llamadas</th>
-                  <th style="padding:8px 10px;">Total llamadas</th>
+                  <th style="padding:8px 10px;" title="Leads que puede discar AHORA. Mismo criterio que su cola de Llamadas: descuenta números muertos, no-llamar, tarifa cara y callbacks a futuro.">Para llamar</th>
+                  <th style="padding:8px 10px;" title="Leads llamables que todavía no abrió. Es el stock que le queda: cuando baja, hay que reponerle leads.">Le quedan</th>
+                  <th style="padding:8px 10px;" title="Veces que marcó el teléfono en el período, contando los reintentos al mismo lead. Abajo, entre paréntesis, a cuántos leads distintos les marcó.">Marcó</th>
                   <th style="padding:8px 10px;">Hoy</th>
+                  <th style="padding:8px 10px;" title="Levantaron el teléfono, aunque hayan cortado enseguida.">Atendieron</th>
+                  <th style="padding:8px 10px;" title="Con cuántas personas realmente habló: atendieron y la charla duró 30 segundos o más (o terminó agendando). Misma definición que Equipo y Mi rendimiento.">Conversaciones</th>
                   <th style="padding:8px 10px;">Interesados</th>
-                  <th style="padding:8px 10px;">Agendados con Ignacio</th>
-                  <th style="padding:8px 10px;">% Conversión</th>
+                  <th style="padding:8px 10px;">Agendados</th>
+                  <th style="padding:8px 10px;" title="Agendados sobre atendidas — la misma definición que la card de arriba.">% agend.</th>
                 </tr>
               </thead>
               <tbody id="cmd-calls-per-setter-body"></tbody>
             </table>
           </div>
+          <div id="cmd-idle-setters-note" class="cmd-idle-note"></div>
         </div>
 
-        <div style="padding:4px 32px 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px;">
+        <div style="padding:4px 32px 0; margin-top:14px;">
           <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
-          <button id="cmd-dedup-btn" data-roles="admin" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de SDRs</button>
-          <label class="btn-table-action" data-roles="admin" style="color:#a8c7fa; cursor:pointer;">
-            Importar CSV a SDR
-            <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
-          </label>
-          <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de SDR</button>
-          <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
-          <button id="cmd-cleanup-emails-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Borra emails basura guardados por el scraper viejo (tracking tipo sentry/wixpress, placeholders, assets). Primero muestra cuántos encontró y pide confirmación. Idempotente + backup.">Limpiar emails basura</button>
-          <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
-          <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">Enriquecer dueño (NPI)</button>
-          <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo/voip) de TODOS los leads sin validar vía Telnyx Number Lookup. Un clic barre toda la base en tandas automáticas. ~$0.0025 por número (precio verificado en pricing de Telnyx). Sirve para detectar números muertos y bajar la tasa de abandono.">Validar TODA la base ($)</button>
-          <button id="cmd-enrich-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Lead Brief IA: agarra los leads de MÁS reseñas primero (10+ reseñas), lote de 8. Re-fetchea reseñas de Google + IA extrae dolores+cita, fit-score y ángulo. Cuesta SerpApi + LLM. Para un lead puntual usá el botón en su card de Llamadas.">Brief IA reseñas ($)</button>
-          <button id="cmd-brief-recon-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="GRATIS — no gasta SerpApi. Cuenta cuántos leads (10+ reseñas) quedan por briefear, y de esos cuántos resuelven barato (ya tienen place_id) vs caros. Sirve para dimensionar la barrida antes de gastar.">Recon brief (gratis)</button>
-          <button id="cmd-web-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Brief IA desde el SITIO WEB (SIN SerpApi, solo LLM = centavos). Un clic barre TODOS los leads con web propia y sin brief, en tandas automáticas hasta terminar. Clic de nuevo mientras corre = parar. Orientado a reactivación de pacientes.">Brief IA desde web (todos)</button>
-          <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
-          <button id="cmd-export-leads-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Exporta un listado LIMPIO para prospección/outreach (Nombre, Email, Teléfono, Web, Instagram, Doctor, Categoría, Dirección, Ciudad, País, Rating, Reseñas). Abre prolijo en Excel. Podés filtrar por país y solo los que tienen email.">Exportar listado (Excel)</button>
-          <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
-          <span id="cmd-enrich-result" style="font-size:12px; color:#9D85F2;"></span>
         </div>
-        <div id="cmd-serpapi-usage-result" style="padding:0 32px 8px; font-size:12.5px; color:var(--text-secondary); line-height:1.6;"></div>
-        <div id="cmd-brief-recon-result" style="padding:0 32px 8px; font-size:12.5px; color:var(--text-secondary); line-height:1.6;"></div>
-        <div data-roles="admin" style="padding:4px 32px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; border-top:1px solid var(--border-subtle); margin-top:4px; padding-top:14px;">
-          <span style="font-size:12.5px; color:var(--text-primary); font-weight:600;">Barrida brief por país ($):</span>
-          <select id="cmd-brief-sweep-country" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit; cursor:pointer;">
-            <option value="">— Elegí país —</option>
-            <option value="Colombia">Colombia</option>
-            <option value="México">México</option>
-            <option value="España">España</option>
-            <option value="Ecuador">Ecuador</option>
-            <option value="Costa Rica">Costa Rica</option>
-            <option value="Perú">Perú</option>
-          </select>
-          <label style="font-size:12px; color:var(--text-secondary);">tope briefs: <input id="cmd-brief-sweep-max" type="number" value="150" min="1" max="700" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit;"></label>
-          <button id="cmd-brief-sweep-btn" class="btn-table-action" style="color:#FFB341; border-color:rgba(255,179,65,0.4);" title="Brief desde RESEÑAS de Google del país elegido. Los mejores prospectos (más reseñas) primero. Cuesta SerpApi + LLM. Se autorregula bajo el límite de 200 búsquedas/hora.">Barrer país (reseñas $)</button>
-          <button id="cmd-brief-websweep-btn" class="btn-table-action" style="color:#79B8FF; border-color:rgba(121,184,255,0.4);" title="Brief desde el SITIO WEB de los leads del país elegido (sin SerpApi). Para los que tienen web propia y no califican para el brief de reseñas. Solo cuesta el LLM (centavos).">Barrer país (web)</button>
-          <button id="cmd-brief-sweep-stop" class="btn-table-action hidden" style="color:#f85149; border-color:rgba(248,81,73,0.4);">Parar</button>
-          <span id="cmd-brief-sweep-progress" style="font-size:12.5px; color:var(--accent); line-height:1.5;"></span>
-        </div>
+        <!-- Herramientas de base de datos (2026-07-26): antes eran 13 botones en
+             una pared plana arriba de todo. Ahora van en un drawer cerrado y
+             agrupadas por familia — la pantalla la lidera la métrica, no la
+             herramienta (mismo criterio que #tlx-analytics-drawer). Los id y los
+             data-roles de cada botón quedan intactos: los handlers se registran
+             por getElementById y el filtro de roles corre sobre [data-roles]. -->
+        <details class="cmd-tools" data-roles="admin,supervisor">
+          <summary>Herramientas de base de datos</summary>
+
+          <div class="cmd-tool-row" data-roles="admin">
+            <span class="cmd-tool-label">Datos</span>
+            <button id="cmd-dedup-btn" data-roles="admin" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados de SDRs</button>
+            <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
+            <button id="cmd-cleanup-emails-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Borra emails basura guardados por el scraper viejo (tracking tipo sentry/wixpress, placeholders, assets). Primero muestra cuántos encontró y pide confirmación. Idempotente + backup.">Limpiar emails basura</button>
+            <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de SDR</button>
+            <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
+          </div>
+
+          <div class="cmd-tool-row" data-roles="admin">
+            <span class="cmd-tool-label">Enriquecer — gratis</span>
+            <button id="cmd-enrich-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Baja el sitio web de cada lead y saca email + Instagram/Facebook + si pauta anuncios. GRATIS. Un clic barre TODO solo (clic de nuevo para parar).">Enriquecer email + redes (web)</button>
+            <button id="cmd-enrich-npi-btn" data-roles="admin" class="btn-table-action" style="color:#9D85F2;" title="Para leads de EE.UU. sin doctor: busca dueño + especialidad en el NPI Registry (lote de 25).">Enriquecer dueño (NPI)</button>
+            <button id="cmd-brief-recon-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="GRATIS — no gasta SerpApi. Cuenta cuántos leads (10+ reseñas) quedan por briefear, y de esos cuántos resuelven barato (ya tienen place_id) vs caros. Sirve para dimensionar la barrida antes de gastar.">Recon brief (gratis)</button>
+            <button id="cmd-web-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Brief IA desde el SITIO WEB (SIN SerpApi, solo LLM = centavos). Un clic barre TODOS los leads con web propia y sin brief, en tandas automáticas hasta terminar. Clic de nuevo mientras corre = parar. Orientado a reactivación de pacientes.">Brief IA desde web (todos)</button>
+            <span id="cmd-enrich-result" style="font-size:12px; color:#9D85F2;"></span>
+          </div>
+
+          <div class="cmd-tool-row is-paid" data-roles="admin">
+            <span class="cmd-tool-label">Cuesta plata ($)</span>
+            <button id="cmd-validate-numbers-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Valida el tipo de línea (móvil/fijo/voip) de TODOS los leads sin validar vía Telnyx Number Lookup. Un clic barre toda la base en tandas automáticas. ~$0.0025 por número (precio verificado en pricing de Telnyx). Sirve para detectar números muertos y bajar la tasa de abandono.">Validar TODA la base ($)</button>
+            <button id="cmd-enrich-brief-btn" data-roles="admin" class="btn-table-action" style="color:#FFB341;" title="Lead Brief IA: agarra los leads de MÁS reseñas primero (10+ reseñas), lote de 8. Re-fetchea reseñas de Google + IA extrae dolores+cita, fit-score y ángulo. Cuesta SerpApi + LLM. Para un lead puntual usá el botón en su card de Llamadas.">Brief IA reseñas ($)</button>
+          </div>
+
+          <div class="cmd-tool-row is-paid" data-roles="admin">
+            <span class="cmd-tool-label">Barrida por país ($)</span>
+            <select id="cmd-brief-sweep-country" class="setter-input" style="min-width:150px; flex:0 0 auto;">
+              <option value="">— Elegí país —</option>
+              <option value="Colombia">Colombia</option>
+              <option value="México">México</option>
+              <option value="España">España</option>
+              <option value="Ecuador">Ecuador</option>
+              <option value="Costa Rica">Costa Rica</option>
+              <option value="Perú">Perú</option>
+            </select>
+            <label style="font-size:12px; color:var(--text-secondary);">tope briefs: <input id="cmd-brief-sweep-max" type="number" value="150" min="1" max="700" style="width:70px; padding:6px 8px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:inherit;"></label>
+            <button id="cmd-brief-sweep-btn" class="btn-table-action" style="color:#FFB341; border-color:rgba(255,179,65,0.4);" title="Brief desde RESEÑAS de Google del país elegido. Los mejores prospectos (más reseñas) primero. Cuesta SerpApi + LLM. Se autorregula bajo el límite de 200 búsquedas/hora.">Barrer país (reseñas $)</button>
+            <button id="cmd-brief-websweep-btn" class="btn-table-action" style="color:#79B8FF; border-color:rgba(121,184,255,0.4);" title="Brief desde el SITIO WEB de los leads del país elegido (sin SerpApi). Para los que tienen web propia y no califican para el brief de reseñas. Solo cuesta el LLM (centavos).">Barrer país (web)</button>
+            <button id="cmd-brief-sweep-stop" class="btn-table-action hidden" style="color:#f85149; border-color:rgba(248,81,73,0.4);">Parar</button>
+            <span id="cmd-brief-sweep-progress" style="font-size:12.5px; color:var(--accent); line-height:1.5;"></span>
+          </div>
+
+          <div class="cmd-tool-row">
+            <span class="cmd-tool-label">Importar y exportar</span>
+            <label class="btn-table-action" data-roles="admin" style="color:#a8c7fa; cursor:pointer;">
+              Importar CSV a SDR
+              <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
+            </label>
+            <button id="cmd-export-leads-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Exporta un listado LIMPIO para prospección/outreach (Nombre, Email, Teléfono, Web, Instagram, Doctor, Categoría, Dirección, Ciudad, País, Rating, Reseñas). Abre prolijo en Excel. Podés filtrar por país y solo los que tienen email.">Exportar listado (Excel)</button>
+            <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
+          </div>
+
+          <div id="cmd-serpapi-usage-result" class="cmd-tool-result"></div>
+          <div id="cmd-brief-recon-result" class="cmd-tool-result"></div>
+        </details>
         <section class="results-panel" style="padding:0 32px;">
           <!-- Consolidación 2026-06-17: se quitaron del Centro de Comando las
                secciones de Setteo WhatsApp (Variables del Setter, Editor de
@@ -3460,7 +3505,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260726b"></script>
+  <script type="module" src="/app.js?v=20260726c"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

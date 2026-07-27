@@ -85,10 +85,23 @@ const mkSend = (result = { sent: true }) => {
 const queued = (kind = "weekly") => (W.loadReportsState().queue || []).filter((i) => i.kind === kind);
 
 let adminCookie = "";
-// Reloj del fixture a nivel módulo: WR-12 inyecta relojes derivados de ESTE mismo
-// valor, así el dato y el reloj inyectado nunca se separan (ver el comentario largo
-// de ese test).
+// ── Relojes del fixture, a nivel módulo ──
+// Todo lo que se inyecta sale de acá, así el dato y el reloj no se pueden separar
+// (ver el comentario largo de WR-12).
 const FIXTURE_NOW = Date.now();
+// Lunes 00:00 de la semana en curso, en TZ de negocio.
+const FIXTURE_MONDAY = (() => {
+  const todayStart = M._bizStartOfDay(FIXTURE_NOW);
+  return todayStart - ((M._bizDayOfWeek(todayStart) || 7) - 1) * 86400000;
+})();
+// Llamada "de esta semana". `now - 60s` cae en la semana ANTERIOR si la suite
+// corre en el primer minuto del lunes — ahí se usa un instante apenas posterior
+// a la medianoche. Sin esto el archivo entero falla ~60 segundos por semana.
+const FIXTURE_THIS_WEEK = Math.max(FIXTURE_MONDAY + 3000, FIXTURE_NOW - 60000);
+// Último instante de la semana ANTERIOR (domingo 23:59). NO sirve `now - 7d`:
+// buildWeeklyReportData capa la ventana en el reloj que recibe, así que un reloj
+// del lunes a la madrugada devuelve una "semana" de minutos.
+const FIXTURE_PREV_WEEK_END = FIXTURE_MONDAY - 60000;
 
 beforeAll(async () => {
   const a = await request(app).post("/api/auth/login").send({ email: "admin-wr@local.test", password: "wrpass1234" });
@@ -98,10 +111,8 @@ beforeAll(async () => {
   // ahora]) + una de la semana anterior para que `previous` no quede vacío.
   // Se usan offsets NEGATIVOS desde `now`: cualquier hora futura del día quedaría
   // fuera de la ventana (toTs está capado a `now`).
-  const now = FIXTURE_NOW;
-  const todayStart = M._bizStartOfDay(now);
-  const thisMonday = todayStart - ((M._bizDayOfWeek(todayStart) || 7) - 1) * 86400000;
-  const thisWeekTs = now - 60000;                 // hace un minuto
+  const thisMonday = FIXTURE_MONDAY;
+  const thisWeekTs = FIXTURE_THIS_WEEK;           // dentro de la semana en curso, siempre
   const lastWeekTs = thisMonday - 3 * 86400000;   // viernes pasado
 
   // Reescritura post-import: los loaders leen de disco en cada llamada (patrón
@@ -115,8 +126,8 @@ beforeAll(async () => {
         conexion: "sin_wsp", estado: "sin_contactar",
         callLog: [
           { ts: iso(thisWeekTs), outcome: "answered_interested", by: "u_v", channel: "telnyx_webrtc", duration: 60 },
-          { ts: iso(thisWeekTs - 60000), outcome: "hung_up", by: "u_v", channel: "telnyx_webrtc", duration: 5 },
-          { ts: iso(thisWeekTs - 120000), outcome: "no_answer", by: "u_v", channel: "telnyx_webrtc" },
+          { ts: iso(thisWeekTs - 1000), outcome: "hung_up", by: "u_v", channel: "telnyx_webrtc", duration: 5 },
+          { ts: iso(thisWeekTs - 2000), outcome: "no_answer", by: "u_v", channel: "telnyx_webrtc" },
           // Semana anterior → alimenta `previous`, NO la semana actual.
           { ts: iso(lastWeekTs), outcome: "answered_interested", by: "u_v", channel: "telnyx_webrtc", duration: 120 },
         ],
@@ -323,7 +334,7 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
   // día y a cualquier hora. Sigue probando lo mismo: que los datos se muevan con
   // el reloj inyectado y no con el real.
   it("WR-12: buildWeeklyReportData acepta nowTs y los datos se mueven con él", () => {
-    const semanaAnteriorTs = FIXTURE_NOW - 7 * 86400000;
+    const semanaAnteriorTs = FIXTURE_PREV_WEEK_END;
 
     const actual = W.buildWeeklyReportData(FIXTURE_NOW);
     expect(actual.period.to).toBe(M._bizDayStr(FIXTURE_NOW));
@@ -383,7 +394,12 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
     expect(t).toContain("Equipo 3 llam · 2 at (67%)");
     // D-20: el cero de reuniones SE MUESTRA (es la noticia).
     expect(t).toContain("0 reuniones agendadas");
-    expect(t).toContain("*Vendedora* 3 llam · 2 at · 1 min · 1 int");
+    // El segmento "activa" (tiempo de trabajo telefónico, bloques de 15 min con
+    // al menos una llamada) se sumó el 2026-07-26 a pedido del user, en el diario
+    // y en el semanal con el MISMO criterio. Las 3 llamadas del fixture caen en 2
+    // bloques distintos → 30min.
+    expect(t).toContain(`*Vendedora* 3 llam · 2 at · 1 min · ${W._reportDuration ? W._reportDuration(d.perSetter[0].activeMinutes) : ""} activa · 1 int`);
+    expect(t).toContain(" activa");   // también en la línea del equipo
     expect(t).toContain("_Semana anterior: 1 llam · 1 at (100%) · 1 int_");
     expect(t).toContain("_Sin arrancar: Nueva_");
     expect(t).toContain("_Detalle completo en el mail._");

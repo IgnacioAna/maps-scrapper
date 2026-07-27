@@ -1,6 +1,40 @@
 {
   "events": [
     {
+      "id": "ev_1785115305808_qwkgua",
+      "type": "window-closed",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T01:21:45.808Z"
+    },
+    {
+      "id": "ev_1785115296723_oayw98",
+      "type": "qr-visible",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T01:21:36.723Z"
+    },
+    {
+      "id": "ev_1785115296703_csobo0",
+      "type": "loading",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-27T01:21:36.703Z"
+    },
+    {
+      "id": "ev_1785115282493_ikf4er",
+      "type": "dom-ready",
+      "accountId": "wa_1780449217500_93p5b4",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-27T01:21:22.493Z"
+    },
+    {
       "id": "ev_1781618684626_u9bmwa",
       "type": "window-closed",
       "accountId": "wa_1777831276977_qxby1z",
@@ -6129,61 +6163,6 @@
         "withinHours": true
       },
       "createdAt": "2026-06-05T18:00:20.869Z"
-    },
-    {
-      "id": "ev_1780682420853_npklgg",
-      "type": "response-received",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:00:20.854Z"
-    },
-    {
-      "id": "ev_1780682420838_mg4hlj",
-      "type": "inbound-message",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 2,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51959876787",
-            "lastMessage": "Hola que tal",
-            "unreadCount": 1
-          },
-          {
-            "name": "Clinica ReVal",
-            "phone": null,
-            "lastMessage": "Gracias por comunicarte con Clinica ReVal. Por favor, haznos saber cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:00:20.838Z"
-    },
-    {
-      "id": "ev_1780682413774_vuacu1",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:00:13.774Z"
-    },
-    {
-      "id": "ev_1780682388199_t5x0ow",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T17:59:48.199Z"
     }
   ]
 }

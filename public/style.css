@@ -4755,3 +4755,144 @@ textarea:disabled {
 .dispo-strip-head button:hover, .dispo-strip-item button:hover { background:rgba(240,180,60,0.14); }
 .dispo-strip-list { margin-top:8px; display:flex; flex-direction:column; gap:2px; }
 .dispo-strip-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0; border-top:1px solid rgba(240,180,60,0.18); }
+
+/* ════════════════════════════════════════════════════════════════
+   Centro de Comando — bloque de Llamadas (rediseño 2026-07-26)
+   Dos grupos de tiles rotulados (actividad del período vs estado de
+   la base), tabla por SDR con semáforo de stock y las herramientas
+   de base de datos en un drawer agrupado por familia.
+═════════════════════════════════════════════════════════════════ */
+.cmd-group-label {
+  padding: 0 32px;
+  margin: 18px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.cmd-group-note { text-transform: none; letter-spacing: 0; font-weight: 400; opacity: 0.7; }
+
+.cmd-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: 10px;
+  padding: 0 32px;
+}
+.cmd-tile { min-height: 96px; }
+.cmd-tile .myp-tile-num { font-size: 28px; }
+.cmd-tile-sub {
+  margin-top: auto;
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+.cmd-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 32px;
+  margin: 20px 0 8px;
+}
+.cmd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cmd-toggle input { cursor: pointer; }
+
+#cmd-calls-per-setter-table { table-layout: auto; }
+.cmd-cell-num {
+  padding: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cmd-cell-strong { font-weight: 600; color: var(--text-primary); }
+
+/* Semáforo del stock por SDR: cuando "le quedan" baja hay que reponer. */
+.cmd-stock {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cmd-stock.is-mid { background: rgba(255, 179, 65, 0.12); color: #FFB341; border: 1px solid rgba(255, 179, 65, 0.28); }
+.cmd-stock.is-low,
+.cmd-stock.is-empty { background: rgba(248, 81, 73, 0.12); color: #f85149; border: 1px solid rgba(248, 81, 73, 0.3); }
+
+.cmd-row-pool {
+  border-top: 1px dashed var(--border-default);
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.015);
+}
+.cmd-row-pool td { padding: 10px; }
+
+.cmd-idle-note {
+  padding: 8px 32px 0;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+/* Drawer de herramientas */
+.cmd-tools {
+  margin: 18px 32px 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+.cmd-tools > summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  list-style: none;
+  user-select: none;
+}
+.cmd-tools > summary::-webkit-details-marker { display: none; }
+.cmd-tools > summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+  color: var(--text-tertiary);
+}
+.cmd-tools[open] > summary::before { transform: rotate(90deg); }
+.cmd-tools > summary:hover { color: var(--text-primary); }
+
+.cmd-tool-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.cmd-tool-row.is-paid { background: rgba(255, 179, 65, 0.04); }
+.cmd-tool-label {
+  min-width: 132px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.cmd-tool-result {
+  padding: 0 16px 10px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.cmd-tool-result:empty { display: none; }
+.cmd-cell-sub { font-size: 10.5px; color: var(--text-tertiary); font-weight: 400; }

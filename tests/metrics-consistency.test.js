@@ -331,13 +331,16 @@ describe("B · serie temporal — TZ, custom, previous, RBAC", () => {
     expect(prevTo).toBe(r.body.fromTs);
     expect(prevTo - prevFrom).toBe(new Date(r.body.to).getTime() - r.body.fromTs);
   });
-  it("B4: assigned = cartera actual con 'sin llamar' por dueño (criterio #139)", async () => {
+  it("B4: assigned = cartera actual con 'por llamar' por dueño (criterio #139 + llamables)", async () => {
+    // 2026-07-26: `sinContactar` cuenta solo los LLAMABLES sin abrir (misma
+    // definición que Equipo/Distribución/Comando) y `llamados` viene explícito
+    // para que el front no lo derive por resta.
     const r = await request(app).get("/api/setters/cold-call-metrics?setter=s_a&period=week").set("Cookie", adminCookie);
-    expect(r.body.assigned).toEqual({ total: 3, sinContactar: 1 }); // l1, l2, l6 — l6 sin llamar
+    expect(r.body.assigned).toEqual({ total: 3, sinContactar: 1, llamados: 2 }); // l1+l2 llamados, l6 por llamar
     const rb = await request(app).get("/api/setters/cold-call-metrics?setter=s_b&period=week").set("Cookie", adminCookie);
-    // B tiene l3 (llamado por A → para B cuenta sin llamar), l4 (ghost → sin
-    // atribuir → sin llamar para B) y l5 (llamado por B).
-    expect(rb.body.assigned).toEqual({ total: 3, sinContactar: 2 });
+    // B tiene l3 (llamado por A → para B cuenta por llamar), l4 (ghost → sin
+    // atribuir → por llamar para B) y l5 (llamado por B).
+    expect(rb.body.assigned).toEqual({ total: 3, sinContactar: 2, llamados: 1 });
   });
   it("B5: RBAC — setter solo ve lo suyo aunque pida otro setter", async () => {
     const r = await request(app).get("/api/setters/cold-call-metrics?setter=s_b&period=week&series=1").set("Cookie", setterACookie);

@@ -358,8 +358,11 @@ describe("texto del reporte — molde D-19", () => {
     expect(lines[0]).toBe("*Sin actividad hoy: Judith*");
     expect(lines[1]).toBe("Reporte diario · mié 22/07");
     expect(lines[2]).toBe("");
-    expect(lines[3]).toBe("*Brenda* 4 llam · 3 at · 22 min");
-    expect(lines).toContain("_Equipo 4 llam · 3 at (75%) · 22 min_");
+    // El segmento "activa" se sumó el 2026-07-26 a pedido del user (tiempo de
+    // trabajo telefónico, distinto de los minutos hablados). El resto del molde
+    // D-19 —excepción arriba, título después, sin segmentos en cero— no cambió.
+    expect(lines[3]).toBe("*Brenda* 4 llam · 3 at · 22 min · 2h activa");
+    expect(lines).toContain("_Equipo 4 llam · 3 at (75%) · 22 min · 2h activa_");
     expect(lines).toContain("_Ayer 2 llam · 1 at (50%)_");
     expect(lines).toContain("_Sin arrancar: Dalia_");
   });
@@ -506,8 +509,7 @@ describe("consolidado — D-26", () => {
     const anteayer = D.buildDailyReportData(NOW23, YEST - DAY + 12 * HOUR);
     const lines = [anteayer, ayer, hoy].map(D.buildDailyReportLine);
     const txt = D.buildConsolidatedReportText(lines, { neverStarted: hoy.neverStarted });
-    expect(txt.split("\n")[0]).toBe("*Reporte acumulado · 3 días*");
-    expect(lines[2]).toBe("*mié 22/07* 4 llam · 3 at · 22 min · sin actividad: Judith");
+    expect(lines[2]).toBe("*mié 22/07* 4 llam · 3 at · 22 min · 2h activa · sin actividad: Judith");
     expect(lines[0]).toBe("*lun 20/07* sin llamadas");
     expect(txt).toContain("_Sin arrancar: Dalia_");
     expect(txt.split("\n").filter((l) => l.startsWith("*")).length).toBe(4); // encabezado + 3 días
@@ -561,5 +563,144 @@ describe("licencia — PATCH /api/setters/team/:id (D-18)", () => {
     const r = await request(app).patch("/api/setters/team/s_jud").set("Cookie", adminCookie).send({ name: "Judith" });
     expect(r.status).toBe(200);
     expect(r.body.setter.leaveUntil).toBe("2026-08-05");
+  });
+});
+
+// ── Tiempo ACTIVA + stock "por llamar" ──
+// Pedido del user (2026-07-26): "cuánto tiempo estuvieron activas" además de los
+// minutos hablados, y "le quedan por llamar" para reponerles leads sin entrar al
+// panel. NO se usa presencia del panel: `lastSeen` en auth.json es un timestamp
+// que se pisa, sin historial de sesiones — no hay data para eso.
+//
+// El tamaño del bloque se DERIVA del helper (una llamada sola = un bloque), así
+// que estos tests sobreviven al próximo cambio de criterio. El user ya lo movió
+// de 15 a 30 minutos el mismo día que se construyó.
+describe("tiempo activa — bloques con actividad (callLog)", () => {
+  const BUCKET = D._reportActiveMinutes([{ ts: 0 }]);   // minutos por bloque
+
+  it("el bloque es de 30 minutos (criterio vigente)", () => {
+    expect(BUCKET).toBe(30);
+  });
+
+  it("_reportActiveMinutes: cuenta bloques distintos, no llamadas", () => {
+    const t0 = TODAY + 10 * HOUR;
+    const bucketMs = BUCKET * 60000;
+    // Varias llamadas dentro del MISMO bloque → un bloque, no una por llamada.
+    expect(D._reportActiveMinutes([
+      { ts: t0 }, { ts: t0 + 60000 }, { ts: t0 + bucketMs - 60000 },
+    ])).toBe(BUCKET);
+    // Dos bloques distintos → el doble.
+    expect(D._reportActiveMinutes([{ ts: t0 }, { ts: t0 + bucketMs + 60000 }])).toBe(BUCKET * 2);
+    // Una llamada suelta vale un bloque entero (decisión documentada).
+    expect(D._reportActiveMinutes([{ ts: t0 }])).toBe(BUCKET);
+    expect(D._reportActiveMinutes([])).toBe(0);
+    expect(D._reportActiveMinutes(null)).toBe(0);
+    // Basura no rompe ni suma.
+    expect(D._reportActiveMinutes([{ ts: NaN }, { ts: "x" }, {}, null])).toBe(0);
+  });
+
+  it("_reportDuration: compacto y sin decimales", () => {
+    expect(D._reportDuration(0)).toBe("0min");
+    expect(D._reportDuration(45)).toBe("45min");
+    expect(D._reportDuration(60)).toBe("1h");
+    expect(D._reportDuration(135)).toBe("2h15");
+    expect(D._reportDuration(125)).toBe("2h05");   // padding: 2h05, no 2h5
+    expect(D._reportDuration(-10)).toBe("0min");
+  });
+
+  it("perSetter y team traen activeMinutes; el equipo SUMA (horas-persona)", () => {
+    canonicalFixture();
+    const d = D.buildDailyReportData(NOW23);
+    const bren = d.perSetter.find((s) => s.name.startsWith("Brenda"));
+    // Las 4 llamadas del fixture caen en 4 horas distintas → 4 bloques.
+    expect(bren.activeMinutes).toBe(BUCKET * 4);
+    expect(d.team.activeMinutes).toBe(d.perSetter.reduce((t, s) => t + s.activeMinutes, 0));
+  });
+
+  it("el texto muestra 'activa' en la fila y en el pie, y NUNCA en cero", () => {
+    canonicalFixture();
+    const d = D.buildDailyReportData(NOW23);
+    const txt = D.buildDailyReportText(d);
+    expect(txt).toContain(`${D._reportDuration(BUCKET * 4)} activa`);
+    // Regla del molde: ningún segmento en cero (D-19).
+    expect(txt).not.toContain("0min activa");
+    expect(txt).not.toContain("0h activa");
+
+    // Día sin llamadas: no aparece el segmento en absoluto.
+    writeFixture({ leads: {} });
+    const vacio = D.buildDailyReportData(NOW23);
+    expect(vacio.team.activeMinutes).toBe(0);
+    expect(D.buildDailyReportText(vacio)).not.toContain("activa");
+  });
+
+  it("la línea del consolidado también lo lleva", () => {
+    canonicalFixture();
+    const d = D.buildDailyReportData(NOW23);
+    expect(D.buildDailyReportLine(d)).toContain("activa");
+    writeFixture({ leads: {} });
+    expect(D.buildDailyReportLine(D.buildDailyReportData(NOW23))).not.toContain("activa");
+  });
+
+  it("activa es INDEPENDIENTE de los minutos hablados (el caso que motivó la métrica)", () => {
+    // 20 llamadas espaciadas un bloque entero, NINGUNA atendida: 0 minutos
+    // hablados pero 20 bloques de actividad. Antes esto se veía como día vacío.
+    const calls = [];
+    for (let i = 0; i < 20; i++) calls.push(call(TODAY + 8 * HOUR + i * BUCKET * 60000, "no_answer", "u_bren", 0));
+    writeFixture({ leads: lead("l_bren", calls) });
+    const d = D.buildDailyReportData(NOW23);
+    const bren = d.perSetter.find((s) => s.name.startsWith("Brenda"));
+    expect(bren.minutes).toBe(0);
+    expect(bren.activeMinutes).toBe(BUCKET * 20);
+    expect(D.buildDailyReportText(d)).not.toContain("0 min");
+  });
+});
+
+describe("stock 'por llamar' por vendedora", () => {
+  // Lead llamable: teléfono válido, sin DNC, sin tarifa roja, no terminal.
+  const stock = (id, sid, extra = {}) => ({
+    [id]: {
+      num: 1, name: `S-${id}`, phone: "+525550001122", assignedTo: sid,
+      conexion: "sin_wsp", estado: "sin_contactar", callLog: [], ...extra,
+    },
+  });
+
+  it("cuenta llamables NO discados por el dueño actual, y ordena de menos a más", () => {
+    writeFixture({
+      leads: {
+        // Las tres YA arrancaron (una llamada vieja cada una): la línea de stock
+        // excluye a las que nunca llamaron, que tienen su propia línea.
+        // `lead()` asigna a s_bren por default: acá cada una tiene que ser dueña
+        // de la suya, si no las de las otras le cuentan como stock a Brenda.
+        ...lead("hist_b", [call(TODAY - 20 * DAY, "no_answer", "u_bren", 0)], { assignedTo: "s_bren" }),
+        ...lead("hist_j", [call(TODAY - 20 * DAY, "no_answer", "u_jud", 0)], { assignedTo: "s_jud" }),
+        ...lead("hist_t", [call(TODAY - 20 * DAY, "no_answer", "u_ter", 0)], { assignedTo: "s_ter" }),
+        ...stock("a1", "s_bren"), ...stock("a2", "s_bren"), ...stock("a3", "s_bren"),
+        ...stock("b1", "s_jud"),
+        // Ya discado por su dueña → NO cuenta como pendiente.
+        ...stock("b2", "s_jud", { callLog: [call(TODAY - 3 * DAY, "no_answer", "u_jud", 0)] }),
+        // DNC y número muerto → nunca se van a llamar, fuera del stock.
+        ...stock("c1", "s_ter", { doNotCall: true }),
+        ...stock("c2", "s_ter", { lookupAt: "2026-07-01T00:00:00.000Z", phoneType: "" }),
+      },
+    });
+    const d = D.buildDailyReportData(NOW23);
+    const by = Object.fromEntries(d.pending.map((p) => [p.name, p.count]));
+    expect(by.Brenda).toBe(3);
+    expect(by.Judith).toBe(1);       // b2 ya lo llamó ella
+    expect(by.Teresa).toBe(0);       // DNC + número muerto
+    // Orden: la que menos stock tiene va primero (es la que hay que reponer).
+    expect(d.pending[0].count).toBeLessThanOrEqual(d.pending[d.pending.length - 1].count);
+    // Ignacio (admin-only) y la oculta nunca aparecen.
+    expect(d.pending.some((p) => p.name === "Ignacio")).toBe(false);
+    expect(d.pending.some((p) => p.name === "Oculta")).toBe(false);
+  });
+
+  it("incluye a las que hoy NO llamaron (son las que hay que mirar)", () => {
+    canonicalFixture({ leads: stock("z1", "s_jud") });
+    const d = D.buildDailyReportData(NOW23);
+    // Judith no llamó hoy → no tiene fila, pero sí línea de stock.
+    expect(d.perSetter.some((s) => s.name.startsWith("Judith"))).toBe(false);
+    expect(d.pending.some((p) => p.name === "Judith")).toBe(true);
+    expect(D.buildDailyReportText(d)).toContain("_Por llamar:");
   });
 });

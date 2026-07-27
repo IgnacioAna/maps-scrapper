@@ -243,6 +243,23 @@ sospechoso (mitigación: sleep extra tras `bringToFront` cuando venía oculta).
 ⚠️ El subject de `90e56a7` dice "(v0.5.12)" pero **NO existe una v0.5.12**: se
 repackeó sobre v0.5.11 (aclarado en `2d9ca99`).
 
+**Extras del reporte pedidos por el user (2026-07-26/27, ver CLAUDE.md #163):**
+tiempo **ACTIVA** (bloques de 30 min con al menos una llamada — la presencia del
+panel NO existe como dato: `lastSeen` se pisa, sin historial de sesiones) y
+**"por llamar"** por vendedora (criterio `_leadPendingForOwner`, el mismo
+unificado en #161; excluye a las que nunca arrancaron y a las de licencia), en el
+diario, en la línea del consolidado y en el semanal corto. Los números se
+cruzaron uno por uno contra `_ccFunnelAggregate` recalculado desde cero por SDR.
+⚠️ `141 llam` son MARCADAS, no personas (141 marcadas sobre 136 leads distintos
+ese día) — misma semántica que la columna "Marcó" de #162.
+De paso, 3 tests dejaron de depender de la hora de la corrida: WR-12 (pedía la
+semana anterior con `now - 7d`, pero la ventana se capa en el reloj recibido), el
+fixture del semanal (llamadas en `now - 60s` caen en la semana previa durante el
+primer minuto del lunes) y el flaky de medianoche de `followups` de la nota #93,
+que **no era ambiental sino un fixture mal anclado** ("vencido ayer" es un bucket
+de calendario, no un offset de horas). **Suite 990/990 a las 00:20 de un lunes**,
+la hora que antes la ponía roja.
+
 **Próximo paso:** **solo 21-07** (prueba en vivo con el user, `autonomous: false`).
 ⚠️ Si el `.exe` de wa-multi está abierto, CERRARLO y volver a abrirlo: el
 `app.asar` se repackeó **3 veces hoy** (plan 21-06 → fixes del code review →

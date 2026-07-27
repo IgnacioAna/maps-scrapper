@@ -37,14 +37,14 @@ fs.writeFileSync(
     variants: [],
     leads: {
       // 3 huérfanos untouched
-      o1: { num: 1, name: "O1", phone: "+5491", assignedTo: "", estado: "sin_contactar", country: "México" },
-      o2: { num: 2, name: "O2", phone: "+5492", assignedTo: "", estado: "sin_contactar", country: "México" },
-      o3: { num: 3, name: "O3", phone: "+5493", assignedTo: "", estado: "sin_contactar", country: "Colombia" },
+      o1: { num: 1, name: "O1", phone: "+549111110001", assignedTo: "", estado: "sin_contactar", country: "México" },
+      o2: { num: 2, name: "O2", phone: "+549111110002", assignedTo: "", estado: "sin_contactar", country: "México" },
+      o3: { num: 3, name: "O3", phone: "+549111110003", assignedTo: "", estado: "sin_contactar", country: "Colombia" },
       // 1 huérfano TOCADO: tiene llamada real (callLog) → cuenta como "trabajado"
       // en el display; y lastContactAt lo excluye del reassign untouchedOnly.
-      o4: { num: 4, name: "O4", phone: "+5494", assignedTo: "", estado: "contactado", country: "México", lastContactAt: new Date().toISOString(), callLog: [{ ts: new Date().toISOString(), outcome: "no_answer", channel: "telnyx_webrtc", duration: 0 }] },
+      o4: { num: 4, name: "O4", phone: "+549111110004", assignedTo: "", estado: "contactado", country: "México", lastContactAt: new Date().toISOString(), callLog: [{ ts: new Date().toISOString(), outcome: "no_answer", channel: "telnyx_webrtc", duration: 0 }] },
       // asignados a Ana
-      a1: { num: 5, name: "A1", phone: "+5495", assignedTo: "s_a", estado: "sin_contactar", country: "Chile" },
+      a1: { num: 5, name: "A1", phone: "+549111110005", assignedTo: "s_a", estado: "sin_contactar", country: "Chile" },
     },
     calendar: [], sessions: [],
   }, null, 2)
@@ -67,7 +67,10 @@ describe("Pool de distribución", () => {
     expect(r.status).toBe(200);
     expect(r.body.total).toBe(5);
     expect(r.body.unassigned.total).toBe(4);   // o1-o4
-    expect(r.body.unassigned.untouched).toBe(3); // o4 tiene llamada real (callLog) → no cuenta como sin tocar
+    // "untouched" = LLAMABLE y nadie lo discó (2026-07-26). o4 tiene llamada
+    // real (callLog) → no cuenta. Los teléfonos del fixture deben tener >=7
+    // dígitos o ningún lead es llamable y esto da 0.
+    expect(r.body.unassigned.untouched).toBe(3);
     const ana = r.body.bySetter.find((s) => s.id === "s_a");
     expect(ana.total).toBe(1);
     const mx = r.body.byCountry.find((c) => c.country === "México");
