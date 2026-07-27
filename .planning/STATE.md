@@ -224,12 +224,32 @@ comentario que afirmaba lo contrario. **Consecuencia asumida: si el volumen de
 Railway se recrea, se pierde `config.transport` y hay que reelegir el grupo desde
 wa-multi (2 min).** ⏳ Pendiente para el cierre de fase: anotar esto en CLAUDE.md.
 
+**EXTRA fuera de plan (2026-07-26, pedido del user en vivo): wa-multi cierra a la
+bandeja del sistema** (`21-EXTRA-tray-SUMMARY.md`, commits `90e56a7`/`2d9ca99`/
+`d3466d6`). Antes `window-all-closed` hacía `app.quit()` en Windows: cerrar con la
+X mataba el proceso y esa noche no salía el reporte. Ahora la X oculta, hay `Tray`
+con menú Abrir panel / Abrir WhatsApp / Salir, y la X de la ventana de WhatsApp
+oculta sin destruir (el camino programático `closeAccountWindow` sigue destruyendo,
+con el force-destroy de v0.5.8 intacto vía flag `_scmForceClose`). Clave: el envío
+tipea dentro de esa ventana, así que `withRestoredVisibility()` la muestra para
+escribir y la vuelve a ocultar — envuelve `sendReportToGroup` **y** el camino por
+DM. El harness (29/29, código literal extraído del archivo contra stubs de
+Electron) atrapó que "Salir" NO habría cerrado la app: el `preventDefault` del
+handler de v0.5.8 cancela un quit en curso → quedaba viva, sin ícono y solo matable
+por el Administrador de tareas. ⚠️ **Sin probar hasta que el user abra el .exe: si
+`sendInputEvent` es confiable inmediatamente después de un `show()` desde oculto.**
+Si un reporte llega vacío o cortado con la ventana escondida, ese es el primer
+sospechoso (mitigación: sleep extra tras `bringToFront` cuando venía oculta).
+⚠️ El subject de `90e56a7` dice "(v0.5.12)" pero **NO existe una v0.5.12**: se
+repackeó sobre v0.5.11 (aclarado en `2d9ca99`).
+
 **Próximo paso:** **solo 21-07** (prueba en vivo con el user, `autonomous: false`).
 ⚠️ Si el `.exe` de wa-multi está abierto, CERRARLO y volver a abrirlo: el
-`app.asar` se re-empaquetó con los fixes del desktop (mismo v0.5.11, contenido
-distinto — md5 `92e90a70…`, 104.161.712 B; rollback en
-`wa-multi/backups/app.asar-v0511-pre-reviewfix-20260726.bak`). Sin reabrir, la
-prueba corre con CR-02 y CR-03 todavía adentro.
+`app.asar` se repackeó **3 veces hoy** (plan 21-06 → fixes del code review →
+bandeja). El vigente es md5 `62fcec2a…`, 104.171.132 B. Cadena de rollback en
+`wa-multi/backups/`: `app.asar-v0510-pre0511`, `-v0511-pre-reviewfix`,
+`-v0511-pre-tray` (cada uno es el asar anterior a ese paso). Sin reabrir, la
+prueba corre sin los fixes de CR-02/CR-03 y sin la bandeja.
 Para la prueba en vivo ya no hace falta esperar a las 23:00: el botón
 **"Mandar ahora"** del bloque "Reporte diario · WhatsApp" en Centro de Comando
 manda en el acto (y funciona incluso con el interruptor de pausa puesto, por
