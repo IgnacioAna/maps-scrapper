@@ -15,7 +15,8 @@ provides:
   - "quitApp() — salida real: destruye bandeja y ventanas ANTES de app.quit() para que el preventDefault de v0.5.8 no cancele el quit"
   - "withRestoredVisibility(accountId, fn) — el envío muestra la ventana para tipear y la vuelve a ocultar al terminar (éxito, fallo o excepción)"
   - "_scmForceClose — separa la X del user (oculta) del cierre programático (destruye), preservando el force-destroy de v0.5.8"
-  - "app.asar de v0.5.11 repackeado con la bandeja + backups/app.asar-v0511-pre-tray-20260726.bak"
+  - "bringToFront con respiro adaptativo: 1s si la ventana venía oculta O minimizada, 300ms si ya estaba en pantalla (cubre los 4 call sites que tipean)"
+  - "app.asar de v0.5.11 repackeado con la bandeja + backups/app.asar-v0511-pre-tray-20260726.bak y -pre-showdelay-20260726.bak"
 affects: [21-07 prueba en vivo con el user, 23 alertas por excepción]
 
 # Tech tracking
@@ -29,6 +30,7 @@ tech-stack:
 key-files:
   created:
     - wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak
+    - wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak
   modified:
     - wa-multi/src-v058-work/out/main/index.js
     - wa-multi/versiones/wa-multi-portable-v0.5.11/wa-multi-win32-x64/resources/app.asar
@@ -149,14 +151,16 @@ Herramienta: `npx --yes @electron/asar@3` (major pineado, T-21-30).
 C:\Users\Usuario\OneDrive\Desktop\GoogleSrapper\wa-multi\versiones\wa-multi-portable-v0.5.11\wa-multi-win32-x64\wa-multi.exe
 ```
 
+⚠️ **Los datos de esta tabla los superó el Addendum de más abajo** (repack #4, mismo día): el asar vigente es el del addendum. Se dejan porque son el estado exacto de este repack (#3).
+
 | Artefacto | Datos |
 |---|---|
-| `app.asar` nuevo | `104.171.132` bytes · md5 **`62fcec2aa4d42b1e0f527dcbdc8bb3b3`** |
-| **Backup para rollback** | `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` · `104.161.712` bytes · md5 `92e90a70242cc0a345d29dbc8ef31620` |
-| Rollback | copiar ese `.bak` sobre `versiones/wa-multi-portable-v0.5.11/wa-multi-win32-x64/resources/app.asar`. Alternativa más vieja: abrir `wa-multi-portable-v0.5.10/` (intacta) |
+| `app.asar` de este repack | `104.171.132` bytes · md5 `62fcec2aa4d42b1e0f527dcbdc8bb3b3` — **hoy es el backup `-pre-showdelay-`** |
+| Backup para rollback | `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` · `104.161.712` bytes · md5 `92e90a70242cc0a345d29dbc8ef31620` (= v0.5.11 **sin** bandeja) |
+| Rollback | copiar el `.bak` que corresponda sobre `versiones/wa-multi-portable-v0.5.11/wa-multi-win32-x64/resources/app.asar`. Alternativa más vieja: abrir `wa-multi-portable-v0.5.10/` (intacta) |
 | `wa-multi.exe` | sin tocar (222.973.952 bytes, mtime Jun/19:05) |
 
-Los 4 backups anteriores quedaron intactos: el nombre nuevo (`-pre-tray-`) no pisa ninguno.
+Los backups anteriores quedaron intactos: los nombres nuevos (`-pre-tray-`, `-pre-showdelay-`) no pisan ninguno.
 
 ## Deviations
 
@@ -209,9 +213,53 @@ Lo de abajo **no se pudo probar acá** (es una app Electron con GUI: abrirla con
 
 - **El ícono real en la bandeja de Windows.** El PNG se validó byte a byte (32x32, IDAT íntegro) y se miró renderizado, pero no se vio en la bandeja real. Windows 11 además esconde los íconos nuevos bajo la flechita "^" hasta que el user los ancla — si "no aparece", casi seguro está ahí abajo.
 - **El aviso de "se ocultó".** Depende de que las notificaciones de Windows estén habilitadas para la app. Si el sistema las tiene apagadas, el aviso no se ve (la feature funciona igual, el user solo no recibe el cartel la primera vez).
-- **⚠️ Lo más importante: el tipeo con la ventana oculta-y-mostrada.** La lógica de mostrar/re-ocultar está probada, y `bringToFront` (que ya corre hoy en cada envío) muestra la ventana **antes** del reload y del tipeo. Lo que nadie verificó es si Chromium necesita algún tiempo extra de "asentado" tras un `show()` desde estado oculto para que `sendInputEvent` sea confiable. **Si el reporte de las 23:00 llegara vacío o cortado con la ventana escondida, ese es el primer sospechoso** (mitigación: un `sleep` extra después de `bringToFront` cuando venía oculta).
+- **⚠️ Lo más importante: el tipeo con la ventana oculta-y-mostrada.** La lógica de mostrar/re-ocultar está probada y el respiro de 1s ya está aplicado (ver abajo), pero **nadie midió cuánto necesita Chromium realmente** para que `sendInputEvent` sea confiable tras un `show()` desde oculto: 1s es una apuesta razonable, no una certeza medida. **Si el reporte de las 23:00 llegara vacío o cortado con la ventana escondida, sigue siendo el primer sospechoso** — y la palanca es subir ese `1000` en `bringToFront`.
 - **Que la sesión de WhatsApp sobreviva horas oculta.** Es lo esperable (la ventana existe, solo no se muestra; WhatsApp Web mantiene su websocket), pero con la ventana oculta Chromium aplica throttling de timers al renderer. El envío la muestra antes de operar, así que el impacto esperado es nulo.
 - **Doble click en el ícono** (en Windows algunos entornos solo emiten `click`): están cableados los dos, así que uno de los dos responde.
+
+## Addendum (mismo día): respiro extra tras mostrar una ventana oculta
+
+La mitigación que este resumen dejaba anotada como pendiente **se aplicó**. Cambio del coordinador en `bringToFront` (~línea 285) + un fix mío encima:
+
+```js
+async function bringToFront(win) {
+  if (win.isDestroyed()) return;
+  const wasHidden = !win.isVisible() || win.isMinimized();   // ← el OR es el fix
+  if (win.isMinimized()) win.restore();
+  win.show(); win.focus(); win.moveTop();
+  await sleep(wasHidden ? 1000 : 300);                       // antes: 300 fijo
+}
+```
+
+Va en `bringToFront` y no en `withRestoredVisibility` a propósito: así cubre **los 4 call sites que tipean** (reporte al grupo, DM/followups, `openChatInAccount`, `sendFileInWindow`), no solo el camino del reporte.
+
+**El fix (`|| win.isMinimized()`):** la versión original medía `!win.isVisible()` solo. En Windows `isVisible()` se apoya en `IsWindowVisible()` de Win32, que devuelve **true** para una ventana minimizada (conserva `WS_VISIBLE`), y la doc de Electron no define ese caso (se consultó: describe `isVisible()` como "whether the window is visible to the user in the foreground", sin aclarar minimizadas). Con la versión original, **una ventana minimizada se llevaba 300ms teniendo exactamente el mismo problema** (renderer throttled + recién restaurada con `restore()`): la mitigación no se aplicaba justo donde hacía falta y daba falsa tranquilidad. El `||` es correcto bajo **las dos** semánticas posibles — si en alguna versión `isVisible()` ya devolviera false para minimizada, es redundante e inofensivo.
+
+El caso inverso (dar 1s de más cuando no hacía falta) se revisó y no aparece: una ventana recién creada por `openAccountWindow` nace visible (`show` default), así que el camino "no había ventana → la abro → tipeo" sigue costando 300ms.
+
+**Verificación (7 tests nuevos, harness 36/36):** oculta → 1000 · visible → 300 · **minimizada con `isVisible()=true`** → 1000 · minimizada con `isVisible()=false` → 1000 · oculta+minimizada → 1000 y restaurada · destruida → sale sin dormir ni tocar la ventana · `wasHidden` se lee antes de `restore()`/`show()` · los 4 call sites cubiertos. Además se corrió una **mutación**: con la versión previa del código (`!isVisible()` solo), el test de la minimizada **falla** — o sea que el test detecta de verdad el agujero que cierra el fix, no es decorativo.
+
+**Repack #4 del día** (`app.asar` de v0.5.11), verificado igual que los anteriores:
+
+| Chequeo | Resultado |
+|---|---|
+| Linaje antes de copiar | 15 líneas agregadas, **1 quitada** (`await sleep(300);`) — el resto de `out/` con md5 idéntico al asar |
+| md5 re-extraído vs `out/` | idénticos (`7d416dd6…` main, `581a42ac…` preload) |
+| `node --check` dentro del asar | exit 0 los dos |
+| `asar list` vs backup | **13.546 entradas, 0 diferencias** |
+| Aritmética | `+1.098` bytes totales `=` `+1.098` de payload `=` el crecimiento de `main/index.js` (96.109 → 97.207); header sin cambio |
+| Bandeja + Phase 21 adentro | `createTray` ×2, `withRestoredVisibility` ×4, `_scmForceClose` ×3, `sendReportToGroup` ×5, `osShiftEnter` ×4, picker del preload ×3 |
+| Fuse de integridad | OFF → bootea |
+
+| Artefacto | Datos |
+|---|---|
+| `app.asar` vigente | `104.172.230` bytes · md5 **`98ccf86f04b44cd8f5e522d4f9f7c967`** |
+| **Backup para rollback** | `wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak` · `104.171.132` bytes · md5 `62fcec2aa4d42b1e0f527dcbdc8bb3b3` (= la bandeja sin el respiro) |
+| Backup anterior (sin bandeja) | `app.asar-v0511-pre-tray-20260726.bak` · md5 `92e90a70…` |
+
+**Suite del server: 978/979** — el único fallo es `tests/weekly-report.test.js` **WR-12**, y es un **time-bomb ambiental ajeno** a esto (que es desktop puro): el fixture crea las llamadas con `now - 60000` y el test las evalúa con un reloj **fijo** de las 23:00 del domingo 26/07; corriendo hoy después de esa hora, las llamadas del fixture caen **5 minutos en el futuro** respecto del reloj del test y quedan fuera de la ventana (`totalWeek` 0 en vez de 3). Evidencia: el mismo archivo pasaba a las 22:41 de hoy (972/972), no cambió desde `fd05e5d`, y el diff sin commitear de `index.js` (trabajo paralelo del user) está todo en `/api/setters/command` (~11.660) mientras `buildWeeklyReportData` vive en la 1798. **No se tocó** (fuera de scope + hay trabajo en curso del user en el árbol); familia de los flaky ambientales conocidos. El total subió de 972 a 979 tests por un `tests/command-metrics.test.js` nuevo, también del user.
+
+**Lo único que sigue sin probar es el tipeo real contra WhatsApp con la ventana oculta.** El 1s es una apuesta razonable — cubre el orden de magnitud de un primer frame + foco — pero **no está medido contra el caso real**. Si el reporte nocturno saliera cortado o vacío con la ventana escondida, la palanca es subir ese `1000` (y, si aun así fallara, mostrar la ventana sin re-ocultarla las noches de reporte).
 
 ## User Setup Required
 
@@ -233,14 +281,18 @@ Nada nuevo. Al abrir el `.exe` (misma ruta de siempre, ver arriba):
 
 ## Self-Check: PASSED
 
-- `wa-multi/src-v058-work/out/main/index.js` — FOUND (2.198 líneas, 96.109 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `electron.Tray` 1, 0 etiquetas `v0.5.12`)
-- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.171.132 B · md5 `62fcec2aa4d42b1e0f527dcbdc8bb3b3`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
+*(actualizado tras el Addendum — repack #4)*
+
+- `wa-multi/src-v058-work/out/main/index.js` — FOUND (97.207 B; `node --check` exit 0; `createTray` 2, `withRestoredVisibility` 4, `_scmForceClose` 3, `electron.Tray` 1, `wasHidden` 4, 0 etiquetas `v0.5.12`)
+- `.../v0.5.11/wa-multi-win32-x64/resources/app.asar` — FOUND (104.172.230 B · md5 `98ccf86f04b44cd8f5e522d4f9f7c967`, coincide con lo documentado; re-extraído: md5 de los 2 archivos == `out/` de trabajo)
 - `.../v0.5.11/wa-multi-win32-x64/wa-multi.exe` — FOUND (sin tocar)
-- `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` — FOUND (104.161.712 B · md5 `92e90a70…`, == el asar previo; los 4 backups anteriores intactos)
+- `wa-multi/backups/app.asar-v0511-pre-showdelay-20260726.bak` — FOUND (104.171.132 B · md5 `62fcec2a…`, == el asar previo)
+- `wa-multi/backups/app.asar-v0511-pre-tray-20260726.bak` — FOUND (104.161.712 B · md5 `92e90a70…`; los 4 backups anteriores intactos)
 - `wa-multi/versiones/wa-multi-portable-v0.5.10/wa-multi-win32-x64/wa-multi.exe` — FOUND (rollback alternativo disponible)
 - `wa-multi/README.txt` — FOUND (sección del re-repack + nota de `npm run build` corregida)
 - `.planning/phases/21-reporte-diario-canal-whatsapp/21-EXTRA-tray-SUMMARY.md` — FOUND
 - commits `90e56a7`, `2d9ca99` — FOUND en `git log`
-- temporales `_asar-extract-tray` / `_asar-verify-tray` — AUSENTES
-- `out/` NO regenerado: solo `main/index.js` con mtime de esta sesión
-- harness de lógica **29/29** · suite del server **972/972 (66 files)**
+- temporales `_asar-extract-tray` / `_asar-verify-tray` / `_asar-extract-sd` / `_asar-verify-sd` — AUSENTES
+- `out/` NO regenerado: solo `main/index.js` con mtime de esta sesión (los otros 6 en Jun 1, el preload en el 21-06 de las 21:01)
+- harness de lógica **36/36** (29 de la bandeja + 7 del respiro de `bringToFront`) · mutación: con el código previo el test de la minimizada **falla** · suite del server **972/972 (66 files)**
+- commit del addendum: `2ee88f0` (código + repack #4) — FOUND en `git log`
