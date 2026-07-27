@@ -345,6 +345,16 @@ NO incluye: análisis IA de transcripciones (Phase 22), alertas por excepción
 - **`reports.json`** ya está en export-data, import-data, seedVolumeFromRepo,
   `BACKUP_FILES` y `pre-deploy` — el estado del diario y la cola pueden vivir
   ahí sin repetir el trabajo de persistencia.
+  ⚠️ **Salvedad verificada en el code review (WR-11):** `data/reports.json` está
+  en `.gitignore:12`, así que **git NO lo transporta** y `seedVolumeFromRepo` no
+  tiene nada que sembrar. Si el Railway Volume se recrea se pierde
+  `config.transport` (grupo, userId, accountId) + cola + historial, el diario
+  deja de salir y el chip del panel queda en "Sin configurar". **Recuperación:
+  abrir wa-multi → "Grupo de reportes" → elegir el grupo otra vez** (2 min, sin
+  deploy). Se decidió NO sacarlo del `.gitignore`: `queue`/`history` guardan el
+  TEXTO de los reportes, o sea nombres y métricas individuales de las vendedoras
+  (D-24), y commitear eso dejaría datos nominales de empleadas en el historial de
+  git para siempre.
 - **`pending_calls.json`** (Phase 20) ya registra las llamadas discadas sin
   marcar: es la fuente directa de D-23, no hay que instrumentar nada nuevo.
 - **`sendWeeklyReport` + Resend** ya funciona multi-destinatario: el email queda

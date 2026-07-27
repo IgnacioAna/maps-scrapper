@@ -2350,11 +2350,28 @@ Object.assign(globalThis.__weeklyReport, { buildWeeklyReportTextShort });
 // lo reusa sin reabrir este código.
 //
 // TODO el estado vive en `reports.json` (regla #21/#128: CERO archivos JSON
-// nuevos). `reports.json` ya está registrado en los 5 lugares —
-// /api/admin/export-data, /api/admin/import-data, seedVolumeFromRepo,
-// BACKUP_FILES y scripts/pre-deploy.js— así que el esquema extendido viaja solo.
-// Un archivo nuevo obligaría a repetir ese registro y un olvido lo borraría en
-// el próximo redeploy de Railway.
+// nuevos). `reports.json` ya está registrado en export-data, import-data,
+// seedVolumeFromRepo, BACKUP_FILES y scripts/pre-deploy.js, así que el esquema
+// extendido viaja solo por esas vías. Un archivo nuevo obligaría a repetir ese
+// registro y un olvido lo borraría en el próximo redeploy de Railway.
+//
+// ⚠️ WR-11 (21-REVIEW) — LO QUE SÍ Y LO QUE NO cubre esa cadena. Corrige la versión
+// anterior de este comentario, que decía "los 5 lugares" y daba a entender que git
+// también lo lleva:
+//   - `data/reports.json` está en `.gitignore:12` ("Logs y state local, nunca
+//     commitear"), o sea que git NUNCA lo transporta y `seedVolumeFromRepo` no tiene
+//     nada que sembrar. `pre-deploy` lo baja a disco, pero queda fuera del commit.
+//   - Consecuencia REAL: si el Railway Volume se recrea, se pierde `config.transport`
+//     (grupo elegido, userId, accountId) además de la cola y el historial. El diario
+//     deja de salir y el chip del panel queda en "Sin configurar".
+//   - RECUPERACIÓN (2 minutos, sin deploy): abrir wa-multi, clickear "Grupo de
+//     reportes", elegir el grupo otra vez. El picker reescribe `config.transport`.
+//   - Se eligió NO sacarlo del .gitignore a propósito: `queue`/`history` guardan el
+//     TEXTO de los reportes, o sea nombres y métricas individuales de las vendedoras
+//     (D-24). Commitear eso metería datos nominales de empleadas en el historial de
+//     git para siempre — peor que la pérdida que evitaría. El precedente de Telnyx
+//     (stripear secrets en pre-deploy) no aplica igual: ahí lo sensible son 5 campos,
+//     acá es el cuerpo del archivo.
 //
 // reports.json (extiende Phase 19, aditivo — el normalizador no pisa nada):
 // {
