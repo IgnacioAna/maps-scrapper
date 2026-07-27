@@ -7922,11 +7922,17 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
       // Lever contra la tasa de abandono de Telnyx, pero SIN enterrar reales: MX/ES vuelven
       // con operadora y sin tipo → siguen llamables. Los que erroraron (rate-limit) también.
       if (_leadIsConfirmedDeadNumber(l)) return false;
+      // 2026-07-26: sin número no hay nada que discar. La rama sin_wsp no lo
+      // chequeaba (la de include=callable sí), así que leads sin teléfono
+      // ocupaban lugar en la cola de la SDR — los veía, no los podía llamar, y
+      // el Comando ya los descontaba (su cola decía 404 y el panel 400). No se
+      // borran: si el enriquecimiento les completa el número, vuelven solos.
+      const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
+      if (!hasPhone) return false;
       if (l.conexion === 'sin_wsp') return true;
       if (includeCallable) {
-        const hasPhone = !!(l.phone && String(l.phone).replace(/\D/g, '').length >= 7);
         const terminal = l.estado === 'descartado' || l.estado === 'agendado';
-        return hasPhone && !terminal;
+        return !terminal;
       }
       return false;
     })

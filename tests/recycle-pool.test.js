@@ -37,8 +37,8 @@ fs.writeFileSync(
     setters: [{ id: "s_x", name: "X" }],
     variants: [],
     leads: {
-      l_int: { num: 1, name: "Int", phone: "+521", assignedTo: "s_x", estado: "interesado", interes: "si", conexion: "enviada", respondio: true, calificado: true, followUps: { '24hs': true }, notes: [{ text: "habló re piola", by: "X", date: new Date().toISOString() }], interactions: [{ action: "open" }], callLog: [{ ts: new Date().toISOString(), outcome: "answered_interested" }] },
-      l_no: { num: 2, name: "No", phone: "+522", assignedTo: "s_x", estado: "descartado", interes: "no", notes: [{ text: "no le interesa", by: "X" }] },
+      l_int: { num: 1, name: "Int", phone: "+5215550000001", assignedTo: "s_x", estado: "interesado", interes: "si", conexion: "enviada", respondio: true, calificado: true, followUps: { '24hs': true }, notes: [{ text: "habló re piola", by: "X", date: new Date().toISOString() }], interactions: [{ action: "open" }], callLog: [{ ts: new Date().toISOString(), outcome: "answered_interested" }] },
+      l_no: { num: 2, name: "No", phone: "+5215550000002", assignedTo: "s_x", estado: "descartado", interes: "no", notes: [{ text: "no le interesa", by: "X" }] },
     },
     calendar: [], sessions: [],
   }, null, 2)

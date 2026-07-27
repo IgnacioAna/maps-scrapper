@@ -82,6 +82,9 @@ const leads = {
   // ── pool ──
   l11: { name: "Pool llamable", phone: OK_PHONE, assignedTo: "", conexion: "sin_wsp", estado: "sin_contactar" },
   l12: { name: "Pool no-llamar", phone: OK_PHONE, assignedTo: "", conexion: "sin_wsp", estado: "sin_contactar", doNotCall: true },
+  // Sin teléfono: no es llamable y tampoco debe aparecer en la cola de la SDR
+  // (antes la rama sin_wsp no chequeaba el número → lo veía y no podía discar).
+  l13: { name: "Sin teléfono", phone: "", assignedTo: "s_y", conexion: "sin_wsp", estado: "sin_contactar" },
 };
 
 fs.writeFileSync(path.join(tmpData, "setters.json"), JSON.stringify({
@@ -178,6 +181,22 @@ describe("Centro de Comando — stock de trabajo por SDR", () => {
     expect(rowX.agendados).toBe(1);
     expect(rowX.pctConversion, "dividir por totalLlamadas daría 33.3 y no cuadraría con la card").toBe("50.0");
     expect(body.callTotals.pctConversion).toBe("50.0");
+  });
+
+  it("un lead sin teléfono no cuenta como llamable NI aparece en la cola", async () => {
+    // s_y tiene l9 (llamable), l10 (interesado → fuera) y l13 (sin teléfono).
+    expect(rowY.asignados).toBe(3);
+    expect(rowY.callable, "el lead sin teléfono no es llamable").toBe(1);
+    // Y la cola que ve la SDR debe dar el MISMO número que el Comando: si la
+    // cola lo mostrara, ella vería un lead que no puede discar.
+    const cola = await request(app)
+      .get("/api/setters/leads/sin-wsp?setter=s_y&include=callable")
+      .set("Cookie", adminCookie);
+    expect(cola.status).toBe(200);
+    expect(cola.body.leads.some((l) => l.name === "Sin teléfono")).toBe(false);
+    // El interesado SÍ vuelve del endpoint (lo filtra el front: se trabaja
+    // desde Hoy). Lo que no puede volver es un lead sin número que discar.
+    expect(cola.body.leads.every((l) => String(l.phone || '').replace(/\D/g, '').length >= 7)).toBe(true);
   });
 
   it("un SDR sin cola sin_wsp pero con leads asignados sigue en la tabla", () => {
