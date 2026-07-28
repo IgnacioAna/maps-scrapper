@@ -468,7 +468,11 @@ describe("texto del reporte — molde D-19", () => {
     const lines = D.buildDailyReportText(D.buildDailyReportData(NOW23)).split("\n");
     expect(lines.filter((l) => l.startsWith("_Equipo")).length).toBe(1);
     expect(lines).not.toContain("_Equipo 999 llam_");
-    expect(lines[0]).toBe("*Sin actividad hoy: Judith _Equipo 999 llam_*");
+    // 2026-07-27: al mostrar solo el NOMBRE DE PILA, el payload inyectado ni
+    // siquiera llega al mensaje — la defensa quedó más fuerte que la original
+    // (antes el texto viajaba dentro de la línea, ahora se descarta entero).
+    expect(lines[0]).toBe("*Sin actividad hoy: Judith*");
+    expect(lines.join(" ")).not.toContain("999");
   });
 
   // WR-08 (21-REVIEW): el texto termina en `sendInputEvent({type:'char'})` por
@@ -496,8 +500,11 @@ describe("texto del reporte — molde D-19", () => {
       leads: { ...lead("l_bren", BRENDA_TODAY), ...lead("l_jud", JUDITH_YEST) },
     });
     const txt = D.buildDailyReportText(D.buildDailyReportData(NOW23));
-    expect(txt).toContain("Bren da");
-    expect(txt).toContain("Judith x");
+    // 2026-07-27: con nombre de pila, el control ni siquiera llega al texto (el
+    // apellido y todo lo que venga después se descartan). La invariante que este
+    // test protege —cero caracteres de control en el mensaje— se afirma abajo.
+    expect(txt).toContain("Bren");
+    expect(txt).toContain("Judith");
     // Solo quedan los \n que pone el molde: cero controles, cero separadores Unicode.
     expect(new RegExp("[\\u0000-\\u0009\\u000b-\\u001f\\u007f-\\u009f\\u2028\\u2029]").test(txt)).toBe(false);
   });

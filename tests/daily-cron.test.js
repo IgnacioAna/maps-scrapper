@@ -416,10 +416,14 @@ describe('endpoints del panel — "Mandar ahora" (D-29 + T-21-14/T-21-18)', () =
     // La carrera real: reportQueueTick elige FIFO sobre TODA la cola, así que la
     // primera vuelta procesa el pendiente viejo y el item propio sigue pending.
     const oldIso = new Date(Date.now() - 3600000).toISOString();
+    // dayStr RELATIVO: con una fecha absoluta el item expira solo (D-26 caduca los
+    // diarios de más de 3 días) y el test se rompe al pasar esos días — pasó el
+    // 2026-07-28 con el '2026-07-24' hardcodeado.
+    const ayer = globalThis.__metricsAudit._bizDayStr(Date.now() - 86400000);
     reset({
       config: { paused: false, backupEmails: [], transport: { ...TRANSPORT } },
       queue: [{
-        id: "rpt_viejo", kind: "daily", periodKey: "2026-07-24", dayStr: "2026-07-24",
+        id: "rpt_viejo", kind: "daily", periodKey: ayer, dayStr: ayer,
         text: "*Reporte viejo*", line: "*vie 24/07* 5 llam", phone: "", parentId: null,
         status: "pending", attempts: 0, sendAttempts: 0, confessedAt: null, confessedIds: [],
         consolidatedInto: null, lastText: "", createdAt: oldIso, sendingAt: null,

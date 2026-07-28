@@ -1828,13 +1828,18 @@ function buildWeeklyReportData(nowTs = Date.now()) {
   // Por SDR: llamadas de la semana atribuidas por quién llamó (entries ya vienen
   // pre-atribuidas de _ccCollectCalls). Sin columna WSP (embudo muerto, REP-03).
   const visibleSetters = _filterSettersVisible(settersData.setters || [], visibleSet);
+  // Nombres de pila para el corto de WhatsApp, igual criterio que el diario.
+  // ⚠️ `perSetter[].name` lo consume TAMBIÉN `buildWeeklyReportHtml` (el mail):
+  // ahí el nombre corto está bien, es la misma gente y la tabla es angosta.
+  const _wkShortBy = _reportShortNames(visibleSetters.map(s => String(s.name || '')));
+  const _wkShort = (n) => _wkShortBy.get(String(n || '').trim()) || _reportSafeName(n);
   const perSetter = visibleSetters.map(s => {
     const w = weekCalls.filter(c => c.setterId === s.id);
     // Minutos por el CORE (totalDurationS suma solo atendidas) — igual que el
     // diario, jamás recalculados al margen (regla #157).
     const a = _ccFunnelAggregate(w, [], fromTs, toTs);
     return {
-      name: s.name,
+      name: _wkShort(s.name),
       leadsAsignados: allLeads.filter(l => l.assignedTo === s.id).length,
       llamadas: w.length,
       atendidas: w.filter(c => COLD_CALL_CONNECT_OUTCOMES.has(c.outcome)).length,
@@ -1848,14 +1853,14 @@ function buildWeeklyReportData(nowTs = Date.now()) {
   // históricas. Sale sola de la lista al hacer su primera llamada.
   const neverStarted = visibleSetters
     .filter(s => s.hidden !== true && !calls.some(c => c.setterId === s.id))
-    .map(s => _reportSafeName(s.name));
+    .map(s => _wkShort(s.name));
   const prevInterested = calls.filter(c => c.ts >= prevFromTs && c.ts < prevToTs && c.outcome === 'answered_interested').length;
 
   // D-23 en el SEMANAL (2026-07-27): discadas sin marcar. Salió del diario —
   // ahí era ruido de todos los días — y vive acá, donde el acumulado de la semana
   // sí es una conversación ("marcaste 40 veces y no cargaste el resultado").
   // Mismo criterio que el diario: NO se suman a dials, se cuentan aparte.
-  const _wkNameById = new Map(visibleSetters.map(s => [s.id, _reportSafeName(s.name)]));
+  const _wkNameById = new Map(visibleSetters.map(s => [s.id, _wkShort(s.name)]));
   const _wkUnmarked = new Map();
   try {
     for (const p of (loadPendingCalls().pending || [])) {
@@ -2117,6 +2122,32 @@ function _reportSafeText(s, max = 0) {
 function _reportSafeName(name) {
   return _reportSafeText(name, 40);
 }
+// Nombre de pila para el mensaje. Los apellidos eran lo que hacía wrappear las
+// líneas del pie en el celular ("Judith Mendez 1, Brenda Eguren 2, Teresa Chun 2"
+// no entra en un renglón; con nombres de pila sí) — pedido del user 2026-07-27.
+// Si dos comparten nombre, la que colisiona lleva la inicial del apellido, así
+// nunca hay dos "Ana" indistinguibles en el mismo reporte.
+function _reportShortNames(fullNames = []) {
+  const map = new Map();
+  const firstOf = (n) => _reportSafeText(String(n || '').trim().split(/\s+/)[0] || '', 20);
+  const counts = new Map();
+  for (const n of fullNames) {
+    const f = firstOf(n).toLowerCase();
+    counts.set(f, (counts.get(f) || 0) + 1);
+  }
+  for (const n of fullNames) {
+    const full = String(n || '').trim();
+    const first = firstOf(full);
+    if (!first) { map.set(full, _reportSafeName(full)); continue; }
+    if ((counts.get(first.toLowerCase()) || 0) > 1) {
+      const rest = full.split(/\s+/)[1] || '';
+      map.set(full, rest ? `${first} ${_reportSafeText(rest[0], 1)}.` : first);
+    } else {
+      map.set(full, first);
+    }
+  }
+  return map;
+}
 // Tiempo ACTIVA: bloques de 15 minutos con al menos una llamada. NO es la ventana
 // entre la primera y la última llamada (esa da 11h por discar a las 8 y a las 19)
 // ni el tiempo con el panel abierto (eso no se guarda: `lastSeen` en auth.json es
@@ -2205,8 +2236,14 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
   // El stock se computa acá pero la LISTA final se arma abajo, después de saber
   // quién nunca arrancó: a esas ya las nombra su propia línea y repetirlas con su
   // stock es ruido (el molde no repite nombres entre líneas).
+  // Nombres de pila para TODO el mensaje (pedido del user 2026-07-27): los
+  // apellidos eran lo que hacía wrappear las líneas del pie. El mapa se arma una
+  // vez sobre las vendedoras en alcance, así una colisión de nombre se resuelve
+  // igual en todas las líneas.
+  const _shortBy = _reportShortNames(setters.map(s => String(s.name || '')));
+  const _short = (n) => _shortBy.get(String(n || '').trim()) || _reportSafeName(n);
   const _pendingAll = setters
-    .map(s => ({ id: s.id, name: _reportSafeName(s.name), count: pendingBySetter[s.id] || 0 }))
+    .map(s => ({ id: s.id, name: _short(s.name), count: pendingBySetter[s.id] || 0 }))
     .sort((a, b) => a.count - b.count);   // la que menos stock tiene, primero
 
   const perSetter = [];
@@ -2216,7 +2253,7 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
   const onLeave = [];
   const interested = [];
   for (const s of setters) {
-    const name = _reportSafeName(s.name);
+    const name = _short(s.name);
     const mine = dayCalls.filter(c => c.setterId === s.id);
     const a = _ccFunnelAggregate(mine, [], fromTs, toTs);
     const int = mine.filter(c => c.outcome === 'answered_interested').length;
@@ -2250,7 +2287,7 @@ function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
 
   // D-23 — discadas sin marcar HOY, por nombre. NO se suman a dials (regla
   // transversal del milestone: una sola forma de contar llamadas).
-  const nameById = new Map(setters.map(s => [s.id, _reportSafeName(s.name)]));
+  const nameById = new Map(setters.map(s => [s.id, _short(s.name)]));
   const unmarkedBy = new Map();
   try {
     for (const p of (loadPendingCalls().pending || [])) {
@@ -2331,16 +2368,24 @@ function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
   const teamSegs = [`${d.team.dials} llam`, `${d.team.connects} at (${pct(d.team.connectRate)}%)`];
   if (d.team.minutes > 0) teamSegs.push(`${d.team.minutes} min`);
   if (d.team.activeMinutes > 0) teamSegs.push(`${_reportDuration(d.team.activeMinutes)} activa`);
-  const foot = [
+  // El pie va en TRES bloques separados por una línea en blanco: totales del
+  // equipo · señales por persona · avisos. Antes eran 5-6 renglones de cursiva
+  // pegados, que en el celular se leían como un párrafo apelmazado (feedback del
+  // user 2026-07-27 sobre el primer reporte automático).
+  const footTotales = [
     d.team.dials > 0 ? `_Equipo ${teamSegs.join(' · ')}_` : '',
     // D-19 + discreción: la comparación solo aparece si AYER hubo llamadas
     // (el primer día no hay ayer; el lunes no compara contra el sábado en cero).
     d.yesterday.dials > 0 ? `_Ayer ${d.yesterday.dials} llam · ${d.yesterday.connects} at (${pct(d.yesterday.connectRate)}%)_` : '',
+  ].filter(Boolean);
+  const footPersonas = [
     d.interested.length ? `_Interesados: ${d.interested.map(i => `${i.name} ${i.count}`).join(', ')}_` : '',     // D-21
     // Stock para reponer. Ordenado de MENOS a más: la primera de la lista es la
     // que hay que stockear. Va como línea propia y no en la fila de cada una
     // porque incluye a las que hoy no llamaron (que no tienen fila).
     (d.pending || []).length ? `_Por llamar: ${d.pending.map(p => `${p.name} ${p.count}`).join(', ')}_` : '',
+  ].filter(Boolean);
+  const footAvisos = [
     // D-23 "Sin marcar" salió del DIARIO el 2026-07-27 (pedido del user tras leer
     // el primer mensaje real): es ruido operativo del día a día, no una excepción
     // que amerite mirar el celular. Vive en el SEMANAL, donde el acumulado sí dice
@@ -2356,7 +2401,9 @@ function buildDailyReportText(data, { gapNote = '', delayed = false } = {}) {
   ].filter(Boolean);
   const body = [head, `Reporte diario · ${d.dayLabel}`];
   if (rows.length) body.push('', ...rows);
-  if (foot.length) body.push('', ...foot);
+  for (const bloque of [footTotales, footPersonas, footAvisos]) {
+    if (bloque.length) body.push('', ...bloque);
+  }
   const text = body.join('\n');
   // D-05: el próximo mensaje que SÍ sale confiesa los baches, arriba de todo.
   return gapNote ? `${gapNote}\n\n${text}` : text;
@@ -2438,7 +2485,7 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
       const segs = [`${s.llamadas} llam`, `${s.atendidas} at`];
       if ((s.minutos || 0) > 0) segs.push(`${s.minutos} min`);
       if ((s.activeMinutes || 0) > 0) segs.push(`${_reportDuration(s.activeMinutes)} activa`);
-      return `*${_reportSafeName(s.name)}* ${segs.join(' · ')}`;
+      return `*${s.name}* ${segs.join(' · ')}`;
     });
   // Interesados en su propia línea, como el diario. Con 5 segmentos la fila de
   // cada vendedora wrappeaba en el celular y el bloque se veía apelmazado
@@ -2446,7 +2493,7 @@ function buildWeeklyReportTextShort(data, { emailSent = false } = {}) {
   const intBySetter = (d.perSetter || [])
     .filter(s => (s.interesados || 0) > 0)
     .sort((a, b) => (b.interesados || 0) - (a.interesados || 0))
-    .map(s => `${_reportSafeName(s.name)} ${s.interesados}`)
+    .map(s => `${s.name} ${s.interesados}`)
     .join(', ');
   const prevSegs = [`${prev.dials} llam`, `${prev.connects} at (${pct(prev.connectRate)}%)`];
   if ((prev.interested || 0) > 0) prevSegs.push(`${prev.interested} int`);

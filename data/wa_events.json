@@ -1,6 +1,103 @@
 {
   "events": [
     {
+      "id": "ev_1785207130221_3j6zg6",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Patient Flow",
+        "contactName": "Patient Flow",
+        "contactPhone": null,
+        "message": "muchas garcias",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": false
+      },
+      "createdAt": "2026-07-28T02:52:10.221Z"
+    },
+    {
+      "id": "ev_1785207130199_behc8r",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-28T02:52:10.199Z"
+    },
+    {
+      "id": "ev_1785207130135_wv3yz2",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Patient Flow",
+            "phone": null,
+            "lastMessage": "muchas garcias",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-28T02:52:10.135Z"
+    },
+    {
+      "id": "ev_1785205002976_mf8eap",
+      "type": "outgoing-sent",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-07-28T02:16:42.976Z"
+    },
+    {
+      "id": "ev_1785204946202_iy3ik8",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-28T02:15:46.202Z"
+    },
+    {
+      "id": "ev_1785204942132_o79ybt",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-28T02:15:42.132Z"
+    },
+    {
+      "id": "ev_1785204942111_p7ja23",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-07-28T02:15:42.111Z"
+    },
+    {
+      "id": "ev_1785204941218_tvlez7",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-28T02:15:41.218Z"
+    },
+    {
       "id": "ev_1785190083186_nt6asg",
       "type": "ai-classified-inbound",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5879,102 +5976,6 @@
       "userId": "user_admin_ignacio",
       "payload": null,
       "createdAt": "2026-06-05T18:19:13.394Z"
-    },
-    {
-      "id": "ev_1780683553367_n2uwgg",
-      "type": "inbound-message",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "Beadent",
-            "phone": null,
-            "lastMessage": "¡De nada! Es un gusto saludarte.  Gracias a ti por la respuesta. Si tienes alguna consulta sobre nuestros servicios o si te gustaría agendar una evaluación para cuidar tu sonrisa, cuenta conmigo. ¿Hay algún tratamiento en particular que te interese o alguna molestia que quieras revisar?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:19:13.367Z"
-    },
-    {
-      "id": "ev_1780683544191_7qhgw2",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:19:04.191Z"
-    },
-    {
-      "id": "ev_1780683527922_9lm5da",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:18:47.922Z"
-    },
-    {
-      "id": "ev_1780683522227_eon471",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:18:42.227Z"
-    },
-    {
-      "id": "ev_1780683506401_y4e9nr",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "click"
-      },
-      "createdAt": "2026-06-05T18:18:26.401Z"
-    },
-    {
-      "id": "ev_1780683483404_s8n7rb",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:18:03.404Z"
-    },
-    {
-      "id": "ev_1780683467397_d8gzqf",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:17:47.397Z"
-    },
-    {
-      "id": "ev_1780683459461_wrkj95",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:17:39.461Z"
     }
   ]
 }
