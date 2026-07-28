@@ -3845,6 +3845,74 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 // países existentes. Idempotente. Soporta dryRun para previsualizar. Hace backup.
 // Valor: distribución/filtros/timezone por país (NO afecta caller ID — ese rutea
 // por el prefijo del teléfono directamente).
+// ── Reparación de teléfonos colombianos rotos (2026-07-28) ──
+// Diagnóstico: 131 leads de Colombia tenían 10 dígitos en vez de 12, y los 61 que
+// se llegaron a discar fallaron TODOS (30 invalid_number + 31 no_answer). Dos
+// causas distintas, las dos del scraping/normalización:
+//
+//   57 + A + 7 díg   → fijo con la numeración VIEJA. Colombia migró en 2022:
+//                      el área de 1 dígito pasó a 60A. `5723125248` marca a
+//                      ningún lado; `+576023125248` es el mismo teléfono vivo.
+//   3XXXXXXXXX       → celular al que se le perdió el +57. Tal cual queda,
+//                      `+3186944802` sale hacia Holanda (+31).
+//
+// La validación de Telnyx NO los atajó: devuelve operadora conocida para estos
+// números (21 de los 23 que resultaron inválidos al discar la tenían), así que
+// `_leadIsConfirmedDeadNumber` los daba por vivos — correctamente, según su regla.
+// Devuelve null si el número no matchea NINGÚN patrón: no se inventa nada.
+function _repairColombianPhone(phone) {
+  const dg = String(phone || '').replace(/\D/g, '');
+  if (dg.length !== 10) return null;                    // 12 = ya está bien
+  if (dg.startsWith('57')) {                            // fijo viejo: 57 + área(1) + 7
+    const nac = dg.slice(2);
+    if (nac.length !== 8) return null;
+    if (!/^[1-8]/.test(nac)) return null;               // áreas válidas de Colombia
+    return `+5760${nac}`;
+  }
+  if (dg.startsWith('3')) return `+57${dg}`;            // celular sin código de país
+  return null;
+}
+globalThis.__phoneRepair = { _repairColombianPhone };
+
+// POST /api/admin/repair-co-phones — dryRun por defecto. Guarda el número viejo
+// en `phoneBroken` y resetea el lookup (el número nuevo nunca se validó).
+app.post('/api/admin/repair-co-phones', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = true } = req.body || {};
+  const data = loadSettersData();
+  const leads = data.leads || {};
+  // Índice de teléfonos ya existentes: no crear duplicados al reparar.
+  const enUso = new Set();
+  for (const id of Object.keys(leads)) {
+    const p = String(leads[id]?.phone || '').replace(/\D/g, '');
+    if (p) enUso.add(p);
+  }
+  let scanned = 0, repaired = 0, skipped = 0, collided = 0;
+  const sample = [];
+  for (const id of Object.keys(leads)) {
+    const l = leads[id];
+    if (!l || l.country !== 'Colombia' || !l.phone) continue;
+    scanned++;
+    const nuevo = _repairColombianPhone(l.phone);
+    if (!nuevo) { skipped++; continue; }
+    if (enUso.has(nuevo.replace(/\D/g, ''))) { collided++; continue; }
+    if (sample.length < 12) sample.push({ id, name: l.name, antes: l.phone, despues: nuevo });
+    if (!dryRun) {
+      l.phoneBroken = l.phone;              // rollback manual si hiciera falta
+      l.phone = nuevo;
+      l.phoneRepairedAt = new Date().toISOString();
+      // El número CAMBIÓ: lo que sabíamos del viejo no aplica al nuevo.
+      l.lookupAt = ''; l.phoneType = ''; l.lookupCarrier = ''; l.lookupError = '';
+      enUso.add(nuevo.replace(/\D/g, ''));
+    }
+    repaired++;
+  }
+  if (!dryRun && repaired) {
+    try { makeBackup('repair-co-phones'); } catch {}
+    saveSettersData(data);
+  }
+  res.json({ ok: true, dryRun, scanned, repaired, skipped, collided, sample });
+});
+
 app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req, res) => {
   const { dryRun = false } = req.body || {};
   const data = loadSettersData();
