@@ -4323,8 +4323,14 @@ app.post('/api/admin/validate-numbers', requireAuth, requireRole('admin'), async
   // Elegible = tiene teléfono válido y (si onlyMissing) NO se le hizo lookup todavía.
   // Filtramos por lookupAt (no phoneType): un número sin operadora queda phoneType=''
   // pero CON lookupAt → así no se re-elige infinito en el loop de "validar toda la base".
+  // `onlyRepaired`: acota la barrida a los leads cuyo teléfono se REPARÓ
+  // (repair-co-phones). Sin esto, validar "los 128 arreglados" implicaba pagar
+  // por los ~457 pendientes de toda la base, sin poder elegir cuáles. El gasto
+  // tiene que ser exactamente el que se aprobó (2026-07-28).
+  const onlyRepaired = !!body.onlyRepaired;
   const _eligible = (l) => {
     if (!l) return false;
+    if (onlyRepaired && !l.phoneRepairedAt) return false;
     const phone = String(l.phone || '').trim();
     if (!phone || phone.replace(/\D/g, '').length < 8) return false;
     // onlyMissing salta los ya validados, PERO reintenta los que erroraron transitorio

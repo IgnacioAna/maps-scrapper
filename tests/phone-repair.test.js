@@ -153,3 +153,47 @@ describe("POST /api/admin/repair-co-phones", () => {
     expect((await request(app).post("/api/admin/repair-co-phones")).status).toBe(401);
   });
 });
+
+describe("validate-numbers acotado a los reparados (onlyRepaired)", () => {
+  // El dryRun cuenta elegibles y devuelve ANTES de tocar la red: se puede
+  // testear sin gastar un centavo (y sin API key real).
+  beforeAll(() => {
+    fs.writeFileSync(path.join(tmpData, "telnyx_config.json"), JSON.stringify({
+      apiKey: "KEY_FALSA_PARA_TEST", sipUsername: "", sipPassword: "",
+      sipConnectionId: "", signaturePublicKey: "", numbers: [], countryRouting: {},
+    }, null, 2));
+  });
+
+  it("sin el flag cuenta TODA la base; con el flag, solo los reparados", async () => {
+    writeLeads({
+      // Reparado por repair-co-phones (lookup en blanco tras el cambio de número).
+      ...lead("rep1", "+576023125248", { phoneRepairedAt: "2026-07-28T20:00:00.000Z", lookupAt: "" }),
+      ...lead("rep2", "+573186944802", { phoneRepairedAt: "2026-07-28T20:00:00.000Z", lookupAt: "" }),
+      // Nunca validados, pero NO reparados: no deben entrar cuando se acota.
+      ...lead("otro1", "+576023928902"),
+      ...lead("otro2", "+573222561204"),
+      // Ya validado: fuera en los dos casos.
+      ...lead("listo", "+573115634949", { lookupAt: "2026-07-01T00:00:00.000Z", phoneType: "mobile" }),
+    });
+    const todos = await request(app).post("/api/admin/validate-numbers")
+      .set("Cookie", adminCookie).send({ dryRun: true });
+    expect(todos.body.pending).toBe(4);          // los 2 reparados + los 2 sin validar
+
+    const soloRep = await request(app).post("/api/admin/validate-numbers")
+      .set("Cookie", adminCookie).send({ dryRun: true, onlyRepaired: true });
+    expect(soloRep.body.pending).toBe(2);        // exactamente los reparados
+  });
+
+  it("un reparado que YA se validó después no se re-cobra", async () => {
+    writeLeads({
+      ...lead("rep1", "+576023125248", {
+        phoneRepairedAt: "2026-07-28T20:00:00.000Z",
+        lookupAt: "2026-07-28T21:00:00.000Z", phoneType: "landline",
+      }),
+      ...lead("rep2", "+573186944802", { phoneRepairedAt: "2026-07-28T20:00:00.000Z", lookupAt: "" }),
+    });
+    const r = await request(app).post("/api/admin/validate-numbers")
+      .set("Cookie", adminCookie).send({ dryRun: true, onlyRepaired: true });
+    expect(r.body.pending).toBe(1);
+  });
+});
