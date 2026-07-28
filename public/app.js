@@ -2348,7 +2348,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       },
 
-      // Lazy init del cliente TelnyxRTC. Re-conecta si las creds expiraron.
+      // ¿El cliente sigue REALMENTE conectado? (2026-07-28)
+      // Antes se reusaba `this.client` mirando solo el vencimiento de las
+      // credenciales. Si el WebSocket se caía —parpadeo de internet, la compu que
+      // duerme, cambio de wifi— el objeto seguía existiendo y las creds seguían
+      // vigentes, así que ensureClient devolvía un cliente MUERTO: "Llamar" no
+      // hacía nada (o la llamada moría en 2-3s) hasta recargar la página. Es lo
+      // que reportó Brenda: "tuve que reiniciar varias veces para poder llamar".
+      // Se prefiere la bandera del SDK si existe; si no, la que mantenemos con
+      // los eventos de socket.
+      _isAlive() {
+        if (!this.client) return false;
+        if (typeof this.client.connected === 'boolean') return this.client.connected;
+        return this.socketAlive !== false;
+      },
+
+      // Lazy init del cliente TelnyxRTC. Re-conecta si las creds expiraron o si
+      // el socket se cayó.
       async ensureClient() {
         if (typeof window.TelnyxRTC === 'undefined' && typeof window.TelnyxWebRTC === 'undefined') {
           throw new Error('TelnyxRTC SDK no está cargado en el browser');
@@ -2358,7 +2374,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Si el cliente existe y las creds no expiraron, reusar
         const credsValid = this.credentials && (this.credentials.expiresAt === 0 || this.credentials.expiresAt > Date.now() + 30000);
-        if (this.client && credsValid) return this.client;
+        if (this.client && credsValid && this._isAlive()) return this.client;
+        if (this.client && credsValid) console.warn('[telnyx] el cliente existía pero el socket estaba caído — reconectando');
 
         // Si hay cliente viejo, desconectar primero
         if (this.client) {
@@ -2398,9 +2415,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             cleanup();
             try { this.client?.disconnect?.(); } catch {}
             this.client = null;
+            this.socketAlive = false;
             reject(new Error('Timeout conectando con Telnyx (15s)'));
           }, 15000);
         });
+
+        // Registrado OK. A partir de acá seguimos el estado del socket: sin esto
+        // una caída pasa inadvertida y el cliente muerto se reusa para siempre
+        // (ver _isAlive). Los nombres de evento del SDK v2 se escuchan TODOS —
+        // el que no exista simplemente nunca dispara.
+        this.socketAlive = true;
+        const _marcarCaido = (motivo) => () => {
+          if (this.socketAlive !== false) console.warn(`[telnyx] socket caído (${motivo}) — la próxima llamada reconecta`);
+          this.socketAlive = false;
+        };
+        for (const ev of ['telnyx.socket.close', 'telnyx.socket.error', 'telnyx.error']) {
+          try { this.client.on?.(ev, _marcarCaido(ev)); } catch {}
+        }
+        try { this.client.on?.('telnyx.ready', () => { this.socketAlive = true; }); } catch {}
 
         // Notification pattern de Telnyx WebRTC v2: TODOS los state changes
         // del call vienen por 'telnyx.notification' con type='callUpdate'.
@@ -2506,6 +2538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           this.client = null;
         }
         this.credentials = null;
+        this.socketAlive = false;
       },
     };
     window._telnyx = _telnyx; // expone para debug en consola
@@ -5227,7 +5260,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadCallsView() {
       // Phase 20: restore del gate tras refresh (one-shot, valida contra el server).
-      if (!_dispoGateRestoreDone) { _dispoGateRestoreDone = true; _dispoGateRestore().catch(() => {}); }
+      if (!_dispoGateRestoreDone) {
+        _dispoGateRestoreDone = true;
+        _dispoGateRestore().catch(() => {});
+        // Metadata de llamadas que quedaron sin marcar antes de un F5: sin esto
+        // el resultado se guarda como 'manual' con 0 segundos (2026-07-28).
+        try { _telnyxMetaRestore(); } catch {}
+      }
       const setter = document.getElementById('calls-setter-select').value;
       // App call-only: la vista Llamadas SIEMPRE muestra los leads accionables
       // (con teléfono, no terminales), no solo los marcados sin_wsp. El viejo
@@ -8537,6 +8576,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           };
           _pendingTelnyxCallMetadata[leadId] = _metaObj;
           if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
+          _telnyxMetaPersist();   // sobrevive un F5 antes de marcar el resultado
           // Phase 20: upsert del pendiente con los datos de cierre reales y
           // bifurcación — sin contacto → auto-marca (D-03); con contacto →
           // gate hasta que el SDR marque a mano (D-01).
@@ -8635,6 +8675,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Se popula en _onTelnyxCallEnded y se consume en _handleCallDisposition
     // para enriquecer el callLog con datos reales de la llamada Telnyx.
     const _pendingTelnyxCallMetadata = {};
+    // …y su espejo en localStorage (2026-07-28). El map vive en memoria, así que
+    // un F5 entre colgar y marcar el resultado lo borraba: la llamada quedaba en
+    // el callLog como `channel:'manual'` con 0 segundos — los "llamados vacíos o
+    // en cero" que reportó Brenda. Y como los minutos salen solo de las llamadas
+    // con duración, cada recarga hundía la métrica del día sin explicación.
+    // TTL corto: marcar el resultado de una llamada es cuestión de segundos; una
+    // metadata vieja pegada a un lead sería peor que no tenerla.
+    const _TELNYX_META_TTL_MS = 30 * 60 * 1000;
+    const _telnyxMetaKey = () => 'scm_telnyx_meta_' + (currentUser?.id || 'anon');
+    function _telnyxMetaPersist() {
+      try {
+        const now = Date.now();
+        const vivo = {};
+        for (const [k, v] of Object.entries(_pendingTelnyxCallMetadata)) {
+          if (v && (!v._savedAt || now - v._savedAt < _TELNYX_META_TTL_MS)) vivo[k] = { ...v, _savedAt: v._savedAt || now };
+        }
+        localStorage.setItem(_telnyxMetaKey(), JSON.stringify(vivo));
+      } catch {}
+    }
+    function _telnyxMetaRestore() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(_telnyxMetaKey()) || '{}');
+        const now = Date.now();
+        for (const [k, v] of Object.entries(raw)) {
+          if (v && v._savedAt && now - v._savedAt < _TELNYX_META_TTL_MS) _pendingTelnyxCallMetadata[k] = v;
+        }
+      } catch {}
+    }
     // Consume la metadata pendiente de un lead: devuelve la de la última llamada y
     // limpia TODAS las entradas de ese lead (simple + compuestas leadId:startedAt).
     function _consumeTelnyxMeta(leadId) {
@@ -8642,6 +8710,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       for (const k of Object.keys(_pendingTelnyxCallMetadata)) {
         if (k === leadId || k.startsWith(leadId + ':')) delete _pendingTelnyxCallMetadata[k];
       }
+      _telnyxMetaPersist();
       return meta;
     }
 
