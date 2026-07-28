@@ -1,6 +1,58 @@
 {
   "events": [
     {
+      "id": "ev_1785260659860_is2ti3",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Comunidad Movistar Argentina",
+        "contactName": "Comunidad Movistar Argentina",
+        "contactPhone": null,
+        "message": "*RECARGÁ AHORA $2.000* = *5GB GRATIS X 30 DÍAS*\n \n *Tu número está por darse de baja*\n Solo en la App  Mi Movistar\n\n¡Podés ganar $20.000.000!  \nRecargás y participá del sorteo. \nMás recargás, más chances tenés.\n\n No pierdas tu línea",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": true
+      },
+      "createdAt": "2026-07-28T17:44:19.867Z"
+    },
+    {
+      "id": "ev_1785260659806_cdvin6",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-07-28T17:44:19.806Z"
+    },
+    {
+      "id": "ev_1785260659779_kgh4l4",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Comunidad Movistar Argentina",
+            "phone": null,
+            "lastMessage": "*RECARGÁ AHORA $2.000* = *5GB GRATIS X 30 DÍAS*\n \n *Tu número está por darse de baja*\n Solo en la App  Mi Movistar\n\n¡Podés ganar $20.000.000!  \nRecargás y participá del sorteo. \nMás recargás, más chances tenés.\n\n No pierdas tu línea",
+            "unreadCount": 1
+          }
+        ]
+      },
+      "createdAt": "2026-07-28T17:44:19.779Z"
+    },
+    {
       "id": "ev_1785207130221_3j6zg6",
       "type": "ai-classified-inbound",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5935,47 +5987,6 @@
         "url": "https://web.whatsapp.com/send?phone=51959177536&text="
       },
       "createdAt": "2026-06-05T18:19:54.524Z"
-    },
-    {
-      "id": "ev_1780683593822_crh7z1",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:19:53.822Z"
-    },
-    {
-      "id": "ev_1780683553413_z84xqa",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "Beadent",
-        "contactName": "Beadent",
-        "contactPhone": null,
-        "message": "¡De nada! Es un gusto saludarte.  Gracias a ti por la respuesta. Si tienes alguna consulta sobre nuestros servicios o si te gustaría agendar una evaluación para cuidar tu sonrisa, cuenta conmigo. ¿Hay algún tratamiento en particular que te interese o alguna molestia que quieras revisar?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:19:13.413Z"
-    },
-    {
-      "id": "ev_1780683553394_2x7xwr",
-      "type": "response-received",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:19:13.394Z"
     }
   ]
 }

@@ -6935,7 +6935,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // se trabajan desde "Hoy" (sección Interesados sin agendar). Llamadas
         // queda para lo nuevo + seguimiento de no-contacto.
         const hiddenStates = showDiscarded ? ['agendado','interesado'] : ['descartado','agendado','interesado'];
-        leads = leads.filter(l => !hiddenStates.includes(l.estado));
+        // `_callsForceShow` bypassea también ESTE filtro (2026-07-28). Era el único
+        // que no lo respetaba, y por eso "Ir a marcar" de la traba de disposición
+        // no hacía nada: el lead ya estaba en 'interesado'/'descartado', la lista
+        // lo escondía siempre, y la vendedora quedaba sin poder discar. Caso real:
+        // Judith, media hora trabada.
+        leads = leads.filter(l => _callsForceShow.has(l.id) || !hiddenStates.includes(l.estado));
       }
 
       // "Para seguir": cola de seguimiento = reintentos automáticos vencidos +
@@ -7366,7 +7371,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       let tries = 0;
       const go = () => {
         const row = document.querySelector(`.call-row[data-id="${leadId}"]`);
-        if (!row) { if (++tries < 12) setTimeout(go, 400); return; }
+        if (!row) {
+          if (++tries < 12) { setTimeout(go, 400); return; }
+          // ESCAPE HATCH (2026-07-28): si tras ~5s el lead no se puede mostrar
+          // (borrado, reasignado a otra vendedora, o cualquier filtro futuro que
+          // no contemple force-show), antes esto se rendía EN SILENCIO y la
+          // vendedora quedaba trabada sin poder discar — media hora en el caso
+          // real. La traba existe para que se marquen los resultados, no para
+          // dejar a alguien sin trabajar: se avisa y se libera. El pendiente
+          // queda registrado server-side y sale en "Sin marcar" del semanal.
+          window.showToast?.('No pude abrir ese lead (puede que ya no esté en tu lista). Te destrabo para que sigas llamando — el resultado quedó sin marcar.', { type: 'warn', duration: 8000 });
+          _dispoGateClear(leadId);
+          return;
+        }
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         row.style.transition = 'box-shadow 0.4s';
         row.style.boxShadow = '0 0 0 3px var(--accent)';
