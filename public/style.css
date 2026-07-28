@@ -2038,6 +2038,9 @@ td.empty-state .empty-state-content::before {
   display: flex;
   align-items: center;
   gap: 12px;
+  /* 2026-07-28: la card sumó el selector de resultado. En paneles angostos el
+     bloque de acciones baja de renglón en vez de desbordar. */
+  flex-wrap: wrap;
   padding: 11px 16px 11px 18px;
   border-top: 1px solid var(--border-subtle);
   transition: background 0.15s ease;

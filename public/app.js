@@ -5120,6 +5120,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       const s = (window.__settersList || []).find(x => x.id === id);
       return s ? (s.name || id) : id;
     }
+    // Selector de resultado de llamada — FUENTE ÚNICA (2026-07-28). Lo usan la
+    // lista de Llamadas y las cards de Hoy. Vivía inline solo en Llamadas, y por
+    // eso marcar el resultado desde Hoy era imposible: los interesados y los
+    // callbacks manuales viven ahí (2026-07-10) pero no tenían dónde marcarse, lo
+    // que dejaba la traba de disposición sin salida. Duplicarlo ya mordió una vez
+    // (la lista y el grid del Power Dialer se desincronizaron, nota #156).
+    function _dispoSelectHTML(leadId, { minWidth = 230, fontSize = 13 } = {}) {
+      return `<select onchange="window._handleCallDisposition('${escHtml(leadId)}', this)" title="Resultado de la llamada. Interesado marca el interés; Agendar reserva la reunión (son acciones separadas)." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:${fontSize}px; min-width:${minWidth}px; cursor:pointer; font-family:inherit;">
+            <option value="">— Resultado —</option>
+            <optgroup label="Atendió">
+              <option value="answered_interested">Interesado (sin agendar)</option>
+              <option value="scheduled_with_admin">Agendar reunión</option>
+              <option value="answered_not_interested">No interesado</option>
+              <option value="hung_up">Me cortó (atendió y colgó)</option>
+            </optgroup>
+            <optgroup label="No atendió">
+              <option value="no_answer">No atendió / sonó nada</option>
+              <option value="voicemail">Buzón de voz</option>
+              <option value="callback_later">Volver a llamar después</option>
+            </optgroup>
+            <optgroup label="Número no sirve">
+              <option value="wrong_number">Número equivocado</option>
+              <option value="invalid_number">No existe / no funciona</option>
+            </optgroup>
+          </select>`;
+    }
+
     function _hoyRenderSection(title, leads, accent, hint) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
@@ -5129,7 +5156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
         const scColor = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
-        return `<div class="hoy-row">
+        return `<div class="hoy-row" data-id="${escHtml(l.id)}">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
@@ -5142,6 +5169,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
+          ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
           <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
         </div>`;
@@ -7163,24 +7191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </a>`;
           })()}
 
-          <select onchange="window._handleCallDisposition('${escHtml(l.id)}', this)" title="Resultado de la llamada. Interesado marca el interés; Agendar reserva la reunión (son acciones separadas)." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; min-width:230px; cursor:pointer; font-family:inherit;">
-            <option value="">— Resultado —</option>
-            <optgroup label="Atendió">
-              <option value="answered_interested">Interesado (sin agendar)</option>
-              <option value="scheduled_with_admin">Agendar reunión</option>
-              <option value="answered_not_interested">No interesado</option>
-              <option value="hung_up">Me cortó (atendió y colgó)</option>
-            </optgroup>
-            <optgroup label="No atendió">
-              <option value="no_answer">No atendió / sonó nada</option>
-              <option value="voicemail">Buzón de voz</option>
-              <option value="callback_later">Volver a llamar después</option>
-            </optgroup>
-            <optgroup label="Número no sirve">
-              <option value="wrong_number">Número equivocado</option>
-              <option value="invalid_number">No existe / no funciona</option>
-            </optgroup>
-          </select>
+          ${_dispoSelectHTML(l.id)}
 
           <button class="call-expand-btn${isExpanded ? ' is-open' : ''}" onclick="window._callsToggleExpand('${escHtml(l.id)}')" title="${isExpanded ? 'Cerrar detalle' : 'Ver ficha, notas, follow-ups e histórico'}" aria-label="${isExpanded ? 'Cerrar' : 'Expandir detalle'}">
             ${isExpanded ? '▴' : '▾'}
@@ -7359,6 +7370,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => el.classList.remove('dispo-flash'), 400);
     }
 
+    // Fallback a HOY: si el lead no se puede mostrar en Llamadas, se lo busca en
+    // las secciones de Hoy (ahí viven interesados y callbacks manuales). Devuelve
+    // true si lo encontró y dejó el foco en su selector de resultado.
+    function _dispoFocusHoyRow(leadId) {
+      if (!leadId) return false;
+      try {
+        const enHoy = document.querySelector(`#hoy-sections .hoy-row[data-id="${leadId}"]`);
+        if (!enHoy && document.querySelector('#view-hoy.hidden')) {
+          // Hoy no está a la vista: se abre y se reintenta cuando termine de cargar.
+          document.querySelector('[data-target="view-hoy"]')?.click();
+          let t = 0;
+          const reintento = () => {
+            const r = document.querySelector(`#hoy-sections .hoy-row[data-id="${leadId}"]`);
+            if (!r) { if (++t < 12) setTimeout(reintento, 400); return; }
+            _dispoHighlightRow(r);
+          };
+          setTimeout(reintento, 400);
+          return true;   // la navegación arrancó: no es un fallo silencioso
+        }
+        if (!enHoy) return false;
+        _dispoHighlightRow(enHoy);
+        return true;
+      } catch { return false; }
+    }
+    function _dispoHighlightRow(row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      row.style.transition = 'box-shadow 0.4s';
+      row.style.boxShadow = '0 0 0 3px var(--accent)';
+      setTimeout(() => { row.style.boxShadow = ''; }, 2000);
+      const sel = row.querySelector('select');
+      if (sel) setTimeout(() => sel.focus(), 400);
+    }
+
     // Navega a Llamadas + scroll + focus al select de disposición del lead.
     // Mismo retry-pattern que _focusDispositionRow de _onTelnyxCallEnded.
     function _dispoFocusLeadRow(leadId) {
@@ -7373,6 +7417,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const row = document.querySelector(`.call-row[data-id="${leadId}"]`);
         if (!row) {
           if (++tries < 12) { setTimeout(go, 400); return; }
+          // Antes de rendirse: el lead puede vivir en HOY (interesados y callbacks
+          // manuales se trabajan ahí desde 2026-07-10). Desde 2026-07-28 las cards
+          // de Hoy tienen el mismo selector de resultado, así que marcar desde ahí
+          // destraba igual.
+          if (_dispoFocusHoyRow(leadId)) return;
           // ESCAPE HATCH (2026-07-28): si tras ~5s el lead no se puede mostrar
           // (borrado, reasignado a otra vendedora, o cualquier filtro futuro que
           // no contemple force-show), antes esto se rendía EN SILENCIO y la
@@ -7414,6 +7463,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
       if (_dispoStripPending && _dispoStripPending.leadId === leadId) _dispoStripPending = null;
       if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
+      // Si el resultado se marcó DESDE Hoy (2026-07-28), esa vista tiene que
+      // refrescarse: el lead cambia de sección o sale (un interesado que se
+      // agenda, un callback que se resuelve). `_handleCallDisposition` solo
+      // repinta la lista de Llamadas.
+      try {
+        if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView();
+      } catch {}
     }
 
     // Campos extra del enforcement para el body de call-disposition.
