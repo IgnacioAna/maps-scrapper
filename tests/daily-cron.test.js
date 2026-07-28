@@ -217,6 +217,20 @@ describe("cron diario — guard por período y pausa (D-28/D-29 + WR-03)", () =>
     expect(live("daily").length).toBe(1);
   });
 
+  it("12 vueltas dentro de la ventana (tick de 5 min) encolan UN solo reporte", async () => {
+    // El intervalo pasó de 60 a 5 minutos: antes se anclaba al BOOT del server y el
+    // reporte salía en un minuto impredecible de las 23 (23:15 el 2026-07-27, que
+    // parecía culpa de la compu suspendida). Con vueltas cada 5 min los guards de
+    // período son los que tienen que aguantar.
+    let corridas = 0;
+    for (let i = 0; i < 12; i++) {
+      const r = await D.maybeRunDailyReportCron(MON23 + i * 5 * 60000);
+      if (r.ran) corridas++;
+    }
+    expect(corridas).toBe(1);
+    expect(live("daily").length).toBe(1);
+  });
+
   it("WR-03: el guard en memoria corta aunque el archivo se pierda", async () => {
     const r1 = await D.maybeRunDailyReportCron(MON23);
     expect(r1.ran).toBe(true);

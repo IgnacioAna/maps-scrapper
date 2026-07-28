@@ -2032,7 +2032,13 @@ if (process.env.NODE_ENV !== 'test') {
     await maybeRunWeeklyReportCron().catch(e => console.warn('weekly cron:', e.message));
     await maybeRunDailyReportCron().catch(e => console.warn('daily cron:', e.message));
   };
-  setInterval(() => { _reportCrons(); }, 60 * 60 * 1000);
+  // Cada 5 min, NO cada hora. El intervalo horario se anclaba al BOOT del server:
+  // si Railway redeployaba 22:15, el reporte salía 23:15; con otro deploy, otro
+  // minuto (caso real 2026-07-27: llegó 23:16 y parecía culpa de la compu
+  // suspendida). Los guards de período (`_dailyPeriodSentMem` +
+  // `lastDailyPeriodKey`) hacen que las vueltas de más sean gratis, y fuera de la
+  // ventana ambos crons cortan en el chequeo de hora ANTES de tocar disco.
+  setInterval(() => { _reportCrons(); }, 5 * 60 * 1000);
   setTimeout(() => { _reportCrons(); }, 60 * 1000);
 }
 
