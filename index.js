@@ -14982,6 +14982,78 @@ app.get("/api/telnyx/rate", requireAuth, (req, res) => {
   });
 });
 
+// GET /api/telnyx/webhook-health — admin: ¿por qué no llegan los eventos?
+// (2026-07-28). Diagnóstico: `telnyx_events.json` tenía 6 registros y ninguno
+// desde el 27/07, así que cuando una llamada se corta no hay forma de saber por
+// qué. Este endpoint contesta las tres preguntas de una: si NUESTRA punta está
+// lista (clave de firma), qué URL tiene configurada Telnyx en la conexión, y
+// cuándo llegó el último evento. Solo lee — no cambia nada en Telnyx.
+app.get("/api/telnyx/webhook-health", requireAuth, requireRole("admin"), async (req, res) => {
+  const cfg = loadTelnyxConfig();
+  const esperada = `${req.protocol}://${req.get("host")}/api/telnyx/webhook`;
+  const out = {
+    urlEsperada: esperada,
+    nuestraPunta: {
+      tieneClaveDeFirma: !!String(cfg.signaturePublicKey || "").trim(),
+      // Sin clave, en producción el webhook responde 503 y descarta TODO (fix
+      // #109: fail-closed, mismo criterio que JWT_SECRET).
+      rechazaTodoPorFaltaDeClave: !String(cfg.signaturePublicKey || "").trim() && process.env.NODE_ENV === "production",
+    },
+    eventos: { guardados: 0, ultimo: null, hace: null },
+    telnyx: null,
+  };
+  try {
+    const ev = loadTelnyxEvents();
+    const arr = Array.isArray(ev?.events) ? ev.events : (Array.isArray(ev) ? ev : []);
+    out.eventos.guardados = arr.length;
+    const ult = arr[arr.length - 1];
+    const ts = ult && Date.parse(ult.receivedAt || ult.occurredAt || "");
+    if (ts && !Number.isNaN(ts)) {
+      out.eventos.ultimo = new Date(ts).toISOString();
+      out.eventos.hace = `${Math.round((Date.now() - ts) / 3600000)}h`;
+    }
+  } catch {}
+  const connId = String(cfg.sipConnectionId || "").trim();
+  if (!cfg.apiKey || !connId) {
+    out.telnyx = { error: !cfg.apiKey ? "sin API key" : "sin sipConnectionId configurado" };
+    return res.json(out);
+  }
+  // La conexión puede ser de varios tipos; se prueban los endpoints en orden.
+  const rutas = [
+    `https://api.telnyx.com/v2/credential_connections/${connId}`,
+    `https://api.telnyx.com/v2/connections/${connId}`,
+  ];
+  for (const url of rutas) {
+    try {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${cfg.apiKey}`, Accept: "application/json" } });
+      if (!r.ok) { out.telnyx = { consultado: url, status: r.status }; continue; }
+      const d = (await r.json())?.data || {};
+      const urlTelnyx = d.webhook_event_url || "";
+      out.telnyx = {
+        consultado: url,
+        nombre: d.connection_name || d.name || null,
+        activa: d.active !== false,
+        webhookConfigurado: urlTelnyx || null,
+        webhookFailover: d.webhook_event_failover_url || null,
+        apiVersion: d.webhook_api_version || null,
+        timeoutSegs: d.webhook_timeout_secs ?? null,
+        coincideConNosotros: !!urlTelnyx && urlTelnyx.replace(/\/+$/, "") === esperada.replace(/\/+$/, ""),
+      };
+      break;
+    } catch (e) { out.telnyx = { consultado: url, error: e.message }; }
+  }
+  // Veredicto legible, para no tener que interpretar el JSON.
+  const t = out.telnyx || {};
+  out.diagnostico = !out.nuestraPunta.tieneClaveDeFirma
+    ? "Falta la clave de firma: el webhook rechaza TODO lo que llega."
+    : !t.webhookConfigurado
+      ? "Telnyx NO tiene URL de webhook en esta conexión: por eso no manda nada."
+      : t.coincideConNosotros
+        ? "Configuración correcta de las dos puntas."
+        : `Telnyx apunta a otra URL (${t.webhookConfigurado}) — los eventos van a otro lado.`;
+  res.json(out);
+});
+
 app.get("/api/telnyx/balance", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
   if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
   const cfg = loadTelnyxConfig();
