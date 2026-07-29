@@ -14982,6 +14982,67 @@ app.get("/api/telnyx/rate", requireAuth, (req, res) => {
   });
 });
 
+// GET /api/telnyx/hangup-analysis?range=today|yesterday|last_7_days|last_30_days
+// admin/supervisor — POR QUÉ se cortan las llamadas (2026-07-28).
+//
+// El webhook `call.hangup` nunca llegó a servir: esta cuenta usa una *credential
+// connection* (WebRTC con credenciales SIP), y los eventos `call.*` los emite
+// Call Control, que no está en el camino. Pero el dato existe igual: los CDR
+// traen `hangup_cause`, `hangup_code`, `telnyx_error_code` y hasta `mos`
+// (calidad de audio) — y ya los bajábamos para conciliar costos.
+//
+// Corta por duración porque la pregunta real es la de Teresa: por qué una
+// llamada muere en 2-3 segundos. Ahí NORMAL_CLEARING significa que la cortaron
+// del otro lado enseguida; un código de error significa que nunca llegó a sonar.
+app.get("/api/telnyx/hangup-analysis", requireAuth, requireRole("admin", "supervisor"), async (req, res) => {
+  if (_visibleSetterIds(req.auth.user)) return res.status(403).json({ error: 'No disponible para supervisor con setters restringidos.' });
+  const cfg = loadTelnyxConfig();
+  if (!cfg.apiKey) return res.status(503).json({ error: "Telnyx no configurado. Falta API key." });
+  const range = ["today", "yesterday", "last_7_days", "last_30_days"].includes(String(req.query.range || ""))
+    ? String(req.query.range) : "last_7_days";
+  try {
+    const r = await _telnyxFetchAllDetailRecords(cfg.apiKey, "sip-trunking", range);
+    if (!r.ok) return res.status(502).json({ error: `Telnyx respondió ${r.status || ""} al pedir los CDR.`, detail: r.error });
+    const recs = r.records || [];
+    const bucket = (s) => (s <= 5 ? "0-5s" : s <= 20 ? "6-20s" : s <= 60 ? "21-60s" : "+60s");
+    const porCausa = {}, porBucket = {}, porPais = {};
+    let total = 0, cortas = 0, sumMos = 0, conMos = 0;
+    for (const c of recs) {
+      const secs = Number(c.billed_sec ?? c.duration_sec ?? 0) || 0;
+      const causa = String(c.hangup_cause || "(sin dato)");
+      const err = String(c.telnyx_error_code || "").trim();
+      const b = bucket(secs);
+      total++;
+      if (secs <= 5) cortas++;
+      const mos = Number(c.mos || 0);
+      if (mos > 0) { sumMos += mos; conMos++; }
+      porCausa[causa] = porCausa[causa] || { total: 0, cortas: 0, errorCodes: {} };
+      porCausa[causa].total++;
+      if (secs <= 5) porCausa[causa].cortas++;
+      if (err && err !== "D00") porCausa[causa].errorCodes[err] = (porCausa[causa].errorCodes[err] || 0) + 1;
+      porBucket[b] = (porBucket[b] || 0) + 1;
+      const pais = String(c.country_code || c.source_country_code || "?");
+      porPais[pais] = porPais[pais] || { total: 0, cortas: 0 };
+      porPais[pais].total++;
+      if (secs <= 5) porPais[pais].cortas++;
+    }
+    const orden = (o) => Object.fromEntries(Object.entries(o).sort((a, b) => (b[1].total ?? b[1]) - (a[1].total ?? a[1])));
+    res.json({
+      ok: true, range, llamadas: total,
+      cortas, pctCortas: total ? Math.round(cortas / total * 100) : 0,
+      calidadPromedio: conMos ? Math.round(sumMos / conMos * 100) / 100 : null,   // MOS 1-5
+      porDuracion: porBucket,
+      porCausaDeCorte: orden(porCausa),
+      porPais: orden(porPais),
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Rechazos por firma desde el último arranque. Ver el comentario largo en el
+// handler del webhook: sin esto, "no llega nada" y "llega y lo rechazamos" son
+// indistinguibles desde afuera.
+const _telnyxWebhookRejects = { total: 0, last: null, since: new Date().toISOString() };
+
 // GET /api/telnyx/webhook-health — admin: ¿por qué no llegan los eventos?
 // (2026-07-28). Diagnóstico: `telnyx_events.json` tenía 6 registros y ninguno
 // desde el 27/07, así que cuando una llamada se corta no hay forma de saber por
@@ -15000,6 +15061,8 @@ app.get("/api/telnyx/webhook-health", requireAuth, requireRole("admin"), async (
       rechazaTodoPorFaltaDeClave: !String(cfg.signaturePublicKey || "").trim() && process.env.NODE_ENV === "production",
     },
     eventos: { guardados: 0, ultimo: null, hace: null },
+    // Distingue "Telnyx no manda" de "manda y lo rechazamos por firma".
+    rechazadosPorFirma: { ..._telnyxWebhookRejects },
     telnyx: null,
   };
   try {
@@ -15044,13 +15107,16 @@ app.get("/api/telnyx/webhook-health", requireAuth, requireRole("admin"), async (
   }
   // Veredicto legible, para no tener que interpretar el JSON.
   const t = out.telnyx || {};
+  const rech = out.rechazadosPorFirma.total;
   out.diagnostico = !out.nuestraPunta.tieneClaveDeFirma
     ? "Falta la clave de firma: el webhook rechaza TODO lo que llega."
     : !t.webhookConfigurado
       ? "Telnyx NO tiene URL de webhook en esta conexión: por eso no manda nada."
-      : t.coincideConNosotros
-        ? "Configuración correcta de las dos puntas."
-        : `Telnyx apunta a otra URL (${t.webhookConfigurado}) — los eventos van a otro lado.`;
+      : !t.coincideConNosotros
+        ? `Telnyx apunta a otra URL (${t.webhookConfigurado}) — los eventos van a otro lado.`
+        : rech > 0
+          ? `Los eventos SÍ llegan pero se rechazan por firma (${rech} desde el último arranque, último motivo: ${out.rechazadosPorFirma.last?.reason}). La clave pública configurada no es la de esta cuenta.`
+          : "Las dos puntas están bien configuradas y no se rechazó ningún evento. Si igual no aparecen eventos nuevos, Telnyx no los está emitiendo para este tipo de conexión (credential connection: las llamadas WebRTC no pasan por Call Control, que es quien emite call.*). En ese caso el dato de por qué se cortó una llamada hay que sacarlo de los CDR, no del webhook.";
   res.json(out);
 });
 
@@ -15486,6 +15552,14 @@ app.post("/api/telnyx/webhook", async (req, res) => {
   const cfg = loadTelnyxConfig();
   const verification = _verifyTelnyxSignature(req, cfg.signaturePublicKey);
   if (!verification.ok && cfg.signaturePublicKey) {
+    // 2026-07-28: un rechazo solo dejaba un console.warn que nadie mira, así que
+    // "Telnyx no manda nada" y "manda y lo tiramos por firma" se veían IGUAL
+    // desde afuera (0 eventos guardados en los dos casos). El contador lo hace
+    // distinguible desde /api/telnyx/webhook-health. En memoria a propósito: no
+    // se toca disco en un camino que puede recibir ráfagas, y para diagnosticar
+    // alcanza con lo que pasó desde el último redeploy.
+    _telnyxWebhookRejects.total++;
+    _telnyxWebhookRejects.last = { at: new Date().toISOString(), reason: verification.reason };
     console.warn(`[telnyx-webhook] signature rejected: ${verification.reason}`);
     return res.status(401).json({ error: "invalid signature", reason: verification.reason });
   }
