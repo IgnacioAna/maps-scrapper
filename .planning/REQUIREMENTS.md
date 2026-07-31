@@ -188,14 +188,14 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   índice de rotación en el JSON, no localStorage) + `override_agent_id` +
   `retell_llm_dynamic_variables` (nombre, ciudad, reviews, years,
   doctor_name, openingAngle/hookPhrase, leadId, whatsapp de retorno).
-- [ ] **VOICE-04**: `POST /api/retell/tool/book` — tool HTTP del agente,
+- [x] **VOICE-04**: `POST /api/retell/tool/book` — tool HTTP del agente,
   protegido por header `x-scm-tool-secret`. Crea calendarEntry con el shape
   de index.js:10607 (`calendarioEstado:'pendiente'`,
   `setterId:'setter_agente_ia'`, `sourceCall:true`) dentro de
   `mutateSettersData`, marca booked-pending y devuelve texto confirmable en
   voz alta. El outcome `scheduled_with_admin` lo aplica el webhook (una sola
   escritura de callLog por llamada).
-- [ ] **VOICE-05**: `POST /api/retell/webhook` — firma `x-retell-signature`
+- [x] **VOICE-05**: `POST /api/retell/webhook` — firma `x-retell-signature`
   verificada (patrón del webhook Telnyx: rawBody en el verify de
   express.json index.js:108-118, 401 con contador, **fail-closed 503 en
   producción sin secret**, FIFO `retell_events.json` cap 1000). En

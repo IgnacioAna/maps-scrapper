@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T16:31:25.000Z"
+last_updated: "2026-07-31T17:10:00.000Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
   completed_phases: 4
   total_plans: 22
-  completed_plans: 18
-  percent: 16
+  completed_plans: 19
+  percent: 17
 ---
 
 # SCM — STATE
@@ -33,11 +33,11 @@ cada phase.
 ## Current Position
 
 Phase: 24 (integracion-backend-retell) — EXECUTING
-Plan: 24-03 EXECUTED (3/5) — próximo 24-04
+Plan: 24-04 EXECUTED (4/5) — próximo 24-05
 
-- **Phase:** 24 — Integración backend Retell — **En ejecución (3/5 planes)**
-- **Plan:** 24-03 EXECUTED (2026-07-31) — 24-04..24-05 pendientes (waves
-  serializadas, todo toca `index.js`).
+- **Phase:** 24 — Integración backend Retell — **En ejecución (4/5 planes)**
+- **Plan:** 24-04 EXECUTED (2026-07-31) — 24-05 pendiente (wave 5,
+  serializada, toca `index.js`).
 - **Status:** Executing Phase 24
 
 - **24-01 EXECUTED (2026-07-31)** — refactor `_applyCallOutcome` +
@@ -98,10 +98,38 @@ Plan: 24-03 EXECUTED (3/5) — próximo 24-04
   **1076/1076** verde (1046 + 30 nuevos). VOICE-03 completado. Detalle en
   `24-03-SUMMARY.md`.
 
-- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-04-PLAN.md
-  (tool `/book` con header secreto + webhook firmado, VOICE-04/05, wave 4).
+- **24-04 EXECUTED (2026-07-31)** — las 2 superficies públicas del agente:
+  la tool `/book` que agenda a mitad de llamada y el shell del webhook.
+  Commits `a63d308` (Task 1: `POST /api/retell/tool/book` — auth por header
+  `x-scm-tool-secret` con `timingSafeEqual`, 401 genérico, 503 fail-closed
+  en producción sin secret; D-24-05: crea SOLO `data.calendar` vía
+  `mutateSettersData`, cero escritura de historial de llamadas, cero cambio
+  de `lead.estado`; tolera las 2 formas del payload de Retell — call+args y
+  "args only" —; idempotencia por `call_id` vía `_pendingBooked` [Map en
+  memoria, TTL 2h, contrato para 24-05]; valida fecha futuro/≤90 días;
+  responde siempre 200 con `ok:false` en los casos de negocio porque Retell
+  no reintenta custom functions), `8995503` (Task 2: `_verifyRetellSignature`
+  — HMAC-SHA256 de `rawBody+timestamp`, formato `v=<ms>,d=<hex>`, ventana
+  anti-replay 5 min, algoritmo verificado contra el source real de
+  `retell-sdk@5.53.0` [research §2.1] — y el shell de
+  `POST /api/retell/webhook`: 401+contador en rechazo, 503 fail-closed en
+  producción sin secret, persiste evento reducido en `retell_events.json`
+  [FIFO 1000, sin transcript/grabación, con `custom_analysis_data`
+  conservado], marcador `// [24-05] punto de inserción del procesamiento de
+  la llamada`), `a9b29a2` (Task 3: `tests/retell-webhook.test.js`, 15 tests
+  — firma válida con fallback `webhookSecret→apiKey`, los 4 modos de ataque
+  [sin firma, secret ajeno, formato malformado, replay/body alterado],
+  fail-closed en producción, health poblada en `GET /api/retell/config`,
+  no-leak, FIFO). Sumado a `tests/retell-book.test.js` (19 tests, Task 1).
+  Suite completa **1104/1104** verde. VOICE-04/VOICE-05 (auth) completados
+  — el procesamiento de la llamada (transcript/outcome/cascada) sigue en
+  24-05. Detalle en `24-04-SUMMARY.md`.
 
-- **Last activity:** 2026-07-31 — 24-03 ejecutado (executor secuencial,
+- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-05-PLAN.md
+  (procesamiento del webhook: transcript, outcome, cascada, extracción +
+  tests end-to-end, VOICE-05, wave 5 — última del phase).
+
+- **Last activity:** 2026-07-31 — 24-04 ejecutado (executor secuencial,
   working tree principal, sin worktree).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
@@ -784,13 +812,68 @@ Contra HEAD `a9e4886`:
   real) escribe callLog (D-24-05) — lo que permite fórmulas de
   `capRemaining` deterministas en cada test sin resets intermedios.
 
+- **24-04:** el comentario de cabecera de `/api/retell/tool/book` evita
+  repetir el literal de la ruta (se describe como "la custom function
+  book" en prosa) para que el grep de verificación del plan ("devuelve 1
+  ruta") no ambigüe entre el comentario y la declaración real de la ruta.
+
+- **24-04:** resolución de `leadId`/`args` del tool `/book` tolerante a las
+  2 formas de payload documentadas por Retell (research §2.2.b):
+  `hasCallWrapper = typeof body.call === 'object'` decide si `args` es
+  `body.args` (modo normal) o el `body` completo (modo "args only", donde
+  el payload ES directamente los args). `leadId` se busca en ese orden:
+  `call.retell_llm_dynamic_variables.leadId` → `call.metadata.leadId` →
+  `args.leadId` — el tercer fallback cubre tanto un eventual parámetro
+  `leadId` en `args` como el caso "args only" sin ningún objeto `call`.
+
+- **24-04:** `_retellParseBookingDate` no asume un formato fijo de
+  fecha/hora (el schema de la function no está definido hasta Phase 26):
+  prueba `fecha+hora` combinadas con `T` y con espacio antes de caer a
+  fecha sola, vía `Date.parse`. Tolerancia amplia preferida sobre un
+  parser estricto — un rechazo falso-positivo deja al agente sin poder
+  agendar una fecha válida a mitad de una llamada real.
+
+- **24-04:** `_pendingBooked` es un Map de módulo separado de
+  `_pendingRetellCalls` (24-03) — representan contratos distintos ("esta
+  llamada fue dispachada" vs "esta llamada ya tiene una cita creada") que
+  el plan 24-05 va a consultar independientemente. Mismo patrón de
+  TTL+cleanup-en-cada-invocación que 24-03, sin timer de fondo.
+
+- **24-04:** el shell del webhook NO hace lookup de lead ni valida que
+  `leadId` exista — a propósito: el research (§5.3) exige responder rápido
+  (Retell corta a los 10s) y el mapeo de outcome/lead es responsabilidad
+  exclusiva del plan 24-05, que se engancha en el marcador de inserción
+  `// [24-05] punto de inserción del procesamiento de la llamada`, ANTES
+  del `res.status(200)`.
+
+- **24-04:** el cap de 4000 chars sobre `raw` (el `call` reducido que se
+  persiste en `retell_events.json`) trunca el STRING serializado, no
+  re-parsea a objeto — un JSON truncado a mitad de camino puede quedar
+  inválido, pero es preferible a perder silenciosamente datos de
+  diagnóstico con un `JSON.parse` que falla. `raw` queda como string, no
+  como objeto.
+
+- **24-04:** intento de `gsd-sdk query state.advance-plan`/
+  `state.update-progress` para esta actualización de STATE.md: ambos
+  comandos existen y corren (el binario SÍ está en PATH en esta sesión,
+  a diferencia de lo que registraron 24-02/24-03), pero `state.advance-plan`
+  devuelve `{"error":"Cannot parse Current Plan or Total Plans in Phase
+  from STATE.md"}` y `state.update-progress` escribió sobre el archivo
+  igual pese al error reportado, CORROMPIENDO `last_activity` (lo cortó a
+  mitad de oración) e insertando saltos de línea sueltos en párrafos ya
+  escritos — revertido con `git checkout -- .planning/STATE.md` antes de
+  commitear nada. Confirma el `known_tooling_issue` para STATE.md además
+  de para `roadmap.update-plan-progress`: el formato custom de este
+  milestone no es compatible con ninguno de los 3 comandos de estado.
+  Actualización 100% manual, mismo patrón que 24-02/24-03.
+
 ---
 
-*Last updated: 2026-07-31 (24-03 ejecutado — dispatch por lote del agente de
-voz: `POST /api/admin/voice-agent/dispatch` admin-only con selección
-reusando `_leadIsCallableNow`, caller ID server-side [routing explícito o
-round-robin persistido en `retell_config.json`], cap diario con rollover a
-prueba de fugas, `dryRun` que gasta cero, y error de Retell por lead sin
-romper el lote. 30 tests nuevos, suite completa 1076/1076 verde. VOICE-03
-completado. Próximo: 24-04, tool `/book` con header secreto + webhook
-firmado).*
+*Last updated: 2026-07-31 (24-04 ejecutado — las 2 superficies públicas del
+agente de voz: `POST /api/retell/tool/book` [auth por header estático,
+crea SOLO la cita, cero escritura de historial de llamadas] y
+`POST /api/retell/webhook` [shell firmado con HMAC-SHA256 verificado
+contra el source real de retell-sdk@5.53.0, 401/503 fail-closed, FIFO 1000
+sin transcript/grabación]. 34 tests nuevos, suite completa 1104/1104
+verde. VOICE-04/VOICE-05 (auth) completados — falta el procesamiento del
+webhook. Próximo: 24-05, última wave del phase).*

@@ -104,7 +104,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 24-04-PLAN.md — Tool `/book` con header secreto + webhook firmado (HMAC nativo, sin SDK nuevo) (VOICE-04/05, wave 4)
+- [x] 24-04-PLAN.md — Tool `/book` con header secreto + webhook firmado (HMAC nativo, sin SDK nuevo) (VOICE-04/05, wave 4)
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
