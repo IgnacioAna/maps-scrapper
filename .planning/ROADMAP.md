@@ -39,7 +39,7 @@ conversación conocido contra el baseline humano.
 
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
-| 24 | Integración backend Retell | VOICE-01..06 | — |
+| 24 | 5/5 | Complete    | 2026-07-31 |
 | 25 | Panel Agente de voz | VOICE-07 | 24 |
 | 26 | Agente en Retell + piloto | VOICE-08..09 | 24 (25 deseable) |
 | 27 | Banco de conocimiento unificado | VOICE-10 | — (paralelizable) |

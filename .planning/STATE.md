@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
-status: executing
-last_updated: "2026-07-31T17:35:00.000Z"
+status: ready_to_plan
+last_updated: 2026-07-31T17:53:40.834Z
 last_activity: 2026-07-31
 progress:
   total_phases: 26
-  completed_phases: 4
-  total_plans: 22
+  completed_phases: 1
+  total_plans: 5
   completed_plans: 20
-  percent: 18
+  percent: 4
+stopped_at: Phase 24 complete (5/5) — ready to discuss Phase 25
 ---
 
 # SCM — STATE
@@ -35,12 +36,12 @@ cada phase.
 Phase: 24 (integracion-backend-retell) — COMPLETE (5/5 planes)
 Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-phase 25`)
 
-- **Phase:** 24 — Integración backend Retell — **COMPLETE (5/5 planes)**.
+- **Phase:** 25
   Los 3 planes previos ejecutaron config+refactor (24-01/24-02), dispatch
   (24-03) y las 2 superficies públicas auth-only (24-04); este plan cierra
   el circuito con el procesamiento real del webhook.
-- **Plan:** 24-05 EXECUTED (2026-07-31) — última wave de la fase.
-- **Status:** Phase 24 COMPLETE — siguiente paso es planificar Phase 25
+- **Plan:** Not started
+- **Status:** Ready to plan
   (Panel Agente de voz, VOICE-07) o Phase 26/27 en paralelo (sin
   dependencia entre sí salvo Phase 25→26 deseable).
 
@@ -167,7 +168,7 @@ Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-pha
   de conocimiento (ninguna de las dos depende de 25 salvo por comodidad
   operativa).
 
-- **Last activity:** 2026-07-31 — 24-05 ejecutado (executor secuencial,
+- **Last activity:** 2026-07-31
   working tree principal, sin worktree). Phase 24 (Integración backend
   Retell) queda COMPLETA: los 6 success criteria del ROADMAP verificados
   (webhook produce la huella completa, suite verde sin cambios de números,
