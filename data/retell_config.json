@@ -1,0 +1,13 @@
+{
+  "apiKey": "",
+  "webhookSecret": "",
+  "toolSecret": "",
+  "agentId": "",
+  "fromNumberId": "",
+  "dailyCap": 50,
+  "enabled": false,
+  "rotationIdx": 0,
+  "whatsappReturn": "",
+  "updatedAt": "2026-07-31T18:13:41.039Z",
+  "updatedBy": "system_seed"
+}
