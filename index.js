@@ -106,12 +106,15 @@ console.log(`🔥 Warming IA: ${WARMING_AI_MODEL} (${openaiKey ? 'ChatGPT (clien
 
 // Middleware
 // express.json con verify hook: guarda el body raw como string en req.rawBody
-// SOLO para rutas que lo necesitan (webhook Telnyx para validar signature ed25519).
-// Evita doble-parsear para todo el resto de endpoints.
+// SOLO para rutas que lo necesitan (webhooks que validan firma criptográfica
+// contra los bytes crudos: Telnyx con ed25519, Retell con HMAC-SHA256 —
+// Phase 24 research §2.1). Evita doble-parsear para todo el resto de
+// endpoints. Match EXACTO de req.url — nunca un prefix, para no ensanchar la
+// superficie de rawBody a rutas que no lo necesitan.
 app.use(express.json({
   limit: '50mb',
   verify: (req, _res, buf, encoding) => {
-    if (req.url === '/api/telnyx/webhook') {
+    if (req.url === '/api/telnyx/webhook' || req.url === '/api/retell/webhook') {
       req.rawBody = buf.toString(encoding || 'utf8');
     }
   },
@@ -16491,6 +16494,43 @@ function _verifyTelnyxSignature(req, publicKeyBase64) {
   }
 }
 
+// Verificación HMAC-SHA256 de x-retell-signature — algoritmo REAL de
+// retell-sdk@5.53.0 (lib/webhook_auth.mjs, research §2.1: código fuente
+// leído directo del tarball, no documentación parafraseada). Formato del
+// header: `v=<timestamp_ms>,d=<hex_digest>`. Se firma
+// `rawBody + String(Number(timestamp))` con el secret. Retell NO tiene un
+// signing secret separado del API key — a diferencia de Telnyx (ed25519
+// asimétrico, arriba), acá el secret ES el API key. Mismo contrato de
+// retorno que _verifyTelnyxSignature: { ok, mode, reason }.
+function _verifyRetellSignature(req, secret) {
+  if (!secret || !String(secret).trim()) return { ok: true, mode: "skipped" };
+  try {
+    const header = req.headers["x-retell-signature"];
+    if (!header || typeof header !== "string") return { ok: false, reason: "missing_signature" };
+    const match = /^v=(\d+),d=([0-9a-f]+)$/i.exec(header);
+    if (!match) return { ok: false, reason: "bad_format" };
+    const poststamp = Number(match[1]);
+    if (!Number.isSafeInteger(poststamp)) return { ok: false, reason: "bad_format" };
+    // Ventana anti-replay: 5 minutos, igual que Telnyx (300s).
+    if (Math.abs(Date.now() - poststamp) > 5 * 60 * 1000) {
+      return { ok: false, reason: "timestamp_outside_window" };
+    }
+    const rawBody = req.rawBody;
+    if (!rawBody) return { ok: false, reason: "no_raw_body" };
+    // ⚠️ El SDK concatena `input + poststamp` (Number, no el string crudo del
+    // match) — con ceros a la izquierda en el timestamp diferirían los bytes
+    // firmados. String(Number(...)) normaliza igual que hace el SDK.
+    const expected = crypto.createHmac("sha256", secret).update(rawBody + String(poststamp)).digest();
+    const providedHex = match[2];
+    if (providedHex.length !== expected.length * 2) return { ok: false, reason: "invalid_signature" };
+    const provided = Buffer.from(providedHex, "hex");
+    const same = provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+    return same ? { ok: true, mode: "verified" } : { ok: false, reason: "invalid_signature" };
+  } catch (e) {
+    return { ok: false, reason: "verify_error", error: e.message };
+  }
+}
+
 // POST /api/telnyx/webhook — endpoint público (sin auth, validación por signature).
 // Telnyx envía aquí eventos de llamadas. Lo loguemos en telnyx_events.json,
 // y si es call.hangup actualizamos el lead.callLog con duration + cost.
@@ -16553,6 +16593,94 @@ app.post("/api/telnyx/webhook", async (req, res) => {
   // la integración con callLog completa se hace en Wave 3 task 3.1.
 
   res.json({ ok: true, eventType });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 24 plan 24-04: POST /api/retell/webhook — endpoint público, junto al
+// de Telnyx (misma estructura, algoritmo distinto: acá HMAC simétrico en
+// vez de ed25519). Este plan es el SHELL: verifica la firma, persiste el
+// evento reducido y responde rápido (Retell espera 2xx en 10s y reintenta
+// hasta 3 veces si no lo recibe, research §5.3). El PROCESAMIENTO de la
+// llamada (mapear outcome, aplicar la cascada de disposición) es el plan
+// 24-05 — ver el marcador de inserción más abajo.
+// ═══════════════════════════════════════════════════════════════════════
+app.post("/api/retell/webhook", async (req, res) => {
+  const cfg = loadRetellConfig();
+  const secret = _retellWebhookSecret(cfg);
+  const verification = _verifyRetellSignature(req, secret);
+
+  if (!verification.ok) {
+    _retellWebhookRejects.total++;
+    _retellWebhookRejects.last = { at: new Date().toISOString(), reason: verification.reason };
+    console.warn(`[retell-webhook] signature rejected: ${verification.reason}`);
+    return res.status(401).json({ error: "invalid signature", reason: verification.reason });
+  }
+
+  if (verification.mode === "skipped") {
+    // Fail-closed en producción sin apiKey/webhookSecret configurado — mismo
+    // criterio que el webhook de Telnyx (arriba) y que JWT_SECRET (nota #23).
+    if (process.env.NODE_ENV === "production") {
+      console.error("[retell-webhook] RECHAZADO: sin apiKey/webhookSecret configurado en producción.");
+      return res.status(503).json({ error: "webhook signature not configured" });
+    }
+    console.warn("[retell-webhook] WARNING: signature validation skipped (sin apiKey/webhookSecret configurado)");
+  }
+
+  const body = req.body || {};
+  const eventType = body.event || body.event_type || "unknown";
+  const call = (body.call && typeof body.call === "object") ? body.call : {};
+
+  // T-24-04-06 / nota #81: este archivo lo baja `npm run pre-deploy` y se
+  // commitea al repo — persistir la conversación completa de un prospecto
+  // acá la dejaría en el historial de git para siempre. El texto de la
+  // llamada ya vive donde corresponde (plan 24-05, que lee este mismo
+  // evento ANTES de que se descarte). Las URLs de grabación se descartan
+  // por la misma decisión que ya rige para Telnyx (no se persiste audio,
+  // nota #81). custom_analysis_data SÍ se conserva: es la extracción
+  // estructurada, dato de negocio, no conversación libre.
+  const rawCall = { ...call };
+  delete rawCall.transcript;
+  delete rawCall.transcript_object;
+  delete rawCall.transcript_with_tool_calls;
+  delete rawCall.recording_url;
+  delete rawCall.public_log_url;
+  if (rawCall.call_analysis && typeof rawCall.call_analysis === "object") {
+    rawCall.call_analysis = { ...rawCall.call_analysis };
+    delete rawCall.call_analysis.call_summary;
+  }
+  let rawStr;
+  try { rawStr = JSON.stringify(rawCall); } catch { rawStr = "{}"; }
+  if (rawStr.length > 4000) rawStr = rawStr.slice(0, 4000);
+
+  let durationMs = null;
+  if (typeof call.duration_ms === "number") durationMs = call.duration_ms;
+  else if (Number.isFinite(call.end_timestamp) && Number.isFinite(call.start_timestamp)) {
+    durationMs = call.end_timestamp - call.start_timestamp;
+  }
+
+  const eventsData = loadRetellEvents();
+  if (!Array.isArray(eventsData.events)) eventsData.events = [];
+  eventsData.events.push({
+    id: `retell_evt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    type: eventType,
+    receivedAt: new Date().toISOString(),
+    verified: verification.mode === "skipped" ? "skipped" : !!verification.ok,
+    callId: call.call_id || null,
+    agentId: call.agent_id || null,
+    fromNumber: call.from_number || null,
+    toNumber: call.to_number || null,
+    direction: call.direction || null,
+    disconnectionReason: call.disconnection_reason || null,
+    durationMs,
+    leadId: call.metadata?.leadId || call.retell_llm_dynamic_variables?.leadId || null,
+    raw: rawStr,
+  });
+  if (eventsData.events.length > 1000) eventsData.events = eventsData.events.slice(-1000);
+  saveRetellEvents(eventsData);
+
+  // [24-05] punto de inserción del procesamiento de la llamada
+
+  res.status(200).json({ ok: true, event: eventType });
 });
 
 // ── Call Scripts: banco de guiones para llamadas (value statement framework) ──
