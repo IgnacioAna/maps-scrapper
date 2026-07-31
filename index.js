@@ -10269,6 +10269,114 @@ app.get('/api/setters/pending-calls', requireAuth, (req, res) => {
 // Disposition de una llamada — endpoint específico de Llamadas.
 // Recibe { outcome, notes?, callbackAt?, scheduled? } y aplica los cambios de estado
 // + log de la llamada + opcional creación de evento en el calendario (agenda con admin).
+// Phase 6: metadata Telnyx. Si la llamada fue por WebRTC, agregamos
+// duration, fromNumber, costo estimado al callLog.
+// Tabla de tarifas USD/min Telnyx (aprox dic 2025, hardcoded).
+// Alineada 2026-07-10 con la rate sheet real de Telnyx (data/telnyx_rates.json)
+// y verificada contra CDRs facturados. Solo se usa si la rate sheet no carga.
+// D-24-01: subidos a scope de módulo (antes anidados en el handler humano) para que el webhook del agente de voz (VOICE-05) pueda estimar el costo de una llamada que nunca pasó por el dialer humano.
+const TELNYX_RATES_USD_PER_MIN = {
+  'ES_mobile': 0.024, 'ES_landline': 0.011,
+  'MX_mobile': 0.029, 'MX_landline': 0.007,
+  'CO_mobile': 0.008, 'CO_landline': 0.008,
+  'AR_mobile': 0.130, 'AR_landline': 0.008,
+  'CL_mobile': 0.015, 'CL_landline': 0.009,
+  'PE_mobile': 0.009, 'PE_landline': 0.003,
+  'EC_mobile': 0.321, 'EC_landline': 0.200,
+  'BO_mobile': 0.320, 'BO_landline': 0.090,
+  'UY_mobile': 0.270, 'UY_landline': 0.070,
+  'BR_mobile': 0.020, 'BR_landline': 0.009,
+  'US_any':    0.005,
+  // Audit fix Sprint 30: tarifas Europa (aprox dic 2025).
+  'FR_mobile': 0.080, 'FR_landline': 0.012,
+  'DE_mobile': 0.110, 'DE_landline': 0.012,
+  'IT_mobile': 0.090, 'IT_landline': 0.012,
+  'UK_mobile': 0.030, 'UK_landline': 0.012,
+  'PT_mobile': 0.080, 'PT_landline': 0.012,
+  'default':   0.080,
+};
+// Audit fix Sprint 17: detectar mobile vs landline correctamente por país.
+// Las heurísticas usan los prefijos internacionales E.164 oficiales. Más
+// preciso que asumir mobile siempre (que sobreestimaba ~25-35%).
+function _detectCountryAndType(digits) {
+  if (!digits) return { country: 'default', isMobile: true };
+  // AR: +549<NUM> = móvil, +54<NUM> sin 9 = fijo (NUM sigue con prefijo área)
+  if (digits.startsWith('549')) return { country: 'AR', isMobile: true };
+  if (digits.startsWith('54'))  return { country: 'AR', isMobile: false };
+  // MX: +521<NUM> o +5219... = móvil (después del 52 va el "1"), +52<área 2-3 dígitos> = fijo
+  // En 2026, México usa 521 oficial para móviles desde el exterior
+  if (digits.startsWith('521')) return { country: 'MX', isMobile: true };
+  if (digits.startsWith('52'))  return { country: 'MX', isMobile: false };
+  // CL: +569<NUM> = móvil (Chile móvil 9 dígitos comienza con 9), +562<NUM> = fijo Santiago
+  if (digits.startsWith('569')) return { country: 'CL', isMobile: true };
+  if (digits.startsWith('56'))  return { country: 'CL', isMobile: false };
+  // CO: +573<NUM> = móvil (Colombia móvil empieza con 3), +57<área 1-2 dígitos> = fijo
+  if (digits.startsWith('573')) return { country: 'CO', isMobile: true };
+  if (digits.startsWith('57'))  return { country: 'CO', isMobile: false };
+  // PE: +519<NUM> = móvil (Perú móvil 9 dígitos comienza con 9), +511 = fijo Lima
+  if (digits.startsWith('519')) return { country: 'PE', isMobile: true };
+  if (digits.startsWith('51'))  return { country: 'PE', isMobile: false };
+  // EC: +5939<NUM> = móvil (Ecuador móvil), +593<área 1-2 dígitos no-9> = fijo
+  if (digits.startsWith('5939')) return { country: 'EC', isMobile: true };
+  if (digits.startsWith('593'))  return { country: 'EC', isMobile: false };
+  // BO: Bolivia mobile empieza con 6 o 7 después del 591. Fijo con 2/3/4.
+  if (/^591[67]/.test(digits)) return { country: 'BO', isMobile: true };
+  if (digits.startsWith('591')) return { country: 'BO', isMobile: false };
+  // UY: +5989<NUM> = móvil (Uruguay móvil 9 dígitos comienza con 9), +5982/4 = fijo
+  if (digits.startsWith('5989')) return { country: 'UY', isMobile: true };
+  if (digits.startsWith('598'))  return { country: 'UY', isMobile: false };
+  // ES: +346/+347 = móvil España (móviles empiezan con 6 o 7), +349/+348 = fijo
+  if (/^34[67]/.test(digits)) return { country: 'ES', isMobile: true };
+  if (digits.startsWith('34')) return { country: 'ES', isMobile: false };
+  // FR: +336/+337 = móvil Francia. +33{1-5,9} = fijo
+  if (/^33[67]/.test(digits)) return { country: 'FR', isMobile: true };
+  if (digits.startsWith('33'))  return { country: 'FR', isMobile: false };
+  // DE: +49{15-17} = móvil. Resto = fijo (simplificado).
+  if (/^491[5-7]/.test(digits)) return { country: 'DE', isMobile: true };
+  if (digits.startsWith('49'))  return { country: 'DE', isMobile: false };
+  // IT: +393 = móvil Italia. Resto = fijo
+  if (digits.startsWith('393')) return { country: 'IT', isMobile: true };
+  if (digits.startsWith('39'))  return { country: 'IT', isMobile: false };
+  // UK: +447 = móvil. Resto = fijo
+  if (digits.startsWith('447')) return { country: 'UK', isMobile: true };
+  if (digits.startsWith('44'))  return { country: 'UK', isMobile: false };
+  // PT: +3519 = móvil Portugal. Resto = fijo.
+  if (digits.startsWith('3519'))return { country: 'PT', isMobile: true };
+  if (digits.startsWith('351')) return { country: 'PT', isMobile: false };
+  // BR: +55<DD>9<NUM> = móvil (con 9 después del DD de área), +55<DD><NUM> = fijo
+  if (/^55\d{2}9/.test(digits)) return { country: 'BR', isMobile: true };
+  if (digits.startsWith('55'))  return { country: 'BR', isMobile: false };
+  // US/CA: no distinguimos mobile vs landline (tarifa unificada en Telnyx)
+  if (digits.startsWith('1')) return { country: 'US', isMobile: false };
+  return { country: 'default', isMobile: true };
+}
+
+function _estimateTelnyxCost(destinationPhone, durationSecs) {
+  if (!durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
+  // Preferir el lookup real contra la rate sheet de Telnyx
+  // Telnyx factura en incrementos de 60s (mínimo 1 min, redondeo hacia arriba)
+  // — verificado contra CDRs reales 2026-07-10: 1s→1min, 79s→2min.
+  const billableMinutes = Math.max(1, Math.ceil(durationSecs / 60));
+  const realRate = _telnyxRateForNumber(destinationPhone);
+  if (realRate) {
+    const minutes = billableMinutes;
+    return {
+      cost: +(realRate.ratePerMin * minutes).toFixed(4),
+      country: realRate.country,
+      tariffKey: `${realRate.country}_${realRate.isMobile ? 'mobile' : 'landline'}_${realRate.matchedPrefix}`,
+      source: 'rate_sheet',
+      matchedPrefix: realRate.matchedPrefix,
+    };
+  }
+  // Fallback a la tabla hardcoded si no hay rate sheet o no matchea
+  const digits = String(destinationPhone || '').replace(/\D/g, '');
+  if (!digits) return { cost: 0, country: 'unknown', tariffKey: 'default' };
+  const { country, isMobile } = _detectCountryAndType(digits);
+  const tariffKey = country === 'US' ? 'US_any' : `${country}_${isMobile ? 'mobile' : 'landline'}`;
+  const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN[`${country}_mobile`] || TELNYX_RATES_USD_PER_MIN['default'];
+  return { cost: +(rate * billableMinutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
+}
+
 const CALL_OUTCOMES = new Set([
   'answered_interested',     // ✅ Atendió + Interesado → calificado, queda en Llamadas
   'answered_not_interested', // ❌ Atendió + No interesado → descarta
@@ -10368,113 +10476,6 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     }
     // La auto-marca ya había sumado su intento; el flujo normal lo re-suma.
     lead.callAttempts = Math.max(0, (lead.callAttempts || 1) - 1);
-  }
-
-  // Phase 6: metadata Telnyx. Si la llamada fue por WebRTC, agregamos
-  // duration, fromNumber, costo estimado al callLog.
-  // Tabla de tarifas USD/min Telnyx (aprox dic 2025, hardcoded).
-  // Alineada 2026-07-10 con la rate sheet real de Telnyx (data/telnyx_rates.json)
-  // y verificada contra CDRs facturados. Solo se usa si la rate sheet no carga.
-  const TELNYX_RATES_USD_PER_MIN = {
-    'ES_mobile': 0.024, 'ES_landline': 0.011,
-    'MX_mobile': 0.029, 'MX_landline': 0.007,
-    'CO_mobile': 0.008, 'CO_landline': 0.008,
-    'AR_mobile': 0.130, 'AR_landline': 0.008,
-    'CL_mobile': 0.015, 'CL_landline': 0.009,
-    'PE_mobile': 0.009, 'PE_landline': 0.003,
-    'EC_mobile': 0.321, 'EC_landline': 0.200,
-    'BO_mobile': 0.320, 'BO_landline': 0.090,
-    'UY_mobile': 0.270, 'UY_landline': 0.070,
-    'BR_mobile': 0.020, 'BR_landline': 0.009,
-    'US_any':    0.005,
-    // Audit fix Sprint 30: tarifas Europa (aprox dic 2025).
-    'FR_mobile': 0.080, 'FR_landline': 0.012,
-    'DE_mobile': 0.110, 'DE_landline': 0.012,
-    'IT_mobile': 0.090, 'IT_landline': 0.012,
-    'UK_mobile': 0.030, 'UK_landline': 0.012,
-    'PT_mobile': 0.080, 'PT_landline': 0.012,
-    'default':   0.080,
-  };
-  // Audit fix Sprint 17: detectar mobile vs landline correctamente por país.
-  // Las heurísticas usan los prefijos internacionales E.164 oficiales. Más
-  // preciso que asumir mobile siempre (que sobreestimaba ~25-35%).
-  function _detectCountryAndType(digits) {
-    if (!digits) return { country: 'default', isMobile: true };
-    // AR: +549<NUM> = móvil, +54<NUM> sin 9 = fijo (NUM sigue con prefijo área)
-    if (digits.startsWith('549')) return { country: 'AR', isMobile: true };
-    if (digits.startsWith('54'))  return { country: 'AR', isMobile: false };
-    // MX: +521<NUM> o +5219... = móvil (después del 52 va el "1"), +52<área 2-3 dígitos> = fijo
-    // En 2026, México usa 521 oficial para móviles desde el exterior
-    if (digits.startsWith('521')) return { country: 'MX', isMobile: true };
-    if (digits.startsWith('52'))  return { country: 'MX', isMobile: false };
-    // CL: +569<NUM> = móvil (Chile móvil 9 dígitos comienza con 9), +562<NUM> = fijo Santiago
-    if (digits.startsWith('569')) return { country: 'CL', isMobile: true };
-    if (digits.startsWith('56'))  return { country: 'CL', isMobile: false };
-    // CO: +573<NUM> = móvil (Colombia móvil empieza con 3), +57<área 1-2 dígitos> = fijo
-    if (digits.startsWith('573')) return { country: 'CO', isMobile: true };
-    if (digits.startsWith('57'))  return { country: 'CO', isMobile: false };
-    // PE: +519<NUM> = móvil (Perú móvil 9 dígitos comienza con 9), +511 = fijo Lima
-    if (digits.startsWith('519')) return { country: 'PE', isMobile: true };
-    if (digits.startsWith('51'))  return { country: 'PE', isMobile: false };
-    // EC: +5939<NUM> = móvil (Ecuador móvil), +593<área 1-2 dígitos no-9> = fijo
-    if (digits.startsWith('5939')) return { country: 'EC', isMobile: true };
-    if (digits.startsWith('593'))  return { country: 'EC', isMobile: false };
-    // BO: Bolivia mobile empieza con 6 o 7 después del 591. Fijo con 2/3/4.
-    if (/^591[67]/.test(digits)) return { country: 'BO', isMobile: true };
-    if (digits.startsWith('591')) return { country: 'BO', isMobile: false };
-    // UY: +5989<NUM> = móvil (Uruguay móvil 9 dígitos comienza con 9), +5982/4 = fijo
-    if (digits.startsWith('5989')) return { country: 'UY', isMobile: true };
-    if (digits.startsWith('598'))  return { country: 'UY', isMobile: false };
-    // ES: +346/+347 = móvil España (móviles empiezan con 6 o 7), +349/+348 = fijo
-    if (/^34[67]/.test(digits)) return { country: 'ES', isMobile: true };
-    if (digits.startsWith('34')) return { country: 'ES', isMobile: false };
-    // FR: +336/+337 = móvil Francia. +33{1-5,9} = fijo
-    if (/^33[67]/.test(digits)) return { country: 'FR', isMobile: true };
-    if (digits.startsWith('33'))  return { country: 'FR', isMobile: false };
-    // DE: +49{15-17} = móvil. Resto = fijo (simplificado).
-    if (/^491[5-7]/.test(digits)) return { country: 'DE', isMobile: true };
-    if (digits.startsWith('49'))  return { country: 'DE', isMobile: false };
-    // IT: +393 = móvil Italia. Resto = fijo
-    if (digits.startsWith('393')) return { country: 'IT', isMobile: true };
-    if (digits.startsWith('39'))  return { country: 'IT', isMobile: false };
-    // UK: +447 = móvil. Resto = fijo
-    if (digits.startsWith('447')) return { country: 'UK', isMobile: true };
-    if (digits.startsWith('44'))  return { country: 'UK', isMobile: false };
-    // PT: +3519 = móvil Portugal. Resto = fijo.
-    if (digits.startsWith('3519'))return { country: 'PT', isMobile: true };
-    if (digits.startsWith('351')) return { country: 'PT', isMobile: false };
-    // BR: +55<DD>9<NUM> = móvil (con 9 después del DD de área), +55<DD><NUM> = fijo
-    if (/^55\d{2}9/.test(digits)) return { country: 'BR', isMobile: true };
-    if (digits.startsWith('55'))  return { country: 'BR', isMobile: false };
-    // US/CA: no distinguimos mobile vs landline (tarifa unificada en Telnyx)
-    if (digits.startsWith('1')) return { country: 'US', isMobile: false };
-    return { country: 'default', isMobile: true };
-  }
-
-  function _estimateTelnyxCost(destinationPhone, durationSecs) {
-    if (!durationSecs) return { cost: 0, country: 'unknown', tariffKey: 'default' };
-    // Preferir el lookup real contra la rate sheet de Telnyx
-    // Telnyx factura en incrementos de 60s (mínimo 1 min, redondeo hacia arriba)
-    // — verificado contra CDRs reales 2026-07-10: 1s→1min, 79s→2min.
-    const billableMinutes = Math.max(1, Math.ceil(durationSecs / 60));
-    const realRate = _telnyxRateForNumber(destinationPhone);
-    if (realRate) {
-      const minutes = billableMinutes;
-      return {
-        cost: +(realRate.ratePerMin * minutes).toFixed(4),
-        country: realRate.country,
-        tariffKey: `${realRate.country}_${realRate.isMobile ? 'mobile' : 'landline'}_${realRate.matchedPrefix}`,
-        source: 'rate_sheet',
-        matchedPrefix: realRate.matchedPrefix,
-      };
-    }
-    // Fallback a la tabla hardcoded si no hay rate sheet o no matchea
-    const digits = String(destinationPhone || '').replace(/\D/g, '');
-    if (!digits) return { cost: 0, country: 'unknown', tariffKey: 'default' };
-    const { country, isMobile } = _detectCountryAndType(digits);
-    const tariffKey = country === 'US' ? 'US_any' : `${country}_${isMobile ? 'mobile' : 'landline'}`;
-    const rate = TELNYX_RATES_USD_PER_MIN[tariffKey] || TELNYX_RATES_USD_PER_MIN[`${country}_mobile`] || TELNYX_RATES_USD_PER_MIN['default'];
-    return { cost: +(rate * billableMinutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
   }
 
   const now = new Date().toISOString();
