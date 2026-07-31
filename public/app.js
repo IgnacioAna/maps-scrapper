@@ -2592,6 +2592,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     }
 
+    // Resuelve el micrófono elegido por el SDR ANTES de cada llamada.
+    // (2026-07-31) Bug reportado por el user: eligió su HyperX en el panel Audio
+    // y la llamada igual salió con el mic interno de la laptop. Causa: los
+    // `deviceId` que entrega el browser CADUCAN (cambian entre sesiones/permisos)
+    // y `constraints()` los pedía como `{ideal}` — si el id ya no existe, se cae
+    // al default de Windows EN SILENCIO. Solución: si el id guardado no está en
+    // la lista actual, se recupera el dispositivo por su NOMBRE y se re-guarda el
+    // id nuevo. Así "lo elegí una vez" vale para siempre.
+    async function _resolveMicId() {
+      const a = _audioCfg.get();
+      if (!a.micId && !a.micLabel) return '';
+      try {
+        const mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+        if (a.micId && mics.some(m => m.deviceId === a.micId)) return a.micId; // sigue vigente
+        if (a.micLabel) {
+          const norm = s => String(s || '').trim().toLowerCase();
+          const exacto = mics.find(m => norm(m.label) === norm(a.micLabel));
+          // Los labels cambian el número de puerto ("(7- HyperX...)" → "(4- HyperX...)")
+          // al reconectar el USB, así que también se compara sin ese prefijo.
+          const sinPuerto = s => norm(s).replace(/\((\d+)-\s*/g, '(');
+          const parecido = mics.find(m => m.label && sinPuerto(m.label) === sinPuerto(a.micLabel));
+          const hit = exacto || parecido;
+          if (hit) {
+            localStorage.setItem(_audioCfg.KEYS.mic, hit.deviceId);
+            localStorage.setItem(_audioCfg.KEYS.micLabel, hit.label || a.micLabel);
+            console.log('[audio] el id del mic elegido había caducado — recuperado por nombre:', hit.label);
+            return hit.deviceId;
+          }
+          console.warn('[audio] el mic elegido ("' + a.micLabel + '") no está conectado — se usa el del sistema');
+        }
+      } catch (e) { console.warn('[audio] no se pudo resolver el mic elegido:', e?.message); }
+      return a.micId || '';
+    }
+
     // Heurística de "micrófono integrado de la computadora". Caso real: el admin
     // hablaba a sus auriculares mientras el browser capturaba el array interno
     // ("Varios micrófonos (Intel® Smart Sound Technology)") porque sin deviceId
@@ -2648,6 +2682,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!box || !sel) return;
       const actual = _micChain?.micLabel || '';
       if (!actual || !_isBuiltInMic(actual)) { box.style.display = 'none'; return; }
+      // Si el SDR YA eligió un mic, no se le pregunta de nuevo (feedback del user:
+      // "para qué me hacés elegir si ya lo elegí en el panel Audio"). Con
+      // _resolveMicId su elección se respeta aunque el deviceId haya caducado; si
+      // aun así se está usando el interno, es porque ESE es el que eligió o el
+      // suyo está desconectado — y eso se ve en la línea "Mic:".
+      const elegido = _audioCfg.get();
+      if (elegido.micId || elegido.micLabel) { box.style.display = 'none'; return; }
       let mics = [];
       try { mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); } catch { return; }
       const otros = mics.filter(m => m.deviceId && m.deviceId !== 'communications' && !_isBuiltInMic(m.label));
@@ -8492,6 +8533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       injectChannels: (ch) => { _recChannels = ch; },
       channels: () => _recChannels,
       isBuiltIn: (l) => _isBuiltInMic(l),
+      resolveMicId: () => _resolveMicId(),
       micChain: () => _micChain && { micLabel: _micChain.micLabel, gain: _micChain.gain?.gain?.value },
       micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
     };
@@ -8976,7 +9018,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         _micChain = null;
         if (_audioCfg.micChainEnabled()) {
           try {
-            const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints() });
+            // Revalida el mic elegido (su deviceId pudo caducar) ANTES de capturar.
+            const micId = await _resolveMicId();
+            const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(micId) });
             const chain = await _buildMicChain(rawStream, _audioCfg.micGain());
             _callOpts.localStream = chain.stream;
             _callOpts.localElement = undefined;
