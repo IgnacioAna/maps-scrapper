@@ -31,9 +31,29 @@ Lo único reproducible por comando es el import de números (sección 5).
       crashea el builder).
 - [ ] La `RETELL_API_KEY`, leída del dashboard de **Railway**. **No se escribe
       en este documento** ni en ningún archivo del repo.
+- [ ] **La verificación de cuenta para llamadas salientes, hecha en Retell.**
+      Ver el aviso de abajo — es un trámite, no una config, y puede frenar
+      todo lo demás.
 - [ ] Un gestor de contraseñas a mano: el trunk va a generar un usuario y una
       contraseña SIP que **no van al repo**.
 - [ ] La decisión de la sección 3 tomada.
+
+> 🚨 **Verificación de cuenta para outbound — chequear ANTES de todo lo demás.**
+> Retell pide una **verificación de la cuenta** (un formulario con datos del
+> negocio) antes de habilitar las llamadas **salientes**. Sin eso, todo el
+> trunk puede quedar perfecto y `create-phone-call` seguir sin funcionar.
+>
+> **Fuente:** un tutorial de Retell en video, no la documentación oficial — así
+> que tratalo como *"andá a mirar si te lo pide"*, no como un hecho. Lo que sí
+> encaja: el dashboard de la cuenta muestra **"Getting started 0/7"** y plan
+> **free trial**, o sea que la onboarding no está completa.
+>
+> **Dónde mirar:** en el dashboard, la lista de "Getting started" y la sección
+> de Phone Numbers — si hay un paso de verificación pendiente, aparece ahí.
+> Si el trámite existe y tarda, **conviene arrancarlo hoy**, igual que la
+> pregunta de facturación: los dos son relojes que corren solos.
+>
+> **Anotar acá el resultado:** _(pendiente)_
 
 ---
 

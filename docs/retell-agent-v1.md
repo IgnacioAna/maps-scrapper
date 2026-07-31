@@ -138,6 +138,20 @@ elegido):
 > elegancia y ofrecés retomar más adelante. Nunca discutís ni insistís una
 > cuarta vez.
 
+### Mejora pendiente para la primera iteración: ejemplos multi-shot
+
+El prompt de arriba dice **cómo** hablar, pero no muestra ni una conversación
+real. Los builds de Retell que funcionan bien suelen incluir, al final del
+prompt global, **2-4 ejemplos de llamadas completas** —una que agenda, una que
+objeta y sale a callback, una que pasa gatekeeper— porque el modelo copia el
+registro y el ritmo de los ejemplos mucho mejor de lo que sigue una
+instrucción abstracta.
+
+**No se escriben ahora a propósito:** los ejemplos buenos salen de los
+transcripts reales del piloto, no de la imaginación. Es la primera mejora a
+meter cuando 26-06 tenga los primeros 20 transcripts leídos, y hay que
+vigilar el largo (el prompt global se paga en cada turno).
+
 ---
 
 ## Variables dinámicas (las manda el dispatch del SCM)
