@@ -102,16 +102,67 @@ SDRs para probar el agente.
    asignarlo a la nueva lo saca de la actual?** Se ve en el momento de
    asignar.
 
+### Uso real de cada número (medido, no estimado)
+
+Del `callLog` del SCM, últimos 90 días — 877 llamadas, de las cuales 130 sin
+`fromNumber` registrado (llamadas viejas, antes de que se guardara el campo):
+
+| Número | Label | 90 días | 30 días | Rol |
+|---|---|---|---|---|
+| `…0849` | Ignacio USA Cold Calling | 351 | 205 | **es el `default` del routing** |
+| `…0620` | USA 2 | 199 | 199 | rotación |
+| `…5783` | USA 3 | 197 | 197 | rotación |
+
+USA 2 y USA 3 están empatados (los dos entraron hace ~30 días y rotan
+parejo). El primero es el más cargado **y** el fallback del routing: moverlo
+dejaría al dialer humano con su `default` apuntando a un número que ya vive
+en otra conexión.
+
 ### Registro de la decisión
 
-> **Decisión:** _(pendiente)_
-> **Fecha:** _(pendiente)_
-> **Números del agente (E.164):** _(pendiente)_
-> **¿Ya comprados?** _(pendiente — si la opción es A, anotar si es un
-> pendiente antes del paso 4)_
+> **Decisión: opción B — mover 1 de los 3 actuales.**
+> **Fecha:** 2026-07-31
+> **Número del agente:** `+17867725783` — "USA 3",
+> id `telnyx_num_1783725955014_ctkmvz`.
 >
-> **Confirmación 1 — números activos reales:** _(pendiente)_
-> **Confirmación 2 — ¿un número puede estar en dos conexiones?:** _(pendiente)_
+> **Por qué ese:** es el menos usado de los tres (197 llamadas en 90 días) y
+> **no es el `default` del `countryRouting`**, así que moverlo no deja al
+> dialer humano con su fallback apuntando fuera de su conexión. Entre USA 2 y
+> USA 3 la diferencia es de 2 llamadas: si en el portal USA 3 resulta
+> incómodo de mover, USA 2 es equivalente.
+>
+> **Confirmación 1 — números activos reales:** _(pendiente — mirar el portal)_
+> **Confirmación 2 — ¿un número puede estar en dos conexiones?:** _(pendiente
+> — se ve al asignarlo en el paso 8 de la sección 4)_
+
+### ⚠️ El modo de falla de esta opción, y cuál es la salida
+
+Después de mover el número, **el dialer humano lo va a seguir eligiendo**. Su
+rotación recorre todos los números activos del pool del SCM, y mover el número
+en Telnyx no lo saca de ese pool: aproximadamente **1 de cada 3 llamadas de
+las SDRs va a salir con el número del agente**.
+
+Si Telnyx no permite usar como caller ID, desde la conexión del dialer humano,
+un número que ahora vive en la conexión FQDN, **esas llamadas fallan**. Es
+exactamente la confirmación 2 de arriba, y por eso la verificación de la
+sección 7 exige una llamada humana real después del cambio.
+
+**La salida obvia no funciona.** Marcar el número como inactivo en el panel
+Centralita lo saca del pool para el dialer humano, sí — pero también para el
+agente: su selector filtra por activo antes de buscar el `fromNumberId`, así
+que el agente perdería su caller ID y volvería a rotar sobre los otros dos.
+
+Quedan dos salidas reales, en este orden:
+
+1. **Fijar `countryRouting` para los países que llaman las SDRs** a un número
+   que no sea el del agente. El routing por país gana sobre la rotación en el
+   dialer humano, así que deja de elegirlo. **Costo:** las SDRs pierden la
+   rotación anti-quemado en esos países y quedan pegadas a un solo caller ID.
+2. **Revertir a la opción A**: devolver USA 3 a la conexión original y comprar
+   un número nuevo para el agente (~$1-2/mes). Es la única salida que no le
+   saca nada a nadie.
+
+Si la llamada de verificación falla, no hay que investigar mucho: es esto.
 
 ---
 
@@ -210,7 +261,17 @@ un error de "no agent bound", probarlos — no genera cargos.
 `PUT /api/retell/config` (admin) con **`fromNumberId`** = el id del número del
 agente en el panel Centralita (formato `telnyx_num_…`).
 
+Según la decisión de la sección 3:
+
+```json
+{ "fromNumberId": "telnyx_num_1783725955014_ctkmvz", "enabled": false }
+```
+
 Dejar **`enabled: false`**: todavía no se llama a nadie.
+
+> Los 3 secretos (`apiKey`, `webhookSecret`, `toolSecret`) vienen de env vars
+> de Railway y el PUT los **rechaza con 409** si se mandan. No incluirlos en el
+> body.
 
 ### Por qué fijar `fromNumberId` y no confiar en la rotación
 
