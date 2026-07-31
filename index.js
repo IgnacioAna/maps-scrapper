@@ -15308,6 +15308,275 @@ app.put("/api/retell/config", requireAuth, requireRole("admin"), (req, res) => {
   res.json(_publicRetellConfig(loadRetellConfig()));
 });
 
+// ── Phase 24 plan 24-03: POST /api/admin/voice-agent/dispatch ─────────────
+// La única superficie del sistema que gasta dinero real de forma masiva:
+// dispara llamadas salientes reales a través de la API de Retell. Todo lo
+// que sigue (cap diario, RBAC admin, dry-run, flag de in-flight) existe para
+// que un click no se convierta en una factura sorpresa (threat register
+// T-24-03-01..08).
+
+// Duración asumida para estimar el costo de TELEFONÍA (Telnyx) en el
+// dry-run. NO modela el costo por minuto del agente de Retell — el response
+// lo rotula explícitamente como estimatedTelnyxCostUsd, no estimatedCost.
+const RETELL_ASSUMED_CALL_SECS = 90;
+
+// Flag de módulo: un dispatch a la vez. Liberado en el `finally` del handler
+// (T-24-03-01: doble click no puede disparar el lote dos veces).
+let _voiceDispatchInFlight = false;
+
+// Contador en memoria del cap diario, SUMADO al conteo real del callLog
+// (_retellCallsTodayCount). Necesario porque el callLog recién se escribe
+// cuando vuelve el webhook (plan 24-04/24-05): sin este contador, dos
+// dispatches seguidos en el mismo minuto pasarían los dos el cap
+// (T-24-03-02). Objeto mutado in-place (nunca reasignado) para que la
+// referencia expuesta en globalThis.__voiceAgent siga viva tras el rollover.
+const _voiceDispatchedToday = { dayKey: '', count: 0 };
+
+// Rollover obligatorio: compara contra el día de negocio actual (_bizDayStr)
+// y resetea ANTES de leer o sumar. Sin este reset el contador nunca vuelve a
+// cero y el dailyCap queda agotado para siempre desde el segundo día — el
+// dispatch se bloquearía solo con un 409 que parece un cap legítimo.
+// Invocado al principio del handler y de nuevo justo antes de sumar los
+// éxitos, para que la comparación viva en un solo lugar.
+function _voiceDispatchRollover() {
+  const today = _bizDayStr(Date.now());
+  if (_voiceDispatchedToday.dayKey !== today) {
+    _voiceDispatchedToday.dayKey = today;
+    _voiceDispatchedToday.count = 0;
+  }
+}
+
+// Correlación callId → { leadId, at } — redundancia sobre metadata.leadId
+// que Retell ecoa en los webhooks (research §2.5), NO la fuente primaria.
+// Útil para el plan 24-05 si el webhook necesita resolver el lead sin
+// depender de que metadata haya viajado intacta. Limpieza de entries de más
+// de 6h en cada dispatch real.
+const _pendingRetellCalls = new Map();
+function _voiceCleanPendingRetellCalls() {
+  const cutoff = Date.now() - 6 * 60 * 60 * 1000;
+  for (const [callId, info] of _pendingRetellCalls) {
+    if (!info || !info.at || info.at < cutoff) _pendingRetellCalls.delete(callId);
+  }
+}
+
+// fetch inyectable para tests. El handler de abajo es un route handler
+// Express (no una función standalone invocable), así que el punto de
+// inyección es este objeto de módulo — los tests lo pisan vía
+// globalThis.__voiceAgent._voiceDispatchFetch.impl y lo restauran en
+// afterAll (mismo espíritu que fetchImpl de _telnyxNumberLookup, adaptado
+// porque acá no hay una función pura que reciba el parámetro directamente).
+const _voiceDispatchFetch = { impl: fetch };
+
+// POST a la API de Retell. Nunca lanza: siempre devuelve { ok, ... }. Timeout
+// 15s con AbortController (research §6.6, T-24-03-06). El body de error se
+// recorta a 300 chars (T-24-03-08: nunca reenviar headers ni un blob gigante
+// que pudiera traer eco de credenciales).
+async function _retellCreatePhoneCall(apiKey, payload, { fetchImpl, timeoutMs = 15000 } = {}) {
+  const doFetch = fetchImpl || _voiceDispatchFetch.impl;
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => { try { ctrl.abort(); } catch {} }, timeoutMs) : null;
+  try {
+    const resp = await doFetch('https://api.retellai.com/v2/create-phone-call', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: ctrl?.signal,
+    });
+    const bodyText = resp && typeof resp.text === 'function' ? await resp.text().catch(() => '') : '';
+    let json = null;
+    try { json = bodyText ? JSON.parse(bodyText) : null; } catch {}
+    if (!resp || !resp.ok) {
+      return { ok: false, status: resp?.status, error: (bodyText || 'http error').substring(0, 300) };
+    }
+    return { ok: true, data: json || {} };
+  } catch (e) {
+    return { ok: false, error: (e.name === 'AbortError' ? 'timeout' : (e.message || 'error')).substring(0, 300) };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+Object.assign(globalThis.__voiceAgent, {
+  RETELL_ASSUMED_CALL_SECS,
+  _voiceDispatchedToday,
+  _voiceDispatchRollover,
+  _voiceDispatchFetch,
+  _pendingRetellCalls,
+  _retellCreatePhoneCall,
+});
+
+// POST /api/admin/voice-agent/dispatch — admin only. Body:
+// { country?, count, withDoctor?, dryRun? }. Elige leads de la cartera del
+// agente (VOICE_AGENT_SETTER_ID), decide caller ID, arma variables dinámicas
+// y le pide a Retell que llame. NO escribe nada en setters.json (D-24-05: la
+// única escritura de callLog por llamada la hace el webhook de 24-04/24-05).
+app.post("/api/admin/voice-agent/dispatch", requireAuth, requireRole("admin"), async (req, res) => {
+  // Rollover al principio del handler: cualquier lectura del contador que
+  // siga (incluida la del guard de cap, más abajo) ya ve el día correcto.
+  _voiceDispatchRollover();
+
+  const { country, count, withDoctor, dryRun } = req.body || {};
+
+  const n = Number(count);
+  if (!Number.isInteger(n) || n < 1 || n > 50) {
+    return res.status(400).json({ error: "count debe ser un entero entre 1 y 50." });
+  }
+
+  const cfg = loadRetellConfig();
+  if (cfg.enabled !== true) {
+    return res.status(409).json({ error: "El agente está apagado." });
+  }
+  if (!cfg.apiKey || !cfg.apiKey.trim()) {
+    return res.status(503).json({ error: "Retell no configurado. Falta la API key." });
+  }
+  if (!cfg.agentId || !cfg.agentId.trim()) {
+    return res.status(409).json({ error: "Falta configurar el agentId de Retell." });
+  }
+  const telnyxCfg = loadTelnyxConfig();
+  const activeNumbers = (telnyxCfg.numbers || []).filter((x) => x.active !== false);
+  if (!activeNumbers.length) {
+    return res.status(409).json({ error: "No hay ningún número activo en Telnyx para usar como caller ID." });
+  }
+
+  if (_voiceDispatchInFlight) {
+    return res.status(409).json({ error: "Ya hay un dispatch en curso. Esperá a que termine." });
+  }
+  _voiceDispatchInFlight = true;
+
+  try {
+    const data = loadSettersData();
+    const calledToday = _retellCallsTodayCount(data);
+    const remaining = cfg.dailyCap - calledToday - _voiceDispatchedToday.count;
+    if (remaining <= 0) {
+      return res.status(409).json({
+        error: `Cap diario alcanzado (${cfg.dailyCap}). Ya se hicieron ${calledToday + _voiceDispatchedToday.count} llamadas hoy.`,
+        capRemaining: 0,
+      });
+    }
+
+    const effectiveCount = Math.min(n, remaining);
+    const selection = _retellSelectDispatchLeads(data, {
+      country: country || '',
+      count: effectiveCount,
+      withDoctor: !!withDoctor,
+      now: Date.now(),
+    });
+
+    if (!selection.length) {
+      return res.json({
+        requested: n,
+        capRemaining: remaining,
+        dispatched: [],
+        failed: [],
+        selected: 0,
+        rotationIdx: cfg.rotationIdx,
+        reason: "No hay leads elegibles del agente para esos filtros.",
+      });
+    }
+
+    // Caller ID decidido SECUENCIALMENTE, antes de correr el pool: aunque
+    // los fetches vayan en paralelo, la asignación de números tiene que ser
+    // determinística y testeable (regla del plan) — cada thunk recibe su
+    // número ya resuelto.
+    let rotationIdx = Number(cfg.rotationIdx) || 0;
+    const plan = selection.map(({ id, lead }) => {
+      const pick = _retellPickNumberForDestination(telnyxCfg, { ...cfg, rotationIdx }, lead.phone);
+      rotationIdx = pick.nextRotationIdx;
+      return { id, lead, number: pick.number };
+    });
+
+    if (dryRun === true) {
+      // Cortar acá: ni un fetch a Retell, ni un incremento de rotationIdx
+      // (cfg.rotationIdx nunca se toca en esta rama), ni del contador diario.
+      let estimatedTelnyxCostUsd = 0;
+      const preview = plan.map(({ id, lead, number }) => {
+        const est = _estimateTelnyxCost(lead.phone, RETELL_ASSUMED_CALL_SECS);
+        estimatedTelnyxCostUsd += est.cost || 0;
+        return {
+          leadId: id,
+          name: lead.name || '',
+          phone: lead.phone || '',
+          fromNumber: number ? number.phone : null,
+        };
+      });
+      return res.json({
+        requested: n,
+        capRemaining: remaining,
+        dryRun: true,
+        selected: preview.length,
+        estimatedTelnyxCostUsd: +estimatedTelnyxCostUsd.toFixed(4),
+        dispatched: preview,
+        failed: [],
+        rotationIdx: cfg.rotationIdx,
+      });
+    }
+
+    // Disparo real: un thunk por lead, corridos con concurrencia 2 (research
+    // §6.6: el rate limit real de Retell es desconocido, 2 está muy por
+    // debajo de cualquier umbral razonable).
+    const tasks = plan.map(({ id, lead, number }) => async () => {
+      if (!number) {
+        return { leadId: id, error: "No hay número activo disponible para este destino." };
+      }
+      const dynVars = _retellDynamicVariables({ id, ...lead }, cfg);
+      const payload = {
+        from_number: number.phone,
+        to_number: lead.phone,
+        override_agent_id: cfg.agentId,
+        metadata: { leadId: id, setterId: VOICE_AGENT_SETTER_ID },
+        retell_llm_dynamic_variables: dynVars,
+      };
+      const result = await _retellCreatePhoneCall(cfg.apiKey, payload, { fetchImpl: _voiceDispatchFetch.impl });
+      if (!result.ok) {
+        // Research §2.6: hasta que Phase 26 importe los números a Retell,
+        // TODOS los leads van a caer acá con un error de from_number no
+        // reconocido — se reporta por lead y el lote sigue, nunca rompe.
+        const detail = `${result.status ? `HTTP ${result.status}: ` : ''}${result.error || 'fallo desconocido'}`;
+        return { leadId: id, error: detail.substring(0, 300) };
+      }
+      return { leadId: id, callId: result.data?.call_id || '', fromNumber: number.phone };
+    });
+
+    const results = await _runPool(tasks, 2);
+    const dispatched = [];
+    const failed = [];
+    for (const r of results) {
+      if (r.error) failed.push(r);
+      else dispatched.push(r);
+    }
+
+    // Persistir rotationIdx final. NO se escribe nada en setters.json — la
+    // única escritura de callLog por llamada la hace el webhook (D-24-05).
+    cfg.rotationIdx = rotationIdx;
+    cfg.updatedAt = new Date().toISOString();
+    saveRetellConfig(cfg);
+
+    // Rollover de nuevo justo antes de sumar (comparación en un solo lugar,
+    // por si el dispatch cruzó la medianoche de negocio mientras corría).
+    _voiceDispatchRollover();
+    _voiceDispatchedToday.count += dispatched.length;
+
+    _voiceCleanPendingRetellCalls();
+    const nowMs = Date.now();
+    for (const d of dispatched) {
+      if (d.callId) _pendingRetellCalls.set(d.callId, { leadId: d.leadId, at: nowMs });
+    }
+
+    console.log(`[voice-agent] dispatch: ${dispatched.length} ok, ${failed.length} fallidas (solicitadas ${n}, cap restante ${remaining})`);
+
+    res.json({
+      requested: n,
+      capRemaining: remaining,
+      dispatched,
+      failed,
+      selected: plan.length,
+      rotationIdx: cfg.rotationIdx,
+    });
+  } finally {
+    _voiceDispatchInFlight = false;
+  }
+});
+
 // POST /api/telnyx/numbers — admin agrega un número virtual a la lista.
 // Body: { phone, label, country }
 app.post("/api/telnyx/numbers", requireAuth, requireRole("admin"), (req, res) => {
