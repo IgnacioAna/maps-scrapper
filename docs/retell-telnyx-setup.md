@@ -38,22 +38,33 @@ Lo único reproducible por comando es el import de números (sección 5).
       contraseña SIP que **no van al repo**.
 - [ ] La decisión de la sección 3 tomada.
 
-> 🚨 **Verificación de cuenta para outbound — chequear ANTES de todo lo demás.**
-> Retell pide una **verificación de la cuenta** (un formulario con datos del
-> negocio) antes de habilitar las llamadas **salientes**. Sin eso, todo el
-> trunk puede quedar perfecto y `create-phone-call` seguir sin funcionar.
+> **Verificación de cuenta para outbound — revisado 2026-07-31, sin bloqueo
+> a la vista.** Un tutorial en video decía que Retell exige verificar la
+> cuenta antes de habilitar llamadas salientes. Se revisó el dashboard: el
+> **"Getting started 0/7"** NO es eso — es un tutorial de onboarding con pasos
+> que se van desbloqueando en cadena:
 >
-> **Fuente:** un tutorial de Retell en video, no la documentación oficial — así
-> que tratalo como *"andá a mirar si te lo pide"*, no como un hecho. Lo que sí
-> encaja: el dashboard de la cuenta muestra **"Getting started 0/7"** y plan
-> **free trial**, o sea que la onboarding no está completa.
+> | # | Paso | Estado |
+> |---|---|---|
+> | 1 | Build your first agent | disponible |
+> | 2 | Run a test call | 🔒 se desbloquea con el 1 |
+> | 3 | View transcript and analysis | 🔒 se desbloquea con el 2 |
+> | 4 | Add a phone number | disponible |
+> | 5 | Make your first real call | 🔒 se desbloquea con el 4 |
+> | 6 | Invite a teammate | disponible |
+> | 7 | Try advanced functions (simulation testing · AI quality assurance) | 🔒 |
 >
-> **Dónde mirar:** en el dashboard, la lista de "Getting started" y la sección
-> de Phone Numbers — si hay un paso de verificación pendiente, aparece ahí.
-> Si el trámite existe y tarda, **conviene arrancarlo hoy**, igual que la
-> pregunta de facturación: los dos son relojes que corren solos.
->
-> **Anotar acá el resultado:** _(pendiente)_
+> Ninguno es un trámite de verificación. **Queda un solo lugar donde podría
+> aparecer: el paso "Add a phone number"** — que es justo el momento del import
+> del trunk (sección 5). Si ahí salta un formulario de verificación, anotarlo
+> acá y arrancarlo enseguida: _(pendiente de llegar a ese paso)_
+
+> 💡 **El agente se puede construir y probar SIN el trunk.** El paso 2 del
+> onboarding ("Run a test call") es una **llamada web desde el navegador**, no
+> telefónica: no toca Telnyx ni consume número. Solo el paso 5 ("Make your
+> first real call") necesita el trunk. Esto permite invertir el orden de esta
+> fase: **cargar el agente y validar voz, tono y flow primero, gratis**, y
+> dejar el trunk para cuando el agente ya suene bien.
 
 ---
 
@@ -435,7 +446,7 @@ Canal: chat del dashboard de Retell o `support@retellai.com`.
 
 | Fecha de envio | Canal | Fecha de respuesta | Respuesta |
 |---|---|---|---|
-| _(pendiente — borrador listo 2026-07-31)_ | email a `support@retellai.com` | _(pendiente)_ | _(pendiente)_ |
+| **2026-07-31 ✅ enviado** | email a `support@retellai.com` | _(esperando)_ | _(pendiente)_ |
 
 **Estado:** el borrador está escrito en el Gmail de la cuenta, listo para
 enviar con un click (asunto: *"Billing question: is ring time billed on
