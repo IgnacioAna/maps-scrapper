@@ -164,13 +164,32 @@ lote piloto real en México con resultados medibles.
 
   5. Confirmado con Retell antes de gastar: facturación ring vs conectado,
      costo real de la voz elegida, formato de firma del webhook.
-**Plans**: 3 (sugeridos; 26-02 y 26-03 son `autonomous: false`)
+**Plans**: 6 (planificado 2026-07-31 — los 3 sugeridos se abrieron a 6. Motivos:
+el documento del agente no entra en un plan dentro del presupuesto de contexto
+(contrato con el código + 9 nodos + globals + checklist), el setup del trunk y
+la llamada de prueba son sesiones de dashboard distintas con dependencia real
+entre ellas, y la compuerta bloqueante D-26-03 se modeló como plan propio para
+que "probar" y "gastar" no compartan plan. 4 de los 6 son `autonomous: false`)
 
 Plans:
 
-- [ ] 26-01: Documento del agente (flow 9 nodos + extraction + settings) desde los guiones
-- [ ] 26-02: Setup trunk Telnyx↔Retell + import números + voz + llamada de prueba al user
-- [ ] 26-03: Lote piloto MX + medición de cierre vs baseline
+**Wave 1**
+- [ ] 26-01: Documento del agente — Parte A: contrato con el código (Global Settings, global prompt, variables dinámicas, Post Call Data Extraction, tool book, webhook)
+
+**Wave 2**
+- [ ] 26-02: Documento del agente — Parte B: los 9 nodos, Global Nodes (DNC + "¿sos un robot?"), tabla de transiciones y checklist de carga
+
+**Wave 3**
+- [ ] 26-03: Guía + setup del trunk Telnyx↔Retell, decisión de números, import a Retell y pregunta de facturación enviada *(autonomous: false)*
+
+**Wave 4**
+- [ ] 26-04: Cargar el agente en Retell + elegir voz entre 3 candidatas + llamada de prueba al user + verificación de `agent_version` *(autonomous: false)*
+
+**Wave 5**
+- [ ] 26-05: **Compuerta D-26-03** — reputación de cada caller ID + GO/NO-GO con presupuesto por escenario de facturación *(autonomous: false)*
+
+**Wave 6**
+- [ ] 26-06: Lote piloto MX por tandas de 10 + cierre vs baseline humano *(autonomous: false)*
 
 ### Phase 27: Banco de conocimiento unificado
 
