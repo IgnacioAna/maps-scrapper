@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T15:41:56.434Z"
+last_updated: "2026-07-31T16:10:00.000Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
   completed_phases: 4
   total_plans: 22
-  completed_plans: 16
+  completed_plans: 17
   percent: 15
 ---
 
@@ -33,10 +33,10 @@ cada phase.
 ## Current Position
 
 Phase: 24 (integracion-backend-retell) — EXECUTING
-Plan: 24-01 EXECUTED (1/5) — próximo 24-02
+Plan: 24-02 EXECUTED (2/5) — próximo 24-03
 
-- **Phase:** 24 — Integración backend Retell — **En ejecución (1/5 planes)**
-- **Plan:** 24-01 EXECUTED (2026-07-31) — 24-02..24-05 pendientes (waves
+- **Phase:** 24 — Integración backend Retell — **En ejecución (2/5 planes)**
+- **Plan:** 24-02 EXECUTED (2026-07-31) — 24-03..24-05 pendientes (waves
   serializadas, todo toca `index.js`).
 - **Status:** Executing Phase 24
 
@@ -52,11 +52,32 @@ Plan: 24-01 EXECUTED (1/5) — próximo 24-02
   (`git diff --cached --name-only -- tests/` solo lista el archivo nuevo).
   VOICE-02 completado. Detalle en `24-01-SUMMARY.md`.
 
-- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-02-PLAN.md
-  (config Retell env>JSON + pseudo-SDR `setter_agente_ia`, VOICE-01/06,
-  wave 2 — bloqueado hasta que 24-01 esté mergeado, que ya lo está).
+- **24-02 EXECUTED (2026-07-31)** — config Retell env>JSON (patrón Telnyx
+  clonado) + log de eventos + endpoints admin-only + regla #21 completa +
+  pseudo-SDR `setter_agente_ia`. Commits `72f175f` (Task 1: módulo de
+  config — `loadRetellConfig`/`saveRetellConfig`/`_publicRetellConfig`
+  con overlay env>JSON, `_retellWebhookSecret` con fallback a `apiKey`
+  [corrección research §2.1: Retell firma con el mismo API key, sin
+  signing secret aparte], `_retellToolSecret` sin fallback, seed de boot
+  del pseudo-SDR guardado por `NODE_ENV !== 'test'`), `b280d18` (Task 2:
+  `GET`/`PUT /api/retell/config` admin-only con 409 env-sourced +
+  self-healing + `retell_config.json`/`retell_events.json` en las 5
+  superficies de la regla #21 — `BACKUP_FILES`, `seedVolumeFromRepo`,
+  export-data [lectura CRUDA sin overlay de env, para que el export nunca
+  filtre el secret efectivo], import-data, `pre-deploy.js`), `649e76e`
+  (Task 3: `tests/retell-config.test.js`, 26 tests — RBAC, no-leak,
+  env-sourced, self-healing, fallback webhookSecret, validaciones,
+  round-trip export/import, pseudo-SDR visible con fila en
+  `team-performance`). Suite completa **1046/1046** verde (1020 + 26
+  nuevos), solo se sumaron 2 claves al `EXPECTED_KEYS` de
+  `export-data-full.test.js` (pactado por el plan). VOICE-01/VOICE-06
+  completados. Detalle en `24-02-SUMMARY.md`.
 
-- **Last activity:** 2026-07-31 — 24-01 ejecutado (executor secuencial,
+- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-03-PLAN.md
+  (dispatch por lote + caller ID server-side + dry-run + cap diario,
+  VOICE-03, wave 3).
+
+- **Last activity:** 2026-07-31 — 24-02 ejecutado (executor secuencial,
   working tree principal, sin worktree).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
@@ -674,10 +695,42 @@ Contra HEAD `a9e4886`:
   se vuelve a correr `roadmap.update-plan-progress` sobre este milestone,
   revisar la fila del `## Resumen` después.
 
+- **24-02:** `gsd-sdk` no está en PATH en este entorno (confirmado también en
+  el `_notes` de `.planning/config.json`) — todos los commits, el SUMMARY, y
+  las actualizaciones de STATE.md/ROADMAP.md/REQUIREMENTS.md de este plan se
+  hicieron manualmente con git + Edit, sin invocar `gsd-sdk query`.
+
+- **24-02:** `VOICE_AGENT_SETTER_NAME`/`VOICE_AGENT_SETTER_ID` se declararon
+  junto al seed de boot (index.js ~6716, inmediatamente después de
+  `mutateSettersData`), NO dentro del bloque de config de Retell (~14190)
+  donde el plan las agrupaba conceptualmente. `const` no hace hoisting (a
+  diferencia de las `function` declarations que sí se usan en el resto del
+  archivo) — declararlas solo en el bloque de Retell habría hecho que el seed
+  de boot, que corre antes en el orden de ejecución del módulo, lanzara
+  "Cannot access before initialization". El bloque de Retell las referencia
+  sin redeclararlas.
+
+- **24-02:** `GET /api/admin/export-data` lee `retellConfig` CRUDO del disco
+  (no vía `loadRetellConfig()`, que aplica el overlay de env vars) — a
+  diferencia de Telnyx, que sí exporta el valor overlayeado. Necesario para
+  cumplir el requisito explícito del plan ("el export NO incluye el valor
+  del apiKey cuando viene de env"): reusar `loadRetellConfig()` tal cual
+  habría filtrado el secret efectivo de Railway en el JSON de respuesta.
+  Verificado por test dedicado en `tests/retell-config.test.js`. No se tocó
+  el comportamiento de `telnyxConfig` en el export (fuera de alcance).
+
+- **24-02:** el hueco de `seedVolumeFromRepo` para los archivos de Telnyx
+  (`telnyx_config.json`/`telnyx_events.json`, documentado por el research
+  §5.2) se dejó intacto a propósito — solo se agregaron `retell_config.json`/
+  `retell_events.json` al array. Arreglar el hueco de Telnyx habría sido un
+  cambio de comportamiento fuera de alcance de este plan.
+
 ---
 
-*Last updated: 2026-07-31 (24-01 ejecutado — `_applyCallOutcome` extraído
-como helper puro, helpers de costo Telnyx en scope de módulo, paridad
-handler↔helper garantizada por 12 tests nuevos + suite completa 1020/1020
-verde. VOICE-02 completado. Próximo: 24-02, config Retell env>JSON +
-pseudo-SDR).*
+*Last updated: 2026-07-31 (24-02 ejecutado — config Retell env>JSON clonada
+del patrón Telnyx, endpoints admin-only `GET`/`PUT /api/retell/config` con
+409 env-sourced + self-healing, `retell_config.json`/`retell_events.json`
+en las 5 superficies de la regla #21, pseudo-SDR `setter_agente_ia`
+sembrado en boot con fila comparable en Equipo. 26 tests nuevos, suite
+completa 1046/1046 verde. VOICE-01/VOICE-06 completados. Próximo: 24-03,
+dispatch por lote + caller ID server-side).*

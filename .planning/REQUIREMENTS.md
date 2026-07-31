@@ -166,7 +166,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### VOICE — Integración y agente
 
-- [ ] **VOICE-01**: Config Retell con patrón env>JSON de Telnyx
+- [x] **VOICE-01**: Config Retell con patrón env>JSON de Telnyx
   (`RETELL_API_KEY` + `RETELL_WEBHOOK_SECRET` como env vars que bloquean
   edición desde panel; `retell_config.json` para `agentId`, `fromNumberId`,
   `dailyCap`, `enabled`). Sumado a BACKUP_FILES, export-data, import-data,
@@ -210,7 +210,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   `mutateSettersData`. La extraction (nota_seguimiento, callback_fecha_hora,
   doctor_name, recepcionista_nombre, objecion) persiste en notes[]/callbackAt/
   lead.doctor.
-- [ ] **VOICE-06**: Pseudo-SDR `setter_agente_ia` ("Agente IA") sin user
+- [x] **VOICE-06**: Pseudo-SDR `setter_agente_ia` ("Agente IA") sin user
   vinculado, NO hidden: fila comparable en Equipo/Comando/Mi rendimiento/
   Distribución sin tocar ninguna métrica (la atribución cae sola por
   assignedTo). Lote piloto se asigna con `pool-distribute` existente.

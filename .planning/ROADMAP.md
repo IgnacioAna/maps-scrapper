@@ -96,7 +96,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 24-02-PLAN.md — Config Retell env>JSON + regla #21 completa + pseudo-SDR `setter_agente_ia` (VOICE-01/06, wave 2)
+- [x] 24-02-PLAN.md — Config Retell env>JSON + regla #21 completa + pseudo-SDR `setter_agente_ia` (VOICE-01/06, wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
