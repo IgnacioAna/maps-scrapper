@@ -2556,6 +2556,114 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cadena Web Audio del micrófono de la llamada en curso (gain ajustable en
     // vivo + label del mic realmente capturado). Se arma en _startTelnyxCall.
     let _micChain = null;
+
+    // Construye la cadena de procesamiento del mic sobre un stream capturado.
+    // Devuelve { stream, ctx, gain, micLabel, cleanup }. Se usa al iniciar la
+    // llamada y al cambiar de micrófono en vivo.
+    async function _buildMicChain(rawStream, gainValue) {
+      const bctx = new (window.AudioContext || window.webkitAudioContext)();
+      await bctx.resume();
+      const bsrc = bctx.createMediaStreamSource(rawStream);
+      // Highpass: saca retumbe/ruido grave de la sala, que el boost si no
+      // amplificaría junto con la voz.
+      const bhp = bctx.createBiquadFilter();
+      bhp.type = 'highpass'; bhp.frequency.value = 100; bhp.Q.value = 0.7;
+      const bgain = bctx.createGain(); bgain.gain.value = gainValue;
+      // Compresor + limitador: la clave de por qué esto sirve para TODOS. Los
+      // datos de prod tenían niveles fuera de rango por los dos lados (0.188 y
+      // 0.368 = no lo escuchan; 1.146 = satura). El compresor levanta lo bajo y
+      // el limitador contiene lo alto. Verificado: 0.188→0.614, 1.146→0.931.
+      const bcomp = bctx.createDynamicsCompressor();
+      bcomp.threshold.value = -12; bcomp.knee.value = 8; bcomp.ratio.value = 3;
+      bcomp.attack.value = 0.005; bcomp.release.value = 0.15;
+      const blim = bctx.createDynamicsCompressor();
+      blim.threshold.value = -2; blim.knee.value = 0; blim.ratio.value = 20;
+      blim.attack.value = 0.001; blim.release.value = 0.06;
+      const bdest = bctx.createMediaStreamDestination();
+      bsrc.connect(bhp).connect(bgain).connect(bcomp).connect(blim).connect(bdest);
+      return {
+        stream: bdest.stream, ctx: bctx, gain: bgain,
+        // El label se lee del track CRUDO: el procesado viene con label vacío.
+        micLabel: (rawStream.getAudioTracks?.()[0]?.label || ''),
+        cleanup: () => {
+          try { rawStream.getTracks().forEach(t => t.stop()); } catch {}
+          try { bctx.close(); } catch {}
+        },
+      };
+    }
+
+    // Heurística de "micrófono integrado de la computadora". Caso real: el admin
+    // hablaba a sus auriculares mientras el browser capturaba el array interno
+    // ("Varios micrófonos (Intel® Smart Sound Technology)") porque sin deviceId
+    // elegido se usa el default de Windows.
+    function _isBuiltInMic(label) {
+      const s = String(label || '').toLowerCase();
+      if (!s) return false;
+      return /smart sound|varios micr|multiple mic|array|internal|integrad|built-?in|realtek|macbook|interno|laptop|notebook/.test(s);
+    }
+
+    // Cambia el micrófono SIN cortar la llamada: captura el nuevo, lo pasa por la
+    // cadena y reemplaza el track del sender (replaceTrack). Si algo falla, el
+    // track anterior sigue en su lugar — la llamada nunca queda muda.
+    async function _swapMicLive(deviceId, label) {
+      const status = document.getElementById('telnyx-mic-swap-status');
+      const say = (t, c) => { if (status) { status.textContent = t; status.style.color = c || 'rgba(255,255,255,0.55)'; } };
+      // La preferencia se guarda SIEMPRE: aunque no se pueda cambiar en caliente,
+      // la próxima llamada ya sale con el mic correcto.
+      localStorage.setItem(_audioCfg.KEYS.mic, deviceId || '');
+      localStorage.setItem(_audioCfg.KEYS.micLabel, label || '');
+      const pc = _findPeerConnection(_telnyx.activeCall);
+      const sender = pc?.getSenders?.().find(s => s.track && s.track.kind === 'audio');
+      if (!sender) { say('Guardado. Se usará en la próxima llamada.'); return false; }
+      let chain = null;
+      try {
+        say('Cambiando micrófono…');
+        const raw = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(deviceId) });
+        chain = await _buildMicChain(raw, _audioCfg.micGain());
+        const newTrack = chain.stream.getAudioTracks()[0];
+        if (!newTrack) throw new Error('sin track');
+        await sender.replaceTrack(newTrack);
+        // La grabación del canal SDR está atada al track viejo: sumamos el nuevo
+        // al mixer (el viejo queda pero solo aporta silencio).
+        try { _recBindChannel('setter', chain.stream); } catch {}
+        const old = _micChain;
+        _micChain = chain;
+        _audioCfg._boostCleanup = chain.cleanup;
+        if (old?.cleanup) { try { old.cleanup(); } catch {} }
+        say('Listo: ahora usás ' + (label || 'el micrófono elegido') + '.', '#5bb974');
+        return true;
+      } catch (e) {
+        console.warn('[audio] cambio de mic en vivo falló:', e?.message);
+        try { chain?.cleanup(); } catch {}
+        say('No se pudo cambiar en esta llamada, pero quedó guardado para la próxima.', '#FFB341');
+        return false;
+      }
+    }
+
+    // Muestra el aviso + selector si el mic en uso es el de la computadora y hay
+    // alternativas disponibles.
+    async function _micSwapRefresh() {
+      const box = document.getElementById('telnyx-mic-swap');
+      const sel = document.getElementById('telnyx-mic-select');
+      if (!box || !sel) return;
+      const actual = _micChain?.micLabel || '';
+      if (!actual || !_isBuiltInMic(actual)) { box.style.display = 'none'; return; }
+      let mics = [];
+      try { mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); } catch { return; }
+      const otros = mics.filter(m => m.deviceId && m.deviceId !== 'communications' && !_isBuiltInMic(m.label));
+      if (!otros.length) { box.style.display = 'none'; return; }  // no hay a qué cambiar
+      if (box.dataset.filled !== '1') {
+        const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+        sel.innerHTML = '<option value="">Elegí tu micrófono…</option>' +
+          otros.map(m => `<option value="${esc(m.deviceId)}">${esc(m.label || 'Micrófono')}</option>`).join('');
+        sel.onchange = () => {
+          const opt = sel.options[sel.selectedIndex];
+          if (sel.value) _swapMicLive(sel.value, opt?.text || '');
+        };
+        box.dataset.filled = '1';
+      }
+      box.style.display = '';
+    }
     const _audioCfg = {
       KEYS: {
         mic: 'scm_audio_micId', micLabel: 'scm_audio_micLabel', spk: 'scm_audio_spkId',
@@ -8297,6 +8405,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (h) { h.textContent = 'Hablá normal: la barra tiene que llegar a la zona verde.'; h.style.color = 'rgba(255,255,255,0.38)'; }
       const dev = document.getElementById('telnyx-mic-device');
       if (dev) dev.textContent = '';
+      const swap = document.getElementById('telnyx-mic-swap');
+      if (swap) swap.style.display = 'none';
+      const swapSt = document.getElementById('telnyx-mic-swap-status');
+      if (swapSt) swapSt.textContent = '';
     }
     function _startMicMonitor() {
       if (_micMonitor) return;
@@ -8324,6 +8436,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         el.title = label ? 'Micrófono que está usando esta llamada: ' + label : '';
       };
       _showDevice();
+      // Si la llamada está capturando el mic de la computadora y hay otro
+      // disponible, se ofrece el cambio en el acto (sin cortar).
+      _micSwapRefresh().catch(() => {});
       st.interval = setInterval(() => {
         const chS = _recChannels?.setter, chL = _recChannels?.lead;
         if (!chS?.analyser) return;
@@ -8376,6 +8491,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       startMic: _startMicMonitor, stopMic: _stopMicMonitor,
       injectChannels: (ch) => { _recChannels = ch; },
       channels: () => _recChannels,
+      isBuiltIn: (l) => _isBuiltInMic(l),
+      micChain: () => _micChain && { micLabel: _micChain.micLabel, gain: _micChain.gain?.gain?.value },
       micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
     };
 
@@ -8860,35 +8977,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (_audioCfg.micChainEnabled()) {
           try {
             const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints() });
-            const bctx = new (window.AudioContext || window.webkitAudioContext)();
-            await bctx.resume();
-            const bsrc = bctx.createMediaStreamSource(rawStream);
-            // Highpass: saca retumbe/ruido grave de la sala, que el boost si no
-            // amplificaría junto con la voz.
-            const bhp = bctx.createBiquadFilter();
-            bhp.type = 'highpass'; bhp.frequency.value = 100; bhp.Q.value = 0.7;
-            const bgain = bctx.createGain(); bgain.gain.value = _audioCfg.micGain();
-            const bcomp = bctx.createDynamicsCompressor();
-            bcomp.threshold.value = -12; bcomp.knee.value = 8; bcomp.ratio.value = 3;
-            bcomp.attack.value = 0.005; bcomp.release.value = 0.15;
-            const blim = bctx.createDynamicsCompressor();
-            blim.threshold.value = -2; blim.knee.value = 0; blim.ratio.value = 20;
-            blim.attack.value = 0.001; blim.release.value = 0.06;
-            const bdest = bctx.createMediaStreamDestination();
-            bsrc.connect(bhp).connect(bgain).connect(bcomp).connect(blim).connect(bdest);
-            _callOpts.localStream = bdest.stream;
+            const chain = await _buildMicChain(rawStream, _audioCfg.micGain());
+            _callOpts.localStream = chain.stream;
             _callOpts.localElement = undefined;
-            // Guardamos el label del mic REAL en uso: es el dato que faltaba para
-            // diagnosticar "tengo auriculares pero ¿qué capturó el browser?".
-            _micChain = {
-              ctx: bctx, gain: bgain,
-              micLabel: (rawStream.getAudioTracks?.()[0]?.label || ''),
-            };
-            _audioCfg._boostCleanup = () => {
-              try { rawStream.getTracks().forEach(t => t.stop()); } catch {}
-              try { bctx.close(); } catch {}
-              _micChain = null;
-            };
+            _micChain = chain;
+            _audioCfg._boostCleanup = () => { chain.cleanup(); _micChain = null; };
           } catch (e) {
             console.warn('[audio] cadena de mic falló, sigo con captura directa:', e.message);
             delete _callOpts.localStream;

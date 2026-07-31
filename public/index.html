@@ -1374,6 +1374,15 @@
               <span id="telnyx-mic-gain-val" style="font-size:11px; font-weight:600; color:var(--accent); font-family:ui-monospace,'SF Mono',Menlo,monospace; min-width:32px; text-align:right;">2.0×</span>
             </div>
             <div id="telnyx-mic-device" style="font-size:10px; color:rgba(255,255,255,0.5); margin-top:6px; font-family:ui-monospace,'SF Mono',Menlo,monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="Micrófono que está usando esta llamada"></div>
+            <!-- Aviso + cambio de mic SIN cortar la llamada (2026-07-31): caso real
+                 del admin — hablaba a sus auriculares y el browser capturaba el
+                 array interno de la laptop ("Intel Smart Sound"), porque sin
+                 deviceId elegido se usa el default de Windows. -->
+            <div id="telnyx-mic-swap" style="display:none; margin-top:8px; padding:8px 10px; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.35); border-radius:8px;">
+              <div style="font-size:10.5px; color:#ffb4ae; line-height:1.45; margin-bottom:6px;">Estás usando el micrófono de la computadora, no tus auriculares. Por eso te escuchan lejos.</div>
+              <select id="telnyx-mic-select" style="width:100%; padding:6px 8px; background:rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.14); border-radius:7px; color:#fff; font-size:11px; font-family:inherit; cursor:pointer;"></select>
+              <div id="telnyx-mic-swap-status" style="font-size:10px; color:rgba(255,255,255,0.55); margin-top:5px;"></div>
+            </div>
             <div id="telnyx-mic-hint" style="font-size:10px; color:rgba(255,255,255,0.38); margin-top:6px; line-height:1.4;">Hablá normal: la barra tiene que llegar a la zona verde.</div>
           </div>
 
@@ -3561,7 +3570,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260731c"></script>
+  <script type="module" src="/app.js?v=20260731d"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
