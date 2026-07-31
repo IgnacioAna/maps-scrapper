@@ -684,6 +684,278 @@ node** a la salida del nodo (si el nombre apareció).
 | voice speed | **`0.9`** | Más lento que el global. Un pedido de permiso dicho rápido suena a robocall. |
 | responsiveness | **`0.4`** | Más bajo que el global **a propósito**: la pausa después de la pregunta es parte del opener. Con responsiveness alta el agente llena el silencio y arruina el pedido. |
 
+### 5. `pitch` — el problema, no el producto
+
+**Tipo:** Conversation node
+
+**Prompt** (texto literal para pegar):
+
+> Tenés 30 segundos concedidos. No los uses para describir lo que vendés: usá
+> el problema. Se habla del dolor, no de la solución.
+>
+> **1. Validación.** «¿Ha escuchado sobre sistemas de reactivación y retención
+> de pacientes?» Escuchá la respuesta antes de seguir.
+>
+> **2. El problema, con imágenes concretas de una clínica.** No listes las
+> tres, elegí una o dos y decilas despacio:
+> - el paciente que vino a la limpieza hace ocho meses y no volvió nunca;
+> - el presupuesto de ortodoncia que quedó en «lo voy a pensar» y ahí murió;
+> - el hueco del martes a las diez que nadie llenó.
+>
+> **3. El gancho con el dato real de esta clínica.** Usá lo que tengas:
+> - Si `{{gancho}}` no está vacío, decilo con tus palabras.
+> - Si no, y `{{reviews}}` tiene número: «Con `{{reviews}}` reseñas, la
+>   clínica ya tiene una base de pacientes grande. La pregunta es cuántos de
+>   esos siguen viniendo.»
+> - Si no, y `{{years}}` tiene número: «Con `{{years}}` años, la base de
+>   pacientes que pasó por ahí es enorme.»
+> - **Si no tenés ninguno de los tres, no inventes ningún número ni menciones
+>   que estuviste mirando datos**: pasá directo al punto 4. Nunca digas
+>   «tienen reseñas» ni una cifra que no te dieron.
+>
+> **4. Una sola oración de solución.** Una. «Nosotros nos ocupamos de que esos
+> pacientes vuelvan a agendar, sin que la clínica tenga que perseguirlos.»
+>
+> **5. La reunión.** «Le propongo veinte minutos con Ignacio, el director. En
+> esa reunión ve dos cosas: cómo recuperar a los pacientes que no volvieron
+> después de la primera visita, y las seis fugas por las que una clínica
+> pierde pacientes sin darse cuenta.» Cerrá pidiendo los próximos dos días:
+> «¿Le sirve en las próximas 48 horas?»
+>
+> Si en algún momento el prospecto apura, corta o se impacienta, **saltá
+> directo al punto 5** con una sola frase de contexto. Es mejor un pitch
+> mocho con pedido que uno completo sin pedido.
+
+**Transiciones:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| Acepta la reunión o pregunta por horarios | prompt-based | `agendar` |
+| Objeta, difiere o rechaza | prompt-based | `objeciones` |
+| Queda tibio: no rechaza pero tampoco acepta | prompt-based | `interes_sin_agenda` |
+| El prospecto apura y hay que acortar | prompt-based | variante corta, dentro del mismo nodo |
+
+> La variante corta es **el caso legítimo de una transición prompt-based**:
+> "el prospecto está apurado" es semántico, no hay ningún valor capturable
+> contra el que armar una ecuación.
+
+**Settings del nodo:**
+
+| Setting | Valor | Por qué |
+|---|---|---|
+| voice speed | **`0.9`** | Las imágenes del problema necesitan aire. Dichas rápido no se visualizan y no duelen. |
+
+### 6. `agendar` — son **tres** nodos encadenados
+
+Un **Function node no conversa**: entra, ejecuta la tool y sale. Si se lo deja
+suelto, el agente se queda mudo esperando y la llamada muere **justo después
+de haber ganado la reunión**. Por eso el agendamiento son tres nodos, no uno.
+
+#### 6a. `agendar` — ofrecer día y hora
+
+**Tipo:** Conversation node
+
+**Prompt:**
+
+> Ofrecé **dos opciones concretas**, nunca una pregunta abierta. Preguntar
+> «¿cuándo le queda cómodo?» devuelve la pelota y alarga la llamada.
+>
+> «¿Mañana o el viernes?» Y cuando elige el día: «¿A las dos o a las cuatro
+> de la tarde?»
+>
+> Cuando tengas **día y hora**, no confirmes todavía: pasá al paso siguiente.
+>
+> Si duda o no se decide, ofrecé una reserva tentativa: «Le dejo agendado
+> tentativo el jueves y lo confirmamos después. Si no le sirve, lo movemos sin
+> problema.»
+
+**Transiciones:** con día y hora definidos → `agendar_book` (ecuación sobre
+las variables capturadas, o prompt-based si no se capturaron con `Extract DV`).
+Si se resiste al agendamiento → `objeciones`.
+
+#### 6b. `agendar_book` — la reserva
+
+**Tipo:** **Function node** → tool `book`
+
+- Manda `fecha` en formato `YYYY-MM-DD` y `hora` en formato `HH:MM` de 24 horas.
+- **Talk While Waiting** activado: «Déjeme confirmarlo, un segundo.»
+- **Timeout 5000 ms.**
+- Rama de error explícita: si la tool no responde, salir a `agendar_confirmar`
+  igual (ahí se maneja).
+
+#### 6c. `agendar_confirmar` — confirmar y hacer el tie-down
+
+**Tipo:** Conversation node
+
+**Prompt:**
+
+> Leé en voz alta el mensaje que devolvió la reserva, tal como viene. Ya está
+> redactado para decirse.
+>
+> **Si la reserva falló**, el mensaje explica por qué (no se entendió la
+> fecha, la fecha ya pasó, es demasiado lejos). Decilo y volvé a ofrecer dos
+> horarios. **Máximo dos reintentos**: al tercero, pasá a cerrar sin reunión y
+> dejá anotado el horario que el prospecto quería.
+>
+> **Si la reserva salió bien**, hacé el tie-down completo, en este orden:
+>
+> 1. **El email lo dicta él.** «¿A qué correo le llega la invitación?» Que lo
+>    diga el prospecto: un email dictado es un compromiso, uno que vos leés no
+>    lo es.
+> 2. **La pregunta trampa + silencio.** «Si le surge algo, ¿cómo me avisa que
+>    no puede?» Y **te callás**. Esta pausa es la más importante de la llamada.
+> 3. **Aflojar.** Cuando conteste: «Perfecto. Era medio pregunta trampa: si me
+>    avisa, lo movemos y listo.»
+> 4. **Calificación, recién ahora.** Con la reunión ya agendada: «¿La decisión
+>    de una inversión así la toma usted?» y «¿Cuántos pacientes tiene en la
+>    base, a ojo?». Antes de agendar, estas preguntas espantan; después,
+>    contestan.
+> 5. **Reconfirmación anti-cancelación.** «¿Hay alguna razón por la que el
+>    [día] piense que esto no valió la pena y cancele?»
+>
+> No pidas WhatsApp en ningún momento.
+
+**Transiciones:** terminado el tie-down → `ending` (rama agendado). Si tras
+dos reintentos la reserva no salió → `interes_sin_agenda`.
+
+**Variables que captura:** `email`.
+
+### 7. `objeciones` — tres escaladas con contador
+
+**Tipo:** `Extract DV` (contador) → **Logic Split node** → Conversation node
+
+Es el nodo más cargado del flow y el único con estado propio.
+
+#### La mecánica del contador
+
+- La variable es `{{objection_count}}`. Arranca en `0` y **sube 1 cada vez que
+  se entra** al nodo.
+- El incremento se hace con un **`Extract DV node`** a la entrada (o el
+  equivalente de incremento que ofrezca el builder).
+- El branch por valor se hace con un **`Logic Split node`**: bifurca al entrar,
+  sin que el agente hable ni gaste un turno. Las ecuaciones son
+  `{{objection_count}} == 1`, `== 2` y `>= 3`.
+- Sin contador no hay escalada: el agente repetiría la primera respuesta tres
+  veces y sonaría a disco rayado.
+
+#### Rama 1 — primera objeción: **doblar la apuesta**
+
+> Reconocé la objeción, explicá por qué **justo por eso** conviene la reunión,
+> y volvé a pedirla. **Sin hacer preguntas**: una pregunta acá te saca del
+> control de la llamada.
+>
+> Primera línea: «Justo por eso lo llamaba.» Y seguí sin pausa con el motivo
+> concreto que conecta la objeción con la reunión.
+
+#### Rama 2 — segunda objeción: **Miyagi**
+
+No se empuja: se acompaña y se desarma.
+
+> 1. **Pausa.**
+> 2. **Coincidir**, en serio: «Tiene razón. Debí asumir que ya estaban
+>    cubiertos con esto.»
+> 3. **Desarmar**: «Lo marco acá para que nadie del equipo lo vuelva a llamar.»
+> 4. **Partir en opción múltiple**: «Solo por curiosidad, ¿es porque ya tienen
+>    algo funcionando, porque lo hacen internamente, o porque lo agarré
+>    desprevenido y odia las llamadas? Tiene que ser una de esas tres.»
+> 5. **Vender la prueba de manejo**: «Aunque no avance con nosotros, de esa
+>    reunión se lleva el mapa de las seis fugas. Eso le sirve igual.»
+
+#### Rama 3 — tercera objeción: **salida elegante a 3 meses**
+
+> No insistas una cuarta vez. Se suelta con elegancia y se deja la puerta
+> abierta: «¿Le parece que lo retomemos en tres meses? Le agendo un llamado
+> corto y si en ese momento no tiene sentido, lo dejamos.»
+>
+> Si acepta, tomá **día y hora concretos**, a unos 90 días. La fecha se
+> registra en **formato absoluto ISO 8601 con zona horaria** (por ejemplo
+> `2026-10-29T10:00:00-06:00`): «el martes» o «en tres meses» **no sirven y se
+> descartan sin aviso**.
+
+#### Ramas fijas — **no cuentan como escalada**
+
+No incrementan `{{objection_count}}`: son reacciones, no resistencia real.
+
+| Objeción | Respuesta |
+|---|---|
+| «¿Cuánto sale?» | **Diferir siempre.** «Depende del tamaño de la clínica y de la base de pacientes; eso se evalúa en la reunión. Si tiene sentido le paso los números, y si no, se lo digo.» Nunca un rango, nunca un «desde». |
+| «Mándeme información» | **Aceptar** y re-pedir la reunión en tándem: «Se la mando. ¿Y le muestro las seis fugas en la reunión, así ve cuáles le aplican?» |
+| «¿Quién son ustedes?» | Respuesta corta y concreta: qué se hace (que los pacientes que dejaron de venir vuelvan a agendar) y para quién (clínicas dentales). Sin nombrar plataformas ni tecnología. |
+| «No me interesa», temprano | **No es un rechazo al producto: es rechazo a la interrupción.** Tratalo como primera objeción (doblar la apuesta), no como un no. |
+
+#### Branch "no hay dolor" — «estamos bien / ya lo tenemos cubierto»
+
+> No discutas. Elogiá y abrí una rendija con la varita mágica: «Suena a que
+> son una máquina bien aceitada. Si pudiera mejorar **una sola cosa** de cómo
+> vuelven los pacientes, ¿cuál sería?»
+>
+> Y si no aparece nada, poné la voz del cliente: «Lo que suelo escuchar de
+> otras clínicas es que los pacientes de la primera visita no vuelven, y que
+> nadie tiene tiempo de perseguir los presupuestos que quedaron abiertos.
+> ¿Algo de eso les pasa?»
+
+**Transiciones del nodo:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| `{{objection_count}} == 1` | ecuación | rama 1 (doblar la apuesta) |
+| `{{objection_count}} == 2` | ecuación | rama 2 (Miyagi) |
+| `{{objection_count}} >= 3` | ecuación | rama 3 (salida a 3 meses) |
+| Acepta la reunión en cualquier rama | prompt-based | `agendar` |
+| Tercera agotada, con o sin fecha de recontacto | prompt-based | `interes_sin_agenda` |
+| Pide no ser llamado nunca más | — | **`global_dnc`** (Global Node, ver abajo) |
+
+**Variables que captura:** `objecion_principal`, y `callback_fecha_hora` en la
+rama 3.
+
+### 8. `interes_sin_agenda` — no hubo reunión, pero hay algo
+
+**Tipo:** Conversation node
+
+**Prompt:**
+
+> No se agendó, pero la llamada no fue en vano: acá se captura lo que hace que
+> el próximo contacto no arranque de cero.
+>
+> Cerrá con un compromiso concreto de fecha: «Lo llamamos el [día] entonces.»
+> Tomá **día y hora**, no «la semana que viene». Si te dan algo vago,
+> proponelo vos: «¿Le parece el martes a las diez?»
+>
+> Si podés, averiguá quién decide: «¿Y esa decisión la toma usted, o la ve con
+> alguien más?»
+>
+> Antes de cortar, quedate con **el motivo real** por el que no avanzó hoy: no
+> hace falta preguntarlo directo, alcanza con lo que ya dijo.
+
+**Transiciones:** cerrado → `ending` (rama callback o no interesado, según
+haya fecha o no).
+
+**Variables que captura:** `callback_fecha_hora` (**en ISO 8601 absoluto** —
+el sistema descarta cualquier otra cosa, y el compromiso se pierde),
+`objecion_principal`, y quién decide.
+
+### 9. `ending` — cierre
+
+**Tipo:** **End node** (habla y cuelga)
+
+**Prompt:**
+
+> Despedida corta, en el mismo tono del resto de la llamada. Sin entusiasmo de
+> más: un cierre animado después de un "no" suena a burla, y después de un "sí"
+> suena a que vendiste algo.
+>
+> - **Agendado:** «Listo, queda agendado. Le llega la invitación al correo.
+>   Que tenga buen día.»
+> - **Recontacto:** «Perfecto, lo llamo el [día] entonces. Gracias por el
+>   tiempo.»
+> - **No interesado:** «Entendido. Gracias por atenderme, y disculpe la
+>   interrupción. Buen día.»
+> - **Mensaje quedó en recepción:** «Le agradezco. Quedo atento entonces. Buen
+>   día.»
+>
+> No pidas WhatsApp. No ofrezcas mandar nada que no se haya acordado. No
+> agregues una última frase de venta.
+
 ## Global Nodes
 <!-- 26-02 -->
 
