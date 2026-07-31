@@ -2,7 +2,9 @@
 
 > Proyecto interno de la agencia SCM (reactivación de pacientes para clínicas
 > dentales en LATAM/España).
-> Última actualización: 2026-07-25 — milestone v2.0 "Gestión por excepción".
+> Última actualización: 2026-07-31 — milestone v3.0 "Agente de voz".
+> Phase 24 (integración backend Retell) completa: el backend ya recibe y
+> despacha llamadas del agente como si fueran de una SDR humana.
 
 ---
 
