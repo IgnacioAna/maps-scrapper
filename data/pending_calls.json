@@ -41,6 +41,20 @@
       "reachedActive": true,
       "createdAt": "2026-07-29T22:51:37.579Z",
       "updatedAt": "2026-07-29T22:52:22.860Z"
+    },
+    {
+      "id": "pc_l_ortodonciasantiagoherrerag_573164351467_1785539485310",
+      "leadId": "l_ortodonciasantiagoherrerag_573164351467",
+      "leadName": "Ortodoncia Santiago Herrera G.",
+      "setterId": "setter_ignacio",
+      "userId": "user_admin_ignacio",
+      "startedAt": "2026-07-31T23:11:25.310Z",
+      "endedAt": "2026-07-31T23:12:02.992Z",
+      "durationSecs": 37,
+      "fromNumber": "",
+      "reachedActive": false,
+      "createdAt": "2026-07-31T23:12:03.321Z",
+      "updatedAt": "2026-07-31T23:12:03.321Z"
     }
   ]
 }
