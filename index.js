@@ -10377,6 +10377,152 @@ function _estimateTelnyxCost(destinationPhone, durationSecs) {
   return { cost: +(rate * billableMinutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
 }
 
+// D-24-02: la cascada de dispositions extraída a helper puro reusable por
+// el handler humano y el webhook del agente de voz (VOICE-05, plan 24-05).
+// T-24-01-01: este helper NO contiene ningún control de acceso ni lee
+// identidad de ningún lado — el caller es responsable de autorizar ANTES
+// de invocarlo (los checks de auth/ownership quedan en el handler humano,
+// index.js:10305-10317). Devuelve { calendarEntry } (null cuando el
+// outcome no crea cita, o cuando opts.skipCalendarCreation===true).
+function _applyCallOutcome(data, lead, logEntry, opts) {
+  const { outcome, callbackAt, callbackShared, scheduled, cleanReason, doNotCall } = opts;
+
+  lead.callLog.push(logEntry);
+  // Sprint 37: cap callLog a últimas 500 entries para prevenir crecimiento
+  // descontrolado si un lead recibe miles de no_answer (rare pero posible).
+  if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
+  lead.callAttempts += 1;
+  lead.lastContactAt = opts.nowIso;
+  // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
+  if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
+
+  let calendarEntry = null;
+
+  switch (outcome) {
+    case 'answered_interested':
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'interesado';
+      // Sigue en Llamadas con chip verde, esperando agendamiento
+      break;
+
+    case 'answered_not_interested':
+      lead.respondio = true;
+      lead.interes = 'no';
+      lead.estado = 'descartado';
+      // disqualifyReason refleja la razón de la ÚLTIMA disposición (si es inválida
+      // o vacía, queda ''). El historial completo se preserva por entry en el
+      // callLog (logEntry.disqualifyReason). Comportamiento intencional (test).
+      lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
+      break;
+
+    case 'no_answer':
+      // Solo contador + log, no cambia estado
+      break;
+
+    case 'voicemail':
+      lead.phoneStatus = 'voicemail';
+      break;
+
+    case 'wrong_number':
+      lead.phoneStatus = 'wrong';
+      lead.estado = 'descartado';
+      break;
+
+    case 'invalid_number':
+      lead.phoneStatus = 'invalid';
+      lead.estado = 'descartado';
+      break;
+
+    case 'callback_later':
+      // callbackAt debe venir en ISO. Si no, default a +24hs
+      lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      // Phase 17 Ola 2: callback compartido (cualquier setter lo toma) vs privado.
+      if (typeof callbackShared === 'boolean') lead.callbackShared = callbackShared;
+      break;
+
+    case 'scheduled_with_admin':
+      // Crea entrada en data.calendar reusando el mismo formato que /api/setters/calendar
+      // D-24-05 (§5.4 Opción A): con opts.skipCalendarCreation=true NO se crea la cita
+      // (ya la creó /book) pero sí se aplican los 4 side-effects de estado de abajo.
+      if (!opts.skipCalendarCreation) {
+        if (!Array.isArray(data.calendar)) data.calendar = [];
+        const sched = scheduled || {};
+        calendarEntry = {
+          id: `cal_${Date.now()}`,
+          leadId: opts.leadId,
+          fecha: sched.fecha || new Date(Date.now() + 24*60*60*1000).toISOString(),
+          nombre: sched.nombre || lead.name || '',
+          calendarioEstado: 'pendiente',
+          valorProyecto: 0,
+          comision: 0,
+          setterId: opts.actorSetterId,
+          sourceCall: true
+        };
+        data.calendar.push(calendarEntry);
+      }
+      lead.respondio = true;
+      lead.calificado = true;
+      lead.interes = 'si';
+      lead.estado = 'agendado';
+      break;
+  }
+
+  // Phase 17: DNC. Se marca si el setter lo pide explícito (doNotCall:true) o si
+  // la razón de descalificación implica no-contactar. Saca el lead de TODA cola.
+  if (doNotCall === true || DNC_REASONS.has(cleanReason)) {
+    lead.doNotCall = true;
+    lead.doNotCallReason = cleanReason || 'manual';
+    lead.doNotCallAt = opts.nowIso;
+    lead.doNotCallBy = opts.actorName || '';
+    lead.estado = 'descartado';
+  }
+
+  // Phase 17 Ola 3: cadencia de auto-redial. Para no_answer/voicemail, si el setter
+  // NO puso un callback manual y el lead no es DNC, programamos el próximo intento
+  // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
+  // dialer automático (compliance: la llamada siempre la dispara una persona).
+  const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
+  // Cualquier resultado que NO sea no-contacto rompe la racha → el contador de
+  // cadencia vuelve a 0 (el chip "auto #N" del frontend deja de mostrar un número
+  // viejo). La racha real siempre se recomputa del callLog, esto es consistencia
+  // del campo persistido.
+  if (!_NO_CONTACT.has(outcome)) lead.cadenceStep = 0;
+  // Política: el lead que no atiende / cae a buzón se reintenta UNA vez a las 24h, y
+  // al 2do no-contacto seguido se DESCARTA automáticamente. (Se bajó de 3 reintentos
+  // a 1 el 2026-06-25 para reducir la TASA DE ABANDONO de Telnyx: cada reintento a un
+  // número muerto = otra llamada abandonada → riesgo de recargo). NO aparece en
+  // "Próximos callbacks" ni en "Hoy" (eso es solo para callbacks manuales).
+  // Compliance: la llamada siempre la dispara una persona — la cadencia solo reordena.
+  const MAX_NO_CONTACT = 2;
+  if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
+    let streak = 0;
+    for (let i = lead.callLog.length - 1; i >= 0; i--) {
+      if (_NO_CONTACT.has(lead.callLog[i].outcome)) streak++; else break;
+    }
+    lead.cadenceStep = streak;
+    if (streak >= MAX_NO_CONTACT) {
+      // 2do no-contacto seguido → descarte automático (no se llama más).
+      lead.estado = 'descartado';
+      lead.callbackAt = '';
+      lead.cadenceExhausted = true;
+      lead.autoDiscarded = true;
+      lead.autoDiscardReason = `sin_contacto_${MAX_NO_CONTACT}x`;
+    } else {
+      // Reintento a las 24h: reaparece en la cola de Llamadas.
+      lead.callbackAt = new Date(Date.now() + 24 * 3600000).toISOString();
+      lead.cadenceExhausted = false;
+    }
+  }
+
+  return { calendarEntry };
+}
+
+// Expuestos para tests puros (patrón __callCore) y para el webhook del
+// agente de voz (planes 24-03/24-04/24-05, que van a sumar más claves).
+globalThis.__voiceAgent = { _applyCallOutcome, _estimateTelnyxCost, _detectCountryAndType };
+
 const CALL_OUTCOMES = new Set([
   'answered_interested',     // ✅ Atendió + Interesado → calificado, queda en Llamadas
   'answered_not_interested', // ❌ Atendió + No interesado → descarta
@@ -10550,130 +10696,18 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     }
   }
 
-  lead.callLog.push(logEntry);
-  // Sprint 37: cap callLog a últimas 500 entries para prevenir crecimiento
-  // descontrolado si un lead recibe miles de no_answer (rare pero posible).
-  if (lead.callLog.length > 500) lead.callLog = lead.callLog.slice(-500);
-  lead.callAttempts += 1;
-  lead.lastContactAt = now;
-  // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
-  if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
-
-  let calendarEntry = null;
-
-  switch (outcome) {
-    case 'answered_interested':
-      lead.respondio = true;
-      lead.calificado = true;
-      lead.interes = 'si';
-      lead.estado = 'interesado';
-      // Sigue en Llamadas con chip verde, esperando agendamiento
-      break;
-
-    case 'answered_not_interested':
-      lead.respondio = true;
-      lead.interes = 'no';
-      lead.estado = 'descartado';
-      // disqualifyReason refleja la razón de la ÚLTIMA disposición (si es inválida
-      // o vacía, queda ''). El historial completo se preserva por entry en el
-      // callLog (logEntry.disqualifyReason). Comportamiento intencional (test).
-      lead.disqualifyReason = cleanReason; // Phase 17: por qué se descartó
-      break;
-
-    case 'no_answer':
-      // Solo contador + log, no cambia estado
-      break;
-
-    case 'voicemail':
-      lead.phoneStatus = 'voicemail';
-      break;
-
-    case 'wrong_number':
-      lead.phoneStatus = 'wrong';
-      lead.estado = 'descartado';
-      break;
-
-    case 'invalid_number':
-      lead.phoneStatus = 'invalid';
-      lead.estado = 'descartado';
-      break;
-
-    case 'callback_later':
-      // callbackAt debe venir en ISO. Si no, default a +24hs
-      lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
-      // Phase 17 Ola 2: callback compartido (cualquier setter lo toma) vs privado.
-      if (typeof callbackShared === 'boolean') lead.callbackShared = callbackShared;
-      break;
-
-    case 'scheduled_with_admin':
-      // Crea entrada en data.calendar reusando el mismo formato que /api/setters/calendar
-      if (!Array.isArray(data.calendar)) data.calendar = [];
-      const sched = scheduled || {};
-      calendarEntry = {
-        id: `cal_${Date.now()}`,
-        leadId: req.params.id,
-        fecha: sched.fecha || new Date(Date.now() + 24*60*60*1000).toISOString(),
-        nombre: sched.nombre || lead.name || '',
-        calendarioEstado: 'pendiente',
-        valorProyecto: 0,
-        comision: 0,
-        setterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
-        sourceCall: true
-      };
-      data.calendar.push(calendarEntry);
-      lead.respondio = true;
-      lead.calificado = true;
-      lead.interes = 'si';
-      lead.estado = 'agendado';
-      break;
-  }
-
-  // Phase 17: DNC. Se marca si el setter lo pide explícito (doNotCall:true) o si
-  // la razón de descalificación implica no-contactar. Saca el lead de TODA cola.
-  if (doNotCall === true || DNC_REASONS.has(cleanReason)) {
-    lead.doNotCall = true;
-    lead.doNotCallReason = cleanReason || 'manual';
-    lead.doNotCallAt = now;
-    lead.doNotCallBy = req.auth?.user?.name || '';
-    lead.estado = 'descartado';
-  }
-
-  // Phase 17 Ola 3: cadencia de auto-redial. Para no_answer/voicemail, si el setter
-  // NO puso un callback manual y el lead no es DNC, programamos el próximo intento
-  // según la racha de no-contacto. Reusa callbackAt + la cola "Para seguir" — NO hay
-  // dialer automático (compliance: la llamada siempre la dispara una persona).
-  const _NO_CONTACT = new Set(['no_answer', 'voicemail']);
-  // Cualquier resultado que NO sea no-contacto rompe la racha → el contador de
-  // cadencia vuelve a 0 (el chip "auto #N" del frontend deja de mostrar un número
-  // viejo). La racha real siempre se recomputa del callLog, esto es consistencia
-  // del campo persistido.
-  if (!_NO_CONTACT.has(outcome)) lead.cadenceStep = 0;
-  // Política: el lead que no atiende / cae a buzón se reintenta UNA vez a las 24h, y
-  // al 2do no-contacto seguido se DESCARTA automáticamente. (Se bajó de 3 reintentos
-  // a 1 el 2026-06-25 para reducir la TASA DE ABANDONO de Telnyx: cada reintento a un
-  // número muerto = otra llamada abandonada → riesgo de recargo). NO aparece en
-  // "Próximos callbacks" ni en "Hoy" (eso es solo para callbacks manuales).
-  // Compliance: la llamada siempre la dispara una persona — la cadencia solo reordena.
-  const MAX_NO_CONTACT = 2;
-  if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
-    let streak = 0;
-    for (let i = lead.callLog.length - 1; i >= 0; i--) {
-      if (_NO_CONTACT.has(lead.callLog[i].outcome)) streak++; else break;
-    }
-    lead.cadenceStep = streak;
-    if (streak >= MAX_NO_CONTACT) {
-      // 2do no-contacto seguido → descarte automático (no se llama más).
-      lead.estado = 'descartado';
-      lead.callbackAt = '';
-      lead.cadenceExhausted = true;
-      lead.autoDiscarded = true;
-      lead.autoDiscardReason = `sin_contacto_${MAX_NO_CONTACT}x`;
-    } else {
-      // Reintento a las 24h: reaparece en la cola de Llamadas.
-      lead.callbackAt = new Date(Date.now() + 24 * 3600000).toISOString();
-      lead.cadenceExhausted = false;
-    }
-  }
+  const { calendarEntry } = _applyCallOutcome(data, lead, logEntry, {
+    leadId: req.params.id,
+    nowIso: now,
+    outcome,
+    callbackAt,
+    callbackShared,
+    scheduled,
+    cleanReason,
+    doNotCall,
+    actorSetterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
+    actorName: req.auth?.user?.name || '',
+  });
 
   // Phase 20: resolver (eliminar) EXACTAMENTE UN registro pendiente de este
   // lead. Prioridad: pendingCallId del body (validando que sea de ESTE lead —
