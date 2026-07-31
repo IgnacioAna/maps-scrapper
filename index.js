@@ -15577,6 +15577,189 @@ app.post("/api/admin/voice-agent/dispatch", requireAuth, requireRole("admin"), a
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 24 plan 24-04: la custom function `book` que Retell invoca A MITAD
+// DE LLAMADA para agendar (VOICE-04). Endpoint PÚBLICO (server-to-server,
+// sin requireAuth): Retell no manda cookie de sesión ni la firma HMAC del
+// webhook acá — el mecanismo de auth es un header estático
+// (x-scm-tool-secret) configurado como "Custom Header" del function node en
+// el dashboard de Retell (research §2.2.b, Phase 26).
+//
+// D-24-05: esta ruta crea LA CITA Y NADA MÁS. Ningún otro side-effect de
+// disposición (estado del lead, historial de la llamada, DNC, cadencia) —
+// eso es responsabilidad exclusiva del webhook (plan 24-05). Si algún día
+// hace falta tocar más que data.calendar acá, es una señal de que se está
+// violando el contrato de "una sola escritura de historial por llamada".
+//
+// Retell NO reintenta esta función si falla o da timeout (research §2.2.b)
+// — por eso NUNCA responde con un status 4xx/5xx salvo el 401/503 de auth:
+// cualquier otro caso "raro" (lead inexistente, fecha inválida) responde
+// 200 con ok:false y un mensaje que el agente pueda leer en voz alta y
+// seguir la conversación, en vez de dejarlo mudo (T-24-04-05).
+// ═══════════════════════════════════════════════════════════════════════
+
+// _pendingBooked: contrato para el plan 24-05 — Map call_id → { leadId,
+// calendarEntryId, fechaISO, at }. El webhook lo consulta para saber que la
+// cita YA existe y no crear una segunda cuando decide scheduled_with_admin
+// (opts.skipCalendarCreation de _applyCallOutcome, D-24-05 §5.4 Opción A).
+// TTL 2h — se limpia en cada invocación de esta ruta, sin timer de fondo.
+const RETELL_PENDING_BOOKED_TTL_MS = 2 * 60 * 60 * 1000;
+const _pendingBooked = new Map();
+function _voiceCleanPendingBooked() {
+  const cutoff = Date.now() - RETELL_PENDING_BOOKED_TTL_MS;
+  for (const [callId, info] of _pendingBooked) {
+    if (!info || !info.at || info.at < cutoff) _pendingBooked.delete(callId);
+  }
+}
+Object.assign(globalThis.__voiceAgent, { _pendingBooked });
+
+// Combina args.fecha (+ args.hora si viene) a un ISO válido. Tolerante al
+// shape exacto que mande el LLM del agente (no está fijado hasta Phase 26):
+// prueba fecha+hora combinadas con los 2 separadores más comunes antes de
+// caer a fecha sola. Devuelve null si nada parsea.
+function _retellParseBookingDate(fecha, hora) {
+  const fechaStr = String(fecha == null ? '' : fecha).trim();
+  if (!fechaStr) return null;
+  const horaStr = String(hora == null ? '' : hora).trim();
+  const candidates = [];
+  if (horaStr) {
+    candidates.push(`${fechaStr}T${horaStr}`);
+    candidates.push(`${fechaStr} ${horaStr}`);
+  }
+  candidates.push(fechaStr);
+  for (const c of candidates) {
+    const ms = Date.parse(c);
+    if (Number.isFinite(ms)) return new Date(ms).toISOString();
+  }
+  return null;
+}
+
+// Texto corto que el agente lee en voz alta al confirmar (§2.2.b: "todo lo
+// que devuelvas se convierte a string"). Sin signos de apertura ¿¡
+// (convención del proyecto para texto leído/mandado), sin nombrar la
+// empresa (nota #119), sin ningún dato interno (id de lead, de cita, ni
+// nombre del SDR).
+function _retellBookConfirmMessage(fechaISO) {
+  const ms = new Date(fechaISO).getTime();
+  const txt = Number.isFinite(ms)
+    ? new Date(ms).toLocaleString('es-AR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })
+    : '';
+  return txt ? `Quedó agendado para el ${txt}.` : 'Quedó agendado. En breve confirmamos el horario.';
+}
+
+app.post("/api/retell/tool/book", async (req, res) => {
+  const cfg = loadRetellConfig();
+  const toolSecret = _retellToolSecret(cfg);
+
+  if (!toolSecret) {
+    // Fail-closed en producción sin secret configurado — mismo criterio que
+    // el webhook de Telnyx y que JWT_SECRET (nota #23). En dev/test seguimos
+    // aceptando para que los tests/preview locales corran sin configurar nada.
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[retell-book] RECHAZADO: toolSecret no configurado en producción.');
+      return res.status(503).json({ error: 'tool secret not configured' });
+    }
+    console.warn('[retell-book] WARNING: toolSecret no configurado — aceptando en dev/test.');
+  } else {
+    // 401 genérico sin pistas (T-24-04-04): ni el largo esperado, ni si el
+    // secret está configurado. timingSafeEqual exige buffers de igual
+    // longitud — se chequea el largo ANTES de comparar, nunca comparando
+    // buffers de tamaños distintos.
+    const provided = Buffer.from(String(req.headers['x-scm-tool-secret'] || ''), 'utf8');
+    const expected = Buffer.from(toolSecret, 'utf8');
+    const match = provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
+    if (!match) return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  const body = req.body || {};
+  const hasCallWrapper = body && typeof body.call === 'object' && body.call !== null;
+  const call = hasCallWrapper ? body.call : {};
+  // Modo "args only" (toggle del dashboard, research §2.2.b): sin objeto
+  // `call`, el body ES directamente los args de la función.
+  const args = hasCallWrapper ? (body.args || {}) : body;
+
+  const leadId = call?.retell_llm_dynamic_variables?.leadId
+    || call?.metadata?.leadId
+    || args?.leadId
+    || '';
+
+  const respondNoBook = (message) => res.json({ ok: false, message });
+
+  if (!leadId) {
+    console.warn('[retell-book] sin leadId resoluble en el payload');
+    return respondNoBook('No pude identificar el registro para agendar. Lo anoto y lo derivo.');
+  }
+
+  const data = loadSettersData();
+  const lead = data.leads?.[leadId];
+  if (!lead) {
+    console.warn(`[retell-book] lead inexistente: ${leadId}`);
+    return respondNoBook('No encuentro ese registro para agendar. Lo anoto y lo derivo.');
+  }
+
+  const callId = call?.call_id || '';
+  _voiceCleanPendingBooked();
+  if (callId && _pendingBooked.has(callId)) {
+    // Idempotencia (§2.2.b: la función no se reintenta desde Retell, pero
+    // el LLM del agente sí puede invocarla dos veces en la misma llamada).
+    const existing = _pendingBooked.get(callId);
+    return res.json({ ok: true, message: _retellBookConfirmMessage(existing.fechaISO) });
+  }
+
+  const fechaISO = _retellParseBookingDate(args?.fecha, args?.hora);
+  if (!fechaISO) {
+    return respondNoBook('No entendí bien la fecha. Repetila, por favor.');
+  }
+  const fechaMs = new Date(fechaISO).getTime();
+  const nowMs = Date.now();
+  if (fechaMs <= nowMs) {
+    return respondNoBook('Esa fecha ya pasó. Necesito un día más adelante.');
+  }
+  if (fechaMs > nowMs + 90 * 24 * 60 * 60 * 1000) {
+    return respondNoBook('Prefiero coordinar con menos anticipación. Necesito una fecha dentro de los próximos meses.');
+  }
+
+  // Creación — regla #19: handler async, toda escritura a setters.json pasa
+  // por el mutex. D-24-05: solo data.calendar, mismo shape que el switch del
+  // handler humano (case scheduled_with_admin) — nada de historial de
+  // llamadas ni de estado del lead.
+  let calendarEntry;
+  try {
+    calendarEntry = await mutateSettersData((d) => {
+      if (!Array.isArray(d.calendar)) d.calendar = [];
+      const entry = {
+        id: `cal_${Date.now()}`,
+        leadId,
+        fecha: fechaISO,
+        nombre: lead.name || '',
+        calendarioEstado: 'pendiente',
+        valorProyecto: 0,
+        comision: 0,
+        setterId: VOICE_AGENT_SETTER_ID,
+        sourceCall: true,
+      };
+      d.calendar.push(entry);
+      return entry;
+    });
+  } catch (e) {
+    console.error('[retell-book] error creando la cita:', e.message);
+    return respondNoBook('Tuve un problema técnico agendando. Lo anoto y lo derivo.');
+  }
+
+  if (callId) {
+    _pendingBooked.set(callId, {
+      leadId,
+      calendarEntryId: calendarEntry.id,
+      fechaISO,
+      at: Date.now(),
+    });
+  }
+
+  console.log(`[retell-book] cita creada: lead=${leadId} call=${callId || '(sin call_id)'} fecha=${fechaISO}`);
+
+  res.json({ ok: true, message: _retellBookConfirmMessage(fechaISO) });
+});
+
 // POST /api/telnyx/numbers — admin agrega un número virtual a la lista.
 // Body: { phone, label, country }
 app.post("/api/telnyx/numbers", requireAuth, requireRole("admin"), (req, res) => {
