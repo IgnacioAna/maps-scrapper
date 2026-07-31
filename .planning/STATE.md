@@ -32,9 +32,27 @@ cada phase.
 
 ## Current Position
 
-Phase: 26 (agente-retell-piloto) — EN CURSO (2/6 planes)
-Plan: 26-02 EXECUTED — próximo: **26-03** (setup del trunk Telnyx↔Retell,
-`autonomous: false` — lo ejecuta el user con acompañamiento).
+Phase: 26 (agente-retell-piloto) — EN CURSO (2/6 planes + 26-03 a mitad)
+Plan: **26-03 EN CHECKPOINT BLOQUEANTE (Task 3)** — Tasks 1 y 2 hechas
+(`docs/retell-telnyx-setup.md` escrita, decisión de números tomada). Task 3
+la ejecuta el user en los dashboards de Telnyx y Retell. **Sin SUMMARY
+todavía**: es un plan segmentado por checkpoints, el SUMMARY va al cerrar
+la Task 3.
+
+- **26-03 Tasks 1-2 (2026-07-31)** — `docs/retell-telnyx-setup.md` (433
+  líneas, 10 secciones). **Decisión de números: opción B**, mover
+  `+17867725783` ("USA 3", `telnyx_num_1783725955014_ctkmvz`) a la conexión
+  FQDN del agente — elegido midiendo el callLog de 90 días (el menos usado y
+  no es el `default` del routing). Commits `4dfb319`, `5a048fe`.
+  **Dos correcciones al plan, verificadas contra el código:**
+  (1) el dry-run del dispatch **no puede correr en 26-03** — el handler
+  chequea `enabled !== true` y `agentId` vacío con 409 **antes** de la rama
+  de dry-run, y el plan pide dejar `enabled:false` con el agente sin
+  publicar; queda como chequeo pre-vuelo de 26-04.
+  (2) mover el número **no lo saca del pool del SCM**: la rotación del dialer
+  humano lo va a seguir eligiendo (~1 de cada 3 llamadas), y marcarlo
+  inactivo no sirve como mitigación porque también se lo saca al agente.
+  Las dos salidas reales están escritas en la guía.
 
 - **26-01 + 26-02 EXECUTED (2026-07-31)** — `docs/retell-agent-v1.md`
   completo y cargable de punta a punta (1.134 líneas). Parte A: Global
