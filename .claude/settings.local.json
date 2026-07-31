@@ -66,5 +66,19 @@
       "Bash(npx vitest *)",
       "Bash(git stash *)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh scripts/telnyx-rates-hook.sh",
+            "timeout": 120,
+            "statusMessage": "Chequeando tarifas Telnyx..."
+          }
+        ]
+      }
+    ]
   }
 }
