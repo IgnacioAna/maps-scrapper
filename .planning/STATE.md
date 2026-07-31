@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
-status: ready_to_plan
-last_updated: 2026-07-31T17:53:40.834Z
+status: executing
+last_updated: "2026-07-31T19:25:45.548Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
-  completed_phases: 1
-  total_plans: 5
+  completed_phases: 5
+  total_plans: 28
   completed_plans: 20
-  percent: 4
-stopped_at: Phase 24 complete (5/5) — ready to discuss Phase 25
+  percent: 19
 ---
 
 # SCM — STATE
@@ -40,8 +39,9 @@ Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-pha
   Los 3 planes previos ejecutaron config+refactor (24-01/24-02), dispatch
   (24-03) y las 2 superficies públicas auth-only (24-04); este plan cierra
   el circuito con el procesamiento real del webhook.
+
 - **Plan:** Not started
-- **Status:** Ready to plan
+- **Status:** Ready to execute
   (Panel Agente de voz, VOICE-07) o Phase 26/27 en paralelo (sin
   dependencia entre sí salvo Phase 25→26 deseable).
 
@@ -51,6 +51,7 @@ Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-pha
   `_detectCountryAndType`/`_estimateTelnyxCost` subidos a scope de
   módulo), `be58347` (Task 2: `_applyCallOutcome(data, lead, logEntry,
   opts)` extraído verbatim del handler humano + `opts.skipCalendarCreation`
+
   + `globalThis.__voiceAgent`), `b208aaf` (Task 3: 12 tests de paridad
   doble-vía en `tests/apply-call-outcome.test.js`). Suite completa
   **1020/1020** verde, sin editar ningún test preexistente
