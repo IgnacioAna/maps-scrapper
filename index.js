@@ -10556,6 +10556,26 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
   // número muerto = otra llamada abandonada → riesgo de recargo). NO aparece en
   // "Próximos callbacks" ni en "Hoy" (eso es solo para callbacks manuales).
   // Compliance: la llamada siempre la dispara una persona — la cadencia solo reordena.
+  // Tope de cortes (2026-07-31). Antes `hung_up` no tenía límite: no entra en
+  // _NO_CONTACT (correcto, atendieron) pero además ROMPÍA la racha de no-contacto,
+  // así que un lead podía acumular cortes para siempre y volver a la cola cada vez.
+  // Caso real que lo destapó: un lead con `no_answer > hung_up ×4` seguía como
+  // "sin contactar". Criterio del user: al 2do corte se descarta — atendieron dos
+  // veces y cortaron, el número es bueno pero no hay interés (o siempre filtra la
+  // recepción). Se cuenta el TOTAL de cortes, no la racha: si se contara la racha,
+  // alternar corte/no-atiende volvería a dejarlo eterno, que es el bug de fondo.
+  // El logEntry de esta llamada ya está en el callLog (se pushea al entrar).
+  const MAX_HUNG_UP = 2;
+  if (outcome === 'hung_up' && !callbackAt && !lead.doNotCall) {
+    const cortes = lead.callLog.filter((e) => e && e.outcome === 'hung_up').length;
+    if (cortes >= MAX_HUNG_UP) {
+      lead.estado = 'descartado';
+      lead.callbackAt = '';
+      lead.autoDiscarded = true;
+      lead.autoDiscardReason = `cortes_${MAX_HUNG_UP}x`;
+    }
+  }
+
   const MAX_NO_CONTACT = 2;
   if (_NO_CONTACT.has(outcome) && !callbackAt && !lead.doNotCall) {
     let streak = 0;
@@ -17878,7 +17898,18 @@ JSON:`;
 
 // Setters cuyas llamadas NO aparecen en la biblioteca de entrenamiento (son
 // llamadas de prueba del dueño, no material de aprendizaje para vendedores).
+// Setters cuyas llamadas NO entran a la biblioteca de entrenamiento del equipo.
+// Motivo original: las pruebas del dueño no son material de aprendizaje para las
+// SDRs. 2026-07-31: el dueño ahora cold-callea en serio y quiere revisarse, así
+// que la exclusión se volvió direccional — sigue oculta para las SDRs, pero
+// admin/supervisor SÍ las ven (ver _trainingExcluded).
 const TRAINING_EXCLUDED_SETTERS = new Set(['setter_ignacio']);
+// Devuelve el set a excluir SEGÚN quién mira: para admin/supervisor no se excluye
+// nada (ven la biblioteca completa); para una SDR se mantiene el ocultamiento.
+function _trainingExcludedFor(role) {
+  if (role === 'admin' || role === 'supervisor') return new Set();
+  return TRAINING_EXCLUDED_SETTERS;
+}
 
 // GET /api/training/calls — biblioteca: TODAS las llamadas con transcript (de todo
 // el equipo), anonimizadas. Cualquier setter ve las de sus compañeros para aprender.
@@ -17900,11 +17931,15 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
   const mySetterId = eff.setterId || '';
   // Phase 18: supervisor scoped — INCLUIR solo llamadas de setters visibles.
   const visibleSet = _visibleSetterIds(req.auth.user);
+  // Exclusión direccional: vacía para admin/supervisor (ven todo, incluidas las
+  // llamadas del dueño), activa para las SDRs. Se usa el rol EFECTIVO, así que
+  // con "Ver como SDR" el admin ve exactamente lo que ve ella.
+  const excluded = _trainingExcludedFor(eff.role);
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
     // Excluir la cartera de los setters ocultos (sus leads asignados).
-    if (TRAINING_EXCLUDED_SETTERS.has(lead.assignedTo)) continue;
+    if (excluded.has(lead.assignedTo)) continue;
     if (visibleSet && !visibleSet.has(lead.assignedTo)) continue;
     for (let i = 0; i < lead.callLog.length; i++) {
       const c = lead.callLog[i];
@@ -17912,7 +17947,7 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
       if (outcomeFilter && c.outcome !== outcomeFilter) continue;
       // Excluir también si el que HIZO la llamada es un setter oculto (aunque el
       // lead sea de otro): Ignacio test-llamando cualquier lead.
-      if (c.by && TRAINING_EXCLUDED_SETTERS.has(userSetterId[c.by])) continue;
+      if (c.by && excluded.has(userSetterId[c.by])) continue;
       // Y (scoped) incluir solo si quien llamó pertenece al subconjunto visible.
       if (visibleSet && c.by && !visibleSet.has(userSetterId[c.by])) continue;
       if (onlyOwn) {
