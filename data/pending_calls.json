@@ -29,18 +29,32 @@
       "updatedAt": "2026-07-27T18:31:20.068Z"
     },
     {
-      "id": "pc_l_centrodeformacinodontolgicafor_34914268071_1785239226528",
-      "leadId": "l_centrodeformacinodontolgicafor_34914268071",
-      "leadName": "Centro de formación odontológica Formadent | Formación para odontólogos",
+      "id": "pc_l_ingenieriadental_523344443445_1785365411631",
+      "leadId": "l_ingenieriadental_523344443445",
+      "leadName": "Ingenieria Dental",
       "setterId": "setter_judith_mendez",
       "userId": "user_setter_1783767580868",
-      "startedAt": "2026-07-28T11:47:06.528Z",
-      "endedAt": "2026-07-28T11:47:56.817Z",
-      "durationSecs": 49,
+      "startedAt": "2026-07-29T22:50:11.631Z",
+      "endedAt": "2026-07-29T22:50:56.909Z",
+      "durationSecs": 44,
       "fromNumber": "+17866870849",
       "reachedActive": true,
-      "createdAt": "2026-07-28T11:48:32.572Z",
-      "updatedAt": "2026-07-28T11:49:22.860Z"
+      "createdAt": "2026-07-29T22:51:37.579Z",
+      "updatedAt": "2026-07-29T22:52:22.860Z"
+    },
+    {
+      "id": "pc_l_radiografiapanoramicalradiogra_573125370223_1785520549581",
+      "leadId": "l_radiografiapanoramicalradiogra_573125370223",
+      "leadName": "Radiografia panoramica l Radiografia dental l Centro radiologico en Bogotá l Radiologico Oral Sede 93",
+      "setterId": "setter_brenda_eguren",
+      "userId": "user_setter_1784395609222",
+      "startedAt": "2026-07-31T17:55:49.581Z",
+      "endedAt": "2026-07-31T17:56:36.742Z",
+      "durationSecs": 46,
+      "fromNumber": "+17864350620",
+      "reachedActive": true,
+      "createdAt": "2026-07-31T17:55:49.774Z",
+      "updatedAt": "2026-07-31T17:56:36.915Z"
     }
   ]
 }
