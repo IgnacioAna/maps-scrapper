@@ -92,7 +92,7 @@ del presupuesto de contexto)
 Plans:
 **Wave 1**
 
-- [ ] 24-01-PLAN.md — Refactor `_applyCallOutcome` + hoisting de los helpers de costo + test de paridad doble-vía (VOICE-02, wave 1)
+- [x] 24-01-PLAN.md — Refactor `_applyCallOutcome` + hoisting de los helpers de costo + test de paridad doble-vía (VOICE-02, wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

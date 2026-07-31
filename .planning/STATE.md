@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T14:58:40.397Z"
+last_updated: "2026-07-31T15:41:56.434Z"
 last_activity: 2026-07-31
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 5
-  completed_plans: 0
-  percent: 0
+  total_phases: 26
+  completed_phases: 4
+  total_plans: 22
+  completed_plans: 16
+  percent: 15
 ---
 
 # SCM — STATE
@@ -32,17 +32,32 @@ cada phase.
 
 ## Current Position
 
-- **Phase:** 24 — Integración backend Retell — **Not started**
-- **Plan:** —
-- **Status:** Ready to execute
-  para planificar.
+Phase: 24 (integracion-backend-retell) — EXECUTING
+Plan: 24-01 EXECUTED (1/5) — próximo 24-02
 
-- **Próximo paso:** `/gsd-plan-phase 24` (los 24/25/26/27-CONTEXT.md ya
-  contienen las decisiones y referencias de código — no hace falta
-  discuss-phase salvo que surjan dudas nuevas).
+- **Phase:** 24 — Integración backend Retell — **En ejecución (1/5 planes)**
+- **Plan:** 24-01 EXECUTED (2026-07-31) — 24-02..24-05 pendientes (waves
+  serializadas, todo toca `index.js`).
+- **Status:** Executing Phase 24
 
-- **Last activity:** 2026-07-31
-  completa hecha en sesión remota; desarrollo arranca en instancia local).
+- **24-01 EXECUTED (2026-07-31)** — refactor `_applyCallOutcome` +
+  hoisting de los helpers de costo Telnyx + test de paridad doble-vía.
+  Commits `57a3543` (Task 1: `TELNYX_RATES_USD_PER_MIN`/
+  `_detectCountryAndType`/`_estimateTelnyxCost` subidos a scope de
+  módulo), `be58347` (Task 2: `_applyCallOutcome(data, lead, logEntry,
+  opts)` extraído verbatim del handler humano + `opts.skipCalendarCreation`
+  + `globalThis.__voiceAgent`), `b208aaf` (Task 3: 12 tests de paridad
+  doble-vía en `tests/apply-call-outcome.test.js`). Suite completa
+  **1020/1020** verde, sin editar ningún test preexistente
+  (`git diff --cached --name-only -- tests/` solo lista el archivo nuevo).
+  VOICE-02 completado. Detalle en `24-01-SUMMARY.md`.
+
+- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-02-PLAN.md
+  (config Retell env>JSON + pseudo-SDR `setter_agente_ia`, VOICE-01/06,
+  wave 2 — bloqueado hasta que 24-01 esté mergeado, que ya lo está).
+
+- **Last activity:** 2026-07-31 — 24-01 ejecutado (executor secuencial,
+  working tree principal, sin worktree).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
 
@@ -628,6 +643,41 @@ Contra HEAD `a9e4886`:
 
 ---
 
-*Last updated: 2026-07-26 (21-04 ejecutado — olas 1 a 4 completas; el reporte
-sale solo Y el admin ya puede diagnosticar el canal, pausarlo y mandarlo en el
-acto. Falta solo la prueba en vivo con el user).*
+## Decisiones de ejecución (Phase 24)
+
+- **24-01:** la extracción verbatim de rangos grandes (107 y 124 líneas,
+  sensibles a backticks/regex/espacios) se hizo con scripts Node.js que
+  validan el contenido exacto ANTES de mover (`if (block[0] !== '...') throw`)
+  y aplican las sustituciones mecánicas por match exacto con conteo esperado
+  (`exactReplace` con `expectedCount`), en vez de transcripción manual vía
+  Edit — elimina el riesgo de error humano en un refactor cuyo contrato es
+  "cero cambios de comportamiento". El repo usa terminadores CRLF; el script
+  los preserva.
+
+- **24-01:** el test de paridad doble-vía (`tests/apply-call-outcome.test.js`)
+  usa un lead "B" en memoria para el lado del helper directo, en vez de leer/
+  escribir `setters.json` a mano en paralelo al server real — evita depender
+  de la resolución de mtime del cache de `loadSettersData` en Windows (fuente
+  de flakiness evitable). `nowIso` se sincroniza tomando el `lastContactAt`
+  real devuelto por la vía HTTP; `callbackAt` auto-generado por la cadencia
+  (usa `Date.now()` real, código verbatim sin tocar) se compara con tolerancia
+  de reloj (5s) en vez de igualdad estricta.
+
+- **24-01:** `gsd-sdk query roadmap.update-plan-progress` no reconoce el
+  formato de tabla custom de `ROADMAP.md` de este milestone (`# | Phase |
+  Reqs | Depende de` sin columna de plans/status) — sobrescribe las columnas
+  Phase/Reqs con `plan_count`/`status`, perdiendo información. Se revirtió esa
+  fila manualmente tras correr el comando (el comando SÍ marcó bien el
+  checkbox `- [x] 24-01-PLAN.md` en la lista de Wave 1, que es lo que importa).
+  `requirements.mark-complete` y el recálculo de `progress:` en el frontmatter
+  de `STATE.md` (vía scan de `SUMMARY.md` en disco) funcionaron correctos. Si
+  se vuelve a correr `roadmap.update-plan-progress` sobre este milestone,
+  revisar la fila del `## Resumen` después.
+
+---
+
+*Last updated: 2026-07-31 (24-01 ejecutado — `_applyCallOutcome` extraído
+como helper puro, helpers de costo Telnyx en scope de módulo, paridad
+handler↔helper garantizada por 12 tests nuevos + suite completa 1020/1020
+verde. VOICE-02 completado. Próximo: 24-02, config Retell env>JSON +
+pseudo-SDR).*

@@ -172,7 +172,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   `dailyCap`, `enabled`). Sumado a BACKUP_FILES, export-data, import-data,
   seedVolumeFromRepo y pre-deploy (regla #21 — sin esto un redeploy lo
   pierde). Endpoints `GET/PUT /api/retell/config` admin-only.
-- [ ] **VOICE-02**: La cascada de dispositions (index.js:10552-10675:
+- [x] **VOICE-02**: La cascada de dispositions (index.js:10552-10675:
   switch de outcomes + calendarEntry + DNC + cadencia) extraída a helper
   puro `_applyCallOutcome(data, lead, logEntry, opts)` usado por el handler
   humano Y por el webhook del agente. **Paridad exacta**: la suite completa
