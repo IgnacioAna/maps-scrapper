@@ -10554,6 +10554,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function loadCommandCenter() {
+      // Salud del audio del equipo: en paralelo, y si falla no arrastra al resto
+      // del Centro de Comando.
+      loadAudioHealth?.().catch?.(() => {});
       try {
         // 2026-07-24: el bloque de llamadas respeta el período elegido
         // (seg-control #cmd-calls-period). Default 'all' = histórico.
@@ -11405,6 +11408,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('#cmd-calls-period .seg-btn').forEach((b) => b.classList.toggle('active', b === btn));
       loadCommandCenter();
     });
+
+    // Calidad de audio del equipo (2026-07-31).
+    window._cmdAudioDays = 14;
+    document.getElementById('cmd-audio-period')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.seg-btn');
+      if (!btn) return;
+      const d = parseInt(btn.dataset.days, 10) || 14;
+      if (d === window._cmdAudioDays) return;
+      window._cmdAudioDays = d;
+      document.querySelectorAll('#cmd-audio-period .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      loadAudioHealth();
+    });
+
+    async function loadAudioHealth() {
+      const body = document.getElementById('cmd-audio-body');
+      const note = document.getElementById('cmd-audio-note');
+      if (!body) return;
+      try {
+        const r = await fetch(apiUrl('/api/telnyx/audio-health?days=' + (window._cmdAudioDays || 14)));
+        if (!r.ok) { body.innerHTML = ''; if (note) note.textContent = ''; return; }
+        const d = await r.json();
+        if (!d.rows?.length) {
+          body.innerHTML = '<tr><td colspan="6" style="padding:12px 10px; color:var(--text-secondary);">Todavía no hay llamadas con audio medido en este período.</td></tr>';
+          if (note) note.textContent = '';
+          return;
+        }
+        const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+        const chip = (txt, color, bg) => `<span style="display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; color:${color}; background:${bg};">${txt}</span>`;
+        body.innerHTML = d.rows.map(x => {
+          const estado = x.verdict === 'low' ? chip('Voz baja', '#f85149', 'rgba(248,81,73,0.13)')
+            : x.verdict === 'clipping' ? chip('Satura', '#FFB341', 'rgba(255,179,65,0.13)')
+            : x.verdict === 'ok' ? chip('Bien', '#5bb974', 'rgba(91,185,116,0.13)')
+            : chip('Sin datos', 'var(--text-secondary)', 'rgba(255,255,255,0.06)');
+          const nivelColor = x.verdict === 'low' ? '#f85149' : x.verdict === 'clipping' ? '#FFB341' : 'var(--text-primary)';
+          // El micrófono interno se marca: suele ser la causa de la voz baja.
+          const micInterno = x.mic && window.__audioDebug?.isBuiltIn?.(x.mic);
+          const mic = x.mic
+            ? `<span style="font-size:11.5px; color:${micInterno ? '#FFB341' : 'var(--text-secondary)'};" title="${esc(x.mic)}">${esc(String(x.mic).slice(0, 28))}${micInterno ? ' (de la compu)' : ''}</span>`
+            : '<span style="color:var(--text-secondary); font-size:11.5px;">—</span>';
+          return `<tr style="border-bottom:1px solid var(--border-subtle);">
+            <td style="padding:8px 10px; font-weight:500;">${esc(x.setterName)}</td>
+            <td style="padding:8px 10px;">${x.measured ?? 0}</td>
+            <td style="padding:8px 10px; font-family:ui-monospace,monospace; color:${nivelColor}; font-weight:600;">${x.voiceAvg ?? '—'}</td>
+            <td style="padding:8px 10px;">${x.lowPct != null ? x.lowPct + '%' : '—'}</td>
+            <td style="padding:8px 10px;">${mic}</td>
+            <td style="padding:8px 10px;">${estado}</td>
+          </tr>`;
+        }).join('');
+        const conProblema = d.rows.filter(x => x.verdict === 'low' || x.verdict === 'clipping').map(x => x.setterName);
+        if (note) {
+          note.textContent = conProblema.length
+            ? 'A revisar: ' + conProblema.join(', ') + '. Casi siempre es que el navegador está tomando el micrófono de la computadora en vez del auricular — se cambia desde el panel Audio de Llamadas.'
+            : 'Todo el equipo sale con buen nivel de voz.';
+        }
+      } catch (e) { console.warn('[audio-health]', e?.message); }
+    }
+    window.loadAudioHealth = loadAudioHealth;
 
     // Toggle "Ocultar SDRs sin llamadas" (2026-07-26). Client-side: re-pinta la
     // tabla sin volver a pedir data. Preferencia por user, como el sort de Llamadas.

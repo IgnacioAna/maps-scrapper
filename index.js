@@ -17218,6 +17218,90 @@ app.delete('/api/telnyx/scripts/:id', requireAuth, requireRole('admin'), (req, r
 // Calcula los KPIs reales del flow v2: ratio de opener pasado (>30s connected),
 // ratio agendada/contactada, % por outcome, mejor hora del día, mejor día,
 // mejor país. admin/supervisor only. Query: ?range=today|week|month|all
+// Salud del audio por vendedor (2026-07-31). Nació de un dato de producción: las
+// 3 SDRs con más volumen venían hablando con voz BAJA hace 2 semanas (0.198,
+// 0.219, 0.225 de pico promedio cuando lo sano es 0.5-0.9) y nadie se enteraba,
+// porque el único síntoma es que el cliente del otro lado escucha mal. Esto le da
+// al admin la visibilidad sin depender de que cada vendedora lo reporte.
+// Los niveles salen de transcript.recMeta, que ya se persiste con cada llamada.
+const AUDIO_LOW_VOICE = 0.35;   // por debajo: el cliente escucha mal
+const AUDIO_CLIP_LEVEL = 0.98;  // por encima: satura / distorsiona
+function _audioHealthBySetter(data, { sinceTs = 0, visibleSet = null, userMap = null } = {}) {
+  const map = userMap || _buildUserSetterMap();
+  const acc = {};
+  for (const lead of Object.values(data.leads || {})) {
+    for (const e of (lead.callLog || [])) {
+      const m = e && e.transcript && e.transcript.recMeta;
+      if (!m || typeof m !== 'object') continue;
+      const ts = e.ts ? new Date(e.ts).getTime() : 0;
+      if (!ts || ts < sinceTs) continue;
+      const sid = _callSetterId(e, lead, map);
+      if (!sid) continue;
+      if (visibleSet && !visibleSet.has(sid)) continue;
+      const a = acc[sid] || (acc[sid] = { setterId: sid, calls: 0, voice: [], lead: [], loss: [], clipped: 0, low: 0, mics: {}, versions: {} });
+      a.calls++;
+      if (typeof m.setterLvlMax === 'number') {
+        a.voice.push(m.setterLvlMax);
+        if (m.setterLvlMax >= AUDIO_CLIP_LEVEL) a.clipped++;
+        else if (m.setterLvlMax < AUDIO_LOW_VOICE) a.low++;
+      }
+      if (typeof m.leadLvlMax === 'number') a.lead.push(m.leadLvlMax);
+      if (typeof m.netLossPct === 'number') a.loss.push(m.netLossPct);
+      if (m.micLabel) a.mics[m.micLabel] = (a.mics[m.micLabel] || 0) + 1;
+      if (m.v) a.versions[m.v] = (a.versions[m.v] || 0) + 1;
+    }
+  }
+  const avg = (arr) => (arr.length ? arr.reduce((x, y) => x + y, 0) / arr.length : null);
+  const top = (obj) => Object.entries(obj).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  const r2 = (v) => (v == null ? null : Math.round(v * 1000) / 1000);
+  return Object.values(acc).map((a) => {
+    const voiceAvg = avg(a.voice);
+    // El veredicto mira el PROMEDIO, no un pico suelto: una llamada floja le pasa
+    // a cualquiera, el problema es el patrón sostenido.
+    let verdict = 'unknown';
+    if (voiceAvg != null) {
+      const lowShare = a.voice.length ? a.low / a.voice.length : 0;
+      if (a.voice.length && a.clipped / a.voice.length > 0.2) verdict = 'clipping';
+      // El promedio solo no alcanza: un caso real de prod tenía 59% de llamadas
+      // con voz baja y promedio 0.38 (zafaba por poco) — decir "bien" ahí es
+      // mentirle al admin. Si más de la mitad de las llamadas salen bajas, es un
+      // problema aunque algún pico alto levante la media.
+      else if (voiceAvg < AUDIO_LOW_VOICE || lowShare > 0.5) verdict = 'low';
+      else verdict = 'ok';
+    }
+    return {
+      setterId: a.setterId, calls: a.calls, measured: a.voice.length,
+      voiceAvg: r2(voiceAvg), voiceMin: r2(a.voice.length ? Math.min(...a.voice) : null),
+      voiceMax: r2(a.voice.length ? Math.max(...a.voice) : null),
+      lowPct: a.voice.length ? Math.round((100 * a.low) / a.voice.length) : null,
+      clippedPct: a.voice.length ? Math.round((100 * a.clipped) / a.voice.length) : null,
+      leadAvg: r2(avg(a.lead)), lossAvg: a.loss.length ? Math.round(avg(a.loss) * 10) / 10 : null,
+      mic: top(a.mics), appVersion: top(a.versions), verdict,
+    };
+  }).sort((x, y) => (x.voiceAvg ?? 9) - (y.voiceAvg ?? 9)); // los peores primero
+}
+globalThis.__audioHealth = { _audioHealthBySetter, AUDIO_LOW_VOICE, AUDIO_CLIP_LEVEL };
+
+app.get('/api/telnyx/audio-health', requireAuth, (req, res) => {
+  const role = req.auth?.user?.role;
+  if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });
+  let days = parseInt(req.query.days, 10);
+  if (!Number.isFinite(days)) days = 14;
+  days = Math.max(1, Math.min(90, days));
+  const data = loadSettersData();
+  const rows = _audioHealthBySetter(data, {
+    sinceTs: Date.now() - days * 24 * 3600 * 1000,
+    visibleSet: _visibleSetterIds(req.auth.user),
+  });
+  const names = {};
+  for (const s of (data.setters || [])) names[s.id] = s.name;
+  res.json({
+    days,
+    thresholds: { low: AUDIO_LOW_VOICE, clipping: AUDIO_CLIP_LEVEL },
+    rows: rows.map(r => ({ ...r, setterName: names[r.setterId] || r.setterId })),
+  });
+});
+
 app.get('/api/telnyx/cold-call-effectiveness', requireAuth, (req, res) => {
   const role = req.auth?.user?.role;
   if (role !== 'admin' && role !== 'supervisor') return res.status(403).json({ error: 'admin/supervisor only' });

@@ -2067,6 +2067,40 @@
           <div id="cmd-idle-setters-note" class="cmd-idle-note"></div>
         </div>
 
+        <!-- Salud del audio del equipo (2026-07-31). Nació de un dato duro: las 3
+             vendedoras con más volumen venían hablando con voz baja hacía 2
+             semanas y no había forma de saberlo — el único síntoma es que el
+             cliente escucha mal y corta. -->
+        <div id="cmd-audio-section" style="padding:0 32px; margin-top:22px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0; font-size:15px; font-weight:600;">Calidad de audio del equipo</h3>
+              <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">Nivel de voz con el que sale cada vendedor. Lo sano pica entre 0.5 y 0.9.</div>
+            </div>
+            <div class="seg-control" id="cmd-audio-period">
+              <button class="seg-btn" data-days="7">7 días</button>
+              <button class="seg-btn active" data-days="14">14 días</button>
+              <button class="seg-btn" data-days="30">30 días</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:13px;">
+              <thead>
+                <tr style="text-align:left; color:var(--text-secondary); border-bottom:1px solid var(--border-subtle);">
+                  <th style="padding:8px 10px;">Vendedor</th>
+                  <th style="padding:8px 10px;" title="Llamadas con audio medido en el período">Llamadas</th>
+                  <th style="padding:8px 10px;" title="Pico promedio de su voz. Lo sano es 0.5-0.9; por debajo de 0.35 el cliente lo escucha mal.">Nivel de voz</th>
+                  <th style="padding:8px 10px;" title="Porcentaje de llamadas donde salió con voz baja">% bajas</th>
+                  <th style="padding:8px 10px;">Micrófono</th>
+                  <th style="padding:8px 10px;">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="cmd-audio-body"></tbody>
+            </table>
+          </div>
+          <div id="cmd-audio-note" style="font-size:12px; color:var(--text-secondary); margin-top:8px;"></div>
+        </div>
+
         <div style="padding:4px 32px 0; margin-top:14px;">
           <span id="cmd-leads-total-badge" style="font-size:13px; color:var(--text-secondary); font-weight:500;"></span>
         </div>
@@ -3570,7 +3604,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260731e"></script>
+  <script type="module" src="/app.js?v=20260731f"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
