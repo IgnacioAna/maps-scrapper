@@ -27,7 +27,10 @@ paula-old.json
 *-old.json
 # Script one-shot de armado de xlsx — no es parte del runtime.
 build_xlsx.js
-.claude/
+# Config local de Claude (settings.local.json, worktrees) sigue fuera del repo,
+# pero las skills sí se versionan para compartirlas.
+.claude/*
+!.claude/skills/
 # Carpeta de assets del desktop WAMULTI — no pertenece a este repo
 wa-multi/
 # Atajo local de pre-deploy (lleva URL + email, NO contraseña). No commitear.
