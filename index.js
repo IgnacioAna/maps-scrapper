@@ -6712,6 +6712,24 @@ async function mutateSettersData(mutator) {
   return next;
 }
 
+// D-24-09 (Phase 24): pseudo-SDR "Agente IA" — el agente de voz necesita un
+// `assignedTo` al que pertenezcan sus leads, como cualquier SDR humana (sin
+// excepciones especiales en Equipo/Comando/Distribución). Declarado ACÁ (no
+// junto al bloque de config de Retell, mucho más abajo en el archivo) porque
+// el seed de boot corre inmediatamente después de `mutateSettersData` — el
+// punto más temprano disponible, y `const` no hace hoisting como sí lo hacen
+// las `function` declarations usadas en el resto del archivo.
+// Guardado por NODE_ENV !== 'test' a propósito: sin el guard, cada fixture de
+// test ganaría un setter extra y varios tests que cuentan filas de
+// Equipo/Distribución cambiarían de número. Los tests que necesiten el
+// agente lo ponen en su propio fixture de setters.json.
+const VOICE_AGENT_SETTER_NAME = 'Agente IA';
+const VOICE_AGENT_SETTER_ID = 'setter_agente_ia';
+if (process.env.NODE_ENV !== 'test') {
+  try { ensureSetterProfile(VOICE_AGENT_SETTER_NAME); }
+  catch (e) { console.warn('[voice-agent] no pude asegurar el pseudo-SDR:', e.message); }
+}
+
 // ══════════════════════════════════════════════════════════════
 // ── SCHEDULED MESSAGES (Automatizaciones de seguimiento)
 // ══════════════════════════════════════════════════════════════
@@ -14187,6 +14205,186 @@ function _setterTelnyxConfig(cfg) {
     countryRouting: cfg.countryRouting || { default: "" },
   };
 }
+
+// ── Phase 24: Agente de voz IA (Retell) — Config storage ──────────────────
+// Mismo patrón env>JSON que Telnyx (arriba). Estructura:
+//   - apiKey: API key de Retell (Bearer). Firma también los webhooks — Retell
+//     NO tiene un signing secret separado (research §2.1, verificado contra
+//     retell-sdk@5.53.0 lib/webhook_auth.mjs: HMAC-SHA256 con el MISMO API
+//     key). `webhookSecret` se conserva solo por si la cuenta del user
+//     resultara tener un "webhook badge" con un valor distinto — nunca
+//     obligatorio, ver `_retellWebhookSecret` más abajo.
+//   - toolSecret: EXTENSIÓN de D-24-01, no una contradicción. VOICE-04 exige
+//     un header secreto `x-scm-tool-secret` para el tool HTTP `/book` que
+//     Retell invoca durante la llamada (plan 24-05) — sin este campo esa
+//     sería la única credencial del sistema viviendo fuera del patrón
+//     env>JSON del proyecto.
+//   - agentId / fromNumberId / dailyCap / enabled / rotationIdx /
+//     whatsappReturn: NO son secretos, viven en JSON siempre (igual que
+//     numbers/countryRouting de Telnyx). fromNumberId vacío = round-robin de
+//     caller ID (D-24-01). whatsappReturn es el número de retorno que se
+//     inyecta como variable dinámica del agente.
+//
+// SEGURIDAD CRÍTICA: apiKey, webhookSecret y toolSecret NUNCA se devuelven al
+// browser. GET /api/retell/config solo devuelve flags hasX + envSourced.
+const RETELL_CONFIG_FILE = path.join(DATA_DIR, "retell_config.json");
+const RETELL_EVENTS_FILE = path.join(DATA_DIR, "retell_events.json");
+
+function _defaultRetellConfig() {
+  return {
+    apiKey: "",
+    webhookSecret: "",
+    toolSecret: "",
+    agentId: "",
+    fromNumberId: "",
+    dailyCap: 50,
+    enabled: false,
+    rotationIdx: 0,
+    whatsappReturn: "",
+    updatedAt: new Date().toISOString(),
+    updatedBy: "system_seed",
+  };
+}
+
+// Campos sensibles que se pueden setear vía env var. La env var SIEMPRE gana
+// sobre el JSON — mismo criterio que TELNYX_ENV_FIELDS.
+const RETELL_ENV_FIELDS = {
+  apiKey: "RETELL_API_KEY",
+  webhookSecret: "RETELL_WEBHOOK_SECRET",
+  toolSecret: "RETELL_TOOL_SECRET",
+};
+
+// Devuelve qué campos vienen de env var (no de JSON). Lo usa el frontend
+// para mostrar "🔒 Configurado vía env var" en lugar de input editable.
+function _retellEnvSourced() {
+  const sourced = {};
+  for (const [field, envName] of Object.entries(RETELL_ENV_FIELDS)) {
+    sourced[field] = !!(process.env[envName] && String(process.env[envName]).trim());
+  }
+  return sourced;
+}
+
+function loadRetellConfig() {
+  let cfg;
+  try {
+    if (fs.existsSync(RETELL_CONFIG_FILE)) {
+      cfg = JSON.parse(fs.readFileSync(RETELL_CONFIG_FILE, "utf8"));
+      if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
+      if (typeof cfg.webhookSecret !== "string") cfg.webhookSecret = "";
+      if (typeof cfg.toolSecret !== "string") cfg.toolSecret = "";
+      if (typeof cfg.agentId !== "string") cfg.agentId = "";
+      if (typeof cfg.fromNumberId !== "string") cfg.fromNumberId = "";
+      cfg.dailyCap = Number.isFinite(Number(cfg.dailyCap)) ? Number(cfg.dailyCap) : 50;
+      if (typeof cfg.enabled !== "boolean") cfg.enabled = false;
+      cfg.rotationIdx = Number.isFinite(Number(cfg.rotationIdx)) ? Number(cfg.rotationIdx) : 0;
+      if (typeof cfg.whatsappReturn !== "string") cfg.whatsappReturn = "";
+    }
+  } catch (e) { console.error("[retell] Error leyendo config:", e.message); }
+  if (!cfg) {
+    // Lazy init: primer arranque crea el file con el seed (sin secrets).
+    cfg = _defaultRetellConfig();
+    try { fs.writeFileSync(RETELL_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+    catch (e) { console.warn("[retell] No pude escribir seed config:", e.message); }
+  }
+  // Overlay env vars con prioridad sobre JSON — igual que Telnyx. El valor
+  // overlayeado NUNCA se re-escribe a disco desde acá (solo vive en el
+  // objeto que se devuelve), así que el archivo persistido nunca contiene el
+  // secret real cuando viene de env var.
+  for (const [field, envName] of Object.entries(RETELL_ENV_FIELDS)) {
+    const envVal = process.env[envName];
+    if (envVal && String(envVal).trim()) {
+      cfg[field] = String(envVal).trim();
+    }
+  }
+  return cfg;
+}
+
+function saveRetellConfig(cfg) {
+  try { fs.writeFileSync(RETELL_CONFIG_FILE, JSON.stringify(cfg, null, 2), "utf8"); }
+  catch (e) { console.error("[retell] Error guardando config:", e.message); }
+}
+
+// _retellWebhookSecret: corrección de research §2.1 sobre D-24-01 — Retell NO
+// tiene un signing secret separado del API key, firma el webhook con el
+// MISMO API key. Si `webhookSecret` está vacío, cae a `apiKey`; si tampoco
+// hay apiKey, devuelve "". Nunca lanza, nunca exige el campo.
+function _retellWebhookSecret(cfg) {
+  if (cfg.webhookSecret && String(cfg.webhookSecret).trim()) return cfg.webhookSecret;
+  if (cfg.apiKey && String(cfg.apiKey).trim()) return cfg.apiKey;
+  return "";
+}
+
+// _retellToolSecret: SIN fallback a propósito — un toolSecret ausente debe
+// ser detectable (el tool /book responde 401 en el plan 24-05), no
+// silenciosamente igual al apiKey (eso mezclaría dos superficies de
+// credencial distintas: quién puede llamar a la API de Retell vs quién
+// puede invocar nuestro propio endpoint /book).
+function _retellToolSecret(cfg) {
+  return (cfg.toolSecret && String(cfg.toolSecret).trim()) || "";
+}
+
+function loadRetellEvents() {
+  try {
+    if (fs.existsSync(RETELL_EVENTS_FILE)) {
+      return JSON.parse(fs.readFileSync(RETELL_EVENTS_FILE, "utf8"));
+    }
+  } catch (e) { console.error("[retell] error leyendo events:", e.message); }
+  return { events: [] };
+}
+
+function saveRetellEvents(data) {
+  try { fs.writeFileSync(RETELL_EVENTS_FILE, JSON.stringify(data, null, 2), "utf8"); }
+  catch (e) { console.error("[retell] error guardando events:", e.message); }
+}
+
+// Contador en memoria de rechazos del webhook por firma inválida — espejo de
+// _telnyxWebhookRejects (index.js, bloque Telnyx). Lo incrementa el webhook
+// del plan 24-04; acá solo se declara y se lee en la health del GET de config.
+const _retellWebhookRejects = { total: 0, last: null, since: new Date().toISOString() };
+
+// Sanitizador público — nunca devuelve el valor de ningún secret, solo flags
+// hasX + envSourced (patrón _publicTelnyxConfig). El objeto `webhook` es la
+// health del endpoint (D-24-06): hasta que exista el webhook (plan 24-04) las
+// fuentes están vacías y esto devuelve valores legítimos derivados de ellas
+// (total:0, lastReject:null, lastEventAt:null, eventCount:0) — NO
+// placeholders hardcodeados. El plan 24-04 no redeclara nada de esto: solo
+// hace que las fuentes (_retellWebhookRejects / loadRetellEvents) se pueblen.
+function _publicRetellConfig(cfg) {
+  const events = loadRetellEvents();
+  const eventsList = Array.isArray(events?.events) ? events.events : [];
+  const lastEvent = eventsList[eventsList.length - 1];
+  const lastEventAt = lastEvent ? (lastEvent.receivedAt || lastEvent.occurredAt || null) : null;
+  return {
+    hasApiKey: !!(cfg.apiKey && cfg.apiKey.trim()),
+    hasWebhookSecret: !!_retellWebhookSecret(cfg),
+    hasToolSecret: !!_retellToolSecret(cfg),
+    envSourced: _retellEnvSourced(),
+    agentId: cfg.agentId || "",
+    fromNumberId: cfg.fromNumberId || "",
+    dailyCap: Number.isFinite(Number(cfg.dailyCap)) ? Number(cfg.dailyCap) : 50,
+    enabled: !!cfg.enabled,
+    rotationIdx: Number.isFinite(Number(cfg.rotationIdx)) ? Number(cfg.rotationIdx) : 0,
+    whatsappReturn: cfg.whatsappReturn || "",
+    webhook: {
+      rejects: _retellWebhookRejects.total,
+      lastReject: _retellWebhookRejects.last,
+      lastEventAt,
+      eventCount: eventsList.length,
+    },
+    updatedAt: cfg.updatedAt,
+    updatedBy: cfg.updatedBy,
+  };
+}
+
+// Extiende el objeto expuesto por 24-01 (patrón __callCore) — no crea uno
+// nuevo. Superficie para los planes 24-03/24-04/24-05.
+Object.assign(globalThis.__voiceAgent, {
+  loadRetellConfig,
+  _publicRetellConfig,
+  _retellWebhookSecret,
+  _retellToolSecret,
+  VOICE_AGENT_SETTER_ID,
+});
 
 // ── Google Calendar embed (Appointment Scheduling) ──
 // El admin pega el URL del iframe que Google Calendar genera en "Compartir".
