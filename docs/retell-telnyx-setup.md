@@ -131,7 +131,8 @@ en otra conexión.
 > USA 3 la diferencia es de 2 llamadas: si en el portal USA 3 resulta
 > incómodo de mover, USA 2 es equivalente.
 >
-> **Confirmación 1 — números activos reales:** _(pendiente — mirar el portal)_
+> **Confirmación 1 — números activos reales: son 3** ✅ (confirmado por el
+> user, 2026-07-31). La nota #116 del proyecto que decía 6 está desactualizada.
 > **Confirmación 2 — ¿un número puede estar en dos conexiones?:** _(pendiente
 > — se ve al asignarlo en el paso 8 de la sección 4)_
 
@@ -254,6 +255,41 @@ un error de "no agent bound", probarlos — no genera cargos.
 **Región SIP elegida:** _(pendiente)_
 **FQDN de terminación:** _(pendiente)_
 
+### Límites de la cuenta Retell (leídos del dashboard, 2026-07-31)
+
+`Workspace SCM → Limits`:
+
+| Límite | Valor | Qué significa acá |
+|---|---|---|
+| Concurrent Calls Limit | **20** | Llamadas simultáneas. El dispatch corre de a 2: sobra. |
+| Concurrency Burst | activado | Permite picos temporales por encima del límite. |
+| Reserve Inbound Capacity | Not Set | Correcto: los números del agente no reciben llamadas en v1. |
+| LLM Token Limit | 32768 | Muy por encima de los 800-4300 tokens/turno del modo Rigid. |
+| **Custom Telephony CPS** | **1** | **El que importa: 1 llamada por segundo para el trunk BYO.** |
+| Plan | Free trial | ⚠️ Verificar el crédito disponible antes del piloto. |
+
+> ⚠️ **CPS 1 contra un dispatch que dispara de a 2.** El dispatch del SCM
+> lanza los `create-phone-call` con concurrencia **2**, así que en el arranque
+> de cada lote puede pedir 2 llamadas dentro del mismo segundo y pasarse del
+> CPS de telefonía custom.
+>
+> **Por qué importa más de lo que parece:** si Retell rechaza la segunda, el
+> lead puede terminar con un `disconnection_reason` que el SCM traduce a **"no
+> atendió"** — un lead marcado como no-contacto **que nunca sonó**. Eso
+> contamina las métricas del piloto y, peor, mete al lead en la cadencia de
+> reintentos por una llamada que no existió.
+>
+> **Qué mirar en el primer lote:** llamadas que vuelven como `no_answer` con
+> duración 0 y sin timbrado. Si aparecen, la causa es el CPS, no el número ni
+> el agente. Se arregla subiendo el límite desde `Limits → Custom Telephony
+> CPS → Adjust Limit`, o bajando la concurrencia del dispatch a 1 (un cambio
+> de una línea en `index.js`, fuera del alcance de esta fase).
+>
+> La calculadora del propio dashboard, con un perfil de 50 llamadas salientes
+> por hora y 25% de atención, recomienda **CPS 1 y concurrencia 5** — o sea que
+> para el volumen del piloto el CPS 1 alcanza, siempre que las llamadas no
+> salgan de a dos en el mismo segundo.
+
 ---
 
 ## 6. Enganchar con el SCM
@@ -349,6 +385,7 @@ Pedirlo antes devuelve un 409 que **parece** un problema del trunk y no lo es.
 | **`create-phone-call` responde error de `from_number`** | Ese número **no está importado en Retell**. Sección 5. |
 | **Código SIP `608` en los logs de Telnyx** | La llamada fue **rechazada por estar marcada como spam likely**. No es un problema de configuración: es reputación del caller ID. Sección 10. |
 | **El lote sale a medias, unas llamadas sí y otras no** | El agente está rotando hacia números no importados. Fijar `fromNumberId`. Sección 6. |
+| **Llamadas que vuelven `no_answer` con duración 0 y sin timbrado** | Sospechar el **Custom Telephony CPS = 1** contra la concurrencia 2 del dispatch, no el número. Sección 5. |
 | **409 «El agente está apagado» al correr el dry-run** | Esperado antes del plan 26-04. Sección 7. |
 
 ---
@@ -378,7 +415,17 @@ Canal: chat del dashboard de Retell o `support@retellai.com`.
 
 | Fecha de envio | Canal | Fecha de respuesta | Respuesta |
 |---|---|---|---|
-| _(pendiente)_ | _(pendiente)_ | _(pendiente)_ | _(pendiente)_ |
+| _(pendiente — borrador listo 2026-07-31)_ | email a `support@retellai.com` | _(pendiente)_ | _(pendiente)_ |
+
+**Estado:** el borrador está escrito en el Gmail de la cuenta, listo para
+enviar con un click (asunto: *"Billing question: is ring time billed on
+create-phone-call with a BYO SIP trunk?"*). Va **en inglés** —el soporte de
+Retell lo es—, con el mismo contenido que el texto de arriba más las dos
+fuentes contradictorias citadas, para que no puedan responder con un link a
+la página de precios.
+
+Si el chat del dashboard responde más rápido, sirve igual: es el mismo
+contenido y no hace falta mandar las dos cosas.
 
 ### Por qué bloquea el tamaño del piloto
 
