@@ -3686,6 +3686,21 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
     // container nuevo de Railway perdería la cola de llamadas sin marcar.
     let pending_calls = null;
     try { pending_calls = loadPendingCalls(); } catch {}
+    // Phase 24: config + eventos del agente de voz Retell — regla #21, los 5
+    // lugares. A diferencia de telnyxConfig (arriba, que usa loadTelnyxConfig
+    // con overlay de env vars), acá se lee el archivo CRUDO de disco — sin
+    // overlay — para que el export nunca incluya el valor efectivo de un
+    // secret cuando viene de una env var de Railway (self-healing del PUT ya
+    // deja "" persistido en ese caso; loadRetellConfig() solo se llama por su
+    // side-effect de lazy-init, para garantizar que el archivo exista).
+    let retellConfig = null, retellEvents = null;
+    try {
+      loadRetellConfig();
+      if (fs.existsSync(RETELL_CONFIG_FILE)) {
+        retellConfig = JSON.parse(fs.readFileSync(RETELL_CONFIG_FILE, "utf8"));
+      }
+    } catch {}
+    try { retellEvents = loadRetellEvents(); } catch {}
     res.json({
       exportedAt: new Date().toISOString(),
       history,
@@ -3702,7 +3717,9 @@ app.get('/api/admin/export-data', requireAuth, requireRole('admin'), (req, res) 
       scheduledMessages,
       scrapeBatches,
       reports,
-      pending_calls
+      pending_calls,
+      retellConfig,
+      retellEvents
     });
   } catch (e) {
     console.error('Export error:', e);
@@ -3722,6 +3739,7 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
       mercuryConfig, mercuryGenerations, alertConfig,
       telnyxConfig, telnyxEvents, callScripts, scheduledMessages,
       scrapeBatches, reports, pending_calls,
+      retellConfig, retellEvents,
     } = req.body || {};
 
     // Validacion de shape ANTES de tocar nada. Un payload malo no debe llegar
@@ -3786,14 +3804,21 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (pending_calls !== undefined && (!pending_calls || typeof pending_calls !== 'object' || !Array.isArray(pending_calls.pending))) {
       errors.push('pending_calls.pending debe ser array');
     }
+    if (retellConfig !== undefined && (!retellConfig || typeof retellConfig !== 'object')) {
+      errors.push('retellConfig debe ser objeto');
+    }
+    if (retellEvents !== undefined && (!retellEvents || typeof retellEvents !== 'object' || !Array.isArray(retellEvents.events))) {
+      errors.push('retellEvents.events debe ser array');
+    }
     const hasAny = history !== undefined || auth !== undefined || setters !== undefined ||
       faqs !== undefined || training !== undefined || mercuryConfig !== undefined ||
       mercuryGenerations !== undefined || alertConfig !== undefined ||
       telnyxConfig !== undefined || telnyxEvents !== undefined ||
       callScripts !== undefined || scheduledMessages !== undefined ||
-      scrapeBatches !== undefined || reports !== undefined || pending_calls !== undefined;
+      scrapeBatches !== undefined || reports !== undefined || pending_calls !== undefined ||
+      retellConfig !== undefined || retellEvents !== undefined;
     if (!hasAny) {
-      errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training/mercuryConfig/mercuryGenerations/alertConfig/telnyxConfig/telnyxEvents/callScripts/scheduledMessages');
+      errors.push('payload vacio: incluir al menos uno de history/auth/setters/faqs/training/mercuryConfig/mercuryGenerations/alertConfig/telnyxConfig/telnyxEvents/callScripts/scheduledMessages/retellConfig/retellEvents');
     }
     if (errors.length) {
       return res.status(400).json({ error: 'Validacion fallida', detalles: errors });
@@ -3817,6 +3842,8 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
     if (scrapeBatches) { saveScrapeBatches(scrapeBatches); restored.push('scrapeBatches'); }
     if (reports) { saveReportsState(reports); restored.push('reports'); }
     if (pending_calls) { savePendingCalls(pending_calls); restored.push('pending_calls'); }
+    if (retellConfig) { saveRetellConfig(retellConfig); restored.push('retellConfig'); }
+    if (retellEvents) { saveRetellEvents(retellEvents); restored.push('retellEvents'); }
     res.json({ ok: true, message: 'Data importada correctamente', restored, backup: backup?.path || null });
   } catch (e) {
     console.error('Import error:', e);
@@ -5676,7 +5703,10 @@ function seedVolumeFromRepo() {
   const repoData = path.join(process.cwd(), "data");
   if (DATA_DIR === repoData) return; // no estamos usando volume
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json', 'reports.json', 'pending_calls.json']) {
+  // Phase 24: retell_config.json y retell_events.json SÍ están acá (a
+  // diferencia de telnyx_config.json/telnyx_events.json, que no están —
+  // deuda preexistente documentada en el research §5.2, no clonada acá).
+  for (const file of ['history.json', 'auth.json', 'setters.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'scrape_batches.json', 'reports.json', 'pending_calls.json', 'retell_config.json', 'retell_events.json']) {
     const volumePath = path.join(DATA_DIR, file);
     const repoPath = path.join(repoData, file);
     if (!fs.existsSync(volumePath) && fs.existsSync(repoPath)) {
@@ -5729,7 +5759,7 @@ process.on('unhandledRejection', (reason) => logError(reason instanceof Error ? 
 const BACKUPS_DIR = path.join(DATA_DIR, 'backups');
 const BACKUP_INTERVAL_HOURS = 6;
 const BACKUP_KEEP = 8;
-const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json', 'reports.json', 'pending_calls.json'];
+const BACKUP_FILES = ['setters.json', 'auth.json', 'history.json', 'faqs.json', 'training.json', 'wa_accounts.json', 'wa_routines.json', 'wa_events.json', 'wa_campaigns.json', 'telnyx_config.json', 'telnyx_events.json', 'call_scripts.json', 'reports.json', 'pending_calls.json', 'retell_config.json', 'retell_events.json'];
 
 function makeBackup(reason = 'auto') {
   try {
@@ -15045,6 +15075,85 @@ app.put("/api/telnyx/config", requireAuth, requireRole("admin"), (req, res) => {
   saveTelnyxConfig(cfg);
   // Devolver representación pública (que aplicará overlay de env vars si los hay)
   res.json(_publicTelnyxConfig(loadTelnyxConfig()));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 24: Agente de voz IA (Retell) — Endpoints REST de config
+// ═══════════════════════════════════════════════════════════════════════
+
+// GET /api/retell/config — admin-only. A diferencia de Telnyx, NO hay vista
+// reducida para el SDR: el panel de VOICE-07 es admin-only y ningún otro rol
+// tiene nada que hacer con la config del agente. Supervisor recibe 403.
+app.get("/api/retell/config", requireAuth, requireRole("admin"), (req, res) => {
+  res.json(_publicRetellConfig(loadRetellConfig()));
+});
+
+// PUT /api/retell/config — admin actualiza secrets/config.
+// Body: { apiKey?, webhookSecret?, toolSecret?, agentId?, fromNumberId?,
+//         dailyCap?, enabled?, whatsappReturn? }
+// Campos omitidos NO se tocan (mismo criterio que Telnyx: no borrar secrets
+// sin querer). `rotationIdx` NO es editable desde el panel — lo administra el
+// dispatch del plan 24-03; se ignora si viene en el body.
+app.put("/api/retell/config", requireAuth, requireRole("admin"), (req, res) => {
+  const { apiKey, webhookSecret, toolSecret, agentId, fromNumberId, dailyCap, enabled, whatsappReturn } = req.body || {};
+  const envSourced = _retellEnvSourced();
+
+  // Detectar intento de update a campo env-managed.
+  const blockedFields = [];
+  if (typeof apiKey === "string" && envSourced.apiKey) blockedFields.push("apiKey (RETELL_API_KEY)");
+  if (typeof webhookSecret === "string" && envSourced.webhookSecret) blockedFields.push("webhookSecret (RETELL_WEBHOOK_SECRET)");
+  if (typeof toolSecret === "string" && envSourced.toolSecret) blockedFields.push("toolSecret (RETELL_TOOL_SECRET)");
+  if (blockedFields.length) {
+    return res.status(409).json({
+      error: "Campos gestionados por env vars no se pueden modificar desde el panel.",
+      blocked: blockedFields,
+      hint: "Editá las env vars en Railway y redeployá.",
+    });
+  }
+
+  // Leer cfg SIN aplicar env overlay para que el save preserve solo lo del
+  // JSON (loadRetellConfig haría overlay, ensuciando lo persistido).
+  let cfg;
+  try {
+    if (fs.existsSync(RETELL_CONFIG_FILE)) {
+      cfg = JSON.parse(fs.readFileSync(RETELL_CONFIG_FILE, "utf8"));
+    }
+  } catch {}
+  if (!cfg) cfg = _defaultRetellConfig();
+  // Normalizar shapes
+  if (typeof cfg.apiKey !== "string") cfg.apiKey = "";
+  if (typeof cfg.webhookSecret !== "string") cfg.webhookSecret = "";
+  if (typeof cfg.toolSecret !== "string") cfg.toolSecret = "";
+  if (typeof cfg.agentId !== "string") cfg.agentId = "";
+  if (typeof cfg.fromNumberId !== "string") cfg.fromNumberId = "";
+  cfg.dailyCap = Number.isFinite(Number(cfg.dailyCap)) ? Number(cfg.dailyCap) : 50;
+  if (typeof cfg.enabled !== "boolean") cfg.enabled = false;
+  cfg.rotationIdx = Number.isFinite(Number(cfg.rotationIdx)) ? Number(cfg.rotationIdx) : 0;
+  if (typeof cfg.whatsappReturn !== "string") cfg.whatsappReturn = "";
+
+  if (typeof apiKey === "string" && !envSourced.apiKey) cfg.apiKey = apiKey.trim().substring(0, 200);
+  if (typeof webhookSecret === "string" && !envSourced.webhookSecret) cfg.webhookSecret = webhookSecret.trim().substring(0, 200);
+  if (typeof toolSecret === "string" && !envSourced.toolSecret) cfg.toolSecret = toolSecret.trim().substring(0, 200);
+  if (typeof agentId === "string") cfg.agentId = agentId.trim().substring(0, 200);
+  if (typeof fromNumberId === "string") cfg.fromNumberId = fromNumberId.trim().substring(0, 200);
+  if (typeof whatsappReturn === "string") cfg.whatsappReturn = whatsappReturn.trim().substring(0, 200);
+  if (dailyCap !== undefined) {
+    const n = Number(dailyCap);
+    if (Number.isFinite(n) && n >= 0 && n <= 500) cfg.dailyCap = Math.floor(n);
+  }
+  if (typeof enabled === "boolean") cfg.enabled = enabled;
+  // rotationIdx NO es editable desde acá — se ignora aunque venga en el body.
+
+  // Self-healing: si la env var está activa para un campo, ese campo en JSON
+  // se limpia (mismo criterio que Telnyx — cubre migración panel→env vars).
+  for (const [field] of Object.entries(RETELL_ENV_FIELDS)) {
+    if (envSourced[field] && cfg[field]) cfg[field] = "";
+  }
+
+  cfg.updatedAt = new Date().toISOString();
+  cfg.updatedBy = req.auth?.user?.email || req.auth?.user?.name || "admin";
+  saveRetellConfig(cfg);
+  res.json(_publicRetellConfig(loadRetellConfig()));
 });
 
 // POST /api/telnyx/numbers — admin agrega un número virtual a la lista.

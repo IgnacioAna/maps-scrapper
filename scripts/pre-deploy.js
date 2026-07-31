@@ -170,6 +170,22 @@ async function main() {
     if (cleaned) console.log(`  lock telnyx_config.json: ${cleaned} secret(s) limpiados (viven en env vars de Railway)`);
   }
 
+  // Phase 24: mismo criterio de seguridad que Telnyx arriba — nunca persistir
+  // los secrets del agente de voz al repo. Viven en env vars de Railway
+  // (RETELL_API_KEY, RETELL_WEBHOOK_SECRET, RETELL_TOOL_SECRET). Nota:
+  // /api/admin/export-data ya devuelve retellConfig leído crudo del disco
+  // (sin overlay de env vars, ver index.js), así que en el caso normal estos
+  // campos ya llegan en "" — este stripper es la segunda barrera, por si
+  // algún día alguien guarda un secret real directo en el JSON (sin env var).
+  if (data.retellConfig && typeof data.retellConfig === "object") {
+    const SENSITIVE_RETELL = ["apiKey", "webhookSecret", "toolSecret"];
+    let cleanedRetell = 0;
+    for (const f of SENSITIVE_RETELL) {
+      if (data.retellConfig[f]) { data.retellConfig[f] = ""; cleanedRetell++; }
+    }
+    if (cleanedRetell) console.log(`  lock retell_config.json: ${cleanedRetell} secret(s) limpiados (viven en env vars de Railway)`);
+  }
+
   const extras = [
     ['mercuryConfig', 'mercury_config.json'],
     ['mercuryGenerations', 'mercury_generations.json'],
@@ -187,6 +203,9 @@ async function main() {
     // Phase 20: cola de llamadas pendientes de disposición — sin esto un
     // container nuevo de Railway la perdería.
     ['pending_calls', 'pending_calls.json'],
+    // Phase 24: config + eventos del agente de voz — regla #21, los 5 lugares.
+    ['retellConfig', 'retell_config.json'],
+    ['retellEvents', 'retell_events.json'],
   ];
   for (const [key, fname] of extras) {
     saveFile(fname, data[key]);

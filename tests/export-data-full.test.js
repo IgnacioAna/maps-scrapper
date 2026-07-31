@@ -1,6 +1,7 @@
-// Tests del /api/admin/export-data: que devuelva los 12 bloques esperados
+// Tests del /api/admin/export-data: que devuelva los 14 bloques esperados
 // (history, auth, setters, faqs, training, mercuryConfig, mercuryGenerations,
-// alertConfig, telnyxConfig, telnyxEvents, callScripts, scheduledMessages).
+// alertConfig, telnyxConfig, telnyxEvents, callScripts, scheduledMessages,
+// retellConfig, retellEvents — los 2 últimos sumados en Phase 24 plan 24-02).
 //
 // Si un futuro refactor "limpia" el export y omite uno, el pre-deploy descarga
 // un snapshot incompleto y al redeploy Railway pierde datos vivos. Bug
@@ -67,13 +68,14 @@ describe("/api/admin/export-data · cobertura completa de bloques", () => {
     expect(r.status).toBe(403);
   });
 
-  it("admin recibe los 12 bloques de data + exportedAt (sin nada faltante)", async () => {
+  it("admin recibe los 14 bloques de data + exportedAt (sin nada faltante)", async () => {
     const r = await request(app).get("/api/admin/export-data").set("Cookie", adminCookie);
     expect(r.status).toBe(200);
     const EXPECTED_KEYS = [
       "exportedAt", "history", "auth", "setters", "faqs", "training",
       "mercuryConfig", "mercuryGenerations", "alertConfig",
       "telnyxConfig", "telnyxEvents", "callScripts", "scheduledMessages",
+      "retellConfig", "retellEvents",
     ];
     for (const key of EXPECTED_KEYS) {
       expect(r.body, `falta bloque: ${key}`).toHaveProperty(key);
