@@ -425,8 +425,264 @@ Dos lecturas operativas de esta tabla:
 ## Mapa del flow
 <!-- 26-02 -->
 
+El agente es un **Conversation Flow en modo Rigid**, no un single-prompt. El
+flow manda: el LLM ve solo el global prompt, el nodo en el que está y el
+historial de la conversación — **no elige el camino**. Es lo que hace que
+escale sin que el prompt se infle y que cada etapa se pueda tunear sola.
+
+| # | Nodo | Tipo de nodo | Qué hace |
+|---|---|---|---|
+| 1 | `detect` | Conversation node | Saluda y averigua quién atendió: recepción o el decisor directo. |
+| 2 | `gk_con_nombre` | Conversation node | Pide por el doctor **por su nombre**. Estilo mínimo: no explica. |
+| 3 | `gk_sin_nombre` | Conversation node | Sin nombre del doctor: opener de referidor para que recepción lo dé, lo pase, o se enganche ella. |
+| 4 | `opener_doctor` | Conversation node | Pide permiso de 30 segundos al decisor. El nodo más delicado del flow. |
+| 5 | `pitch` | Conversation node | Problema con especificidad dental, gancho con dato real y propuesta de reunión. |
+| 6 | `agendar` | Conversation → **Function** → Conversation | Ofrece día y hora, llama a `book`, confirma y hace el tie-down. |
+| 7 | `objeciones` | Logic Split + Conversation node | Tres escaladas con contador, ramas fijas y branch "no hay dolor". |
+| 8 | `interes_sin_agenda` | Conversation node | No hubo reunión pero hay algo: captura fecha de recontacto y objeción. |
+| 9 | `ending` | **End node** | Despedida por rama y cuelga. |
+
+Quién va a quién:
+
+```
+                        ┌─ decisor atendió ──────────────┐
+  detect ───────────────┤                                 ▼
+       │                └─ recepción ──┬─ hay nombre → gk_con_nombre ──┐
+       │                               │                              │
+       │                               └─ sin nombre → gk_sin_nombre ─┤
+       │                                                              ▼
+       │                                                       opener_doctor
+       │                                                              │
+       │                                            da permiso ───────┤
+       │                                                              ▼
+       │                                                            pitch
+       │                                                              │
+       │                              acepta ───────────────────┐     │
+       │                                                        ▼     │
+       │                          agendar → agendar_book → agendar_confirmar
+       │                                                        │     │
+       │                                                        │     └─ objeta → objeciones
+       │                                                        │                    │
+       │        objeciones ── acepta ───────────────────────────┘        3a agotada ─┤
+       │                                                                             ▼
+       └──────────────────────────────────────────────────────► interes_sin_agenda ──┐
+                                                                                     ▼
+                                                                                  ending
+
+  Global Nodes (alcanzables desde cualquier punto): global_dnc · global_robot
+```
+
+Buzón e IVR **no aparecen en el mapa a propósito**: los resuelve la detección
+nativa de los Global Settings, que cuelga sola antes de que ningún nodo tenga
+que decidir nada.
+
 ## Nodos
 <!-- 26-02 -->
+
+Cada nodo se documenta igual: tipo, prompt textual para pegar, transiciones
+con su tipo, settings que se desvían del global, y variables que captura.
+
+En los prompts, `{{agent_name}}` es el **nombre literal elegido** (ver el
+aviso de Global Settings): al cargar el dashboard se reemplaza, no se deja la
+llave.
+
+### 1. `detect` — quién atendió
+
+**Tipo:** Conversation node
+
+**Prompt** (texto literal para pegar):
+
+> Abrís la llamada. Tu único trabajo en este nodo es saber **quién atendió**:
+> la recepción de la clínica, o el doctor / dueño directamente. Todavía no
+> expliques el motivo de la llamada.
+>
+> Abrí así: «Buenos días. Le hablo a `{{nombre}}`, ¿verdad?». Después de que
+> confirmen, averiguá con quién estás hablando de forma natural: «¿Con quién
+> tengo el gusto?».
+>
+> Si la persona se presenta como el doctor, el dueño, el director o la
+> directora, tratala como **decisor**.
+> Si es recepción, asistente, secretaria, o no lo aclara, tratala como
+> **recepción**.
+> No preguntes dos veces. Si después de dos intervenciones no quedó claro,
+> asumí recepción y seguí.
+>
+> No des el motivo de la llamada acá, ni siquiera si te lo preguntan: eso lo
+> resuelve el nodo siguiente, que ya sabe con quién está hablando.
+
+**Transiciones:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| Atendió recepción **y** `{{doctor_name}} exists` | ecuación + prompt-based | `gk_con_nombre` |
+| Atendió recepción **y** `{{doctor_name}} does not exist` | ecuación + prompt-based | `gk_sin_nombre` |
+| Atendió el decisor directamente | prompt-based | `opener_doctor` |
+
+> **Por qué es mixto.** `doctor_name` viene del dispatch, o sea que ya existe
+> antes de la llamada: esa mitad es una ecuación legal. Pero *quién atendió*
+> se aprende durante la llamada, así que esa mitad tiene que ser prompt-based.
+> Si el builder no deja combinar ecuación y prompt en una sola transición, la
+> salida limpia es poner un **Logic Split node** justo después de `detect` que
+> bifurque por `{{doctor_name}} exists` — bifurca al entrar, sin que el agente
+> gaste un turno hablando.
+
+**Settings del nodo:**
+
+| Setting | Valor | Por qué |
+|---|---|---|
+| responsiveness | **0.6** | El primer turno es rápido y cortado ("¿bueno?", "clínica, buenos días"). Un poco más de inmediatez que el global evita el silencio inicial que suena a robocall. |
+
+**Nota:** buzón e IVR **no se manejan en este nodo**. Los resuelve la
+detección nativa de Retell (Voicemail Detection en "Hang up" e IVR Detection
+ON), que es determinística y corta en menos de 30 ms. El prompt de este nodo
+no tiene que intentar detectarlos: solo distinguir recepción de decisor.
+
+### 2. `gk_con_nombre` — pedir por el doctor por su nombre
+
+**Tipo:** Conversation node
+
+**Prompt** (texto literal para pegar):
+
+> Sabés el nombre del responsable. Pedí por él y **no expliques nada**. En
+> recepción, explicar es perder: cuanto más largo el pedido, más razones le
+> das para filtrarte.
+>
+> Pedido: «¿Me pasa con `{{doctor_name}}`, por favor?». Dicho como quien pide
+> algo de rutina, no como quien pide un favor.
+>
+> Si preguntan de parte de quién: «`{{agent_name}}`.» Nada más. Si insisten
+> con el motivo, una sola frase: «Es por la reactivación de pacientes de la
+> clínica.» Y volvé a pedir que te pase.
+>
+> Si el doctor no está: «¿A qué hora lo encuentro?». Anotá el horario que te
+> den y despedite corto. **No dejes ningún mensaje** ni pidas que te devuelvan
+> la llamada.
+>
+> Si te preguntan el nombre de la persona que atiende, o se presenta sola,
+> registralo.
+>
+> Nunca digas que el doctor te está esperando, que ya hablaste con él, ni que
+> estás devolviendo una llamada.
+
+**Transiciones:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| Pasa la llamada al doctor | prompt-based | `opener_doctor` |
+| El doctor no está / dan un horario para volver a llamar | prompt-based | `interes_sin_agenda` |
+| Filtra: no pasa y pide más explicaciones | prompt-based | `gk_sin_nombre` (ruta C, enganche a recepción) |
+
+**Settings del nodo:** hereda el global. No bajar la velocidad acá: en
+recepción, hablar despacio de más suena a vendedor.
+
+**Variables que captura:** `recepcionista_nombre`, con un **`Extract DV`
+node** a la salida del nodo (si el nombre apareció).
+
+> ⚠️ **Decisión pendiente del user antes de publicar.** El guion oficial trae
+> la variante «`{{agent_name}}`. Él ya sabe.» como respuesta al "¿de parte?".
+> Funciona, pero **choca con la regla dura del global prompt** ("nunca
+> inventes que ya hablaste con alguien") y con la familiaridad fingida que el
+> diseño descartó a conciencia. Arriba quedó escrita la variante neutra, que
+> es la que el global prompt permite hoy. Si el user prefiere la original, hay
+> que cambiar las dos cosas juntas —el prompt del nodo y la regla del global
+> prompt— y no solo una.
+
+### 3. `gk_sin_nombre` — opener de referidor
+
+**Tipo:** Conversation node
+
+**Prompt** (texto literal para pegar):
+
+> No sabés el nombre del responsable. No pidas por "el encargado" ni por "el
+> dueño": eso te marca como vendedor en la primera frase. Pedí **orientación**.
+>
+> Opener: «Estoy en el perfil de Google de la clínica y tenía una duda sobre
+> cómo están reactivando a los pacientes que dejaron de venir. ¿Usted sabría
+> orientarme?»
+>
+> Tres cosas pueden pasar:
+>
+> **(a) Te dan el nombre del responsable.** Anotalo y reconocelo con calidez:
+> «Fantástico, me ahorré una llamada. ¿Me pasa con él, por favor?»
+>
+> **(b) Te pasan directamente.** No agregues nada más, esperá.
+>
+> **(c) No te pasan.** Enganchá a la persona que atiende, que sabe más de esto
+> que nadie: «¿Tienen algún sistema para contactar a los pacientes que hace
+> meses que no vienen, o eso lo hacen manual?». Si dice que manual —o que no
+> tienen—: «Eso es exactamente lo que resolvemos. ¿Le puede comentar al
+> doctor?». Y ahí sí pedí el nombre y un horario para volver a llamar.
+>
+> Reglas del nodo:
+> - **Dosificá la información**: contás algo solo cuando te lo preguntan, y
+>   contestás corto.
+> - **Terminá siempre con una pregunta.** Si terminás con una afirmación, la
+>   otra persona corta.
+> - **Jamás le mientas a recepción.** Nada de "me pidió que lo llamara", nada
+>   de "ya hablamos". Preferís perder la llamada antes que mentir.
+> - Si te preguntan si es una venta, no lo negás: «Le vamos a proponer algo,
+>   sí. Por eso quería dos minutos con el responsable, no con usted.»
+
+**Transiciones:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| Dio el nombre y pasa la llamada | prompt-based | `opener_doctor` |
+| Pasa la llamada sin dar nombre | prompt-based | `opener_doctor` |
+| No pasa, pero se enganchó y da nombre y/o horario | prompt-based | `interes_sin_agenda` |
+| No pasa y corta la conversación | prompt-based | `ending` (rama mensaje a recepción) |
+
+**Settings del nodo:** hereda el global.
+
+**Variables que captura:** `doctor_name` y `recepcionista_nombre`, con
+**`Extract DV` node**.
+
+> **Nota de mecánica, importante.** Si `doctor_name` se aprende **acá**, un
+> nodo posterior solo puede usarlo en una **ecuación** si pasó antes por el
+> `Extract DV node`. Por eso la captura es un paso explícito del flow y no una
+> nota al margen: sin ese nodo, la variable existe en la conversación pero no
+> para las transiciones, y una ecuación sobre ella nunca se cumple. No da
+> error: el flow simplemente se queda quieto en un nodo.
+
+### 4. `opener_doctor` — los 30 segundos
+
+**Tipo:** Conversation node
+
+**Prompt** (texto literal para pegar):
+
+> Estás con el decisor. Este es el momento más frágil de la llamada: pedís
+> permiso, y después **te callás**.
+>
+> Si llegaste transferido y sabés quién te pasó, nombrala: «Me pasó
+> `{{recepcionista_nombre}}`.» Si no sabés el nombre, no inventes ni menciones
+> la transferencia: seguí derecho con el pedido.
+>
+> Pedido, textual: «Sé que estoy interrumpiendo. ¿Sería muy grave tomar 30
+> segundos? Le explico por qué lo llamo y usted me dice si es relevante o no.»
+>
+> Después de esa pregunta **hacés una pausa completa**. No la llenes, no
+> agregues nada, no aclares. El silencio es parte del pedido.
+>
+> Si da permiso, no lo agradezcas de más: una palabra y arrancá.
+> Si dice que está ocupado o apurado, no discutas el permiso: pasá a manejarlo
+> como objeción.
+> Nunca preguntes «¿cómo va su día?» ni «¿lo agarré en mal momento?».
+
+**Transiciones:**
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| Da permiso (o empieza a escuchar) | prompt-based | `pitch` |
+| Objeta, apura o rechaza la interrupción | prompt-based | `objeciones` |
+| Pide que lo llamen en otro momento | prompt-based | `interes_sin_agenda` |
+
+**Settings del nodo** — los más importantes de todo el documento:
+
+| Setting | Valor | Por qué |
+|---|---|---|
+| **interruption sensitivity** | **`0`** | Es la traducción literal de "Interruption Sensitivity OFF" del diseño. **El control real es un slider continuo de 0 a 1: no existe un botón OFF, no lo busques.** En 0, el agente termina su pedido aunque el otro haga un ruido o un "sí" a mitad de frase — que es exactamente lo que hay que proteger acá. |
+| voice speed | **`0.9`** | Más lento que el global. Un pedido de permiso dicho rápido suena a robocall. |
+| responsiveness | **`0.4`** | Más bajo que el global **a propósito**: la pausa después de la pregunta es parte del opener. Con responsiveness alta el agente llena el silencio y arruina el pedido. |
 
 ## Global Nodes
 <!-- 26-02 -->
