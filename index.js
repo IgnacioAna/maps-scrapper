@@ -14416,6 +14416,158 @@ Object.assign(globalThis.__voiceAgent, {
   VOICE_AGENT_SETTER_ID,
 });
 
+// ── Phase 24 plan 24-03: dispatch por lote — helpers de módulo ────────────
+// D-24-03 (selección) / D-24-04 (caller ID). Cero lógica de elegibilidad ni
+// de conteo de llamadas NUEVA: todo reusa _leadIsCallableNow y el CALL
+// METRICS CORE (_ccCollectCalls/_ccResolveRange) tal cual existen.
+
+// Port verbatim de public/app.js:_telnyx._prefixToCountry (D-24-04). El
+// frontend NO se toca — el dialer humano sigue usando su propia copia; esta
+// es la réplica server-side para que el agente de voz elija caller ID sin
+// depender del browser.
+function _retellPrefixToIso(phone) {
+  const digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return null;
+  const three = digits.substring(0, 3);
+  const two = digits.substring(0, 2);
+  const one = digits.substring(0, 1);
+  const map = {
+    '593': 'EC', '598': 'UY', '591': 'BO', '595': 'PY', '506': 'CR',
+    '507': 'PA', '503': 'SV', '504': 'HN', '502': 'GT', '505': 'NI',
+    '809': 'DO', '829': 'DO', '849': 'DO',
+  };
+  if (map[three]) return map[three];
+  const twoMap = {
+    '34': 'ES', '52': 'MX', '54': 'AR', '55': 'BR', '56': 'CL',
+    '57': 'CO', '58': 'VE', '51': 'PE',
+  };
+  if (twoMap[two]) return twoMap[two];
+  if (one === '1') return 'US';
+  return null;
+}
+
+// Port server-side de public/app.js:pickNumberForDestination +
+// _nextRotatingNumber (D-24-04), con el índice de rotación persistido en
+// retell_config.json (rotationIdx) en vez de localStorage. Orden de decisión
+// (idéntico al frontend salvo el paso 1, que no tiene equivalente humano):
+//   1. retellCfg.fromNumberId (override manual de D-24-01) gana sobre todo.
+//   2. countryRouting explícito por país destino → sin rotar.
+//   3. round-robin sobre rotationIdx si hay más de un número activo.
+//   4. countryRouting.default.
+//   5. pool[0] o null.
+// El pool se filtra por active !== false: a diferencia de _setterTelnyxConfig
+// (que ya llega filtrado al frontend), loadTelnyxConfig() devuelve numbers
+// CRUDO — sin este filtro el agente podría salir con un número dado de baja.
+// Devuelve { number, nextRotationIdx }; number es null si no hay pool.
+function _retellPickNumberForDestination(telnyxCfg, retellCfg, destinationPhone) {
+  const pool = (telnyxCfg.numbers || []).filter((n) => n.active !== false);
+  const routing = telnyxCfg.countryRouting || {};
+  let nextRotationIdx = Number(retellCfg.rotationIdx) || 0;
+
+  if (retellCfg.fromNumberId) {
+    const forced = pool.find((n) => n.id === retellCfg.fromNumberId);
+    if (forced) return { number: forced, nextRotationIdx };
+  }
+
+  const country = _retellPrefixToIso(destinationPhone);
+  if (country && routing[country]) {
+    const n = pool.find((x) => x.id === routing[country]);
+    if (n) return { number: n, nextRotationIdx };
+  }
+
+  if (pool.length > 1) {
+    const idx = ((nextRotationIdx % pool.length) + pool.length) % pool.length;
+    const n = pool[idx];
+    nextRotationIdx = (idx + 1) % pool.length;
+    return { number: n, nextRotationIdx };
+  }
+
+  if (routing.default) {
+    const n = pool.find((x) => x.id === routing.default);
+    if (n) return { number: n, nextRotationIdx };
+  }
+
+  return { number: pool[0] || null, nextRotationIdx };
+}
+
+// Llamadas del agente HOY, derivadas del CALL METRICS CORE (regla del
+// milestone — jamás un loop propio sobre callLog). Entries pre-atribuidas
+// por _callSetterId con setterId===VOICE_AGENT_SETTER_ID, filtradas al rango
+// de _ccResolveRange('today') (medianoche TZ de negocio → ahora).
+function _retellCallsTodayCount(data) {
+  const calls = _ccCollectCalls(data, { setterId: VOICE_AGENT_SETTER_ID });
+  const { fromTs, toTs } = _ccResolveRange('today');
+  return calls.filter((c) => c.ts >= fromTs && c.ts < toTs).length;
+}
+
+// D-24-03: selección del lote a disparar. Filtra por dueño (el pseudo-SDR
+// setter_agente_ia) y elegibilidad (_leadIsCallableNow — el MISMO filtro que
+// la cola humana, no un filtro paralelo). country/withDoctor son refinos
+// opcionales. Ordena: nunca llamados primero, luego por callAttempts
+// ascendente, luego por lastContactAt más antiguo. Devuelve hasta `count`
+// leads como [{ id, lead }].
+function _retellSelectDispatchLeads(data, { country = '', count = 1, withDoctor = false, now = Date.now() } = {}) {
+  const countryNeedle = String(country || '').trim().toLowerCase();
+  let entries = Object.entries(data.leads || {})
+    .filter(([, l]) => l.assignedTo === VOICE_AGENT_SETTER_ID)
+    .filter(([, l]) => _leadIsCallableNow(l, now));
+
+  if (countryNeedle) {
+    entries = entries.filter(([, l]) => {
+      const iso = String(_retellPrefixToIso(l.phone) || '').toLowerCase();
+      const name = String(l.country || '').toLowerCase();
+      return iso === countryNeedle || name === countryNeedle;
+    });
+  }
+  if (withDoctor) {
+    entries = entries.filter(([, l]) => String(l.doctor || '').trim());
+  }
+
+  entries.sort((a, b) => {
+    const logA = Array.isArray(a[1].callLog) ? a[1].callLog.length : 0;
+    const logB = Array.isArray(b[1].callLog) ? b[1].callLog.length : 0;
+    if ((logA === 0) !== (logB === 0)) return logA === 0 ? -1 : 1;
+    const attA = Number(a[1].callAttempts) || 0;
+    const attB = Number(b[1].callAttempts) || 0;
+    if (attA !== attB) return attA - attB;
+    const lastA = a[1].lastContactAt ? new Date(a[1].lastContactAt).getTime() : 0;
+    const lastB = b[1].lastContactAt ? new Date(b[1].lastContactAt).getTime() : 0;
+    return lastA - lastB;
+  });
+
+  return entries.slice(0, Math.max(0, count)).map(([id, lead]) => ({ id, lead }));
+}
+
+// Variables dinámicas del prompt del agente (research §2.2). TODOS los
+// valores son strings (la doc de Retell no confirma coerción numérica),
+// recortados a 300 chars, nunca undefined/null (se convierten a '').
+// `lead` debe traer `id` mergeado por el caller (ej. { id, ...leadObj }) —
+// leadId es redundancia gratis con metadata.leadId para correlacionar el
+// webhook (research §2.5).
+function _retellDynamicVariables(lead, retellCfg) {
+  const s = (v) => String(v ?? '').substring(0, 300);
+  return {
+    nombre: s(lead.name),
+    ciudad: s(lead.city),
+    pais: s(lead.country),
+    reviews: s(lead.reviews || ''),
+    rating: s(lead.rating || ''),
+    years: s(lead.yearsActive != null ? lead.yearsActive : ''),
+    doctor_name: s(lead.doctor),
+    gancho: s(lead.leadBrief?.hookPhrase || lead.openingAngle || ''),
+    leadId: s(lead.id),
+    whatsapp: s(retellCfg.whatsappReturn),
+  };
+}
+
+Object.assign(globalThis.__voiceAgent, {
+  _retellPrefixToIso,
+  _retellPickNumberForDestination,
+  _retellCallsTodayCount,
+  _retellSelectDispatchLeads,
+  _retellDynamicVariables,
+});
+
 // ── Google Calendar embed (Appointment Scheduling) ──
 // El admin pega el URL del iframe que Google Calendar genera en "Compartir".
 // Lo usamos en un modal "Agendar reunion" en el Setteo. Al confirmar, el setter
