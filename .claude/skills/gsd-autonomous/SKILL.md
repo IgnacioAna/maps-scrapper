@@ -1,5 +1,5 @@
 ---
-name: gsd:autonomous
+name: gsd-autonomous
 description: "Run all remaining phases autonomously — discuss→plan→execute per phase"
 argument-hint: "[--from N] [--to N] [--only N] [--interactive]"
 allowed-tools:
@@ -9,7 +9,6 @@ allowed-tools:
   - Glob
   - Grep
   - AskUserQuestion
-  - Task
   - Agent
 ---
 
@@ -42,6 +41,6 @@ Project context, phase list, and state are resolved inside the workflow using in
 </context>
 
 <process>
-Execute the autonomous workflow from @$HOME/.claude/get-shit-done/workflows/autonomous.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (phase discovery, per-phase execution, blocker handling, progress display).
 </process>

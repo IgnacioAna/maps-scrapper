@@ -1,5 +1,5 @@
 ---
-name: gsd:review-backlog
+name: gsd-review-backlog
 description: "Review and promote backlog items to active milestone"
 allowed-tools:
   - Read
@@ -48,7 +48,7 @@ milestone sequence or remove stale entries.
 
 6. **Commit changes:**
    ```bash
-   gsd-sdk query commit "docs: review backlog — promoted N, removed M" .planning/ROADMAP.md
+   gsd-sdk query commit "docs: review backlog — promoted N, removed M" --files .planning/ROADMAP.md
    ```
 
 7. **Report summary:**

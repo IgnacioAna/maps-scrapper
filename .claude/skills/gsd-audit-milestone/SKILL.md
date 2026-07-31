@@ -1,5 +1,5 @@
 ---
-name: gsd:audit-milestone
+name: gsd-audit-milestone
 description: "Audit milestone completion against original intent before archiving"
 argument-hint: "[version]"
 allowed-tools:
@@ -7,7 +7,7 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
   - Write
 ---
 
@@ -32,6 +32,6 @@ Glob: .planning/phases/*/*-VERIFICATION.md
 </context>
 
 <process>
-Execute the audit-milestone workflow from @$HOME/.claude/get-shit-done/workflows/audit-milestone.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (scope determination, verification reading, integration check, requirements coverage, routing).
 </process>

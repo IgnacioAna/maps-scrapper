@@ -1,5 +1,5 @@
 ---
-name: gsd:cleanup
+name: gsd-cleanup
 description: "Archive accumulated phase directories from completed milestones"
 allowed-tools:
   - Read
@@ -19,6 +19,6 @@ Use when `.planning/phases/` has accumulated directories from past milestones.
 </execution_context>
 
 <process>
-Follow the cleanup workflow at @$HOME/.claude/get-shit-done/workflows/cleanup.md.
+Execute end-to-end.
 Identify completed milestones, show a dry-run summary, and archive on confirmation.
 </process>

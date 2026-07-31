@@ -1,5 +1,5 @@
 ---
-name: gsd:execute-phase
+name: gsd-execute-phase
 description: "Execute all plans in a phase with wave-based parallelization"
 argument-hint: "<phase-number> [--wave N] [--gaps-only] [--interactive] [--tdd]"
 allowed-tools:
@@ -9,7 +9,7 @@ allowed-tools:
   - Glob
   - Grep
   - Bash
-  - Task
+  - Agent
   - TodoWrite
   - AskUserQuestion
 ---
@@ -59,6 +59,6 @@ Context files are resolved inside the workflow via `gsd-sdk query init.execute-p
 </context>
 
 <process>
-Execute the execute-phase workflow from @$HOME/.claude/get-shit-done/workflows/execute-phase.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (wave execution, checkpoint handling, verification, state updates, routing).
 </process>

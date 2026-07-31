@@ -1,5 +1,5 @@
 ---
-name: gsd:add-tests
+name: gsd-add-tests
 description: "Generate tests for a completed phase based on UAT criteria and implementation"
 argument-hint: "<phase> [additional instructions]"
 allowed-tools:
@@ -9,7 +9,7 @@ allowed-tools:
   - Bash
   - Glob
   - Grep
-  - Task
+  - Agent
   - AskUserQuestion
 ---
 
@@ -33,6 +33,6 @@ Phase: $ARGUMENTS
 </context>
 
 <process>
-Execute the add-tests workflow from @$HOME/.claude/get-shit-done/workflows/add-tests.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (classification approval, test plan approval, RED-GREEN verification, gap reporting).
 </process>

@@ -1,7 +1,7 @@
 ---
-name: gsd:sketch
+name: gsd-sketch
 description: "Sketch UI/design ideas with throwaway HTML mockups, or propose what to sketch next (frontier mode)"
-argument-hint: "[design idea to explore] [--quick] [--text] or [frontier]"
+argument-hint: "[design idea to explore] [--quick] [--text] [--wrap-up] or [frontier]"
 allowed-tools:
   - Read
   - Write
@@ -26,11 +26,12 @@ Two modes:
 - **Idea mode** (default) — describe a design idea to sketch
 - **Frontier mode** (no argument or "frontier") — analyzes existing sketch landscape and proposes consistency and frontier sketches
 
-Does not require `/gsd-new-project` — auto-creates `.planning/sketches/` if needed.
+Does not require prior new-project setup — auto-creates `.planning/sketches/` if needed.
 </objective>
 
 <execution_context>
 @$HOME/.claude/get-shit-done/workflows/sketch.md
+@$HOME/.claude/get-shit-done/workflows/sketch-wrap-up.md
 @$HOME/.claude/get-shit-done/references/ui-brand.md
 @$HOME/.claude/get-shit-done/references/sketch-theme-system.md
 @$HOME/.claude/get-shit-done/references/sketch-interactivity.md
@@ -47,9 +48,13 @@ Design idea: $ARGUMENTS
 
 **Available flags:**
 - `--quick` — Skip mood/direction intake, jump straight to decomposition and building. Use when the design direction is already clear.
+- `--wrap-up` — Package sketch design findings into a persistent project skill for future build conversations. Runs the sketch-wrap-up workflow.
 </context>
 
 <process>
-Execute the sketch workflow from @$HOME/.claude/get-shit-done/workflows/sketch.md end-to-end.
+Parse the first token of $ARGUMENTS:
+- If it is `--wrap-up`: strip the flag, execute the sketch-wrap-up workflow end-to-end.
+- Otherwise: execute the sketch workflow end-to-end.
+
 Preserve all workflow gates (intake, decomposition, target stack research, variant evaluation, MANIFEST updates, commit patterns).
 </process>

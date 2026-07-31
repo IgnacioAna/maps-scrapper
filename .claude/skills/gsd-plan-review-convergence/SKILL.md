@@ -1,6 +1,6 @@
 ---
-name: gsd:plan-review-convergence
-description: "Cross-AI plan convergence loop — replan with review feedback until no HIGH concerns remain (max 3 cycles)"
+name: gsd-plan-review-convergence
+description: "Cross-AI plan convergence loop — replan with review feedback until no HIGH concerns remain."
 argument-hint: "<phase> [--codex] [--gemini] [--claude] [--opencode] [--ollama] [--lm-studio] [--llama-cpp] [--text] [--ws <name>] [--all] [--max-cycles N]"
 allowed-tools:
   - Read
@@ -54,6 +54,6 @@ Phase number: extracted from $ARGUMENTS (required)
 </context>
 
 <process>
-Execute the plan-review-convergence workflow from @$HOME/.claude/get-shit-done/workflows/plan-review-convergence.md end-to-end.
+Execute end-to-end.
 Preserve all workflow gates (pre-flight, revision loop, stall detection, escalation).
 </process>

@@ -1,5 +1,5 @@
 ---
-name: gsd:profile-user
+name: gsd-profile-user
 description: "Generate developer behavioral profile and create Claude-discoverable artifacts"
 argument-hint: "[--questionnaire] [--refresh]"
 allowed-tools:
@@ -9,7 +9,7 @@ allowed-tools:
   - Glob
   - Grep
   - AskUserQuestion
-  - Task
+  - Agent
 ---
 
 
