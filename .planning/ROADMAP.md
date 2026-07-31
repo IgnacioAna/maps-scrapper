@@ -72,12 +72,17 @@ sale del sistema exactamente como una llamada de SDR humana.
      llamadas atribuidas (by:'' → assignedTo) sin tocar código de métricas.
   6. `retell_config.json` sobrevive un redeploy (export/import/backup/
      pre-deploy) y sus secrets viven en env vars con lock en el PUT.
-**Plans**: 3 (sugeridos)
+**Plans**: 5 (planificado 2026-07-31 — los 3 sugeridos se abrieron a 5: todo
+toca `index.js`, así que las waves se serializan para que dos planes nunca
+editen el archivo en paralelo, y el webhook no entraba en un solo plan dentro
+del presupuesto de contexto)
 
 Plans:
-- [ ] 24-01: Config Retell (patrón env>JSON) + refactor `_applyCallOutcome` con paridad
-- [ ] 24-02: Dispatch por lote + caller ID server-side + tool `/book`
-- [ ] 24-03: Webhook firmado + mapeo transcript/outcome/extraction + pseudo-SDR + tests integración
+- [ ] 24-01-PLAN.md — Refactor `_applyCallOutcome` + hoisting de los helpers de costo + test de paridad doble-vía (VOICE-02, wave 1)
+- [ ] 24-02-PLAN.md — Config Retell env>JSON + regla #21 completa + pseudo-SDR `setter_agente_ia` (VOICE-01/06, wave 2)
+- [ ] 24-03-PLAN.md — Dispatch por lote + caller ID server-side + dry-run + cap diario (VOICE-03, wave 3)
+- [ ] 24-04-PLAN.md — Tool `/book` con header secreto + webhook firmado (HMAC nativo, sin SDK nuevo) (VOICE-04/05, wave 4)
+- [ ] 24-05-PLAN.md — Procesamiento del webhook: transcript, outcome, cascada, extracción + tests end-to-end (VOICE-05, wave 5)
 
 ### Phase 25: Panel Agente de voz
 **Goal**: El user opera el agente desde el panel sin tocar API ni consola.
