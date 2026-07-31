@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T16:10:00.000Z"
+last_updated: "2026-07-31T16:31:25.000Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
   completed_phases: 4
   total_plans: 22
-  completed_plans: 17
-  percent: 15
+  completed_plans: 18
+  percent: 16
 ---
 
 # SCM — STATE
@@ -33,10 +33,10 @@ cada phase.
 ## Current Position
 
 Phase: 24 (integracion-backend-retell) — EXECUTING
-Plan: 24-02 EXECUTED (2/5) — próximo 24-03
+Plan: 24-03 EXECUTED (3/5) — próximo 24-04
 
-- **Phase:** 24 — Integración backend Retell — **En ejecución (2/5 planes)**
-- **Plan:** 24-02 EXECUTED (2026-07-31) — 24-03..24-05 pendientes (waves
+- **Phase:** 24 — Integración backend Retell — **En ejecución (3/5 planes)**
+- **Plan:** 24-03 EXECUTED (2026-07-31) — 24-04..24-05 pendientes (waves
   serializadas, todo toca `index.js`).
 - **Status:** Executing Phase 24
 
@@ -73,11 +73,35 @@ Plan: 24-02 EXECUTED (2/5) — próximo 24-03
   `export-data-full.test.js` (pactado por el plan). VOICE-01/VOICE-06
   completados. Detalle en `24-02-SUMMARY.md`.
 
-- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-03-PLAN.md
-  (dispatch por lote + caller ID server-side + dry-run + cap diario,
-  VOICE-03, wave 3).
+- **24-03 EXECUTED (2026-07-31)** — dispatch por lote del agente de voz.
+  Commits `dad0be7` (Task 1: `_retellPrefixToIso`/
+  `_retellPickNumberForDestination`/`_retellCallsTodayCount`/
+  `_retellSelectDispatchLeads`/`_retellDynamicVariables` — reusan
+  `_leadIsCallableNow` y el CALL METRICS CORE tal cual, cero lógica de
+  elegibilidad ni conteo nuevos), `fa1fb1d` (Task 2:
+  `POST /api/admin/voice-agent/dispatch` admin-only — guards en orden,
+  `_voiceDispatchInFlight` liberado en `finally`, cap diario
+  `_voiceDispatchedToday` con `_voiceDispatchRollover` por `_bizDayStr`
+  invocado al principio del handler y antes de sumar los éxitos, `dryRun`
+  que corta antes de cualquier fetch/incremento, caller ID resuelto
+  secuencialmente antes del pool [`_runPool` conc 2], error de Retell por
+  lead sin romper el lote, cero escritura a `setters.json`,
+  `_pendingRetellCalls` para 24-05), `0b3a914` (Task 3:
+  `tests/retell-dispatch.test.js`, 30 tests — RBAC, las 6 exclusiones de
+  `_leadIsCallableNow` verificadas ausentes de la selección, cap diario +
+  rollover de día simulado vía `globalThis.__voiceAgent`, caller ID
+  [round-robin persistido leído del archivo vs routing explícito sin
+  rotar vs `active:false` nunca elegido], variables dinámicas [leadId
+  correlacionado + coerción string], robustez ante fallos de Retell por
+  lead, correlación `_pendingRetellCalls`, y callLog de los leads
+  elegibles sin crecer ante ningún dispatch). Suite completa
+  **1076/1076** verde (1046 + 30 nuevos). VOICE-03 completado. Detalle en
+  `24-03-SUMMARY.md`.
 
-- **Last activity:** 2026-07-31 — 24-02 ejecutado (executor secuencial,
+- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-04-PLAN.md
+  (tool `/book` con header secreto + webhook firmado, VOICE-04/05, wave 4).
+
+- **Last activity:** 2026-07-31 — 24-03 ejecutado (executor secuencial,
   working tree principal, sin worktree).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
@@ -725,12 +749,48 @@ Contra HEAD `a9e4886`:
   `retell_events.json` al array. Arreglar el hueco de Telnyx habría sido un
   cambio de comportamiento fuera de alcance de este plan.
 
+- **24-03:** `_retellDynamicVariables(lead, retellCfg)` mantiene la firma de
+  2 argumentos exacta del plan leyendo `lead.id` — el caller (el handler del
+  dispatch) le pasa `{ id, ...lead }` en vez de que el helper reciba un
+  tercer parámetro `leadId`. Verificado por grep que `data.leads[id]` NO
+  trae `.id` embebido de forma consistente en el resto del código base
+  (solo un puñado de endpoints hacen spread explícito `{id, ...lead}}`), así
+  que mergear el id en el punto de llamada evita cambiar el contrato
+  documentado en `<interfaces>` del plan.
+
+- **24-03:** el rollover del cap diario (`_voiceDispatchRollover`, compara
+  contra `_bizDayStr(Date.now())`) se invoca en 2 puntos exactos, tal como
+  pide el plan: al principio del handler (antes de leer `remaining`) y de
+  nuevo justo antes de sumar los éxitos a `_voiceDispatchedToday.count` —
+  cubre el caso borde de que el dispatch cruce la medianoche de negocio
+  mientras el pool de fetches está en vuelo. El contador se muta in-place
+  (`.dayKey`/`.count`, nunca reasignado) para que la referencia expuesta en
+  `globalThis.__voiceAgent` siga siendo la misma tras cada rollover — los
+  tests de `tests/retell-dispatch.test.js` simulan el cambio de día
+  escribiendo directamente sobre ese objeto, sin esperar 24 horas.
+
+- **24-03:** el caller ID se resuelve SECUENCIALMENTE (loop síncrono antes
+  de correr `_runPool`), no dentro de los thunks paralelos — la rotación
+  round-robin necesita determinismo: cada lead recibe su número ya decidido
+  antes de que el pool dispare las llamadas en paralelo (conc 2).
+
+- **24-03:** el fixture de test usa un lead adicional en estado terminal
+  (`lead_precalled`, `estado:'agendado'`) con una entry de callLog de HOY
+  atribuida al agente, para simular "ya se hizo 1 llamada hoy" sin
+  contaminar la selección de los 3 leads elegibles (el estado terminal lo
+  excluye de `_leadIsCallableNow` mientras su callLog sigue contando para
+  `_retellCallsTodayCount`). Esto deja el baseline `calledToday=1`
+  CONSTANTE durante todo el archivo de test — ningún dispatch (dry-run ni
+  real) escribe callLog (D-24-05) — lo que permite fórmulas de
+  `capRemaining` deterministas en cada test sin resets intermedios.
+
 ---
 
-*Last updated: 2026-07-31 (24-02 ejecutado — config Retell env>JSON clonada
-del patrón Telnyx, endpoints admin-only `GET`/`PUT /api/retell/config` con
-409 env-sourced + self-healing, `retell_config.json`/`retell_events.json`
-en las 5 superficies de la regla #21, pseudo-SDR `setter_agente_ia`
-sembrado en boot con fila comparable en Equipo. 26 tests nuevos, suite
-completa 1046/1046 verde. VOICE-01/VOICE-06 completados. Próximo: 24-03,
-dispatch por lote + caller ID server-side).*
+*Last updated: 2026-07-31 (24-03 ejecutado — dispatch por lote del agente de
+voz: `POST /api/admin/voice-agent/dispatch` admin-only con selección
+reusando `_leadIsCallableNow`, caller ID server-side [routing explícito o
+round-robin persistido en `retell_config.json`], cap diario con rollover a
+prueba de fugas, `dryRun` que gasta cero, y error de Retell por lead sin
+romper el lote. 30 tests nuevos, suite completa 1076/1076 verde. VOICE-03
+completado. Próximo: 24-04, tool `/book` con header secreto + webhook
+firmado).*

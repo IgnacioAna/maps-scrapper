@@ -100,7 +100,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 24-03-PLAN.md — Dispatch por lote + caller ID server-side + dry-run + cap diario (VOICE-03, wave 3)
+- [x] 24-03-PLAN.md — Dispatch por lote + caller ID server-side + dry-run + cap diario (VOICE-03, wave 3)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

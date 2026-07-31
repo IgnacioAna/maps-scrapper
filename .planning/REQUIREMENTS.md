@@ -179,7 +179,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   (`metrics-consistency` 19 tests + `call-cadence` + `disposition-dnc` +
   `funnel-close`) verde sin cambios de números. Resuelve la deuda M1 del
   audit 2026-06-20.
-- [ ] **VOICE-03**: `POST /api/admin/voice-agent/dispatch` (admin):
+- [x] **VOICE-03**: `POST /api/admin/voice-agent/dispatch` (admin):
   `{country, count}` → selecciona SOLO leads de `setter_agente_ia` que pasan
   `_leadIsCallableNow` (DNC/tarifa roja/muertos/callbacks futuros ya
   excluidos), cap por `dailyCap`, orden por prioridad, y por cada uno llama
