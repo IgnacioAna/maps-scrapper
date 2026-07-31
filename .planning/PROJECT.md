@@ -41,9 +41,55 @@ acordarse de abrir ya falló.
 
 ---
 
-## Current Milestone: v2.0 Gestión por excepción
+## Current Milestone: v3.0 Agente de voz
 
-**Goal:** Ignacio y sus dos socios reciben automáticamente — sin entrar a
+**Goal:** Un agente de voz IA (Retell AI + SIP trunk de Telnyx) llama en
+frío a clínicas dentales, pasa la recepción e intenta agendar la reunión
+con el decisor; lo que no agenda vuelve como datos accionables (nota de
+seguimiento, callback con fecha, nombres de doctor/recepcionista, objeción)
+al MISMO circuito que usan las SDRs humanas — callLog, cadencia, funnel,
+Hoy, biblioteca de transcripts.
+
+**Target features:**
+- Integración backend Retell: config env>JSON (patrón Telnyx), dispatch por
+  lote, tool HTTP `/book`, webhook firmado fail-closed, pseudo-SDR
+  `setter_agente_ia` con métricas comparables lado a lado.
+- Refactor `_applyCallOutcome`: la cascada de dispositions extraída a helper
+  puro reusable por el handler humano y el webhook del agente (paridad
+  garantizada por `metrics-consistency`).
+- Sección "Agente de voz" en el panel (config + armado de lote + disparo +
+  resultados). Cero vistas de métricas nuevas.
+- Agente en Retell: Conversational Flow Rigid de 9 nodos derivado de los
+  guiones oficiales del user + Post Call Data Extraction + setup del SIP
+  trunk + piloto México (~$50, primera llamada al propio user).
+- Banco de conocimiento unificado: la oferta/objeciones/casos en UNA fuente
+  que alimenta prompt del agente + asistente + Banco de Respuestas +
+  Centro de Entrenamiento (solo OpenAI — verificar estado Mercury/Qwen).
+
+**Criterio de éxito:** el agente completa un lote piloto real en México con
+transcripts legibles en la biblioteca, su fila en Equipo/Comando es
+comparable con las SDRs humanas, y al menos un lead termina agendado o con
+callback+nota utilizables por el user — con costo por conversación conocido.
+
+**Decisiones ya tomadas (no re-litigar):** ver
+`.planning/research/2026-08-01-agente-voz-retell.md` (síntesis completa) y
+los `*-CONTEXT.md` de las phases 24-27. Las centrales: sin transferencia a
+humano; sin voicemail; no se identifica como IA (esquive con humor);
+persona con nombre propio del equipo; lotes manuales; interesados los
+cierra el user; guiones PACE = materia prima de los nodos; Retell con BYO
+SIP Telnyx (conserva números, caller ID, tarifas, DNC, CDRs).
+
+**v2.0 al momento del switch (2026-08-01):** phases 19-20-21 ejecutadas
+(21 con 6/7 planes — falta 21-07 prueba en vivo, queda como pending todo);
+**phases 22 (Coaching) y 23 (Alertas) DIFERIDAS** a backlog — se retoman
+post-piloto del agente. La advertencia de alcance del roadmap v2.0
+("orquestador de agentes… decirlo, no construirlo") fue dicha al user;
+decisión explícita del user: priorizar el agente de voz.
+
+<details>
+<summary>Milestone v2.0 anterior (referencia)</summary>
+
+**Goal v2.0:** Ignacio y sus dos socios reciben automáticamente — sin entrar a
 ningún panel — un reporte de rendimiento por vendedora (diario y semanal)
 en un grupo de WhatsApp, y las transcripciones de llamadas se convierten en
 feedback de coaching por persona en vez de quedar como archivo muerto.
@@ -82,6 +128,8 @@ entender algo, el milestone falló.
   `_filterSettersVisible`, criterio Phase 18).
 - **Nada de métricas en cero** en los reportes (agendados/shows/deals dan
   0 hoy — entrenarían a los destinatarios a ignorar el reporte).
+
+</details>
 
 ---
 

@@ -1,18 +1,48 @@
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-07-26.
+> Estado vivo del proyecto. Actualización: 2026-08-01.
 
 ---
 
 ## Current Milestone
 
-**v2.0 — Gestión por excepción** (iniciado 2026-07-25)
+**v3.0 — Agente de voz** (iniciado 2026-08-01)
 
-Reportes diario/semanal automáticos al grupo de WhatsApp de los 3 socios
-(fallback email), disposición obligatoria, coaching por vendedora desde
-transcripciones, alertas que llegan solas. Solo vendedoras nuevas.
+Agente de voz IA (Retell + SIP trunk Telnyx) que llama en frío a clínicas,
+pasa recepción e intenta agendar con el decisor; lo no-agendado vuelve como
+datos (nota, callback, nombres, objeción) al mismo circuito de las SDRs
+humanas. Phases 24-27. Contexto completo:
+`.planning/research/2026-08-01-agente-voz-retell.md` + `*-CONTEXT.md` de
+cada phase.
 
 ## Current Position
+
+- **Phase:** 24 — Integración backend Retell — **Not started**
+- **Plan:** —
+- **Status:** Roadmap y requirements definidos; phases con CONTEXT listo
+  para planificar.
+- **Próximo paso:** `/gsd-plan-phase 24` (los 24/25/26/27-CONTEXT.md ya
+  contienen las decisiones y referencias de código — no hace falta
+  discuss-phase salvo que surjan dudas nuevas).
+- **Last activity:** 2026-08-01 — Milestone v3.0 iniciado (planificación
+  completa hecha en sesión remota; desarrollo arranca en instancia local).
+
+## Pending todos (heredados de v2.0 — NO bloquean v3.0)
+
+- **21-07**: prueba en vivo del reporte diario por WhatsApp con el user
+  (`autonomous: false`). Ver detalle operativo en el archivo de posición
+  v2.0 más abajo (asar vigente, botón "Mandar ahora", recarga de tabs).
+- **UAT humano de Phase 20** (`20-HUMAN-UAT.md`): al aprobar →
+  `/gsd-verify-work 20` → COMPLETE.
+- **Phases 22 (Coaching) y 23 (Alertas): DIFERIDAS a backlog** — detalle en
+  `ROADMAP-v2.0-archived.md`; sus requirements COACH-01..06 / ALERT-01..03
+  siguen en REQUIREMENTS.md marcados como diferidos. Retomar post-piloto.
+- **Pendiente del user (v2.0)**: cargar `RESEND_API_KEY` en Railway si
+  quiere el mail semanal detallado (decisión previa: no urgente).
+
+---
+
+## Archivo — posición v2.0 al momento del switch (2026-08-01)
 
 - **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 6/7
   planes ejecutados (olas 1, 2, 3 y 4 completas). Falta solo 21-07 (prueba en

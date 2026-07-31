@@ -113,7 +113,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   audio (public/app.js:7530): diferir la disposición pierde el transcript
   de esa llamada — el diseño debe tenerlo en cuenta.
 
-### COACH — Coaching por vendedora
+### COACH — Coaching por vendedora *(DIFERIDO a backlog 2026-08-01 — milestone v3.0 lo desplaza; se retoma post-piloto del agente)*
 
 - [ ] **COACH-01** *(gate de la phase)*: Verificar en producción que la
   ronda 8 de Whisper (boost del canal del cliente, commit `a9e4886`)
@@ -141,7 +141,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   ven su propio análisis? (hoy admin/supervisor only — un scorecard que
   la evaluada no puede ver es vigilancia; uno que sí, es coaching).
 
-### ALERT — Notificación por excepción
+### ALERT — Notificación por excepción *(DIFERIDO a backlog 2026-08-01 — ídem COACH)*
 
 - [ ] **ALERT-01**: Las alertas `high` que ya calcula team-performance
   (index.js:9772 — drop %, inactividad, apertura baja, never_touched) se
@@ -153,6 +153,93 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   los 3 socios (a decidir con el user en discuss-phase). Un grupo de tres
   que ve la misma alerta y asume que otro va a actuar es peor que una
   sola persona notificada.
+
+---
+
+## v3.0 Requirements — Agente de voz (definidos 2026-08-01)
+
+> Contexto completo en `.planning/research/2026-08-01-agente-voz-retell.md`
+> y en los `*-CONTEXT.md` de las phases 24-27.
+> **Regla transversal:** el agente alimenta el MISMO circuito que una SDR
+> humana (callLog → `_applyCallOutcome` → cadencia → funnel → biblioteca).
+> Cero circuito paralelo de métricas; todo deriva del CALL METRICS CORE.
+
+### VOICE — Integración y agente
+
+- [ ] **VOICE-01**: Config Retell con patrón env>JSON de Telnyx
+  (`RETELL_API_KEY` + `RETELL_WEBHOOK_SECRET` como env vars que bloquean
+  edición desde panel; `retell_config.json` para `agentId`, `fromNumberId`,
+  `dailyCap`, `enabled`). Sumado a BACKUP_FILES, export-data, import-data,
+  seedVolumeFromRepo y pre-deploy (regla #21 — sin esto un redeploy lo
+  pierde). Endpoints `GET/PUT /api/retell/config` admin-only.
+- [ ] **VOICE-02**: La cascada de dispositions (index.js:10552-10675:
+  switch de outcomes + calendarEntry + DNC + cadencia) extraída a helper
+  puro `_applyCallOutcome(data, lead, logEntry, opts)` usado por el handler
+  humano Y por el webhook del agente. **Paridad exacta**: la suite completa
+  (`metrics-consistency` 19 tests + `call-cadence` + `disposition-dnc` +
+  `funnel-close`) verde sin cambios de números. Resuelve la deuda M1 del
+  audit 2026-06-20.
+- [ ] **VOICE-03**: `POST /api/admin/voice-agent/dispatch` (admin):
+  `{country, count}` → selecciona SOLO leads de `setter_agente_ia` que pasan
+  `_leadIsCallableNow` (DNC/tarifa roja/muertos/callbacks futuros ya
+  excluidos), cap por `dailyCap`, orden por prioridad, y por cada uno llama
+  `POST /v2/create-phone-call` de Retell con `from_number` (caller ID
+  server-side: portar `pickNumberForDestination` de app.js:2270 a index.js,
+  índice de rotación en el JSON, no localStorage) + `override_agent_id` +
+  `retell_llm_dynamic_variables` (nombre, ciudad, reviews, years,
+  doctor_name, openingAngle/hookPhrase, leadId, whatsapp de retorno).
+- [ ] **VOICE-04**: `POST /api/retell/tool/book` — tool HTTP del agente,
+  protegido por header `x-scm-tool-secret`. Crea calendarEntry con el shape
+  de index.js:10607 (`calendarioEstado:'pendiente'`,
+  `setterId:'setter_agente_ia'`, `sourceCall:true`) dentro de
+  `mutateSettersData`, marca booked-pending y devuelve texto confirmable en
+  voz alta. El outcome `scheduled_with_admin` lo aplica el webhook (una sola
+  escritura de callLog por llamada).
+- [ ] **VOICE-05**: `POST /api/retell/webhook` — firma `x-retell-signature`
+  verificada (patrón del webhook Telnyx: rawBody en el verify de
+  express.json index.js:108-118, 401 con contador, **fail-closed 503 en
+  producción sin secret**, FIFO `retell_events.json` cap 1000). En
+  `call_analyzed`: resuelve leadId, arma logEntry (`channel:'retell'`,
+  `by:''` → atribución a `assignedTo` por criterio #149, duration,
+  fromNumber, cost estimado `_estimateTelnyxCost`), mapea transcript de
+  Retell a `{segments:[{speaker:'setter'|'lead',start,end,text}]}` (la
+  biblioteca/resumen/análisis existentes lo consumen sin cambios), decide
+  outcome (booked→scheduled_with_admin; no conectó→no_answer/voicemail;
+  conectó sin agendar→Post Call Data Extraction de Retell +
+  `_autoDispositionLLM` fallback) y aplica `_applyCallOutcome` dentro de
+  `mutateSettersData`. La extraction (nota_seguimiento, callback_fecha_hora,
+  doctor_name, recepcionista_nombre, objecion) persiste en notes[]/callbackAt/
+  lead.doctor.
+- [ ] **VOICE-06**: Pseudo-SDR `setter_agente_ia` ("Agente IA") sin user
+  vinculado, NO hidden: fila comparable en Equipo/Comando/Mi rendimiento/
+  Distribución sin tocar ninguna métrica (la atribución cae sola por
+  assignedTo). Lote piloto se asigna con `pool-distribute` existente.
+- [ ] **VOICE-07**: Sección "Agente de voz" en el panel (admin): estado de
+  config (locks 🔒 env-sourced), armado de lote (cantidad, país, filtro
+  con/sin `lead.doctor`), botón de disparo con confirmación de gasto
+  estimado, llamadas de hoy del agente y últimos resultados. Cache-buster
+  bumpeado.
+- [ ] **VOICE-08**: Entregable "agente cargable": documento con el
+  Conversational Flow Rigid de 9 nodos (global prompt + prompt por nodo +
+  transiciones por ecuación + variables + Post Call Data Extraction +
+  settings de voz/interrupción por nodo + config de la tool book) derivado
+  de los guiones oficiales, listo para que el user lo cargue en el
+  dashboard de Retell. Incluye las reglas duras (sin precios, sin stack,
+  esquive-IA, DNC) y la secuencia de objeciones 1ª-doblar/2ª-Miyagi/
+  3ª-salida-90d.
+- [ ] **VOICE-09**: Piloto ejecutado: trunk Telnyx↔Retell configurado
+  (guía paso a paso en docs/), números importados, llamada de prueba al
+  user OK (voz elegida entre 3 candidatas en español), lote real en México
+  con transcripts en la biblioteca y fila del agente en Equipo. Métricas de
+  cierre del piloto: % atención, % pasa gatekeeper, % conversación ≥30s,
+  agendas/callbacks, costo por conversación (CDR + factura Retell) vs
+  baseline humano del Comando.
+- [ ] **VOICE-10**: Banco de conocimiento unificado: oferta/6 fugas/casos/
+  calificación/objeciones consolidados en una fuente que actualiza system
+  prompt del asistente, Banco de Respuestas (FAQs de objeciones v2) y
+  material del Centro de Entrenamiento (incluye playbook de los 5 cursos
+  para SDRs humanas). Verificar y reflejar el estado real de proveedores IA
+  (user reporta: solo OpenAI; Mercury/Qwen fuera).
 
 ---
 
@@ -186,14 +273,17 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 | REP-01, REP-02, REP-03 | 19 |
 | DISP-01, DISP-02, DISP-03 | 20 |
 | REP-04, REP-05, REP-06, REP-07, REP-08, REP-09, REP-10 | 21 |
-| COACH-01, COACH-02, COACH-03, COACH-04, COACH-05, COACH-06 | 22 |
-| ALERT-01, ALERT-02, ALERT-03 | 23 |
+| COACH-01, COACH-02, COACH-03, COACH-04, COACH-05, COACH-06 | 22 (DIFERIDA) |
+| ALERT-01, ALERT-02, ALERT-03 | 23 (DIFERIDA) |
+| VOICE-01, VOICE-02, VOICE-03, VOICE-04, VOICE-05, VOICE-06 | 24 |
+| VOICE-07 | 25 |
+| VOICE-08, VOICE-09 | 26 |
+| VOICE-10 | 27 |
 
-✓ 22/22 requirements mapeados — 100% cobertura.
+✓ v2.0: 13/13 activos mapeados (COACH/ALERT diferidos) · v3.0: 10/10 mapeados.
 
 ---
 
-*Last updated: 2026-07-26 — milestone v2.0 (REP-07 y REP-08 completos en 21-02;
-21-03 encendió los crons y sumó el molde corto del semanal; 21-04 agregó el panel
-del canal con el botón "Mandar ahora" — REP-05 y REP-06 siguen abiertos solo por
-el primer envío real y la validación del user en su celular, plan 21-07).*
+*Last updated: 2026-08-01 — milestone v3.0 "Agente de voz" definido (VOICE-01..10,
+phases 24-27). COACH/ALERT de v2.0 diferidos a backlog; REP-05/06 siguen abiertos
+solo por 21-07 (prueba en vivo, pending todo en STATE.md).*
