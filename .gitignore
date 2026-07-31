@@ -38,3 +38,4 @@ pre-deploy.bat
 
 # Backup viejo de 9MB en la raiz (audit 2026-06-20) — nunca commitear
 paula-old.json
+!.claude/get-shit-done/
