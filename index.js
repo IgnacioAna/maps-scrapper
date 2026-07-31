@@ -18113,10 +18113,17 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       // inventar (la causa del sonido "robótico"), netSamples = ventanas medidas,
       // leadPlaybackGain = boost que el SDR tenía puesto para ESCUCHAR.
       // Permite separar "Whisper falló" de "la línea vino rota" sin adivinar.
-      'netLossPct', 'netJitterMs', 'netConcealPct', 'netSamples', 'leadPlaybackGain']) {
+      'netLossPct', 'netJitterMs', 'netConcealPct', 'netSamples', 'leadPlaybackGain',
+      // 2026-07-31 (2da vuelta): ganancia de la cadena del MICRÓFONO con la que
+      // se hizo la llamada. Los datos de prod mostraron picos de 0.188 y 0.368
+      // (cliente no escucha al SDR) y 1.146 (saturando) — sin esto no se puede
+      // saber con qué config salió cada llamada.
+      'micGain']) {
       if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
     }
-    for (const k of ['setterRecError', 'leadRecError', 'v', 'netCodec']) {
+    // micLabel = micrófono REALMENTE capturado (responde "tengo auriculares
+    // puestos pero ¿qué agarró el browser?").
+    for (const k of ['setterRecError', 'leadRecError', 'v', 'netCodec', 'micLabel']) {
       if (typeof recMeta[k] === 'string' && recMeta[k]) out[k] = recMeta[k].slice(0, 80);
     }
     return Object.keys(out).length ? out : null;

@@ -2553,6 +2553,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Telnyx vía las constraints de newCall. Los DEFAULTS preservan exactamente
     // el comportamiento histórico (EC/NS/AGC = true, sin boost), así que si el
     // setter nunca abre el panel, las llamadas funcionan igual que antes.
+    // Cadena Web Audio del micrófono de la llamada en curso (gain ajustable en
+    // vivo + label del mic realmente capturado). Se arma en _startTelnyxCall.
+    let _micChain = null;
     const _audioCfg = {
       KEYS: {
         mic: 'scm_audio_micId', micLabel: 'scm_audio_micLabel', spk: 'scm_audio_spkId',
@@ -2577,6 +2580,26 @@ document.addEventListener('DOMContentLoaded', async () => {
           gain: Math.max(1, Math.min(3, g)),
           gainLive: bool(this.KEYS.gainLive, false),
         };
+      },
+
+      // Cadena del micrófono (2026-07-31): ON por defecto. El SDR la puede
+      // apagar desde el panel Audio (clave `scm_audio_micChain` = '0').
+      micChainEnabled() { return localStorage.getItem('scm_audio_micChain') !== '0'; },
+      // Ganancia del mic, independiente del viejo `gain` del modal (que seguía
+      // capado en 3 y acoplado al checkbox opt-in).
+      micGain() {
+        const v = parseFloat(localStorage.getItem('scm_audio_micGain') || '2');
+        if (!(v >= 1)) return 2;
+        return Math.max(1, Math.min(4, v));
+      },
+      setMicGain(v) {
+        const g = Math.max(1, Math.min(4, parseFloat(v) || 1));
+        localStorage.setItem('scm_audio_micGain', String(g));
+        if (_micChain?.gain && _micChain.ctx) {
+          try { _micChain.gain.gain.setTargetAtTime(g, _micChain.ctx.currentTime, 0.05); }
+          catch { _micChain.gain.gain.value = g; }
+        }
+        return g;
       },
 
       // MediaTrackConstraints para una llamada o test. deviceId va como {ideal}
@@ -2890,6 +2913,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       bindCheck('audio-ns', _audioCfg.KEYS.ns);
       bindCheck('audio-agc', _audioCfg.KEYS.agc);
       bindCheck('audio-gain-live', _audioCfg.KEYS.gainLive);
+      // Nivelador de voz: ON por defecto, guarda '0' solo si lo apagan.
+      $('audio-mic-chain')?.addEventListener('change', (e) => {
+        localStorage.setItem('scm_audio_micChain', e.target.checked ? '1' : '0');
+      });
       $('audio-gain')?.addEventListener('input', (e) => {
         let v = parseFloat(e.target.value); if (!(v >= 1)) v = 1;
         localStorage.setItem(_audioCfg.KEYS.gain, String(v));
@@ -2914,6 +2941,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if ($('audio-gain')) $('audio-gain').value = a.gain;
       if ($('audio-gain-val')) $('audio-gain-val').textContent = a.gain.toFixed(1) + '×';
       if ($('audio-gain-live')) $('audio-gain-live').checked = a.gainLive;
+      if ($('audio-mic-chain')) $('audio-mic-chain').checked = _audioCfg.micChainEnabled();
       const micSel = $('audio-mic-select'), spkSel = $('audio-speaker-select');
       const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
       const { mics, spks, denied } = await _audioListDevices();
@@ -8052,6 +8080,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const recMeta = _recMeta
         ? { ..._recMeta, setterBytes: setterBlob?.size || 0, leadBytes: leadBlob?.size || 0,
             leadPlaybackGain: _remoteAudio.active ? _remoteAudio.getGain() : null,
+            // Config del mic con la que se hizo ESTA llamada: sin esto hay que
+            // pedirle al SDR que mire la pantalla para saber qué capturó.
+            micGain: _micChain ? _audioCfg.micGain() : null,
+            micLabel: (_micChain?.micLabel || '').slice(0, 60),
             ...(_lineStatsSummary() || {}) }
         : null;
       _recMeta = null;
@@ -8284,8 +8316,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const _showDevice = () => {
         const el = document.getElementById('telnyx-mic-device');
         if (!el) return;
+        // Con la cadena activa, el track del call es el procesado (label vacío):
+        // el nombre real del dispositivo es el que guardó _micChain al capturar.
         const t = (_telnyx.activeCall?.localStream?.getAudioTracks?.() || [])[0];
-        const label = t?.label || '';
+        const label = _micChain?.micLabel || t?.label || '';
         el.textContent = label ? 'Mic: ' + label : '';
         el.title = label ? 'Micrófono que está usando esta llamada: ' + label : '';
       };
@@ -8808,25 +8842,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         // "Aplicar boost en llamadas" Y subió la ganancia. Capturamos nosotros el
         // mic, lo amplificamos con un GainNode y pasamos ese stream como localStream
         // del call (el SDK usa el provisto, no abre una segunda captura).
+        // ── Cadena del MICRÓFONO (2026-07-31) ────────────────────────────────
+        // Antes esto era un boost opt-in, apagado por defecto y escondido en un
+        // modal. Los datos de producción mostraron por qué no alcanzaba: picos de
+        // 0.188 y 0.368 en llamadas donde el cliente decía "casi no se te
+        // escucha", y una SDR en 1.146 (saturando). O sea el nivel del mic está
+        // fuera de rango por los DOS lados y nadie lo estaba tocando.
+        //
+        // Ahora es una cadena con compresor, que es justamente lo que sirve para
+        // ambos casos: levanta lo bajo y contiene lo alto. Va ACTIVA por defecto
+        // (el SDR puede apagarla desde el panel Audio) y su ganancia se ajusta EN
+        // VIVO desde el panel de llamada, porque el GainNode es nuestro.
+        // El echo cancellation NO se pierde: se aplica en getUserMedia, o sea
+        // aguas arriba de este grafo.
         _audioCfg._boostCleanup = null;
-        if (_aCfg.gainLive && _aCfg.gain > 1.01) {
+        _micChain = null;
+        if (_audioCfg.micChainEnabled()) {
           try {
             const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints() });
             const bctx = new (window.AudioContext || window.webkitAudioContext)();
             await bctx.resume();
             const bsrc = bctx.createMediaStreamSource(rawStream);
-            const bgain = bctx.createGain(); bgain.gain.value = _aCfg.gain;
+            // Highpass: saca retumbe/ruido grave de la sala, que el boost si no
+            // amplificaría junto con la voz.
+            const bhp = bctx.createBiquadFilter();
+            bhp.type = 'highpass'; bhp.frequency.value = 100; bhp.Q.value = 0.7;
+            const bgain = bctx.createGain(); bgain.gain.value = _audioCfg.micGain();
+            const bcomp = bctx.createDynamicsCompressor();
+            bcomp.threshold.value = -12; bcomp.knee.value = 8; bcomp.ratio.value = 3;
+            bcomp.attack.value = 0.005; bcomp.release.value = 0.15;
+            const blim = bctx.createDynamicsCompressor();
+            blim.threshold.value = -2; blim.knee.value = 0; blim.ratio.value = 20;
+            blim.attack.value = 0.001; blim.release.value = 0.06;
             const bdest = bctx.createMediaStreamDestination();
-            bsrc.connect(bgain).connect(bdest);
+            bsrc.connect(bhp).connect(bgain).connect(bcomp).connect(blim).connect(bdest);
             _callOpts.localStream = bdest.stream;
             _callOpts.localElement = undefined;
+            // Guardamos el label del mic REAL en uso: es el dato que faltaba para
+            // diagnosticar "tengo auriculares pero ¿qué capturó el browser?".
+            _micChain = {
+              ctx: bctx, gain: bgain,
+              micLabel: (rawStream.getAudioTracks?.()[0]?.label || ''),
+            };
             _audioCfg._boostCleanup = () => {
               try { rawStream.getTracks().forEach(t => t.stop()); } catch {}
               try { bctx.close(); } catch {}
+              _micChain = null;
             };
           } catch (e) {
-            console.warn('[audio] boost en vivo falló, sigo sin boost:', e.message);
+            console.warn('[audio] cadena de mic falló, sigo con captura directa:', e.message);
             delete _callOpts.localStream;
+            _micChain = null;
           }
         }
         const call = _telnyx.client.newCall(_callOpts);
@@ -9443,6 +9509,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (clean) {
         clean.checked = _remoteAudio.getClean();
         clean.addEventListener('change', (e) => _remoteAudio.setClean(e.target.checked));
+      }
+      // Ganancia del micrófono, también en vivo (el GainNode es nuestro).
+      const mg = document.getElementById('telnyx-mic-gain');
+      const mgVal = document.getElementById('telnyx-mic-gain-val');
+      if (mg) {
+        mg.value = String(_audioCfg.micGain());
+        if (mgVal) mgVal.textContent = _audioCfg.micGain().toFixed(1) + '×';
+        mg.addEventListener('input', (e) => {
+          const g = _audioCfg.setMicGain(e.target.value);
+          if (mgVal) mgVal.textContent = g.toFixed(1) + '×';
+        });
       }
     })();
 
