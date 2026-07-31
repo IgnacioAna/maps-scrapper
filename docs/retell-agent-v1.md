@@ -959,8 +959,176 @@ el sistema descarta cualquier otra cosa, y el compromiso se pierde),
 ## Global Nodes
 <!-- 26-02 -->
 
+Un **Global Node** no es un tipo de nodo: es un **toggle** sobre cualquier
+nodo. Activado, queda alcanzable desde **cualquier punto del flow** sin
+conexiones explícitas, con una condición propia de cuándo saltar ahí, una
+opción para volver al nodo anterior y otra para no re-dispararse en loop.
+
+Van dos.
+
+### `global_dnc` — «no me llame más / sáqueme de la lista»
+
+**Condición de salto:** el prospecto pide, en cualquier punto de la llamada,
+que no lo contacten nunca más.
+
+**Prompt:**
+
+> Aceptá de inmediato. **No pelees ni una sola vez**: ni "solo treinta
+> segundos", ni "entiendo, pero…", ni un último intento. Cualquier resistencia
+> acá es un problema, no una técnica.
+>
+> «Por supuesto. Lo saco de la lista ahora mismo y no lo volvemos a llamar.
+> Disculpe la molestia. Buen día.»
+>
+> Cortá corto. No preguntes por qué, no ofrezcas alternativas, no pidas
+> confirmación.
+
+**Al salir:** va directo a `ending`. No vuelve al nodo anterior.
+
+**Anti-loop:** no aplica — la llamada termina.
+
+> 🚨 **Instrucción crítica de extracción.** En este caso el campo
+> `objecion_principal` tiene que devolver **exactamente** `no_contactar`. Es
+> la **única vía** por la que el sistema marca el lead como no-llamar. Si sale
+> como texto libre ("pidió que no lo llamemos", "no quiere que lo contacten"),
+> **el lead vuelve a la cola y se lo va a discar de nuevo**. Conviene repetir
+> la instrucción en el prompt de este nodo, además de en la `description` del
+> campo.
+
+**Por qué es un Global Node y no una rama en cada nodo.** El pedido puede
+llegar en el saludo, en el medio del pitch o en la tercera objeción.
+Duplicar la rama en los 9 nodos garantiza que en alguno falte —y el nodo donde
+falte es justo donde el pedido se va a perder. Una sola definición,
+alcanzable desde todos lados, no tiene ese modo de falla.
+
+### `global_robot` — «¿es un robot? / ¿esto es una grabación?»
+
+**Condición de salto:** el prospecto cuestiona si está hablando con una
+persona, en cualquier punto del flow.
+
+**Prompt:**
+
+> Esquivá con humor y volvé al tema en la misma frase, sin pausa:
+> «¿Tan mal sueno? Le decía que lo llamaba porque…» y retomá exactamente donde
+> estabas.
+>
+> **No lo negás y no lo confirmás.** Nunca digas que sos una persona, y nunca
+> digas que sos un sistema.
+>
+> Si vuelve a preguntar una **segunda** vez, no repitas el chiste: reconocé
+> con otra frase y seguí. «Le entiendo la duda. Se lo hago corto y usted me
+> dice si le sirve.»
+>
+> Si insiste una **tercera** vez, no sigas esquivando: cerrá con elegancia.
+> «Prefiero no hacerle perder tiempo. Le agradezco la atención, buen día.»
+
+**Al salir:** vuelve al nodo anterior y retoma la conversación donde estaba.
+
+**Anti-loop:** activar la protección de re-disparo. Cada vez que se entra, se
+usa una respuesta distinta (chiste → reconocimiento → cierre); a la tercera se
+sale a `ending`. Sin esto, un prospecto insistente y un agente que repite la
+misma frase producen exactamente la conversación que este nodo intenta evitar.
+
+> **Es una decisión del user, tomada a conciencia, no un descuido**: el agente
+> no se identifica como IA. Es revisable por país y queda escrito acá para que
+> se pueda revisar sabiendo qué se decidió.
+
 ## Tabla de transiciones
 <!-- 26-02 -->
 
+Todas las conexiones del flow en un solo lugar, para cargarlas en el builder
+sin releer los 9 nodos.
+
+| Origen | Condición | Tipo | Destino |
+|---|---|---|---|
+| `detect` | recepción + `{{doctor_name}} exists` | ecuación + prompt | `gk_con_nombre` |
+| `detect` | recepción + `{{doctor_name}} does not exist` | ecuación + prompt | `gk_sin_nombre` |
+| `detect` | atendió el decisor | prompt-based | `opener_doctor` |
+| `gk_con_nombre` | pasa la llamada | prompt-based | `opener_doctor` |
+| `gk_con_nombre` | no está / da horario | prompt-based | `interes_sin_agenda` |
+| `gk_con_nombre` | filtra y pide explicaciones | prompt-based | `gk_sin_nombre` |
+| `gk_sin_nombre` | da el nombre y pasa | prompt-based | `opener_doctor` |
+| `gk_sin_nombre` | pasa sin dar nombre | prompt-based | `opener_doctor` |
+| `gk_sin_nombre` | se engancha, da nombre u horario | prompt-based | `interes_sin_agenda` |
+| `gk_sin_nombre` | no pasa y corta | prompt-based | `ending` |
+| `opener_doctor` | da permiso | prompt-based | `pitch` |
+| `opener_doctor` | objeta o apura | prompt-based | `objeciones` |
+| `opener_doctor` | pide que lo llamen después | prompt-based | `interes_sin_agenda` |
+| `pitch` | acepta la reunión | prompt-based | `agendar` |
+| `pitch` | objeta | prompt-based | `objeciones` |
+| `pitch` | queda tibio | prompt-based | `interes_sin_agenda` |
+| `agendar` | hay día y hora | ecuación (si se capturaron) / prompt | `agendar_book` |
+| `agendar` | se resiste al agendamiento | prompt-based | `objeciones` |
+| `agendar_book` | siempre (function node) | automática | `agendar_confirmar` |
+| `agendar_confirmar` | reserva OK + tie-down hecho | prompt-based | `ending` (agendado) |
+| `agendar_confirmar` | 2 reintentos fallidos | prompt-based | `interes_sin_agenda` |
+| `objeciones` | `{{objection_count}} == 1` | **ecuación** | rama doblar la apuesta |
+| `objeciones` | `{{objection_count}} == 2` | **ecuación** | rama Miyagi |
+| `objeciones` | `{{objection_count}} >= 3` | **ecuación** | rama salida a 3 meses |
+| `objeciones` | acepta la reunión | prompt-based | `agendar` |
+| `objeciones` | tercera agotada | prompt-based | `interes_sin_agenda` |
+| `interes_sin_agenda` | cerrado | prompt-based | `ending` |
+| *cualquier nodo* | pide no ser llamado más | Global Node | `global_dnc` |
+| *cualquier nodo* | pregunta si es un robot | Global Node | `global_robot` |
+
+> ⚠️ **La restricción que más se olvida.** Una **ecuación solo puede leer
+> variables que YA existen**. Las que se aprenden durante la llamada
+> (`doctor_name` capturado en recepción, `objection_count`, el día y la hora
+> de la reunión) necesitan pasar antes por un **`Extract DV node`**. Y el modo
+> de falla es traicionero: una ecuación sobre una variable inexistente **no da
+> error** — simplemente nunca se cumple, y el flow se queda clavado en el
+> nodo.
+
 ## Checklist de carga en el dashboard
 <!-- 26-02 -->
+
+Orden de operaciones. La tool y los campos de extracción van **antes** que los
+nodos, porque los nodos los referencian.
+
+- [ ] **1.** Crear el agente con **Conversation Flow** en modo **Rigid** (no
+      Dynamic, no single-prompt).
+- [ ] **2.** Cargar los **Global Settings** completos (tabla de la Parte A),
+      incluidas **Voicemail Detection en "Hang up"** e **IVR Detection ON**.
+- [ ] **3.** Pegar el **global prompt**, reemplazando `{{agent_name}}` por el
+      nombre literal elegido. **No dejar la llave**: no es una variable
+      dinámica del dispatch y renderiza vacío.
+- [ ] **4.** Crear la custom function **`book`**: URL, POST, header
+      `x-scm-tool-secret` con el valor de Railway, schema de `fecha` y `hora`,
+      timeout **5000**, Talk While Waiting — y **"Payload: args only"
+      DESACTIVADO**.
+- [ ] **5.** Cargar los **9 campos de Post Call Data Extraction** con su
+      nombre exacto, tipo, `description` y `choices`.
+- [ ] **6.** Crear los **9 nodos** en el orden del mapa y conectarlos según la
+      tabla de transiciones. Los `Extract DV` y el `Logic Split` del contador
+      de objeciones son parte del flow, no un detalle.
+- [ ] **7.** Marcar los **2 Global Nodes** (`global_dnc`, `global_robot`) con
+      su condición de salto y la protección anti-loop.
+- [ ] **8.** Configurar el **webhook**: URL, secret de Railway, y suscribir
+      **`call_ended` y `call_analyzed`** (los dos).
+- [ ] **9.** **Publicar** — la versión se crea al publicar, no al guardar — y
+      anotar el número de versión en el registro de versiones de este
+      documento.
+- [ ] **10.** Copiar el `agent_id` y escribirlo en la configuración del SCM
+      (lo hace el plan 26-04).
+
+**Dos avisos operativos:**
+
+1. **Usar Chrome.** Safari crashea el builder.
+2. **Cómo se itera** (D-26-05): se edita **este documento primero**, después
+   se crea un draft nuevo en Retell, se publica, y se anota la versión en el
+   registro. **Una versión publicada no se edita nunca.** Rollback = crear un
+   draft a partir de una versión vieja y publicarlo de nuevo.
+
+**Qué escuchar en la primera llamada de prueba**, además del flujo:
+
+- Que el agente **trate de usted** y no se le escape ningún "vos" ni modismo
+  rioplatense (este documento lo escribió un rioplatense; el global prompt lo
+  prohíbe explícitamente, pero se verifica escuchando).
+- Que **diga su nombre** en la presentación. Si se presenta sin nombre, quedó
+  `{{agent_name}}` sin reemplazar (paso 3).
+- Que **la pausa del opener exista de verdad**. Si el agente llena el silencio,
+  bajar `responsiveness` en `opener_doctor`.
+- Que la reunión confirmada **aparezca una sola vez** en Reuniones agendadas.
+  Ausente o duplicada → revisar el toggle "args only" (paso 4).
+- Que el **transcript llegue a la biblioteca de Entrenamiento IA**. Si no
+  llega, el problema es el secret del webhook (paso 8), no el agente.
