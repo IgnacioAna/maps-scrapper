@@ -309,6 +309,117 @@ leer los transcripts del piloto sin sorpresas.
 
 ---
 
+## Tool `book` (custom function)
+
+Es la única tool del agente. La invoca el nodo de agendamiento para crear la
+reunión en el calendario del SCM mientras el prospecto sigue en línea.
+
+| Campo del dashboard | Valor exacto |
+|---|---|
+| Nombre | `book` |
+| URL | `https://scm-setting.up.railway.app/api/retell/tool/book` |
+| Método HTTP | `POST` |
+| Header | nombre `x-scm-tool-secret`, valor = el de la env var `RETELL_TOOL_SECRET` de Railway (se copia de un dashboard al otro; **no se escribe en este documento**) |
+| Timeout | **`5000`** ms — el default de Retell es `120000`; hay que bajarlo a mano |
+| Talk While Waiting | activado, frase estática: «Déjeme confirmarlo, un segundo.» |
+| Parámetro `fecha` | tipo string · description: «día de la reunión en formato YYYY-MM-DD» · lo completa el LLM |
+| Parámetro `hora` | tipo string · description: «hora de la reunión en formato HH:MM de 24 horas» · lo completa el LLM |
+| **Toggle "Payload: args only"** | **DESACTIVADO** |
+
+### Por qué el toggle "args only" va desactivado
+
+> El endpoint sabe leer las dos formas del payload — el problema **no** es el
+> parseo del `leadId`. El problema es `call.call_id`: en modo *args only* el
+> payload no trae el objeto `call`, y sin `call_id` se caen las dos cosas que
+> lo usan.
+>
+> 1. **La idempotencia.** Si el LLM del agente invoca `book` dos veces en la
+>    misma llamada —cosa que pasa cuando el prospecto reconfirma el horario—,
+>    se crean dos citas.
+> 2. **La coordinación con el webhook.** Al terminar la llamada, el webhook
+>    mira esa marca para saber que la cita ya existe y no crearla de nuevo.
+>    Sin ella, crea una segunda cita encima de la que ya había creado `book`.
+>
+> En los dos casos el resultado es **reuniones duplicadas en el calendario,
+> sin ningún error visible durante la llamada**: el agente confirma, saluda y
+> cuelga como si todo hubiera salido bien.
+
+**Señal de alerta.** Si después de una llamada donde el agente confirmó un
+horario la reunión **no aparece** en "Reuniones agendadas", o aparece
+**duplicada**, lo primero a revisar es este toggle.
+
+### Qué devuelve el endpoint y cómo lo usa el flow
+
+```
+{ "ok": true,  "message": "Quedó agendado para el ..." }
+{ "ok": false, "message": "<motivo en lenguaje natural>" }
+```
+
+El function node **no conversa**: ejecuta y sigue. El nodo que va inmediatamente
+después tiene que leer `message` y decirlo en voz alta. Los mensajes ya vienen
+redactados para eso —sin signos de apertura, sin nombrar la empresa y sin
+ningún dato interno—, así que se leen tal cual.
+
+Motivos posibles de `ok: false`:
+
+| Situación | Lo que el agente dice |
+|---|---|
+| La fecha no se entendió | «No entendí bien la fecha. Repetila, por favor.» |
+| La fecha ya pasó | «Esa fecha ya pasó. Necesito un día más adelante.» |
+| Más de 3 meses adelante | «Prefiero coordinar con menos anticipación…» |
+| El lead no se pudo identificar | «No pude identificar el registro para agendar. Lo anoto y lo derivo.» |
+| Error técnico al guardar | «Tuve un problema técnico agendando. Lo anoto y lo derivo.» |
+
+**Retell no reintenta custom functions.** Si `book` falla o da timeout, no hay
+segundo intento: la red de seguridad es el campo de extracción `agendo`, que
+registra la reunión igual al terminar la llamada.
+
+---
+
+## Webhook
+
+| Campo | Valor |
+|---|---|
+| URL | `https://scm-setting.up.railway.app/api/retell/webhook` |
+| Eventos a suscribir | `call_ended` **y** `call_analyzed` |
+| Secret de firma | el valor de la env var `RETELL_WEBHOOK_SECRET` de Railway |
+
+**Los dos eventos, no uno.** `call_analyzed` puede no llegar nunca cuando la
+llamada no conectó; `call_ended` siempre llega. El backend sabe esperar el
+análisis cuando la llamada conectó de verdad, y resolver sola la que no.
+
+**Nota operativa.** Si la firma no coincide, el endpoint responde `401` y **la
+llamada no aparece en la biblioteca de Entrenamiento IA**. Ese es exactamente
+el síntoma a mirar en la llamada de prueba: si el transcript no está en la
+biblioteca, el problema es el secret del webhook, no el agente.
+
+---
+
+## Qué resultado queda en el SCM según cómo terminó la llamada
+
+Retell informa cómo terminó cada llamada en `disconnection_reason`. El backend
+lo traduce al mismo vocabulario de resultados que usan las SDRs humanas.
+
+| `disconnection_reason` de Retell | Resultado en el SCM | Qué le pasa al lead |
+|---|---|---|
+| `voicemail_reached`, `ivr_reached` | **buzón** | Vuelve a la cola; la cadencia lo reintenta. |
+| `dial_no_answer`, `dial_busy`, `dial_failed`, `invalid_destination`, `registered_call_timeout`, `sip_routing_error`, `marked_as_spam`, `scam_detected`, `concurrency_limit_reached`, `no_concurrency_fallback`, `no_valid_payment`, `telephony_provider_*`, `error_*` | **no atendió** | Igual que arriba: vuelve a la cola. |
+| `user_declined` | **me cortó** | Atendió y no quiso seguir. Sigue siendo re-llamable. |
+| `user_hangup`, `agent_hangup`, `inactivity`, `max_duration_reached`, `manual_stopped`, `call_take_over` | **lo decide la extracción** | Hubo conversación real: `agendo` → agendada · `callback_fecha_hora` → recontacto · `interes` → interesado / no interesado · si nada resuelve, decide el análisis del transcript por IA. |
+
+Dos lecturas operativas de esta tabla:
+
+1. **"buzón" y "no atendió" disparan la cadencia que ya existe** — y un
+   segundo no-contacto seguido **descarta el lead solo**. No hace falta
+   tocar nada: el agente hereda exactamente la misma política de reintentos
+   que las SDRs.
+2. **`marked_as_spam` es la señal dura de que el caller ID está quemado.** Si
+   aparece durante el piloto, el problema es el **número**, no el agente:
+   cambiar de caller ID antes de tocar una sola línea del prompt. La compuerta
+   del piloto lo usa como criterio explícito.
+
+---
+
 <!-- Parte B: la escribe el plan siguiente sobre este mismo archivo. -->
 
 ## Mapa del flow
