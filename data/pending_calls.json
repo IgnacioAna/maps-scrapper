@@ -41,20 +41,6 @@
       "reachedActive": true,
       "createdAt": "2026-07-29T22:51:37.579Z",
       "updatedAt": "2026-07-29T22:52:22.860Z"
-    },
-    {
-      "id": "pc_l_radiografiapanoramicalradiogra_573125370223_1785520549581",
-      "leadId": "l_radiografiapanoramicalradiogra_573125370223",
-      "leadName": "Radiografia panoramica l Radiografia dental l Centro radiologico en Bogotá l Radiologico Oral Sede 93",
-      "setterId": "setter_brenda_eguren",
-      "userId": "user_setter_1784395609222",
-      "startedAt": "2026-07-31T17:55:49.581Z",
-      "endedAt": "2026-07-31T17:56:36.742Z",
-      "durationSecs": 46,
-      "fromNumber": "+17864350620",
-      "reachedActive": true,
-      "createdAt": "2026-07-31T17:55:49.774Z",
-      "updatedAt": "2026-07-31T17:56:36.915Z"
     }
   ]
 }
