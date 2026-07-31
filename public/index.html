@@ -1247,6 +1247,12 @@
            Sin "controls" para no renderizar UI control bar (drena CPU).
            Off-screen (no display:none) para que browser procese autoplay normal. -->
       <audio id="telnyx-remote-audio" autoplay playsinline style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; pointer-events:none; opacity:0;"></audio>
+      <!-- Salida PROCESADA del audio del cliente (boost + limpieza, 2026-07-31).
+           El elemento de arriba conserva SIEMPRE el stream crudo (es el ground
+           truth de la grabación de Whisper y el consumidor que necesita Chromium)
+           pero queda muteado mientras el pipeline está activo; lo que se escucha
+           sale por acá. Si el pipeline falla, se desmutea el original. -->
+      <audio id="telnyx-remote-audio-out" autoplay playsinline style="position:absolute; left:-9999px; top:-9999px; width:1px; height:1px; pointer-events:none; opacity:0;"></audio>
 
       <!-- Phase 6: Backdrop oscuro mientras hay llamada activa (sin blur — caro en GPU) -->
       <div id="telnyx-call-backdrop" style="display:none; position:fixed; inset:0; background:rgba(8,9,12,0.82); z-index:9990;"></div>
@@ -1313,7 +1319,12 @@
               <span id="telnyx-call-status-dot" style="width:8px; height:8px; border-radius:50%; background:#FFB341; box-shadow:0 0 12px #FFB341; display:inline-block; animation:tlxPulse 1.4s ease-in-out infinite;"></span>
               <strong id="telnyx-call-status" style="font-size:12px; color:rgba(255,255,255,0.85); font-weight:500; letter-spacing:0.2px;">Conectando…</strong>
             </div>
-            <span id="telnyx-call-timer" style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; font-weight:600; color:var(--accent); letter-spacing:0.5px;">00:00</span>
+            <div style="display:flex; align-items:center; gap:9px;">
+              <!-- Calidad de línea medida con RTCPeerConnection.getStats (2026-07-31).
+                   Dice si el audio feo es la RED (pérdida/jitter) o el codec. -->
+              <span id="telnyx-line-quality" title="Calidad de la línea" style="display:none; font-size:10px; font-weight:600; letter-spacing:0.2px; padding:3px 8px; border-radius:20px; border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.75); background:rgba(255,255,255,0.05); cursor:help; white-space:nowrap;">Midiendo…</span>
+              <span id="telnyx-call-timer" style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; font-weight:600; color:var(--accent); letter-spacing:0.5px;">00:00</span>
+            </div>
           </div>
         </div>
 
@@ -1337,6 +1348,22 @@
 
           <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:6px;">Llamando desde</div>
           <div id="telnyx-call-from" style="font-size:12px; color:rgba(255,255,255,0.85); margin-bottom:16px; padding:9px 12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:9px; font-family:ui-monospace,'SF Mono',Menlo,monospace; letter-spacing:0.3px;">—</div>
+
+          <!-- Volumen del cliente (2026-07-31): amplifica EN VIVO el audio entrante.
+               El <audio> del browser tope en 1.0 y la línea telefónica llega muy
+               baja (medido: RMS 0.03-0.13), por eso hace falta Web Audio. -->
+          <div style="margin-bottom:14px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:9px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px;">
+              <span style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600;">Volumen del cliente</span>
+              <span id="telnyx-lead-gain-val" style="font-size:11px; font-weight:600; color:var(--accent); font-family:ui-monospace,'SF Mono',Menlo,monospace;">2.5×</span>
+            </div>
+            <input type="range" id="telnyx-lead-gain" min="1" max="6" step="0.5" value="2.5" style="width:100%; accent-color:var(--accent); cursor:pointer;">
+            <label style="display:flex; align-items:center; gap:7px; margin-top:8px; font-size:11px; color:rgba(255,255,255,0.7); cursor:pointer;">
+              <input type="checkbox" id="telnyx-lead-clean" checked style="accent-color:var(--accent); cursor:pointer;">
+              Limpiar audio (corta zumbido grave y realza la voz)
+            </label>
+            <div style="font-size:10px; color:rgba(255,255,255,0.38); margin-top:6px; line-height:1.4;">Con el volumen alto usá auriculares: por parlante el cliente se escucha a sí mismo.</div>
+          </div>
 
           <!-- Sprint 11: Nota rápida durante la llamada -->
           <div style="margin-bottom:10px;">
@@ -3506,7 +3533,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260728c"></script>
+  <script type="module" src="/app.js?v=20260731a"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>
