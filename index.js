@@ -16678,7 +16678,12 @@ app.post("/api/retell/webhook", async (req, res) => {
   if (eventsData.events.length > 1000) eventsData.events = eventsData.events.slice(-1000);
   saveRetellEvents(eventsData);
 
-  // [24-05] punto de inserción del procesamiento de la llamada (Task 2)
+  // [24-05]: procesamiento de la llamada — fire-and-forget (research §5.3:
+  // Retell corta a los 10s, el fallback LLM interno puede tardar 15). El
+  // `res` de abajo NO espera a que `_retellProcessCallEvent` termine.
+  _retellLastProcessPromise = _retellProcessCallEvent(eventType, call).catch((e) => {
+    console.error('[retell] error procesando el evento:', e?.message || e);
+  });
 
   res.status(200).json({ ok: true, event: eventType });
 });
@@ -16862,6 +16867,247 @@ Object.assign(globalThis.__voiceAgent, {
   _retellReasonIsNoConnection,
   _retellParseCallbackAt,
   _retellDecideOutcome,
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 24 plan 24-05, Task 2: pipeline que aplica la cascada — enganchado
+// en el marcador de POST /api/retell/webhook (arriba). Convierte un evento
+// call_ended/call_analyzed en exactamente la misma huella que deja una
+// llamada de SDR humana: entry de callLog con transcript, outcome canónico
+// aplicado con _applyCallOutcome (24-01), y los datos de la conversación en
+// su lugar (D-24-05/D-24-07/D-24-08).
+// ═══════════════════════════════════════════════════════════════════════
+
+// Guard de doble procesamiento en vuelo (T-24-05-02) — única defensa contra
+// un reintento de Retell que llega mientras el primer procesamiento todavía
+// no escribió el callLog. La idempotencia REAL por retellCallId corre DENTRO
+// del mutator, más abajo (regla #19 / research §5.3/§5.6).
+const _retellProcessing = new Set();
+
+// call_ended de una llamada que CONECTÓ (disconnection_reason no mapea a
+// no_answer/voicemail en la tabla de la Task 1) espera call_analyzed — que
+// puede no llegar nunca (research §2.3). Red de seguridad: a los 10 min sin
+// analyzed, se resuelve con lo que trajo call_ended (que ya trae el
+// transcript_object completo — solo falta call_analysis).
+const RETELL_AWAITING_ANALYSIS_TIMEOUT_MS = 10 * 60 * 1000;
+const _retellAwaitingAnalysis = new Map();
+
+async function _retellSweepAwaitingAnalysis(nowMs) {
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const due = [];
+  for (const [callId, info] of _retellAwaitingAnalysis) {
+    if (!info || !info.at || (now - info.at) >= RETELL_AWAITING_ANALYSIS_TIMEOUT_MS) due.push([callId, info]);
+  }
+  for (const [, info] of due) {
+    await _retellProcessCallEvent(info.event, info.call, { forceResolve: true }).catch((e) => {
+      console.error('[retell] error en la red de seguridad de call_ended sin análisis:', e?.message || e);
+    });
+  }
+}
+// El timer de fondo solo corre fuera de test — los tests invocan
+// _retellSweepAwaitingAnalysis directo vía globalThis.__voiceAgent, con un
+// reloj simulado (no hace falta esperar 5/10 minutos reales).
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(() => { _retellSweepAwaitingAnalysis(Date.now()).catch(() => {}); }, 5 * 60 * 1000);
+}
+
+// Promesa del último procesamiento disparado por el webhook — expuesta solo
+// para que los tests puedan awaitear el trabajo fire-and-forget (patrón
+// preferido por el plan sobre polling de setters.json).
+let _retellLastProcessPromise = Promise.resolve();
+
+async function _retellProcessCallEvent(event, call, opts) {
+  const forceResolve = !!(opts && opts.forceResolve);
+  const callId = call?.call_id || '';
+  if (!callId) {
+    console.warn(`[retell] evento "${event}" sin call_id — ignorado`);
+    return;
+  }
+  if (_retellProcessing.has(callId)) return;
+  _retellProcessing.add(callId);
+  try {
+    // a) Filtro de evento — call_started/transcript_updated/transfer_* ya
+    // quedaron persistidos por el shell de 24-04, acá se ignoran en silencio.
+    if (event !== 'call_ended' && event !== 'call_analyzed') return;
+
+    // c) Resolver el lead — 3 vías redundantes (research §2.5).
+    const leadId = call?.metadata?.leadId
+      || call?.retell_llm_dynamic_variables?.leadId
+      || _pendingRetellCalls.get(callId)?.leadId
+      || '';
+    if (!leadId) {
+      console.warn(`[retell] sin leadId resoluble para call_id=${callId} (event=${event})`);
+      return;
+    }
+
+    // d) ¿este evento resuelve la llamada, o hay que esperar call_analyzed?
+    let resolves = forceResolve || event === 'call_analyzed';
+    if (!resolves) {
+      // event === 'call_ended'
+      resolves = _retellReasonIsNoConnection(call?.disconnection_reason);
+      if (!resolves) {
+        _retellAwaitingAnalysis.set(callId, { event, call, at: Date.now() });
+        return;
+      }
+    }
+
+    // e) transcript + extracción + booked/pendingEntry.
+    const segments = _retellTranscriptToSegments(call);
+    const rawAnalysis = (call?.call_analysis && typeof call.call_analysis === 'object') ? call.call_analysis : {};
+    const extraction = (rawAnalysis.custom_analysis_data && typeof rawAnalysis.custom_analysis_data === 'object')
+      ? rawAnalysis.custom_analysis_data
+      : {};
+
+    _voiceCleanPendingBooked();
+    const pendingEntry = _pendingBooked.get(callId);
+    const booked = !!pendingEntry || extraction.agendo === true;
+
+    // f) decidir outcome — `booked` decide SOLO esto; `pendingEntry` decide
+    // SOLO el skip de creación de cita, en el mutator de abajo (D-24-05, "the
+    // blocker fix": las dos variables NUNCA se colapsan en una).
+    const decision = _retellDecideOutcome({ call, extraction, booked, segments });
+    let outcome = decision.outcome;
+    let outcomeSource = decision.source;
+    let aiSuggestedOutcome = '';
+    let aiSuggestedReason = '';
+    if (!outcome && segments.length) {
+      try {
+        const ai = await _autoDispositionLLM(segments);
+        if (ai && CALL_OUTCOMES.has(ai.outcome)) {
+          outcome = ai.outcome;
+          outcomeSource = 'llm';
+          aiSuggestedOutcome = ai.outcome;
+          aiSuggestedReason = ai.reason || '';
+        }
+      } catch (e) { /* best-effort — cae al último recurso de abajo */ }
+    }
+    if (!outcome) {
+      outcome = 'answered_not_interested';
+      outcomeSource = 'fallback';
+    }
+
+    // logEntry — espeja el shape del dialer humano (index.js ~10480-10515).
+    const nowIso = new Date().toISOString();
+    const endMs = Number.isFinite(call?.end_timestamp) ? call.end_timestamp : null;
+    const startMs = Number.isFinite(call?.start_timestamp) ? call.start_timestamp : null;
+    let durationSecs = 0;
+    if (Number.isFinite(call?.duration_ms)) durationSecs = Math.round(call.duration_ms / 1000);
+    else if (endMs != null && startMs != null) durationSecs = Math.round((endMs - startMs) / 1000);
+    durationSecs = Math.max(0, Math.min(3600, durationSecs));
+    const ts = endMs != null ? new Date(endMs).toISOString() : nowIso;
+    const costInfo = _estimateTelnyxCost(call?.to_number || '', durationSecs);
+
+    let notes = '';
+    const rawSummary = (typeof extraction.call_summary === 'string' && extraction.call_summary)
+      || (typeof rawAnalysis.call_summary === 'string' ? rawAnalysis.call_summary : '');
+    if (rawSummary && rawSummary.trim()) notes = rawSummary.trim().slice(0, 500);
+
+    let retellObjection = '';
+    if (!decision.cleanReason && typeof extraction.objecion_principal === 'string' && extraction.objecion_principal.trim()) {
+      retellObjection = extraction.objecion_principal.trim().slice(0, 300);
+    }
+
+    const logEntry = {
+      ts,
+      outcome,
+      by: '', // criterio #149 (D-24-07): vacío a propósito — _callSetterId cae a
+              // lead.assignedTo === VOICE_AGENT_SETTER_ID, sin inventar un user sintético.
+      notes,
+      channel: 'retell', // match exacto → fuera de Centralita (CALL METRICS CORE, D-24-07)
+      duration: durationSecs,
+      fromNumber: call?.from_number || '',
+      cost: costInfo.cost,
+      costCountry: costInfo.country,
+      costTariffKey: costInfo.tariffKey,
+      retellCallId: callId,
+      retellAgentId: call?.agent_id || '',
+      disconnectionReason: call?.disconnection_reason || '',
+      outcomeSource,
+      ...(retellObjection ? { retellObjection } : {}),
+      ...(aiSuggestedOutcome ? { aiSuggestedOutcome, aiSuggestedReason } : {}),
+      ...(segments.length ? { transcript: { segments, transcribedAt: nowIso, source: 'retell' } } : {}),
+    };
+
+    // g) escribir — TODO dentro de UN mutateSettersData: el chequeo de
+    // idempotencia y el push del logEntry ocurren en el MISMO mutator (regla
+    // #19 / research §5.3/§5.6) — si se separan, un reintento concurrente de
+    // Retell pasa los dos.
+    await mutateSettersData((fresh) => {
+      const lead = fresh.leads?.[leadId];
+      if (!lead) { console.warn(`[retell] lead inexistente al escribir: ${leadId}`); return; }
+      if (!Array.isArray(lead.callLog)) lead.callLog = [];
+      if (lead.callLog.some((e) => e.retellCallId === callId)) {
+        console.log(`[retell] call_id=${callId} ya procesado (idempotencia) — se ignora`);
+        return;
+      }
+      _applyCallOutcome(fresh, lead, logEntry, {
+        leadId,
+        outcome,
+        nowIso: ts,
+        callbackAt: decision.callbackAt || '',
+        scheduled: {},
+        cleanReason: decision.cleanReason || '',
+        doNotCall: false,
+        actorSetterId: VOICE_AGENT_SETTER_ID,
+        actorName: 'Agente IA',
+        // D-24-05 (§5.4 Opción A): SOLO deriva de la marca de /book
+        // (`pendingEntry`) — nunca de `booked`. Si /book ya creó la cita, se
+        // saltea la rama del switch para no duplicarla; si el agendamiento
+        // vino solo de extraction.agendo, pendingEntry es undefined → false →
+        // _applyCallOutcome crea la cita (camino de respaldo de D-24-05).
+        skipCalendarCreation: !!pendingEntry,
+      });
+
+      // D-24-05: extracción → notas/doctor/email, solo si no pisa datos ya
+      // cargados (misma política que el enrichment, nota #111).
+      if (typeof extraction.nota_seguimiento === 'string' && extraction.nota_seguimiento.trim()) {
+        if (!Array.isArray(lead.notes)) lead.notes = [];
+        lead.notes.push({
+          id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          text: extraction.nota_seguimiento.trim().slice(0, 500),
+          by: 'Agente IA',
+          date: nowIso,
+        });
+        if (lead.notes.length > 100) lead.notes = lead.notes.slice(-100);
+      }
+      if (typeof extraction.doctor_name === 'string' && extraction.doctor_name.trim() && !lead.doctor) {
+        lead.doctor = extraction.doctor_name.trim().slice(0, 200);
+      }
+      if (typeof extraction.recepcionista_nombre === 'string' && extraction.recepcionista_nombre.trim()) {
+        if (!Array.isArray(lead.notes)) lead.notes = [];
+        lead.notes.push({
+          id: `note_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          text: `Recepcionista: ${extraction.recepcionista_nombre.trim().slice(0, 200)}`,
+          by: 'Agente IA',
+          date: nowIso,
+        });
+        if (lead.notes.length > 100) lead.notes = lead.notes.slice(-100);
+      }
+      if (typeof extraction.email === 'string' && extraction.email.trim() && !lead.email) {
+        const candidate = extraction.email.trim().slice(0, 200);
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidate)) lead.email = candidate;
+      }
+    });
+
+    console.log(`[retell] procesado call_id=${callId} lead=${leadId} outcome=${outcome} source=${outcomeSource}`);
+  } finally {
+    _retellProcessing.delete(callId);
+  }
+
+  // h) limpieza — solo se llega acá tras una resolución real. Los `return`
+  // de arriba (evento ignorado, sin leadId, esperando call_analyzed) salen
+  // desde dentro del try/finally sin pasar por acá, así _retellAwaitingAnalysis
+  // conserva la entrada mientras la llamada sigue esperando el análisis.
+  _pendingBooked.delete(callId);
+  _pendingRetellCalls.delete(callId);
+  _retellAwaitingAnalysis.delete(callId);
+}
+
+Object.assign(globalThis.__voiceAgent, {
+  _retellProcessCallEvent,
+  _retellSweepAwaitingAnalysis,
+  _retellAwaitingAnalysis,
+  _retellGetLastProcessPromise: () => _retellLastProcessPromise,
 });
 
 // ── Call Scripts: banco de guiones para llamadas (value statement framework) ──
