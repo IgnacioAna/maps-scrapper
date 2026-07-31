@@ -7275,6 +7275,16 @@ function _buildUserSetterMap() {
   return m;
 }
 function _callSetterId(entry, lead, userMap) {
+  // 2026-07-31 (CR-01 del code review de Phase 24): atribución FIJA en la
+  // entry. Las llamadas de un agente automático pertenecen al pseudo-SDR que
+  // las hizo, no a quien tenga el lead hoy. Sin esto, reasignar a una SDR
+  // humana un lead ya trabajado por el agente (`pool-distribute` conserva el
+  // callLog a propósito) le acreditaría llamadas que nunca marcó — el mismo
+  // bug de atribución de #134/#139/#149, esta vez agente→humano.
+  // El chequeo por `channel` cubre entries escritas antes de que se empezara
+  // a estampar `setterId`.
+  if (entry.setterId) return entry.setterId;
+  if (entry.channel === 'retell') return VOICE_AGENT_SETTER_ID;
   // 2026-07-22: si la entry TIENE `by` pero ese user ya no existe (SDR
   // eliminado) o no tiene setter vinculado, la llamada queda SIN atribuir ('')
   // en vez de caer al dueño actual — el fallback hacía que Melissa (0 llamadas)
@@ -14511,8 +14521,24 @@ function _retellCallsTodayCount(data) {
 // leads como [{ id, lead }].
 function _retellSelectDispatchLeads(data, { country = '', count = 1, withDoctor = false, now = Date.now() } = {}) {
   const countryNeedle = String(country || '').trim().toLowerCase();
+
+  // CR-01/CR-02 del code review de Phase 24: excluir los leads que YA tienen
+  // una llamada del agente disparada y sin resolver. `_voiceDispatchInFlight`
+  // solo cubre dos requests solapados (segundos); la llamada en sí dura
+  // minutos, y hasta que el webhook no la resuelve el lead sigue con
+  // `callLog` vacío — o sea, ordena PRIMERO en la próxima selección. Sin este
+  // filtro, dos despachos seguidos vuelven a discar los mismos leads: doble
+  // gasto y la clínica atendiendo dos llamadas casi simultáneas del agente.
+  // Se lee el Map directo (en vez de recibirlo por parámetro) para que ningún
+  // call site futuro pueda saltearse el guard por olvido.
+  _voiceCleanPendingRetellCalls();
+  const inFlightLeadIds = new Set(
+    Array.from(_pendingRetellCalls.values()).map((v) => v && v.leadId).filter(Boolean)
+  );
+
   let entries = Object.entries(data.leads || {})
     .filter(([, l]) => l.assignedTo === VOICE_AGENT_SETTER_ID)
+    .filter(([id]) => !inFlightLeadIds.has(id))
     .filter(([, l]) => _leadIsCallableNow(l, now));
 
   if (countryNeedle) {
@@ -17010,8 +17036,10 @@ async function _retellProcessCallEvent(event, call, opts) {
     const logEntry = {
       ts,
       outcome,
-      by: '', // criterio #149 (D-24-07): vacío a propósito — _callSetterId cae a
-              // lead.assignedTo === VOICE_AGENT_SETTER_ID, sin inventar un user sintético.
+      by: '', // criterio #149 (D-24-07): vacío a propósito — no se inventa un
+              // user sintético para el agente.
+      setterId: VOICE_AGENT_SETTER_ID, // CR-01: atribución fija, inmune a que
+              // el lead se reasigne después a una SDR humana (_callSetterId).
       notes,
       channel: 'retell', // match exacto → fuera de Centralita (CALL METRICS CORE, D-24-07)
       duration: durationSecs,

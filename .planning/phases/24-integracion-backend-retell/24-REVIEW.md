@@ -17,7 +17,12 @@ findings:
   warning: 4
   info: 2
   total: 8
+critical_resolved: 2
 status: issues_found
+resolved_at: 2026-07-31
+resolution_note: >
+  CR-01 y CR-02 ARREGLADOS (ver "Resolución" abajo). Los 4 warnings y los 2
+  info siguen abiertos — no se tocaron.
 ---
 
 # Phase 24: Code Review Report — Integración backend Retell (Agente de voz)
@@ -169,3 +174,47 @@ o, más general, limpiar `cleanReason` en el pipeline (Task 2) si el `outcome` f
 _Reviewed: 2026-07-31_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+
+---
+
+## Resolución de los hallazgos Critical (2026-07-31)
+
+Los 2 Critical se arreglaron a pedido del user. Los 4 Warning y los 2 Info
+quedan abiertos.
+
+### CR-01 — resuelto
+
+`_callSetterId` (index.js) gana dos ramas ANTES del fallback a `assignedTo`:
+
+- `if (entry.setterId) return entry.setterId;` — atribución explícita estampada
+  en la entry.
+- `if (entry.channel === 'retell') return VOICE_AGENT_SETTER_ID;` — cubre las
+  entries escritas entre el deploy de la fase y este fix, que no llevan
+  `setterId`.
+
+El logEntry del webhook ahora estampa `setterId: VOICE_AGENT_SETTER_ID`. `by`
+sigue vacío a propósito (no se inventa un user sintético, criterio #149).
+
+Efecto: reasignar un lead del agente a una SDR humana ya no le transfiere las
+llamadas. La atribución humana de siempre (`by` → userMap) no cambió.
+
+### CR-02 — resuelto
+
+`_retellSelectDispatchLeads` llama a `_voiceCleanPendingRetellCalls()` y excluye
+los leads con una entrada activa en `_pendingRetellCalls`. El Map se lee directo
+dentro de la función (en vez de recibirlo por parámetro) para que ningún call
+site futuro pueda saltearse el guard por olvido.
+
+Efecto: dos despachos consecutivos, antes de que llegue el webhook del primero,
+ya no vuelven a discar los mismos leads.
+
+### Verificación
+
+- `tests/retell-critical-fixes.test.js` — 9 tests nuevos. **Verificado que
+  fallan sin el fix**: revirtiendo los dos cambios, 6 de los 9 se ponen en rojo
+  (los otros 3 son controles de comportamiento que no debía cambiar).
+- `tests/retell-dispatch.test.js` — se agregó un `beforeEach` que limpia
+  `_pendingRetellCalls`. Cada `it` es un escenario de despacho independiente y
+  el guard nuevo hacía que un test dejara sin cartera al siguiente. **Ninguna
+  aserción existente se modificó** (0 líneas con `expect` en el diff).
+- Suite completa: **1140/1140 en 75 archivos**.

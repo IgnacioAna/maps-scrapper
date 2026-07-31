@@ -15,7 +15,7 @@
 // se restaura en afterAll (ver Task 2, mismo espíritu que fetchImpl de
 // _telnyxNumberLookup, adaptado al contrato de un route handler).
 
-import { describe, it, beforeAll, afterAll, expect } from "vitest";
+import { describe, it, beforeAll, beforeEach, afterAll, expect } from "vitest";
 import path from "node:path";
 import fs from "node:fs";
 import os from "node:os";
@@ -218,8 +218,19 @@ beforeAll(async () => {
   globalThis.__voiceAgent._voiceDispatchFetch.impl = mockRetellFetch;
 });
 
+// 2026-07-31 (fix CR-02 del code review): un lead con una llamada disparada y
+// sin resolver queda FUERA de la selección hasta que el webhook la cierre. En
+// producción eso es lo correcto (evita el doble marcado), pero acá cada `it` es
+// un escenario de despacho independiente: sin este reset, el primer test que
+// hace un dispatch real deja los leads "en vuelo" y los siguientes se quedan sin
+// cartera. El guard en sí se prueba en tests/retell-critical-fixes.test.js.
+beforeEach(() => {
+  globalThis.__voiceAgent._pendingRetellCalls.clear();
+});
+
 afterAll(() => {
   globalThis.__voiceAgent._voiceDispatchFetch.impl = fetch;
+  globalThis.__voiceAgent._pendingRetellCalls.clear();
   try { fs.rmSync(tmpData, { recursive: true, force: true }); } catch {}
 });
 
