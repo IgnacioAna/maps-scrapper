@@ -140,6 +140,175 @@ elegido):
 
 ---
 
+## Variables dinámicas (las manda el dispatch del SCM)
+
+Son las 10 que el backend envía en cada llamada dentro de
+`retell_llm_dynamic_variables`. En el prompt de cualquier nodo se escriben
+con doble llave: `{{nombre}}`, `{{gancho}}`. Todas llegan como texto.
+
+| Variable | Ejemplo | De dónde sale | ¿Puede venir vacía? |
+|---|---|---|---|
+| `nombre` | `Clínica Dental Sonrisa` | nombre del negocio scrapeado | prácticamente nunca |
+| `ciudad` | `Guadalajara` | ciudad del lead | rara vez |
+| `pais` | `México` | país del lead | rara vez |
+| `reviews` | `184` | cantidad de reseñas de Google | **sí** |
+| `rating` | `4.7` | puntaje de Google | **sí** |
+| `years` | `12` | años activo (antigüedad estimada) | **sí** |
+| `doctor_name` | `Dr. Ramírez` | `lead.doctor`, si se conoce antes de llamar | **sí** |
+| `gancho` | `184 reseñas y 4.7, pero sin agenda online` | frase del brief IA, o el ángulo sugerido por las señales | **sí** |
+| `leadId` | `lead_1783…` | id interno; sirve para correlacionar la llamada | nunca |
+| `whatsapp` | `+52…` | número de retorno configurado en el panel | sí, si no se configuró |
+
+> ⚠️ **El gancho se llama `{{gancho}}`.** El diseño original lo nombraba
+> `openingAngle` / `hookPhrase`; **esos nombres no existen** en el dispatch.
+> Escritos en el prompt renderizan vacío y el agente dice una frase mocha sin
+> que nadie se entere.
+
+> ⚠️ **`{{doctor_name}}`, `{{reviews}}`, `{{years}}`, `{{rating}}` y
+> `{{gancho}}` pueden llegar vacías.** No todo lead tiene esos datos. Todo
+> prompt que las use necesita una salida natural cuando están vacías. Esta es
+> exactamente la razón por la que el flow tiene **dos** nodos de gatekeeper:
+> uno para cuando se sabe el nombre del doctor y otro para cuando no.
+
+> ⚠️ **`recepcionista_nombre` no es una variable del dispatch.** No se sabe
+> antes de llamar: se captura **durante** la llamada con un nodo `Extract DV`
+> (definido en la Parte B). Es un campo de extracción, no una variable de
+> entrada.
+
+---
+
+## Post Call Data Extraction (9 campos)
+
+Se cargan en Post Call Analysis. Retell soporta 4 tipos: `boolean`, `text`,
+`number` y `enum`. Regla no obvia del dashboard: **en un enum, la explicación
+va en `description` y la lista de `choices` lleva solo el valor**, sin
+explicación pegada.
+
+Los nombres tienen que coincidir **carácter por carácter** con los de abajo:
+el backend los lee por nombre. Un campo mal escrito no da error — el dato
+simplemente nunca llega al lead.
+
+### `atendio` — enum
+
+- **Choices:** `recepcion` · `doctor` · `buzon` · `nadie`
+- **Description:** «Quién atendió efectivamente la llamada: la recepción de la
+  clínica, el doctor o dueño directamente, un buzón de voz, o nadie.»
+- **Qué hace el backend:** nada que decida el resultado. El resultado ya lo
+  resuelve el `disconnection_reason` de la telefonía, que es más confiable que
+  una lectura del transcript. Este campo existe para **leer los transcripts
+  del piloto y saber dónde se cae el flow** (cuánto muere en recepción vs
+  cuánto llega al decisor). El único caso que el backend mira es
+  `atendio = false`, que con un enum nunca se produce.
+
+### `doctor_name` — text
+
+- **Description:** «Nombre del doctor, dueño o responsable de la clínica que se
+  haya mencionado durante la llamada, si apareció alguno. Solo el nombre.»
+- **Qué hace el backend:** rellena `lead.doctor` **solo si estaba vacío**.
+  Nunca pisa un nombre ya cargado.
+
+### `recepcionista_nombre` — text
+
+- **Description:** «Nombre de la persona de recepción que atendió, si lo dijo.»
+- **Qué hace el backend:** lo guarda como nota en el lead ("Recepcionista: X").
+  La próxima llamada la puede empezar nombrándola.
+
+### `interes` — enum
+
+- **Choices:** `si` · `tibio` · `no`
+- **Description:** «Nivel de interés real que mostró el prospecto en tener la
+  reunión: si aceptó o se mostró claramente interesado, si quedó tibio o
+  ambiguo, o si rechazó.»
+- **Qué hace el backend:** `si` → interesado. `no` → no interesado.
+- ⚠️ **`tibio` no lo resuelve el backend, y es a propósito.** No está en
+  ninguna de las dos listas, así que cae al análisis del transcript por IA,
+  que decide con más contexto. Un tibio no es un interesado ni un rechazo:
+  forzarlo a uno de los dos ensucia el funnel del piloto.
+
+### `objecion_principal` — text
+
+- **Description:** «La objeción principal que puso el prospecto. Si encaja
+  exactamente en una de estas etiquetas, devolvé la etiqueta sola, sin
+  explicación: `no_es_icp`, `no_es_decisor`, `ya_no_trabaja`,
+  `sin_presupuesto`, `ya_tiene_proveedor`, `cliente_actual`,
+  `mala_experiencia`, `no_contactar`, `ya_agendado`. Si no encaja en ninguna,
+  describila en una frase corta.»
+- **Qué hace el backend:** si el valor es **exactamente** una de esas 9
+  etiquetas, se guarda como razón estructurada de descarte (la misma que usan
+  las SDRs humanas, así entra en el reporte de razones de pérdida). Si es
+  texto libre, se guarda como objeción suelta en el historial de la llamada.
+
+> 🚨 **`no_contactar` es la única vía por la que el agente puede marcar un
+> lead como no-llamar.** Si el prospecto pide que no lo llamen más y este
+> campo sale como texto libre ("dijo que no lo llamemos", "pidió que lo saquen
+> de la lista"), **el lead NO queda en la lista de no-llamar y el sistema lo
+> va a volver a discar**. Es un problema de compliance, no de prolijidad: en
+> cold calling volver a llamar a alguien que pidió no ser llamado es
+> exactamente lo que las reglas de DNC prohíben.
+
+### `callback_fecha_hora` — text
+
+- **Description:** «Fecha y hora absolutas en las que pidió que lo vuelvan a
+  llamar, en formato ISO 8601 con zona horaria. Ejemplo:
+  `2026-08-14T10:00:00-06:00`. Si no dio un momento concreto, dejalo vacío.
+  Nunca devuelvas texto como "el martes" ni "la semana que viene".»
+- **Qué hace el backend:** parsea la fecha y, si es futura y está dentro de los
+  próximos 90 días, agenda el recontacto en esa fecha exacta.
+- ⚠️ Si el valor no es una fecha absoluta parseable, **se descarta en
+  silencio**: no hay error, no hay aviso, y el compromiso que el agente tomó
+  con el prospecto se pierde. De ahí que la `description` prohíba las fechas
+  relativas de forma explícita.
+
+### `email` — text
+
+- **Description:** «Dirección de email que dictó el prospecto durante la
+  llamada, si dictó alguna.»
+- **Qué hace el backend:** valida el formato y solo lo escribe si el lead no
+  tenía email cargado.
+
+### `agendo` — boolean
+
+- **Description:** «Verdadero solo si quedó una reunión confirmada con día y
+  hora concretos. Falso si quedó en "lo vemos", "mandame algo" o cualquier
+  cosa sin fecha.»
+- **Qué hace el backend:** `true` → la llamada cuenta como **reunión agendada**.
+- **Es la red de seguridad de la tool `book`.** Si la tool falló durante la
+  llamada, el sistema igual registra la reunión con este campo. Y si la tool
+  ya la creó, no se duplica: hay una marca por llamada que lo evita.
+
+### `nota_seguimiento` — text
+
+- **Description:** «En 2 o 3 frases: qué se habló y qué tiene que hacer la
+  persona que haga el seguimiento. Escribilo para que lo entienda alguien que
+  no escuchó la llamada.»
+- **Qué hace el backend:** entra como nota en el lead, firmada **"Agente IA"**.
+  Es lo que va a leer el humano que retome el contacto.
+
+### Un décimo campo que no se carga: `call_summary`
+
+Retell lo genera solo (built-in de Post Call Analysis, no hay que definirlo).
+El backend lo usa como el texto del resultado de la llamada en el historial,
+recortado a 500 caracteres.
+
+### Orden en que el backend decide el resultado
+
+No es "gana el último": hay una precedencia fija, y conviene conocerla para
+leer los transcripts del piloto sin sorpresas.
+
+1. Reunión creada por la tool `book`, o `agendo = true` → **agendada**.
+2. `disconnection_reason` con mapeo (buzón, IVR, no atendió, error de
+   telefonía) → ese resultado, **por encima de lo que diga la extracción**.
+3. `callback_fecha_hora` válido → **recontacto** en esa fecha.
+4. `interes` = `si` / `no` → interesado / no interesado.
+5. Nada de lo anterior → lo decide el análisis del transcript por IA.
+
+> **Nota final.** Retell **no completa estos campos en llamadas que nunca
+> conectaron**: llegan vacíos. No es un error ni un campo mal cargado — para
+> esas llamadas el resultado ya lo resuelve el `disconnection_reason`, que
+> está mapeado entero (tabla más abajo).
+
+---
+
 <!-- Parte B: la escribe el plan siguiente sobre este mismo archivo. -->
 
 ## Mapa del flow
