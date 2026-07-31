@@ -16678,9 +16678,190 @@ app.post("/api/retell/webhook", async (req, res) => {
   if (eventsData.events.length > 1000) eventsData.events = eventsData.events.slice(-1000);
   saveRetellEvents(eventsData);
 
-  // [24-05] punto de inserción del procesamiento de la llamada
+  // [24-05] punto de inserción del procesamiento de la llamada (Task 2)
 
   res.status(200).json({ ok: true, event: eventType });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 24 plan 24-05, Task 1: helpers puros — transcript, tabla de
+// disconnection, decisión de outcome. El pipeline que los consume
+// (_retellProcessCallEvent, enganchado en el marcador de arriba) es la
+// Task 2, en el bloque siguiente.
+// ═══════════════════════════════════════════════════════════════════════
+
+// D-24-05 (research §2.3/§6.2, unknown #2): tabla explícita, una entrada por
+// cada valor del catálogo de disconnection_reason (research §2.3 lo describe
+// como "32 valores" en prosa, pero el catálogo enumerado trae 34 strings
+// distintos — se mapean los 34 sin dejar ninguno afuera; documentado como
+// deviation en el SUMMARY, no una omisión). ASSUMED: propuesta razonada, NO
+// verificada contra llamadas reales — revisar con datos del piloto de
+// Phase 26 (el `disconnectionReason` crudo queda persistido en cada
+// logEntry para esa auditoría). `null` = la llamada CONECTÓ, el outcome lo
+// decide la extracción/LLM, no el motivo de corte.
+const RETELL_DISCONNECT_OUTCOME = {
+  // → voicemail: no habló un humano (buzón o IVR automatizado)
+  voicemail_reached: 'voicemail',
+  ivr_reached: 'voicemail',
+
+  // → no_answer: nunca conectó (dial/telefonía/routing) o falla técnica de
+  // Retell/LLM — tratarlas como no-contacto retentable (la cadencia
+  // MAX_NO_CONTACT=2 de _applyCallOutcome ya las descarta solas si se repiten).
+  dial_no_answer: 'no_answer',
+  dial_busy: 'no_answer',
+  dial_failed: 'no_answer',
+  invalid_destination: 'no_answer',
+  registered_call_timeout: 'no_answer',
+  telephony_provider_permission_denied: 'no_answer',
+  telephony_provider_unavailable: 'no_answer',
+  sip_routing_error: 'no_answer',
+  error_no_audio_received: 'no_answer',
+  error_user_not_joined: 'no_answer',
+  error_llm_websocket_open: 'no_answer',
+  error_llm_websocket_lost_connection: 'no_answer',
+  error_llm_websocket_runtime: 'no_answer',
+  error_llm_websocket_corrupt_payload: 'no_answer',
+  error_asr: 'no_answer',
+  error_retell: 'no_answer',
+  error_unknown: 'no_answer',
+  concurrency_limit_reached: 'no_answer',
+  no_concurrency_fallback: 'no_answer',
+  no_valid_payment: 'no_answer',
+  scam_detected: 'no_answer',
+  marked_as_spam: 'no_answer',
+
+  // → hung_up: declinó explícitamente (atendió y no quiso seguir)
+  user_declined: 'hung_up',
+
+  // → null: conectó, hubo llamada real — el outcome lo decide la extracción
+  user_hangup: null,
+  agent_hangup: null,
+  inactivity: null,
+  max_duration_reached: null,
+  call_transfer: null,
+  transfer_bridged: null,
+  transfer_cancelled: null,
+  manual_stopped: null,
+  call_take_over: null,
+};
+
+// D-24-08: transcript_object → shape Whisper ({speaker,start,end,text}).
+// research §2.4: NO hay start/end a nivel de turno — se derivan de
+// words[0].start / words[last].end (0 de fallback). role:'agent'→'setter',
+// cualquier otro ('user', y 'transfer_target' que no aplica en v1)→'lead'.
+// Si no hay transcript_object pero sí el string plano `transcript`, se
+// devuelve [] a propósito (mejor vacío que un parseo inventado del formato
+// humano-legible).
+function _retellTranscriptToSegments(call) {
+  const turns = call?.transcript_object;
+  if (!Array.isArray(turns)) {
+    if (call && typeof call.transcript === 'string' && call.transcript.trim()) {
+      console.warn('[retell] transcript_object ausente (solo transcript plano) — se omite, mejor vacío que inventado');
+    }
+    return [];
+  }
+  const out = [];
+  for (const u of turns) {
+    if (!u || typeof u !== 'object') continue;
+    const text = String(u.content || '').trim();
+    if (!text) continue;
+    const words = Array.isArray(u.words) ? u.words : [];
+    out.push({
+      speaker: u.role === 'agent' ? 'setter' : 'lead',
+      start: words[0]?.start ?? 0,
+      end: words[words.length - 1]?.end ?? 0,
+      text,
+    });
+  }
+  return out;
+}
+
+// Predicado: ¿este disconnection_reason significa "nunca conectó"? Decide si
+// call_ended puede resolver la llamada solo, sin esperar call_analyzed
+// (research §2.3 — call_analyzed puede no llegar nunca para estos casos).
+function _retellReasonIsNoConnection(reason) {
+  const mapped = RETELL_DISCONNECT_OUTCOME[reason];
+  return mapped === 'no_answer' || mapped === 'voicemail';
+}
+
+// callback_fecha_hora de la extracción → ISO. Mismo criterio de validación
+// que /book (24-04): futuro, ≤90 días (D-24-05). '' si no parsea, si es
+// pasado, o si supera el rango.
+function _retellParseCallbackAt(raw, nowMs) {
+  const str = String(raw == null ? '' : raw).trim();
+  if (!str) return '';
+  const ms = Date.parse(str);
+  if (!Number.isFinite(ms)) return '';
+  const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+  if (ms <= now) return '';
+  if (ms > now + 90 * 24 * 60 * 60 * 1000) return '';
+  return new Date(ms).toISOString();
+}
+
+const _RETELL_INTEREST_POSITIVE = new Set(['true', 'si', 'sí', 'yes', 'alto']);
+const _RETELL_INTEREST_NEGATIVE = new Set(['false', 'no', 'bajo']);
+
+// D-24-05: decide el outcome. `opts.booked` decide EXCLUSIVAMENTE esto —
+// nunca quién crea la cita (eso lo resuelve el pipeline de la Task 2 con
+// `pendingEntry`, una variable DISTINTA). Devuelve
+// { outcome, source, callbackAt, cleanReason }; outcome=null → hace falta
+// el fallback LLM (o, si tampoco resuelve, el último recurso).
+function _retellDecideOutcome({ call, extraction, booked, segments }) {
+  const ext = extraction || {};
+  let cleanReason = '';
+  if (typeof ext.objecion_principal === 'string' && DISQUALIFY_REASONS.has(ext.objecion_principal)) {
+    cleanReason = ext.objecion_principal;
+  }
+
+  // 1) booked === true (pendingEntry vigente en _pendingBooked, O
+  // extraction.agendo === true) → scheduled_with_admin. Quién CREA la cita
+  // (si hace falta) es una decisión aparte, tomada en la Task 2 con
+  // `pendingEntry` — nunca con esta variable `booked`.
+  if (booked === true) {
+    return { outcome: 'scheduled_with_admin', source: 'book', callbackAt: '', cleanReason };
+  }
+
+  // 2) disconnection_reason mapeado (no nulo) → ese outcome.
+  const reason = call?.disconnection_reason || '';
+  const hasMapping = Object.prototype.hasOwnProperty.call(RETELL_DISCONNECT_OUTCOME, reason);
+  if (reason && !hasMapping) {
+    console.warn(`[retell] disconnection_reason desconocido: "${reason}" — sin mapeo en RETELL_DISCONNECT_OUTCOME, se ignora (cae al resto de la decisión)`);
+  }
+  const mapped = hasMapping ? RETELL_DISCONNECT_OUTCOME[reason] : null;
+  if (mapped) {
+    return { outcome: mapped, source: 'disconnect', callbackAt: '', cleanReason };
+  }
+
+  // 3) callback_fecha_hora válido (futuro, ≤90 días) → callback_later.
+  const callbackAt = _retellParseCallbackAt(ext.callback_fecha_hora, Date.now());
+  if (callbackAt) {
+    return { outcome: 'callback_later', source: 'extraction', callbackAt, cleanReason };
+  }
+
+  // 4/5) interes afirmativo/negativo explícito de la extracción.
+  const interesRaw = String(ext.interes == null ? '' : ext.interes).trim().toLowerCase();
+  if (ext.interes === true || _RETELL_INTEREST_POSITIVE.has(interesRaw)) {
+    return { outcome: 'answered_interested', source: 'extraction', callbackAt: '', cleanReason };
+  }
+  if (ext.interes === false || _RETELL_INTEREST_NEGATIVE.has(interesRaw)) {
+    return { outcome: 'answered_not_interested', source: 'extraction', callbackAt: '', cleanReason };
+  }
+
+  // 6) atendio === false sin más datos → no_answer.
+  if (ext.atendio === false) {
+    return { outcome: 'no_answer', source: 'extraction', callbackAt: '', cleanReason };
+  }
+
+  // 7) nada de lo anterior → null, el pipeline decide si llama al LLM.
+  return { outcome: null, source: '', callbackAt: '', cleanReason };
+}
+
+Object.assign(globalThis.__voiceAgent, {
+  RETELL_DISCONNECT_OUTCOME,
+  _retellTranscriptToSegments,
+  _retellReasonIsNoConnection,
+  _retellParseCallbackAt,
+  _retellDecideOutcome,
 });
 
 // ── Call Scripts: banco de guiones para llamadas (value statement framework) ──
