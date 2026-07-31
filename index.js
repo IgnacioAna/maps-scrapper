@@ -18078,10 +18078,17 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
       'setterLvlMax', 'leadLvlMax', 'setterActivePct', 'leadActivePct',
       // 2026-07-25: ganancia aplicada al canal del cliente en la grabación
       // (boost frontend) — para interpretar los niveles medidos post-boost.
-      'leadBoost']) {
+      'leadBoost',
+      // 2026-07-31: calidad de la LÍNEA medida con RTCPeerConnection.getStats
+      // durante la llamada (peor ventana de 2s). netLossPct = paquetes perdidos,
+      // netJitterMs = jitter, netConcealPct = audio que el decoder tuvo que
+      // inventar (la causa del sonido "robótico"), netSamples = ventanas medidas,
+      // leadPlaybackGain = boost que el SDR tenía puesto para ESCUCHAR.
+      // Permite separar "Whisper falló" de "la línea vino rota" sin adivinar.
+      'netLossPct', 'netJitterMs', 'netConcealPct', 'netSamples', 'leadPlaybackGain']) {
       if (typeof recMeta[k] === 'number' && Number.isFinite(recMeta[k])) out[k] = recMeta[k];
     }
-    for (const k of ['setterRecError', 'leadRecError', 'v']) {
+    for (const k of ['setterRecError', 'leadRecError', 'v', 'netCodec']) {
       if (typeof recMeta[k] === 'string' && recMeta[k]) out[k] = recMeta[k].slice(0, 80);
     }
     return Object.keys(out).length ? out : null;

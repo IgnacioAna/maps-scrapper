@@ -2462,6 +2462,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 audioEl.volume = 1.0; audioEl.muted = false;
                 try { _audioCfg.applySpeaker(); } catch {} // salida elegida por el SDR (auriculares)
                 audioEl.play?.().catch(err => { console.warn('[telnyx] remote audio play() rejected:', err?.message); });
+                // Boost + limpieza del audio del cliente (2026-07-31). Si el
+                // pipeline engancha, mutea este elemento y el sonido sale por
+                // telnyx-remote-audio-out; si falla, este sigue sonando crudo.
+                try { _remoteAudio.attach(stream); } catch (e) { console.warn('[audio-in]', e?.message); }
+                try { _startLineStats(call); } catch {}
                 // Whisper: arranca la grabación si hace falta y re-conecta ambos
                 // canales al stream/track vigente (bug 2026-07-13/2026-07-21).
                 _syncCallRecording(call);
@@ -2589,13 +2594,169 @@ document.addEventListener('DOMContentLoaded', async () => {
       applySpeaker() {
         const a = this.get();
         if (!a.spkId) return;
-        ['telnyx-remote-audio', 'audio-test-playback'].forEach(id => {
+        ['telnyx-remote-audio', 'telnyx-remote-audio-out', 'audio-test-playback'].forEach(id => {
           const el = document.getElementById(id);
           if (el && typeof el.setSinkId === 'function') el.setSinkId(a.spkId).catch(() => {});
         });
       },
     };
     window._audioCfg = _audioCfg;
+
+    // ── Audio ENTRANTE: boost + limpieza de lo que escucha el SDR ──────────────
+    // (2026-07-31) Hasta acá TODO el tratamiento de audio era del lado del mic
+    // (lo que sale). Lo que ENTRA iba crudo al <audio>, cuyo volume tope es 1.0
+    // — no amplifica. La línea telefónica llega muy baja (medido en producción
+    // vía recMeta: RMS 0.03-0.13 en el canal del cliente) y encima con el ruido
+    // de banda angosta típico de PSTN, así que el SDR escucha bajo y sucio.
+    //
+    // Pipeline: track → highpass 170Hz (saca zumbido/rumble de línea)
+    //           → peaking 2.6kHz +4dB (banda de inteligibilidad de la voz)
+    //           → gain (1-6×, del slider) → compresor (evita saturar) → salida.
+    //
+    // El <audio> ORIGINAL nunca cambia de stream: conserva el crudo (es el ground
+    // truth de la grabación de Whisper — ver _syncCallRecording — y el consumidor
+    // que Chromium necesita para que Web Audio reciba un track remoto) y queda
+    // MUTEADO; lo audible sale por telnyx-remote-audio-out. Ante cualquier error
+    // se desmutea el original: nunca puede quedar el SDR sin escuchar.
+    const _remoteAudio = {
+      KEYS: { gain: 'scm_audio_leadGain', clean: 'scm_audio_leadClean' },
+      ctx: null, inlet: null, gainNode: null, dest: null,
+      bound: new Map(),   // track.id → {src, sink}
+      active: false,
+      failed: false,
+
+      getGain() {
+        const v = parseFloat(localStorage.getItem(this.KEYS.gain) || '2.5');
+        if (!(v >= 1)) return 2.5;
+        return Math.max(1, Math.min(6, v));
+      },
+      getClean() { return localStorage.getItem(this.KEYS.clean) !== '0'; },
+
+      // Aplicable en vivo: mover el slider durante la llamada se oye al instante.
+      setGain(v) {
+        const g = Math.max(1, Math.min(6, parseFloat(v) || 1));
+        localStorage.setItem(this.KEYS.gain, String(g));
+        if (this.gainNode && this.ctx) {
+          // Rampa corta: un salto brusco de ganancia hace "click" audible.
+          try { this.gainNode.gain.setTargetAtTime(g, this.ctx.currentTime, 0.05); }
+          catch { this.gainNode.gain.value = g; }
+        }
+        return g;
+      },
+      // La limpieza (filtros) se arma al construir la cadena: cambiarla en vivo
+      // rearma el pipeline con los tracks que ya estaban bindeados.
+      setClean(on) {
+        localStorage.setItem(this.KEYS.clean, on ? '1' : '0');
+        if (!this.active) return;
+        const streams = [...this.bound.values()].map(b => b.stream).filter(Boolean);
+        this.teardown();
+        streams.forEach(s => this.attach(s));
+      },
+
+      _ensure() {
+        if (this.ctx || this.failed) return this.active;
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          const outEl = document.getElementById('telnyx-remote-audio-out');
+          if (!Ctx || !outEl) return false;
+          this.ctx = new Ctx();
+          this.ctx.resume?.().catch(() => {});
+
+          let head = null, tail = null;
+          if (this.getClean()) {
+            const hp = this.ctx.createBiquadFilter();
+            hp.type = 'highpass'; hp.frequency.value = 170; hp.Q.value = 0.7;
+            const pk = this.ctx.createBiquadFilter();
+            pk.type = 'peaking'; pk.frequency.value = 2600; pk.Q.value = 1.1; pk.gain.value = 4;
+            hp.connect(pk);
+            head = hp; tail = pk;
+          }
+          this.gainNode = this.ctx.createGain();
+          this.gainNode.gain.value = this.getGain();
+          // Compresor + limitador. Los parámetros NO son a ojo: se midieron en el
+          // browser con una señal del nivel real de la línea (pico 0.05 ≈ el
+          // 0.03-0.13 RMS que reporta recMeta en producción).
+          //   · compresor -12/ratio 3 → la respuesta del slider queda PROPORCIONAL
+          //     (1×→0.093, 2.5×→0.234, 4×→0.374). Con -24/ratio 6 la curva se
+          //     aplastaba (3×→0.357, 6×→0.422): mover el slider no se oía.
+          //   · limitador -2/ratio 20 → techo duro. Sin él, un cliente que habla
+          //     fuerte (pico 0.35) con el slider al máximo daba 1.073 = CLIPPING,
+          //     o sea distorsión: justo el "sucio" que venimos a arreglar.
+          //     Con limitador, ese mismo peor caso queda en 0.937.
+          const comp = this.ctx.createDynamicsCompressor();
+          comp.threshold.value = -12; comp.knee.value = 8; comp.ratio.value = 3;
+          comp.attack.value = 0.005; comp.release.value = 0.15;
+          const lim = this.ctx.createDynamicsCompressor();
+          lim.threshold.value = -2; lim.knee.value = 0; lim.ratio.value = 20;
+          lim.attack.value = 0.001; lim.release.value = 0.06;
+          this.dest = this.ctx.createMediaStreamDestination();
+          if (tail) tail.connect(this.gainNode); else head = this.gainNode;
+          this.gainNode.connect(comp); comp.connect(lim); lim.connect(this.dest);
+          this.inlet = head;
+
+          outEl.srcObject = this.dest.stream;
+          outEl.volume = 1.0; outEl.muted = false;
+          try { _audioCfg.applySpeaker(); } catch {}
+          outEl.play?.().catch(err => console.warn('[audio-in] play() rejected:', err?.message));
+          this.active = true;
+          return true;
+        } catch (e) {
+          console.warn('[audio-in] pipeline falló, se escucha el audio crudo:', e?.message);
+          this.failed = true;
+          this._fallbackToRaw();
+          return false;
+        }
+      },
+
+      _fallbackToRaw() {
+        this.active = false;
+        const raw = document.getElementById('telnyx-remote-audio');
+        if (raw) { raw.muted = false; raw.volume = 1.0; raw.play?.().catch(() => {}); }
+      },
+
+      // Idempotente y por TRACK (mismo patrón que el mixer de grabación): el SDK
+      // puede swapear el stream/track cuando el carrier reemplaza el early-media.
+      attach(stream) {
+        // Guard: durante el ringing el <audio> crudo está muteado a propósito
+        // (para no pisar el tono sintético con el ringback del carrier). Recién
+        // procesamos cuando la llamada se comprometió al audio real.
+        if (!_telnyxCallState.enteredActive && !_telnyxCallState.committedRemote) return;
+        if (!stream || this.failed) return;
+        const tracks = stream.getAudioTracks?.() || [];
+        if (!tracks.length) return;
+        if (!this._ensure()) return;
+        for (const track of tracks) {
+          if (!track || track.readyState === 'ended') continue;
+          if (this.bound.has(track.id)) continue;
+          try {
+            const wrapper = new MediaStream([track]);
+            const src = this.ctx.createMediaStreamSource(wrapper);
+            src.connect(this.inlet);
+            this.bound.set(track.id, { src, stream });
+            this.ctx.resume?.().catch(() => {});
+            console.log('[audio-in] track procesado (' + this.bound.size + ' en total), gain ' + this.getGain() + '×');
+          } catch (e) {
+            console.warn('[audio-in] bind falló:', e?.message);
+          }
+        }
+        // Con el pipeline sonando, el crudo se mutea para no escuchar doble.
+        if (this.bound.size > 0) {
+          const raw = document.getElementById('telnyx-remote-audio');
+          if (raw) raw.muted = true;
+        }
+      },
+
+      teardown() {
+        for (const b of this.bound.values()) { try { b.src.disconnect(); } catch {} }
+        this.bound.clear();
+        const outEl = document.getElementById('telnyx-remote-audio-out');
+        if (outEl) { try { outEl.srcObject = null; } catch {} }
+        if (this.ctx) { try { this.ctx.close(); } catch {} }
+        this.ctx = null; this.inlet = null; this.gainNode = null; this.dest = null;
+        this.active = false; this.failed = false;
+      },
+    };
+    window._remoteAudio = _remoteAudio;
 
     // Enumera dispositivos. Pide permiso primero (sin permiso las labels vienen
     // vacías). Devuelve {mics, spks, denied}.
@@ -7738,6 +7899,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       _recBindChannel('setter', localStream);
       _recBindChannel('lead', remoteStream);
       _recBindChannel('lead', playingStream);
+      // Mismo motivo que la grabación: el carrier puede swapear el track del
+      // cliente a mitad de llamada y el pipeline de escucha quedaría en silencio.
+      // attach() es idempotente y no hace nada mientras la llamada esté en ringing.
+      try {
+        _remoteAudio.attach(remoteStream);
+        _remoteAudio.attach(playingStream);
+      } catch {}
     }
 
     function _startCallRecording() {
@@ -7874,7 +8042,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       _leadChunks = [];
       // Debug de la grabación (binds por canal, errores del recorder, bytes):
       // viaja con el transcribe y queda persistido para diagnosticar canales mudos.
-      const recMeta = _recMeta ? { ..._recMeta, setterBytes: setterBlob?.size || 0, leadBytes: leadBlob?.size || 0 } : null;
+      // Se le suman las métricas de RED de la llamada (2026-07-31): pérdida,
+      // jitter, ocultamiento y codec. Con esto, ante un transcript malo o una
+      // queja de audio se sabe si la línea venía rota SIN depender del recuerdo
+      // de quien llamó.
+      const recMeta = _recMeta
+        ? { ..._recMeta, setterBytes: setterBlob?.size || 0, leadBytes: leadBlob?.size || 0,
+            leadPlaybackGain: _remoteAudio.active ? _remoteAudio.getGain() : null,
+            ...(_lineStatsSummary() || {}) }
+        : null;
       _recMeta = null;
       // Si no hay audio o llamada muy corta, no guardar nada
       const totalBytes = (setterBlob?.size || 0) + (leadBlob?.size || 0);
@@ -8061,6 +8237,108 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.warn('[voicewatch] failed:', e.message); }
     }
 
+    // ── Calidad de la línea: RTCPeerConnection.getStats ────────────────────────
+    // (2026-07-31) Hasta acá el audio "robótico/entrecortado" se diagnosticaba a
+    // ojo. Esto lo MIDE: cada 2s lee el inbound-rtp de audio y calcula, sobre el
+    // delta contra la muestra anterior, pérdida de paquetes, jitter y ocultamiento
+    // (concealment = muestras que el decoder tuvo que inventar porque no llegaron;
+    // es la causa directa del sonido robótico). También reporta el codec real.
+    // Fail-safe total: si el SDK no expone el peer connection, no pasa nada.
+    let _lineStats = null;
+    function _findPeerConnection(call) {
+      const cands = [
+        call?.peer?.instance, call?.peer?.peer, call?.peer?.pc,
+        call?.rtcPeerConnection, call?.peer, call?.pc,
+      ];
+      for (const c of cands) {
+        if (c && typeof c.getStats === 'function') return c;
+      }
+      return null;
+    }
+    function _stopLineStats() {
+      if (!_lineStats) return;
+      try { clearInterval(_lineStats.interval); } catch {}
+      _lineStats.interval = null;
+    }
+    function _lineStatsSummary() {
+      if (!_lineStats || !_lineStats.samples) return null;
+      const s = _lineStats;
+      return {
+        netCodec: s.codec || null,
+        netLossPct: s.worstLoss != null ? Math.round(s.worstLoss * 10) / 10 : null,
+        netJitterMs: s.worstJitter != null ? Math.round(s.worstJitter) : null,
+        netConcealPct: s.worstConceal != null ? Math.round(s.worstConceal * 10) / 10 : null,
+        netSamples: s.samples,
+      };
+    }
+    function _startLineStats(call) {
+      _stopLineStats();
+      const pc = _findPeerConnection(call);
+      if (!pc) { console.warn('[line] no se pudo acceder al peer connection — sin métricas de calidad'); return; }
+      _lineStats = {
+        interval: null, prev: null, samples: 0, codec: null,
+        worstLoss: null, worstJitter: null, worstConceal: null,
+      };
+      const chip = () => document.getElementById('telnyx-line-quality');
+      const tick = async () => {
+        let report;
+        try { report = await pc.getStats(); } catch { return; }
+        let inbound = null;
+        report.forEach(r => {
+          if (r.type === 'inbound-rtp' && (r.kind === 'audio' || r.mediaType === 'audio')) inbound = r;
+        });
+        if (!inbound) return;
+        if (inbound.codecId) {
+          const c = report.get?.(inbound.codecId);
+          if (c?.mimeType) {
+            const hz = c.clockRate ? ' ' + Math.round(c.clockRate / 1000) + 'kHz' : '';
+            _lineStats.codec = String(c.mimeType).replace('audio/', '') + hz;
+          }
+        }
+        const cur = {
+          lost: inbound.packetsLost || 0,
+          recv: inbound.packetsReceived || 0,
+          jitter: (inbound.jitter || 0) * 1000, // s → ms
+          concealed: inbound.concealedSamples || 0,
+          total: inbound.totalSamplesReceived || 0,
+        };
+        const prev = _lineStats.prev;
+        _lineStats.prev = cur;
+        if (!prev) return; // la primera muestra solo fija la línea de base
+        const dRecv = cur.recv - prev.recv;
+        const dLost = Math.max(0, cur.lost - prev.lost);
+        const dTotal = cur.total - prev.total;
+        const dConceal = Math.max(0, cur.concealed - prev.concealed);
+        if (dRecv + dLost <= 0) return; // sin tráfico en la ventana: no puntuamos
+        const lossPct = (dLost / (dRecv + dLost)) * 100;
+        const concealPct = dTotal > 0 ? (dConceal / dTotal) * 100 : 0;
+        const jitterMs = cur.jitter;
+        _lineStats.samples++;
+        const worse = (a, b) => (a == null ? b : Math.max(a, b));
+        _lineStats.worstLoss = worse(_lineStats.worstLoss, lossPct);
+        _lineStats.worstJitter = worse(_lineStats.worstJitter, jitterMs);
+        _lineStats.worstConceal = worse(_lineStats.worstConceal, concealPct);
+
+        // Umbrales de telefonía: <2% pérdida y <30ms jitter es una línea sana;
+        // el ocultamiento es el que se OYE (por eso pesa aunque no haya pérdida).
+        let label, color, bg;
+        if (lossPct < 2 && jitterMs < 30 && concealPct < 4) { label = 'Línea buena'; color = '#5bb974'; bg = 'rgba(91,185,116,0.12)'; }
+        else if (lossPct < 6 && jitterMs < 60 && concealPct < 12) { label = 'Línea regular'; color = '#FFB341'; bg = 'rgba(255,179,65,0.12)'; }
+        else { label = 'Línea mala'; color = '#f85149'; bg = 'rgba(248,81,73,0.12)'; }
+        const el = chip();
+        if (el) {
+          el.style.display = '';
+          el.textContent = label;
+          el.style.color = color;
+          el.style.background = bg;
+          el.style.borderColor = color + '55';
+          el.title = `Codec ${_lineStats.codec || '—'} · pérdida ${lossPct.toFixed(1)}% · jitter ${jitterMs.toFixed(0)}ms · audio reconstruido ${concealPct.toFixed(1)}%`;
+        }
+      };
+      tick();
+      _lineStats.interval = setInterval(tick, 2000);
+    }
+
     // ── Clasificador voz-vs-tono para early-media ──────────────────────────────
     // Este carrier (+57) manda ringback, buzón y voz como early-media (estado 'early',
     // sin pasar a 'active'). Para distinguir "solo está sonando" de "atendió el buzón o
@@ -8111,6 +8389,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Liberar el pipeline de boost por software si se usó en esta llamada.
       if (_audioCfg._boostCleanup) { try { _audioCfg._boostCleanup(); } catch {} _audioCfg._boostCleanup = null; }
+      // Liberar el pipeline del audio ENTRANTE + frenar el medidor de línea.
+      try { _remoteAudio.teardown(); } catch {}
+      try { _stopLineStats(); } catch {}
+      const _lineChip = document.getElementById('telnyx-line-quality');
+      if (_lineChip) { _lineChip.style.display = 'none'; _lineChip.textContent = 'Midiendo…'; }
+      const _outEl = document.getElementById('telnyx-remote-audio-out');
+      if (_outEl) { try { _outEl.srcObject = null; } catch {} }
+      _telnyxCallState.committedRemote = false;
       _telnyxCallState.startedAt = 0;
       _telnyxCallState.answeredAt = 0;
       _telnyxCallState.enteredActive = false;
@@ -9028,6 +9314,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       } catch (e) { console.warn('[telnyx] mute toggle:', e); }
     });
+
+    // Volumen del cliente (2026-07-31): aplica EN VIVO sobre el GainNode, así el
+    // SDR corrige a mitad de llamada sin cortar. Se persiste por navegador.
+    (function _wireLeadGain() {
+      const slider = document.getElementById('telnyx-lead-gain');
+      const val = document.getElementById('telnyx-lead-gain-val');
+      const clean = document.getElementById('telnyx-lead-clean');
+      if (slider) {
+        slider.value = String(_remoteAudio.getGain());
+        if (val) val.textContent = _remoteAudio.getGain().toFixed(1) + '×';
+        slider.addEventListener('input', (e) => {
+          const g = _remoteAudio.setGain(e.target.value);
+          if (val) val.textContent = g.toFixed(1) + '×';
+        });
+      }
+      if (clean) {
+        clean.checked = _remoteAudio.getClean();
+        clean.addEventListener('change', (e) => _remoteAudio.setClean(e.target.checked));
+      }
+    })();
 
     // Phase 13: DTMF — toggle del pad + envío de tonos al call activo (IVRs/centrales).
     document.getElementById('telnyx-call-dtmf-toggle')?.addEventListener('click', () => {
