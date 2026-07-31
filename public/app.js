@@ -7906,6 +7906,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         _remoteAudio.attach(remoteStream);
         _remoteAudio.attach(playingStream);
       } catch {}
+      // El medidor de voz vive del analyser del mixer: arranca cuando el mixer ya
+      // existe. Idempotente.
+      try { if (_recChannels?.setter?.analyser) _startMicMonitor(); } catch {}
     }
 
     function _startCallRecording() {
@@ -8237,6 +8240,111 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (e) { console.warn('[voicewatch] failed:', e.message); }
     }
 
+    // ── Medidor del micrófono EN VIVO durante la llamada ───────────────────────
+    // (2026-07-31) Diagnóstico de 3 llamadas reales: los clientes decían "casi no
+    // se te escucha, estás lejos del micrófono" y el SDR no tenía forma de saberlo
+    // hasta escuchar la grabación después. Reusa el analyser del canal 'setter'
+    // del mixer de grabación = EXACTAMENTE la señal que se le envía al cliente
+    // (call.localStream), no una captura aparte del mic.
+    //
+    // Además detecta el caso PARLANTES: si mientras el cliente habla el mic sigue
+    // captando señal fuerte, es que su voz entra por el aire → el cancelador de
+    // eco del browser va a cortar la voz del SDR (los dos lados se degradan).
+    let _micMonitor = null;
+    function _stopMicMonitor() {
+      if (!_micMonitor) return;
+      try { clearInterval(_micMonitor.interval); } catch {}
+      _micMonitor = null;
+      const bar = document.getElementById('telnyx-mic-meter');
+      if (bar) bar.style.width = '0%';
+      const v = document.getElementById('telnyx-mic-verdict');
+      if (v) { v.textContent = '—'; v.style.color = 'rgba(255,255,255,0.5)'; }
+      // El aviso también se limpia acá (y no solo al cerrar el panel): si no,
+      // la próxima llamada arranca con la advertencia de la anterior.
+      const h = document.getElementById('telnyx-mic-hint');
+      if (h) { h.textContent = 'Hablá normal: la barra tiene que llegar a la zona verde.'; h.style.color = 'rgba(255,255,255,0.38)'; }
+      const dev = document.getElementById('telnyx-mic-device');
+      if (dev) dev.textContent = '';
+    }
+    function _startMicMonitor() {
+      if (_micMonitor) return;
+      const bar = document.getElementById('telnyx-mic-meter');
+      const verdict = document.getElementById('telnyx-mic-verdict');
+      const hint = document.getElementById('telnyx-mic-hint');
+      if (!bar) return;
+      const st = { interval: null, peak: 0, quiet: 0, spoke: 0, echoHits: 0 };
+      const setHint = (txt, color) => {
+        if (!hint) return;
+        hint.textContent = txt;
+        hint.style.color = color || 'rgba(255,255,255,0.38)';
+      };
+      // Qué micrófono está usando REALMENTE la llamada (label del track en uso,
+      // no lo configurado). Responde de una el caso "tengo auriculares puestos
+      // pero el browser está capturando el mic de la laptop".
+      const _showDevice = () => {
+        const el = document.getElementById('telnyx-mic-device');
+        if (!el) return;
+        const t = (_telnyx.activeCall?.localStream?.getAudioTracks?.() || [])[0];
+        const label = t?.label || '';
+        el.textContent = label ? 'Mic: ' + label : '';
+        el.title = label ? 'Micrófono que está usando esta llamada: ' + label : '';
+      };
+      _showDevice();
+      st.interval = setInterval(() => {
+        const chS = _recChannels?.setter, chL = _recChannels?.lead;
+        if (!chS?.analyser) return;
+        if (st.spoke % 25 === 0) _showDevice(); // el track puede aparecer tarde
+        const read = (ch) => {
+          const buf = new Float32Array(ch.analyser.fftSize);
+          ch.analyser.getFloatTimeDomainData(buf);
+          let s = 0, p = 0;
+          for (let i = 0; i < buf.length; i++) { s += buf[i] * buf[i]; p = Math.max(p, Math.abs(buf[i])); }
+          return { rms: Math.sqrt(s / buf.length), peak: p };
+        };
+        const me = read(chS);
+        // Decaimiento del pico: la barra baja suave en vez de parpadear.
+        st.peak = Math.max(me.peak, st.peak * 0.82);
+        const pct = Math.min(100, Math.round(Math.pow(st.peak, 0.6) * 130));
+        bar.style.width = pct + '%';
+        const saturando = st.peak > 0.95;
+        const bien = st.peak >= 0.18;
+        bar.style.background = saturando ? '#f85149' : bien ? '#5bb974' : '#FFB341';
+        if (verdict) {
+          verdict.textContent = saturando ? 'Saturando' : bien ? 'Bien' : (st.peak > 0.03 ? 'Baja' : 'Sin voz');
+          verdict.style.color = saturando ? '#f85149' : bien ? '#5bb974' : '#FFB341';
+        }
+        // Aviso de voz baja: solo tras hablar un rato flojo (no por un silencio).
+        if (st.peak > 0.03 && st.peak < 0.18) st.quiet++; else if (st.peak >= 0.18) { st.quiet = 0; st.spoke++; }
+        // Retorno del cliente por el micrófono: sostenido, ambos canales fuertes.
+        if (chL?.analyser) {
+          const lead = read(chL);
+          if (lead.rms > 0.06 && me.rms > 0.05) st.echoHits++; else st.echoHits = Math.max(0, st.echoHits - 1);
+        }
+        // Un solo lugar decide el mensaje, por prioridad y en CADA tick: si no,
+        // el aviso queda pegado cuando el problema ya se corrigió (bug detectado
+        // en la verificación: seguía diciendo "sale BAJA" con la voz ya sana).
+        if (st.echoHits > 18) {
+          setHint('La voz del cliente está entrando por tu micrófono: el cancelador de eco te va a cortar a vos. Bajá el volumen del cliente o revisá los auriculares.', '#f85149');
+        } else if (saturando) {
+          setHint('Tu voz satura: alejate un poco del micrófono.', '#f85149');
+        } else if (st.quiet > 25) {
+          setHint('Tu voz sale BAJA: acercate al micrófono, revisá que sea el mic correcto o subí el boost en el panel Audio.', '#FFB341');
+        } else {
+          setHint('Hablá normal: la barra tiene que llegar a la zona verde.');
+        }
+      }, 200);
+      _micMonitor = st;
+    }
+
+    // Diagnóstico en vivo (consola): permite arrancar el medidor con canales de
+    // prueba para verificar umbrales sin depender de una llamada real.
+    window.__audioDebug = {
+      startMic: _startMicMonitor, stopMic: _stopMicMonitor,
+      injectChannels: (ch) => { _recChannels = ch; },
+      channels: () => _recChannels,
+      micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
+    };
+
     // ── Calidad de la línea: RTCPeerConnection.getStats ────────────────────────
     // (2026-07-31) Hasta acá el audio "robótico/entrecortado" se diagnosticaba a
     // ojo. Esto lo MIDE: cada 2s lee el inbound-rtp de audio y calcula, sobre el
@@ -8392,6 +8500,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Liberar el pipeline del audio ENTRANTE + frenar el medidor de línea.
       try { _remoteAudio.teardown(); } catch {}
       try { _stopLineStats(); } catch {}
+      try { _stopMicMonitor(); } catch {}
+      const _micHint = document.getElementById('telnyx-mic-hint');
+      if (_micHint) { _micHint.textContent = 'Hablá normal: la barra tiene que llegar a la zona verde.'; _micHint.style.color = 'rgba(255,255,255,0.38)'; }
       const _lineChip = document.getElementById('telnyx-line-quality');
       if (_lineChip) { _lineChip.style.display = 'none'; _lineChip.textContent = 'Midiendo…'; }
       const _outEl = document.getElementById('telnyx-remote-audio-out');
