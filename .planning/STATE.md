@@ -1,3 +1,18 @@
+---
+gsd_state_version: 1.0
+milestone: v2.0
+milestone_name: — estado al switch
+status: executing
+last_updated: "2026-07-31T14:58:40.397Z"
+last_activity: 2026-07-31
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 0
+  percent: 0
+---
+
 # SCM — STATE
 
 > Estado vivo del proyecto. Actualización: 2026-08-01.
@@ -19,12 +34,14 @@ cada phase.
 
 - **Phase:** 24 — Integración backend Retell — **Not started**
 - **Plan:** —
-- **Status:** Roadmap y requirements definidos; phases con CONTEXT listo
+- **Status:** Ready to execute
   para planificar.
+
 - **Próximo paso:** `/gsd-plan-phase 24` (los 24/25/26/27-CONTEXT.md ya
   contienen las decisiones y referencias de código — no hace falta
   discuss-phase salvo que surjan dudas nuevas).
-- **Last activity:** 2026-08-01 — Milestone v3.0 iniciado (planificación
+
+- **Last activity:** 2026-07-31
   completa hecha en sesión remota; desarrollo arranca en instancia local).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
@@ -32,11 +49,14 @@ cada phase.
 - **21-07**: prueba en vivo del reporte diario por WhatsApp con el user
   (`autonomous: false`). Ver detalle operativo en el archivo de posición
   v2.0 más abajo (asar vigente, botón "Mandar ahora", recarga de tabs).
+
 - **UAT humano de Phase 20** (`20-HUMAN-UAT.md`): al aprobar →
   `/gsd-verify-work 20` → COMPLETE.
+
 - **Phases 22 (Coaching) y 23 (Alertas): DIFERIDAS a backlog** — detalle en
   `ROADMAP-v2.0-archived.md`; sus requirements COACH-01..06 / ALERT-01..03
   siguen en REQUIREMENTS.md marcados como diferidos. Retomar post-piloto.
+
 - **Pendiente del user (v2.0)**: cargar `RESEND_API_KEY` en Railway si
   quiere el mail semanal detallado (decisión previa: no urgente).
 
@@ -47,6 +67,7 @@ cada phase.
 - **Phase:** 21 — Reporte diario + canal WhatsApp — **EN EJECUCIÓN: 6/7
   planes ejecutados (olas 1, 2, 3 y 4 completas). Falta solo 21-07 (prueba en
   vivo con el user, `autonomous: false`).**
+
   - **21-04 EXECUTED (2026-07-26)** — el panel del canal. Commits `e808f4d`
     (`#cmd-daily-report-panel` en `view-command`, admin-only, arriba de todo:
     chip de estado, detalle grupo/último envío/cola/desktop, hint de setup,
@@ -69,6 +90,7 @@ cada phase.
     mismo método que el picker de 21-06). Detalle en `21-04-SUMMARY.md`.
     ⚠️ `status:'sent'` sigue sin ejercitarse contra WhatsApp real (necesita el
     `report:send-result` del desktop) y nada se vio en un browser de verdad.
+
   - **21-03 EXECUTED (2026-07-26)** — el automatismo encendido. Commits
     `560c295` (semanal mudado a **domingo 23:00** con ventana corrida a "la
     semana que TERMINA hoy" (D-13), `buildWeeklyReportTextShort` con el molde
@@ -90,6 +112,7 @@ cada phase.
     ⚠️ Ningún cron corrió con el reloj real (todo con `nowTs` inyectado) y el
     `status:'sent'` de "Mandar ahora" no se ejercitó end-to-end (necesita el
     `report:send-result` del desktop) — eso es 21-07.
+
   - **21-06 EXECUTED (2026-07-26)** — picker del grupo + repack v0.5.11.
     Commits `261765a` (`detectors.allChats()` = `unreadChats()` sin el filtro
     de badge, cap 40; overlay `#scm-report-group-picker` dentro de WhatsApp
@@ -118,6 +141,7 @@ cada phase.
     ⚠️ Sin verificar en vivo (queda para 21-07): pin en fila 0 (A1), `@g.us`
     en el `data-id` (A2) y si la sesión del login/WhatsApp sobrevive al
     cambio de carpeta de versión (A4).
+
   - **21-02 EXECUTED (2026-07-26)** — cola de envío al grupo. Commits
     `a0acab2` (esquema en `reports.json` + `mutateReportsState` + prune con
     cap que nunca descarta pendientes + expiración D-26 + `enqueueReportMessage`
@@ -135,6 +159,7 @@ cada phase.
     (incluye `consts`). Detalle y contrato de uso en `21-02-SUMMARY.md`.
     ⚠️ El evento nunca viajó por un socket real (gateway doble en los tests);
     lo verificado es que el payload cumple el contrato congelado de 21-05.
+
   - **21-01 EXECUTED (2026-07-26)** — builder del reporte diario + textos.
     Commits `a303114` (datos + helpers + `now` inyectable en
     `_ccResolveRange` + `leaveUntil`), `81142ab` (molde D-19 / línea de día /
@@ -144,6 +169,7 @@ cada phase.
     Judith/Teresa en la alerta, Dalia/Adela/Melissa en "Sin arrancar").
     Superficie para los planes siguientes: `globalThis.__dailyReport`.
     Detalle en `21-01-SUMMARY.md`.
+
   - **21-05 EXECUTED (2026-07-26)** — transporte a grupo en el desktop
     wa-multi. Commits `6614be4` (sendReportToGroup: fila fijada o búsqueda,
     verificación de header/JID ANTES de tipear, confirmación por burbujas
@@ -161,16 +187,19 @@ cada phase.
     Sin verificar en vivo (queda para 21-07): pin en fila 0 (A1), `@g.us`
     en `data-id` (A2), selectores de la caja de búsqueda (A3, nunca
     probados) y Shift+Enter en el composer.
+
   - Artefactos de planificación:
   `21-CONTEXT.md` (29 decisiones), `21-RESEARCH.md` (transporte wa-multi),
   `21-PATTERNS.md` (analogía por superficie), `21-UI-SPEC.md` (aprobado 6/6
   por gsd-ui-checker), `21-01..21-07-PLAN.md`.
+
   - **Verificación de planes: PASSED** (gsd-plan-checker, sin bloqueantes).
     Las 2 advertencias se corrigieron en los propios planes antes de cerrar:
     la nota de baches de D-05 ahora aplica a TODO envío y no solo al
     consolidado (21-02), y `send-now` avanza la cola en cada vuelta del
     polling buscando su propio item, con rama definida para "sigue pending"
     (21-03).
+
   - Cobertura: REP-04..REP-10 7/7 · decisiones D-01..D-29 29/29.
   - **Bloquea la prueba en vivo (plan 21-07, `autonomous: false`), NO la
     construcción:** el user tiene que (a) conseguir un número nuevo y
@@ -179,6 +208,7 @@ cada phase.
     v0.5.10!), escanear el QR, clickear el botón **"Grupo de reportes"** abajo
     a la izquierda de la ventana de WhatsApp, elegir el grupo y **fijarlo
     (pin)** — el pin es lo que hace que el envío sobreviva a un rename.
+
   - Los planes 21-01..21-06 se ejecutan y verifican HOY, sin número ni grupo.
 - **Phase 20:** Disposición obligatoria — 3/3 planes EXECUTED +
   verificados. **Preview checklist a-f: 6/6 PASS** (documentado en
@@ -188,11 +218,13 @@ cada phase.
   `20-REVIEW.md` (candidatos de hardening: stash de franja sin expiración
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
+
 - **Status:** VERIFICATION **human_needed 14/15** (`20-VERIFICATION.md`):
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
+
 - **Last activity:** 2026-07-26 — (1) Phase 20 ejecutada completa (waves 1-2,
   preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
   push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
@@ -229,16 +261,19 @@ cada phase.
 commit `3b48a20`, 14 commits de fix + repack `fffa455`). Suite **972/972**
 (27 tests nuevos; los 4 flaky de `wa-campaign-engine` también pasaron).
 Cache-buster → `app.js v=20260726b` (WR-15). Los 3 blockers eran:
+
 - **CR-01** el guard de alcanzabilidad confundía el desktop con una pestaña del
   panel (`isUserConnected` miraba el Map `presence`, que también se puebla con
   sockets de cookie desde `public/wa.js`) → con wa-multi cerrado decía "Desktop
   conectada" y quemaba `sendAttempts` hasta `failed`. **Fix:** `presence` guarda
   `desktopSockets` + `isDesktopConnected` (el `io.use` ya marcaba
   `source:'desktop'|'browser'`, solo no se persistía). Sin el helper NO se emite.
+
 - **CR-02** el picker guardaba el JID del chat ABIERTO, no del elegido → el grupo
   correcto quedaba con `jid-mismatch` permanente. **Fix:** el JID se manda solo si
   el header del chat abierto coincide con el nombre elegido; 2 `jid-mismatch`
   consecutivos des-fijan `groupJid` solos, + `PUT /config {groupJid:null}`.
+
 - **CR-03** el `queueId` se reusaba entre intentos y el desktop no respondía al
   dedupear → el grupo podía recibir el reporte DOS veces. **Fix:** correlación por
   intento (`<itemId>#<n>`), un `ok` tardío CIERRA el item, y el desktop recuerda
@@ -347,20 +382,26 @@ Contra HEAD `a9e4886`:
 - **Bug `now`** en `maybeRunWeeklyReportCron` confirmado (index.js:1861 y
   :1870 usan `now`; solo existe `nowTs` en :1857). `data/reports.json` no
   existe → nunca persistió un envío.
+
 - Sección WhatsApp del mail semanal mezcla acumulados históricos bajo
   encabezado "semana" (index.js:1821).
+
 - `/analyze` (index.js:13678) admin/supervisor-only, cachea en
   `call.mercuryAnalysis`, **cero tests**.
+
 - Hook post-transcripción para el auto-analyze: donde ya corre
   `_autoDispositionLLM` (index.js:14525).
+
 - Alertas de equipo se calculan (index.js:9772) pero solo pintan pantalla.
 - Patrón de cola a copiar: `scheduledMessagesTick` (index.js:5126) — el
   módulo NO se reusa (atado a leadId).
+
 - **Handler `followup:send-message` de wa-multi NO soporta grupos**: manda
   vía deeplink `web.whatsapp.com/send?phone=` (out/main/index.js:630,736
   del desktop). Plan B: repack con group-send (búsqueda por nombre +
   typing; `out/` ES el source, NUNCA `npm run build`). Plan C: 3 DMs
   individuales. Plan D: solo email.
+
 - `gsd-sdk` no está en PATH → commits/estado manuales con git.
 
 ---
@@ -371,11 +412,14 @@ Contra HEAD `a9e4886`:
   pendientes vs ambas); tratamiento de llamadas viejas sin marcar; cómo
   evitar disposiciones falsas; interacción con la ventana de 10 min del
   audio.
+
 - ~~**Phase 21**~~: RESUELTA en `21-CONTEXT.md` (2026-07-26, 29 decisiones).
   Expiración de diarios = 3 días. El molde quedó elegido con datos reales y
   se valida definitivamente en el celular con el primer envío real.
+
 - **Phase 22**: ¿las vendedoras ven su propio scorecard? (hoy
   admin/supervisor only — sin verlo es vigilancia, viéndolo es coaching).
+
 - **Phase 23**: quién de los 3 socios actúa ante cada tipo de alerta.
 - **Acciones del user pendientes (bloquean la prueba en vivo de la Phase 21,
   NO la construcción)**: (1) conseguir un número de WhatsApp NUEVO dedicado y
@@ -400,16 +444,21 @@ Contra HEAD `a9e4886`:
   excepción sin métricas en cero. Advertencia de alcance: NO ampliar a
   orquestador de agentes/Stripe/GHL antes de que 19–22 corran con datos
   reales.
+
 - 2026-07-12 — Phase 18 EXECUTED y verificada (commits 6b00175 backend,
   a196b76 tests 21/21, 53b7db7 frontend; suite completa 751/751;
   verificación en vivo: supervisor scoped ve solo sus 3 SDRs, 403 en
   financieros/pool/command, home = view-team).
+
 - 2026-07-12 — Phase 18 added: Supervisor restringido + panel de
   rendimiento SDR. `visibleSetterIds[]` en el user record.
+
 - 2026-06-10 — Phase 8 added: Anti-detección wa-multi (Proxy +
   Fingerprint por cuenta). DONE 2026-06-11, luego parkeada con el pivot.
+
 - 2026-06-10 — Phase 7 added: Motor de Campañas Drip WhatsApp. v2
   2026-06-12, luego parkeada con el pivot a llamadas.
+
 - 2026-05-21/22 — Phase 6 Telnyx Calls Foundation ejecutada y cerrada
   (~22h, 5 bugs del SDK resueltos). Base del call center actual.
 
@@ -433,72 +482,89 @@ Contra HEAD `a9e4886`:
   minutos son los del CORE (`totalDurationS`, solo llamadas atendidas) — el
   borrador de D-19 mostraba 23 min donde el CORE da 21 para el mismo día, y
   manda el CORE (regla #157).
+
 - **21-01:** `setter.leaveUntil` es campo propio (no se reusa `hidden`, que no
   vence); los setters `hidden` quedan fuera de TODAS las listas del reporte,
   incluida "Sin arrancar".
+
 - **21-01:** las discadas sin marcar (`pending_calls.json`) se muestran por
   nombre pero NUNCA suman a `dials` — una sola forma de contar llamadas.
+
 - **21-05:** los saltos de línea del reporte se tipean con **Shift+Enter**
   (`osShiftEnter`): un `\n` mandado como evento `char` en WhatsApp Web
   dispara el ENVÍO y habría partido el reporte en 6-8 mensajes sueltos. El
   mismo tratamiento se aplicó al tipeo de `sendMessageInWindowInner` (por
   ahí sale el fallback por DM); el camino de una sola línea quedó idéntico,
   así que los followups no cambian.
+
 - **21-05:** ante `jid-mismatch` en la fila fijada se prueba igual el
   fallback de búsqueda por nombre (el research §Q2 lo describe justo para
   "si el pin se rompe"). Nunca se tipea en un chat sin verificar.
+
 - **21-05:** el envío al grupo NO consume `DAILY_SEND_CAP` (80/día) — es un
   grupo propio, no outreach frío. `enqueueSend` sí se respeta.
+
 - **21-05:** `wa-multi/` está gitignored, así que los commits de tarea del
   desktop van `--allow-empty` con el detalle en el mensaje. No se forzó
   `git add -f`: meter el árbol del desktop (con binarios) contradice una
   decisión explícita del `.gitignore`.
+
 - **21-02:** los items terminales **MIGRAN** de `queue` a `history` (una sola
   copia por id) en vez de vivir en las dos listas como decía el plan: con el
   item duplicado, sellar `confessedAt` en una copia y no en la otra haría que
   la nota de baches (D-05) se repitiera en cada mensaje para siempre.
   `REPORT_QUEUE_CAP` quedó como guard contra crecimiento patológico (>200
   vivos), no como recorte normal — los pendientes nunca se descartan.
+
 - **21-02:** dos contadores por item: `attempts` (todas las vueltas, sube
   también con el desktop apagado) y `sendAttempts` (emisiones reales). El
   presupuesto `REPORT_MAX_ATTEMPTS` mira `sendAttempts`; si mirara `attempts`,
   20 minutos offline lo agotarían y el primer fallo real tras reconectar sería
   definitivo — justo el escenario principal de la fase.
+
 - **21-02:** los 2 writers de `reports.json` de Phase 19
   (`maybeRunWeeklyReportCron` y `POST /api/admin/weekly-report/send`) pasaron
   al mutex: tenían `await` entre load y save, y con el estado nuevo del archivo
   eso significaba pisar la cola entera mientras Resend respondía (regla #19).
+
 - **21-02:** `config.paused` ya se honra en el tick (el esquema lo declaraba y
   nadie lo leía). 21-04 solo cablea el interruptor de D-29.
+
 - **21-02:** `dailyState.lastDailyPeriodKey` / `weeklyState.lastWeeklyPeriodKey`
   existen en el esquema pero NADIE las escribe: el guard de D-28 se implementó
   escaneando `queue`+`history` por `kind`+`periodKey` (más fuerte, no depende de
   que el cron acierte el orden). Quedan para el bookkeeping de 21-03 si le sirven.
   → **21-03 las usa**: son el guard de entrada de los dos crons (más un gemelo
   en memoria, WR-03). El de `enqueueReportMessage` quedó como segunda línea.
+
 - **21-03:** `config.paused` pausa lo **AUTOMÁTICO**, no los manuales: el tick
   sigue emitiendo items `kind:'custom'`/`'dm'` con la pausa puesta. Si no, el
   botón "Mandar ahora" quedaba inutilizado justo en su caso de uso (probar el
   canal antes de reactivar, decisión 1 del `21-UI-SPEC`). Sin pendientes
   emitibles sigue devolviendo `reason:'pausado'`.
+
 - **21-03:** el período del semanal se consume **solo cuando el mail salió**. El
   corto al grupo se encola siempre (D-04) y su unicidad la garantiza el guard de
   `enqueueReportMessage`; así el mail conserva el reintento de Phase 19 sin que
   el grupo reciba dos mensajes del mismo período.
+
 - **21-03:** el encabezado del semanal corto comprime el mes cuando la semana no
   lo cruza (`*Semana 20–26/07*`), como el molde literal que el user validó, en
   vez del `DD/MM–DD/MM` que describía el texto del plan. Semana entera sin
   llamadas → una línea (`Equipo sin llamadas en la semana`), mismo criterio que
   D-11 en el diario.
+
 - **21-03:** `send-now` corta la espera en el acto si el motivo no se resuelve
   solo (`sin_grupo` / `desktop offline`); los casos ambiguos agotan el techo
   (`REPORT_SEND_NOW_WAIT_MS`, env, default 25s) y devuelven `queued/sending`.
   Ninguna rama puede responder sin `status`.
+
 - **21-03:** la ventana nueva del semanal rompió 8 tests (7 de
   `weekly-report` + A4 de `metrics-consistency`, que afirmaba la ventana vieja).
   Se movieron los **fixtures**, no la feature — y los del semanal pasaron a
   offsets NEGATIVOS desde `now` (`now - 60000`): con la ventana capada a `now`,
   una hora fija del día habría hecho el test flaky según la hora de la corrida.
+
 - **21-06:** antes de repackear se **diffeó** el `out/` de trabajo contra el
   archivo extraído del asar de v0.5.10 para confirmar el linaje. El preload
   tenía mtime del **Jun 10** (era v0.5.9) y v0.5.10 se armó el **Jun 12**: si
@@ -506,6 +572,7 @@ Contra HEAD `a9e4886`:
   borrado ese cambio en silencio. Resultado: preload = v0.5.10 + 130 líneas
   agregadas y **0 quitadas**; main = v0.5.10 + los 2 reemplazos documentados
   de 21-05. **Regla para repacks futuros: diffear primero, copiar después.**
+
 - **21-06:** un repack NO se verifica por grep de 2 strings. Se verifica por
   md5 de los archivos re-extraídos contra el `out/` de trabajo + `asar list`
   comparado contra el backup (13.546 entradas, mismo set) + aritmética de
@@ -513,39 +580,47 @@ Contra HEAD `a9e4886`:
   `EnableEmbeddedAsarIntegrityValidation` del exe está en **off**, así que un
   asar repackeado siempre boota en esta build (es lo que hizo funcionar los
   repacks de v0.5.9 y v0.5.10).
+
 - **21-06:** el picker no guarda nada del lado desktop (ni localStorage): la
   fuente de verdad del grupo es `reports.json` en el server y duplicarla
   crearía dos estados que pueden divergir. El overlay es un formulario de una
   sola vez, no un display de estado.
+
 - **21-06:** los criterios de aceptación que se medían con
   `git status --porcelain wa-multi/...` no sirven (carpeta gitignored): la
   prueba de que no se corrió `npm run build` se hace con **mtimes de todo
   `out/`** (2 de 8 archivos de hoy, 6 en Jun 1).
+
 - **21-04:** los botones de una tabla generada por JS NO llevan `onclick` con el
   nombre interpolado. Un valor de atributo se **decodifica como HTML antes de
   evaluarse como JS**: `escHtml("O'Brien")` → `O&#39;Brien` → el parser JS ve
   `'O'Brien'` y tira `SyntaxError` (botón muerto para esa fila, no XSS). El
   handler se cablea con `addEventListener` sobre el nodo — mismo motivo por el
   que `_teamRenderTable` ya pintaba el nombre con `textContent`.
+
 - **21-04:** las fechas tipo `'YYYY-MM-DD'` NO se comparan con `Date` en el
   frontend. `new Date('2026-07-26')` es medianoche **UTC** y contra la medianoche
   **local** el último día de una licencia se lee como vencido en AR (UTC-3) —
   panel y reporte diciendo cosas distintas de la misma persona. Se compara el
   string de día, inclusive, igual que `_reportOnLeave` del backend; el `DD/MM`
   del badge sale de `slice`.
+
 - **21-04:** si un estado de error pinta con `textContent` sobre un contenedor
   que tiene ids adentro, el pintado siguiente tiene que poder **reponer el
   esqueleto** (markup constante, sin interpolación) — si no, un 500 transitorio
   deja el bloque muerto hasta un F5 porque todos los `getElementById` devuelven
   `null` para siempre.
+
 - **21-04:** un interruptor booleano del panel se **revierte** si el server no
   confirmó el guardado. Un checkbox que dice "pausado" sobre un canal que sigue
   mandando es peor que no tener el checkbox.
+
 - **21-04:** cada `reason` que devuelve el backend merece su propio texto. El
   `queued` genérico ("la computadora está apagada") habría mentido en los 4
   casos nuevos de 21-03 (`sin_grupo`, `busy`, `sending`, `fallback_dm`) —
   incluido el peor: mandar a prender una computadora que ya está prendida
   mientras el mensaje se está tipeando.
+
 - **21-04:** sin browser ni jsdom en el entorno, la UI se verifica extrayendo el
   bloque REAL de `public/app.js` por marcadores de texto y corriéndolo contra un
   DOM stub (mismo método que el picker de 21-06). Verifica el código que se
