@@ -44,7 +44,7 @@ conversación conocido contra el baseline humano.
 | 26 | Agente en Retell + piloto | VOICE-08..09 | 24 (25 deseable) |
 | 27 | Banco de conocimiento unificado | VOICE-10 | — (paralelizable) |
 
-- [ ] **Phase 24: Integración backend Retell** — config, refactor cascada, dispatch, tool book, webhook, pseudo-SDR
+- [x] **Phase 24: Integración backend Retell** — config, refactor cascada, dispatch, tool book, webhook, pseudo-SDR
 - [ ] **Phase 25: Panel Agente de voz** — sección admin de config + lote + resultados
 - [ ] **Phase 26: Agente en Retell + piloto** — flow de 9 nodos cargable, setup trunk, prueba y lote MX
 - [ ] **Phase 27: Banco de conocimiento unificado** — oferta/objeciones en una fuente para agente + asistente + banco + entrenamiento
@@ -108,7 +108,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 24-05-PLAN.md — Procesamiento del webhook: transcript, outcome, cascada, extracción + tests end-to-end (VOICE-05, wave 5)
+- [x] 24-05-PLAN.md — Procesamiento del webhook: transcript, outcome, cascada, extracción + tests end-to-end (VOICE-05, wave 5)
 
 ### Phase 25: Panel Agente de voz
 

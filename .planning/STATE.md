@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T17:10:00.000Z"
+last_updated: "2026-07-31T17:35:00.000Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
   completed_phases: 4
   total_plans: 22
-  completed_plans: 19
-  percent: 17
+  completed_plans: 20
+  percent: 18
 ---
 
 # SCM — STATE
@@ -32,13 +32,17 @@ cada phase.
 
 ## Current Position
 
-Phase: 24 (integracion-backend-retell) — EXECUTING
-Plan: 24-04 EXECUTED (4/5) — próximo 24-05
+Phase: 24 (integracion-backend-retell) — COMPLETE (5/5 planes)
+Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-phase 25`)
 
-- **Phase:** 24 — Integración backend Retell — **En ejecución (4/5 planes)**
-- **Plan:** 24-04 EXECUTED (2026-07-31) — 24-05 pendiente (wave 5,
-  serializada, toca `index.js`).
-- **Status:** Executing Phase 24
+- **Phase:** 24 — Integración backend Retell — **COMPLETE (5/5 planes)**.
+  Los 3 planes previos ejecutaron config+refactor (24-01/24-02), dispatch
+  (24-03) y las 2 superficies públicas auth-only (24-04); este plan cierra
+  el circuito con el procesamiento real del webhook.
+- **Plan:** 24-05 EXECUTED (2026-07-31) — última wave de la fase.
+- **Status:** Phase 24 COMPLETE — siguiente paso es planificar Phase 25
+  (Panel Agente de voz, VOICE-07) o Phase 26/27 en paralelo (sin
+  dependencia entre sí salvo Phase 25→26 deseable).
 
 - **24-01 EXECUTED (2026-07-31)** — refactor `_applyCallOutcome` +
   hoisting de los helpers de costo Telnyx + test de paridad doble-vía.
@@ -125,12 +129,51 @@ Plan: 24-04 EXECUTED (4/5) — próximo 24-05
   — el procesamiento de la llamada (transcript/outcome/cascada) sigue en
   24-05. Detalle en `24-04-SUMMARY.md`.
 
-- **Próximo paso:** `/gsd:execute-phase 24` continúa con 24-05-PLAN.md
-  (procesamiento del webhook: transcript, outcome, cascada, extracción +
-  tests end-to-end, VOICE-05, wave 5 — última del phase).
+- **24-05 EXECUTED (2026-07-31)** — el procesamiento del webhook: cierra el
+  circuito completo de la fase. Commits `7eb9e61` (Task 1:
+  `RETELL_DISCONNECT_OUTCOME` — tabla de módulo con las 34 claves reales del
+  catálogo de `disconnection_reason` [el research/plan dicen "32" en prosa,
+  desfase documentado como deviation] → `voicemail`/`no_answer`/`hung_up`/
+  `null`, ASSUMED, a revisar con datos del piloto de Phase 26;
+  `_retellTranscriptToSegments` [D-24-08, deriva start/end de `words[]`];
+  `_retellReasonIsNoConnection`; `_retellParseCallbackAt` [futuro ≤90 días,
+  mismo criterio que `/book`]; `_retellDecideOutcome` [7 pasos ordenados,
+  `booked` decide SOLO el outcome]), `87b9775` (Task 2:
+  `_retellProcessCallEvent` enganchado en el marcador de 24-04, fire-and-forget
+  antes del `res.status(200)` [Retell corta a los 10s]; filtra evento,
+  resuelve `leadId` por 3 vías, decide si `call_ended` resuelve solo o espera
+  `call_analyzed` [con red de seguridad a los 10 min, timer solo fuera de
+  test]; arma el `logEntry` [transcript, costo, `by:''`→atribución,
+  `channel:'retell'`, `outcomeSource` auditable] y escribe TODO —idempotencia
+  por `retellCallId` + push + cascada de `_applyCallOutcome`— dentro de UN
+  `mutateSettersData`; persiste la extracción [nota/doctor/email/
+  recepcionista, solo si vacío]. **El blocker fix del plan-checker**:
+  `skipCalendarCreation: !!pendingEntry` deriva EXCLUSIVAMENTE de
+  `_pendingBooked`, nunca de `booked` — verificado por grep [`booked` nunca
+  dentro de las opts de `_applyCallOutcome`] y 2 tests dedicados), `fd38aee`
+  (Task 3: `tests/retell-webhook-process.test.js`, 27 tests — el gate del
+  success criterion 1 del ROADMAP [1 entry con transcript+cascada+nota+
+  atribución, visible en Entrenamiento IA y `cold-call-metrics`],
+  idempotencia [mismo evento 2x, y `call_ended`+`call_analyzed` tardío],
+  los 3 caminos de outcome, booking [con `/book` no duplica, sin `/book`
+  SÍ crea la cita — el test del blocker fix], extracción, robustez, y 6
+  unit tests puros de los helpers de Task 1). Suite completa **1131/1131**
+  verde (1104 + 27 nuevos). VOICE-05 completado — **Phase 24 CERRADA
+  (5/5 planes)**. Detalle en `24-05-SUMMARY.md`.
 
-- **Last activity:** 2026-07-31 — 24-04 ejecutado (executor secuencial,
-  working tree principal, sin worktree).
+- **Próximo paso:** Phase 24 completa. Siguiente: planificar Phase 25
+  (Panel Agente de voz, VOICE-07, `/gsd:plan-phase 25`) — o Phase 26/27 en
+  paralelo si el user prefiere adelantar el setup real de Retell / el banco
+  de conocimiento (ninguna de las dos depende de 25 salvo por comodidad
+  operativa).
+
+- **Last activity:** 2026-07-31 — 24-05 ejecutado (executor secuencial,
+  working tree principal, sin worktree). Phase 24 (Integración backend
+  Retell) queda COMPLETA: los 6 success criteria del ROADMAP verificados
+  (webhook produce la huella completa, suite verde sin cambios de números,
+  dispatch filtra por `_leadIsCallableNow`, auth de `/book`/webhook con los
+  401/503 esperados, atribución de `setter_agente_ia` sin código nuevo,
+  `retell_config.json` sobrevive redeploy).
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
 
@@ -867,13 +910,52 @@ Contra HEAD `a9e4886`:
   milestone no es compatible con ninguno de los 3 comandos de estado.
   Actualización 100% manual, mismo patrón que 24-02/24-03.
 
+- **24-05:** el catálogo de `disconnection_reason` enumerado literal en
+  `24-RESEARCH.md §2.3` y en `24-05-PLAN.md` trae 34 strings distintos,
+  verificado programáticamente (`node -e` contando el split por `·`) —
+  ambos documentos lo describen como "32 valores" en la prosa, un desfase
+  de conteo de la planificación, no una instrucción de recortar 2 valores
+  reales de la API. Se mapearon los 34 sin dejar ninguno afuera (dejar 2
+  fuera de la tabla los habría hecho caer silenciosamente al
+  `console.warn` de "desconocido" en producción). Documentado como
+  deviation en `24-05-SUMMARY.md`, con test dedicado que assertea el
+  conteo contra el catálogo copiado literal del research.
+
+- **24-05:** el acceptance criterion de grep sobre `skipCalendarCreation`
+  ("exactamente 2 líneas") no se cumple literalmente porque ya había 3
+  comentarios de 24-01/24-04 mencionando la palabra antes de este plan
+  (no se tocaron, no son responsabilidad de esta task). El chequeo que sí
+  importa — `grep skipCalendarCreation | grep -c booked` → `0`, ninguna
+  ocurrencia deriva de `booked` — se verificó y pasa, reforzado por los 2
+  tests de booking (con `/book` no duplica, sin `/book` sí crea la cita).
+
+- **24-05:** para mantener el patrón de un commit por Task pese a que
+  Task 1 y Task 2 insertan código en el MISMO bloque contiguo de
+  `index.js` (el marcador de 24-04 vive justo ahí), se aplicó primero
+  solo el contenido de Task 1 vía `Edit`, se commiteó, y recién después se
+  insertó el contenido de Task 2 encima con un segundo `Edit` — en vez de
+  escribir todo junto y tratar de partir el diff resultante en 2 commits
+  (que hubiera requerido reconstruir el patch a mano, con más riesgo de
+  error que simplemente aplicar los cambios en 2 pasadas separadas).
+
+- **24-05:** `_retellDecideOutcome` recibe `booked` ya resuelto por el
+  caller (`_retellProcessCallEvent`) en vez de leer `_pendingBooked`
+  directo — mantiene el helper de Task 1 puro y testeable sin I/O ni
+  estado de módulo; la única lectura real de `_pendingBooked` vive en el
+  pipeline de Task 2, junto a `pendingEntry` (la variable que sí decide
+  `skipCalendarCreation`).
+
 ---
 
-*Last updated: 2026-07-31 (24-04 ejecutado — las 2 superficies públicas del
-agente de voz: `POST /api/retell/tool/book` [auth por header estático,
-crea SOLO la cita, cero escritura de historial de llamadas] y
-`POST /api/retell/webhook` [shell firmado con HMAC-SHA256 verificado
-contra el source real de retell-sdk@5.53.0, 401/503 fail-closed, FIFO 1000
-sin transcript/grabación]. 34 tests nuevos, suite completa 1104/1104
-verde. VOICE-04/VOICE-05 (auth) completados — falta el procesamiento del
-webhook. Próximo: 24-05, última wave del phase).*
+*Last updated: 2026-07-31 (24-05 ejecutado — el procesamiento del webhook
+cierra el circuito completo de la Phase 24: `_retellProcessCallEvent`
+convierte un evento `call_ended`/`call_analyzed` en una entry de callLog
+indistinguible de una llamada humana [transcript de `words[]`, outcome
+canónico vía `_applyCallOutcome`, atribución a `setter_agente_ia`,
+idempotencia real por `retellCallId` dentro de UN `mutateSettersData`].
+El blocker fix del plan-checker verificado explícito: `skipCalendarCreation`
+deriva SOLO de `_pendingBooked`, nunca de `booked` — 2 tests dedicados
+prueban el camino de respaldo [`agendo:true` sin `/book` previo SÍ crea la
+cita]. 27 tests nuevos, suite completa 1131/1131 verde. VOICE-05 completado
+— **Phase 24 (Integración backend Retell) CERRADA, 5/5 planes**. Próximo:
+planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
