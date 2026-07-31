@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: — estado al switch
 status: executing
-last_updated: "2026-07-31T19:25:45.548Z"
+last_updated: "2026-07-31T23:10:00.000Z"
 last_activity: 2026-07-31
 progress:
   total_phases: 26
   completed_phases: 5
   total_plans: 28
-  completed_plans: 20
+  completed_plans: 22
   percent: 19
 ---
 
@@ -32,8 +32,29 @@ cada phase.
 
 ## Current Position
 
-Phase: 24 (integracion-backend-retell) — COMPLETE (5/5 planes)
-Plan: 24-05 EXECUTED — próximo: Phase 25 (Panel Agente de voz, `/gsd:plan-phase 25`)
+Phase: 26 (agente-retell-piloto) — EN CURSO (2/6 planes)
+Plan: 26-02 EXECUTED — próximo: **26-03** (setup del trunk Telnyx↔Retell,
+`autonomous: false` — lo ejecuta el user con acompañamiento).
+
+- **26-01 + 26-02 EXECUTED (2026-07-31)** — `docs/retell-agent-v1.md`
+  completo y cargable de punta a punta (1.134 líneas). Parte A: Global
+  Settings, global prompt, 10 variables dinámicas, 9 campos de Post Call
+  Data Extraction, tool `book`, webhook y tabla `disconnection_reason` →
+  resultado (todos los nombres leídos del código deployado, no del diseño).
+  Parte B: mapa del flow en modo Rigid, los 9 nodos con prompt textual +
+  transiciones tipadas + settings, 2 Global Nodes, tabla consolidada de 29
+  transiciones y checklist de carga de 10 pasos. Commits `b1022c6`,
+  `20b3915`, `5a83aba`, `081bd07`, `43338ac`, `0498140`, `96fdafc`,
+  `d1a3fbf`. VOICE-08 completado. Detalle en `26-01-SUMMARY.md` y
+  `26-02-SUMMARY.md`.
+  ⚠️ **Decisión abierta antes de publicar el agente**: la línea «Él ya
+  sabe» del guion oficial choca con la regla dura del global prompt (no
+  inventar contacto previo). En el documento quedó la variante neutra;
+  cambiarla implica cambiar también la regla global.
+
+- **Phases 24-25 previas:**
+  Phase 24 (integracion-backend-retell) COMPLETE (5/5 planes).
+  Phase 25 (Panel Agente de voz, VOICE-07) sin empezar — no bloquea a 26.
 
 - **Phase:** 25
   Los 3 planes previos ejecutaron config+refactor (24-01/24-02), dispatch
