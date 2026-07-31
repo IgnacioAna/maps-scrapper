@@ -578,14 +578,15 @@ recepción, hablar despacio de más suena a vendedor.
 **Variables que captura:** `recepcionista_nombre`, con un **`Extract DV`
 node** a la salida del nodo (si el nombre apareció).
 
-> ⚠️ **Decisión pendiente del user antes de publicar.** El guion oficial trae
-> la variante «`{{agent_name}}`. Él ya sabe.» como respuesta al "¿de parte?".
-> Funciona, pero **choca con la regla dura del global prompt** ("nunca
-> inventes que ya hablaste con alguien") y con la familiaridad fingida que el
-> diseño descartó a conciencia. Arriba quedó escrita la variante neutra, que
-> es la que el global prompt permite hoy. Si el user prefiere la original, hay
-> que cambiar las dos cosas juntas —el prompt del nodo y la regla del global
-> prompt— y no solo una.
+> ✅ **Decisión tomada (2026-07-31): va la variante neutra.** El guion oficial
+> traía «`{{agent_name}}`. Él ya sabe.» como respuesta al "¿de parte?", pero
+> choca con la regla dura del global prompt ("nunca inventes que ya hablaste
+> con alguien") y con la familiaridad fingida que el diseño descartó a
+> conciencia. Queda la línea neutra de arriba. **No reintroducir «Él ya sabe»
+> en una iteración futura sin cambiar también la regla del global prompt**: si
+> se cambia una sola de las dos, el agente queda con instrucciones
+> contradictorias y resuelve la contradicción solo, en vivo, frente a una
+> recepcionista.
 
 ### 3. `gk_sin_nombre` — opener de referidor
 

@@ -136,17 +136,20 @@ completed: 2026-07-31
 4. **Bloque "qué escuchar en la llamada de prueba"** agregado al final del
    checklist (5 síntomas → causa). No estaba pedido.
 
-## Decisión abierta que hay que cerrar antes de publicar
+## Decisión cerrada (2026-07-31)
 
 **La línea «Él ya sabe» del guion oficial** (respuesta al "¿de parte?" en
-`gk_con_nombre`) quedó marcada en el documento como decisión pendiente del
-user. Choca con dos cosas ya escritas: la regla dura del global prompt ("nunca
-inventes que ya hablaste con alguien") y la *familiaridad fingida* que el
-diseño del milestone descartó a conciencia. En el documento quedó escrita la
-**variante neutra** —«Es por la reactivación de pacientes de la clínica»— que
-es la que el global prompt permite hoy. Si el user prefiere la original, hay
-que cambiar **las dos cosas juntas**: el prompt del nodo y la regla del global
-prompt. Cambiar solo una deja al agente con instrucciones contradictorias.
+`gk_con_nombre`) se presentó al user como decisión abierta: chocaba con la
+regla dura del global prompt ("nunca inventes que ya hablaste con alguien") y
+con la *familiaridad fingida* que el diseño del milestone descartó a
+conciencia.
+
+**Resolución del user: va la variante neutra** —«Es por la reactivación de
+pacientes de la clínica»—, que es la que el global prompt permite. El
+documento quedó actualizado con la decisión y con el aviso de que
+reintroducir «Él ya sabe» en una iteración futura obliga a cambiar **también**
+la regla del global prompt: cambiar una sola de las dos deja al agente
+resolviendo la contradicción solo, en vivo, frente a una recepcionista.
 
 ## Notes for the next plan
 
