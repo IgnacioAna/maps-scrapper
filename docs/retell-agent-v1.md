@@ -57,9 +57,9 @@ opcional: si un campo no está acá, se deja en su default.
 |---|---|---|
 | Idioma | **`es-419`** | Español latinoamericano. El piloto es México — `es-ES` mete voseo peninsular y "vale/venga" en boca del agente. |
 | Modelo de LLM | **GPT 4.1** (~$0.045/min) | Las tres escaladas de objeción dependen de matices finos (coincidir, partir en opción múltiple, soltar con elegancia). **No arrancar con un modelo nano**: ahorra centavos y arruina el nodo que decide si hay reunión. |
-| Voz | _(pendiente — la elige 26-04 entre 3 candidatas escuchadas en vivo)_ | Formato a anotar: `Proveedor · Nombre de voz · costo/min`. La voz en español es el riesgo más alto de la fase y no se elige por nombre encontrado en la web: se escucha en el selector del dashboard. |
+| Voz | _(pendiente — se elige escuchando, ver el método abajo)_ | Formato a anotar: `Proveedor · Nombre de voz · costo/min`. La voz en español es el riesgo más alto de la fase y no se elige por nombre encontrado en la web: se escucha en el selector del dashboard. |
 | Nombre de la persona (`{{agent_name}}`) | _(pendiente — lo elige 26-04 **después** de escuchar la voz)_ | El nombre tiene que matchear la voz. Una voz grave con nombre de otra edad se nota en el primer segundo. |
-| Voice speed (global) | **0.95** | El slider real va de 0.5 a 2. Lento sin sonar arrastrado; el opener baja todavía más en su nodo. |
+| Voice speed (global) | **0.95** ⚠️ a testear | Ver el bloque de abajo: hay una tensión real entre nuestro método de venta y lo que recomienda la práctica de voice agents. |
 | Responsiveness (global) | **0.5** | Punto de partida. Es el campo que el diseño llamaba "Response Eagerness". Si el gatekeeper se siente robótico en la llamada de prueba, se sube **solo en esos nodos**, no acá. |
 | Interruption sensitivity (global) | **0.5** | Default sano. El opener lo baja a 0 en su propio nodo. |
 | **Voicemail Detection** | **ON · acción "Hang up"** | Coincide exacto con la decisión cerrada: detecta buzón → cuelga → el SCM registra `voicemail` y la cadencia reintenta. Determinístico (<30ms) y más confiable que intentar detectarlo por prompt. Corre solo los primeros 3 minutos. |
@@ -70,6 +70,100 @@ opcional: si un campo no está acá, se deja en su default.
 | Post call analysis | **Activado** | Es lo que llena los 9 campos de extracción que consume el webhook del SCM. Sin esto el agente llama pero no deja datos. |
 | Webhook URL | `https://scm-setting.up.railway.app/api/retell/webhook` | Detalle completo más abajo. |
 | Backchanneling | **ON, suave** | Los "ajá / claro" cortos mientras el otro habla sostienen la sensación de conversación. En "fuerte" pisa al prospecto y suena ansioso. |
+| **Agent Handbook → "professional + conversational"** | **ON** | Ver el bloque de abajo. Es lo que más mueve la aguja de realismo y no estaba en el diseño original. |
+| **Agent Handbook → natural filler words** | **ON** | Las muletillas ("bueno, dejame ver…") son lo que separa a una persona de un lector de guion. |
+| **Agent Handbook → empathy** | **medio, no alto** | El nivel alto está pensado para soporte y atención al cliente. En una llamada fría comercial, un agente demasiado empático suena falso. |
+| **Expressive Mode** | **evaluar al elegir la voz** | Ver el bloque de abajo. Solo lo soportan ~18 voces de plataforma. |
+
+### Cómo elegir la voz (método, no lista de nombres)
+
+El catálogo de voces de Retell **no es público**: solo se ve en el selector,
+con preview. Así que esto es un método, no una recomendación de nombres.
+
+**1. Los proveedores, por costo.** Retell Platform / OpenAI / Cartesia / Fish
+cuestan **$0.015/min**; **ElevenLabs cuesta $0.040/min** (+$0.025 sobre un
+costo base de ~$0.115 = entre 22% y 35% más caro por minuto). MiniMax no está
+en la tabla de precios pública. Empezar por el tier barato y subir solo si la
+diferencia se escucha de verdad.
+
+**2. La misma voz suena distinto según el modelo.** En ElevenLabs, cada voz
+tiene **V2 y V3**, y hay voces que suenan **mejor en V2**. Al audicionar una
+candidata, escucharla en las dos — no asumir que la última versión gana.
+
+**3. MiniMax merece una escucha.** En comparativas de practicantes, las voces
+de MiniMax aparecen entre las más realistas (la voz en español que suele
+citarse es *Alejandro*). Nuestro research no pudo confirmar su tier de precio:
+**verificarlo en el dashboard antes de elegirla**.
+
+**4. Qué escuchar, concretamente.** No "cuál suena más linda":
+- Que **no cante** las frases. El sonsonete de locutor mata la llamada fría.
+- Que el acento sea **neutro latino**. Una voz marcadamente argentina o
+  española llamando a Guadalajara agrega una pregunta que no querés contestar.
+- Que suene **lenta sin sonar arrastrada** (ver el bloque de velocidad abajo).
+- **Escuchar la misma frase 3 veces**, no una. La consistencia entre tomas es
+  lo que después se rompe en producción.
+
+> ⚠️ **Una técnica popular que NO nos sirve.** Circula el consejo de usar una
+> voz con acento marcado para que el interlocutor se concentre en entender el
+> acento en vez de en detectar si es una IA. Funciona **cuando el agente habla
+> inglés con acento extranjero**. Nuestro agente habla español a mexicanos: un
+> "acento español" ahí no es exótico, es local o es sospechoso. La técnica no
+> se traslada.
+
+### ⚠️ La velocidad: nuestro método dice lento, la práctica dice rápido
+
+Nuestro diseño fija **0.95 global y 0.9 en el opener**, y tiene su razón: el
+método de llamada fría pide tono lento, inflexión descendente, "como quien
+llama a un referido".
+
+La práctica de voice agents recomienda lo contrario, de forma consistente:
+**5-20% más rápido** (valores citados: 1.06, 1.1-1.2), con el argumento de que
+un agente que habla algo más rápido **se percibe más competente y más humano**,
+y que hablar lento es una de las cosas que delatan a una máquina.
+
+Las dos cosas pueden ser ciertas a la vez: el objetivo de ellos es *sonar
+humano en una llamada entrante*; el nuestro es *no sonar a vendedor en una
+llamada fría*. **No se resuelve leyendo — se resuelve escuchando.** Plan:
+arrancar en 0.95 como dice el diseño, y en la llamada de prueba escuchar la
+misma frase a 0.95 y a 1.05. Si a 0.95 suena arrastrado o "leído", subir.
+Anotar acá el valor final: _(pendiente)_
+
+Hay una tercera opción que puede ganarle a las dos: **"dynamically adjust
+based on user input"** — la velocidad se acomoda sola a la del prospecto. Es
+literalmente lo que nuestro global prompt pide con palabras ("adaptate al
+ritmo: apurado → directo, lento → calma"), pero resuelto por la plataforma en
+vez de por el modelo. **Probarlo.**
+
+### El Agent Handbook: arregla el texto, no la voz
+
+Es la mejora de realismo con mejor relación esfuerzo/resultado, y opera en una
+capa distinta de la voz:
+
+> **Se puede tener la voz más realista del mundo, pero si el texto que dice es
+> texto de IA, va a sonar a ChatGPT con parlante.**
+
+La opción **"professional + conversational"** activa un modelo chico de Retell
+entrenado con miles de llamadas telefónicas que **reescribe en tiempo real lo
+que el LLM produjo**, para que suene a persona hablando y no a texto leído.
+Cuesta ~900 tokens y suma ~50 ms de latencia — nada, contra lo que aporta.
+
+Esto convive con nuestro global prompt, no lo reemplaza: el prompt define
+**qué** dice y con qué reglas; el handbook define **cómo suena** al decirlo.
+
+### Expressive Mode
+
+Permite etiquetas de emoción (pausas, énfasis, respiración) sobre la voz.
+Limitaciones a tener en cuenta antes de apoyarse en él:
+
+- Solo lo soportan **~18 voces de plataforma** — condiciona la elección de voz.
+- Es **inconsistente**: la etiqueta se ejecuta siempre, pero la intensidad
+  varía entre llamadas.
+- **Rinde distinto según la voz.** Que funcione bien en una no garantiza nada
+  en otra.
+- ⚠️ **Nos pega directo en un punto:** las frases estáticas de un Conversation
+  Flow hay que **re-escucharlas varias veces**, no una. En nuestro caso, la
+  frase de espera de la tool (*"Déjeme confirmarlo, un segundo."*) es
+  exactamente eso.
 
 > ⚠️ **`{{agent_name}}` no es una variable dinámica de Retell.** El dispatch
 > del SCM manda 10 variables (tabla más abajo) y `agent_name` **no está entre
@@ -123,7 +217,8 @@ elegido):
 > - Nunca animado ni entusiasta. El tono es el de alguien que llama a un
 >   referido, no el de alguien que vende algo.
 > - Te adaptás al ritmo del otro: si está apurado, vas directo y corto; si es
->   pausado, bajás todavía más.
+>   pausado, bajás todavía más. Lo detectás por **lo que dice y qué tan corto
+>   contesta** — no por el tono de voz (ver la nota de abajo).
 > - Vocabulario fino: "responsable", "podrían estar", "suele pasar".
 > - En los cierres usás preguntas negativas: "¿estaría en contra de…?",
 >   "¿se opondría a…?", "¿sería completamente irreal…?".
@@ -137,6 +232,31 @@ elegido):
 > **Objeciones:** máximo 3 intentos por objeción. Al tercero, soltás con
 > elegancia y ofrecés retomar más adelante. Nunca discutís ni insistís una
 > cuarta vez.
+>
+> **Una pregunta por vez.** Nunca encadenes dos preguntas en el mismo turno.
+> La persona contesta solo la última y la primera se pierde.
+>
+> **Si no sabés algo, decilo.** "Eso no lo sé, lo confirmo y le aviso" es una
+> respuesta válida y creíble. Nunca inventes un dato, una cifra ni un nombre.
+>
+> **Nunca narres lo que hacés por dentro.** No digas que estás consultando un
+> sistema, guardando algo, ni usando una herramienta. Si necesitás un momento,
+> decí solo "un segundo" y seguí.
+
+### Lo que el agente NO puede percibir (y por qué el prompt está escrito así)
+
+Retell es un modelo **en cascada**: el audio del prospecto pasa por
+transcripción → el LLM lee **texto** → una voz sintetiza la respuesta. El
+modelo **nunca escucha el audio**.
+
+Consecuencia práctica: el agente **no sabe si el otro sonó molesto, apurado o
+interesado**. Solo ve palabras. Todo lo que el prompt le pide sobre "leer" al
+prospecto tiene que apoyarse en señales textuales —respuestas cortas, "estoy
+ocupado", interrupciones— y no en el tono, que no le llega.
+
+(Existen modelos *speech-to-speech* que sí perciben el tono, pero hoy no están
+en plataformas listas para producción con trunk propio. No es una opción para
+este piloto; sí algo a revisar en el futuro.)
 
 ### Mejora pendiente para la primera iteración: ejemplos multi-shot
 
