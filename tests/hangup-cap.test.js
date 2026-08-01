@@ -86,6 +86,54 @@ describe('tope de cortes ("Me cortó")', () => {
     expect(l3.estado).toBe('descartado');
   });
 
+  it('el backfill aplica el tope a los leads que YA lo superaban', async () => {
+    // El tope solo actúa al marcar un corte nuevo, así que los leads que venían
+    // acumulando cortes de antes seguían en la cola. Eso lo vio el user apenas
+    // se deployó: "aprieto el power dialer y me lleva de vuelta al mismo lead".
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    d.leads.viejo = {
+      num: 9, name: 'Viejo con cortes', phone: '+5215559999999', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callbackAt: new Date(Date.now() - 30 * 24 * 3600000).toISOString(), // vencido
+      callLog: [
+        { ts: new Date().toISOString(), outcome: 'no_answer' },
+        { ts: new Date().toISOString(), outcome: 'hung_up' },
+        { ts: new Date().toISOString(), outcome: 'hung_up' },
+        { ts: new Date().toISOString(), outcome: 'hung_up' },
+      ],
+    };
+    // Un lead con UN solo corte no debe tocarse.
+    d.leads.uno_solo = {
+      num: 10, name: 'Un solo corte', phone: '+5215558888888', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callLog: [{ ts: new Date().toISOString(), outcome: 'hung_up' }],
+    };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    const dry = await request(app).post('/api/admin/backfill-hangup-cap').set('Cookie', cookie).send({ dryRun: true });
+    expect(dry.body.matched).toBeGreaterThanOrEqual(1);
+    expect(dry.body.leads.some((l) => l.id === 'viejo')).toBe(true);
+    expect(dry.body.leads.some((l) => l.id === 'uno_solo')).toBe(false);
+    // La simulación no escribe.
+    const sinTocar = JSON.parse(fs.readFileSync(p, 'utf8'));
+    expect(sinTocar.leads.viejo.estado).toBe('sin_contactar');
+
+    const run = await request(app).post('/api/admin/backfill-hangup-cap').set('Cookie', cookie).send({});
+    expect(run.body.updated).toBeGreaterThanOrEqual(1);
+    const after = JSON.parse(fs.readFileSync(p, 'utf8'));
+    expect(after.leads.viejo.estado).toBe('descartado');
+    expect(after.leads.viejo.autoDiscardReason).toBe('cortes_2x');
+    expect(after.leads.viejo.callbackAt).toBe('');   // limpia el callback vencido
+    expect(after.leads.viejo.callLog.length).toBe(4); // no toca el historial
+    expect(after.leads.viejo.interes).toBeFalsy();    // cortar no es "no interesado"
+    expect(after.leads.uno_solo.estado).toBe('sin_contactar');
+
+    // Idempotente: correrlo de nuevo no encuentra nada.
+    const otra = await request(app).post('/api/admin/backfill-hangup-cap').set('Cookie', cookie).send({});
+    expect(otra.body.updated).toBe(0);
+  });
+
   it('el callback manual NO se puede colgar de un corte: "me cortó" siempre cuenta', async () => {
     // Comportamiento real del endpoint (verificado en index.js:10501): callbackAt
     // solo se aplica en el outcome 'callback_later'. Si el prospecto pidió que lo

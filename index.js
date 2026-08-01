@@ -4008,6 +4008,46 @@ app.post('/api/admin/backfill-websites', requireAuth, requireRole('admin'), (req
 // signals[]/reputationTier/ratingNum/hasWebsite/openingAngle de cada lead desde
 // rating/reviews/web/instagram (datos YA scrapeados). Idempotente; no toca el
 // estado operativo ni los datos de scraping. dryRun reporta sin escribir.
+// Aplica el tope de cortes a los leads que YA lo superaban (2026-07-31).
+// El tope en _applyCallOutcome solo actúa al marcar un corte NUEVO, así que los
+// leads que venían acumulando cortes de antes seguían en la cola — el user lo vio
+// enseguida: "aprieto el power dialer y me lleva de vuelta al mismo lead que ya
+// pasé 500 veces". Idempotente: los que ya están descartados no se tocan.
+// Body: { dryRun?: true, maxHungUp?: 2 }
+app.post('/api/admin/backfill-hangup-cap', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  let maxHungUp = parseInt(req.body?.maxHungUp, 10);
+  if (!Number.isFinite(maxHungUp) || maxHungUp < 1) maxHungUp = 2;
+  const TERMINAL = new Set(['descartado', 'agendado', 'cerrado']);
+  const scan = (leads) => {
+    const hits = [];
+    for (const [id, lead] of Object.entries(leads || {})) {
+      if (!lead || TERMINAL.has(lead.estado) || lead.doNotCall) continue;
+      const cortes = (lead.callLog || []).filter((e) => e && e.outcome === 'hung_up').length;
+      if (cortes >= maxHungUp) hits.push({ id, name: lead.name || '', cortes, estado: lead.estado, assignedTo: lead.assignedTo || '' });
+    }
+    return hits;
+  };
+  if (dryRun) {
+    const hits = scan(loadSettersData().leads);
+    return res.json({ dryRun: true, maxHungUp, matched: hits.length, leads: hits.slice(0, 50) });
+  }
+  let hits = [];
+  await mutateSettersData((data) => {
+    hits = scan(data.leads);
+    for (const h of hits) {
+      const lead = data.leads[h.id];
+      lead.estado = 'descartado';
+      lead.callbackAt = '';           // varios arrastraban callbacks vencidos
+      lead.autoDiscarded = true;
+      lead.autoDiscardReason = `cortes_${maxHungUp}x`;
+      // NO se toca el callLog ni `interes`: el historial queda intacto y esto no
+      // se cuenta como "no interesado" (no lo dijeron, cortaron).
+    }
+  });
+  res.json({ dryRun: false, maxHungUp, updated: hits.length, leads: hits.slice(0, 50) });
+});
+
 app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req, res) => {
   const { dryRun = false } = req.body || {};
   const data = loadSettersData();

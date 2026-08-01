@@ -5962,11 +5962,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return leads.map(l => l.id);
     }
-    window._pdStart = function() {
+    window._pdStart = async function() {
       if (callsLeadsCache.length === 0) {
         window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
         return;
       }
+      // (2026-07-31) La cola se armaba con `callsLeadsCache`, el snapshot cargado
+      // al abrir Llamadas — nunca se volvía a preguntar al servidor. Si el estado
+      // del lead cambió (se descartó solo, otro SDR lo tomó, entró un callback),
+      // el Power Dialer seguía mostrándolo. Síntoma que reportó el user: "aprieto
+      // el power dialer y me lleva de vuelta al mismo lead que ya pasé, no está
+      // sincronizado una cosa con la otra". Ahora se refresca antes de armar la
+      // cola. Si el refresh falla (sin red), seguimos con el cache: es preferible
+      // discar con datos viejos a no poder discar.
+      try { await loadCallsView(); } catch (e) { console.warn('[pd] no se pudo refrescar la cola:', e?.message); }
       _pd.queue = _pdBuildQueue();
       if (_pd.queue.length === 0) {
         window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
