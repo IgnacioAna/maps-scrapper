@@ -461,19 +461,30 @@ México** (el destino del piloto, no la nuestra), e inyectarla en el global
 prompt con una línea del tipo *"La fecha y hora actual es {{…}}. Usala como
 referencia para cualquier fecha que menciones o agendes."*
 
-**Token exacto** (confirmado en el selector, 2026-07-31):
-`{{current_time_America/Mexico_City}}` — la variante `current_time_[timezone]`
-de la pestaña *System*, reemplazando el placeholder por la zona IANA.
+### ✅ RESUELTO — usar `{{fecha_local}}`, no el token de Retell
 
-### 🚨 Dos problemas de zona horaria que este token NO resuelve
+**El backend ahora manda la fecha ya resuelta en la zona del lead** (commit
+`9e5a156`). En el global prompt va:
 
-**Problema 1 — el token es estático, y el discado no.** `current_time_[timezone]`
-fija UNA zona horaria en el prompt. Sirve mientras el lote sea de un solo país
-(el piloto es México, D-26-04), pero **el día que se llame a Colombia o Chile
-el agente va a razonar con la hora de México**.
+> La fecha y hora actual es **`{{fecha_local}}`**. Usala como referencia para
+> cualquier fecha que menciones o acuerdes. Nunca calcules una fecha sin esta
+> referencia.
 
-**Problema 2 — la reunión se guarda en la zona equivocada. Esto ya está roto,
-incluso llamando solo a México.**
+**Por qué esta y no `{{current_time_America/Mexico_City}}`:** el token de
+Retell fija **una** zona horaria dentro del prompt. Sirve mientras el lote sea
+de un solo país; el día que se llame a Colombia o Chile, el agente razona con
+la hora de México. `fecha_local` se calcula **por lead**, desde su país, y no
+hay que tocar el agente nunca más.
+
+Ejemplo de lo que llega: `viernes, 14 de agosto de 2026, 10:35`.
+
+> Para las **pruebas web** (sin dispatch) hay que cargar `fecha_local` a mano
+> en *Default Dynamic Variables*, como el resto. Si el agente propone fechas
+> del año equivocado en la prueba, es que ahí está vacía.
+
+### ✅ El bug de agendamiento — ARREGLADO (commit `9e5a156`)
+
+Lo que estaba roto, para que quede el registro:
 
 `_retellParseBookingDate` hace `Date.parse("2026-08-14T14:00")` **en el
 servidor**. Un datetime sin offset se interpreta en la zona local del proceso,
@@ -507,11 +518,14 @@ tres cambios chicos en el backend:
    lead**. El endpoint ya tiene el lead a mano (lo busca en `data.leads`), así
    que es aplicar el offset que corresponde.
 
-⚠️ **Es código del SCM, fuera del alcance declarado de esta fase** (que es solo
-documentos). Pero el punto 3 **bloquea el criterio central del piloto**: si las
-reuniones se agendan seis horas corridas, no hay agendas que medir.
+Era código del SCM, fuera del alcance declarado de esta fase (solo documentos),
+pero bloqueaba el criterio central del piloto: con las reuniones seis horas
+corridas no hay agendas que medir. Autorizado por el user y ejecutado.
 
-**Estado:** _(pendiente de decisión del user)_
+**Estado: HECHO** (2026-07-31, commit `9e5a156`). Los tres cambios aplicados +
+`_retellBookConfirmMessage` con zona (segunda mitad del bug: el agente le
+**repetía en voz alta** un horario distinto del acordado). Tests en
+`tests/retell-lead-timezone.test.js` (9), suites de Retell 111/111 verdes.
 
 ### 🚨 Default Dynamic Variables: SOLO para testeo, nunca en producción
 
