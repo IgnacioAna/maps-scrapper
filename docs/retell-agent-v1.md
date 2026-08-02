@@ -74,6 +74,10 @@ opcional: si un campo no está acá, se deja en su default.
 | **Agent Handbook → natural filler words** | **ON** | Las muletillas ("bueno, dejame ver…") son lo que separa a una persona de un lector de guion. |
 | **Agent Handbook → empathy** | **medio, no alto** | El nivel alto está pensado para soporte y atención al cliente. En una llamada fría comercial, un agente demasiado empático suena falso. |
 | **Expressive Mode** | **evaluar al elegir la voz** | Ver el bloque de abajo. Solo lo soportan ~18 voces de plataforma. |
+| Transcripción en tiempo real | **optimizar por velocidad** | El modo "precisión" cuesta ~200 ms en cada turno. En una llamada fría, 200 ms de demora se notan más que una palabra mal transcrita. |
+| Knowledge base | **ninguna** | Cada KB conectada suma latencia. Todo lo que el agente necesita saber entra en el prompt de su nodo. |
+| Boosted keywords | **ninguna** | Misma razón: suman latencia de transcripción y no las necesitamos. |
+| Fallback voice | **configurar una** | En seguridad hay un *fallback voice id*: una voz de otro proveedor que entra si el TTS principal falla. Sin esto, un problema del proveedor deja al agente mudo a mitad de llamada. |
 
 ### Cómo elegir la voz (método, no lista de nombres)
 
@@ -308,6 +312,56 @@ con doble llave: `{{nombre}}`, `{{gancho}}`. Todas llegan como texto.
 > antes de llamar: se captura **durante** la llamada con un nodo `Extract DV`
 > (definido en la Parte B). Es un campo de extracción, no una variable de
 > entrada.
+
+### 🚨 La variable de fecha actual — sin esto el agendamiento no funciona
+
+**Un LLM no sabe qué día es hoy.** Está entrenado con datos del pasado y, si
+nadie se lo dice, calcula las fechas contra el año de su entrenamiento.
+
+Retell expone una **variable predefinida de fecha y hora actual** (con zona
+horaria) que hay que inyectar en el prompt. **Es obligatoria para nosotros**,
+y no por prolijidad:
+
+- El nodo de agendamiento ofrece *"¿mañana o el viernes?"*. Sin fecha de
+  referencia, "mañana" se convierte en una fecha de hace dos años.
+- La tool `book` recibe `fecha` en `YYYY-MM-DD` y **rechaza las fechas
+  pasadas** con *"Esa fecha ya pasó. Necesito un día más adelante."* → el
+  agente vuelve a ofrecer horarios, vuelve a calcular mal, y **entra en loop
+  hasta agotar los 2 reintentos**. La reunión ganada se pierde en el último
+  metro.
+- La salida a 90 días de la tercera objeción pide `callback_fecha_hora` en ISO
+  8601 absoluto. Sin fecha de hoy, no hay forma de calcular "+3 meses".
+
+**Qué hacer al cargar el dashboard:** buscar en la lista de variables
+predefinidas la de fecha/hora actual, configurarle la **zona horaria de
+México** (el destino del piloto, no la nuestra), e inyectarla en el global
+prompt con una línea del tipo *"La fecha y hora actual es {{…}}. Usala como
+referencia para cualquier fecha que menciones o agendes."*
+
+Anotar acá el nombre exacto del token: _(pendiente — confirmar en el
+dashboard; el nombre lo da Retell, no lo inventamos)_
+
+### Valores por defecto: mejor que resolverlo por prompt
+
+Retell permite fijar un **valor por defecto por variable dinámica**, que se usa
+cuando la variable llega vacía. Es más confiable que pedirle al modelo que
+improvise una salida natural.
+
+Conviene ponerlo en las cuatro que sabemos que faltan seguido —
+`{{doctor_name}}`, `{{reviews}}`, `{{years}}`, `{{gancho}}`— con un valor que
+sea **inocuo si se dice en voz alta**, nunca un `N/A` ni un `null`. Las
+instrucciones de salida natural que ya tienen los nodos se quedan igual: son
+el cinturón, esto es los tiradores.
+
+### Variables de prueba (para escuchar el agente antes de que exista el dispatch)
+
+En la sección de seguridad del agente hay **default dynamic variables para
+testeo**: valores fijos que se usan cuando la llamada no trae ninguno.
+
+Cargando ahí un lead de mentira —nombre de clínica, ciudad, reseñas, gancho—
+se puede **hacer la llamada web de prueba con el prompt completo funcionando**,
+sin trunk, sin dispatch y sin gastar. Es la forma de validar voz, tono y flow
+antes de tocar telefonía.
 
 ---
 
@@ -1217,8 +1271,49 @@ sin releer los 9 nodos.
 ## Checklist de carga en el dashboard
 <!-- 26-02 -->
 
-Orden de operaciones. La tool y los campos de extracción van **antes** que los
-nodos, porque los nodos los referencian.
+### Antes de empezar: usar Conductor para el trabajo mecánico
+
+Retell tiene un asistente llamado **Conductor** que construye y edita agentes
+—incluidos los de Conversation Flow— en lenguaje natural. Está entrenado por
+los ingenieros de Retell sobre miles de flows de producción, así que conoce la
+mecánica del builder mucho mejor que cualquier asistente genérico. **La cuenta
+trae 30 mensajes gratis por día.**
+
+Lo que sabe hacer y nos sirve:
+
+- **Armar el grafo**: crear los nodos, conectar las transiciones, marcar
+  Global Nodes (incluso activando el *prevent immediate retrigger*, que es
+  justo el anti-loop que necesitamos).
+- **Editar un nodo puntual**: se selecciona el nodo, se le pide *"acortá esto,
+  sacale la grasa"*, y toca **solo ese nodo**.
+- **Anotar el flow**: se le puede pedir que ponga notas sobre cada nodo y
+  transición explicando qué hace. Muy útil la primera vez.
+- **Testing por simulación**: genera casos de prueba, los corre y **explica
+  por qué falló cada uno** sin tener que leer el transcript entero. Es la
+  forma de probar el flow **antes** de gastar en llamadas reales.
+
+> ⚠️ **Cómo usarlo sin perder la precisión del documento.** Conductor
+> **parafrasea**. Si le pedís que construya todo de una, vas a terminar con un
+> flow que se parece al nuestro pero con prompts reescritos, nombres de campo
+> cambiados y sliders en el default. Y este documento está armado justamente
+> para que esos valores sean exactos: el backend lee los campos de extracción
+> **por nombre**.
+>
+> **El reparto correcto:**
+> - **Conductor hace la carpintería** — crear los 9 nodos, cablear las
+>   transiciones de la tabla, marcar los Global Nodes, generar tests.
+> - **Vos pegás el contenido exacto** — el texto de cada prompt, los 9 campos
+>   de extracción con su nombre literal, la config de la tool `book` y los
+>   sliders del `opener_doctor`.
+>
+> Después de que Conductor toque algo, **verificalo contra este documento**.
+> Es el mismo criterio del versionado: el documento manda, el dashboard es el
+> deploy.
+
+### Orden de operaciones
+
+La tool y los campos de extracción van **antes** que los nodos, porque los
+nodos los referencian.
 
 - [ ] **1.** Crear el agente con **Conversation Flow** en modo **Rigid** (no
       Dynamic, no single-prompt).
@@ -1227,6 +1322,10 @@ nodos, porque los nodos los referencian.
 - [ ] **3.** Pegar el **global prompt**, reemplazando `{{agent_name}}` por el
       nombre literal elegido. **No dejar la llave**: no es una variable
       dinámica del dispatch y renderiza vacío.
+- [ ] **3 bis.** Inyectar la **variable de fecha y hora actual** con zona
+      horaria de México, y cargar los **valores por defecto** de las 4
+      variables que pueden venir vacías. Sin la fecha, el agendamiento entra
+      en loop y se pierde la reunión.
 - [ ] **4.** Crear la custom function **`book`**: URL, POST, header
       `x-scm-tool-secret` con el valor de Railway, schema de `fecha` y `hora`,
       timeout **5000**, Talk While Waiting — y **"Payload: args only"
@@ -1254,7 +1353,15 @@ nodos, porque los nodos los referencian.
    registro. **Una versión publicada no se edita nunca.** Rollback = crear un
    draft a partir de una versión vieja y publicarlo de nuevo.
 
+**Cómo verificar que las variables llegan de verdad:** el **Call History** de
+Retell muestra, por llamada, las variables dinámicas que recibió y las que
+extrajo. Es la forma de confirmar que las 10 del dispatch llegan con valor —y
+no vacías— sin adivinar por cómo sonó la llamada.
+
 **Qué escuchar en la primera llamada de prueba**, además del flujo:
+
+- Que al ofrecer día y hora **diga fechas de este año**. Si dice un año
+  viejo o una fecha pasada, falta la variable de fecha actual (paso 3 bis).
 
 - Que el agente **trate de usted** y no se le escape ningún "vos" ni modismo
   rioplatense (este documento lo escribió un rioplatense; el global prompt lo
