@@ -847,7 +847,7 @@ escale sin que el prompt se infle y que cada etapa se pueda tunear sola.
 
 | # | Nodo | Tipo de nodo | Qué hace |
 |---|---|---|---|
-| 1 | `detect` | Conversation node | Saluda y averigua quién atendió: recepción o el decisor directo. |
+| 1 | `detect` | **Logic Split node** | Bifurca en silencio según si se conoce el nombre del doctor. No habla. |
 | 2 | `gk_con_nombre` | Conversation node | Pide por el doctor **por su nombre**. Estilo mínimo: no explica. |
 | 3 | `gk_sin_nombre` | Conversation node | Sin nombre del doctor: opener de referidor para que recepción lo dé, lo pase, o se enganche ella. |
 | 4 | `opener_doctor` | Conversation node | Pide permiso de 30 segundos al decisor. El nodo más delicado del flow. |
@@ -918,7 +918,51 @@ En los prompts, `{{agent_name}}` es el **nombre literal elegido** (ver el
 aviso de Global Settings): al cargar el dashboard se reemplaza, no se deja la
 llave.
 
-### 1. `detect` — quién atendió
+### 1. `detect` — bifurca sin hablar
+
+**Tipo:** **Logic Split node** *(corregido 2026-07-31 — antes era Conversation)*
+
+**Por qué cambió.** La versión anterior saludaba y preguntaba "¿con quién tengo
+el gusto?" **aun teniendo ya el nombre del doctor**, y ahí se abría un absurdo:
+si `doctor_name` es "Claudio" y atiende una mujer, el agente tiene que adivinar
+quién es — y puede tratarla como decisora, o preguntarle si ella es Claudio.
+
+**La identidad no se deduce, se pregunta.** Se pide por la persona **por su
+nombre** y el que contesta se identifica solo: "soy yo" o "ya se lo paso". Cero
+inferencia por voz, por género o por tono — que además el modelo **no puede
+oír**: lee texto, no escucha audio.
+
+Consecuencias buenas del cambio:
+
+- **No gasta un turno.** Un Logic Split bifurca al entrar, en silencio. Menos
+  latencia y una pregunta menos para que recepción te filtre.
+- **La transición queda 100% ecuación.** `{{doctor_name}}` viene del dispatch,
+  así que existe antes de la llamada. Esto resuelve la duda abierta de si el
+  builder permitía combinar ecuación con condición de prompt en una sola
+  transición — ya no hace falta.
+- El saludo se mudó al primer renglón de cada gatekeeper, donde corresponde.
+
+**Transiciones** (las dos por **Equation**):
+
+| Condición | Tipo | Destino |
+|---|---|---|
+| `{{doctor_name}}` **exists** | Equation | `gk_con_nombre` |
+| *Else* | Else | `gk_sin_nombre` |
+
+**Sin prompt, sin settings.** No habla.
+
+> **Los 4 tipos de transición del builder** (verificado en pantalla): `Prompt`
+> (evalúa el LLM), `Equation` (condiciones sobre variables, combinables con
+> *Any / All*), `Else` (la que agarra todo lo demás) y `Always/Skip` (avanza
+> sola — es la que usa el Function node del agendamiento).
+>
+> Una transición es de **un solo tipo**: no se mezcla Equation con Prompt en la
+> misma. Por eso los nodos que dependen de algo aprendido en la conversación
+> usan `Prompt`, y los que dependen de una variable del dispatch usan
+> `Equation`.
+
+<details>
+<summary>Versión anterior de <code>detect</code> (Conversation) — descartada</summary>
 
 **Tipo:** Conversation node
 
@@ -968,6 +1012,8 @@ llave.
 detección nativa de Retell (Voicemail Detection en "Hang up" e IVR Detection
 ON), que es determinística y corta en menos de 30 ms. El prompt de este nodo
 no tiene que intentar detectarlos: solo distinguir recepción de decisor.
+
+</details>
 
 ### 2. `gk_con_nombre` — pedir por el doctor por su nombre
 
