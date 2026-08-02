@@ -433,9 +433,8 @@ con doble llave: `{{nombre}}`, `{{gancho}}`. Todas llegan como texto.
 > uno para cuando se sabe el nombre del doctor y otro para cuando no.
 
 > ⚠️ **`recepcionista_nombre` no es una variable del dispatch.** No se sabe
-> antes de llamar: se captura **durante** la llamada con un nodo `Extract Variable`
-> (definido en la Parte B). Es un campo de extracción, no una variable de
-> entrada.
+> antes de llamar. **Sale en la extracción post-llamada**, no como variable de
+> entrada. Dentro de la conversación, el modelo lo tiene en el historial.
 
 ### 🚨 La variable de fecha actual — sin esto el agendamiento no funciona
 
@@ -853,7 +852,7 @@ escale sin que el prompt se infle y que cada etapa se pueda tunear sola.
 | 4 | `opener_doctor` | Conversation node | Pide permiso de 30 segundos al decisor. El nodo más delicado del flow. |
 | 5 | `pitch` | Conversation node | Problema con especificidad dental, gancho con dato real y propuesta de reunión. |
 | 6 | `agendar` | Conversation → **Function** → Conversation | Ofrece día y hora, llama a `book`, confirma y hace el tie-down. |
-| 7 | `objeciones` | Logic Split + Conversation node | Tres escaladas con contador, ramas fijas y branch "no hay dolor". |
+| 7 | `objeciones` | **`Code`** + Conversation node | Tres escaladas con contador, ramas fijas y branch "no hay dolor". |
 | 8 | `interes_sin_agenda` | Conversation node | No hubo reunión pero hay algo: captura fecha de recontacto y objeción. |
 | 9 | `ending` | **Ending** | Despedida por rama y cuelga. |
 
@@ -1053,8 +1052,8 @@ no tiene que intentar detectarlos: solo distinguir recepción de decisor.
 **Settings del nodo:** hereda el global. No bajar la velocidad acá: en
 recepción, hablar despacio de más suena a vendedor.
 
-**Variables que captura:** `recepcionista_nombre`, con un **`Extract Variable`
-node** a la salida del nodo (si el nombre apareció).
+**Variables que captura:** ninguna en vivo. `recepcionista_nombre` sale en la
+extracción post-llamada.
 
 > ✅ **Decisión tomada (2026-07-31): va la variante neutra.** El guion oficial
 > traía «`{{agent_name}}`. Él ya sabe.» como respuesta al "¿de parte?", pero
@@ -1154,9 +1153,9 @@ node** a la salida del nodo (si el nombre apareció).
 > Estás con el decisor. Este es el momento más frágil de la llamada: pedís
 > permiso, y después **te callás**.
 >
-> Si llegaste transferido y sabés quién te pasó, nombrala: «Me pasó
-> `{{recepcionista_nombre}}`.» Si no sabés el nombre, no inventes ni menciones
-> la transferencia: seguí derecho con el pedido.
+> Si llegaste transferida y la persona de recepción dijo su nombre en la
+> conversación anterior, mencionalo: «Me pasó [nombre].» Si no lo dijo, no
+> inventes ni menciones la transferencia: seguí derecho con el pedido.
 >
 > Pedido, textual: «Sé que estoy interrumpiendo. ¿Sería muy grave tomar 30
 > segundos? Le explico por qué lo llamo y usted me dice si es relevante o no.»
@@ -1271,7 +1270,7 @@ de haber ganado la reunión**. Por eso el agendamiento son tres nodos, no uno.
 > problema.»
 
 **Transiciones:** con día y hora definidos → `agendar_book` (ecuación sobre
-las variables capturadas, o prompt-based si no se capturaron con `Extract Variable`).
+por **Prompt**: depende de que la persona haya elegido día y hora.
 Si se resiste al agendamiento → `objeciones`.
 
 #### 6b. `agendar_book` — la reserva
@@ -1331,7 +1330,7 @@ dos reintentos la reserva no salió → `interes_sin_agenda`.
 
 ### 7. `objeciones` — tres escaladas con contador
 
-**Tipo:** `Extract Variable` (contador) → **Logic Split node** → Conversation node
+**Tipo:** **`Code` node** (contador) → Conversation node
 
 Es el nodo más cargado del flow y el único con estado propio.
 
@@ -1339,11 +1338,15 @@ Es el nodo más cargado del flow y el único con estado propio.
 
 - La variable es `{{objection_count}}`. Arranca en `0` y **sube 1 cada vez que
   se entra** al nodo.
-- El incremento se hace con un **`Extract Variable`** a la entrada (o el
-  equivalente de incremento que ofrezca el builder).
-- El branch por valor se hace con un **`Logic Split node`**: bifurca al entrar,
-  sin que el agente hable ni gaste un turno. Las ecuaciones son
-  `{{objection_count}} == 1`, `== 2` y `>= 3`.
+- El incremento se hace con un **`Code` node** a la entrada:
+  `objection_count = (objection_count || 0) + 1`. Es determinístico y no gasta
+  un turno de conversación.
+- **Plan B si el `Code` node no puede escribir variables dinámicas:** sacar el
+  nodo y que el prompt de `objeciones` diga *"contá cuántas veces ya
+  manejaste una objeción en esta conversación y escalá en consecuencia"*.
+  Menos confiable, cero nodos extra.
+- El valor se inyecta en el prompt de `objeciones` como `{{objection_count}}`
+  para que el modelo sepa qué escalada le toca.
 - Sin contador no hay escalada: el agente repetiría la primera respuesta tres
   veces y sonaría a disco rayado.
 
@@ -1407,15 +1410,23 @@ No incrementan `{{objection_count}}`: son reacciones, no resistencia real.
 
 | Condición | Tipo | Destino |
 |---|---|---|
-| `{{objection_count}} == 1` | ecuación | rama 1 (doblar la apuesta) |
-| `{{objection_count}} == 2` | ecuación | rama 2 (Miyagi) |
-| `{{objection_count}} >= 3` | ecuación | rama 3 (salida a 3 meses) |
-| Acepta la reunión en cualquier rama | prompt-based | `agendar` |
-| Tercera agotada, con o sin fecha de recontacto | prompt-based | `interes_sin_agenda` |
-| Pide no ser llamado nunca más | — | **`global_dnc`** (Global Node, ver abajo) |
+| Acepta la reunión | **Prompt** | `agendar` |
+| Objeta de nuevo (vuelve a contar) | **Prompt** | `obj_count` (el `Code` node) |
+| Tercera agotada, con o sin fecha de recontacto | **Prompt** | `interes_sin_agenda` |
+| Pide no ser llamado nunca más | — | **`global_dnc`** (Global Node) |
 
-**Variables que captura:** `objecion_principal`, y `callback_fecha_hora` en la
-rama 3.
+> **Las tres escaladas NO son transiciones.** Viven dentro del prompt de este
+> nodo, y el modelo elige cuál usar leyendo `{{objection_count}}`, que el
+> `Code` node ya dejó actualizado. Es una comparación numérica explícita con el
+> número delante: no hay margen para que se confunda.
+>
+> **La alternativa —un `Logic Split` que rutee a tres nodos separados—
+> se descartó para v1**: son 2 nodos y 5 bordes más, y obliga a que cada rama
+> tenga su propia vuelta al contador. Si en el piloto se ve que elige mal la
+> escalada, ahí se parte en tres. No antes.
+
+**Variables que captura:** ninguna en vivo. `objecion_principal` y
+`callback_fecha_hora` salen en la extracción post-llamada.
 
 ### 8. `interes_sin_agenda` — no hubo reunión, pero hay algo
 
@@ -1550,9 +1561,8 @@ sin releer los 9 nodos.
 
 | Origen | Condición | Tipo | Destino |
 |---|---|---|---|
-| `detect` | recepción + `{{doctor_name}} exists` | ecuación + prompt | `gk_con_nombre` |
-| `detect` | recepción + `{{doctor_name}} does not exist` | ecuación + prompt | `gk_sin_nombre` |
-| `detect` | atendió el decisor | prompt-based | `opener_doctor` |
+| `detect` | `{{doctor_name}}` **exists** | **Equation** | `gk_con_nombre` |
+| `detect` | — | **Else** | `gk_sin_nombre` |
 | `gk_con_nombre` | pasa la llamada | prompt-based | `opener_doctor` |
 | `gk_con_nombre` | no está / da horario | prompt-based | `interes_sin_agenda` |
 | `gk_con_nombre` | filtra y pide explicaciones | prompt-based | `gk_sin_nombre` |
@@ -1566,9 +1576,9 @@ sin releer los 9 nodos.
 | `pitch` | acepta la reunión | prompt-based | `agendar` |
 | `pitch` | objeta | prompt-based | `objeciones` |
 | `pitch` | queda tibio | prompt-based | `interes_sin_agenda` |
-| `agendar` | hay día y hora | ecuación (si se capturaron) / prompt | `agendar_book` |
+| `agendar` | hay día y hora definidos | **Prompt** | `agendar_book` |
 | `agendar` | se resiste al agendamiento | prompt-based | `objeciones` |
-| `agendar_book` | siempre (function node) | automática | `agendar_confirmar` |
+| `agendar_book` | — | **Always/Skip** | `agendar_confirmar` |
 | `agendar_confirmar` | reserva OK + tie-down hecho | prompt-based | `ending` (agendado) |
 | `agendar_confirmar` | 2 reintentos fallidos | prompt-based | `interes_sin_agenda` |
 | `objeciones` | `{{objection_count}} == 1` | **ecuación** | rama doblar la apuesta |
@@ -1583,7 +1593,7 @@ sin releer los 9 nodos.
 > ⚠️ **La restricción que más se olvida.** Una **ecuación solo puede leer
 > variables que YA existen**. Las que se aprenden durante la llamada
 > (`doctor_name` capturado en recepción, `objection_count`, el día y la hora
-> de la reunión) necesitan pasar antes por un **`Extract Variable`**. Y el modo
+> de la reunión) necesitan un nodo que las cree primero. Y el modo
 > de falla es traicionero: una ecuación sobre una variable inexistente **no da
 > error** — simplemente nunca se cumple, y el flow se queda clavado en el
 > nodo.
@@ -1653,7 +1663,7 @@ nodos los referencian.
 - [ ] **5.** Cargar los **9 campos de Post Call Data Extraction** con su
       nombre exacto, tipo, `description` y `choices`.
 - [ ] **6.** Crear los **9 nodos** en el orden del mapa y conectarlos según la
-      tabla de transiciones. Los `Extract Variable` y el `Logic Split` del contador
+      tabla de transiciones. El `Code` node del contador de objeciones
       de objeciones son parte del flow, no un detalle.
 - [ ] **7.** Marcar los **2 Global Nodes** (`global_dnc`, `global_robot`) con
       su condición de salto y la protección anti-loop.
