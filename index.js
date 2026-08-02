@@ -14748,7 +14748,23 @@ function _retellDynamicVariables(lead, retellCfg) {
     rating: s(lead.rating || ''),
     years: s(lead.yearsActive != null ? lead.yearsActive : ''),
     doctor_name: s(lead.doctor),
-    gancho: s(lead.leadBrief?.hookPhrase || lead.openingAngle || ''),
+    // Phase 26: SOLO el hook del brief IA. `openingAngle` queda AFUERA a
+    // propósito, por dos razones independientes:
+    //  1. Está desalineado con la oferta. Sus 7 variantes (_openingAngleFor)
+    //     hablan de web, agenda online, posición en el mapa y captación de
+    //     pacientes NUEVOS — un producto que no vendemos. Nosotros vendemos
+    //     reactivación de la base existente. Son de Phase 16, cuando el pitch
+    //     era otro; el prompt del brief SÍ se re-frameó, este no.
+    //  2. El formato no es decible. Está escrito como chuleta para que una
+    //     SDR lo lea en pantalla ("184 reseñas y 4.7★ pero SIN web → «...»"),
+    //     con flechas, estrellas y comillas anidadas. Un agente de voz lo lee
+    //     literal.
+    // Cuando venga vacío, el nodo `pitch` arma el gancho con reviews/years/ads.
+    gancho: s(lead.leadBrief?.hookPhrase || ''),
+    // "si" cuando la clínica corre anuncios. Es el ángulo de reactivación más
+    // fuerte que tenemos: está pagando por pacientes nuevos mientras los que
+    // ya la conocen no vuelven.
+    ads: s(lead.runsAds ? 'si' : ''),
     leadId: s(lead.id),
     whatsapp: s(retellCfg.whatsappReturn),
     // Phase 26: fecha y hora actual EN LA ZONA DEL LEAD. Sin esto el modelo

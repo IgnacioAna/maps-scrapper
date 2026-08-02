@@ -97,6 +97,44 @@ describe("fecha_local en las variables del dispatch", () => {
     expect(vars.fecha_local).toBeTruthy();
   });
 
+  it("gancho NO usa openingAngle — está desalineado con la oferta", () => {
+    // openingAngle habla de web / agenda online / captación de pacientes
+    // nuevos. Vendemos reactivación de la base existente. Además viene con
+    // formato de chuleta visual (flechas, ★, comillas anidadas) que un agente
+    // de voz leería literal.
+    const vars = V._retellDynamicVariables(
+      {
+        id: "l4",
+        name: "X",
+        country: "México",
+        openingAngle: '184 reseñas y 4.7★ pero SIN web → "¿cómo agenda esa gente?"',
+      },
+      { whatsappReturn: "" },
+    );
+    expect(vars.gancho).toBe("");
+  });
+
+  it("gancho sí toma el hook del brief IA, que está re-frameado a la oferta", () => {
+    const vars = V._retellDynamicVariables(
+      {
+        id: "l5",
+        name: "X",
+        country: "México",
+        openingAngle: "algo sobre la web",
+        leadBrief: { hookPhrase: "1300 pacientes en la base y atención desde hace 12 años" },
+      },
+      { whatsappReturn: "" },
+    );
+    expect(vars.gancho).toBe("1300 pacientes en la base y atención desde hace 12 años");
+  });
+
+  it("ads marca las clínicas que pagan por pacientes nuevos", () => {
+    const conAds = V._retellDynamicVariables({ id: "a", country: "México", runsAds: true }, { whatsappReturn: "" });
+    const sinAds = V._retellDynamicVariables({ id: "b", country: "México" }, { whatsappReturn: "" });
+    expect(conAds.ads).toBe("si");
+    expect(sinAds.ads).toBe("");
+  });
+
   it("no rompe el contrato: las 10 variables previas siguen estando", () => {
     const vars = V._retellDynamicVariables(
       { id: "l3", name: "N", city: "C", country: "México", reviews: 10, rating: 4.5, yearsActive: 3, doctor: "Dr. X" },

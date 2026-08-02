@@ -1238,7 +1238,25 @@ extracción post-llamada.
 > - el presupuesto de ortodoncia que quedó en «lo voy a pensar» y ahí murió;
 > - el hueco del martes a las diez que nadie llenó.
 >
-> **3. El gancho con el dato real de esta clínica.** Usá lo que tengas:
+> > ### ⚠️ El gancho apunta al TAMAÑO DE LA BASE, no a la presencia digital
+>
+> El paso 3 se reescribió (2026-07-31) porque estaba pidiendo el dato
+> equivocado. Lo que hace fuerte a un lead para **reactivación** es que tenga
+> **muchos pacientes que ya pasaron por ahí** —reseñas altas, muchos años— y,
+> si además corre anuncios, que esté pagando por gente nueva mientras la que
+> ya lo conoce no vuelve.
+>
+> Lo que NO es señal para nosotros: que no tenga web, que tenga rating bajo, o
+> que no aparezca en el mapa. Eso apunta a captar pacientes nuevos y a
+> presencia digital — otro producto.
+>
+> Por eso `{{gancho}}` ahora trae **solo el hook del brief IA** (que sí está
+> escrito sobre la oferta real). El `openingAngle` por reglas quedó afuera del
+> dispatch: sus 7 variantes son de Phase 16, cuando el pitch era otro, y
+> además vienen con formato de chuleta visual (`→`, `★`, comillas anidadas)
+> que un agente de voz leería literal.
+
+**3. El gancho con el dato real de esta clínica.** Usá lo que tengas:
 > - Si `{{gancho}}` no está vacío, decilo con tus palabras.
 > - Si no, y `{{reviews}}` tiene número: «Con `{{reviews}}` reseñas, la
 >   clínica ya tiene una base de pacientes grande. La pregunta es cuántos de
