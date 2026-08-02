@@ -57,8 +57,8 @@ opcional: si un campo no está acá, se deja en su default.
 |---|---|---|
 | Idioma | **`es-419`** | Español latinoamericano. El piloto es México — `es-ES` mete voseo peninsular y "vale/venga" en boca del agente. |
 | Modelo de LLM | **GPT 4.1** (~$0.045/min) | Las tres escaladas de objeción dependen de matices finos (coincidir, partir en opción múltiple, soltar con elegancia). **No arrancar con un modelo nano**: ahorra centavos y arruina el nodo que decide si hay reunión. |
-| Voz | _(pendiente — se elige escuchando, ver el método abajo)_ | Formato a anotar: `Proveedor · Nombre de voz · costo/min`. La voz en español es el riesgo más alto de la fase y no se elige por nombre encontrado en la web: se escucha en el selector del dashboard. |
-| Nombre de la persona (`{{agent_name}}`) | _(pendiente — lo elige 26-04 **después** de escuchar la voz)_ | El nombre tiene que matchear la voz. Una voz grave con nombre de otra edad se nota en el primer segundo. |
+| Voz | **`retell-Claudia`** · Mexican · Middle Aged · Retell Platform · $0.015/min *(elegida 2026-07-31)* | Formato a anotar: `Proveedor · Nombre de voz · costo/min`. La voz en español es el riesgo más alto de la fase y no se elige por nombre encontrado en la web: se escucha en el selector del dashboard. |
+| Nombre de la persona (`{{agent_name}}`) | **Claudia** *(matchea la voz; decidido 2026-07-31)* | El nombre tiene que matchear la voz. Una voz grave con nombre de otra edad se nota en el primer segundo. |
 | Voice speed (global) | **0.95** ⚠️ a testear | Ver el bloque de abajo: hay una tensión real entre nuestro método de venta y lo que recomienda la práctica de voice agents. |
 | Responsiveness (global) | **0.5** | Punto de partida. En el panel se llama **Response Eagerness** (el research decía "responsiveness"; ese es el nombre de la API, no el de la pantalla). Si el gatekeeper se siente robótico en la llamada de prueba, se sube **solo en esos nodos**, no acá. |
 | Interruption sensitivity (global) | **0.5** | Default sano. El opener lo baja a 0 en su propio nodo. |
@@ -195,7 +195,7 @@ Esto es mejor de lo que esperábamos: no hace falta ir a ElevenLabs
 candidata natural** para hablar con dueños de clínica — una voz joven pide más
 esfuerzo para sostener autoridad frente a un decisor. Escuchá las dos igual.
 
-Anotar la elegida: _(pendiente)_
+**Elegida: `retell-Claudia`** (2026-07-31). Middle aged, acento mexicano, tier barato. El nombre de la persona queda **Claudia**, igual que la voz.
 
 ### Expressive Mode: los tags manuales resuelven la pausa del opener
 
