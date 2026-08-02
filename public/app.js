@@ -7963,6 +7963,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // lo tiene que manejar el SDR... si no se va a ver muy trabado por el
     // sistema para poder tomar decisiones". La franja NO deshabilita nada,
     // NO intercepta _startTelnyxCall y NO abre modales sola.
+    // 2026-07-31: DESACTIVADA por pedido del user ("sacalo, no quiero que esté
+    // eso que te diga que tenés que marcar, porque está mal"). El disparador fue
+    // un pendiente HUÉRFANO: le reclamaba marcar una llamada que ya había
+    // marcado (ver el guard anti-race en POST /api/setters/pending-calls). La
+    // franja queda en el código para poder revolverla con un solo cambio acá.
+    const DISPO_STRIP_ENABLED = false;
     let _dispoStripPending = null;  // { pendingId, leadId, meta } — seteado al resolver desde la franja
     let _dispoStripCache = [];      // pendientes propios (cache del último GET)
     let _dispoStripExpanded = false;
@@ -7970,6 +7976,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function _dispoLoadPendingStrip() {
       const el = document.getElementById('dispo-pending-strip');
       if (!el) return;
+      if (!DISPO_STRIP_ENABLED) { el.classList.add('hidden'); el.innerHTML = ''; return; }
       try {
         const r = await fetch(apiUrl('/api/setters/pending-calls'), { credentials: 'include' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -7991,6 +7998,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _dispoStripRender() {
       const el = document.getElementById('dispo-pending-strip');
       if (!el) return;
+      if (!DISPO_STRIP_ENABLED) { el.classList.add('hidden'); el.innerHTML = ''; return; }
       const n = _dispoStripCache.length;
       if (!n) { el.classList.add('hidden'); el.innerHTML = ''; return; }
       const fmtDur = (s) => (typeof s === 'number' && s > 0) ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '—';

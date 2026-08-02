@@ -10330,6 +10330,19 @@ app.post('/api/setters/pending-calls', requireAuth, (req, res) => {
     if (reachedActive !== undefined) rec.reachedActive = !!reachedActive;
     rec.updatedAt = nowIso;
   } else {
+    // Guard anti-race (2026-07-31). Al colgar, el front hace el POST de este
+    // pendiente SIN await y acto seguido auto-marca no_answer. Si la disposición
+    // llega primero, su limpieza no encuentra nada y este POST crea un pendiente
+    // HUÉRFANO que ya nunca se resuelve: el SDR ve "tenés una llamada sin marcar"
+    // de una llamada que SÍ marcó. Caso real que lo destapó: el admin con una
+    // llamada de 37s ya registrada como no_answer y el lead hasta descartado.
+    // Si el callLog ya tiene una marca posterior al inicio de ESTA llamada, no
+    // hay nada pendiente.
+    const yaMarcada = (lead.callLog || []).some((e) => {
+      const t = Date.parse(e && e.ts) || 0;
+      return t >= startedMs && t <= Date.now() + 1000;
+    });
+    if (yaMarcada) return res.json({ ok: true, skipped: 'already_dispositioned' });
     state.pending.push({
       id,
       leadId,
