@@ -60,7 +60,7 @@ opcional: si un campo no está acá, se deja en su default.
 | Voz | _(pendiente — se elige escuchando, ver el método abajo)_ | Formato a anotar: `Proveedor · Nombre de voz · costo/min`. La voz en español es el riesgo más alto de la fase y no se elige por nombre encontrado en la web: se escucha en el selector del dashboard. |
 | Nombre de la persona (`{{agent_name}}`) | _(pendiente — lo elige 26-04 **después** de escuchar la voz)_ | El nombre tiene que matchear la voz. Una voz grave con nombre de otra edad se nota en el primer segundo. |
 | Voice speed (global) | **0.95** ⚠️ a testear | Ver el bloque de abajo: hay una tensión real entre nuestro método de venta y lo que recomienda la práctica de voice agents. |
-| Responsiveness (global) | **0.5** | Punto de partida. Es el campo que el diseño llamaba "Response Eagerness". Si el gatekeeper se siente robótico en la llamada de prueba, se sube **solo en esos nodos**, no acá. |
+| Responsiveness (global) | **0.5** | Punto de partida. En el panel se llama **Response Eagerness** (el research decía "responsiveness"; ese es el nombre de la API, no el de la pantalla). Si el gatekeeper se siente robótico en la llamada de prueba, se sube **solo en esos nodos**, no acá. |
 | Interruption sensitivity (global) | **0.5** | Default sano. El opener lo baja a 0 en su propio nodo. |
 | **Voicemail Detection** | **ON · acción "Hang up"** | Coincide exacto con la decisión cerrada: detecta buzón → cuelga → el SCM registra `voicemail` y la cadencia reintenta. Determinístico (<30ms) y más confiable que intentar detectarlo por prompt. Corre solo los primeros 3 minutos. |
 | **IVR Detection** | **ON** | Cuelga al detectar un menú de opciones. **No** activar "IVR navigation" (navegar el menú con tonos): el diseño cuelga, no navega. |
@@ -113,6 +113,99 @@ citarse es *Alejandro*). Nuestro research no pudo confirmar su tier de precio:
 > inglés con acento extranjero**. Nuestro agente habla español a mexicanos: un
 > "acento español" ahí no es exótico, es local o es sospechoso. La técnica no
 > se traslada.
+
+### Valores exactos, panel por panel (verificado en pantalla 2026-07-31)
+
+Los **defaults de Retell son casi todos malos para nosotros**. Esta tabla es
+lo que hay que dejar en cada campo, en el orden en que aparecen bajando por el
+panel derecho.
+
+| Panel | Campo | Default | **Poner** |
+|---|---|---|---|
+| Agent Settings | Idioma | — | **Spanish (Latin America)** |
+| | Voz | — | Mexicana de Retell — ver abajo |
+| | LLM | GPT 4.1 **nano** | **GPT 4.1**, tier **Default** ($0.045/min). El **Fast Tier** ($0.0675) queda como palanca de latencia, no se activa de entrada |
+| | ⚙️ LLM Temperature | 0.00 | **0.2** — 0 hace que repita las mismas frases llamada tras llamada; 0.2 da variación sin perder fiabilidad en los parámetros de la tool |
+| | ⚙️ Structured Output | ON | **ON** (ayuda a que `fecha`/`hora` salgan bien formadas) |
+| | Global Prompt | vacío | nuestro prompt + la variable de fecha |
+| | Transition Flexibility | Rigid | **Rigid** ✓ ya está |
+| Knowledge Base | — | vacío | **dejar vacío** (suma latencia; todo va en el prompt del nodo) |
+| Speech Settings | Background Sound | None | **None** |
+| | **Response Eagerness** | **1** | **0.5** ⚠️ el default está al máximo: el agente se tira encima de cada pausa |
+| | Dynamically adjust based on user input | off | **probarlo** en la llamada de prueba (hace por plataforma lo que el prompt pide con palabras) |
+| | **Interruption Sensitivity** | **0.9** | **0.5** ⚠️ en 0.9 lo corta cualquier "ajá" |
+| | Reminder Message Frequency | 10 s · 1 vez | **dejar** |
+| Realtime Transcription | Denoising Mode | Remove noise | **Remove noise**. Si en recepciones ruidosas transcribe mal, probar *Remove noise + background speech* |
+| | Transcription Mode | Optimize for speed | **Optimize for speed** ✓ ya está |
+| | Boosted Keywords | vacío | **vacío** |
+| Call Settings | **Voicemail Detection** | **OFF** | **ON → Hang up** ⚠️ sin esto le habla al contestador y se factura |
+| | IOS/Android Call Screen Handling | OFF | **OFF** por ahora (palanca a probar si aparecen filtros de iPhone) |
+| | **IVR Hangup** | **OFF** | **ON** ⚠️ |
+| | User Keypad Input Detection | ON | **OFF** — no navegamos menús, no hace falta escuchar el teclado |
+| | **End Call on Silence** | **10 min** | **2 min** — corto suficiente para no facturar una línea muerta, largo suficiente para aguantar una espera en recepción |
+| | **Max Call Duration** | **1 hora** | **5 min** 🚨 el default es un agujero de presupuesto |
+| | Ring Duration | 30 s | **30 s** ✓ |
+| Post-Call Data Extraction | — | Call Summary · Call Successful · User Sentiment | **dejar esas 3** y agregar nuestros 9. Modelo de extracción: **GPT-4.1** |
+| Security & Fallback | Data Storage | Everything · Keep forever | **decisión tuya** — ver la nota de privacidad abajo |
+| | Fallback Voice ID | Automatic fallback | **Automatic fallback** ✓ ya está bien |
+| | **Default Dynamic Variables** | vacío | acá van los **valores por defecto y los de prueba** |
+| Webhook Settings | Agent Level Webhook URL | vacío | `https://scm-setting.up.railway.app/api/retell/webhook` |
+| | Webhook Timeout | 5 s | **5 s** ✓ |
+| | Webhook Events | — | `call_ended` **y** `call_analyzed` |
+
+> 💡 **El botón `Test` del webhook sirve antes de llamar a nadie.** Manda un
+> evento firmado a nuestro endpoint. Si vuelve error, el problema es el secret
+> (`RETELL_WEBHOOK_SECRET`) — y lo descubrís ahora y no cuando falte el primer
+> transcript.
+
+> ⚠️ **Privacidad: `Everything · Keep forever`.** Ese default deja en Retell
+> las grabaciones y transcripts de prospectos mexicanos **para siempre**. El
+> proyecto ya decidió no persistir audio del lado nuestro (solo el transcript).
+> Vale la pena bajarlo a `Everything except PII` o fijar una retención con
+> fecha. Es decisión del user, pero conviene tomarla ahora y no después de 800
+> llamadas.
+
+### Voces mexicanas de Retell — el tier barato ya las tiene
+
+El filtro por país devuelve voces **mexicanas del propio proveedor Retell**
+($0.015/min, el tier barato):
+
+- **`retell-Claudia`** — Mexican · Middle Aged
+- **`retell-Gaby`** — Mexican · Young
+
+Esto es mejor de lo que esperábamos: no hace falta ir a ElevenLabs
+($0.040/min) para tener acento local. **Claudia (middle aged) es la
+candidata natural** para hablar con dueños de clínica — una voz joven pide más
+esfuerzo para sostener autoridad frente a un decisor. Escuchá las dos igual.
+
+Anotar la elegida: _(pendiente)_
+
+### Expressive Mode: los tags manuales resuelven la pausa del opener
+
+Con Expressive Mode ON se pueden escribir tags **directamente en el prompt**:
+`[pause]`, `[long pause]`, `[sigh]`, `[emphasis]`, `[clear throat]`.
+
+Esto es mejor que depender solo del slider: la pausa del `opener_doctor` —la
+que hace que el pedido de permiso funcione— se puede escribir explícita:
+
+> «Sé que estoy interrumpiendo. ¿Sería muy grave tomar 30 segundos? `[long
+> pause]` Le explico por qué lo llamo y usted me dice si es relevante o no.»
+
+**Auto emotion tags — qué dejar y qué sacar.** Vienen activados *Empathetic,
+Excited, Sigh, Clear throat, Emphasis*:
+
+- **Sacar `Excited`** (y no agregar `Happy`). Nuestro prompt dice explícito
+  "nunca animado". Un agente entusiasmado en una llamada fría suena a
+  telemarketer y es exactamente lo que el diseño evita.
+- **Dejar** `Empathetic`, `Emphasis`, `Clear throat`.
+- **Agregar** `Pause` y `Long pause` — los vamos a usar a mano.
+- `Sigh` sirve en la 2ª objeción (el "Miyagi" arranca con una pausa), pero
+  **usalo a mano ahí**, no automático: un suspiro en el momento equivocado
+  suena a fastidio con el prospecto.
+
+⚠️ **No abuses.** Con tags en cada frase el agente queda emocionalmente
+errático —entusiasmado y apenado en dos oraciones seguidas—, que es peor que
+plano.
 
 ### ⚠️ La velocidad: nuestro método dice lento, la práctica dice rápido
 
