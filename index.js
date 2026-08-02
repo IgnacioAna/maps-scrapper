@@ -14576,6 +14576,98 @@ function _retellPickNumberForDestination(telnyxCfg, retellCfg, destinationPhone)
   return { number: pool[0] || null, nextRotationIdx };
 }
 
+// ── Zona horaria del LEAD (Phase 26) ──────────────────────────────────────
+// El agente acuerda horarios con el prospecto en la hora local de ESTE, no en
+// la del servidor. Railway corre en UTC: sin esto, "a las 2 de la tarde" con
+// un prospecto mexicano se guardaba como 14:00Z, o sea 8:00 AM en México, y
+// nadie iba a la reunión. El camino humano no tiene el bug porque el navegador
+// de la SDR resuelve la zona antes de mandar la fecha (public/app.js).
+//
+// El mapa es el mismo que usa el chip 🕐 de hora local del Power Dialer
+// (`_LEAD_TZ` en public/app.js). Si se agrega un país allá, agregarlo acá.
+const LEAD_TZ = {
+  'Argentina': 'America/Argentina/Buenos_Aires',
+  'México': 'America/Mexico_City', 'Mexico': 'America/Mexico_City',
+  'Colombia': 'America/Bogota', 'Chile': 'America/Santiago',
+  'Perú': 'America/Lima', 'Peru': 'America/Lima',
+  'Uruguay': 'America/Montevideo', 'Bolivia': 'America/La_Paz',
+  'Ecuador': 'America/Guayaquil',
+  'España': 'Europe/Madrid', 'Espana': 'Europe/Madrid',
+  'Costa Rica': 'America/Costa_Rica',
+  'Estados Unidos': 'America/New_York', 'USA': 'America/New_York',
+  'Venezuela': 'America/Caracas', 'Brasil': 'America/Sao_Paulo',
+  'Paraguay': 'America/Asuncion', 'Panamá': 'America/Panama',
+  'Guatemala': 'America/Guatemala', 'Honduras': 'America/Tegucigalpa',
+  'El Salvador': 'America/El_Salvador', 'Nicaragua': 'America/Managua',
+};
+
+// Formatters cacheados: construir un Intl.DateTimeFormat es caro y esto se
+// llama una vez por lead en cada dispatch. Mismo motivo por el que existe
+// `_bizDtf` para la TZ de negocio (que NO se toca acá: está cubierta por la
+// suite de métricas y no necesita cambiar).
+const _tzDtfCache = new Map();
+function _tzDtf(tz) {
+  let d = _tzDtfCache.get(tz);
+  if (!d) {
+    d = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    _tzDtfCache.set(tz, d);
+  }
+  return d;
+}
+
+// Offset (ms) de `tz` respecto de UTC en el instante ts. Mismo patrón que
+// _bizOffsetMs, con la zona como parámetro.
+function _tzOffsetMs(ts, tz) {
+  const parts = {};
+  for (const p of _tzDtf(tz).formatToParts(new Date(ts))) parts[p.type] = p.value;
+  const asUTC = Date.UTC(+parts.year, +parts.month - 1, +parts.day,
+    parts.hour === '24' ? 0 : +parts.hour, +parts.minute, +parts.second);
+  return asUTC - Math.floor(ts / 1000) * 1000;
+}
+
+// País del lead → zona IANA. '' si no está mapeado.
+function _leadTimezone(lead) {
+  return LEAD_TZ[String(lead?.country || '').trim()] || '';
+}
+
+// "2026-08-14" + "14:30" leídos como hora de PARED en `tz` → instante UTC ISO.
+// Dos pasadas: la primera estima el offset tratando la pared como UTC, la
+// segunda lo recalcula sobre el instante ya corregido. Hace falta porque en
+// los bordes de horario de verano el offset del instante estimado y el del
+// real difieren (México ya no aplica DST, pero Chile y España sí).
+function _wallTimeToUtcIso(fechaStr, horaStr, tz) {
+  const d = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(fechaStr || '').trim());
+  if (!d) return null;
+  const t = /^(\d{1,2}):(\d{2})/.exec(String(horaStr || '').trim());
+  const hh = t ? Math.min(23, Number(t[1])) : 0;
+  const mm = t ? Math.min(59, Number(t[2])) : 0;
+  const wall = Date.UTC(+d[1], +d[2] - 1, +d[3], hh, mm, 0);
+  if (!Number.isFinite(wall)) return null;
+  let utc = wall - _tzOffsetMs(wall, tz);
+  utc = wall - _tzOffsetMs(utc, tz);
+  return Number.isFinite(utc) ? new Date(utc).toISOString() : null;
+}
+
+// Texto de fecha/hora actual EN LA ZONA DEL LEAD, para inyectar en el prompt.
+// Un LLM no sabe qué día es hoy: sin esto calcula "mañana" contra su año de
+// entrenamiento, la tool rechaza la fecha pasada y el agendamiento entra en
+// loop. Si el país no está mapeado cae a la TZ de negocio — la hora puede
+// quedar corrida, pero la FECHA (que es lo que importa para agendar) casi
+// siempre coincide, y es mucho mejor que no mandar nada.
+function _leadNowText(lead, now = Date.now()) {
+  const tz = _leadTimezone(lead) || BUSINESS_TZ;
+  try {
+    return new Date(now).toLocaleString('es-MX', {
+      timeZone: tz, weekday: 'long', day: 'numeric', month: 'long',
+      year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+    });
+  } catch { return ''; }
+}
+
 // Llamadas del agente HOY, derivadas del CALL METRICS CORE (regla del
 // milestone — jamás un loop propio sobre callLog). Entries pre-atribuidas
 // por _callSetterId con setterId===VOICE_AGENT_SETTER_ID, filtradas al rango
@@ -14659,6 +14751,12 @@ function _retellDynamicVariables(lead, retellCfg) {
     gancho: s(lead.leadBrief?.hookPhrase || lead.openingAngle || ''),
     leadId: s(lead.id),
     whatsapp: s(retellCfg.whatsappReturn),
+    // Phase 26: fecha y hora actual EN LA ZONA DEL LEAD. Sin esto el modelo
+    // calcula "mañana" contra su año de entrenamiento y /book rechaza la
+    // fecha por pasada. Se prefiere sobre el token estático de Retell
+    // (`current_time_[timezone]`) porque ese fija UNA zona en el prompt y el
+    // discado es multi-país.
+    fecha_local: s(_leadNowText(lead)),
   };
 }
 
@@ -14668,6 +14766,11 @@ Object.assign(globalThis.__voiceAgent, {
   _retellCallsTodayCount,
   _retellSelectDispatchLeads,
   _retellDynamicVariables,
+  LEAD_TZ,
+  _tzOffsetMs,
+  _leadTimezone,
+  _wallTimeToUtcIso,
+  _leadNowText,
 });
 
 // ── Google Calendar embed (Appointment Scheduling) ──
@@ -15719,10 +15822,20 @@ Object.assign(globalThis.__voiceAgent, { _pendingBooked });
 // shape exacto que mande el LLM del agente (no está fijado hasta Phase 26):
 // prueba fecha+hora combinadas con los 2 separadores más comunes antes de
 // caer a fecha sola. Devuelve null si nada parsea.
-function _retellParseBookingDate(fecha, hora) {
+// `tz` = zona IANA del lead. Con ella, `fecha`+`hora` se leen como hora de
+// PARED del prospecto (que es lo que se acordó en voz) y se convierten al
+// instante UTC correcto. Sin ella se mantiene el comportamiento viejo, que
+// interpreta la hora en la zona del proceso — en Railway, UTC — y desplaza la
+// reunión tantas horas como diferencia haya con el país del prospecto.
+function _retellParseBookingDate(fecha, hora, tz) {
   const fechaStr = String(fecha == null ? '' : fecha).trim();
   if (!fechaStr) return null;
   const horaStr = String(hora == null ? '' : hora).trim();
+  if (tz) {
+    const zoned = _wallTimeToUtcIso(fechaStr, horaStr, tz);
+    if (zoned) return zoned;
+    // Formato raro (el LLM no respetó YYYY-MM-DD): cae al parser tolerante.
+  }
   const candidates = [];
   if (horaStr) {
     candidates.push(`${fechaStr}T${horaStr}`);
@@ -15741,10 +15854,16 @@ function _retellParseBookingDate(fecha, hora) {
 // (convención del proyecto para texto leído/mandado), sin nombrar la
 // empresa (nota #119), sin ningún dato interno (id de lead, de cita, ni
 // nombre del SDR).
-function _retellBookConfirmMessage(fechaISO) {
+// `tz` = zona del lead. Sin ella el texto sale en la zona del proceso (UTC en
+// Railway) y el agente le repite en voz alta un horario distinto del que
+// acaban de acordar — el prospecto escucha "las ocho de la noche" después de
+// haber pedido las dos de la tarde.
+function _retellBookConfirmMessage(fechaISO, tz) {
   const ms = new Date(fechaISO).getTime();
+  const opts = { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' };
+  if (tz) opts.timeZone = tz;
   const txt = Number.isFinite(ms)
-    ? new Date(ms).toLocaleString('es-AR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })
+    ? new Date(ms).toLocaleString('es-AR', opts)
     : '';
   return txt ? `Quedó agendado para el ${txt}.` : 'Quedó agendado. En breve confirmamos el horario.';
 }
@@ -15805,10 +15924,11 @@ app.post("/api/retell/tool/book", async (req, res) => {
     // Idempotencia (§2.2.b: la función no se reintenta desde Retell, pero
     // el LLM del agente sí puede invocarla dos veces en la misma llamada).
     const existing = _pendingBooked.get(callId);
-    return res.json({ ok: true, message: _retellBookConfirmMessage(existing.fechaISO) });
+    return res.json({ ok: true, message: _retellBookConfirmMessage(existing.fechaISO, _leadTimezone(lead)) });
   }
 
-  const fechaISO = _retellParseBookingDate(args?.fecha, args?.hora);
+  // La hora que dijo el prospecto es SU hora local, no la del servidor.
+  const fechaISO = _retellParseBookingDate(args?.fecha, args?.hora, _leadTimezone(lead));
   if (!fechaISO) {
     return respondNoBook('No entendí bien la fecha. Repetila, por favor.');
   }
@@ -15859,7 +15979,7 @@ app.post("/api/retell/tool/book", async (req, res) => {
 
   console.log(`[retell-book] cita creada: lead=${leadId} call=${callId || '(sin call_id)'} fecha=${fechaISO}`);
 
-  res.json({ ok: true, message: _retellBookConfirmMessage(fechaISO) });
+  res.json({ ok: true, message: _retellBookConfirmMessage(fechaISO, _leadTimezone(lead)) });
 });
 
 // POST /api/telnyx/numbers — admin agrega un número virtual a la lista.
