@@ -510,9 +510,19 @@ reunión en el calendario del SCM mientras el prospecto sigue en línea.
 | Header | nombre `x-scm-tool-secret`, valor = el de la env var `RETELL_TOOL_SECRET` de Railway (se copia de un dashboard al otro; **no se escribe en este documento**) |
 | Timeout | **`5000`** ms — el default de Retell es `120000`; hay que bajarlo a mano |
 | Talk While Waiting | activado, frase estática: «Déjeme confirmarlo, un segundo.» |
-| Parámetro `fecha` | tipo string · description: «día de la reunión en formato YYYY-MM-DD» · lo completa el LLM |
-| Parámetro `hora` | tipo string · description: «hora de la reunión en formato HH:MM de 24 horas» · lo completa el LLM |
+| Parámetro `fecha` | string · description: `Meeting date in YYYY-MM-DD format. Must be an absolute date in the future, never a relative expression like "tomorrow". Example: 2026-08-14` · lo completa el LLM |
+| Parámetro `hora` | string · description: `Meeting time in 24-hour HH:MM format. Example: 14:30` · lo completa el LLM |
 | **Toggle "Payload: args only"** | **DESACTIVADO** |
+
+> **Por qué las descriptions de los parámetros van en inglés** aunque el agente
+> hable español: para instrucciones técnicas —formatos, tipos, ejemplos— los
+> modelos son más precisos en inglés. La conversación con el prospecto sigue
+> siendo 100% en español; esto es contrato entre el LLM y la tool, no algo que
+> alguien escuche. El texto conversacional (prompts de los nodos, global
+> prompt) se queda en español, donde el modelo anda perfecto.
+>
+> Y el ejemplo concreto dentro de la description no es decorativo: sin él, el
+> modelo inventa un formato distinto cada vez.
 
 ### Por qué el toggle "args only" va desactivado
 
@@ -988,9 +998,17 @@ Si se resiste al agendamiento → `objeciones`.
 >
 > **Si la reserva salió bien**, hacé el tie-down completo, en este orden:
 >
-> 1. **El email lo dicta él.** «¿A qué correo le llega la invitación?» Que lo
->    diga el prospecto: un email dictado es un compromiso, uno que vos leés no
->    lo es.
+> 1. **El email lo dicta él, y vos se lo repetís.** «¿A qué correo le llega la
+>    invitación?» Que lo diga el prospecto: un email dictado es un compromiso,
+>    uno que vos leés no lo es. **Después repetíselo entero y esperá que lo
+>    confirme**: «Le repito, ene-a-ce-o punto…, ¿está bien?»
+>
+>    Esto no es cortesía: **el email dictado por teléfono es el dato que peor
+>    transcribe un agente de voz.** Un carácter mal y la invitación no llega, el
+>    prospecto no se entera, y la reunión figura agendada pero nadie aparece.
+>    Nuestro backend valida el formato, así que un email mal transcrito no se
+>    guarda —lo cual es peor todavía, porque **falla en silencio**. La
+>    confirmación en voz alta es la única red que hay.
 > 2. **La pregunta trampa + silencio.** «Si le surge algo, ¿cómo me avisa que
 >    no puede?» Y **te callás**. Esta pausa es la más importante de la llamada.
 > 3. **Aflojar.** Cuando conteste: «Perfecto. Era medio pregunta trampa: si me
@@ -1357,6 +1375,12 @@ nodos los referencian.
 Retell muestra, por llamada, las variables dinámicas que recibió y las que
 extrajo. Es la forma de confirmar que las 10 del dispatch llegan con valor —y
 no vacías— sin adivinar por cómo sonó la llamada.
+
+**Cómo verificar que la tool se llamó bien:** en el detalle de la llamada se
+ve la **invocación** de la función (los parámetros exactos que el agente
+mandó) y su **resultado**. Ahí se lee de una si `fecha` salió como
+`YYYY-MM-DD` del año correcto y si `book` respondió `ok:true`. Es más rápido y
+más confiable que escuchar el audio buscando si la confirmación sonó bien.
 
 **Qué escuchar en la primera llamada de prueba**, además del flujo:
 
