@@ -462,8 +462,57 @@ México** (el destino del piloto, no la nuestra), e inyectarla en el global
 prompt con una línea del tipo *"La fecha y hora actual es {{…}}. Usala como
 referencia para cualquier fecha que menciones o agendes."*
 
-Anotar acá el nombre exacto del token: _(pendiente — confirmar en el
-dashboard; el nombre lo da Retell, no lo inventamos)_
+**Token exacto** (confirmado en el selector, 2026-07-31):
+`{{current_time_America/Mexico_City}}` — la variante `current_time_[timezone]`
+de la pestaña *System*, reemplazando el placeholder por la zona IANA.
+
+### 🚨 Dos problemas de zona horaria que este token NO resuelve
+
+**Problema 1 — el token es estático, y el discado no.** `current_time_[timezone]`
+fija UNA zona horaria en el prompt. Sirve mientras el lote sea de un solo país
+(el piloto es México, D-26-04), pero **el día que se llame a Colombia o Chile
+el agente va a razonar con la hora de México**.
+
+**Problema 2 — la reunión se guarda en la zona equivocada. Esto ya está roto,
+incluso llamando solo a México.**
+
+`_retellParseBookingDate` hace `Date.parse("2026-08-14T14:00")` **en el
+servidor**. Un datetime sin offset se interpreta en la zona local del proceso,
+y Railway corre en **UTC**. Medido:
+
+| Lo que se acordó | Lo que se guarda | Lo que ve el prospecto en México |
+|---|---|---|
+| «a las 2 de la tarde» | `2026-08-14T14:00:00.000Z` | **8:00 de la mañana** |
+
+**Seis horas de corrimiento.** No es una deriva sutil: es una reunión a la que
+no va nadie. Y falla en silencio — `book` responde `ok:true`, el agente
+confirma con entusiasmo y la cita aparece en el calendario.
+
+**El camino humano NO tiene este bug** (`public/app.js:10126`): la SDR elige la
+fecha en un input del navegador y `new Date(fecha).toISOString()` la convierte
+al instante absoluto correcto desde su zona. El defecto es solo del camino del
+agente, y viene de Phase 24.
+
+### La corrección que resuelve los dos
+
+El SCM **ya tiene** el mapa país → zona IANA… pero solo en el frontend
+(`public/app.js:6868`, el que pinta el chip 🕐 de hora local del lead). Con
+tres cambios chicos en el backend:
+
+1. **Portar ese mapa** a `index.js`.
+2. **Agregar `fecha_local`** a `_retellDynamicVariables` (~14576): fecha y hora
+   actual **en la zona del lead**. El prompt pasa a usar `{{fecha_local}}` en
+   vez del token estático de Retell → correcto en cualquier país, sin tocar el
+   agente nunca más.
+3. **Que `_retellParseBookingDate` interprete `fecha`+`hora` en la zona del
+   lead**. El endpoint ya tiene el lead a mano (lo busca en `data.leads`), así
+   que es aplicar el offset que corresponde.
+
+⚠️ **Es código del SCM, fuera del alcance declarado de esta fase** (que es solo
+documentos). Pero el punto 3 **bloquea el criterio central del piloto**: si las
+reuniones se agendan seis horas corridas, no hay agendas que medir.
+
+**Estado:** _(pendiente de decisión del user)_
 
 ### 🚨 Default Dynamic Variables: SOLO para testeo, nunca en producción
 
