@@ -152,9 +152,23 @@ panel derecho.
 | Security & Fallback | Data Storage | Everything · Keep forever | **decisión tuya** — ver la nota de privacidad abajo |
 | | Fallback Voice ID | Automatic fallback | **Automatic fallback** ✓ ya está bien |
 | | **Default Dynamic Variables** | vacío | acá van los **valores por defecto y los de prueba** |
+| Security & Fallback | Safety Guardrails | ninguno | **Regulated Professional Advice** — ver nota |
 | Webhook Settings | Agent Level Webhook URL | vacío | `https://scm-setting.up.railway.app/api/retell/webhook` |
 | | Webhook Timeout | 5 s | **5 s** ✓ |
-| | Webhook Events | — | `call_ended` **y** `call_analyzed` |
+| | Webhook Events | Call started · ended · analyzed | **destildar `Call started`**; dejar solo `Call ended` y `Call analyzed` |
+
+> **Por qué destildar `Call started`.** Nuestro endpoint lo ignora (filtra por
+> tipo de evento), pero **lo persiste igual** en el log de auditoría antes de
+> descartarlo, y ese log es un FIFO de 1000. Con `call_started` activo, cada
+> llamada mete 3 eventos en vez de 2 y el historial útil se diluye un 50% más
+> rápido. Cero beneficio.
+
+> **Por qué `Regulated Professional Advice`.** Vendemos a clínicas dentales:
+> alcanza con que un prospecto pregunte "¿y esto sirve para los de
+> ortodoncia?" para que el agente se deslice hacia terreno clínico. No damos
+> consejo médico y no queremos empezar. Los otros guardrails (violencia,
+> juego, seguridad nacional) no tienen nada que ver con este dominio — no
+> tildarlos, cada uno es proceso extra sobre cada respuesta.
 
 > 💡 **El botón `Test` del webhook sirve antes de llamar a nadie.** Manda un
 > evento firmado a nuestro endpoint. Si vuelve error, el problema es el secret
@@ -451,17 +465,61 @@ referencia para cualquier fecha que menciones o agendes."*
 Anotar acá el nombre exacto del token: _(pendiente — confirmar en el
 dashboard; el nombre lo da Retell, no lo inventamos)_
 
-### Valores por defecto: mejor que resolverlo por prompt
+### 🚨 Default Dynamic Variables: SOLO para testeo, nunca en producción
 
-Retell permite fijar un **valor por defecto por variable dinámica**, que se usa
-cuando la variable llega vacía. Es más confiable que pedirle al modelo que
-improvise una salida natural.
+Retell permite fijar un **valor por defecto por variable dinámica** (Security
+& Fallback → *Default Dynamic Variables*). Suena a red de seguridad, pero en
+nuestro diseño **es una trampa**, por dos razones distintas:
 
-Conviene ponerlo en las cuatro que sabemos que faltan seguido —
-`{{doctor_name}}`, `{{reviews}}`, `{{years}}`, `{{gancho}}`— con un valor que
-sea **inocuo si se dice en voz alta**, nunca un `N/A` ni un `null`. Las
-instrucciones de salida natural que ya tienen los nodos se quedan igual: son
-el cinturón, esto es los tiradores.
+**1. Rompe el ruteo del flow.** La transición de `detect` a los dos
+gatekeepers se decide con la ecuación `{{doctor_name}} exists` / `does not
+exist`. Si `doctor_name` tiene un valor por defecto, **siempre existe** — la
+rama `gk_sin_nombre` no se ejecuta jamás y el agente pide por un doctor cuyo
+nombre no conoce. Falla en silencio: el flow "funciona", solo que mal.
+
+**2. Se dice en voz alta.** Un default en `{{gancho}}` o `{{reviews}}` hace
+que los `if` del prompt ("si no está vacío, decilo") den **siempre
+verdadero**, y el agente le recita a un prospecto real un dato que no es suyo.
+
+**Entonces:**
+
+| Uso | Qué poner |
+|---|---|
+| **Ahora, para escuchar el agente sin dispatch** | valores de un lead inventado: `nombre`, `ciudad`, `pais`, `reviews`, `rating`, `years`, `doctor_name`, `gancho` |
+| **Antes del primer lote real** | **vaciar todo.** Sin excepción |
+
+La salida natural cuando una variable falta ya está resuelta donde
+corresponde: en el prompt de cada nodo. **Eso es lo que tiene que funcionar**,
+y el piloto es justamente donde se comprueba.
+
+Anotar acá cuándo se vaciaron: _(pendiente — antes del primer lote)_
+
+### ⚠️ Data Storage: "Everything except PII" puede vaciarnos la extracción
+
+El default es `Everything · Keep forever`, que deja grabaciones y transcripts
+de prospectos mexicanos en Retell para siempre. Hay que cambiarlo, **pero no
+por la opción obvia**.
+
+`Everything except PII` suena bien hasta que se mira qué extraemos del
+transcript: **`doctor_name` y `recepcionista_nombre` son nombres de persona, y
+`email` es información de contacto** — justo las categorías que esa opción
+está pensada para borrar. Si la redacción corre antes del análisis post-
+llamada, esos tres campos vuelven vacíos y **nadie se entera**: la llamada
+suena bien, el transcript llega, y el lead simplemente no recibe el nombre del
+doctor.
+
+**Lo correcto para nosotros: dejar `Everything` y controlar la privacidad con
+la RETENCIÓN.** Elegir **30 días** (o 90). Así:
+
+- El transcript queda completo → la extracción funciona.
+- Los datos no viven para siempre en un tercero.
+- No perdemos nada: el transcript que importa **ya se guarda en el SCM**, en
+  la biblioteca de Entrenamiento IA. La copia de Retell es un respaldo
+  temporal, no el original.
+
+**Cómo detectar si igual se activó la redacción:** en la llamada de prueba, el
+agente escucha claramente el nombre del doctor pero la extracción devuelve
+`doctor_name` vacío. Si pasa eso, la causa es esta opción.
 
 ### Variables de prueba (para escuchar el agente antes de que exista el dispatch)
 
