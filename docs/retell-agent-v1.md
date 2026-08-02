@@ -1374,9 +1374,28 @@ Es el nodo más cargado del flow y el único con estado propio.
 
 - La variable es `{{objection_count}}`. Arranca en `0` y **sube 1 cada vez que
   se entra** al nodo.
-- El incremento se hace con un **`Code` node** a la entrada:
-  `objection_count = (objection_count || 0) + 1`. Es determinístico y no gasta
-  un turno de conversación.
+- El incremento se hace con un **`Code` node** a la entrada. Determinístico y
+  sin gastar un turno de conversación.
+
+  **API real del Code node** (leída del editor, 2026-07-31): `dv.<nombre>`
+  lee variables dinámicas pero **es de solo lectura**. Para escribir una hay
+  que **retornar un objeto** y mapearlo en *Store Fields as Variables*.
+
+  ```javascript
+  const n = Number(dv.objection_count || 0) + 1;
+  return { objection_count: n };
+  ```
+
+  Store Fields as Variables: nombre `objection_count` ← path `objection_count`.
+
+  Settings del nodo:
+
+  | Ajuste | Valor | Por qué |
+  |---|---|---|
+  | **Talk While Waiting** | **OFF** | 🚨 Encendido, el agente diría «déjeme ver un segundo» **justo después de que el prospecto objetó**. Suena a que lo está esquivando. |
+  | Play typing sound | OFF | Un tecleo de fondo en una llamada telefónica no tiene explicación posible. |
+  | **Wait for Result** | **ON** | El nodo siguiente lee `{{objection_count}}`. Sin esto, lo lee desactualizado. |
+  | Timeout | 5 s | Es una suma, no hace red. El default de 30 s solo alarga un cuelgue. |
 - **Plan B si el `Code` node no puede escribir variables dinámicas:** sacar el
   nodo y que el prompt de `objeciones` diga *"contá cuántas veces ya
   manejaste una objeción en esta conversación y escalá en consecuencia"*.
