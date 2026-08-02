@@ -5605,7 +5605,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // el resultado se guarda como 'manual' con 0 segundos (2026-07-28).
         try { _telnyxMetaRestore(); } catch {}
       }
-      const setter = document.getElementById('calls-setter-select').value;
+      // OJO: la URL se arma ANTES de poblar el select, así que en la primera
+      // carga hay que leer la preferencia guardada directamente — si no, el
+      // fetch pediría TODOS los leads aunque el filtro quede bien en pantalla.
+      const _callsSetterEl = document.getElementById('calls-setter-select');
+      const setter = _callsSetterEl.value
+        || (_callsSetterEl.dataset.prefApplied === '1' ? '' : (localStorage.getItem('calls_setter_filter_' + (currentUser?.id || 'anon')) || ''));
       // App call-only: la vista Llamadas SIEMPRE muestra los leads accionables
       // (con teléfono, no terminales), no solo los marcados sin_wsp. El viejo
       // checkbox "Incluir leads de Setteo" se removió en la limpieza del panel
@@ -5625,14 +5630,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         const infoResp = await fetch(apiUrl('/api/setters'));
         const info = await infoResp.json();
         const callsSelect = document.getElementById('calls-setter-select');
-        const curVal = callsSelect.value;
+        // Preferencia guardada (2026-07-31): sin esto el filtro volvía a "Todos"
+        // en cada recarga. Se aplica solo la primera vez que se puebla el select
+        // (después manda lo que el usuario tenga elegido en pantalla).
+        const _setterKey = 'calls_setter_filter_' + (currentUser?.id || 'anon');
+        const curVal = callsSelect.value || (callsSelect.dataset.prefApplied === '1' ? '' : (localStorage.getItem(_setterKey) || ''));
         callsSelect.innerHTML = '<option value="">Todos</option>';
         (info.setters || []).forEach(s => {
           const opt = document.createElement('option');
           opt.value = s.id; opt.textContent = s.name;
           callsSelect.appendChild(opt);
         });
-        if (curVal) callsSelect.value = curVal;
+        // Solo se aplica si el setter guardado sigue existiendo (si lo borraron,
+        // cae a "Todos" en vez de dejar el filtro en un id fantasma que no
+        // devuelve nada).
+        if (curVal && (info.setters || []).some(s => s.id === curVal)) callsSelect.value = curVal;
+        callsSelect.dataset.prefApplied = '1';
         // Sprint 31: poblar también el select de bulk-assign con los mismos setters
         const bulkAssign = document.getElementById('calls-bulk-assign-setter');
         if (bulkAssign) {
@@ -7984,7 +7997,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const fmtHora = (iso) => iso ? new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '—';
       el.innerHTML = `
         <div class="dispo-strip-head">
-          <span>Tenés ${n} llamada${n === 1 ? '' : 's'} sin marcar</span>
+          <span>${n === 1
+            // Con una sola, se nombra: "Tenés 1 llamada sin marcar" a secas
+            // obligaba a expandir para saber de cuál hablaba (feedback del user:
+            // "no sé para qué está ese cartel, yo no llamé a ese").
+            ? `Te quedó sin marcar la llamada a <strong>${escHtml(_dispoStripCache[0].leadName || _dispoStripCache[0].leadId)}</strong> (${fmtHora(_dispoStripCache[0].startedAt)} · ${fmtDur(_dispoStripCache[0].durationSecs)})`
+            : `Tenés ${n} llamadas sin marcar`}</span>
           <button type="button" id="dispo-strip-toggle">${_dispoStripExpanded ? 'Ocultar' : 'Resolver'}</button>
         </div>
         ${_dispoStripExpanded ? `<div class="dispo-strip-list">${_dispoStripCache.map(p => `
@@ -10140,7 +10158,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (callsMenuItem) callsMenuItem.addEventListener('click', () => { loadCallsView(); });
     // Phase 13: home "Hoy"
     document.querySelector('[data-target="view-hoy"]')?.addEventListener('click', () => { loadHoyView(); });
-    document.getElementById('calls-setter-select').addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
+    // El filtro de SDR se PERSISTE por usuario (2026-07-31), como ya se hacía
+    // con país y orden. Antes se perdía en cada recarga y volvía a "Todos": el
+    // admin, que también tiene cartera propia, veía los leads de todo el equipo
+    // mezclados con los suyos cada vez que refrescaba ("no puedo ver lo mío").
+    document.getElementById('calls-setter-select').addEventListener('change', (e) => {
+      localStorage.setItem('calls_setter_filter_' + (currentUser?.id || 'anon'), e.target.value || '');
+      _callsCurrentPage = 1;
+      loadCallsView();
+    });
     document.getElementById('calls-country-filter').addEventListener('change', (e) => {
       localStorage.setItem('calls_country_filter_' + (currentUser?.id || 'anon'), e.target.value);
       _callsCurrentPage = 1;
