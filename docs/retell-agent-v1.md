@@ -1113,15 +1113,37 @@ node** a la salida del nodo (si el nombre apareció).
 
 **Settings del nodo:** hereda el global.
 
-**Variables que captura:** `doctor_name` y `recepcionista_nombre`, con
-**`Extract Variable` node**.
+**Variables que captura:** ninguna en vivo. Los dos salen en la extracción post-llamada.
 
-> **Nota de mecánica, importante.** Si `doctor_name` se aprende **acá**, un
-> nodo posterior solo puede usarlo en una **ecuación** si pasó antes por el
-> `Extract Variable`. Por eso la captura es un paso explícito del flow y no una
-> nota al margen: sin ese nodo, la variable existe en la conversación pero no
-> para las transiciones, y una ecuación sobre ella nunca se cumple. No da
-> error: el flow simplemente se queda quieto en un nodo.
+> ### ⚠️ Corrección (2026-07-31): en v1 NO hace falta ningún `Extract Variable`
+>
+> Versiones anteriores de este documento ponían nodos `Extract Variable` para
+> capturar `doctor_name`, `recepcionista_nombre`, `email`,
+> `objecion_principal` y `callback_fecha_hora` durante la llamada. **Sobra.**
+>
+> Un `Extract Variable` sirve para exactamente dos cosas, y ninguna aplica:
+>
+> 1. **Que una ECUACIÓN posterior pueda leer algo aprendido en la llamada.**
+>    Revisadas las 29 transiciones, la única que evalúa un valor aprendido es
+>    la del contador de objeciones — y esa se resuelve con un `Code` node. El
+>    resto son `Prompt` (evalúa el LLM leyendo la conversación) o `Equation`
+>    sobre variables del dispatch, que ya existen antes de llamar.
+> 2. **Interpolar el valor con `{{...}}` en un prompt posterior.** El único
+>    caso era `{{recepcionista_nombre}}` en `opener_doctor` — y se resuelve
+>    mejor pidiéndole al modelo que lo tome del historial, que en modo Rigid
+>    tiene delante.
+>
+> **Todo lo demás se persiste igual**, por el camino que corresponde: los 9
+> campos de **Post Call Data Extraction** al colgar. Esa es la vía al SCM, no
+> las variables de la llamada.
+>
+> **Por qué importa sacarlos:** cada nodo de más es un punto de falla, un
+> borde más que cablear mal y latencia extra. El flow queda en 11 nodos en vez
+> de 15.
+>
+> Si en el piloto se ve que el agente no usa el nombre de la recepcionista
+> cuando lo tiene, ahí sí se agrega **un** `Extract Variable` antes de
+> `opener_doctor`. No antes.
 
 ### 4. `opener_doctor` — los 30 segundos
 
@@ -1305,7 +1327,7 @@ Si se resiste al agendamiento → `objeciones`.
 **Transiciones:** terminado el tie-down → `ending` (rama agendado). Si tras
 dos reintentos la reserva no salió → `interes_sin_agenda`.
 
-**Variables que captura:** `email`.
+**Variables que captura:** ninguna en vivo — `email` sale en la extracción post-llamada.
 
 ### 7. `objeciones` — tres escaladas con contador
 
