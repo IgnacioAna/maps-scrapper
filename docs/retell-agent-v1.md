@@ -309,7 +309,7 @@ con doble llave: `{{nombre}}`, `{{gancho}}`. Todas llegan como texto.
 > uno para cuando se sabe el nombre del doctor y otro para cuando no.
 
 > ⚠️ **`recepcionista_nombre` no es una variable del dispatch.** No se sabe
-> antes de llamar: se captura **durante** la llamada con un nodo `Extract DV`
+> antes de llamar: se captura **durante** la llamada con un nodo `Extract Variable`
 > (definido en la Parte B). Es un campo de extracción, no una variable de
 > entrada.
 
@@ -638,7 +638,7 @@ escale sin que el prompt se infle y que cada etapa se pueda tunear sola.
 | 6 | `agendar` | Conversation → **Function** → Conversation | Ofrece día y hora, llama a `book`, confirma y hace el tie-down. |
 | 7 | `objeciones` | Logic Split + Conversation node | Tres escaladas con contador, ramas fijas y branch "no hay dolor". |
 | 8 | `interes_sin_agenda` | Conversation node | No hubo reunión pero hay algo: captura fecha de recontacto y objeción. |
-| 9 | `ending` | **End node** | Despedida por rama y cuelga. |
+| 9 | `ending` | **Ending** | Despedida por rama y cuelga. |
 
 Quién va a quién:
 
@@ -679,6 +679,23 @@ que decidir nada.
 
 Cada nodo se documenta igual: tipo, prompt textual para pegar, transiciones
 con su tipo, settings que se desvían del global, y variables que captura.
+
+> **Nombres tal como aparecen en el panel izquierdo del builder** (verificado
+> en pantalla, 2026-07-31): `Conversation` · `Subagent` · `Function` ·
+> `Call Transfer` · `Press Digit` · `Logic Split` · `Agent Transfer` ·
+> `In-Call SMS` · **`Extract Variable`** · `Code` · `MCP` · **`Ending`** ·
+> `Note`.
+>
+> Dos que el diseño nombraba distinto: lo que aquí se llama **`Extract
+> Variable`** aparecía como "Extract DV", y **`Ending`** como "End node". Son
+> los mismos.
+>
+> El modo Rigid está en el panel derecho como **Transition Flexibility →
+> Rigid Mode** (la otra opción es Flex Mode). Y arriba hay una pestaña
+> **Simulation** propia, además de `Test` y `Conductor`.
+>
+> `Note` es el nodo que usa Conductor cuando se le pide que **anote el flow**
+> explicando qué hace cada etapa. Útil la primera vez.
 
 En los prompts, `{{agent_name}}` es el **nombre literal elegido** (ver el
 aviso de Global Settings): al cargar el dashboard se reemplaza, no se deja la
@@ -773,7 +790,7 @@ no tiene que intentar detectarlos: solo distinguir recepción de decisor.
 **Settings del nodo:** hereda el global. No bajar la velocidad acá: en
 recepción, hablar despacio de más suena a vendedor.
 
-**Variables que captura:** `recepcionista_nombre`, con un **`Extract DV`
+**Variables que captura:** `recepcionista_nombre`, con un **`Extract Variable`
 node** a la salida del nodo (si el nombre apareció).
 
 > ✅ **Decisión tomada (2026-07-31): va la variante neutra.** El guion oficial
@@ -834,11 +851,11 @@ node** a la salida del nodo (si el nombre apareció).
 **Settings del nodo:** hereda el global.
 
 **Variables que captura:** `doctor_name` y `recepcionista_nombre`, con
-**`Extract DV` node**.
+**`Extract Variable` node**.
 
 > **Nota de mecánica, importante.** Si `doctor_name` se aprende **acá**, un
 > nodo posterior solo puede usarlo en una **ecuación** si pasó antes por el
-> `Extract DV node`. Por eso la captura es un paso explícito del flow y no una
+> `Extract Variable`. Por eso la captura es un paso explícito del flow y no una
 > nota al margen: sin ese nodo, la variable existe en la conversación pero no
 > para las transiciones, y una ecuación sobre ella nunca se cumple. No da
 > error: el flow simplemente se queda quieto en un nodo.
@@ -969,7 +986,7 @@ de haber ganado la reunión**. Por eso el agendamiento son tres nodos, no uno.
 > problema.»
 
 **Transiciones:** con día y hora definidos → `agendar_book` (ecuación sobre
-las variables capturadas, o prompt-based si no se capturaron con `Extract DV`).
+las variables capturadas, o prompt-based si no se capturaron con `Extract Variable`).
 Si se resiste al agendamiento → `objeciones`.
 
 #### 6b. `agendar_book` — la reserva
@@ -1029,7 +1046,7 @@ dos reintentos la reserva no salió → `interes_sin_agenda`.
 
 ### 7. `objeciones` — tres escaladas con contador
 
-**Tipo:** `Extract DV` (contador) → **Logic Split node** → Conversation node
+**Tipo:** `Extract Variable` (contador) → **Logic Split node** → Conversation node
 
 Es el nodo más cargado del flow y el único con estado propio.
 
@@ -1037,7 +1054,7 @@ Es el nodo más cargado del flow y el único con estado propio.
 
 - La variable es `{{objection_count}}`. Arranca en `0` y **sube 1 cada vez que
   se entra** al nodo.
-- El incremento se hace con un **`Extract DV node`** a la entrada (o el
+- El incremento se hace con un **`Extract Variable`** a la entrada (o el
   equivalente de incremento que ofrezca el builder).
 - El branch por valor se hace con un **`Logic Split node`**: bifurca al entrar,
   sin que el agente hable ni gaste un turno. Las ecuaciones son
@@ -1143,7 +1160,7 @@ el sistema descarta cualquier otra cosa, y el compromiso se pierde),
 
 ### 9. `ending` — cierre
 
-**Tipo:** **End node** (habla y cuelga)
+**Tipo:** **Ending** (habla y cuelga)
 
 **Prompt:**
 
@@ -1281,7 +1298,7 @@ sin releer los 9 nodos.
 > ⚠️ **La restricción que más se olvida.** Una **ecuación solo puede leer
 > variables que YA existen**. Las que se aprenden durante la llamada
 > (`doctor_name` capturado en recepción, `objection_count`, el día y la hora
-> de la reunión) necesitan pasar antes por un **`Extract DV node`**. Y el modo
+> de la reunión) necesitan pasar antes por un **`Extract Variable`**. Y el modo
 > de falla es traicionero: una ecuación sobre una variable inexistente **no da
 > error** — simplemente nunca se cumple, y el flow se queda clavado en el
 > nodo.
@@ -1351,7 +1368,7 @@ nodos los referencian.
 - [ ] **5.** Cargar los **9 campos de Post Call Data Extraction** con su
       nombre exacto, tipo, `description` y `choices`.
 - [ ] **6.** Crear los **9 nodos** en el orden del mapa y conectarlos según la
-      tabla de transiciones. Los `Extract DV` y el `Logic Split` del contador
+      tabla de transiciones. Los `Extract Variable` y el `Logic Split` del contador
       de objeciones son parte del flow, no un detalle.
 - [ ] **7.** Marcar los **2 Global Nodes** (`global_dnc`, `global_robot`) con
       su condición de salto y la protección anti-loop.
