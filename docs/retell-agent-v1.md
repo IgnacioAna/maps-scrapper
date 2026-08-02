@@ -730,6 +730,28 @@ reunión en el calendario del SCM mientras el prospecto sigue en línea.
 | Parámetro `hora` | string · description: `Meeting time in 24-hour HH:MM format. Example: 14:30` · lo completa el LLM |
 | **Toggle "Payload: args only"** | **DESACTIVADO** |
 
+### Store Fields as Variables — capturar la respuesta de la tool
+
+El formulario de la custom function tiene **"Store Fields as Variables"**
+(*extract values from tool response and store as dynamic variables*). Guardar
+los dos campos que devuelve `/book` mejora el flow en dos puntos concretos:
+
+| Campo de la respuesta | Variable |
+|---|---|
+| `message` | `book_message` |
+| `ok` | `book_ok` |
+
+**1. El agente dice el mensaje EXACTO, no una paráfrasis.** Los cinco textos
+de `ok:false` están redactados para leerse en voz alta, sin signos de apertura
+y sin datos internos. Con `{{book_message}}` en el prompt de
+`agendar_confirmar`, se dicen tal cual. Sin eso, el modelo los reinterpreta y
+puede filtrar algo que no corresponde.
+
+**2. La transición deja de depender del criterio del LLM.** Con `{{book_ok}}`
+se puede ramificar por **Equation** (`book_ok` `=` `true`) en vez de por
+Prompt. Es el caso legítimo de una variable aprendida en la llamada: el
+Function node la crea **antes** de que se evalúe la transición.
+
 > **Por qué las descriptions de los parámetros van en inglés** aunque el agente
 > hable español: para instrucciones técnicas —formatos, tipos, ejemplos— los
 > modelos son más precisos en inglés. La conversación con el prospecto sigue
