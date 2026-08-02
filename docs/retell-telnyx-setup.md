@@ -446,7 +446,59 @@ Canal: chat del dashboard de Retell o `support@retellai.com`.
 
 | Fecha de envio | Canal | Fecha de respuesta | Respuesta |
 |---|---|---|---|
-| **2026-07-31 ✅ enviado** | email a `support@retellai.com` | _(esperando)_ | _(pendiente)_ |
+| 2026-07-31 | email a `support@retellai.com` | **2026-07-31** | ✅ **Solo se factura lo conectado** — ver abajo |
+
+### ✅ RESUELTO: Retell no cobra el timbrado
+
+Respuesta de soporte (Sakshi), 2026-07-31 — **aplica el escenario optimista**:
+
+- En salientes con trunk propio, **Retell factura solo cuando el destino
+  responde**. `dial_no_answer` y `dial_busy` se guardan con `duration_ms = 0`
+  y **no generan ningún cargo por minuto** (ni motor de voz, ni TTS, ni LLM,
+  ni análisis post-llamada).
+- El momento de "conexión" para facturar es cuando **Telnyx devuelve el
+  200 OK del destinatario**, no cuando Retell emite el INVITE.
+- **El post del foro no aplica a nuestro caso**, y por la razón exacta que el
+  research había supuesto: describe a Retell como *receptor* de un INVITE
+  entrante. Nosotros originamos. La sospecha estaba bien planteada.
+- `registered_call_timeout` es un estado de llamadas entrantes registradas;
+  normalmente no aparece en salientes, y si aparece tampoco se factura.
+
+**Consecuencia:** el presupuesto se calcula con el escenario bueno. Los
+intentos que no atienden son **gratis del lado de Retell**, así que el costo
+del piloto lo manda la tasa de atención sobre las llamadas que **sí** conectan.
+
+### ⚠️ Lo que la respuesta dejó abierto: Telnyx factura aparte
+
+Sakshi lo marcó explícitamente: Telnyx calcula **sus propios cargos por
+intentos de llamada, PDD y llamadas de corta duración**, según el contrato de
+elastic SIP trunking, y eso corre por fuera de lo que factura Retell.
+
+**Medido con nuestros propios CDRs** (llamadas reales del dialer humano por el
+mismo trunk, ya reconciliadas contra la factura de Telnyx):
+
+| Resultado | Llamadas | Con CDR | Costo real total | Por llamada | CDRs con costo **$0** |
+|---|---|---|---|---|---|
+| `no_answer` | 306 | 177 | $2.64 | $0.0149 | **135 de 177 (76%)** |
+| `voicemail` | 201 | 197 | $3.81 | $0.0194 | 78 de 197 (40%) |
+| `answered_not_interested` | 63 | 59 | $5.79 | $0.0981 | 1 |
+| `answered_interested` | 50 | 44 | $6.38 | $0.1449 | 0 |
+
+**Lectura:** la mayoría de los no-contacto reales **no cuestan nada** en
+Telnyx (76% de los `no_answer` reconciliados salieron $0). Los que sí cuestan
+son, casi con seguridad, llamadas que **sí conectaron** —un buzón que atendió,
+alguien que levantó y cortó— y que la SDR marcó "no atendió" a mano. Telnyx
+factura en bloques de 60s con mínimo de 1 minuto, así que cualquier conexión
+real cuesta al menos un minuto.
+
+**Con el agente esto debería ser más limpio, no menos**: el
+`disconnection_reason` lo reporta la telefonía, no una persona clasificando
+apurada. Un `dial_no_answer` del agente es un no-contacto de verdad.
+
+**Lo que sí hay que vigilar** es el recargo por llamadas abandonadas que
+Telnyx aplica si superan cierto umbral mensual. El agente **siempre habla**
+cuando alguien atiende, así que no debería generar abandonos — pero el volumen
+de intentos sube, y conviene mirarlo después del primer lote.
 
 **Estado:** el borrador está escrito en el Gmail de la cuenta, listo para
 enviar con un click (asunto: *"Billing question: is ring time billed on
@@ -458,21 +510,34 @@ la página de precios.
 Si el chat del dashboard responde más rápido, sirve igual: es el mismo
 contenido y no hace falta mandar las dos cosas.
 
-### Por qué bloquea el tamaño del piloto
+### Presupuesto del piloto, ya con la respuesta
 
-Con una tasa de atención típica de cold calling (15-25%), si el timbrado se
-cobra igual, **el costo por conversación se multiplica 4-6x**:
+Costo de **una llamada conectada de 2 minutos a México**:
 
-| Escenario | Presupuesto ~$50 rinde |
+| Concepto | Costo |
 |---|---|
-| Solo se cobra lo conectado | ~145-210 llamadas conectadas de 2 min |
-| Se cobra también el timbrado | **~25-40** llamadas conectadas |
+| Retell (infra $0.055 + GPT 4.1 $0.045 + TTS $0.015 = $0.115/min) | $0.230 |
+| Telnyx terminación México (~$0.029/min, bloques de 60s) | $0.058 |
+| **Total por conversación de 2 min** | **≈ $0.29** |
 
-**Verificación de respaldo, por si soporte tarda:** correr el primer lote de 10
-y comparar el total facturado en el dashboard de billing de Retell contra la
-suma de duración real de los transcripts (visible en la biblioteca de
-Entrenamiento IA del SCM). Si lo facturado es bastante mayor, aplica el
-escenario caro.
+Con **~$50** y una tasa de atención de 15-25%:
+
+| | |
+|---|---|
+| Conversaciones de 2 min que se pagan | **~170** |
+| Intentos totales para llegar ahí (20% atención) | ~850 |
+| Costo de esos ~680 intentos sin respuesta | **≈ $0** (Retell no cobra; Telnyx tampoco los no-contacto reales) |
+
+O sea que el presupuesto alcanza para mucho más de lo que hace falta: el
+piloto de D-26-04 son **lotes de 10** hasta llegar a unas 100-150 llamadas. El
+límite real del piloto **no es la plata, es el tiempo de leer transcripts**.
+
+**Verificación de respaldo igual** (una respuesta de soporte no es una
+factura): después del primer lote de 10, comparar el total facturado en el
+dashboard de billing de Retell contra la suma de duraciones reales de los
+transcripts en la biblioteca de Entrenamiento IA. Y del lado Telnyx, el SCM ya
+reconcilia el costo real por CDR (`realCost` en cada llamada), así que el
+número exacto va a estar en el historial sin hacer nada.
 
 ---
 
