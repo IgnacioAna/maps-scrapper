@@ -124,6 +124,9 @@ panel derecho.
 |---|---|---|---|
 | Agent Settings | Idioma | — | **Spanish (Latin America)** |
 | | Voz | — | Mexicana de Retell — ver abajo |
+| | Voz → **More Settings** → Voice Speed | 1.00 | **0.95** (ver el bloque de velocidad). Está **dentro del modal de la voz**, no en Speech Settings |
+| | Voz → More Settings → *Dynamically adjust based on user input* | off | **off en la primera prueba**, después probarlo — ver aviso abajo |
+| | Voz → More Settings → Voice Volume | 1.00 | **1.00** |
 | | LLM | GPT 4.1 **nano** | **GPT 4.1**, tier **Default** ($0.045/min). El **Fast Tier** ($0.0675) queda como palanca de latencia, no se activa de entrada |
 | | ⚙️ LLM Temperature | 0.00 | **0.2** — 0 hace que repita las mismas frases llamada tras llamada; 0.2 da variación sin perder fiabilidad en los parámetros de la tool |
 | | ⚙️ Structured Output | ON | **ON** (ayuda a que `fecha`/`hora` salgan bien formadas) |
@@ -225,11 +228,25 @@ arrancar en 0.95 como dice el diseño, y en la llamada de prueba escuchar la
 misma frase a 0.95 y a 1.05. Si a 0.95 suena arrastrado o "leído", subir.
 Anotar acá el valor final: _(pendiente)_
 
-Hay una tercera opción que puede ganarle a las dos: **"dynamically adjust
+Hay una tercera opción que puede ganarle a las dos: **"Dynamically adjust
 based on user input"** — la velocidad se acomoda sola a la del prospecto. Es
 literalmente lo que nuestro global prompt pide con palabras ("adaptate al
 ritmo: apurado → directo, lento → calma"), pero resuelto por la plataforma en
-vez de por el modelo. **Probarlo.**
+vez de por el modelo.
+
+> ⚠️ **Ojo: ese checkbox aparece DOS veces y no son lo mismo.**
+> - En el modal de la voz, bajo **Voice Speed** → ajusta **qué tan rápido
+>   habla** el agente. **Es el que corresponde a nuestra instrucción de
+>   adaptarse al ritmo.**
+> - En Speech Settings, bajo **Response Eagerness** → ajusta **qué tan rápido
+>   arranca a responder**. Otra cosa.
+>
+> **Dejar los dos apagados en la primera prueba.** Si están activos, no hay
+> forma de saber cómo suena 0.95 — la velocidad se mueve sola y estarías
+> evaluando un blanco móvil. Se prueban después, de a uno.
+
+**Y la velocidad se re-evalúa si cambiás de voz.** El mismo 0.95 suena
+distinto en cada voz; no es un número universal.
 
 ### El Agent Handbook: arregla el texto, no la voz
 
