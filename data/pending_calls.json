@@ -13,6 +13,20 @@
       "reachedActive": true,
       "createdAt": "2026-07-29T22:51:37.579Z",
       "updatedAt": "2026-07-29T22:52:22.860Z"
+    },
+    {
+      "id": "pc_l_doctorasarazapataestticadental_573022645042_1785766371182",
+      "leadId": "l_doctorasarazapataestticadental_573022645042",
+      "leadName": "Doctora Sara Zapata - Estética Dental - Porcelain Veneers - Diseños De Sonrisa - Odontología",
+      "setterId": "setter_adela_ruiz",
+      "userId": "user_setter_1785009018709",
+      "startedAt": "2026-08-03T14:12:51.182Z",
+      "endedAt": "2026-08-03T14:13:31.055Z",
+      "durationSecs": 39,
+      "fromNumber": "+17864350620",
+      "reachedActive": true,
+      "createdAt": "2026-08-03T14:12:52.112Z",
+      "updatedAt": "2026-08-03T14:13:31.715Z"
     }
   ]
 }

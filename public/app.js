@@ -5566,6 +5566,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const ov = document.createElement('div');
       ov.id = 'hoy-ficha-modal';
       ov.className = 'modal-overlay';
+      ov.dataset.leadId = leadId; // lo usa _hoyRefreshFicha para re-renderizar
       ov.style.cssText = 'display:flex; align-items:center; justify-content:center; z-index:1200;';
       ov.innerHTML = `<div class="modal-card" style="max-width:880px; width:min(94vw,880px); max-height:88vh; display:flex; flex-direction:column;">
         <div class="modal-header">
@@ -5579,6 +5580,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.addEventListener('keydown', escClose);
       document.body.appendChild(ov);
     };
+
+    // 2026-08-03: el modal de la ficha es un DOM APARTE de la lista de Llamadas,
+    // así que renderCallsList() no lo toca. Sin esto, tocar un follow-up o una
+    // nota desde la ficha de Hoy guardaba bien en el server pero el modal seguía
+    // mostrando el estado viejo → parecía que "no pasaba nada" y un segundo
+    // click DESTILDABA el follow-up recién puesto (es un toggle).
+    window._hoyRefreshFicha = function(leadId) {
+      const ov = document.getElementById('hoy-ficha-modal');
+      if (!ov || ov.dataset.leadId !== leadId) return;
+      const lead = _callsLeadsById.get(leadId);
+      const body = ov.querySelector('.modal-body');
+      if (!lead || !body) return;
+      // Preservar lo que el SDR esté tipeando (la pre-call se guarda en blur y
+      // el PUT puede no haber vuelto todavía) + la posición del scroll.
+      const scroll = body.scrollTop;
+      const keep = {};
+      ['call-precall-note-' + leadId, 'call-note-input-' + leadId].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && (el.value || '').trim()) keep[id] = el.value;
+      });
+      body.innerHTML = _callsRenderExpandedPanel(lead);
+      Object.entries(keep).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && !(el.value || '').trim()) el.value = val;
+      });
+      body.scrollTop = scroll;
+    };
+
+    // Punto único de refresco tras mutar un lead desde el panel expandido: la
+    // lista de Llamadas + la ficha de Hoy si está abierta sobre ese mismo lead.
+    function _refreshLeadPanels(leadId) {
+      renderCallsList();
+      window._hoyRefreshFicha?.(leadId);
+    }
 
     // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
     // los nuevos se trabajan en Llamadas/Power Dialer, ya ordenados por prioridad.
@@ -6986,7 +7021,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const lead = _callsLeadsById.get(leadId);
         if (lead) lead.notes = d.notes;
         ta.value = '';
-        renderCallsList();
+        _refreshLeadPanels(leadId);
         window.showToast?.('Nota agregada', { type: 'success', duration: 1500 });
       } catch (e) {
         window.showToast?.('Error guardando nota: ' + e.message, { type: 'error' });
@@ -7002,7 +7037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const d = await r.json();
         const lead = _callsLeadsById.get(leadId);
         if (lead) lead.notes = d.notes;
-        renderCallsList();
+        _refreshLeadPanels(leadId);
       } catch (e) {
         window.showToast?.('Error borrando nota: ' + e.message, { type: 'error' });
       }
@@ -7022,7 +7057,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           lead.followUps = d.followUps;
           lead.followUpStartedAt = d.followUpStartedAt;
         }
-        renderCallsList();
+        _refreshLeadPanels(leadId);
+        // Feedback explícito: es un toggle y sin aviso el SDR no sabe si quedó
+        // puesto o quitado (y vuelve a clickear, apagándolo).
+        const _fuLabel = { '24hs': '24h', '48hs': '48h', '72hs': '72h', '7d': '7 días', '15d': '15 días' }[step] || step;
+        const _fuOn = !!(d.followUps || {})[step];
+        window.showToast?.(_fuOn ? ('Follow-up a ' + _fuLabel + ' programado') : ('Follow-up a ' + _fuLabel + ' quitado'),
+          { type: _fuOn ? 'success' : 'info', duration: 2000 });
       } catch (e) {
         window.showToast?.('Error guardando follow-up: ' + e.message, { type: 'error' });
       }
@@ -7050,7 +7091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           _rebuildCallsLeadsIndex();
         }
         _callsRenderCountryChips();
-        renderCallsList();
+        _refreshLeadPanels(leadId);
         renderCallsStats();
         window.showToast?.('Lead reactivado — ya está en cola para llamar', { type: 'success', duration: 3000 });
       } catch (e) {
@@ -7916,7 +7957,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.lead) _leadStoreApply(leadId, data.lead);
         _dispoAfterSaved(leadId);
         _lastAutoMark = { leadId, at: Date.now() };
-        renderCallsList();
+        _refreshLeadPanels(leadId);
         renderCallsStats();
         window.showToast?.('No atendió — marcado automático. Corregilo si hubo contacto (ej. Buzón).', { type: 'info', duration: 5000 });
         // Replicar el post-save del Power Dialer (#151): autopilot avanza,
@@ -9787,7 +9828,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // _leadStore: escritura única → sincroniza lista + Power Dialer.
         if (data.lead) _leadStoreApply(leadId, data.lead);
-        renderCallsList();
+        _refreshLeadPanels(leadId);
         renderCallsStats();
         // Audit fix Sprint 36 (bug 3): refrescar barra de quota tras cada disposition
         _callsRenderQuota?.();
@@ -10279,7 +10320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (window._leadStoreApply) window._leadStoreApply(leadId, { altPhone: d.altPhone, altPhoneLabel: d.altPhoneLabel, email: d.email });
           window.showToast?.(d.altPhone || d.email ? 'Contacto guardado' : 'Contacto borrado', { type: 'success' });
           if (_currentCallLead && _currentCallLead.id === leadId) { _currentCallLead.altPhone = d.altPhone; _currentCallLead.altPhoneLabel = d.altPhoneLabel; _currentCallLead.email = d.email; _renderLeadFile(_currentCallLead); }
-          if (typeof renderCallsList === 'function') renderCallsList();
+          if (typeof renderCallsList === 'function') _refreshLeadPanels(leadId);
           if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
           close();
         } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
