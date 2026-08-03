@@ -128,6 +128,21 @@ describe("fecha_local en las variables del dispatch", () => {
     expect(vars.gancho).toBe("1300 pacientes en la base y atención desde hace 12 años");
   });
 
+  it("tiene_doctor: la bandera de la bifurcación, porque doctor_name viaja SIEMPRE", () => {
+    const con = V._retellDynamicVariables({ id: "a", country: "México", doctor: "Dr. Ramírez" }, { whatsappReturn: "" });
+    const sin = V._retellDynamicVariables({ id: "b", country: "México" }, { whatsappReturn: "" });
+
+    expect(con.tiene_doctor).toBe("si");
+    expect(sin.tiene_doctor).toBe("");
+
+    // El motivo de que exista esta bandera: `doctor_name` está PRESENTE en
+    // los dos casos (string vacío cuando no hay doctor), así que un
+    // `doctor_name exists` en el flow daría verdadero siempre y el agente
+    // pediría por un nombre en blanco.
+    expect(sin).toHaveProperty("doctor_name");
+    expect(sin.doctor_name).toBe("");
+  });
+
   it("ads marca las clínicas que pagan por pacientes nuevos", () => {
     const conAds = V._retellDynamicVariables({ id: "a", country: "México", runsAds: true }, { whatsappReturn: "" });
     const sinAds = V._retellDynamicVariables({ id: "b", country: "México" }, { whatsappReturn: "" });

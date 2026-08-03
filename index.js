@@ -14765,6 +14765,15 @@ function _retellDynamicVariables(lead, retellCfg) {
     // fuerte que tenemos: está pagando por pacientes nuevos mientras los que
     // ya la conocen no vuelven.
     ads: s(lead.runsAds ? 'si' : ''),
+    // Bandera explícita para la bifurcación de `detect` (gk_con_nombre vs
+    // gk_sin_nombre). NO alcanza con evaluar `doctor_name exists`: todas las
+    // variables se mandan SIEMPRE, y `doctor_name` viaja como string vacío
+    // cuando no conocemos al doctor. O sea que la clave existe igual y el
+    // `exists` daría verdadero en todas las llamadas — el agente pediría por
+    // un nombre en blanco. Con esto la condición es una comparación normal
+    // (`tiene_doctor == si`), sin depender de cómo trate Retell una variable
+    // presente pero vacía.
+    tiene_doctor: s(lead.doctor ? 'si' : ''),
     leadId: s(lead.id),
     whatsapp: s(retellCfg.whatsappReturn),
     // Phase 26: fecha y hora actual EN LA ZONA DEL LEAD. Sin esto el modelo
