@@ -183,6 +183,29 @@ describe("alcance — REP-09 (admin-only) y setters ocultos", () => {
     expect(txt).not.toContain("Paula");
   });
 
+  // 2026-08-03 (pedido del user): el agente IA queda fuera del reporte al grupo.
+  // Es el equipo HUMANO de vendedoras; el agente tiene su propio panel y mezclar
+  // sus llamadas en las filas y en el total confunde a quien lee el mensaje.
+  // Ojo: la exclusión es SOLO de reportes — en visibilidad/RBAC el agente sí se ve.
+  it("el agente IA no entra al reporte ni con llamadas ni sin ellas", () => {
+    canonicalFixture({
+      setters: [...SETTERS, { id: "setter_agente_ia", name: "Agente IA" }],
+      leads: lead("l_ia", [
+        // Las llamadas del agente se atribuyen por `channel: 'retell'` aunque no
+        // haya `setterId` en la entry (`_callSetterId`, regla CR-01 de Phase 24).
+        { ts: iso(TODAY + 9 * HOUR), outcome: "answered_interested", duration: 300, channel: "retell" },
+        { ts: iso(TODAY + 9.5 * HOUR), outcome: "no_answer", duration: 0, channel: "retell", setterId: "setter_agente_ia" },
+      ], { assignedTo: "setter_agente_ia" }),
+    });
+    const d = D.buildDailyReportData(NOW23);
+    expect(d.team.dials).toBe(4);                              // solo las de Brenda
+    expect(d.perSetter.map((s) => s.name)).toEqual(["Brenda"]);
+    expect(d.neverStarted).toEqual(["Dalia"]);                 // el agente tampoco acá
+    expect(d.interested.map((i) => i.name)).toEqual(["Brenda"]);
+    const txt = D.buildDailyReportText(d);
+    expect(txt).not.toMatch(/Agente/i);
+  });
+
   it("un setter con hidden:true no aparece en ninguna lista (tampoco en 'Sin arrancar')", () => {
     canonicalFixture();
     const d = D.buildDailyReportData(NOW23);

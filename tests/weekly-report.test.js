@@ -425,7 +425,12 @@ describe("shape del reporte — ventana nueva, sin WSP, sin admin-only (REP-03 +
     // La semana previa se nombra con FECHAS, no como "Semana anterior" (ambiguo
     // cuando el reporte sale con atraso).
     expect(t).not.toContain("Semana anterior");
-    expect(t).toMatch(/_Semana \d{2}[–-]\d{2}\/\d{2}: 1 llam/);
+    // `mkRange` colapsa el mes SOLO si las dos fechas caen en el mismo mes
+    // ("27–02/08"); si la semana cruza de mes lo escribe entero
+    // ("27/07–02/08"). El regex viejo solo aceptaba el primer caso → el test se
+    // ponía rojo ~1 semana de cada 4, según cuándo corriera (misma clase de bug
+    // de calendario que #163). Ahora acepta los dos.
+    expect(t).toMatch(/_Semana \d{2}(\/\d{2})?[–-]\d{2}\/\d{2}: 1 llam/);
     expect(t).toContain(" activa");   // también en la línea del equipo
     expect(t).toMatch(/_Semana [\d–\-/]+: 1 llam · 1 at \(100%\) · 1 int_/);
     expect(t).toContain("_Sin arrancar: Nueva_");

@@ -1801,9 +1801,9 @@ function savePendingCalls(state) {
 function buildWeeklyReportData(nowTs = Date.now()) {
   const settersData = loadSettersData();
   // Regla milestone v2.0: solo vendedoras nuevas — Ignacio y Paula (admin-only)
-  // fuera de todo reporte. Mismo pseudo-set que usa el supervisor sin lista.
-  const visibleSet = _SUPERVISOR_EXCLUSION_SET;
-  const calendar = (settersData.calendar || []).filter(e => !ADMIN_ONLY_SETTER_IDS.has(e.setterId));
+  // fuera de todo reporte. 2026-08-03: el agente IA también (REPORT_EXCLUDED).
+  const visibleSet = _REPORT_EXCLUSION_SET;
+  const calendar = (settersData.calendar || []).filter(e => !REPORT_EXCLUDED_SETTER_IDS.has(e.setterId));
   // D-13 (2026-07-26): el semanal pasó de "la semana pasada completa" a "la
   // semana que TERMINA hoy" (lunes → ahora), porque ahora sale el DOMINGO 23:00
   // junto al último diario, no el lunes a la mañana. Un solo momento y un solo
@@ -2202,9 +2202,9 @@ function _reportDayLabel(ts) {
 function buildDailyReportData(nowTs = Date.now(), dayTs = nowTs) {
   const settersData = loadSettersData();
   // REP-09: solo vendedoras nuevas — Ignacio y Paula (admin-only) fuera de todo
-  // reporte. Mismo pseudo-set que usa el supervisor sin lista (regla #144).
-  const visibleSet = _SUPERVISOR_EXCLUSION_SET;
-  const calendar = (settersData.calendar || []).filter(e => !ADMIN_ONLY_SETTER_IDS.has(e.setterId));
+  // reporte. 2026-08-03: el agente IA también (REPORT_EXCLUDED_SETTER_IDS).
+  const visibleSet = _REPORT_EXCLUSION_SET;
+  const calendar = (settersData.calendar || []).filter(e => !REPORT_EXCLUDED_SETTER_IDS.has(e.setterId));
   const dayStr = _bizDayStr(dayTs);
   // Rango del CORE: from/to iguales = ese día completo, capado a `now`
   // (hoy → [medianoche, ahora]; día pasado → el día entero).
@@ -7360,6 +7360,14 @@ const ADMIN_ONLY_SETTER_IDS = new Set(['setter_ignacio', 'setter_paula_kroff']);
 // admin-only". Los call sites solo usan truthiness + .has() (verificado
 // 2026-07-22), así que alcanza con implementar has().
 const _SUPERVISOR_EXCLUSION_SET = { has: (id) => !ADMIN_ONLY_SETTER_IDS.has(id) };
+// 2026-08-03 — exclusión propia de los REPORTES al grupo (distinta de la de
+// Phase 18): además de los admin-only, el agente IA queda afuera. El reporte es
+// del equipo humano de vendedoras; el agente tiene su propio panel y mezclar sus
+// llamadas en las filas y en el total del equipo confunde a quien lo lee.
+// Pedido explícito del user. NO usar este set para visibilidad/RBAC — ahí el
+// agente SÍ se ve (supervisores incluidos).
+const REPORT_EXCLUDED_SETTER_IDS = new Set([...ADMIN_ONLY_SETTER_IDS, VOICE_AGENT_SETTER_ID]);
+const _REPORT_EXCLUSION_SET = { has: (id) => !REPORT_EXCLUDED_SETTER_IDS.has(id) };
 
 function _visibleSetterIds(authUser) {
   if (!authUser) return null;
