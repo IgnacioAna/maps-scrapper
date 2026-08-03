@@ -1,3 +1,19 @@
 {
-  "events": []
+  "events": [
+    {
+      "id": "retell_evt_1785706961318_ss6t",
+      "type": "call_started",
+      "receivedAt": "2026-08-02T21:42:41.318Z",
+      "verified": true,
+      "callId": "test_call",
+      "agentId": "test_agent",
+      "fromNumber": null,
+      "toNumber": null,
+      "direction": null,
+      "disconnectionReason": null,
+      "durationMs": null,
+      "leadId": null,
+      "raw": "{\"call_id\":\"test_call\",\"call_type\":\"web_call\",\"agent_id\":\"test_agent\",\"agent_version\":0,\"agent_name\":\"Test Single Prompt Agent\",\"call_status\":\"ongoing\",\"start_timestamp\":1785706961191,\"scrubbed_transcript_with_tool_calls\":[],\"latency\":{},\"call_cost\":{\"product_costs\":[],\"combined_cost\":0,\"total_duration_seconds\":0,\"total_duration_unit_price\":0},\"access_token\":\"\"}"
+    }
+  ]
 }

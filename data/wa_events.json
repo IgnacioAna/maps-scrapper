@@ -1,6 +1,192 @@
 {
   "events": [
     {
+      "id": "ev_1785550676583_muv507",
+      "type": "outgoing-sent",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "firstInChat": true,
+        "via": "click"
+      },
+      "createdAt": "2026-08-01T02:17:56.583Z"
+    },
+    {
+      "id": "ev_1785550634871_umxhci",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Patient Flow",
+        "contactName": "Patient Flow",
+        "contactPhone": null,
+        "message": "~Ignacio Ana",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": false
+      },
+      "createdAt": "2026-08-01T02:17:14.871Z"
+    },
+    {
+      "id": "ev_1785550634855_hdrff6",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:17:14.855Z"
+    },
+    {
+      "id": "ev_1785550634838_g3xilk",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Patient Flow",
+            "phone": null,
+            "lastMessage": "~Ignacio Ana",
+            "unreadCount": 4
+          }
+        ]
+      },
+      "createdAt": "2026-08-01T02:17:14.838Z"
+    },
+    {
+      "id": "ev_1785550634819_o0kzq3",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:17:14.819Z"
+    },
+    {
+      "id": "ev_1785550630357_n8mqme",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:17:10.357Z"
+    },
+    {
+      "id": "ev_1785550630333_qodujn",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-08-01T02:17:10.333Z"
+    },
+    {
+      "id": "ev_1785550629728_dkwyky",
+      "type": "logged-out",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:17:09.728Z"
+    },
+    {
+      "id": "ev_1785550616261_9bkhjh",
+      "type": "report-group-selected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "groupName": "Patient Flow",
+        "groupJid": null
+      },
+      "createdAt": "2026-08-01T02:16:56.261Z"
+    },
+    {
+      "id": "ev_1785550611854_pza2e3",
+      "type": "ai-classified-inbound",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "contactKey": "Patient Flow",
+        "contactName": "Patient Flow",
+        "contactPhone": null,
+        "message": "~Ignacio Ana",
+        "classification": {
+          "intent": "desconocido",
+          "confidence": 0.2,
+          "shouldAutoReply": false,
+          "suggestedReply": null,
+          "needsHumanReview": true,
+          "markLeadAs": null,
+          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
+        },
+        "aiEnabled": false,
+        "aiMode": "log-only",
+        "withinHours": false
+      },
+      "createdAt": "2026-08-01T02:16:51.854Z"
+    },
+    {
+      "id": "ev_1785550611835_uxxto7",
+      "type": "response-received",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:16:51.835Z"
+    },
+    {
+      "id": "ev_1785550611792_6wrbdx",
+      "type": "inbound-message",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "newCount": 1,
+        "total": 1,
+        "chats": [
+          {
+            "name": "Patient Flow",
+            "phone": null,
+            "lastMessage": "~Ignacio Ana",
+            "unreadCount": 4
+          }
+        ]
+      },
+      "createdAt": "2026-08-01T02:16:51.792Z"
+    },
+    {
+      "id": "ev_1785550611772_3bomfn",
+      "type": "connected",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:16:51.772Z"
+    },
+    {
+      "id": "ev_1785550607752_zsvr3g",
+      "type": "loading",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": null,
+      "createdAt": "2026-08-01T02:16:47.752Z"
+    },
+    {
+      "id": "ev_1785550607642_lhhu2v",
+      "type": "dom-ready",
+      "accountId": "wa_1785185792141_4h0rso",
+      "userId": "user_admin_ignacio",
+      "payload": {
+        "url": "https://web.whatsapp.com/"
+      },
+      "createdAt": "2026-08-01T02:16:47.642Z"
+    },
+    {
       "id": "ev_1785463378101_t9e1lt",
       "type": "outgoing-sent",
       "accountId": "wa_1785185792141_4h0rso",
@@ -5904,166 +6090,6 @@
         ]
       },
       "createdAt": "2026-06-05T18:21:54.128Z"
-    },
-    {
-      "id": "ev_1780683713496_co2u85",
-      "type": "loading",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:53.496Z"
-    },
-    {
-      "id": "ev_1780683713482_w4vn50",
-      "type": "dom-ready",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/"
-      },
-      "createdAt": "2026-06-05T18:21:53.482Z"
-    },
-    {
-      "id": "ev_1780683712715_fiomvu",
-      "type": "logged-out",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:52.715Z"
-    },
-    {
-      "id": "ev_1780683701581_xrt8co",
-      "type": "outgoing-sent",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:21:41.581Z"
-    },
-    {
-      "id": "ev_1780683698761_oak8m9",
-      "type": "connected",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:38.761Z"
-    },
-    {
-      "id": "ev_1780683696003_j907es",
-      "type": "loading",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:36.003Z"
-    },
-    {
-      "id": "ev_1780683695986_4c17o7",
-      "type": "dom-ready",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51984445191&text=Buenos%20d%C3%ADas%2C%20la%20jornada%20muy%20activa"
-      },
-      "createdAt": "2026-06-05T18:21:35.986Z"
-    },
-    {
-      "id": "ev_1780683695352_je837n",
-      "type": "logged-out",
-      "accountId": "wa_1780449217500_93p5b4",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:35.352Z"
-    },
-    {
-      "id": "ev_1780683685262_dja93g",
-      "type": "ai-classified-inbound",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "contactKey": "+51966847508",
-        "contactName": "",
-        "contactPhone": "+51966847508",
-        "message": "Gracias por comunicarte con Consultorio Odontologico Paredes y Cárdenas. ¿Cómo podemos ayudarte?",
-        "classification": {
-          "intent": "desconocido",
-          "confidence": 0.2,
-          "shouldAutoReply": false,
-          "suggestedReply": null,
-          "needsHumanReview": true,
-          "markLeadAs": null,
-          "reasoning": "no matchea reglas conocidas (confianza baja → review humano)"
-        },
-        "aiEnabled": false,
-        "aiMode": "log-only",
-        "withinHours": true
-      },
-      "createdAt": "2026-06-05T18:21:25.262Z"
-    },
-    {
-      "id": "ev_1780683685249_2x0rqs",
-      "type": "response-received",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:25.249Z"
-    },
-    {
-      "id": "ev_1780683685234_e2153p",
-      "type": "inbound-message",
-      "accountId": "wa_1777129407605_6dmfeo",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "newCount": 1,
-        "total": 1,
-        "chats": [
-          {
-            "name": "",
-            "phone": "+51966847508",
-            "lastMessage": "Gracias por comunicarte con Consultorio Odontologico Paredes y Cárdenas. ¿Cómo podemos ayudarte?",
-            "unreadCount": 1
-          }
-        ]
-      },
-      "createdAt": "2026-06-05T18:21:25.234Z"
-    },
-    {
-      "id": "ev_1780683683445_ddivzu",
-      "type": "outgoing-sent",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "firstInChat": true,
-        "via": "enter"
-      },
-      "createdAt": "2026-06-05T18:21:23.445Z"
-    },
-    {
-      "id": "ev_1780683677982_5ho915",
-      "type": "connected",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:17.982Z"
-    },
-    {
-      "id": "ev_1780683675125_s52apo",
-      "type": "loading",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": null,
-      "createdAt": "2026-06-05T18:21:15.125Z"
-    },
-    {
-      "id": "ev_1780683675113_i8pkpr",
-      "type": "dom-ready",
-      "accountId": "wa_1777831276977_qxby1z",
-      "userId": "user_admin_ignacio",
-      "payload": {
-        "url": "https://web.whatsapp.com/send?phone=51974406841&text=Buenas%2C%20la%20semana%20muy%20movida"
-      },
-      "createdAt": "2026-06-05T18:21:15.114Z"
     }
   ]
 }
