@@ -9431,6 +9431,88 @@ app.get('/api/setters/pool-setter-breakdown', requireAuth, requireRole('admin', 
 // Body: { toSetterId, count?, tier? ('all'|key), country?, fromSetterId? }.
 //   fromSetterId: '__unassigned__' (huérfanos) | '__all__' (todo el pool) | <setterId>. Default '__unassigned__'.
 // Devuelve { moved, byTierMoved, fromRemaining, toTotal }.
+// POST /api/setters/transfer-portfolio — traspaso de CARTERA COMPLETA entre SDRs,
+// CONSERVANDO el trabajo hecho (2026-07-28).
+//
+// Es el "endpoint dedicado con audit log explícito" que pide el comentario de
+// `reassign-bulk`. Existía un hueco real entre los dos caminos que había:
+//   · pool-distribute  → mueve todo, pero RESETEA (interesados y callbacks se
+//                        pierden como estado: el que recibe los ve como fríos).
+//   · reassign-bulk    → conserva, pero solo mueve leads "sin tocar", y esa
+//                        definición exige `!lead.conexion`. Desde que la app es
+//                        100% llamadas TODOS los leads de la cola tienen
+//                        conexion='sin_wsp', así que movía 99 de 1692.
+//
+// Acá NO se resetea nada: estado, callbackAt, interés, follow-ups, callLog, notas
+// e interactions viajan intactos. El que recibe ve los interesados y los
+// callbacks en su vista Hoy, que es el punto.
+//
+// Incluye los DNC a propósito: es un traspaso de cartera, no una distribución
+// para llamar. Dejarlos atrás los deja huérfanos con alguien que quizás ya no
+// está. No son llamables igual (el filtro de la cola los excluye).
+app.post('/api/setters/transfer-portfolio', requireAuth, requireRole('admin'), (req, res) => {
+  const { fromSetterIds, toSetterId, dryRun = true } = req.body || {};
+  const origenes = (Array.isArray(fromSetterIds) ? fromSetterIds : [fromSetterIds]).filter(Boolean).map(String);
+  if (!origenes.length || !toSetterId) return res.status(400).json({ error: 'fromSetterIds[] y toSetterId son requeridos.' });
+  if (origenes.includes(String(toSetterId))) return res.status(400).json({ error: 'El destino no puede estar entre los orígenes.' });
+
+  const data = loadSettersData();
+  const setters = data.setters || [];
+  const destino = setters.find((s) => s.id === toSetterId);
+  if (!destino) return res.status(404).json({ error: `Setter destino no encontrado: ${toSetterId}` });
+  const faltantes = origenes.filter((id) => !setters.find((s) => s.id === id));
+  if (faltantes.length) return res.status(404).json({ error: `Setter origen no encontrado: ${faltantes.join(', ')}` });
+
+  const nombre = Object.fromEntries(setters.map((s) => [s.id, s.name || s.id]));
+  const porOrigen = {};
+  const ids = [];
+  let interesados = 0, callbacks = 0, conLlamadas = 0, dnc = 0;
+  for (const [id, l] of Object.entries(data.leads || {})) {
+    if (!l || !origenes.includes(String(l.assignedTo || ''))) continue;
+    const o = l.assignedTo;
+    porOrigen[o] = porOrigen[o] || { nombre: nombre[o], leads: 0, interesados: 0, callbacks: 0 };
+    porOrigen[o].leads++;
+    if (l.estado === 'interesado') { porOrigen[o].interesados++; interesados++; }
+    if (l.callbackAt) { porOrigen[o].callbacks++; callbacks++; }
+    if (Array.isArray(l.callLog) && l.callLog.length) conLlamadas++;
+    if (l.doNotCall) dnc++;
+    ids.push(id);
+  }
+  const resumen = {
+    ok: true, dryRun, destino: destino.name || toSetterId,
+    leads: ids.length, interesadosQueViajan: interesados, callbacksQueViajan: callbacks,
+    conHistorialDeLlamadas: conLlamadas, dnc, porOrigen,
+  };
+  if (dryRun || !ids.length) return res.json(resumen);
+
+  const backup = makeBackup('pre-transfer-portfolio');
+  const nowIso = new Date().toISOString();
+  for (const id of ids) {
+    const l = data.leads[id];
+    // Audit: de quién venía y cuándo. NADA más se toca.
+    l.transferredFrom = l.assignedTo;
+    l.transferredAt = nowIso;
+    l.transferredBy = req.auth?.user?.id || '';
+    l.assignedTo = toSetterId;
+  }
+  saveSettersData(data);
+
+  // Llamadas sin marcar de los leads que se fueron: quedarían apuntando a leads
+  // que su SDR ya no posee → no podría marcarlas nunca (el guard de ownership la
+  // rechaza) y la traba de disposición la dejaría sin poder discar.
+  let pendientesLimpiados = 0;
+  try {
+    const pc = loadPendingCalls();
+    const antes = (pc.pending || []).length;
+    pc.pending = (pc.pending || []).filter((p) => !ids.includes(p.leadId));
+    pendientesLimpiados = antes - pc.pending.length;
+    if (pendientesLimpiados) savePendingCalls(pc);
+  } catch {}
+
+  console.log(`[transfer-portfolio] ${ids.length} leads → ${destino.name} (de ${origenes.map((o) => nombre[o]).join(', ')}) por ${req.auth?.user?.email || '?'}`);
+  res.json({ ...resumen, dryRun: false, backup, pendientesLimpiados });
+});
+
 app.post('/api/setters/pool-distribute', requireAuth, requireRole('admin'), (req, res) => {
   const { toSetterId, count, tier, country } = req.body || {};
   const fromSetterId = req.body?.fromSetterId || '__unassigned__';
