@@ -1,18 +1,3 @@
 {
-  "pending": [
-    {
-      "id": "pc_l_ingenieriadental_523344443445_1785365411631",
-      "leadId": "l_ingenieriadental_523344443445",
-      "leadName": "Ingenieria Dental",
-      "setterId": "setter_judith_mendez",
-      "userId": "user_setter_1783767580868",
-      "startedAt": "2026-07-29T22:50:11.631Z",
-      "endedAt": "2026-07-29T22:50:56.909Z",
-      "durationSecs": 44,
-      "fromNumber": "+17866870849",
-      "reachedActive": true,
-      "createdAt": "2026-07-29T22:51:37.579Z",
-      "updatedAt": "2026-07-29T22:52:22.860Z"
-    }
-  ]
+  "pending": []
 }

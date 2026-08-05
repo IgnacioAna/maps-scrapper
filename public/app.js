@@ -2604,10 +2604,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const a = _audioCfg.get();
       if (!a.micId && !a.micLabel) return '';
       try {
-        const mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
-        if (a.micId && mics.some(m => m.deviceId === a.micId)) return a.micId; // sigue vigente
+        const mics = (await navigator.mediaDevices.enumerateDevices())
+          .filter(d => d.kind === 'audioinput' && !_isPseudoMicId(d.deviceId));
+        // Solo un id FÍSICO vigente se acepta directo. El virtual ("default"/
+        // "communications") existe siempre en la lista, así que antes pasaba
+        // este check eternamente y la llamada seguía al default de Windows.
+        if (a.micId && !_isPseudoMicId(a.micId) && mics.some(m => m.deviceId === a.micId)) return a.micId;
         if (a.micLabel) {
-          const norm = s => String(s || '').trim().toLowerCase();
+          // El label guardado puede venir con el prefijo virtual ("Predeterminado - X"):
+          // se compara sin él para migrar al dispositivo real.
+          const norm = s => _stripPseudoPrefix(s).trim().toLowerCase();
           const exacto = mics.find(m => norm(m.label) === norm(a.micLabel));
           // Los labels cambian el número de puerto ("(7- HyperX...)" → "(4- HyperX...)")
           // al reconectar el USB, así que también se compara sin ese prefijo.
@@ -2617,13 +2623,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (hit) {
             localStorage.setItem(_audioCfg.KEYS.mic, hit.deviceId);
             localStorage.setItem(_audioCfg.KEYS.micLabel, hit.label || a.micLabel);
-            console.log('[audio] el id del mic elegido había caducado — recuperado por nombre:', hit.label);
+            console.log('[audio] mic elegido re-resuelto al dispositivo físico:', hit.label);
             return hit.deviceId;
           }
           console.warn('[audio] el mic elegido ("' + a.micLabel + '") no está conectado — se usa el del sistema');
         }
       } catch (e) { console.warn('[audio] no se pudo resolver el mic elegido:', e?.message); }
-      return a.micId || '';
+      // Un id virtual sin resolver equivale a "sin elección": que decida el
+      // sistema, pero jamás devolver "default" como si fuera una elección.
+      return _isPseudoMicId(a.micId) ? '' : (a.micId || '');
     }
 
     // Heurística de "micrófono integrado de la computadora". Caso real: el admin
@@ -2634,6 +2642,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       const s = String(label || '').toLowerCase();
       if (!s) return false;
       return /smart sound|varios micr|multiple mic|array|internal|integrad|built-?in|realtek|macbook|interno|laptop|notebook/.test(s);
+    }
+
+    // Chrome expone dos dispositivos VIRTUALES en enumerateDevices ("default" y
+    // "communications", labels "Predeterminado - X" / "Comunicaciones - X") que
+    // no son un micrófono: son un puntero a "lo que Windows tenga como
+    // predeterminado AHORA". Elegirlos en el panel parecía elegir el mic propio,
+    // pero si Windows cambia su default (drivers, reconexión USB, actualización)
+    // la llamada sale por OTRO mic — típicamente el interno de la laptop — sin
+    // ningún error. Caso real 2026-08-05: el admin elegía su mic y las llamadas
+    // igual salían por "Varios micrófonos (Intel Smart Sound)" con el cliente
+    // sin poder escucharlo. Estos ids NUNCA se guardan ni se aceptan: siempre se
+    // resuelven al dispositivo físico que representan (por nombre, sin prefijo).
+    function _isPseudoMicId(id) { return id === 'default' || id === 'communications'; }
+    function _stripPseudoPrefix(label) {
+      return String(label || '').replace(/^\s*(predeterminado|comunicaciones|default|communications)\s*[-–—:]\s*/i, '');
     }
 
     // Cambia el micrófono SIN cortar la llamada: captura el nuevo, lo pasa por la
@@ -2682,16 +2705,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!box || !sel) return;
       const actual = _micChain?.micLabel || '';
       if (!actual || !_isBuiltInMic(actual)) { box.style.display = 'none'; return; }
-      // Si el SDR YA eligió un mic, no se le pregunta de nuevo (feedback del user:
-      // "para qué me hacés elegir si ya lo elegí en el panel Audio"). Con
-      // _resolveMicId su elección se respeta aunque el deviceId haya caducado; si
-      // aun así se está usando el interno, es porque ESE es el que eligió o el
-      // suyo está desconectado — y eso se ve en la línea "Mic:".
+      // La llamada está saliendo por el mic integrado de la compu. Solo se
+      // oculta el aviso si eso es EXACTAMENTE lo que el SDR eligió. Antes se
+      // ocultaba apenas había una elección guardada — y cuando el browser la
+      // ignoraba (id virtual "default", mic desconectado) el selector de rescate
+      // no aparecía justo en el caso donde más hacía falta.
       const elegido = _audioCfg.get();
-      if (elegido.micId || elegido.micLabel) { box.style.display = 'none'; return; }
+      const normLbl = s => _stripPseudoPrefix(s).trim().toLowerCase().replace(/\((\d+)-\s*/g, '(');
+      const eligioEste = !!elegido.micLabel && normLbl(elegido.micLabel) === normLbl(actual);
+      if (eligioEste) { box.style.display = 'none'; return; }
       let mics = [];
       try { mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); } catch { return; }
-      const otros = mics.filter(m => m.deviceId && m.deviceId !== 'communications' && !_isBuiltInMic(m.label));
+      const otros = mics.filter(m => m.deviceId && !_isPseudoMicId(m.deviceId) && !_isBuiltInMic(m.label));
       if (!otros.length) { box.style.display = 'none'; return; }  // no hay a qué cambiar
       if (box.dataset.filled !== '1') {
         const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
@@ -2702,6 +2727,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (sel.value) _swapMicLive(sel.value, opt?.text || '');
         };
         box.dataset.filled = '1';
+      }
+      // Si había una elección y el browser la ignoró, decirlo con nombre y
+      // apellido — es la pista de que algo (id caducado, mic desconectado)
+      // pisó la preferencia del SDR.
+      if (elegido.micId || elegido.micLabel) {
+        const status = document.getElementById('telnyx-mic-swap-status');
+        if (status) {
+          status.textContent = 'Elegiste "' + _stripPseudoPrefix(elegido.micLabel || 'otro micrófono') +
+            '" pero la llamada salió con el mic de la computadora. Elegilo acá para cambiar ya.';
+          status.style.color = '#FFB341';
+        }
       }
       box.style.display = '';
     }
@@ -2758,7 +2794,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const a = this.get();
         const c = { echoCancellation: a.ec, noiseSuppression: a.ns, autoGainControl: a.agc, channelCount: 1 };
         const id = deviceIdOverride !== undefined ? deviceIdOverride : a.micId;
-        if (id) c.deviceId = { ideal: id };
+        // Un id virtual de Chrome ("default"/"communications") no es una
+        // elección: se omite y decide el sistema — igual que no pasar nada.
+        if (id && !_isPseudoMicId(id)) c.deviceId = { ideal: id };
         return c;
       },
 
@@ -2941,7 +2979,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const devs = await navigator.mediaDevices.enumerateDevices();
       return {
-        mics: devs.filter(d => d.kind === 'audioinput'),
+        // Sin los virtuales de Chrome ("Predeterminado - X"/"Comunicaciones - X"):
+        // elegirlos guardaba un puntero móvil al default de Windows, no un mic
+        // (causa raíz del "elegí mi mic y la llamada sale por el de la laptop").
+        mics: devs.filter(d => d.kind === 'audioinput' && !_isPseudoMicId(d.deviceId)),
         spks: devs.filter(d => d.kind === 'audiooutput'),
         denied: false,
       };
@@ -3102,7 +3143,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         micSel.innerHTML = mics.length
           ? mics.map((m, i) => `<option value="${esc(m.deviceId)}">${esc(m.label || ('Micrófono ' + (i + 1)))}</option>`).join('')
           : '<option value="">No se detectaron micrófonos</option>';
-        if (a.micId && mics.some(m => m.deviceId === a.micId)) micSel.value = a.micId;
+        // Migra elecciones viejas guardadas como id virtual ("default") o con id
+        // caducado al dispositivo físico ANTES de marcar el select — así el panel
+        // muestra la verdad de lo que va a usar la próxima llamada.
+        try { await _resolveMicId(); } catch {}
+        const cur = _audioCfg.get();
+        if (cur.micId && mics.some(m => m.deviceId === cur.micId)) micSel.value = cur.micId;
       }
       if (spkSel) {
         spkSel.innerHTML = '<option value="">Predeterminado del sistema</option>' +
@@ -8609,6 +8655,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       injectChannels: (ch) => { _recChannels = ch; },
       channels: () => _recChannels,
       isBuiltIn: (l) => _isBuiltInMic(l),
+      isPseudo: (id) => _isPseudoMicId(id),
+      stripPseudo: (l) => _stripPseudoPrefix(l),
       resolveMicId: () => _resolveMicId(),
       micChain: () => _micChain && { micLabel: _micChain.micLabel, gain: _micChain.gain?.gain?.value },
       micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
