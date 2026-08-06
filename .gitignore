@@ -39,3 +39,6 @@ pre-deploy.bat
 # Backup viejo de 9MB en la raiz (audit 2026-06-20) — nunca commitear
 paula-old.json
 !.claude/get-shit-done/
+
+# CSVs crudos de la rate sheet Telnyx (25MB c/u) — al repo va solo data/telnyx_rates.json
+telnyx/
