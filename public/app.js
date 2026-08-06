@@ -479,6 +479,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.dataset.viewAs = '1';
     }
 
+    // Estado de los pollings (Sprint 14 + 27). Declarado ACA porque las
+    // funciones se invocan unas líneas más abajo, en este mismo scope, ANTES
+    // de que la ejecución llegue a sus definiciones — con `let` allá abajo
+    // quedaban en TDZ y ambos pollings morían con ReferenceError silencioso
+    // (las funciones son async → promise rejection, el boot seguía igual).
+    let _speedLastCheck = new Date().toISOString();
+    let _speedPollTimer = null;
+    let _speedAudioCtx = null;
+    let _cbLastCheck = new Date().toISOString();
+    let _cbPollTimer = null;
+    let _cbPollFn = null;
+
     // Sprint 14: Speed-to-Lead Alert — polling cada 15s para detectar
     // leads que respondieron en WA. Toast prominente + sonido beep.
     // Solo admin/supervisor (los que pueden llamar) tienen este alert.
@@ -711,10 +723,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ───────────────────────────────────────────────────────────────
     // Sprint 14: Speed-to-Lead Polling (solo admin/supervisor)
+    // (_speedLastCheck/_speedPollTimer/_speedAudioCtx se declaran arriba,
+    // junto al boot que invoca este polling — ver nota anti-TDZ)
     // ───────────────────────────────────────────────────────────────
-    let _speedLastCheck = new Date().toISOString();
-    let _speedPollTimer = null;
-    let _speedAudioCtx = null;
     async function _startSpeedToLeadPolling() {
       if (_speedPollTimer) clearInterval(_speedPollTimer);
       _speedLastCheck = new Date().toISOString();
@@ -817,9 +828,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cada 90s, fetch callbacks vencidos en los últimos 90 minutos
     // (no notificados aún). Toast + beep distintivo. LocalStorage de
     // IDs notificados para no spammear entre refreshes.
+    // (_cbLastCheck/_cbPollTimer se declaran arriba, junto al boot que
+    // invoca este polling — ver nota anti-TDZ)
     // ───────────────────────────────────────────────────────────────
-    let _cbLastCheck = new Date().toISOString();
-    let _cbPollTimer = null;
     function _cbGetNotifiedSet() {
       try {
         const raw = localStorage.getItem('scm_cb_notified_' + (currentUser?.id || 'anon'));
@@ -933,6 +944,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       _cbPollTimer = setInterval(poll, 90000); // 90s
       setTimeout(poll, 3000); // primera corrida después de 3s
+      // Guardar poll en variable del scope: en browser setInterval devuelve un
+      // NUMBER y colgarle `._fn` tira TypeError en strict mode (ES module) —
+      // bug que quedaba enmascarado mientras el TDZ mataba esta función antes.
+      _cbPollFn = poll;
       // Sprint 37 (re-audit fix): visibilitychange listener una sola vez en
       // toda la vida de la app (sino acumula handlers en cada re-login).
       if (!window.__cbVisibilityRegistered) {
@@ -940,12 +955,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.addEventListener('visibilitychange', () => {
           if (!document.hidden && _cbPollTimer) setTimeout(() => {
             // re-disparar el polling al volver (sin redeclarar poll)
-            _cbPollTimer && _cbPollTimer._fn?.();
+            _cbPollTimer && _cbPollFn?.();
           }, 500);
         });
       }
-      // Guardar fn en el timer para que el visibilitychange pueda invocarlo
-      if (_cbPollTimer) _cbPollTimer._fn = poll;
     }
     function _stopCallbackDuePolling() {
       if (_cbPollTimer) { clearInterval(_cbPollTimer); _cbPollTimer = null; }
