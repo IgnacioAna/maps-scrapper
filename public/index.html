@@ -794,6 +794,10 @@
               <option value="">Todos los SDRs</option>
             </select>
             <span id="hoy-greeting" style="font-size:13px; color:var(--text-secondary);"></span>
+            <button id="hoy-power-dialer-btn" data-roles="admin,supervisor,setter" class="calls-cta-primary" title="Discar los seguimientos de hoy uno atrás de otro: callbacks ya vencidos primero, después interesados sin agendar. Los callbacks de más tarde entran a su hora.">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Power dialer</span>
+            </button>
           </div>
         </div>
         <div id="hoy-kpis" class="setter-stats" style="padding:0 32px; margin-top:6px;"></div>
@@ -3604,7 +3608,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260805b"></script>
+  <script type="module" src="/app.js?v=20260810a"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

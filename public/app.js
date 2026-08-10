@@ -5450,6 +5450,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     }
+    // Snapshot de las secciones de Hoy (ids en el orden renderizado). Lo consume
+    // el Power Dialer en modo 'hoy' (2026-08-10): la cola del dialer tiene que
+    // ser EXACTAMENTE lo que la vista muestra, no una re-derivación aparte.
+    let _hoyState = { callbackIds: [], interesadoIds: [], at: 0 };
+
     async function loadHoyView() {
       const kpisEl = document.getElementById('hoy-kpis');
       const secEl = document.getElementById('hoy-sections');
@@ -5505,6 +5510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
         // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
         const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
+        _hoyState = { callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id), at: Date.now() };
 
         // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
         // mini-funnel del día: llamadas → conectadas → conversaciones → agendadas,
@@ -5930,6 +5936,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─────────────────────────────────────────────────────────────
     const _pd = {
       active: false,
+      mode: 'calls',      // 'calls' = cola de Llamadas | 'hoy' = seguimientos de Hoy (2026-08-10)
       queue: [],          // array de lead IDs en orden
       currentIdx: 0,
       processed: 0,
@@ -6069,11 +6076,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return leads.map(l => l.id);
     }
-    window._pdStart = async function() {
-      if (callsLeadsCache.length === 0) {
-        window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
-        return;
-      }
+    // Cola del dialer en modo Hoy (2026-08-10, pedido del user: "es poco práctico
+    // trabajar ahí" clickeando Llamar fila por fila). Orden = el de la vista:
+    // callbacks manuales YA VENCIDOS primero (por hora), después interesados sin
+    // agendar. Los callbacks programados para más tarde HOY se ven en la vista
+    // pero NO entran a la cola: el SDR prometió llamar a esa hora, el dialer no
+    // tiene derecho a adelantarse (además _pdRender los expulsaría por
+    // callbackAt futuro). Al re-abrir el dialer más tarde, entran solos.
+    function _pdBuildQueueHoy() {
+      const now = Date.now();
+      const due = _hoyState.callbackIds
+        .map(id => _callsLeadsById.get(id))
+        .filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() <= now);
+      const interesados = _hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean);
+      return due.concat(interesados).map(l => l.id);
+    }
+    window._pdStart = async function(mode) {
+      _pd.mode = mode === 'hoy' ? 'hoy' : 'calls';
       // (2026-07-31) La cola se armaba con `callsLeadsCache`, el snapshot cargado
       // al abrir Llamadas — nunca se volvía a preguntar al servidor. Si el estado
       // del lead cambió (se descartó solo, otro SDR lo tomó, entró un callback),
@@ -6082,11 +6101,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       // sincronizado una cosa con la otra". Ahora se refresca antes de armar la
       // cola. Si el refresh falla (sin red), seguimos con el cache: es preferible
       // discar con datos viejos a no poder discar.
-      try { await loadCallsView(); } catch (e) { console.warn('[pd] no se pudo refrescar la cola:', e?.message); }
-      _pd.queue = _pdBuildQueue();
-      if (_pd.queue.length === 0) {
-        window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
-        return;
+      if (_pd.mode === 'hoy') {
+        try { await loadHoyView(); } catch (e) { console.warn('[pd] no se pudo refrescar Hoy:', e?.message); }
+        _pd.queue = _pdBuildQueueHoy();
+        if (_pd.queue.length === 0) {
+          const later = _hoyState.callbackIds.length
+            ? _hoyState.callbackIds.map(id => _callsLeadsById.get(id)).filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()).length
+            : 0;
+          window.showToast?.(later
+            ? `Nada para discar ahora — ${later} callback${later > 1 ? 's' : ''} de hoy entra${later > 1 ? 'n' : ''} a su hora.`
+            : 'Sin seguimientos pendientes en Hoy.', { type: 'info', duration: 3500 });
+          return;
+        }
+      } else {
+        if (callsLeadsCache.length === 0) {
+          window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
+          return;
+        }
+        try { await loadCallsView(); } catch (e) { console.warn('[pd] no se pudo refrescar la cola:', e?.message); }
+        _pd.queue = _pdBuildQueue();
+        if (_pd.queue.length === 0) {
+          window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
+          return;
+        }
       }
       _pd.currentIdx = 0;
       _pd.processed = 0;
@@ -6099,7 +6136,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
       _pdRender();
-      window.showToast?.(`Power dialer activado · ${_pd.queue.length} leads en cola`, { type: 'success', duration: 2500 });
+      window.showToast?.(_pd.mode === 'hoy'
+        ? `Power dialer · ${_pd.queue.length} seguimiento${_pd.queue.length > 1 ? 's' : ''} de Hoy en cola`
+        : `Power dialer activado · ${_pd.queue.length} leads en cola`, { type: 'success', duration: 2500 });
     };
     window._pdExit = function() {
       // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
@@ -6112,8 +6151,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.active = false;
       document.getElementById('power-dialer').style.display = 'none';
       document.body.style.overflow = '';
-      // Refrescar lista de Llamadas para que se actualicen los counts
-      loadCallsView();
+      // Refrescar la vista de origen para que se actualicen los counts
+      if (_pd.mode === 'hoy') loadHoyView(); else loadCallsView();
     };
     // Audit fix Sprint 36 + 37 (HOTSPOT-8): event delegation en lugar de
     // attachar listener por cada menu-item. Previene listener leak si el
@@ -6552,7 +6591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`;
       }).join('');
 
-      document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas`;
+      document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas${_pd.mode === 'hoy' ? ' · cola de Hoy' : ''}`;
 
       // Badge de tarifa real Telnyx por prefijo. Async para no bloquear el render.
       // Cache por número así no re-fetcheamos en cada re-render del PD.
@@ -6734,6 +6773,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Wiring botones power dialer
     document.getElementById('calls-power-dialer-btn')?.addEventListener('click', () => window._pdStart());
+    document.getElementById('hoy-power-dialer-btn')?.addEventListener('click', () => window._pdStart('hoy'));
     document.getElementById('pd-exit-btn')?.addEventListener('click', () => window._pdExit());
 
     // ── Manual dial: discar un numero arbitrario sin lead asociado ───────────
