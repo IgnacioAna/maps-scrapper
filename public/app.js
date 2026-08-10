@@ -5541,8 +5541,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
 
         secEl.innerHTML =
-          _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar') +
-          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar') +
+          _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
+          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar', 'hoy-interesados') +
           _hoyNewLeadsPointer(virgenesCount);
       } catch (e) {
         console.error('[hoy]', e);
@@ -5583,7 +5583,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>`;
     }
 
-    function _hoyRenderSection(title, leads, accent, hint) {
+    function _hoyRenderSection(title, leads, accent, hint, dialerMode) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
@@ -5610,12 +5610,20 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
         </div>`;
       }).join('');
+      // Power dialer POR SECCIÓN (2026-08-10, pedido del user): cada cola se
+      // puede barrer por separado, además del botón general del header que
+      // encadena callbacks → interesados.
+      const dialBtn = (dialerMode && leads.length) ? `<button onclick="window._pdStart('${dialerMode}')"
+          title="Discar solo esta sección, uno atrás de otro"
+          style="padding:5px 12px; background:color-mix(in srgb, ${accent} 14%, transparent); border:1px solid color-mix(in srgb, ${accent} 45%, transparent); color:var(--text-primary); border-radius:8px; cursor:pointer; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Power dialer</button>` : '';
       return `<div class="hoy-section" style="--sec-accent:${accent};">
         <div class="hoy-section-head">
           <span class="hoy-section-dot"></span>
           <span class="hoy-section-title">${title}</span>
           <span class="hoy-section-count">${leads.length}</span>
           <span class="hoy-section-hint">${hint}</span>
+          ${dialBtn}
         </div>
         ${leads.length ? rows : '<div class="hoy-empty">Sin pendientes.</div>'}
       </div>`;
@@ -5937,6 +5945,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const _pd = {
       active: false,
       mode: 'calls',      // 'calls' = cola de Llamadas | 'hoy' = seguimientos de Hoy (2026-08-10)
+      hoyFilter: null,    // en modo hoy: null (todo) | 'callbacks' | 'interesados' (botón por sección)
       queue: [],          // array de lead IDs en orden
       currentIdx: 0,
       processed: 0,
@@ -6083,16 +6092,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // pero NO entran a la cola: el SDR prometió llamar a esa hora, el dialer no
     // tiene derecho a adelantarse (además _pdRender los expulsaría por
     // callbackAt futuro). Al re-abrir el dialer más tarde, entran solos.
-    function _pdBuildQueueHoy() {
+    // filter: 'callbacks' | 'interesados' | null (ambas, callbacks primero).
+    function _pdBuildQueueHoy(filter) {
       const now = Date.now();
-      const due = _hoyState.callbackIds
+      const due = filter === 'interesados' ? [] : _hoyState.callbackIds
         .map(id => _callsLeadsById.get(id))
         .filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() <= now);
-      const interesados = _hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean);
+      const interesados = filter === 'callbacks' ? [] : _hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean);
       return due.concat(interesados).map(l => l.id);
     }
     window._pdStart = async function(mode) {
-      _pd.mode = mode === 'hoy' ? 'hoy' : 'calls';
+      // 'hoy' = seguimientos completos (callbacks vencidos → interesados);
+      // 'hoy-callbacks' / 'hoy-interesados' = solo esa sección (botón por sección).
+      const isHoy = typeof mode === 'string' && mode.startsWith('hoy');
+      _pd.mode = isHoy ? 'hoy' : 'calls';
+      _pd.hoyFilter = mode === 'hoy-callbacks' ? 'callbacks' : mode === 'hoy-interesados' ? 'interesados' : null;
       // (2026-07-31) La cola se armaba con `callsLeadsCache`, el snapshot cargado
       // al abrir Llamadas — nunca se volvía a preguntar al servidor. Si el estado
       // del lead cambió (se descartó solo, otro SDR lo tomó, entró un callback),
@@ -6103,14 +6117,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       // discar con datos viejos a no poder discar.
       if (_pd.mode === 'hoy') {
         try { await loadHoyView(); } catch (e) { console.warn('[pd] no se pudo refrescar Hoy:', e?.message); }
-        _pd.queue = _pdBuildQueueHoy();
+        _pd.queue = _pdBuildQueueHoy(_pd.hoyFilter);
         if (_pd.queue.length === 0) {
-          const later = _hoyState.callbackIds.length
-            ? _hoyState.callbackIds.map(id => _callsLeadsById.get(id)).filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()).length
-            : 0;
+          const later = (_pd.hoyFilter === 'interesados' || !_hoyState.callbackIds.length) ? 0
+            : _hoyState.callbackIds.map(id => _callsLeadsById.get(id)).filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()).length;
           window.showToast?.(later
             ? `Nada para discar ahora — ${later} callback${later > 1 ? 's' : ''} de hoy entra${later > 1 ? 'n' : ''} a su hora.`
-            : 'Sin seguimientos pendientes en Hoy.', { type: 'info', duration: 3500 });
+            : (_pd.hoyFilter === 'interesados' ? 'Sin interesados por agendar.'
+              : _pd.hoyFilter === 'callbacks' ? 'Sin callbacks pendientes hoy.'
+              : 'Sin seguimientos pendientes en Hoy.'), { type: 'info', duration: 3500 });
           return;
         }
       } else {
@@ -6136,9 +6151,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
       _pdRender();
+      const _n = _pd.queue.length;
       window.showToast?.(_pd.mode === 'hoy'
-        ? `Power dialer · ${_pd.queue.length} seguimiento${_pd.queue.length > 1 ? 's' : ''} de Hoy en cola`
-        : `Power dialer activado · ${_pd.queue.length} leads en cola`, { type: 'success', duration: 2500 });
+        ? (_pd.hoyFilter === 'callbacks' ? `Power dialer · ${_n} callback${_n > 1 ? 's' : ''} en cola`
+          : _pd.hoyFilter === 'interesados' ? `Power dialer · ${_n} interesado${_n > 1 ? 's' : ''} por agendar en cola`
+          : `Power dialer · ${_n} seguimiento${_n > 1 ? 's' : ''} de Hoy en cola`)
+        : `Power dialer activado · ${_n} leads en cola`, { type: 'success', duration: 2500 });
     };
     window._pdExit = function() {
       // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
@@ -6591,7 +6609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`;
       }).join('');
 
-      document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas${_pd.mode === 'hoy' ? ' · cola de Hoy' : ''}`;
+      document.getElementById('pd-progress').textContent = `${_pd.currentIdx + 1} / ${_pd.queue.length} · ${_pd.processed} procesadas${_pd.mode === 'hoy' ? (_pd.hoyFilter === 'callbacks' ? ' · callbacks de Hoy' : _pd.hoyFilter === 'interesados' ? ' · interesados de Hoy' : ' · cola de Hoy') : ''}`;
 
       // Badge de tarifa real Telnyx por prefijo. Async para no bloquear el render.
       // Cache por número así no re-fetcheamos en cada re-render del PD.
