@@ -2569,6 +2569,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Cadena Web Audio del micrófono de la llamada en curso (gain ajustable en
     // vivo + label del mic realmente capturado). Se arma en _startTelnyxCall.
     let _micChain = null;
+    // Guard del auto-rescate de mic: un solo intento por llamada (se resetea en
+    // _stopMicMonitor) para no entrar en loop si el swap falla repetido.
+    let _micAutoSwapTried = false;
 
     // Construye la cadena de procesamiento del mic sobre un stream capturado.
     // Devuelve { stream, ctx, gain, micLabel, cleanup }. Se usa al iniciar la
@@ -2603,6 +2606,50 @@ document.addEventListener('DOMContentLoaded', async () => {
           try { bctx.close(); } catch {}
         },
       };
+    }
+
+    // Qué hizo la última captura verificada ('' | 'retried-exact' | 'mismatch-kept').
+    // Viaja en recMeta.micFix para diagnosticar sin depender del recuerdo del SDR.
+    let _micCaptureNote = '';
+    // Captura el micrófono y VERIFICA que el dispositivo entregado sea el que el
+    // SDR eligió (2026-08-11). Caso real de prod: elección guardada "HyperX
+    // SoloCast" resuelta a un id vigente, y la llamada igual salió por el mic
+    // interno — en Brave, getUserMedia con un deviceId que su anti-fingerprinting
+    // no mapea cae al default del sistema SIN error (con {ideal} no hay throw).
+    // La ÚNICA verdad es el label del track capturado: si vino otro dispositivo
+    // y el elegido está conectado, se re-captura con {exact} y se libera el
+    // stream equivocado. Con un stream activo, enumerateDevices() ya devuelve
+    // labels reales — por eso este chequeo post-captura no puede fallar por
+    // labels vacíos como sí puede fallar la resolución pre-llamada.
+    async function _captureMicVerified(micId) {
+      _micCaptureNote = '';
+      const raw = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(micId) });
+      const chosen = _audioCfg.get().micLabel;
+      if (!chosen) return raw;
+      const norm = s => _stripPseudoPrefix(s).trim().toLowerCase().replace(/\((\d+)-\s*/g, '(');
+      const got = raw.getAudioTracks?.()[0]?.label || '';
+      if (!got || norm(got) === norm(chosen)) return raw;
+      try {
+        const mics = (await navigator.mediaDevices.enumerateDevices())
+          .filter(d => d.kind === 'audioinput' && !_isPseudoMicId(d.deviceId));
+        const hit = mics.find(m => m.label && norm(m.label) === norm(chosen));
+        if (hit) {
+          const base = _audioCfg.constraints('');
+          const retry = await navigator.mediaDevices.getUserMedia({ audio: { ...base, deviceId: { exact: hit.deviceId } } });
+          try { raw.getTracks().forEach(t => t.stop()); } catch {}
+          localStorage.setItem(_audioCfg.KEYS.mic, hit.deviceId);
+          localStorage.setItem(_audioCfg.KEYS.micLabel, hit.label || chosen);
+          _micCaptureNote = 'retried-exact';
+          console.log('[audio] el browser entregó "' + got + '" — re-capturado el elegido con exact:', hit.label);
+          return retry;
+        }
+        _micCaptureNote = 'mismatch-kept';
+        console.warn('[audio] el mic elegido ("' + chosen + '") no aparece conectado — se sigue con:', got);
+      } catch (e) {
+        _micCaptureNote = 'mismatch-kept';
+        console.warn('[audio] re-captura del mic elegido falló, se sigue con "' + got + '":', e?.message);
+      }
+      return raw;
     }
 
     // Resuelve el micrófono elegido por el SDR ANTES de cada llamada.
@@ -2688,7 +2735,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       let chain = null;
       try {
         say('Cambiando micrófono…');
-        const raw = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(deviceId) });
+        const raw = await _captureMicVerified(deviceId);
         chain = await _buildMicChain(raw, _audioCfg.micGain());
         const newTrack = chain.stream.getAudioTracks()[0];
         if (!newTrack) throw new Error('sin track');
@@ -2731,6 +2778,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       try { mics = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput'); } catch { return; }
       const otros = mics.filter(m => m.deviceId && !_isPseudoMicId(m.deviceId) && !_isBuiltInMic(m.label));
       if (!otros.length) { box.style.display = 'none'; return; }  // no hay a qué cambiar
+      // Auto-rescate (2026-08-11): si el mic ELEGIDO está conectado, no tiene
+      // sentido pedirle al SDR que lo vuelva a elegir — se cambia solo, una vez
+      // por llamada. El cartel queda para cuando el elegido no aparece (ahí sí
+      // hace falta que elija otro a mano).
+      if (!_micAutoSwapTried && elegido.micLabel) {
+        const hit = otros.find(m => m.label && normLbl(m.label) === normLbl(elegido.micLabel));
+        if (hit) {
+          _micAutoSwapTried = true;
+          const ok = await _swapMicLive(hit.deviceId, hit.label);
+          if (ok) {
+            box.style.display = 'none';
+            window.showToast?.('Micrófono corregido automáticamente: la llamada ahora usa ' + hit.label, { type: 'success', duration: 4500 });
+            return;
+          }
+        }
+      }
       if (box.dataset.filled !== '1') {
         const esc = s => String(s || '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
         sel.innerHTML = '<option value="">Elegí tu micrófono…</option>' +
@@ -8426,6 +8489,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // pedirle al SDR que mire la pantalla para saber qué capturó.
             micGain: _micChain ? _audioCfg.micGain() : null,
             micLabel: (_micChain?.micLabel || '').slice(0, 60),
+            micFix: _micCaptureNote || undefined,
             ...(_lineStatsSummary() || {}) }
         : null;
       _recMeta = null;
@@ -8643,6 +8707,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (swap) swap.style.display = 'none';
       const swapSt = document.getElementById('telnyx-mic-swap-status');
       if (swapSt) swapSt.textContent = '';
+      _micAutoSwapTried = false; // la próxima llamada puede volver a auto-rescatar
     }
     function _startMicMonitor() {
       if (_micMonitor) return;
@@ -8729,6 +8794,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       isPseudo: (id) => _isPseudoMicId(id),
       stripPseudo: (l) => _stripPseudoPrefix(l),
       resolveMicId: () => _resolveMicId(),
+      captureVerified: (id) => _captureMicVerified(id),
+      captureNote: () => _micCaptureNote,
       micChain: () => _micChain && { micLabel: _micChain.micLabel, gain: _micChain.gain?.gain?.value },
       micState: () => _micMonitor && { peak: _micMonitor.peak, quiet: _micMonitor.quiet, spoke: _micMonitor.spoke, echoHits: _micMonitor.echoHits },
     };
@@ -9179,11 +9246,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Defaults = EC/NS/AGC true (idéntico al comportamiento histórico). Si eligió
         // un micrófono, va como deviceId {ideal} (no rompe la llamada si lo desconecta).
         const _aCfg = _audioCfg.get();
+        // Resolver el mic elegido ANTES de armar las opciones (2026-08-11): acá
+        // se snapshotea `audio` para el fallback del SDK, y con el id guardado
+        // sin revalidar (en Brave rota por sesión) ese fallback caía al mic
+        // interno sin ningún error si la cadena fallaba.
+        let _resolvedMicId = '';
+        try { _resolvedMicId = await _resolveMicId(); } catch {}
         const _callOpts = {
           destinationNumber: cleanDestination,
           callerNumber: cleanCaller || fromNum.phone,
           callerName: 'SCM',
-          audio: _audioCfg.constraints(),
+          audio: _audioCfg.constraints(_resolvedMicId),
           video: false,
           // CRÍTICO: el SDK lee remoteElement de options del CALL (no solo del
           // client). Sin esto, attachMediaStream() del SDK puede no encontrar
@@ -9213,9 +9286,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         _micChain = null;
         if (_audioCfg.micChainEnabled()) {
           try {
-            // Revalida el mic elegido (su deviceId pudo caducar) ANTES de capturar.
-            const micId = await _resolveMicId();
-            const rawStream = await navigator.mediaDevices.getUserMedia({ audio: _audioCfg.constraints(micId) });
+            // Captura VERIFICADA contra el label elegido (2026-08-11): en Brave
+            // el id resuelto puede igual caer al mic interno sin error — la
+            // verificación re-captura el elegido con {exact} si hizo falta.
+            const rawStream = await _captureMicVerified(_resolvedMicId);
             const chain = await _buildMicChain(rawStream, _audioCfg.micGain());
             _callOpts.localStream = chain.stream;
             _callOpts.localElement = undefined;

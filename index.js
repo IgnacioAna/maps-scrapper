@@ -18530,7 +18530,10 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
     }
     // micLabel = micrófono REALMENTE capturado (responde "tengo auriculares
     // puestos pero ¿qué agarró el browser?").
-    for (const k of ['setterRecError', 'leadRecError', 'v', 'netCodec', 'micLabel']) {
+    // micFix (2026-08-11) = qué hizo la captura verificada: 'retried-exact'
+    // (el browser entregó otro mic y se re-capturó el elegido con {exact}),
+    // 'mismatch-kept' (elegido desconectado, se siguió con lo que dio).
+    for (const k of ['setterRecError', 'leadRecError', 'v', 'netCodec', 'micLabel', 'micFix']) {
       if (typeof recMeta[k] === 'string' && recMeta[k]) out[k] = recMeta[k].slice(0, 80);
     }
     return Object.keys(out).length ? out : null;
