@@ -8080,6 +8080,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // limpia el gate y refresca la franja de pendientes.
     function _dispoAfterSaved(leadId) {
       _dispoGateClear(leadId);
+      // 2026-08-11: despinnear el lead de la lista. Los pins de _callsForceShow
+      // nunca se limpiaban: el lead recién marcado quedaba ARRIBA de la cola
+      // (el sort los pone primeros) bypasseando el filtro de callbacks futuros —
+      // los "ya trabajados" se apilaban mezclados con los pendientes (reporte
+      // del user 2026-08-11). Con el resultado marcado, el pin ya cumplió.
+      try { _callsForceShow.delete(leadId); } catch {}
       if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
       if (_dispoStripPending && _dispoStripPending.leadId === leadId) _dispoStripPending = null;
       if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
@@ -8090,6 +8096,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView();
       } catch {}
+    }
+
+    // Toast "a dónde se fue" (2026-08-11): tras marcar un resultado, si el lead
+    // queda con callback futuro SALE de la cola de Llamadas (cadencia automática
+    // o callback manual). Sin aviso parecía que el lead "se esfumaba" — el user
+    // no sabía dónde encontrarlo ni cuándo volvía. En el Power Dialer se omite:
+    // el banner "Resultado guardado" ya da el feedback y el flujo sigue ahí.
+    // opts.manual fuerza el destino "Hoy → Callbacks" cuando el caller SABE que
+    // fue un callback manual (el cache optimista puede no tener el callLog fresco).
+    function _dispoWhereToast(leadId, opts = {}) {
+      if (_pd.active) return;
+      const l = _callsLeadsById.get(leadId);
+      if (!l || ['descartado', 'agendado'].includes(l.estado)) return;
+      const ts = l.callbackAt ? new Date(l.callbackAt).getTime() : 0;
+      if (!ts || isNaN(ts) || ts <= Date.now()) return;
+      const d = new Date(ts);
+      const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+      const dias = Math.floor((ts - hoy0.getTime()) / 86400000);
+      const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      const cuando = dias === 0 ? `hoy ${hora}`
+        : dias === 1 ? `mañana ${hora}`
+        : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ` ${hora}`;
+      const manual = opts.manual === true
+        || (Array.isArray(l.callLog) && l.callLog.length > 0 && l.callLog[l.callLog.length - 1].outcome === 'callback_later');
+      const destino = manual ? 'en Hoy → Callbacks' : 'a la cola de Llamadas';
+      window.showToast?.(`«${l.name || 'Lead'}» sale de la cola — vuelve ${cuando} ${destino}`, { type: 'info', duration: 4500 });
     }
 
     // Campos extra del enforcement para el body de call-disposition.
@@ -8140,6 +8172,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         _refreshLeadPanels(leadId);
         renderCallsStats();
         window.showToast?.('No atendió — marcado automático. Corregilo si hubo contacto (ej. Buzón).', { type: 'info', duration: 5000 });
+        // 2026-08-11: la cadencia programó el reintento y el lead salió de la
+        // cola — avisar cuándo vuelve (fuera del Power Dialer).
+        _dispoWhereToast(leadId);
         // Replicar el post-save del Power Dialer (#151): autopilot avanza,
         // manual queda en la tarjeta con banner hasta que el SDR decida.
         if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
@@ -9473,7 +9508,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           // la vista Llamadas OCULTA (la row existe en el DOM pero no se ve) y la
           // llamada quedaba sin disposition (métricas rotas). OJO: no alcanza con
           // chequear que la row exista — hay que chequear qué vista está VISIBLE.
-          if (document.querySelector('#view-hoy:not(.hidden)')) {
+          // 2026-08-11: con el Power Dialer ABIERTO este salto no corre — el dialer
+          // tiene su propia grilla de resultado, y el click programático al sidebar
+          // disparaba el delegate que CIERRA el dialer (el SDR del dialer de Hoy
+          // quedaba expulsado en Llamadas a mitad de cola, con el lead encima
+          // pinneado en _callsForceShow). El gate igual queda armado y se libera
+          // al marcar desde la grilla del dialer.
+          if (!_pd.active && document.querySelector('#view-hoy:not(.hidden)')) {
             // forceShow: si el callback del lead es para más tarde hoy, el filtro de
             // Llamadas lo escondería y la row nunca aparecería para marcar resultado.
             try { _callsForceShow.add(leadId); } catch {}
@@ -9535,7 +9576,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 30000);
           }
           };
-          _focusDispositionRow();
+          // En el Power Dialer no hay row de lista que enfocar: la grilla del
+          // dialer es la UI de resultado y ya tiene sus propios atajos 1-9.
+          if (!_pd.active) _focusDispositionRow();
         }
       }, 500);
     }
@@ -10021,6 +10064,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // _leadStore: escritura única → sincroniza lista + Power Dialer.
         if (data.lead) _leadStoreApply(leadId, data.lead);
+        // 2026-08-11: si el resultado dejó un callback futuro, el lead sale de la
+        // cola al re-render de abajo — avisar cuándo y dónde vuelve.
+        _dispoWhereToast(leadId);
         _refreshLeadPanels(leadId);
         renderCallsStats();
         // Audit fix Sprint 36 (bug 3): refrescar barra de quota tras cada disposition
@@ -10063,17 +10109,21 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
         });
       }
+      // 2026-08-11: mismo bug latente que el modal de callback — el éxito escondía
+      // el modal sin restaurar el botón ("Mandando…" muerto en el próximo open).
+      const phBtn = document.getElementById('call-ph-confirm');
+      phBtn.disabled = false;
+      phBtn.textContent = 'Mandar hold';
       modal.classList.remove('hidden');
 
-      document.getElementById('call-ph-confirm').onclick = async () => {
+      phBtn.onclick = async () => {
         const email = emailIn.value.trim();
         const when = fechaIn.value;
         const durationMins = parseInt(durIn.value, 10) || 30;
         const customNote = noteIn.value.trim();
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Email inválido del prospect.'); return; }
         if (!when) { alert('Elegí fecha y hora.'); return; }
-        const btn = document.getElementById('call-ph-confirm');
-        btn.disabled = true; const old = btn.textContent; btn.textContent = 'Mandando…';
+        phBtn.disabled = true; phBtn.textContent = 'Mandando…';
         try {
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/send-placeholder'), {
             method: 'POST', credentials: 'include',
@@ -10087,7 +10137,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           await loadCallsView();
         } catch (e) {
           alert('Error: ' + e.message);
-          btn.disabled = false; btn.textContent = old;
+        } finally {
+          phBtn.disabled = false; phBtn.textContent = 'Mandar hold';
         }
       };
     }
@@ -10125,12 +10176,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
+      // 2026-08-11 (BUG "Guardando…" eterno): el flujo de éxito escondía el modal
+      // SIN restaurar el botón — quedaba disabled + "Guardando…" para siempre, y
+      // como el modal se reusa, la SIGUIENTE vez que se abría el botón aparecía
+      // muerto: no se podía programar ningún callback más en toda la sesión
+      // (reporte del user: "se queda colgado en el guardando", recurrente).
+      // Cinturón: reset al abrir. Tiradores: finally al terminar cada intento.
+      const confirmBtn = document.getElementById('call-cb-confirm');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Programar';
       modal.classList.remove('hidden');
-      document.getElementById('call-cb-confirm').onclick = async () => {
+      confirmBtn.onclick = async () => {
         const fecha = fechaInput.value;
         if (!fecha) { alert('Elegí una fecha'); return; }
-        const confirmBtn = document.getElementById('call-cb-confirm');
-        confirmBtn.disabled = true; const _oldTxt = confirmBtn.textContent; confirmBtn.textContent = 'Guardando…';
+        confirmBtn.disabled = true; confirmBtn.textContent = 'Guardando…';
         try {
           const callbackIso = new Date(fecha).toISOString();
           const callbackShared = !!document.getElementById('call-cb-shared')?.checked;
@@ -10148,10 +10207,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           // async) y el dialer queda trabado en el mismo lead.
           _leadStoreApply(leadId, { callbackAt: callbackIso, callbackShared });
           modal.classList.add('hidden');
+          // Confirmación explícita: antes el modal se cerraba sin decir nada y el
+          // lead desaparecía de la cola — parecía que no se guardó.
+          _dispoWhereToast(leadId, { manual: true });
           await loadCallsView();
         } catch (e) {
           alert('Error: ' + e.message);
-          confirmBtn.disabled = false; confirmBtn.textContent = _oldTxt;
+        } finally {
+          confirmBtn.disabled = false; confirmBtn.textContent = 'Programar';
         }
       };
     }
@@ -17793,6 +17856,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('agendar-fecha').value = defaultIso;
     document.getElementById('agendar-notas').value = '';
     document.getElementById('agendar-confirm').disabled = false;
+    // 2026-08-11: resetear también el label — tras un éxito quedaba "✓ Agendado".
+    document.getElementById('agendar-confirm').textContent = '✓ Marcar como agendado';
 
     const url = await _agendarLoadGcalConfig();
     const iframe = document.getElementById('agendar-iframe');
