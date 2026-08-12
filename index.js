@@ -10770,7 +10770,15 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
       if (_NO_CONTACT.has(lead.callLog[i].outcome)) streak++; else break;
     }
     lead.cadenceStep = streak;
-    if (streak >= MAX_NO_CONTACT) {
+    // Los INTERESADOS nunca se auto-descartan por no-contacto (2026-08-12):
+    // hay interés declarado — que no atienda dos veces no lo borra. Caso real:
+    // lead interesado con callback manual, el SDR llama a la hora pactada y no
+    // atienden → un "No atendió" más y el descarte automático se comía un lead
+    // caliente en silencio. Siguen con reintento +24h para siempre; el cierre
+    // (agendar/descartar) es SIEMPRE decisión humana desde Hoy → Interesados.
+    // El tope de cortes (hung_up ×2) SÍ les aplica: atender y cortar dos veces
+    // es una señal, no un accidente — criterio del user (#171).
+    if (streak >= MAX_NO_CONTACT && lead.estado !== 'interesado') {
       // 2do no-contacto seguido → descarte automático (no se llama más).
       lead.estado = 'descartado';
       lead.callbackAt = '';

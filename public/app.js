@@ -7549,7 +7549,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const now = Date.now();
 
       let leads = callsLeadsCache.slice();
-      if (country) leads = leads.filter(l => (l.country || '').trim() === country);
+      // 2026-08-12: búsqueda GLOBAL. Con texto en el buscador se busca en TODO
+      // el cache — todos los países y todos los estados (interesados, descartados,
+      // callbacks futuros, último resultado "volver a llamar"). Caso real: pitcheó
+      // a la recepcionista, marcó interesado + callback, al día siguiente no
+      // atendió → el lead quedó solo en Hoy → Interesados y "no lo puedo
+      // encontrar para volverlo a llamar". Los chips que la card ya tiene
+      // (INTERESADO / DESCARTADO / fecha de callback / auto #N) dicen dónde vive.
+      // El Power Dialer NO cambia: _pdBuildQueue mantiene sus filtros propios.
+      const searching = !!search;
+      if (country && !searching) leads = leads.filter(l => (l.country || '').trim() === country);
       if (search) leads = leads.filter(l => (
         // Audit Sprint 37: matchear universalmente como el buscador de Setteo
         // (nombre, teléfono, país, ciudad, doctor, dirección, email, website).
@@ -7566,9 +7575,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
 
       // Ocultar leads con callbackAt en el futuro (excepto los que el user
-      // forzó a mostrar clickeando su callback en la agenda).
+      // forzó a mostrar clickeando su callback en la agenda, o en búsqueda global).
       const showCallbackPending = false;
-      if (!showCallbackPending) {
+      if (!showCallbackPending && !searching) {
         leads = leads.filter(l => _callsForceShow.has(l.id) || !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
       }
 
@@ -7577,7 +7586,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 17: la vista DNC (calls-show-dnc) muestra TODOS los DNC sin importar
       // su estado (son descartados por definición) → bypassea el filtro.
       const showDncView = document.getElementById('calls-show-dnc')?.checked;
-      if (!showDncView) {
+      if (!showDncView && !searching) {
         const showDiscarded = document.getElementById('calls-show-discarded')?.checked;
         // 2026-07-10 (pedido del user): los INTERESADOS no viven en Llamadas —
         // se trabajan desde "Hoy" (sección Interesados sin agendar). Llamadas
@@ -7599,8 +7608,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 2026-07-10 (pedido del user): los callbacks MANUALES ("volver a llamar")
       // no viven en Llamadas — aparecen en Hoy el día que tocan. Acá solo quedan
       // nuevos + reintentos automáticos de no-contacto. Excepción: click desde la
-      // agenda (_callsForceShow) sigue mostrando el lead puntual.
-      if (!showDncView) {
+      // agenda (_callsForceShow) sigue mostrando el lead puntual, y la búsqueda
+      // global los encuentra igual.
+      if (!showDncView && !searching) {
         leads = leads.filter(l => _callsForceShow.has(l.id) || _lastOutcome(l) !== 'callback_later');
       }
       if (sortMode === 'follow_up') {
@@ -7704,7 +7714,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Solo renderizar la página actual
       leads = leads.slice(startIdx, endIdx);
 
-      list.innerHTML = leads.map(l => {
+      // Búsqueda global activa: avisar que se está viendo TODO (incluye leads
+      // que normalmente no viven en esta lista) para que el estado de cada
+      // card no sorprenda.
+      const searchBanner = searching ? `<div style="display:flex; align-items:center; gap:8px; padding:8px 14px; margin-bottom:4px; border:1px dashed var(--border-subtle); border-radius:10px; font-size:11.5px; color:var(--text-tertiary);">
+        <span style="opacity:0.8;">🔎</span>
+        <span>Búsqueda en <strong style="color:var(--text-secondary);">todos tus leads</strong> — incluye interesados (viven en Hoy), descartados y callbacks a futuro. Los chips de cada card dicen dónde está.</span>
+      </div>` : '';
+
+      list.innerHTML = searchBanner + leads.map(l => {
         const tel = buildTelLink(l.phone, l.country);
         const flag = fmtCountry(l.country);
         const lastNote = l.notes && l.notes.length > 0 ? l.notes[l.notes.length - 1] : null;

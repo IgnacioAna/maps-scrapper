@@ -77,4 +77,17 @@ describe("cadencia de auto-redial (1 reintento a 24h, descarte al 2do — anti-a
     const r = await disp({ outcome: "answered_interested" });
     expect(r.body.lead.cadenceStep).toBe(0);
   });
+  it("un INTERESADO nunca se auto-descarta por no-contacto (2026-08-12)", async () => {
+    // l1 quedó estado='interesado' (test anterior). Dos no-contactos seguidos
+    // antes lo descartaban EN SILENCIO — un lead caliente borrado por la
+    // cadencia (caso real: interesado con callback manual, el SDR llama a la
+    // hora pactada y no atienden). Ahora sigue con reintento +24h para
+    // siempre; agendar o descartar es decisión humana desde Hoy → Interesados.
+    await disp({ outcome: "no_answer" });
+    const r = await disp({ outcome: "no_answer" });
+    expect(r.body.lead.estado).toBe("interesado");
+    expect(r.body.lead.cadenceStep).toBe(2);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(r.body.lead.callbackAt)).toBeLessThan(25);
+  });
 });
