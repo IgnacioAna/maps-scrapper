@@ -261,7 +261,12 @@ describe("auto-marca y corrección (D-03)", () => {
     expect(r3.status).toBe(200);
     expect(r3.body.lead.estado).toBe("interesado");
     expect(r3.body.lead.autoDiscarded).toBe(false);
-    expect(new Date(r3.body.lead.callbackAt).getTime()).toBe(new Date(cb1).getTime()); // restaurado del snapshot
+    // El snapshot restaura cb1 (deshace la cadencia fantasma), pero la
+    // disposición corregida lo CONSUME después (regla 2026-08-12: toda
+    // disposición consume el callback pendiente) — atendió y está interesado,
+    // el reintento de cadencia ya no aplica. Sin esto, corregir a "me cortó"
+    // reabriría el bug del callback zombie por la vía de la corrección.
+    expect(r3.body.lead.callbackAt).toBeFalsy();
     expect(r3.body.lead.callLog.length).toBe(2); // la corrección reemplazó a la auto-marca
     expect(r3.body.lead.cadenceStep).toBe(0); // el connect resetea la racha
   });

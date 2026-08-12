@@ -149,4 +149,79 @@ describe('tope de cortes ("Me cortó")', () => {
     const r2 = await disp('l2', { outcome: 'callback_later', callbackAt: manual });
     expect(new Date(r2.body.lead.callbackAt).toISOString()).toBe(manual);
   });
+
+  it('cualquier disposición consume el callback pendiente arrastrado (lead clavado 1° en Prioridad)', async () => {
+    // Caso real (2026-08-12): lead con callback de cadencia del 25/7 vencido; el
+    // SDR lo llamó el 11/8 y marcó "Me cortó" (1er corte, no descarta). Ninguna
+    // rama limpiaba el callback viejo → "callback vencido" = +60 de score → el
+    // lead quedaba clavado PRIMERO en la cola de Prioridad sin importar cuántas
+    // veces se lo llamara, tapando a los vírgenes.
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const stale = new Date(Date.now() - 18 * 24 * 3600000).toISOString();
+    d.leads.zombie = {
+      num: 11, name: 'Callback zombie', phone: '+5215557777777', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callbackAt: stale, callLog: [{ ts: stale, outcome: 'no_answer' }],
+    };
+    // Mismo arrastre pero el próximo resultado es no-contacto: la cadencia debe
+    // RE-programar (+24h), no conservar el vencido ni quedar vacío.
+    d.leads.zombie2 = {
+      num: 12, name: 'Callback zombie 2', phone: '+5215556666666', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callbackAt: stale, callLog: [],
+    };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    // "Me cortó" (1er corte): sigue vivo, pero el callback viejo queda consumido.
+    const r = await disp('zombie', { outcome: 'hung_up' });
+    expect(r.body.lead.estado).not.toBe('descartado');
+    expect(r.body.lead.callbackAt).toBe('');
+
+    const r2 = await disp('zombie2', { outcome: 'no_answer' });
+    const cb = new Date(r2.body.lead.callbackAt).getTime();
+    expect(cb).toBeGreaterThan(Date.now());
+  });
+
+  it('el backfill limpia los callbacks consumidos que YA estaban arrastrados', async () => {
+    // El fix de arriba solo actúa hacia adelante (mismo gap que el tope de
+    // cortes): los zombies existentes en la base seguían clavados hasta que
+    // alguien los volviera a llamar. En prod había 6 al momento del fix.
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const DAY = 24 * 3600000;
+    const base = { assignedTo: 's_x', conexion: 'sin_wsp', estado: 'sin_contactar' };
+    // Vencido + llamada POSTERIOR → consumido, se limpia.
+    d.leads.consumido = { ...base, num: 20, name: 'Consumido', phone: '+5215551111111',
+      callbackAt: new Date(Date.now() - 18 * DAY).toISOString(),
+      callLog: [{ ts: new Date(Date.now() - 1 * DAY).toISOString(), outcome: 'hung_up' }] };
+    // Vencido SIN llamada posterior → sigue legítimamente pendiente, NO se toca.
+    d.leads.pendiente = { ...base, num: 21, name: 'Pendiente real', phone: '+5215552222222',
+      callbackAt: new Date(Date.now() - 2 * DAY).toISOString(),
+      callLog: [{ ts: new Date(Date.now() - 3 * DAY).toISOString(), outcome: 'callback_later' }] };
+    // Callback FUTURO → NO se toca aunque haya llamadas viejas.
+    d.leads.futuro = { ...base, num: 22, name: 'Futuro', phone: '+5215553333333',
+      callbackAt: new Date(Date.now() + 2 * DAY).toISOString(),
+      callLog: [{ ts: new Date(Date.now() - 1 * DAY).toISOString(), outcome: 'callback_later' }] };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    const dry = await request(app).post('/api/admin/backfill-consumed-callbacks').set('Cookie', cookie).send({ dryRun: true });
+    expect(dry.body.leads.some((l) => l.id === 'consumido')).toBe(true);
+    expect(dry.body.leads.some((l) => l.id === 'pendiente')).toBe(false);
+    expect(dry.body.leads.some((l) => l.id === 'futuro')).toBe(false);
+    // La simulación no escribe.
+    expect(JSON.parse(fs.readFileSync(p, 'utf8')).leads.consumido.callbackAt).toBeTruthy();
+
+    const run = await request(app).post('/api/admin/backfill-consumed-callbacks').set('Cookie', cookie).send({});
+    expect(run.body.updated).toBeGreaterThanOrEqual(1);
+    const after = JSON.parse(fs.readFileSync(p, 'utf8'));
+    expect(after.leads.consumido.callbackAt).toBe('');
+    expect(after.leads.consumido.callLog.length).toBe(1); // historial intacto
+    expect(after.leads.pendiente.callbackAt).toBeTruthy();
+    expect(after.leads.futuro.callbackAt).toBeTruthy();
+
+    // Idempotente.
+    const otra = await request(app).post('/api/admin/backfill-consumed-callbacks').set('Cookie', cookie).send({});
+    expect(otra.body.updated).toBe(0);
+  });
 });

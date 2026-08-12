@@ -4048,6 +4048,40 @@ app.post('/api/admin/backfill-hangup-cap', requireAuth, requireRole('admin'), as
   res.json({ dryRun: false, maxHungUp, updated: hits.length, leads: hits.slice(0, 50) });
 });
 
+// Limpia callbacks CONSUMIDOS que quedaron arrastrados (2026-08-12). El fix en
+// _applyCallOutcome (toda disposición consume el callback pendiente) solo actúa
+// hacia adelante — mismo gap que el tope de cortes (#172): los leads que YA
+// estaban en ese estado seguían clavados 1° en la cola de Prioridad (+60 de
+// score por "callback vencido"). Criterio: callbackAt VENCIDO y una llamada en
+// el callLog POSTERIOR a esa fecha → el callback se atendió/intentó y ya no
+// aplica. Un vencido SIN llamada posterior NO se toca: sigue legítimamente
+// pendiente ("Para seguir"). Idempotente. Body: { dryRun?: true }
+app.post('/api/admin/backfill-consumed-callbacks', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const now = Date.now();
+  const scan = (leads) => {
+    const hits = [];
+    for (const [id, lead] of Object.entries(leads || {})) {
+      if (!lead || !lead.callbackAt) continue;
+      const cb = new Date(lead.callbackAt).getTime();
+      if (!cb || cb > now) continue; // solo vencidos
+      const lastCall = (lead.callLog || []).reduce((mx, e) => Math.max(mx, Date.parse(e?.ts || '') || 0), 0);
+      if (lastCall > cb) hits.push({ id, name: lead.name || '', callbackAt: lead.callbackAt, lastCallTs: new Date(lastCall).toISOString(), assignedTo: lead.assignedTo || '' });
+    }
+    return hits;
+  };
+  if (dryRun) {
+    const hits = scan(loadSettersData().leads);
+    return res.json({ dryRun: true, matched: hits.length, leads: hits.slice(0, 50) });
+  }
+  let hits = [];
+  await mutateSettersData((data) => {
+    hits = scan(data.leads);
+    for (const h of hits) data.leads[h.id].callbackAt = '';
+  });
+  res.json({ dryRun: false, updated: hits.length, leads: hits.slice(0, 50) });
+});
+
 app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req, res) => {
   const { dryRun = false } = req.body || {};
   const data = loadSettersData();
@@ -10599,6 +10633,16 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
   lead.lastContactAt = opts.nowIso;
   // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
   if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
+
+  // Esta llamada CONSUME el callback pendiente (2026-08-12). Las ramas que
+  // programan uno nuevo (callback_later, cadencia de no-contacto) lo pisan más
+  // abajo; para el resto de los outcomes el callback viejo ya no aplica — se
+  // habló (o se intentó) DESPUÉS de la fecha prometida. Sin esto, un lead con
+  // callback vencido arrastrado que terminaba en `hung_up` (1er corte) quedaba
+  // con el vencido para siempre → +60 de score → clavado 1° en la cola de
+  // Prioridad sin importar cuántas veces se lo llamara (caso real: lead con
+  // callback de cadencia del 25/7 vencido, corte el 11/8, primero por 18 días).
+  lead.callbackAt = '';
 
   let calendarEntry = null;
 
