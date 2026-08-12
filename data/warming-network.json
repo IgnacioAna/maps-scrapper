@@ -1,0 +1,18 @@
+{
+  "pool": [],
+  "pairs": [],
+  "sentMessages": [],
+  "stats": {
+    "totalMessagesSent": 0,
+    "totalLLMCostUsd": 0,
+    "lastResetMonth": "2026-08"
+  },
+  "llmStats": {
+    "totalCalls": 0,
+    "totalSuccesses": 0,
+    "totalFailures": 0,
+    "totalEstimatedCostUsd": 0,
+    "lastCallAt": null,
+    "lastError": null
+  }
+}
