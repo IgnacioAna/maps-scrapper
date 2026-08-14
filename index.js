@@ -8378,10 +8378,17 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
     // callbacks MANUALES ("vuelvo a llamar") marcados por el DUEÑO ACTUAL.
     // Los reintentos automáticos de no_answer/voicemail (cadencia) también
     // setean callbackAt pero son plomería interna, NO una métrica del SDR.
-    // Manual = el último intento fue disposition 'callback_later' hecha por él.
+    // Phase 29 (D-09): "manual" se lee de nextAction.origen en vez de
+    // inspeccionar el outcome del callLog a mano. _leadNextAction cubre tanto
+    // leads ya migrados (nextAction explícito) como sin migrar — y para estos
+    // últimos, _deriveNextActionFromLegacy marca origen:'manual' con el MISMO
+    // criterio literal de hoy (el último callLog entry es 'callback_later'),
+    // así que el número visible al user no se mueve. La ATRIBUCIÓN por dueño
+    // actual (quién hizo esa última llamada) sigue exactamente igual, aparte.
     const _log = Array.isArray(l.callLog) ? l.callLog : [];
     const _last = _log.length ? _log[_log.length - 1] : null;
-    l.manualCallbackByOwner = !!(l.callbackAt && _last && _last.outcome === 'callback_later'
+    const _na = _leadNextAction(l);
+    l.manualCallbackByOwner = !!(_na && _na.dueAt && _na.origen === 'manual'
       && _callSetterId(_last, l, _swUserMap) === l.assignedTo);
   }
   res.json({ leads });

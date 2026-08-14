@@ -158,6 +158,9 @@ const COMPARE_FIELDS = [
   "doNotCall", "doNotCallReason", "doNotCallBy", "phoneStatus", "cadenceStep",
   "cadenceExhausted", "autoDiscarded", "autoDiscardReason", "callAttempts",
   "conexion", "disqualifyReason",
+  // Phase 29 (D-10): nextAction es el espejo D-03 de callbackAt — mismo
+  // reloj, mismo caller. La paridad humano↔agente de voz tiene que cubrirlo.
+  "nextAction",
 ];
 
 // callbackAt auto-generado por la cadencia usa Date.now() real (no
@@ -174,6 +177,30 @@ function assertParity(r, leadB, { looseCallbackAt = false } = {}) {
   for (const f of COMPARE_FIELDS) {
     if (f === "callbackAt" && looseCallbackAt) {
       expect(closeIso(leadA.callbackAt, leadB.callbackAt), "callbackAt (tolerancia de reloj)").toBe(true);
+      continue;
+    }
+    if (f === "nextAction") {
+      // nextAction.dueAt ES callbackAt espejado (D-03): mismo tratamiento que
+      // el campo de arriba — igualdad estricta en tipo/canal/origen/motivo,
+      // tolerancia de reloj en dueAt cuando lo generó la cadencia con
+      // Date.now() real (looseCallbackAt). createdAt/createdBy quedan FUERA
+      // de la comparación a propósito (mismo criterio que logEntry.by/channel
+      // arriba: son metadata de quién/cuándo, no el estado del reloj).
+      const naA = leadA.nextAction;
+      const naB = leadB.nextAction;
+      if (naA === null || naB === null) {
+        expect(naB, "nextAction (null-ness)").toEqual(naA);
+        continue;
+      }
+      expect(naB.tipo, "nextAction.tipo").toEqual(naA.tipo);
+      expect(naB.canal, "nextAction.canal").toEqual(naA.canal);
+      expect(naB.origen, "nextAction.origen").toEqual(naA.origen);
+      expect(naB.motivo, "nextAction.motivo").toEqual(naA.motivo);
+      if (looseCallbackAt) {
+        expect(closeIso(naA.dueAt, naB.dueAt), "nextAction.dueAt (tolerancia de reloj)").toBe(true);
+      } else {
+        expect(naB.dueAt, "nextAction.dueAt").toEqual(naA.dueAt);
+      }
       continue;
     }
     expect(leadB[f], `campo '${f}'`).toEqual(leadA[f]);
