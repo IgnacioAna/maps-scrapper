@@ -650,6 +650,11 @@ function ensureLeadDefaults(lead = {}) {
   if (!Array.isArray(lead.callLog)) lead.callLog = [];
   if (typeof lead.callAttempts !== 'number') lead.callAttempts = 0;
   if (!lead.callbackAt) lead.callbackAt = '';      // ISO datetime para "Volver a llamar después"
+  // Phase 29 (D-01): el reloj único de próxima acción. Guard por `undefined`,
+  // NO por falsedad — `null` es un valor CON significado ("el lead no tiene
+  // próximo paso"). Un guard estilo `if (!lead.x)` lo estaría re-escribiendo
+  // a `null` en cada load aunque ya tuviera un objeto escrito.
+  if (lead.nextAction === undefined) lead.nextAction = null;
   // Phase 17 Ola 2: callback compartido (cualquier setter lo puede tomar, no solo
   // el dueño). false = privado (comportamiento histórico).
   if (typeof lead.callbackShared !== 'boolean') lead.callbackShared = false;
@@ -10615,6 +10620,142 @@ function _estimateTelnyxCost(destinationPhone, durationSecs) {
   return { cost: +(rate * billableMinutes).toFixed(4), country, tariffKey, source: 'hardcoded_fallback' };
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── NEXT ACTION: el reloj único de próxima acción (Phase 29) ──
+// D-01: lead.nextAction reemplaza a los dos relojes viejos (callbackAt +
+// followUps) sin cambiar comportamiento todavía. D-03: nextAction.dueAt y
+// callbackAt NO pueden divergir mientras conviven — cualquier escritura pasa
+// por _setNextAction/_clearNextAction, que los tocan a los dos juntos.
+// Los planes 29-02 (disposiciones) / 29-03 (followUps) / 29-04 (migración)
+// escriben sobre este cimiento.
+// ══════════════════════════════════════════════════════════════
+
+// Whitelists (mismo idioma que CALL_OUTCOMES/DISQUALIFY_REASONS, ~10802).
+const NEXT_ACTION_TIPOS = new Set([
+  'callback',           // volver a llamar en una fecha
+  'cadencia',           // reintento automático de no-contacto
+  'enviar_info',        // se comprometió a mandar info por WhatsApp/email
+  'esperar_respuesta',  // el prospecto dijo que iba a responder/decidir
+  'otro',
+]);
+const NEXT_ACTION_CANALES = new Set([
+  'llamada',
+  'whatsapp',
+  'email',
+  '',   // '' ES un valor válido: "sin canal definido"
+]);
+const NEXT_ACTION_ORIGENES = new Set([
+  'manual',      // el SDR lo programó a mano
+  'cadencia',    // lo generó el reintento automático de no-contacto
+  'compromiso',  // Phase 31: compromiso hablado durante la llamada
+]);
+
+// Las 5 duraciones de follow-up. Única fuente (D-04): FOLLOWUP_STEPS (más
+// abajo, ~11440) DERIVA de este array — no duplicar deltaMs en ningún otro
+// lado. El orden importa: _computeFollowupsDue hace .find() sobre él.
+const NEXT_ACTION_TEMPLATES = [
+  { key: '24hs', label: '24h', deltaMs: 24 * 60 * 60 * 1000 },
+  { key: '48hs', label: '48h', deltaMs: 48 * 60 * 60 * 1000 },
+  { key: '72hs', label: '72h', deltaMs: 72 * 60 * 60 * 1000 },
+  { key: '7d',   label: '7d',  deltaMs: 7 * 24 * 60 * 60 * 1000 },
+  { key: '15d',  label: '15d', deltaMs: 15 * 24 * 60 * 60 * 1000 },
+];
+
+// Devuelve la plantilla cuyo deltaMs coincide EXACTO con el argumento, o
+// null. Sin tolerancia ni "más cercana": la coincidencia exacta es lo que
+// permite recuperar el `step` original de un follow-up derivado.
+function _nextActionTemplateForDelta(deltaMs) {
+  return NEXT_ACTION_TEMPLATES.find((t) => t.deltaMs === deltaMs) || null;
+}
+
+// Escribe lead.nextAction y espeja lead.callbackAt = nextAction.dueAt (D-03).
+// NUNCA lanza (coerción en vez de throw): está en el camino de una
+// disposición real, un throw sería un 500 en la cara del usuario mientras
+// llama. spec = {tipo, dueAt, canal, motivo, origen, createdBy}.
+function _setNextAction(lead, spec, nowIso) {
+  const s = spec && typeof spec === 'object' ? spec : {};
+  if (typeof s.dueAt !== 'string' || !s.dueAt) {
+    _clearNextAction(lead);
+    return null;
+  }
+  const tipo = NEXT_ACTION_TIPOS.has(s.tipo) ? s.tipo : 'otro';
+  const canal = NEXT_ACTION_CANALES.has(s.canal) ? s.canal : '';
+  const origen = NEXT_ACTION_ORIGENES.has(s.origen) ? s.origen : 'manual';
+  const motivo = typeof s.motivo === 'string' ? s.motivo.slice(0, 200) : '';
+  const createdBy = typeof s.createdBy === 'string' ? s.createdBy.slice(0, 80) : '';
+  const createdAt = typeof nowIso === 'string' && nowIso ? nowIso : new Date().toISOString();
+  lead.nextAction = { tipo, dueAt: s.dueAt, canal, motivo, origen, createdAt, createdBy };
+  // Espejo D-03: asignación LITERAL del string recibido. NO normalizar, NO
+  // re-parsear a Date, NO redondear — callbackAt tiene que quedar
+  // byte-idéntico al que el código de hoy asignaría.
+  lead.callbackAt = s.dueAt;
+  return lead.nextAction;
+}
+
+// Apaga el reloj: los dos campos juntos, siempre. Única forma autorizada de
+// apagarlo.
+function _clearNextAction(lead) {
+  lead.nextAction = null;
+  lead.callbackAt = '';
+}
+
+// PURA: no muta el lead que recibe. Traduce el modelo viejo (callbackAt +
+// followUps) al nuevo — la usan tanto las lecturas (mientras los leads no
+// estén migrados) como el endpoint de migración del plan 29-04.
+function _deriveNextActionFromLegacy(lead) {
+  if (!lead) return null;
+  if (lead.callbackAt) {
+    // callbackAt GANA sobre cualquier followUps activo: es el compromiso
+    // fechado explícito y es el que las colas ya honran hoy — así la fecha
+    // visible no se mueve.
+    const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+    const last = log.length ? log[log.length - 1] : null;
+    // Mismo criterio que manualCallbackByOwner (index.js:8379) y la nota
+    // #150: origen='manual' SOLO si el ÚLTIMO callLog entry es
+    // 'callback_later'. Cualquier otro caso (incluido sin callLog) →
+    // 'cadencia' — preserva el número de "En seguimiento" (D-09).
+    const isManual = !!(last && last.outcome === 'callback_later');
+    return {
+      tipo: isManual ? 'callback' : 'cadencia',
+      dueAt: lead.callbackAt,
+      canal: 'llamada',
+      motivo: isManual ? '' : 'reintento de no-contacto',
+      origen: isManual ? 'manual' : 'cadencia',
+      createdAt: last && last.ts ? last.ts : '',
+      createdBy: '',
+    };
+  }
+  // Sin callbackAt: derivar de un step activo de followUps (mismo .find()
+  // que _computeFollowupsDue usa hoy, ~11470).
+  const fu = lead.followUps || {};
+  const activeStep = NEXT_ACTION_TEMPLATES.find((s) => fu[s.key] === true);
+  if (activeStep) {
+    // Base del contador: followUpStartedAt, con fallback a lastContactAt
+    // (mismo criterio que _computeFollowupsDue, ~11472-11475).
+    const base = lead.followUpStartedAt || lead.lastContactAt;
+    const baseTs = base ? new Date(base).getTime() : 0;
+    if (baseTs) {
+      return {
+        tipo: 'callback',
+        dueAt: new Date(baseTs + activeStep.deltaMs).toISOString(),
+        canal: 'llamada',
+        motivo: `follow-up ${activeStep.label}`,
+        origen: 'manual',
+        createdAt: new Date(baseTs).toISOString(),
+        createdBy: '',
+      };
+    }
+  }
+  return null;
+}
+
+// Único lector autorizado para los planes siguientes: garantiza que un lead
+// migrado y uno sin migrar respondan lo mismo. PURA.
+function _leadNextAction(lead) {
+  if (lead && typeof lead.nextAction === 'object' && lead.nextAction !== null) return lead.nextAction;
+  return _deriveNextActionFromLegacy(lead);
+}
+
 // D-24-02: la cascada de dispositions extraída a helper puro reusable por
 // el handler humano y el webhook del agente de voz (VOICE-05, plan 24-05).
 // T-24-01-01: este helper NO contiene ningún control de acceso ni lee
@@ -10797,7 +10938,13 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
 
 // Expuestos para tests puros (patrón __callCore) y para el webhook del
 // agente de voz (planes 24-03/24-04/24-05, que van a sumar más claves).
-globalThis.__voiceAgent = { _applyCallOutcome, _estimateTelnyxCost, _detectCountryAndType };
+globalThis.__voiceAgent = {
+  _applyCallOutcome, _estimateTelnyxCost, _detectCountryAndType,
+  // Phase 29: modelo nextAction (reloj único).
+  _setNextAction, _clearNextAction, _deriveNextActionFromLegacy, _leadNextAction,
+  _nextActionTemplateForDelta,
+  NEXT_ACTION_TIPOS, NEXT_ACTION_CANALES, NEXT_ACTION_ORIGENES, NEXT_ACTION_TEMPLATES,
+};
 
 const CALL_OUTCOMES = new Set([
   'answered_interested',     // ✅ Atendió + Interesado → calificado, queda en Llamadas
@@ -11432,13 +11579,9 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
 // (fecha base para calcular vencimientos), + extensiones nuevas:
 // followUpNotes, followUpDueOverrides, followUpsReactivated.
 // ══════════════════════════════════════════════════════════════
-const FOLLOWUP_STEPS = [
-  { key: '24hs',  label: '24h', deltaMs: 24 * 60 * 60 * 1000 },
-  { key: '48hs',  label: '48h', deltaMs: 48 * 60 * 60 * 1000 },
-  { key: '72hs',  label: '72h', deltaMs: 72 * 60 * 60 * 1000 },
-  { key: '7d',    label: '7d',  deltaMs: 7 * 24 * 60 * 60 * 1000 },
-  { key: '15d',   label: '15d', deltaMs: 15 * 24 * 60 * 60 * 1000 },
-];
+// Phase 29 (D-04): las 5 duraciones ahora viven en NEXT_ACTION_TEMPLATES
+// (~10618) — sus 5 duraciones sobreviven acá como alias. Una sola fuente.
+const FOLLOWUP_STEPS = NEXT_ACTION_TEMPLATES;
 
 // Estados que ocultan los follow-ups del listado "Hacer hoy" automáticamente.
 // El setter puede revertir con followUpsReactivated=true desde la tarjeta.
