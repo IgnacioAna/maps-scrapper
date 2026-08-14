@@ -117,10 +117,12 @@ panel de llamada cuando tapa algo.
   5. Nada de esto toca `_applyCallOutcome`, `setters.json` ni las
      métricas: la suite completa sigue verde sin cambios de backend, y la
      fase se puede deployar sin migración de datos.
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 28-01: TBD (definido en plan-phase)
+- [ ] 28-01-PLAN.md — Componente de calendario propio (popover anclado, mes navegable, franjas 09:00–19:00, etiqueta relativa)
+- [ ] 28-02-PLAN.md — Cableado a los 5 campos de fecha + hora local del lead + carga de compromisos por día
+- [ ] 28-03-PLAN.md — Paneles de llamada arrastrables con posición recordada (resuelve el empuje CSS de D-11)
 
 ### Phase 29: NEXT — El reloj único
 
@@ -307,7 +309,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. QUICK — Alivio inmediato | 0/TBD | Not started | - |
+| 28. QUICK — Alivio inmediato | 0/3 | Planned | - |
 | 29. NEXT — El reloj único | 0/TBD | Not started | - |
 | 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
 | 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
