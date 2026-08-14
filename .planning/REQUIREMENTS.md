@@ -243,6 +243,109 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ---
 
+## v4.0 Requirements — Seguimiento bajo control (definidos 2026-08-13)
+
+> **Fuente de verdad**: `.planning/research/2026-08-13-requisitos-seguimiento-ignacio.md`
+> (R1-R8, dichos por el user). Si algo acá lo contradice, gana ese archivo.
+> Estado actual del código: `2026-08-13-estado-seguimiento-para-investigar.md`.
+>
+> **Contexto**: se disolvió el equipo. Ignacio trabaja solo con 4.133 leads,
+> ~52 en seguimiento activo, 12 de 16 callbacks vencidos, interesados con 21
+> días de mediana sin avanzar.
+>
+> **Restricción transversal**: el invariante "todo lead activo tiene próxima
+> acción" aplica **solo a leads ya tocados** (137 hoy), nunca al stock virgen
+> (3.699). El `_applyCallOutcome` que se toca acá es el mismo que consume el
+> webhook del agente de voz (v3.0 parkeado) — mantener el helper puro y su
+> paridad con `metrics-consistency`.
+
+### NEXT — Próxima acción única
+
+- [ ] **NEXT-01**: Cada lead tiene a lo sumo un objeto `nextAction`
+  (`{tipo, dueAt, canal, motivo, origen}`) que representa el único
+  compromiso de volver a tocarlo.
+- [ ] **NEXT-02**: `callbackAt` pasa a ser un caso de `nextAction`
+  (tipo=callback) sin perder el comportamiento vigente de la cadencia
+  automática de no-contacto ni de los callbacks manuales.
+- [ ] **NEXT-03**: El sistema viejo de `followUps` (24h/48h/72h/7d/15d) deja
+  de existir como reloj paralelo; sus pasos sobreviven como plantillas de
+  `dueAt`. Los 3 leads que hoy lo usan migran sin perder historia.
+- [ ] **NEXT-04**: Toda disposición nueva consume el `nextAction` pendiente
+  (regla vigente que hay que preservar: evita callbacks viejos clavados
+  arriba de la cola).
+
+### GATE — Cerrar la llamada define el próximo paso
+
+- [ ] **GATE-01**: No se puede cerrar una disposición sin definir un
+  `nextAction` o marcar un estado terminal. Un lead con interés declarado no
+  puede quedar sin fecha.
+- [ ] **GATE-02**: Cada resultado de llamada propone un próximo paso por
+  defecto, editable (interesado, "mandame info", "llamame en X").
+- [ ] **GATE-03**: Al programar una fecha, se ve un calendario real con el
+  mes a la vista y etiquetas relativas ("en 3 días", "el martes"), sin tener
+  que contar días a mano. Conserva los atajos rápidos existentes. *(R7)*
+- [ ] **GATE-04**: Al guardar, el sistema dice **a dónde se fue el lead** y
+  cómo volver a encontrarlo — hoy "desaparece" y ese es el reclamo #1. *(R2)*
+
+### COMM — Compromisos como objeto
+
+- [ ] **COMM-01**: Los compromisos hablados se registran como objeto
+  (`tipo`, `parte` yo/prospecto, `canal`, `dueAt`, `estado`), no como texto
+  libre en una nota. *(R4)*
+- [ ] **COMM-02**: Un compromiso pendiente setea el `nextAction` del lead.
+- [ ] **COMM-03**: Se distingue quién se comprometió: si fue él, es una tarea
+  propia; si fue el prospecto, es una expectativa cuyo incumplimiento
+  dispara su follow-up.
+- [ ] **COMM-04**: Puede consultar en cualquier momento a quién le mandó
+  información, cuándo, y qué falta responder.
+
+### ACT — Acciones desde cualquier vista
+
+- [ ] **ACT-01**: Botón de WhatsApp visible desde toda vista donde aparezca
+  el lead (lista, Power Dialer, ficha, Hoy), que abre `wa.me` con el mensaje
+  precargado. *(R4)*
+- [ ] **ACT-02**: El mismo click registra el envío como evento y crea el
+  próximo paso — mandar y registrar son un solo acto, no dos.
+- [ ] **ACT-03**: Puede mandar a un **número alternativo** cargado en el
+  momento (caso real: el número que llamó no tiene WhatsApp y le pasan otro
+  durante la llamada). *(R4)*
+- [ ] **ACT-04**: Botón de descartar desde cualquier vista, que saca el lead
+  de todas las listas de una. *(R5)*
+- [ ] **ACT-05**: El envío de material por email queda registrado con el
+  mismo modelo de evento que WhatsApp. Sin tracking de aperturas (Apple MPP
+  las volvió ruido).
+
+### DIAL — Power Dialer como motor único
+
+- [ ] **DIAL-01**: Puede lanzar el Power Dialer sobre un lead puntual desde
+  cualquier lista, sin que la cola arranque de cero. *(R2)*
+- [ ] **DIAL-02**: Marcar un resultado no expulsa el lead de la vista antes
+  de que él decida avanzar. *(R2)*
+- [ ] **DIAL-03**: Power Dialer, Hoy y Llamadas se comportan como una sola
+  herramienta: lo que marca en una se refleja en las otras sin recargar.
+- [ ] **DIAL-04**: La ficha del lead muestra al frente lo que necesita ver
+  antes de que atiendan, incluido **el historial de las vendedoras** — quién
+  lo trabajó, qué anotó, en qué quedó. Llamar a un lead trabajado no es una
+  llamada en frío. *(R1, R6)*
+- [ ] **DIAL-05**: El panel de llamada se puede arrastrar y recuerda dónde
+  quedó. Hoy está fijo al centro y tapa lo que hay detrás. *(R8)*
+
+### HOY — La vista diaria
+
+- [ ] **HOY-01**: Hoy se ordena por prioridad de trabajo: compromisos que
+  vencen hoy → interesados con paso vencido → reintentos de no-contacto →
+  nuevos por score. *(R3)*
+- [ ] **HOY-02**: Puede filtrar Hoy por país, para saber a quién puede
+  llamar ahora según huso horario. *(R3)*
+- [ ] **HOY-03**: Cada sección se trabaja en modo cola (una tarjeta, marcar
+  y siguiente) con contador de cuántas quedan.
+- [ ] **HOY-04**: Hay una red de seguridad visible: los leads tocados que
+  quedaron sin próxima acción. Objetivo: vacía.
+- [ ] **HOY-05**: Un panel de higiene muestra si la cola de vencidos crece o
+  se vacía — el indicador de si está por encima de su capacidad.
+
+---
+
 ## Future Requirements (deferred)
 
 - Shows/no-shows y deals en los reportes — cuando `lead.asistio` y
@@ -251,6 +354,23 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - Scorecard visible para las vendedoras (si COACH-06 se decide que no
   en esta pasada).
 - Reactivación del canal WhatsApp de prospección (Phases 7-8 parkeadas).
+- **wa-multi para DETECTAR respuestas** (v4.0): conectar su número solo
+  para escuchar, y que una respuesta cancele el follow-up y suba el lead a
+  Hoy. Recibir no quema la cuenta; mandar en volumen, sí. Es lo único que
+  `wa.me` no puede dar. Requiere reconectar cuentas (hoy `QR_PENDING`).
+- **Extracción IA de compromisos** desde el resumen de la llamada, como
+  borrador que él confirma. Se retoma cuando `commitment` esté rodado y
+  haya ejemplos reales para calibrar.
+
+## Out of Scope (v4.0)
+
+| Feature | Razón |
+|---|---|
+| Envío automático de WhatsApp | Riesgo de ban del número; a su volumen (5-10 mensajes/día) automatizar el envío no ahorra nada. Manda él, el sistema registra |
+| Extracción IA de compromisos | El research es claro: falla justo en los condicionales ("cuando vuelva de vacaciones", "lo hablo con mi socio"), que es su casuística. Diferido, no descartado |
+| Invariante sobre el stock virgen | Aplicarlo a los 3.699 leads sin tocar haría nacer la métrica con 3.699 defectos, inservible |
+| Cuotas de actividad diaria | Trabaja solo; medir outcomes (reuniones), no actividad. El research lo marca como la trampa clásica del modelo de tareas |
+| Tracking de aperturas de email | Apple MPP precarga el pixel en >50% de los opens; se mide ruido de proxies |
 
 ## Out of Scope (v2.0)
 
@@ -280,10 +400,14 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 | VOICE-08, VOICE-09 | 26 |
 | VOICE-10 | 27 |
 
-✓ v2.0: 13/13 activos mapeados (COACH/ALERT diferidos) · v3.0: 10/10 mapeados.
+| NEXT-01..04, GATE-01..04, COMM-01..04, ACT-01..05, DIAL-01..05, HOY-01..05 | *(pendiente — lo asigna el roadmap de v4.0)* |
+
+✓ v2.0: 13/13 activos mapeados (COACH/ALERT diferidos) · v3.0: 10/10 mapeados
+(phases archivadas, milestone parkeado) · v4.0: 23 requirements a mapear.
 
 ---
 
-*Last updated: 2026-08-01 — milestone v3.0 "Agente de voz" definido (VOICE-01..10,
-phases 24-27). COACH/ALERT de v2.0 diferidos a backlog; REP-05/06 siguen abiertos
-solo por 21-07 (prueba en vivo, pending todo en STATE.md).*
+*Last updated: 2026-08-13 — milestone v4.0 "Seguimiento bajo control" definido
+(NEXT/GATE/COMM/ACT/DIAL/HOY, 23 requirements). v3.0 "Agente de voz" PARKEADO:
+fases 24-27 archivadas en `.planning/archive/v3.0-agente-voz/`, se retoma después
+porque su webhook escribe por el mismo `_applyCallOutcome` que v4.0 rediseña.*
