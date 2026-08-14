@@ -187,7 +187,7 @@ consumo al re-discar).
 Plans:
 **Wave 1**
 
-- [ ] 29-01-PLAN.md — Modelo `nextAction` + helpers (`_setNextAction` / `_clearNextAction` / `_deriveNextActionFromLegacy` / `_leadNextAction`) + invariante de espejo con `callbackAt` en los 7 writers existentes
+- [x] 29-01-PLAN.md — Modelo `nextAction` + helpers (`_setNextAction` / `_clearNextAction` / `_deriveNextActionFromLegacy` / `_leadNextAction`) + invariante de espejo con `callbackAt` en los 7 writers existentes (completed 2026-08-14, 29-01-SUMMARY.md)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -370,8 +370,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 28. QUICK — Alivio inmediato | 0/3 | Planned | - |
-| 29. NEXT — El reloj único | 0/4 | Planned | - |
+| 28. QUICK — Alivio inmediato | 3/3 | Complete | 2026-08-14 |
+| 29. NEXT — El reloj único | 1/4 | In Progress | - |
 | 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
 | 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T17:30:17.225Z"
+last_updated: "2026-08-14T21:26:54.677Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 3
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 7
+  completed_plans: 4
+  percent: 14
 ---
 
 # SCM — STATE
@@ -39,12 +39,14 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 28 (QUICK — Alivio inmediato) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 28
-`/gsd-plan-phase 28`
-Resume file: `.planning/phases/28-quick-alivio-inmediato/28-CONTEXT.md`
-Last activity: 2026-08-14 -- Phase 28 execution started
+Phase: 29 (NEXT — El reloj único) — EXECUTING
+Plan: 1 of 4 complete (29-01 done; next: 29-02)
+Status: Wave 1 done — modelo `nextAction` + espejo con `callbackAt` en los 7 writers existentes. Wave 2 (29-02, `_applyCallOutcome` sobre el reloj único) blocked-on-wave1, ahora desbloqueada.
+`/gsd:execute-phase 29`
+Resume file: `.planning/phases/29-next-reloj-unico/29-02-PLAN.md`
+Last activity: 2026-08-14 -- 29-01 ejecutado (modelo nextAction + helpers + invariante de espejo + 17 tests), suite completa 1257/1257
+
+Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
 
 ## Milestone v3.0 — PARKEADO (2026-08-13)
 
@@ -831,7 +833,56 @@ Contra HEAD `a9e4886`:
 
 ---
 
-*Last updated: 2026-07-31 (24-05 ejecutado — el procesamiento del webhook
+## Decisiones de ejecución (Phase 29)
+
+- **29-01:** `_clearNextAction` (Task 1) contiene su propia asignación
+  literal `lead.callbackAt = '';` en el cuerpo — es la implementación exacta
+  del contrato de `<interfaces>` del plan. El grep de la acceptance criteria
+  de Task 2 esperaba "exactamente 5"/"exactamente 2" ocurrencias de
+  `callbackAt = ''` (sin contemplar que el propio helper se auto-cuenta);
+  el resultado real es 6/3. Verificado que el invariante real que la
+  acceptance criteria protegía (ningún writer FUERA de `_clearNextAction`
+  asigna `callbackAt=''` directo, fuera de `_applyCallOutcome`) se cumple
+  igual — los 5 writers de la Task 2 ya NO tienen asignación directa, todos
+  pasan por `_clearNextAction(...)`. Detalle completo en `29-01-SUMMARY.md`.
+  **Para 29-02/29-03/29-04**: si agregan otro grep de conteo exacto sobre
+  `callbackAt = ''`, recordar que `_clearNextAction` (index.js ~10698) es
+  un match legítimo, no un writer sin cubrir.
+
+- **29-01:** `_applyCallOutcome` quedó en el rango **10767–10938** tras los
+  edits de este plan (la Task 1 insertó ~150 líneas de modelo ANTES de la
+  función, corriendo todo lo posterior hacia abajo). El plan 29-02 no
+  necesita recalcularlo a ciegas — este es el rango vigente al cierre de
+  29-01.
+
+- **29-01:** `_deriveNextActionFromLegacy` replica el criterio de
+  `manualCallbackByOwner` (index.js:8379, nota #150 de CLAUDE.md) para
+  decidir `origen:'manual'` vs `'cadencia'`: SOLO mira si el ÚLTIMO
+  `callLog` entry es `callback_later`, sin chequear atribución por
+  `_callSetterId` (a diferencia de `manualCallbackByOwner`, que sí filtra
+  por dueño actual). Es intencional — el plan pide "el mismo criterio de
+  manualCallbackByOwner" para la CLASIFICACIÓN manual/cadencia, no para la
+  atribución de propiedad; D-09 (preservar "En seguimiento") solo depende
+  de esa clasificación.
+
+---
+
+*Last updated: 2026-08-14 (29-01 ejecutado — el reloj único `nextAction`
+existe: whitelists + helpers puros (`_setNextAction`/`_clearNextAction`/
+`_deriveNextActionFromLegacy`/`_leadNextAction`) expuestos en
+`globalThis.__voiceAgent`, espejo D-03 garantizado en los 7 writers de
+`callbackAt` fuera de `_applyCallOutcome` (que queda intacto, territorio del
+plan 29-02), y 17 tests puros con verificación por mutación registrada.
+Cero cambios de comportamiento visible — `FOLLOWUP_STEPS` deriva de
+`NEXT_ACTION_TEMPLATES` sin tocar valores, suites de followups/cadencia/
+cortes/disposition-enforcement/recycle-pool/pool-distribution/
+apply-call-outcome/metrics-consistency verdes sin editarlas. Suite completa
+del repo: 1257/1257. Requirement NEXT-01 marcado completo. Próximo: plan
+29-02 [`_applyCallOutcome` sobre el reloj único] — Wave 2, ya desbloqueada).*
+
+---
+
+*Last updated (Phase 24): 2026-07-31 (24-05 ejecutado — el procesamiento del webhook
 cierra el circuito completo de la Phase 24: `_retellProcessCallEvent`
 convierte un evento `call_ended`/`call_analyzed` en una entry de callLog
 indistinguible de una llamada humana [transcript de `words[]`, outcome

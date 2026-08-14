@@ -261,7 +261,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### NEXT — Próxima acción única
 
-- [ ] **NEXT-01**: Cada lead tiene a lo sumo un objeto `nextAction`
+- [x] **NEXT-01**: Cada lead tiene a lo sumo un objeto `nextAction`
   (`{tipo, dueAt, canal, motivo, origen}`) que representa el único
   compromiso de volver a tocarlo.
 - [ ] **NEXT-02**: `callbackAt` pasa a ser un caso de `nextAction`
