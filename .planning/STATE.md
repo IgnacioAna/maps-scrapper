@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T21:26:54.677Z"
+last_updated: "2026-08-14T21:45:00.000Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
   percent: 14
 ---
 
@@ -40,11 +40,11 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 29 (NEXT — El reloj único) — EXECUTING
-Plan: 1 of 4 complete (29-01 done; next: 29-02)
-Status: Wave 1 done — modelo `nextAction` + espejo con `callbackAt` en los 7 writers existentes. Wave 2 (29-02, `_applyCallOutcome` sobre el reloj único) blocked-on-wave1, ahora desbloqueada.
+Plan: 2 of 4 complete (29-01 + 29-02 done; next: 29-03)
+Status: Wave 2 done — `_applyCallOutcome` escribe y consume el reloj único (NEXT-02/NEXT-04); "En seguimiento" lee `nextAction.origen` (D-09), delta 0 contra datos reales. Wave 3 (29-03, `followUps` retirado — NEXT-03) desbloqueada.
 `/gsd:execute-phase 29`
-Resume file: `.planning/phases/29-next-reloj-unico/29-02-PLAN.md`
-Last activity: 2026-08-14 -- 29-01 ejecutado (modelo nextAction + helpers + invariante de espejo + 17 tests), suite completa 1257/1257
+Resume file: `.planning/phases/29-next-reloj-unico/29-03-PLAN.md`
+Last activity: 2026-08-14 -- 29-02 ejecutado (_applyCallOutcome sobre nextAction, manualCallbackByOwner migrado, paridad humano↔agente de voz extendida, 11 tests nuevos), suite completa 1268/1268, metrics-consistency intocado y verde
 
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
 
@@ -865,6 +865,47 @@ Contra HEAD `a9e4886`:
   atribución de propiedad; D-09 (preservar "En seguimiento") solo depende
   de esa clasificación.
 
+- **29-02:** el delta de "En seguimiento" contra datos reales de producción
+  fue **0**, no el 3-4 estimado por el contexto/PATTERNS. Verificado con un
+  script de solo-lectura sobre una copia de `data/setters.json` (25.6 MB) +
+  `data/auth.json`, importando `index.js` apuntado a la copia (nunca al
+  archivo del repo, `DATA_DIR` a un dir de scratchpad, `NODE_ENV=test`, sin
+  listener ni llamadas HTTP mutantes) y reusando `_leadNextAction`/
+  `_callSetterId`/`_buildUserSetterMap` REALES. VIEJO=19, NUEVO=19, las dos
+  diferencias de conjunto vacías. El único candidato con `followUps` activo
+  y sin `callbackAt` (que sí calificaría `origen:'manual'` vía la
+  derivación de D-04) no entró a NINGUNO de los dos criterios porque su
+  último `callLog` entry lo hizo un user ya eliminado de `auth.json` (nota
+  #149) — `_callSetterId` no cae al `assignedTo` en ese caso, así que la
+  atribución por dueño falla igual en el criterio viejo y en el nuevo.
+  Detalle completo en `29-02-SUMMARY.md`.
+
+- **29-02:** `_applyCallOutcome` sigue en el rango **10767–10956** tras los
+  edits de este plan (Task 1 sumó 18 líneas netas dentro de la función —
+  bloque `{ }` del `case 'callback_later'` + los dos `_setNextAction`
+  inline). El plan 29-03 no necesita recalcularlo a ciegas — este es el
+  rango vigente al cierre de 29-02.
+
+- **29-02:** `gsd-sdk query state.advance-plan` sigue con el mismo mismatch
+  de formato ya documentado en las decisiones de Phase 24: sobrescribe
+  "Current Position" con texto genérico ("Status: Ready to execute") y
+  además corrompe una línea NO relacionada más abajo en el archivo (una
+  "Status:" de la sección archivada de Phase 20/28 quedó pisada con el mismo
+  texto genérico). Revertido con `git checkout -- .planning/STATE.md` antes
+  de commitear nada; la actualización de este plan fue 100% manual (mismo
+  patrón que 24-02/24-03/24-04).
+  `gsd-sdk query roadmap.update-plan-progress 29` reproduce EXACTO el bug ya
+  documentado en 24-01: pisa las columnas `Phase`/`Reqs` de la fila 29 del
+  `## Resumen` con `plan_count`/`status` (quedó `| 29 | 2/4 | In Progress|  |`,
+  perdiendo el nombre de la fase y los IDs de requirements), aunque SÍ marcó
+  bien el checkbox de la lista de planes (`29-02-PLAN.md`, que de todas
+  formas ya se había marcado a mano antes de correr el comando). Revertida
+  la fila manualmente a `| 29 | NEXT — El reloj único (2/4 planes) |
+  NEXT-01..04 | — |`, preservando el checkbox. `state.record-metric`/
+  `state.add-decision`/`requirements.mark-complete` no se probaron esta
+  vez — se asume el mismo mismatch de formato para este milestone y se hizo
+  todo manual para no arriesgar más corrupción.
+
 ---
 
 *Last updated: 2026-08-14 (29-01 ejecutado — el reloj único `nextAction`
@@ -879,6 +920,25 @@ cortes/disposition-enforcement/recycle-pool/pool-distribution/
 apply-call-outcome/metrics-consistency verdes sin editarlas. Suite completa
 del repo: 1257/1257. Requirement NEXT-01 marcado completo. Próximo: plan
 29-02 [`_applyCallOutcome` sobre el reloj único] — Wave 2, ya desbloqueada).*
+
+---
+
+*Last updated: 2026-08-14 (29-02 ejecutado — `_applyCallOutcome` escribe y
+consume el reloj único: 5 sitios de escritura migrados a
+`_setNextAction`/`_clearNextAction` [entrada consume NEXT-04, `callback_later`
+origen manual, tope de cortes descarta, cadencia descarta, cadencia
+reintenta origen cadencia], cero asignación directa de `callbackAt` dentro
+de la función. `manualCallbackByOwner` ("En seguimiento") migrado a
+`nextAction.origen==='manual'` (D-09) — verificado contra copia de datos
+reales de producción: delta 0 (19/19 leads coinciden exacto, sin regresión
+ni lead sin explicar). Paridad humano↔agente de voz extendida a `nextAction`
+(`tests/apply-call-outcome.test.js`). 11 tests nuevos
+(`tests/next-action-disposition.test.js`) fijan cadencia, callback manual,
+consumo del compromiso pendiente (NEXT-04, caso real del 2026-08-12), tope
+de cortes, excepción de interesados (#183) y lectura sin migración (D-09).
+Suite completa del repo: 1268/1268 (86 archivos), `metrics-consistency`
+intocado y verde. Requirements NEXT-02/NEXT-04 marcados completos. Próximo:
+plan 29-03 [`followUps` retirado — NEXT-03] — Wave 3, ya desbloqueada).*
 
 ---
 

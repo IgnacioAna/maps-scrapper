@@ -74,7 +74,7 @@ recordarle, el milestone falló.
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
 | 28 | 3/3 | Complete   | 2026-08-14 |
-| 29 | NEXT — El reloj único | NEXT-01..04 | — |
+| 29 | NEXT — El reloj único (2/4 planes) | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
@@ -191,7 +191,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 29-02-PLAN.md — `_applyCallOutcome` sobre el reloj único: consumo en toda disposición (NEXT-04), cadencia y callback manual, "En seguimiento" por `origen`, paridad con el agente de voz
+- [x] 29-02-PLAN.md — `_applyCallOutcome` sobre el reloj único: consumo en toda disposición (NEXT-04), cadencia y callback manual, "En seguimiento" por `origen`, paridad con el agente de voz (completed 2026-08-14, 29-02-SUMMARY.md)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
