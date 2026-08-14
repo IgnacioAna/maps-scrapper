@@ -73,7 +73,7 @@ recordarle, el milestone falló.
 
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
-| 28 | 2/3 | In Progress|  |
+| 28 | 3/3 | Complete   | 2026-08-14 |
 | 29 | NEXT — El reloj único | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
@@ -81,7 +81,7 @@ recordarle, el milestone falló.
 | 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
-- [ ] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos
+- [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
 - [ ] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps`
 - [ ] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal
 - [ ] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas
@@ -144,7 +144,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 28-03-PLAN.md — Paneles de llamada arrastrables con posición recordada (resuelve el empuje CSS de D-11)
+- [x] 28-03-PLAN.md — Paneles de llamada arrastrables con posición recordada (resuelve el empuje CSS de D-11)
 
 ### Phase 29: NEXT — El reloj único
 
