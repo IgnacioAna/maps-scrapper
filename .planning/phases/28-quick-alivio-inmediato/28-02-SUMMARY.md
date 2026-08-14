@@ -92,6 +92,18 @@ None - no external service configuration required.
 - El `<human-check>` de ambas tasks (abrir "Volver a llamar" y ver el trigger/popover en vivo, verificar hora local del lead sin ámbar, verificar badges de carga por día) **NO se ejecutó** — este ejecutor no tuvo disponible ninguna herramienta de browser/preview (`preview_start`, `javascript_tool`, screenshot) en su set de tools (solo Read/Write/Edit/Bash/Grep/Glob), igual que el ejecutor de 28-01. La verificación se hizo por la vía disponible más fuerte: lectura línea por línea del código contra la especificación exacta del plan, `node --check` (sintaxis OK), greps de TODOS los acceptance criteria del plan, diff explícito confirmando que ningún handler de guardado cambió, y 30 tests nuevos (13 Task 1 + 17 Task 2) que fijan el contrato de wiring y de los helpers `_leadTimeAtTz`/`_leadLocalTimeAt` contra casos reales de UTC↔zona horaria. **Queda pendiente la verificación visual en el próximo ciclo con el user** (o un ejecutor con acceso a browser/preview): confirmar que el popover se ve bien anclado al input real dentro de cada modal, que el texto de hora local no tiene ningún color de alerta, y que los numeritos de carga aparecen en los días correctos.
 - No hay bloqueadores para el resto de Phase 28 (paneles arrastrables, D-08..D-11) — ese es alcance de otro plan/wave, sin dependencia de este.
 
+## Self-Check
+
+- `public/app.js`: FOUND
+- `public/index.html`: FOUND
+- `tests/dtpicker-wiring.test.js`: FOUND
+- Commit `d40f199` (Task 1): FOUND en `git log`
+- Commit `a75239b` (Task 2): FOUND en `git log`
+- Commit `ce04263` (docs: SUMMARY): FOUND en `git log`
+- `npm test` completo: **1221/1221 PASS** (baseline 1204 tras Task 1 + 17 nuevos de Task 2)
+
+## Self-Check: PASSED
+
 ---
 *Phase: 28-quick-alivio-inmediato*
 *Completed: 2026-08-14*
