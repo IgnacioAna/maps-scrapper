@@ -1,37 +1,61 @@
-# SCM — Roadmap · Milestone v3.0 "Agente de voz"
+# SCM — Roadmap · Milestone v4.0 "Seguimiento bajo control"
 
-> Creado 2026-08-01. El roadmap v2.0 completo quedó archivado en
-> `ROADMAP-v2.0-archived.md` (sus phases 19-21 están ejecutadas; 22-23
-> DIFERIDAS a backlog — se retoman post-piloto). La numeración continúa:
-> **24–27**.
+> Creado 2026-08-13. El roadmap v3.0 completo quedó archivado en
+> `.planning/archive/v3.0-agente-voz/ROADMAP-v3.0.md` (Phase 24 ejecutada
+> 5/5 planes; Phases 25-27 sin arrancar — **parkeado**, no cancelado, ver
+> resumen al final de este archivo). La numeración continúa: **28–34**.
+>
+> **27 requirements** (NEXT 4 + GATE 4 + COMM 4 + ACT 5 + DIAL 5 + HOY 5),
+> mapeados 1:1 a fase. (El commit que definió los requisitos dice "23" —
+> fue un error de conteo del orquestador, corregido acá y en
+> `REQUIREMENTS.md`.)
 
-**Criterio de éxito del milestone:** el agente completa un lote piloto real
-en México con transcripts legibles en la biblioteca, su fila en
-Equipo/Comando es comparable con las SDRs humanas, y al menos un lead
-termina agendado o con callback+nota utilizables — con costo por
-conversación conocido contra el baseline humano.
+**Criterio de éxito del milestone:** pasa una semana llamando y al abrir
+el sistema no hay ningún lead trabajado sin próximo paso, ningún callback
+vencido olvidado, y sabe de memoria a quién le mandó información y cuándo
+toca volver. Si tiene que acordarse de algo que el sistema debería
+recordarle, el milestone falló.
 
 **Reglas transversales (aplican a todas las phases):**
 
-- El agente alimenta el MISMO circuito que una SDR humana. Cero circuito
-  paralelo de métricas; toda métrica DERIVA del CALL METRICS CORE
-  (`tests/metrics-consistency.test.js` es la garantía).
-
-- Alcance acotado del agente: agenda vía `/book`, termina en un outcome
-  canónico, y NADA más. No mueve estados por criterio propio.
-
-- Suite completa verde antes de cerrar cada phase (base: ~991 tests).
-- Cache-buster ante cualquier cambio de `app.js`/`style.css`/`index.html`.
+- **Riesgo #1 del milestone**: las Phases 29-30 tocan el flujo que el user
+  usa TODOS LOS DÍAS para llamar. No puede quedar un día sin poder discar.
+  Preferir cambios aditivos y reversibles (campos nuevos que conviven con
+  los viejos hasta migrar, feature flags si hace falta) sobre reescrituras
+  grandes de una sola vez.
+- El invariante "todo lead activo tiene próximo paso" aplica **solo a
+  leads ya tocados** (137 hoy), nunca al stock virgen (3.699) — no forzar
+  `nextAction` sobre leads sin tocar.
+- `_applyCallOutcome` (index.js ~10700) es el corazón de las disposiciones
+  y lo comparte el webhook del agente de voz (v3.0, parkeado). El helper
+  se mantiene puro y su paridad con `tests/metrics-consistency.test.js`
+  intacta — ninguna phase de v4.0 puede romper ese contrato.
+- Toda métrica nueva DERIVA del CALL METRICS CORE
+  (`globalThis.__callCore`); jamás re-implementar el funnel inline.
+- Toda migración de datos (callbackAt → nextAction, followUps →
+  nextAction) sigue el patrón ya establecido del proyecto: backup +
+  `dryRun` + ejecución idempotente, verificable antes/después contra los
+  números medidos en `PROJECT.md` (16 callbacks, 3 followUps, 36
+  interesados, 137 tocados sin próxima acción).
+- Cache-buster ante cualquier cambio de `app.js`/`style.css`/`index.html`
+  (regla dura, se olvida fácil — ver CLAUDE.md nota final de cada sesión).
+- Handlers async que escriben `setters.json` → `mutateSettersData` (regla
+  #19 de CLAUDE.md).
 - Rutas sin `:id` ANTES de rutas con `:id` (Express, regla #3 del repo).
+- Suite completa verde antes de cerrar cada phase (base: ~1181 tests al
+  2026-08-13).
 - `npm run pre-deploy` antes de push a `main` (lo corre el user); Railway
   escucha `main`.
-
-- Pasos que requieren al user (dashboard Retell, trunk, voz, gasto,
-  llamada de prueba): `autonomous: false`.
-
-- Handlers async que escriben setters.json → `mutateSettersData` (regla #19).
+- El usuario real del sistema es UNO (Ignacio, admin). El andamiaje
+  multi-SDR (supervisores scoped, reportes por vendedora, privacidad de
+  biblioteca) sigue funcionando pero deja de ser una restricción de
+  diseño — no hay que preservarlo a costa de complejidad para el caso de
+  uso real.
 - Contexto completo del milestone:
-  `.planning/research/2026-08-01-agente-voz-retell.md`.
+  `.planning/research/2026-08-13-requisitos-seguimiento-ignacio.md` (qué
+  duele, R1-R8, fuente de verdad por encima de este roadmap) y
+  `.planning/research/2026-08-13-estado-seguimiento-para-investigar.md`
+  (estado del código antes del rediseño).
 
 ---
 
@@ -39,201 +63,277 @@ conversación conocido contra el baseline humano.
 
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
-| 24 | Integración backend Retell | VOICE-01..06 | — |
-| 25 | Panel Agente de voz | VOICE-07 | 24 |
-| 26 | Agente en Retell + piloto | VOICE-08..09 | 24 (25 deseable) |
-| 27 | Banco de conocimiento unificado | VOICE-10 | — (paralelizable) |
+| 28 | QUICK — Alivio inmediato | GATE-03, DIAL-05 | — |
+| 29 | NEXT — El reloj único | NEXT-01..04 | — |
+| 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
+| 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
+| 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
+| 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
+| 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
-- [x] **Phase 24: Integración backend Retell** — config, refactor cascada, dispatch, tool book, webhook, pseudo-SDR
-- [ ] **Phase 25: Panel Agente de voz** — sección admin de config + lote + resultados
-- [ ] **Phase 26: Agente en Retell + piloto** — flow de 9 nodos cargable, setup trunk, prueba y lote MX
-- [ ] **Phase 27: Banco de conocimiento unificado** — oferta/objeciones en una fuente para agente + asistente + banco + entrenamiento
+- [ ] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos
+- [ ] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps`
+- [ ] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal
+- [ ] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas
+- [ ] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy
+- [ ] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente
+- [ ] **Phase 34: HOY — La vista diaria** — reordenada por prioridad, filtro por país, red de seguridad de higiene
+
+> **Por qué la Phase 28 existe**: decisión del user (2026-08-13). Las dos
+> mejoras que más se sienten a diario (contar días a mano para programar un
+> callback, y el panel que tapa lo que hay detrás) **no dependen del modelo
+> de datos**. Se adelantan para tener alivio en días en vez de esperar a que
+> baje toda la cadena. Es puramente de interfaz: no toca `_applyCallOutcome`,
+> ni `setters.json`, ni las métricas.
 
 ---
 
 ## Phase Details
 
-### Phase 24: Integración backend Retell
+### Phase 28: QUICK — Alivio inmediato
 
-**Goal**: Todo el lado servidor del agente: una llamada de Retell entra y
-sale del sistema exactamente como una llamada de SDR humana.
-**Depends on**: Nothing (first phase)
-**Requirements**: VOICE-01, VOICE-02, VOICE-03, VOICE-04, VOICE-05, VOICE-06
+**Goal**: Las dos molestias diarias que NO dependen del modelo de datos se
+resuelven ya: programar una fecha sin contar días a mano, y poder correr el
+panel de llamada cuando tapa algo.
+**Depends on**: Nothing (first phase — solo interfaz)
+**Requirements**: GATE-03, DIAL-05
 **Success Criteria** (what must be TRUE):
 
-  1. Un webhook `call_analyzed` simulado (curl firmado) produce en el lead:
-     callLog entry `channel:'retell'` con transcript visible en la
-     biblioteca de Entrenamiento IA, outcome canónico aplicado con cascada
-     (estado/cadencia/DNC/calendar idénticos a los del handler humano), y
-     nota de seguimiento en notes[].
-
-  2. La suite completa está verde y `metrics-consistency` NO cambió ningún
-     número tras el refactor `_applyCallOutcome` (paridad handler humano ↔
-     helper).
-
-  3. El dispatch rechaza leads DNC/tarifa-roja/muertos/callback-futuro
-     (pasa por `_leadIsCallableNow`), respeta `dailyCap`, y arma las
-     variables dinámicas con `leadId` incluido.
-
-  4. `/book` con header secreto crea la cita (`sourceCall:true`,
-     `setterId:'setter_agente_ia'`) y sin header devuelve 401; el webhook
-     sin firma devuelve 401 y en producción sin secret configurado 503.
-
-  5. `setter_agente_ia` aparece como fila en Equipo/Comando con sus
-     llamadas atribuidas (by:'' → assignedTo) sin tocar código de métricas.
-
-  6. `retell_config.json` sobrevive un redeploy (export/import/backup/
-     pre-deploy) y sus secrets viven en env vars con lock en el PUT.
-**Plans**: 5 (planificado 2026-07-31 — los 3 sugeridos se abrieron a 5: todo
-toca `index.js`, así que las waves se serializan para que dos planes nunca
-editen el archivo en paralelo, y el webhook no entraba en un solo plan dentro
-del presupuesto de contexto)
+  1. Al programar una fecha (modal "Volver a llamar" y cualquier otro punto
+     donde hoy se usa `<input type="datetime-local">`) aparece un
+     calendario propio con el mes visible y clickeable, más etiquetas
+     relativas ("en 3 días", "el martes") — no hay que contar días a mano
+     para saber dónde cae la fecha que pactó.
+  2. Los atajos rápidos que ya existen (`#call-cb-quickpicks`) siguen
+     funcionando igual: la fase suma una forma de elegir, no reemplaza la
+     que ya se usa.
+  3. El panel de llamada se puede arrastrar con el mouse y recuerda su
+     posición entre llamadas.
+  4. El panel no vuelve a saltar solo al abrir el panel de guiones — la
+     regla CSS `body.tlx-script-open #telnyx-call-panel` (index.html:1461)
+     que hoy lo reposiciona se resuelve JUNTO con el arrastre, no en
+     paralelo, o el panel se movería solo después de que el usuario lo
+     acomodó.
+  5. Nada de esto toca `_applyCallOutcome`, `setters.json` ni las
+     métricas: la suite completa sigue verde sin cambios de backend, y la
+     fase se puede deployar sin migración de datos.
+**Plans**: TBD
 
 Plans:
-**Wave 1**
+- [ ] 28-01: TBD (definido en plan-phase)
 
-- [x] 24-01-PLAN.md — Refactor `_applyCallOutcome` + hoisting de los helpers de costo + test de paridad doble-vía (VOICE-02, wave 1)
+### Phase 29: NEXT — El reloj único
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Goal**: Cada lead tiene UN SOLO objeto de próxima acción (`nextAction`)
+que reemplaza a `callbackAt` y al sistema viejo de `followUps`, sin perder
+ningún comportamiento vigente hoy (cadencia automática, callback manual,
+consumo al re-discar).
+**Depends on**: Phase 28 (solo por orden de trabajo; no hay dependencia técnica)
+**Requirements**: NEXT-01, NEXT-02, NEXT-03, NEXT-04
+**Success Criteria** (what must be TRUE):
 
-- [x] 24-02-PLAN.md — Config Retell env>JSON + regla #21 completa + pseudo-SDR `setter_agente_ia` (VOICE-01/06, wave 2)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 24-03-PLAN.md — Dispatch por lote + caller ID server-side + dry-run + cap diario (VOICE-03, wave 3)
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 24-04-PLAN.md — Tool `/book` con header secreto + webhook firmado (HMAC nativo, sin SDK nuevo) (VOICE-04/05, wave 4)
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 24-05-PLAN.md — Procesamiento del webhook: transcript, outcome, cascada, extracción + tests end-to-end (VOICE-05, wave 5)
-
-### Phase 25: Panel Agente de voz
-
-**Goal**: El user opera el agente desde el panel sin tocar API ni consola.
-**Depends on**: Phase 24
-**Requirements**: VOICE-07
-**Success Criteria**:
-
-  1. Sección "Agente de voz" (admin only) muestra estado de config con
-     locks 🔒 de env vars, y permite editar agentId/dailyCap/enabled.
-
-  2. El user arma un lote (cantidad, país, filtro con/sin nombre de
-     doctor), ve el gasto estimado, confirma y dispara; el resultado del
-     dispatch (aceptadas/rechazadas y por qué) queda visible.
-
-  3. Las llamadas de hoy del agente y sus últimos resultados se ven en la
-     misma sección; el rendimiento comparativo se ve en Equipo/Comando sin
-     UI nueva (fila "Agente IA").
-
-  4. Cache-buster bumpeado; cero regresión visual en el resto del panel.
-
-**Plans**: 1 (sugerido)
+  1. Cualquier lead con callback pendiente o con `followUps` activo (los 3
+     casos de hoy) muestra un ÚNICO próximo paso (`nextAction`) tras la
+     migración — ya no conviven dos relojes con vistas y semánticas
+     distintas para la misma pregunta ("¿cuándo vuelvo a este lead?").
+  2. La cadencia automática de no-contacto (reintento a 24h, descarte al
+     2° seguido salvo interesados) y el callback manual (`callback_later`)
+     siguen produciendo la MISMA fecha visible que hoy para el usuario —
+     ambos escriben ahora el mismo objeto `nextAction` en vez de dos
+     mecanismos paralelos.
+  3. Marcar cualquier resultado de llamada sobre un lead con un
+     `nextAction` pendiente (vencido o no) lo reemplaza siempre — la regla
+     ya vigente hoy solo para `callbackAt`/cortes (nota #182 de CLAUDE.md)
+     se generaliza a todo el modelo nuevo, así que no puede volver a
+     aparecer un lead clavado arriba de la cola por un compromiso viejo.
+  4. `lead.followUps` deja de ser leído como fuente de verdad por ninguna
+     vista — sus 5 pasos (24h/48h/72h/7d/15d) sobreviven solo como
+     plantillas de duración al elegir un `nextAction`.
+  5. Migración ejecutada en producción con backup + `dryRun` corridos
+     antes: los 16 callbacks y los 3 `followUps` quedan correctamente
+     representados en `nextAction`, y la suite completa (incluido
+     `metrics-consistency`) sigue verde sin cambiar ningún número de
+     funnel/atribución.
+**Plans**: TBD
 
 Plans:
+- [ ] 29-01: TBD (definido en plan-phase)
 
-- [ ] 25-01: Sección completa + wiring a los endpoints de 24 + cache-buster
+### Phase 30: GATE — Cierra la llamada, define el próximo paso
 
-### Phase 26: Agente en Retell + piloto
+**Goal**: No se puede cerrar una disposición sin un `nextAction` o un
+estado terminal explícito, con una propuesta de próximo paso ya cargada y
+feedback claro de a dónde se fue el lead. (El calendario para elegir la
+fecha ya existe desde la Phase 28.)
+**Depends on**: Phase 29
+**Requirements**: GATE-01, GATE-02, GATE-04
+**Success Criteria** (what must be TRUE):
 
-**Goal**: El agente existe en Retell, suena bien en español, y completa un
-lote piloto real en México con resultados medibles.
-**Depends on**: Phase 24 (25 deseable para operar cómodo)
-**Requirements**: VOICE-08, VOICE-09
-**Success Criteria**:
-
-  1. Existe el documento "agente cargable" (global prompt + 9 nodos +
-     transiciones por ecuación + variables + Post Call Data Extraction +
-     settings de voz + tool book) derivado de los guiones oficiales, y el
-     user lo cargó en su dashboard.
-
-  2. SIP trunk Telnyx↔Retell operativo con los números propios importados
-     (guía paso a paso seguida; números chequeados contra "spam likely"
-     llamando a un teléfono propio).
-
-  3. Llamada de prueba al user completada: escuchó el flujo completo
-     (gatekeeper→pitch→objeción→agendar), eligió la voz entre 3 candidatas
-     en español, y aprobó seguir.
-
-  4. Lote piloto real en México ejecutado dentro del presupuesto (~$50):
-     transcripts en la biblioteca, fila del agente en Equipo, y cierre del
-     piloto con % atención, % gatekeeper pasado, % conversación ≥30s,
-     agendas/callbacks y costo por conversación vs baseline humano.
-
-  5. Confirmado con Retell antes de gastar: facturación ring vs conectado,
-     costo real de la voz elegida, formato de firma del webhook.
-**Plans**: 6 (planificado 2026-07-31 — los 3 sugeridos se abrieron a 6. Motivos:
-el documento del agente no entra en un plan dentro del presupuesto de contexto
-(contrato con el código + 9 nodos + globals + checklist), el setup del trunk y
-la llamada de prueba son sesiones de dashboard distintas con dependencia real
-entre ellas, y la compuerta bloqueante D-26-03 se modeló como plan propio para
-que "probar" y "gastar" no compartan plan. 4 de los 6 son `autonomous: false`)
+  1. Al intentar cerrar cualquier disposición (incluida "interesado") sin
+     `nextAction` y sin marcar un estado terminal (descartado/agendado/
+     cerrado), el sistema lo impide con un aviso claro — un lead con
+     interés declarado no puede quedar sin fecha.
+  2. Cada resultado de llamada llega con una propuesta de próximo paso ya
+     cargada (fecha + motivo) — interesado, "mandame info", "llamame en
+     X" — que el usuario acepta con un click o edita antes de guardar.
+  3. Al guardar, un mensaje visible dice explícitamente a dónde se fue el
+     lead y cómo volver a encontrarlo (qué vista, qué fecha) — el reclamo
+     "desaparece" (R2) queda resuelto sin tener que adivinar ni navegar a
+     ciegas.
+**Plans**: TBD
 
 Plans:
+- [ ] 30-01: TBD (definido en plan-phase)
 
-**Wave 1**
-- [ ] 26-01: Documento del agente — Parte A: contrato con el código (Global Settings, global prompt, variables dinámicas, Post Call Data Extraction, tool book, webhook)
+### Phase 31: COMM — Compromisos como objeto
 
-**Wave 2**
-- [ ] 26-02: Documento del agente — Parte B: los 9 nodos, Global Nodes (DNC + "¿sos un robot?"), tabla de transiciones y checklist de carga
+**Goal**: Los compromisos hablados ("mandame info", "llamame en dos
+semanas", "lo hablo con mi socio") son objetos del sistema con dueño,
+canal y fecha — no texto suelto dentro de una nota.
+**Depends on**: Phase 29
+**Requirements**: COMM-01, COMM-02, COMM-03, COMM-04
+**Success Criteria** (what must be TRUE):
 
-**Wave 3**
-- [ ] 26-03: Guía + setup del trunk Telnyx↔Retell, decisión de números, import a Retell y pregunta de facturación enviada *(autonomous: false)*
-
-**Wave 4**
-- [ ] 26-04: Cargar el agente en Retell + elegir voz entre 3 candidatas + llamada de prueba al user + verificación de `agent_version` *(autonomous: false)*
-
-**Wave 5**
-- [ ] 26-05: **Compuerta D-26-03** — reputación de cada caller ID + GO/NO-GO con presupuesto por escenario de facturación *(autonomous: false)*
-
-**Wave 6**
-- [ ] 26-06: Lote piloto MX por tandas de 10 + cierre vs baseline humano *(autonomous: false)*
-
-### Phase 27: Banco de conocimiento unificado
-
-**Goal**: Una sola fuente de verdad de la oferta que alimenta al agente, al
-asistente, al Banco de Respuestas y al Centro de Entrenamiento.
-**Depends on**: Nothing (paralelizable con 25/26; el prompt de 26-01 la
-consume si ya está)
-**Requirements**: VOICE-10
-**Success Criteria**:
-
-  1. La oferta (reactivación sin publicidad paga, 6 fugas, casos reales,
-     calificación base 800+) y las objeciones v2 están consolidadas en una
-     fuente versionada en el repo.
-
-  2. El system prompt del asistente refleja esa fuente y el estado real de
-     proveedores IA (verificado en código: qué quedó de Mercury/Qwen; user
-     reporta solo OpenAI).
-
-  3. El Banco de Respuestas tiene las objeciones oficiales v2 cargadas
-     (seed idempotente, dedup por pregunta) sin pisar entries con métricas
-     de uso.
-
-  4. El Centro de Entrenamiento tiene el playbook consolidado de los 5
-     cursos (material para SDRs humanas, incluida la sección mindset/miedo
-     que al agente no le sirve).
-**Plans**: 2 (sugeridos)
+  1. Al anotar un compromiso durante o después de una llamada, el usuario
+     carga un objeto con tipo, quién se comprometió (él o el prospecto),
+     canal y fecha — no queda como texto libre dentro de una nota.
+  2. Un compromiso pendiente aparece como el `nextAction` del lead — no
+     son dos cosas separadas que hay que revisar por separado.
+  3. Si el compromiso es del prospecto ("te mando el presupuesto", "lo
+     hablo con mi socio") y vence sin novedades, el lead reaparece en el
+     flujo de seguimiento con ese vencimiento como motivo visible — no
+     necesita acordarse a mano de qué esperaba de quién.
+  4. Existe una vista o filtro donde puede consultar, en cualquier
+     momento, a quién le mandó información, cuándo, y cuáles compromisos
+     siguen sin resolver.
+**Plans**: TBD
 
 Plans:
+- [ ] 31-01: TBD (definido en plan-phase)
 
-- [ ] 27-01: Fuente unificada de la oferta + system prompt + verificación de proveedores IA
-- [ ] 27-02: Seed de objeciones al Banco + material del Centro de Entrenamiento
+### Phase 32: ACT — Acciones desde cualquier vista
+
+**Goal**: Botón de WhatsApp (con número alternativo) y botón de descartar
+disponibles en toda vista donde aparece el lead, con el envío registrado
+como evento del mismo modelo que los compromisos.
+**Depends on**: Phase 29, Phase 31
+**Requirements**: ACT-01, ACT-02, ACT-03, ACT-04, ACT-05
+**Success Criteria** (what must be TRUE):
+
+  1. Desde la lista de Llamadas, el Power Dialer, la ficha del lead y Hoy
+     hay un botón de WhatsApp que abre `wa.me` con el mensaje precargado,
+     sin tener que navegar a otra vista para mandarlo.
+  2. Ese mismo click, además de abrir WhatsApp, registra el envío como
+     evento del lead y arma el próximo paso (compromiso "yo mandé info,
+     espero respuesta") — mandar y registrar es un solo acto, no dos.
+  3. Puede cargar un número alternativo en el momento (durante la llamada,
+     cuando le pasan otro número) y mandarle el WhatsApp a ESE número sin
+     perder la asociación con el lead original.
+  4. Hay un botón de descartar en las mismas 4 vistas; al usarlo, el lead
+     sale de Llamadas, Power Dialer y Hoy de una sola vez, sin tener que
+     entrar a una vista específica para sacarlo de circulación.
+  5. El envío de material por email queda registrado con el mismo modelo
+     de evento que el WhatsApp (mismo timeline del lead), sin ningún
+     tracking de apertura.
+**Plans**: TBD
+
+Plans:
+- [ ] 32-01: TBD (definido en plan-phase)
+
+### Phase 33: DIAL — Power Dialer como motor único
+
+**Goal**: El Power Dialer deja de ser una herramienta aislada: se lanza
+sobre un lead puntual desde cualquier lista, no expulsa al marcar un
+resultado, comparte estado en vivo con Hoy y Llamadas, y su ficha muestra
+el historial de las vendedoras al frente.
+**Depends on**: Phase 29, Phase 30, Phase 32
+**Requirements**: DIAL-01, DIAL-02, DIAL-03, DIAL-04
+**Success Criteria** (what must be TRUE):
+
+  1. Desde cualquier lista (Llamadas, Hoy, resultado de búsqueda, ficha),
+     un botón "Discar en Power Dialer" abre el dialer con la cola
+     arrancando en ESE lead puntual, sin tener que empezar desde el
+     principio.
+  2. Al marcar un resultado dentro del Power Dialer, el lead NO se saca de
+     la vista hasta que el usuario decide avanzar (extensión del patrón de
+     hold ya existente — nota #151 de CLAUDE.md — a todo el flujo del
+     dialer, incluida la cola de Hoy).
+  3. Un cambio hecho en el Power Dialer (disposición, nota, callback) se
+     ve reflejado en Hoy y en Llamadas sin recargar la página, y
+     viceversa — las 3 vistas leen y escriben el mismo estado.
+  4. La ficha del lead, al entrar en llamada, muestra arriba de todo —
+     antes de que atiendan — quién lo trabajó antes, qué anotó y en qué
+     quedó (si tiene historial de otra vendedora); llamar a un lead
+     trabajado ya no se siente ni se ve como una llamada en frío.
+**Plans**: TBD
+
+Plans:
+- [ ] 33-01: TBD (definido en plan-phase)
+
+### Phase 34: HOY — La vista diaria
+
+**Goal**: Hoy se reordena con criterio, se puede filtrar por país, se
+trabaja en modo cola, y muestra una red de seguridad visible de la
+higiene del seguimiento.
+**Depends on**: Phase 29, Phase 30, Phase 33
+**Requirements**: HOY-01, HOY-02, HOY-03, HOY-04, HOY-05
+**Success Criteria** (what must be TRUE):
+
+  1. Al abrir Hoy, las secciones aparecen en este orden: compromisos que
+     vencen hoy → interesados con paso vencido → reintentos de
+     no-contacto → nuevos por score — en vez del orden mezclado actual.
+  2. Puede filtrar Hoy por país y ver solo los leads llamables ahora según
+     el huso horario de ese país.
+  3. Cada sección se trabaja como una cola (una tarjeta a la vez, marcar y
+     pasa la siguiente) con un contador de cuántas quedan — extensión del
+     Power Dialer por sección que ya existe (notas #179-181 de CLAUDE.md).
+  4. Hay una sección/panel visible con los leads tocados que quedaron sin
+     próxima acción (el baseline de 137 medido el 2026-08-13), pensada
+     para vaciarse con el uso — nunca para crecer sin que se note.
+  5. Un indicador de higiene muestra si la cola de vencidos crece o se
+     achica respecto de días anteriores — la señal de saturación que hoy
+     solo se nota mirando manualmente (12 de 16 callbacks vencidos al
+     2026-08-13).
+**Plans**: TBD
+
+Plans:
+- [ ] 34-01: TBD (definido en plan-phase)
 
 ---
 
-## Milestone v2.0 — estado al switch (2026-08-01)
+## Progress
+
+**Execution Order:** Phases execute in numeric order: 28 → 29 → 30 → 31 → 32 → 33 → 34
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 28. QUICK — Alivio inmediato | 0/TBD | Not started | - |
+| 29. NEXT — El reloj único | 0/TBD | Not started | - |
+| 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
+| 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
+| 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
+| 33. DIAL — Power Dialer como motor único | 0/TBD | Not started | - |
+| 34. HOY — La vista diaria | 0/TBD | Not started | - |
+
+---
+
+## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
+
+Roadmap completo archivado en
+`.planning/archive/v3.0-agente-voz/ROADMAP-v3.0.md`.
 
 | # | Phase | Reqs | Status |
 |---|-------|------|--------|
-| 19 | Encender el reporte semanal | REP-01..03 | COMPLETE |
-| 20 | Disposición obligatoria | DISP-01..03 | Ejecutada + verificada (UAT humano en prod pendiente) |
-| 21 | Reporte diario + canal WhatsApp | REP-04..10 | 6/7 planes — falta SOLO 21-07 (prueba en vivo, pending todo) |
-| 22 | Coaching por vendedora | COACH-01..06 | **DIFERIDA a backlog** |
-| 23 | Notificación por excepción | ALERT-01..03 | **DIFERIDA a backlog** |
+| 24 | Integración backend Retell | VOICE-01..06 | **COMPLETE** (5/5 planes, 2026-07-31, suite 1131/1131) |
+| 25 | Panel Agente de voz | VOICE-07 | No arrancó |
+| 26 | Agente en Retell + piloto | VOICE-08..09 | No arrancó (mayoría `autonomous: false`) |
+| 27 | Banco de conocimiento unificado | VOICE-10 | No arrancó (paralelizable, sin dependencias) |
 
-La advertencia de alcance del roadmap v2.0 (no ampliar a orquestador de
-agentes antes de que 19-22 corran con datos) fue dicha explícitamente al
-user; su decisión: priorizar el agente de voz. 22-23 se retoman post-piloto.
+**Por qué se parkeó** (decisión del user, 2026-08-13): se disolvió el
+equipo de vendedoras — Ignacio pasó a trabajar solo toda la base, y el
+problema urgente dejó de ser "sumar volumen de llamadas" (el rol del
+agente) para ser "no perder ningún lead trabajado" (seguimiento). Razón
+técnica adicional: el webhook de Retell (Phase 24) escribe resultados por
+`_applyCallOutcome`, el mismo helper que v4.0 rediseña con `nextAction` —
+integrar el agente antes habría obligado a rehacerlo. Se retoma después de
+v4.0.

@@ -399,15 +399,27 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 | VOICE-07 | 25 |
 | VOICE-08, VOICE-09 | 26 |
 | VOICE-10 | 27 |
-
-| NEXT-01..04, GATE-01..04, COMM-01..04, ACT-01..05, DIAL-01..05, HOY-01..05 | *(pendiente — lo asigna el roadmap de v4.0)* |
+| GATE-03, DIAL-05 | 28 (QUICK — adelantados por decisión del user) |
+| NEXT-01, NEXT-02, NEXT-03, NEXT-04 | 29 |
+| GATE-01, GATE-02, GATE-04 | 30 |
+| COMM-01, COMM-02, COMM-03, COMM-04 | 31 |
+| ACT-01, ACT-02, ACT-03, ACT-04, ACT-05 | 32 |
+| DIAL-01, DIAL-02, DIAL-03, DIAL-04 | 33 |
+| HOY-01, HOY-02, HOY-03, HOY-04, HOY-05 | 34 |
 
 ✓ v2.0: 13/13 activos mapeados (COACH/ALERT diferidos) · v3.0: 10/10 mapeados
-(phases archivadas, milestone parkeado) · v4.0: 23 requirements a mapear.
+(phases archivadas, milestone parkeado) · **v4.0: 27/27 requirements mapeados
+(Phases 28-34)** — nota: el conteo enunciado en la introducción del bloque
+v4.0 y en el research decía "23"; el conteo real de la sección es 27
+(NEXT 4 + GATE 4 + COMM 4 + ACT 5 + DIAL 5 + HOY 5), y son esos 27 los que
+están mapeados 1:1 a fase, sin huérfanos ni duplicados. **Phases 28-34**:
+GATE-03 (calendario) y DIAL-05 (panel arrastrable) se adelantaron a una
+Phase 28 de puro frontend porque no dependen del modelo de datos.
 
 ---
 
-*Last updated: 2026-08-13 — milestone v4.0 "Seguimiento bajo control" definido
-(NEXT/GATE/COMM/ACT/DIAL/HOY, 23 requirements). v3.0 "Agente de voz" PARKEADO:
-fases 24-27 archivadas en `.planning/archive/v3.0-agente-voz/`, se retoma después
-porque su webhook escribe por el mismo `_applyCallOutcome` que v4.0 rediseña.*
+*Last updated: 2026-08-13 — Roadmap de v4.0 creado (Phases 28-33: NEXT →
+GATE → COMM → ACT → DIAL → HOY). Los 27 requirements reales de la sección
+v4.0 quedaron mapeados 1:1, uno por categoría/fase. v3.0 "Agente de voz"
+sigue PARKEADO: fases 24-27 archivadas en
+`.planning/archive/v3.0-agente-voz/`, se retoma después de v4.0.*

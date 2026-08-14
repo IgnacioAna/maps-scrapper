@@ -15,29 +15,49 @@ progress:
 
 # SCM — STATE
 
-> Estado vivo del proyecto. Actualización: 2026-08-01.
+> Estado vivo del proyecto. Actualización: 2026-08-13.
 
 ---
 
 ## Current Milestone
 
-**v3.0 — Agente de voz** (iniciado 2026-08-01)
+**v4.0 — Seguimiento bajo control** (iniciado 2026-08-13)
 
-Agente de voz IA (Retell + SIP trunk Telnyx) que llama en frío a clínicas,
-pasa recepción e intenta agendar con el decisor; lo no-agendado vuelve como
-datos (nota, callback, nombres, objeción) al mismo circuito de las SDRs
-humanas. Phases 24-27. Contexto completo:
-`.planning/research/2026-08-01-agente-voz-retell.md` + `*-CONTEXT.md` de
-cada phase.
+Ignacio trabaja solo toda la base (se disolvió el equipo de vendedoras).
+El objetivo es que no se le caiga un lead: un solo objeto de próxima
+acción por lead, compromisos hablados como objetos del sistema, y Power
+Dialer + Hoy + Llamadas comportándose como una sola herramienta.
+Phases 28-34. Fuente de verdad de los requisitos:
+`.planning/research/2026-08-13-requisitos-seguimiento-ignacio.md` (R1-R8,
+dichos por el user). Estado del código de partida:
+`.planning/research/2026-08-13-estado-seguimiento-para-investigar.md`.
+
+**Baseline medido (12/08)**: 36 interesados (mediana 21 días sin avanzar),
+16 callbacks manuales con 12 vencidos, 137 leads tocados sin próxima
+acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
+137 y el objetivo es 0.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 28 — QUICK: Alivio inmediato — **NO ARRANCADA**
 Plan: —
-Status: Defining requirements
-Last activity: 2026-08-14 — Milestone v4.0 started
+Status: Roadmap creado (Phases 28-34), listo para `/gsd:discuss-phase 28`
+Last activity: 2026-08-13 — Milestone v4.0 iniciado, roadmap aprobado
 
-## Pending todos (heredados de v2.0 — NO bloquean v3.0)
+## Milestone v3.0 — PARKEADO (2026-08-13)
+
+Agente de voz IA (Retell + SIP trunk Telnyx). **No estaba frenado por
+código**: el plan 26-03 quedó en un checkpoint que depende de que el user
+haga el setup en los dashboards de Telnyx y Retell (mover el número
+`+17867725783` al trunk FQDN e importar el agente). Phase 24 ejecutada
+5/5; 25, 26 (2/6) y 27 sin terminar.
+
+Todo archivado en `.planning/archive/v3.0-agente-voz/` (phases + ROADMAP +
+REQUIREMENTS). **Se retoma después de v4.0**, y hay una razón técnica para
+ese orden: el webhook del agente escribe por `_applyCallOutcome`, el mismo
+modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
+
+## Pending todos (heredados de v2.0 — NO bloquean v4.0)
 
 - **21-07**: prueba en vivo del reporte diario por WhatsApp con el user
   (`autonomous: false`). Ver detalle operativo en el archivo de posición
