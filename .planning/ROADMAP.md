@@ -73,7 +73,7 @@ recordarle, el milestone falló.
 
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
-| 28 | 1/3 | In Progress|  |
+| 28 | 2/3 | In Progress|  |
 | 29 | NEXT — El reloj único | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
@@ -140,7 +140,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 28-02-PLAN.md — Cableado a los 5 campos de fecha + hora local del lead + carga de compromisos por día
+- [x] 28-02-PLAN.md — Cableado a los 5 campos de fecha + hora local del lead + carga de compromisos por día
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
