@@ -73,7 +73,7 @@ recordarle, el milestone falló.
 
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
-| 28 | QUICK — Alivio inmediato | GATE-03, DIAL-05 | — |
+| 28 | 1/3 | In Progress|  |
 | 29 | NEXT — El reloj único | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
@@ -136,7 +136,7 @@ panel de llamada cuando tapa algo.
 Plans:
 **Wave 1**
 
-- [ ] 28-01-PLAN.md — Componente de calendario propio (popover anclado, mes navegable, franjas 09:00–19:00, etiqueta relativa)
+- [x] 28-01-PLAN.md — Componente de calendario propio (popover anclado, mes navegable, franjas 09:00–19:00, etiqueta relativa)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

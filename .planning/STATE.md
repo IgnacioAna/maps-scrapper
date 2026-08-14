@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T17:26:23.490Z"
+last_updated: "2026-08-14T17:30:17.225Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
@@ -39,12 +39,12 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 28 — QUICK: Alivio inmediato — contexto capturado
-Plan: —
-Status: Ready to execute
+Phase: 28 (QUICK — Alivio inmediato) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 28
 `/gsd-plan-phase 28`
 Resume file: `.planning/phases/28-quick-alivio-inmediato/28-CONTEXT.md`
-Last activity: 2026-08-14 -- Phase 28 planning complete
+Last activity: 2026-08-14 -- Phase 28 execution started
 
 ## Milestone v3.0 — PARKEADO (2026-08-13)
 
@@ -234,7 +234,7 @@ modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
 
-- **Status:** Ready to execute
+- **Status:** Executing Phase 28
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
