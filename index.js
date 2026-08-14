@@ -4043,7 +4043,7 @@ app.post('/api/admin/backfill-hangup-cap', requireAuth, requireRole('admin'), as
     for (const h of hits) {
       const lead = data.leads[h.id];
       lead.estado = 'descartado';
-      lead.callbackAt = '';           // varios arrastraban callbacks vencidos
+      _clearNextAction(lead);         // varios arrastraban callbacks vencidos y su nextAction
       lead.autoDiscarded = true;
       lead.autoDiscardReason = `cortes_${maxHungUp}x`;
       // NO se toca el callLog ni `interes`: el historial queda intacto y esto no
@@ -4082,7 +4082,7 @@ app.post('/api/admin/backfill-consumed-callbacks', requireAuth, requireRole('adm
   let hits = [];
   await mutateSettersData((data) => {
     hits = scan(data.leads);
-    for (const h of hits) data.leads[h.id].callbackAt = '';
+    for (const h of hits) _clearNextAction(data.leads[h.id]);
   });
   res.json({ dryRun: false, updated: hits.length, leads: hits.slice(0, 50) });
 });
@@ -9228,7 +9228,7 @@ function _resetLeadForRedistribution(lead) {
   lead.calificado = false;
   lead.interes = null;
   lead.apertura = '';
-  lead.callbackAt = '';
+  _clearNextAction(lead); // un lead que cambia de dueño arranca sin próximo paso
   lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
   lead.followUpStartedAt = null;
   lead.followUpNotes = {};
@@ -9631,7 +9631,7 @@ app.post('/api/admin/recycle-pool', requireAuth, requireRole('admin'), (req, res
     lead.calificado = false;
     lead.interes = null;
     lead.apertura = '';
-    lead.callbackAt = '';
+    _clearNextAction(lead);
     lead.followUps = { '24hs': false, '48hs': false, '72hs': false, '7d': false, '15d': false };
     lead.followUpStartedAt = null;
     lead.followUpNotes = {};
@@ -10153,14 +10153,15 @@ app.post('/api/setters/leads/:id/reactivate', requireAuth, requireRole('admin'),
     phoneStatus: lead.phoneStatus,
     respondio: lead.respondio,
     calificado: lead.calificado,
-    callbackAt: lead.callbackAt
+    callbackAt: lead.callbackAt,
+    nextAction: lead.nextAction
   };
   lead.estado = 'sin_contactar';
   lead.interes = null;
   lead.phoneStatus = '';
   lead.respondio = false;
   lead.calificado = false;
-  lead.callbackAt = '';
+  _clearNextAction(lead);
   // Conexion sin_wsp se mantiene si estaba ahí (sigue siendo lead de Llamadas)
   // Asegurar que sigue en Llamadas — si no estaba en sin_wsp, lo marcamos
   if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
@@ -11033,9 +11034,14 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     const _pc = _correctedEntry.preCadence;
     if (_pc && typeof _pc === 'object') {
       // Restaurar el estado pre-auto-marca: deshace auto-descarte, callbackAt
-      // de cadencia, cadenceStep, etc.
+      // de cadencia, cadenceStep, etc. nextAction vuelve JUNTO con callbackAt
+      // (Phase 29) — corregir una auto-marca sin restaurar los dos dejaría los
+      // relojes desincronizados. Snapshots viejos (sin nextAction persistido)
+      // caen a null: es lo mismo que devuelve la derivación cuando el
+      // callbackAt restaurado viene vacío.
       lead.estado = _pc.estado;
       lead.callbackAt = _pc.callbackAt;
+      lead.nextAction = _pc.nextAction ?? null;
       lead.cadenceStep = _pc.cadenceStep;
       lead.cadenceExhausted = _pc.cadenceExhausted;
       lead.autoDiscarded = _pc.autoDiscarded;
@@ -11097,6 +11103,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     logEntry.preCadence = {
       estado: lead.estado,
       callbackAt: lead.callbackAt || '',
+      nextAction: lead.nextAction || null,
       cadenceStep: lead.cadenceStep || 0,
       cadenceExhausted: !!lead.cadenceExhausted,
       autoDiscarded: !!lead.autoDiscarded,
