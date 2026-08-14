@@ -10006,19 +10006,55 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
 
   const previous = !!lead.followUps[step];
   const next = typeof value === 'boolean' ? value : !previous;
+  // Única llamada a `new Date().toISOString()` de la rama de tildado — el
+  // mismo instante se escribe en followUpStartedAt Y en nextAction.createdAt
+  // (Phase 29 / D-04), para que _nextActionTemplateForDelta pueda recuperar
+  // el `step` exacto a partir de dueTs-createdAt.
+  const nowIso = new Date().toISOString();
 
   if (next === true) {
     // Tildar este step → destildar los otros (solo uno activo) + setear started.
     for (const k of valid) lead.followUps[k] = (k === step);
-    lead.followUpStartedAt = new Date().toISOString();
+    lead.followUpStartedAt = nowIso;
+    // Phase 29 (D-04/NEXT-03): tildar un follow-up programa el MISMO próximo
+    // paso que cualquier otra vía — un nextAction real, no solo el flag.
+    // Consecuencia BUSCADA: como _setNextAction espeja callbackAt (D-03), el
+    // lead sale de la cola de Llamadas hasta esa fecha y aparece en
+    // Hoy → Callbacks. Antes tildar el checkbox no movía nada y el lead se
+    // perdía — es el punto de esta fase.
+    const template = NEXT_ACTION_TEMPLATES.find((t) => t.key === step);
+    if (template) {
+      _setNextAction(lead, {
+        tipo: 'callback',
+        dueAt: new Date(Date.parse(nowIso) + template.deltaMs).toISOString(),
+        canal: 'llamada',
+        motivo: `follow-up ${template.label}`,
+        origen: 'manual',
+        createdBy: req.auth?.user?.name || '',
+      }, nowIso);
+    }
   } else {
     // Destildar este step → si era el activo, queda sin follow-up.
     lead.followUps[step] = false;
     const stillActive = valid.some((k) => lead.followUps[k] === true);
     if (!stillActive) lead.followUpStartedAt = null;
+    // Destildar un checkbox no puede borrar un compromiso pactado por OTRA
+    // vía (p.ej. un callback manual pactado por teléfono en una disposición).
+    // Solo se apaga el nextAction vigente si ES el que este endpoint creó.
+    const na = lead.nextAction;
+    if (na && na.origen === 'manual' && typeof na.motivo === 'string' && na.motivo.startsWith('follow-up ')) {
+      _clearNextAction(lead);
+    }
   }
   // No cambiar lastContactAt acá: ese sigue siendo "última vez que se mandó WSP",
   // no "última vez que se cambió el checkbox de follow-up".
+  //
+  // Phase 29 (D-04): lead.followUps y followUpStartedAt SE SIGUEN escribiendo
+  // como REGISTRO MUERTO — ya ninguna vista del backend los lee como fuente
+  // de verdad (esa es _leadNextAction/nextAction, arriba). Se conservan
+  // porque el frontend todavía pinta el chip con ellos (_callsToggleFollowup,
+  // nota #175 de CLAUDE.md) y porque borrar el campo sería borrar historia.
+  // Los lectores del frontend se migran en las fases 30-34.
   saveSettersData(data);
   res.json({
     ok: true,
