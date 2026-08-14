@@ -4602,6 +4602,96 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) { console.error(err); }
     });
 
+    // ─── [28-01] DTPICKER-PURE: INICIO ───
+    // Fase 28 (2026-08-14): helpers puros de fecha para el calendario propio
+    // (popover). Bloque sin ninguna dependencia externa del entorno del
+    // navegador ni de red — así el test lo extrae por estos marcadores y lo
+    // evalúa aislado (mismo patrón que tests/app-version.test.js; ver
+    // STATE.md "Decisiones de ejecución 21-04"/21-06).
+    //
+    // Contrato de formato (D-01, "cambio de superficie, no de plomería"): el
+    // string de salida es EXACTAMENTE el que hoy produce _toDatetimeLocal
+    // (más abajo en este archivo) — YYYY-MM-DDTHH:mm, sin segundos, sin huso.
+    function _dtpPad2(n) { return String(n).padStart(2, '0'); }
+
+    function _dtpFormatValue(date) {
+      return `${date.getFullYear()}-${_dtpPad2(date.getMonth() + 1)}-${_dtpPad2(date.getDate())}T${_dtpPad2(date.getHours())}:${_dtpPad2(date.getMinutes())}`;
+    }
+
+    function _dtpParseValue(str) {
+      if (typeof str !== 'string') return null;
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(str);
+      if (!m) return null;
+      const [, y, mo, d, hh, mm] = m;
+      const parsed = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), 0, 0);
+      if (isNaN(parsed.getTime())) return null;
+      return parsed;
+    }
+
+    function _dtpDayKey(date) {
+      return _dtpFormatValue(date).slice(0, 10);
+    }
+
+    function _dtpBuildMonthGrid(year, monthIndex) {
+      const first = new Date(year, monthIndex, 1);
+      // getDay(): 0=domingo..6=sabado. Offset al lunes de esa semana.
+      const offset = (first.getDay() + 6) % 7;
+      const start = new Date(year, monthIndex, 1 - offset);
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        cells.push({ date: d, inMonth: d.getMonth() === monthIndex, key: _dtpDayKey(d) });
+      }
+      return cells;
+    }
+
+    function _dtpRelativeLabel(date, now) {
+      const d0 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const n0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dias = Math.round((d0.getTime() - n0.getTime()) / 86400000);
+      let texto;
+      if (dias === 0) texto = 'Hoy';
+      else if (dias === 1) texto = 'Mañana';
+      else if (dias > 1) texto = `en ${dias} días`;
+      else texto = `hace ${Math.abs(dias)} día${Math.abs(dias) === 1 ? '' : 's'}`;
+      return { dias, texto };
+    }
+
+    function _dtpFullLabel(date, now) {
+      const dayNamesFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const dow = dayNamesFull[date.getDay()];
+      const fecha = `${_dtpPad2(date.getDate())}/${_dtpPad2(date.getMonth() + 1)}`;
+      const { texto } = _dtpRelativeLabel(date, now);
+      const hora = `${_dtpPad2(date.getHours())}:${_dtpPad2(date.getMinutes())}`;
+      return `${dow} ${fecha} · ${texto} · ${hora}`;
+    }
+
+    const _DTP_CAL_SKIP = new Set(['cancelada', 'reagendada']);
+
+    function _dtpCountByDay(leads, calendarEntries) {
+      const map = new Map();
+      const bump = (key) => { if (!key) return; map.set(key, (map.get(key) || 0) + 1); };
+      if (Array.isArray(leads)) {
+        for (const l of leads) {
+          if (!l || l.manualCallbackByOwner !== true || !l.callbackAt) continue;
+          const d = new Date(l.callbackAt);
+          if (isNaN(d.getTime())) continue;
+          bump(_dtpDayKey(d));
+        }
+      }
+      if (Array.isArray(calendarEntries)) {
+        for (const entry of calendarEntries) {
+          if (!entry || !entry.fecha) continue;
+          if (_DTP_CAL_SKIP.has(entry.calendarioEstado)) continue;
+          const d = new Date(entry.fecha);
+          if (isNaN(d.getTime())) continue;
+          bump(_dtpDayKey(d));
+        }
+      }
+      return map;
+    }
+    // ─── [28-01] DTPICKER-PURE: FIN ───
+
     // ─── PROGRAMAR MENSAJE ───────────────────────────────────────
     // Phase setter-automations-followups (2026-05-22)
     // Setter elige fecha + escribe mensaje + (opcionalmente) cancelar-si-responde
