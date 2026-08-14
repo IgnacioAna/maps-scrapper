@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
-status: planning
-last_updated: "2026-08-14T16:43:16.357Z"
+status: executing
+last_updated: "2026-08-14T17:26:23.490Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
   completed_phases: 0
-  total_plans: 0
+  total_plans: 3
   completed_plans: 0
   percent: 0
 ---
@@ -41,10 +41,10 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 Phase: 28 — QUICK: Alivio inmediato — contexto capturado
 Plan: —
-Status: CONTEXT.md listo (6 áreas discutidas, D-01..D-11) →
+Status: Ready to execute
 `/gsd-plan-phase 28`
 Resume file: `.planning/phases/28-quick-alivio-inmediato/28-CONTEXT.md`
-Last activity: 2026-08-14 — Phase 28 context gathered
+Last activity: 2026-08-14 -- Phase 28 planning complete
 
 ## Milestone v3.0 — PARKEADO (2026-08-13)
 
@@ -234,13 +234,13 @@ modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
 
-- **Status:** VERIFICATION **human_needed 14/15** (`20-VERIFICATION.md`):
+- **Status:** Ready to execute
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
 
-- **Last activity:** 2026-07-26 — (1) Phase 20 ejecutada completa (waves 1-2,
+- **Last activity:** 2026-08-14
   preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
   push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
   `20260725c`, los 3 endpoints nuevos responden 401 (vivos). ⚠️ El push
