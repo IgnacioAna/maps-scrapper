@@ -10,7 +10,8 @@
     "plan_check": true,
     "verifier": true,
     "nyquist_validation": false,
-    "auto_advance": false
+    "auto_advance": false,
+    "_auto_chain_active": false
   },
   "_notes": "Bootstrap manual 2026-04-27. Mismatch conocido: gsd-sdk no resuelve en PATH (binario real es gsd-tools.cjs). Workflows que invocan 'gsd-sdk query ...' fallan; usar los skills /gsd-* con conciencia de que la maquinaria full no está cableada. Phase numbering: A=1, B=2, C=3, C.5=3.5, D=4, E=5."
 }
