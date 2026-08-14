@@ -1189,12 +1189,13 @@
       <!-- Phase 6: Script panel — al lado del panel centrado durante llamada -->
       <div id="telnyx-script-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(calc(-50% + 240px), -50%); width:460px; max-width:46vw; max-height:88vh; background:#11131A; border:1px solid rgba(157,133,242,0.4); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.85), 0 0 0 1px rgba(157,133,242,0.2); z-index:9999; overflow:hidden; flex-direction:column; animation:tlxSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
         <!-- Header: título + tone chip + cerrar -->
-        <div style="padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.06); background:linear-gradient(180deg, rgba(157,133,242,0.1) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div id="telnyx-script-panel-header" class="tlx-drag-handle" style="padding:13px 16px; border-bottom:1px solid rgba(255,255,255,0.06); background:linear-gradient(180deg, rgba(157,133,242,0.1) 0%, transparent 100%); display:flex; align-items:center; justify-content:space-between; gap:10px;">
           <div style="display:flex; align-items:center; gap:10px;">
             <strong style="font-size:13.5px; color:#fff; font-weight:600;">Guion de llamada</strong>
           </div>
           <div style="display:flex; align-items:center; gap:8px;">
             <span title="3-S del tono: matchea al prospect" style="display:inline-flex; align-items:center; gap:4px; font-size:10.5px; color:rgba(157,133,242,0.9); padding:3px 9px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.25); border-radius:6px; font-weight:500; cursor:default;">Slow · Smile · Strong</span>
+            <button type="button" id="telnyx-script-recenter" class="tlx-recenter-btn" title="Volver al centro">Centrar</button>
             <button id="telnyx-script-close" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.8); cursor:pointer; font-size:14px; padding:3px 8px; line-height:1; border-radius:6px;">✕</button>
           </div>
         </div>
@@ -1316,7 +1317,7 @@
 
       <div id="telnyx-call-panel" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); width:420px; max-width:92vw; max-height:94vh; background:#11131A; border:1px solid rgba(157,133,242,0.6); border-radius:18px; box-shadow:0 40px 100px rgba(0,0,0,0.9), 0 0 0 1px rgba(157,133,242,0.3), 0 0 80px rgba(157,133,242,0.25); z-index:9999; overflow:hidden; font-family:inherit; animation:tlxScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); flex-direction:column;">
         <!-- Header con avatar + status + timer (fijo arriba) -->
-        <div style="flex-shrink:0; padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div id="telnyx-call-panel-header" class="tlx-drag-handle" style="flex-shrink:0; padding:18px 20px 14px; background:linear-gradient(180deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.04) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex; align-items:center; gap:14px;">
             <!-- Avatar circular con inicial -->
             <div id="telnyx-call-avatar" style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent) 0%, #7c5ee8 100%); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; box-shadow:0 4px 12px rgba(157,133,242,0.4);">—</div>
@@ -1331,6 +1332,7 @@
               <strong id="telnyx-call-status" style="font-size:12px; color:rgba(255,255,255,0.85); font-weight:500; letter-spacing:0.2px;">Conectando…</strong>
             </div>
             <div style="display:flex; align-items:center; gap:9px;">
+              <button type="button" id="telnyx-call-recenter" class="tlx-recenter-btn" title="Volver al centro">Centrar</button>
               <!-- Calidad de línea medida con RTCPeerConnection.getStats (2026-07-31).
                    Dice si el audio feo es la RED (pérdida/jitter) o el codec. -->
               <span id="telnyx-line-quality" title="Calidad de la línea" style="display:none; font-size:10px; font-weight:600; letter-spacing:0.2px; padding:3px 8px; border-radius:20px; border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.75); background:rgba(255,255,255,0.05); cursor:help; white-space:nowrap;">Midiendo…</span>
@@ -1457,12 +1459,22 @@
           .tlx-btn-action.tlx-mute-active { background:rgba(157,133,242,0.18) !important; border-color:rgba(157,133,242,0.5) !important; color:var(--accent) !important; }
           #telnyx-call-hangup:hover { box-shadow:0 6px 20px rgba(248,81,73,0.5); transform:translateY(-1px); }
           #telnyx-call-hangup:active { transform:translateY(0); }
-          /* Cuando el guion está abierto, el panel principal se mueve a la izquierda */
-          body.tlx-script-open #telnyx-call-panel { transform:translate(calc(-50% - 240px), -50%) !important; transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+          /* Cuando el guion está abierto, el panel principal se mueve a la izquierda —
+             SOLO si el usuario nunca lo arrastró (D-11, Fase 28 2026-08-14). Un panel
+             con posición propia (.tlx-dragged) deja de matchear este selector. */
+          body.tlx-script-open #telnyx-call-panel:not(.tlx-dragged) { transform:translate(calc(-50% - 240px), -50%) !important; transition:transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
           /* Scrollbar discreto para el cuerpo scrolleable del panel de llamada */
           .tlx-call-scroll::-webkit-scrollbar { width:7px; }
           .tlx-call-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.14); border-radius:4px; }
           .tlx-call-scroll::-webkit-scrollbar-track { background:transparent; }
+          /* Fase 28 (2026-08-14, D-08..D-11): paneles arrastrables — motor en app.js
+             (bloque PANEL-DRAG-PURE + _tlxRegisterDrag/_tlxApplyPos/_tlxRecenter). */
+          .tlx-dragged { animation:none !important; }
+          .tlx-drag-handle { cursor:move; user-select:none; -webkit-user-select:none; }
+          body.tlx-dragging { user-select:none; cursor:move; }
+          .tlx-recenter-btn { display:none; background:transparent; border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7); font-size:10px; border-radius:6px; padding:3px 8px; cursor:pointer; font-family:inherit; line-height:1.4; white-space:nowrap; transition:color 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
+          .tlx-recenter-btn:hover { color:#fff; border-color:var(--accent); background:rgba(157,133,242,0.1); }
+          .tlx-dragged .tlx-recenter-btn { display:inline-flex; align-items:center; }
         </style>
       </div>
 
@@ -3608,7 +3620,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260814b"></script>
+  <script type="module" src="/app.js?v=20260814c"></script>
   <script type="module" src="/wa.js?v=20260705a"></script>
 </body>
 </html>

@@ -10264,6 +10264,169 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
+    // ─── [28-03] PANEL-DRAG-PURE: INICIO ───
+    // Fase 28 (2026-08-14): helpers puros del motor de arrastre de los
+    // paneles de llamada/guion (D-08..D-11). Bloque sin dependencias del
+    // entorno del navegador ni de almacenamiento persistente ni de red — el
+    // test lo extrae por estos marcadores y lo evalúa aislado (mismo patrón
+    // que DTPICKER-PURE, 28-01).
+    function _tlxClampPos(left, top, w, h, vw, vh) {
+      const L = Number(left);
+      const T = Number(top);
+      const W = Number(w);
+      const H = Number(h);
+      const VW = Number(vw);
+      const VH = Number(vh);
+      if (!Number.isFinite(L) || !Number.isFinite(T) || !Number.isFinite(W) || !Number.isFinite(H) || !Number.isFinite(VW) || !Number.isFinite(VH)) {
+        return { left: 0, top: 0 };
+      }
+      const maxLeft = Math.max(0, VW - W);
+      const maxTop = Math.max(0, VH - H);
+      return {
+        left: Math.min(Math.max(L, 0), maxLeft),
+        top: Math.min(Math.max(T, 0), maxTop),
+      };
+    }
+
+    function _tlxPosKey(panelKey, userId) {
+      const uid = userId ? String(userId) : 'anon';
+      return `tlx_panel_pos_${panelKey}_${uid}`;
+    }
+    // ─── [28-03] PANEL-DRAG-PURE: FIN ───
+
+    // ─── Fase 28 (2026-08-14): motor de arrastre de los paneles Telnyx ───
+    // Persiste posición por panel y por usuario; el empuje automático
+    // (body.tlx-script-open, ver <style> del panel de llamada en index.html)
+    // sigue aplicando SOLO mientras el panel no tenga la clase .tlx-dragged
+    // (D-11) — esa clase la agrega este motor la primera vez que hay drag
+    // real o una posición guardada que aplicar.
+    const _TLX_PANELS = {
+      call: {
+        panelId: 'telnyx-call-panel',
+        handleId: 'telnyx-call-panel-header',
+        recenterId: 'telnyx-call-recenter',
+        home: { left: '50%', top: '50%', transform: 'translate(-50%, -50%)' },
+      },
+      script: {
+        panelId: 'telnyx-script-panel',
+        handleId: 'telnyx-script-panel-header',
+        recenterId: 'telnyx-script-recenter',
+        home: { left: '50%', top: '50%', transform: 'translate(calc(-50% + 240px), -50%)' },
+      },
+    };
+
+    function _tlxLoadPos(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Number.isFinite(parsed.left) || !Number.isFinite(parsed.top)) return null;
+        return { left: parsed.left, top: parsed.top };
+      } catch { return null; }
+    }
+
+    function _tlxSavePos(key, pos) {
+      try { localStorage.setItem(key, JSON.stringify({ left: pos.left, top: pos.top })); } catch {}
+    }
+
+    // Aplica la posición guardada (si hay) al mostrar el panel. Re-clampea
+    // contra el viewport ACTUAL (pudo cambiar la resolución desde que se
+    // guardó) — así un panel guardado "fuera de pantalla" siempre reaparece
+    // adentro. Si no hay posición guardada, no toca nada: el panel queda con
+    // su centrado y su empuje CSS de siempre.
+    function _tlxApplyPos(panelKey) {
+      const cfg = _TLX_PANELS[panelKey];
+      if (!cfg) return;
+      const panel = document.getElementById(cfg.panelId);
+      if (!panel) return;
+      const key = _tlxPosKey(panelKey, currentUser?.id);
+      const saved = _tlxLoadPos(key);
+      if (!saved) return;
+      const rect = panel.getBoundingClientRect();
+      const w = rect.width || panel.offsetWidth || 0;
+      const h = rect.height || panel.offsetHeight || 0;
+      const clamped = _tlxClampPos(saved.left, saved.top, w, h, window.innerWidth, window.innerHeight);
+      panel.style.left = clamped.left + 'px';
+      panel.style.top = clamped.top + 'px';
+      panel.style.transform = 'none';
+      panel.classList.add('tlx-dragged');
+    }
+
+    // Vuelve el panel a su posición original de HTML — top:50%/left:50%/
+    // transform:translate(...) NO se pueden dejar vacíos: ese centrado vive
+    // en el atributo style del HTML y borrarlo no lo restaura solo.
+    function _tlxRecenter(panelKey) {
+      const cfg = _TLX_PANELS[panelKey];
+      if (!cfg) return;
+      const panel = document.getElementById(cfg.panelId);
+      if (panel) {
+        panel.classList.remove('tlx-dragged');
+        panel.style.left = cfg.home.left;
+        panel.style.top = cfg.home.top;
+        panel.style.transform = cfg.home.transform;
+      }
+      try { localStorage.removeItem(_tlxPosKey(panelKey, currentUser?.id)); } catch {}
+    }
+
+    function _tlxRegisterDrag(panelKey) {
+      const cfg = _TLX_PANELS[panelKey];
+      if (!cfg) return;
+      const panel = document.getElementById(cfg.panelId);
+      const handle = document.getElementById(cfg.handleId);
+      if (!panel || !handle) return;
+      let dragging = false;
+      let moved = false;
+      let startX = 0, startY = 0, startLeft = 0, startTop = 0;
+      handle.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        if (e.target.closest('button, input, select, textarea, a')) return;
+        dragging = true;
+        moved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = panel.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop = rect.top;
+        try { handle.setPointerCapture(e.pointerId); } catch {}
+      });
+      handle.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        // Umbral de 3px: un click suelto en la barra no puede marcar el
+        // panel como arrastrado ni apagar el empuje automático (D-11).
+        if (!moved && Math.hypot(dx, dy) <= 3) return;
+        moved = true;
+        panel.classList.add('tlx-dragged');
+        document.body.classList.add('tlx-dragging');
+        const rect = panel.getBoundingClientRect();
+        const w = rect.width || panel.offsetWidth || 0;
+        const h = rect.height || panel.offsetHeight || 0;
+        const clamped = _tlxClampPos(startLeft + dx, startTop + dy, w, h, window.innerWidth, window.innerHeight);
+        panel.style.left = clamped.left + 'px';
+        panel.style.top = clamped.top + 'px';
+        panel.style.transform = 'none';
+      });
+      const finishDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        try { handle.releasePointerCapture(e.pointerId); } catch {}
+        document.body.classList.remove('tlx-dragging');
+        if (moved) {
+          const rect = panel.getBoundingClientRect();
+          _tlxSavePos(_tlxPosKey(panelKey, currentUser?.id), { left: rect.left, top: rect.top });
+        }
+      };
+      handle.addEventListener('pointerup', finishDrag);
+      handle.addEventListener('pointercancel', finishDrag);
+    }
+
+    _tlxRegisterDrag('call');
+    _tlxRegisterDrag('script');
+    document.getElementById('telnyx-call-recenter')?.addEventListener('click', () => _tlxRecenter('call'));
+    document.getElementById('telnyx-script-recenter')?.addEventListener('click', () => _tlxRecenter('script'));
+    window._tlxRecenter = _tlxRecenter; // diagnóstico
+
     function _openScriptPanel() {
       const panel = document.getElementById('telnyx-script-panel');
       if (panel) panel.style.display = 'flex';
