@@ -4602,6 +4602,322 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch (err) { console.error(err); }
     });
 
+    // ─── [28-01] DTPICKER-PURE: INICIO ───
+    // Fase 28 (2026-08-14): helpers puros de fecha para el calendario propio
+    // (popover). Bloque sin ninguna dependencia externa del entorno del
+    // navegador ni de red — así el test lo extrae por estos marcadores y lo
+    // evalúa aislado (mismo patrón que tests/app-version.test.js; ver
+    // STATE.md "Decisiones de ejecución 21-04"/21-06).
+    //
+    // Contrato de formato (D-01, "cambio de superficie, no de plomería"): el
+    // string de salida es EXACTAMENTE el que hoy produce _toDatetimeLocal
+    // (más abajo en este archivo) — YYYY-MM-DDTHH:mm, sin segundos, sin huso.
+    function _dtpPad2(n) { return String(n).padStart(2, '0'); }
+
+    function _dtpFormatValue(date) {
+      return `${date.getFullYear()}-${_dtpPad2(date.getMonth() + 1)}-${_dtpPad2(date.getDate())}T${_dtpPad2(date.getHours())}:${_dtpPad2(date.getMinutes())}`;
+    }
+
+    function _dtpParseValue(str) {
+      if (typeof str !== 'string') return null;
+      const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(str);
+      if (!m) return null;
+      const [, y, mo, d, hh, mm] = m;
+      const parsed = new Date(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), 0, 0);
+      if (isNaN(parsed.getTime())) return null;
+      return parsed;
+    }
+
+    function _dtpDayKey(date) {
+      return _dtpFormatValue(date).slice(0, 10);
+    }
+
+    function _dtpBuildMonthGrid(year, monthIndex) {
+      const first = new Date(year, monthIndex, 1);
+      // getDay(): 0=domingo..6=sabado. Offset al lunes de esa semana.
+      const offset = (first.getDay() + 6) % 7;
+      const start = new Date(year, monthIndex, 1 - offset);
+      const cells = [];
+      for (let i = 0; i < 42; i++) {
+        const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+        cells.push({ date: d, inMonth: d.getMonth() === monthIndex, key: _dtpDayKey(d) });
+      }
+      return cells;
+    }
+
+    function _dtpRelativeLabel(date, now) {
+      const d0 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      const n0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dias = Math.round((d0.getTime() - n0.getTime()) / 86400000);
+      let texto;
+      if (dias === 0) texto = 'Hoy';
+      else if (dias === 1) texto = 'Mañana';
+      else if (dias > 1) texto = `en ${dias} días`;
+      else texto = `hace ${Math.abs(dias)} día${Math.abs(dias) === 1 ? '' : 's'}`;
+      return { dias, texto };
+    }
+
+    function _dtpFullLabel(date, now) {
+      const dayNamesFull = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+      const dow = dayNamesFull[date.getDay()];
+      const fecha = `${_dtpPad2(date.getDate())}/${_dtpPad2(date.getMonth() + 1)}`;
+      const { texto } = _dtpRelativeLabel(date, now);
+      const hora = `${_dtpPad2(date.getHours())}:${_dtpPad2(date.getMinutes())}`;
+      return `${dow} ${fecha} · ${texto} · ${hora}`;
+    }
+
+    const _DTP_CAL_SKIP = new Set(['cancelada', 'reagendada']);
+
+    function _dtpCountByDay(leads, calendarEntries) {
+      const map = new Map();
+      const bump = (key) => { if (!key) return; map.set(key, (map.get(key) || 0) + 1); };
+      if (Array.isArray(leads)) {
+        for (const l of leads) {
+          if (!l || l.manualCallbackByOwner !== true || !l.callbackAt) continue;
+          const d = new Date(l.callbackAt);
+          if (isNaN(d.getTime())) continue;
+          bump(_dtpDayKey(d));
+        }
+      }
+      if (Array.isArray(calendarEntries)) {
+        for (const entry of calendarEntries) {
+          if (!entry || !entry.fecha) continue;
+          if (_DTP_CAL_SKIP.has(entry.calendarioEstado)) continue;
+          const d = new Date(entry.fecha);
+          if (isNaN(d.getTime())) continue;
+          bump(_dtpDayKey(d));
+        }
+      }
+      return map;
+    }
+    // ─── [28-01] DTPICKER-PURE: FIN ───
+
+    // ─── Fase 28 (2026-08-14): popover del calendario propio (D-01..D-05) ───
+    // Reemplaza la superficie de elección del datetime-local nativo por un
+    // popover anclado al campo (D-02). Este plan (28-01) construye el
+    // componente y lo deja en window._dtPicker — el wiring a los 5 modales
+    // reales (los inputs `#call-cb-fecha`, `#call-sched-fecha`,
+    // `#agendar-fecha`, `#call-ph-fecha`, `#schedule-datetime`) es 28-02.
+    let _dtpPop = null;      // el <div class="dtp-pop">, creado una sola vez y reusado
+    let _dtpState = null;    // { input, opts, view:{year,month}, draft:Date|null }
+    let _dtpCleanup = null;  // remueve los listeners agregados en la apertura actual
+
+    function _dtpCommit(date) {
+      if (!_dtpState) return;
+      _dtpState.draft = date;
+      _dtPickerSet(_dtpState.input, date);
+      _dtpRenderGrid();
+      _dtpRenderPreview();
+    }
+
+    function _dtpRenderGrid() {
+      if (!_dtpState || !_dtpPop) return;
+      const { year, month } = _dtpState.view;
+      const monthLabel = new Date(year, month, 1).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+      const monthEl = _dtpPop.querySelector('.dtp-month');
+      if (monthEl) monthEl.textContent = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+      const cells = _dtpBuildMonthGrid(year, month);
+      const todayKey = _dtpDayKey(new Date());
+      const selKey = _dtpState.draft ? _dtpDayKey(_dtpState.draft) : null;
+      const gridEl = _dtpPop.querySelector('.dtp-grid');
+      if (gridEl) {
+        gridEl.innerHTML = cells.map((c) => {
+          const cls = ['dtp-day'];
+          if (!c.inMonth) cls.push('is-out');
+          if (c.key === todayKey) cls.push('is-today');
+          if (c.key === selKey) cls.push('is-sel');
+          if (c.key < todayKey) cls.push('is-past');
+          return `<button type="button" class="${cls.join(' ')}" data-dtp-key="${c.key}">${c.date.getDate()}</button>`;
+        }).join('');
+      }
+      const slotsEl = _dtpPop.querySelector('.dtp-slots');
+      if (slotsEl) {
+        const selHour = _dtpState.draft ? _dtpState.draft.getHours() : null;
+        const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+        slotsEl.innerHTML = hours.map((h) => `<button type="button" class="dtp-slot${h === selHour ? ' is-sel' : ''}" data-dtp-hour="${h}">${_dtpPad2(h)}:00</button>`).join('');
+      }
+      const timeEl = _dtpPop.querySelector('.dtp-time');
+      if (timeEl && _dtpState.draft) timeEl.value = `${_dtpPad2(_dtpState.draft.getHours())}:${_dtpPad2(_dtpState.draft.getMinutes())}`;
+    }
+
+    function _dtpRenderPreview() {
+      if (!_dtpState || !_dtpPop) return;
+      const previewEl = _dtpPop.querySelector('.dtp-preview');
+      if (previewEl) previewEl.textContent = _dtpState.draft ? _dtpFullLabel(_dtpState.draft, new Date()) : 'Elegí fecha y hora';
+    }
+
+    function _dtpPosition(anchorEl) {
+      if (!_dtpPop || !anchorEl) return;
+      const rect = anchorEl.getBoundingClientRect();
+      _dtpPop.style.display = 'block';
+      const popRect = _dtpPop.getBoundingClientRect();
+      let top = rect.bottom + 6;
+      if (top + popRect.height > window.innerHeight - 8) {
+        top = rect.top - popRect.height - 6;
+        if (top < 8) top = 8;
+      }
+      let left = rect.left;
+      if (left + popRect.width > window.innerWidth - 8) left = window.innerWidth - popRect.width - 8;
+      if (left < 8) left = 8;
+      _dtpPop.style.top = top + 'px';
+      _dtpPop.style.left = left + 'px';
+    }
+
+    function _dtpEnsurePop() {
+      if (_dtpPop) return _dtpPop;
+      const pop = document.createElement('div');
+      pop.className = 'dtp-pop';
+      pop.style.cssText = 'position:fixed; display:none;';
+      pop.innerHTML = `
+        <div class="dtp-head">
+          <button type="button" class="dtp-nav" data-dtp-nav="-1" aria-label="Mes anterior">‹</button>
+          <strong class="dtp-month"></strong>
+          <button type="button" class="dtp-nav" data-dtp-nav="1" aria-label="Mes siguiente">›</button>
+          <button type="button" class="dtp-today">Hoy</button>
+        </div>
+        <div class="dtp-week"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+        <div class="dtp-grid"></div>
+        <div class="dtp-times">
+          <div class="dtp-slots"></div>
+          <input type="time" class="dtp-time" step="60">
+        </div>
+        <div class="dtp-foot">
+          <div class="dtp-preview"></div>
+          <div class="dtp-leadtime"></div>
+          <button type="button" class="dtp-done">Listo</button>
+        </div>`;
+      document.body.appendChild(pop);
+      _dtpPop = pop;
+
+      pop.querySelectorAll('.dtp-nav').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (!_dtpState) return;
+          const dir = Number(btn.getAttribute('data-dtp-nav'));
+          let { year, month } = _dtpState.view;
+          month += dir;
+          if (month < 0) { month = 11; year -= 1; }
+          else if (month > 11) { month = 0; year += 1; }
+          _dtpState.view = { year, month };
+          _dtpRenderGrid();
+        });
+      });
+      pop.querySelector('.dtp-today').addEventListener('click', () => {
+        if (!_dtpState) return;
+        const now = new Date();
+        _dtpState.view = { year: now.getFullYear(), month: now.getMonth() };
+        _dtpRenderGrid();
+      });
+      pop.querySelector('.dtp-grid').addEventListener('click', (e) => {
+        const cell = e.target.closest('.dtp-day');
+        if (!cell || !_dtpState) return;
+        const key = cell.getAttribute('data-dtp-key');
+        if (!key) return;
+        const [y, m, d] = key.split('-').map(Number);
+        const base = _dtpState.draft || new Date();
+        _dtpState.view = { year: y, month: m - 1 };
+        _dtpCommit(new Date(y, m - 1, d, base.getHours(), base.getMinutes(), 0, 0));
+      });
+      pop.querySelector('.dtp-slots').addEventListener('click', (e) => {
+        const btn = e.target.closest('.dtp-slot');
+        if (!btn || !_dtpState) return;
+        const hour = Number(btn.getAttribute('data-dtp-hour'));
+        const base = _dtpState.draft || new Date();
+        _dtpCommit(new Date(base.getFullYear(), base.getMonth(), base.getDate(), hour, 0, 0, 0));
+      });
+      pop.querySelector('.dtp-time').addEventListener('change', (e) => {
+        if (!_dtpState) return;
+        const m = /^(\d{2}):(\d{2})$/.exec(e.target.value || '');
+        if (!m) return;
+        const base = _dtpState.draft || new Date();
+        _dtpCommit(new Date(base.getFullYear(), base.getMonth(), base.getDate(), Number(m[1]), Number(m[2]), 0, 0));
+      });
+      pop.querySelector('.dtp-done').addEventListener('click', () => { _dtPickerClose(); });
+
+      return pop;
+    }
+
+    function _dtpOpen(input) {
+      _dtPickerClose(); // por si había otro abierto — nunca 2 aperturas superpuestas
+      const pop = _dtpEnsurePop();
+      const trigger = input._dtpTrigger || null;
+      const opts = input._dtpOpts || {};
+      const existing = _dtpParseValue(input.value);
+      let draft = existing;
+      if (!draft) { draft = new Date(); draft.setHours(10, 0, 0, 0); }
+      _dtpState = { input, opts, view: { year: draft.getFullYear(), month: draft.getMonth() }, draft };
+      _dtpRenderGrid();
+      _dtpRenderPreview();
+      _dtpPosition(trigger || input);
+
+      const onKeydown = (e) => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); _dtPickerClose(); }
+      };
+      const onPointerDown = (e) => {
+        const t = e.target;
+        if (pop.contains(t)) return;
+        if (trigger && trigger.contains(t)) return;
+        _dtPickerClose();
+      };
+      const onResize = () => { _dtPickerClose(); };
+      document.addEventListener('keydown', onKeydown, true);
+      document.addEventListener('pointerdown', onPointerDown, true);
+      window.addEventListener('resize', onResize);
+      _dtpCleanup = () => {
+        document.removeEventListener('keydown', onKeydown, true);
+        document.removeEventListener('pointerdown', onPointerDown, true);
+        window.removeEventListener('resize', onResize);
+      };
+    }
+
+    // Idempotente: los modales se abren muchas veces por sesión. Si ya está
+    // attacheado, solo repinta el trigger con el value actual.
+    function _dtPickerAttach(input, opts) {
+      if (!input) return;
+      if (input.dataset.dtpAttached === '1') { _dtPickerSync(input); return; }
+      try {
+        const wrap = document.createElement('div');
+        wrap.className = 'dtp-field';
+        const trigger = document.createElement('button');
+        trigger.type = 'button';
+        trigger.className = 'dtp-trigger';
+        if (input.id) trigger.setAttribute('data-dtp-for', input.id);
+        trigger.textContent = 'Elegir fecha y hora';
+        trigger.addEventListener('click', () => { _dtpOpen(input); });
+        wrap.appendChild(trigger);
+        input.insertAdjacentElement('afterend', wrap);
+        input.style.display = 'none';
+        input._dtpTrigger = trigger;
+        input.dataset.dtpAttached = '1';
+        input._dtpOpts = opts || {};
+        _dtPickerSync(input);
+      } catch (e) {
+        // Fallback (T-28-03): si el componente falla, el input nativo queda
+        // visible y el flujo de programar fecha sigue funcionando.
+        console.warn('[dtpicker] attach falló, sigue disponible el input nativo:', e);
+      }
+    }
+
+    function _dtPickerSync(input) {
+      if (!input || !input._dtpTrigger) return;
+      const date = _dtpParseValue(input.value);
+      input._dtpTrigger.textContent = date ? _dtpFullLabel(date, new Date()) : 'Elegir fecha y hora';
+    }
+
+    function _dtPickerSet(input, date) {
+      if (!input || !(date instanceof Date) || isNaN(date.getTime())) return;
+      input.value = _dtpFormatValue(date);
+      try { input.dispatchEvent(new Event('change', { bubbles: true })); } catch {}
+      _dtPickerSync(input);
+    }
+
+    function _dtPickerClose() {
+      if (_dtpCleanup) { try { _dtpCleanup(); } catch {} _dtpCleanup = null; }
+      if (_dtpPop) _dtpPop.style.display = 'none';
+      _dtpState = null;
+    }
+
+    window._dtPicker = { attach: _dtPickerAttach, sync: _dtPickerSync, set: _dtPickerSet, close: _dtPickerClose };
+
     // ─── PROGRAMAR MENSAJE ───────────────────────────────────────
     // Phase setter-automations-followups (2026-05-22)
     // Setter elige fecha + escribe mensaje + (opcionalmente) cancelar-si-responde
