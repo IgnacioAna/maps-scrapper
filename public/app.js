@@ -4552,6 +4552,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Format yyyy-mm-ddThh:mm (sin segundos)
           const pad = n => String(n).padStart(2, '0');
           dtInput.value = `${tomorrow10.getFullYear()}-${pad(tomorrow10.getMonth() + 1)}-${pad(tomorrow10.getDate())}T${pad(tomorrow10.getHours())}:${pad(tomorrow10.getMinutes())}`;
+          // [28-02] Calendario propio (D-01): sin lead confiable en este punto
+          // de entrada (WA parkeado) — D-06 contempla explícitamente este caso.
+          _dtPickerAttach(dtInput, { getLead: () => null });
         }
         const msgArea = document.getElementById('schedule-message');
         if (msgArea) msgArea.value = lead.openMessage || '';
@@ -4939,6 +4942,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (preset === '7d' || preset === '15d') target.setHours(10, 0, 0, 0);
         const dtInput = document.getElementById('schedule-datetime');
         if (dtInput) dtInput.value = _scheduleFormatDatetimeLocal(target);
+        // [28-02] D-05: el atajo sigue siendo un click directo — solo se
+        // repinta la etiqueta del trigger del calendario.
+        if (dtInput) _dtPickerSync(dtInput);
       });
     });
 
@@ -10426,6 +10432,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       emailIn.value = (lead.email || '').trim();
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(11, 0, 0, 0);
       fechaIn.value = _toDatetimeLocal(m);
+      // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
+      _dtPickerAttach(fechaIn, { getLead: () => lead });
       durIn.value = '30';
       noteIn.value = '';
 
@@ -10437,6 +10445,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         qp.querySelectorAll('.ph-quickpick').forEach(btn => {
           btn.addEventListener('click', () => {
             fechaIn.value = _toDatetimeLocal(new Date(btn.getAttribute('data-iso')));
+            // [28-02] D-05: el atajo sigue siendo un click directo — solo se
+            // repinta la etiqueta del trigger del calendario.
+            _dtPickerSync(fechaIn);
             qp.querySelectorAll('.ph-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
             btn.style.borderColor = 'var(--accent)';
             btn.style.background = 'rgba(157,133,242,0.12)';
@@ -10484,6 +10495,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Default: mañana 10am hora local
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(10, 0, 0, 0);
       fechaInput.value = _toDatetimeLocal(m);
+      // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
+      _dtPickerAttach(fechaInput, { getLead: () => _callsLeadsById.get(leadId) });
       // 2026-07-10: el checkbox "compartido" se removió del HTML (los leads no se
       // comparten entre SDRs). El read de abajo usa ?.checked → siempre false.
 
@@ -10502,6 +10515,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           btn.addEventListener('click', () => {
             const iso = btn.getAttribute('data-iso');
             fechaInput.value = _toDatetimeLocal(new Date(iso));
+            // [28-02] D-05: el atajo sigue siendo un click directo — solo se
+            // repinta la etiqueta del trigger del calendario.
+            _dtPickerSync(fechaInput);
             // Highlight selected
             qpWrap.querySelectorAll('.cb-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
             btn.style.borderColor = 'var(--accent)';
@@ -10736,6 +10752,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // (no toISOString que devuelve UTC y se ve 3hs atrasado en AR).
       const m = new Date(); m.setDate(m.getDate() + 1); m.setHours(11, 0, 0, 0);
       document.getElementById('call-sched-fecha').value = _toDatetimeLocal(m);
+      // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
+      _dtPickerAttach(document.getElementById('call-sched-fecha'), { getLead: () => lead });
       document.getElementById('call-sched-notas').value = '';
       modal.classList.remove('hidden');
 
@@ -18188,6 +18206,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pad = (n) => String(n).padStart(2, '0');
     const defaultIso = `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}`;
     document.getElementById('agendar-fecha').value = defaultIso;
+    // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
+    _dtPickerAttach(document.getElementById('agendar-fecha'), { getLead: () => _agendarLead });
     document.getElementById('agendar-notas').value = '';
     document.getElementById('agendar-confirm').disabled = false;
     // 2026-08-11: resetear también el label — tras un éxito quedaba "✓ Agendado".
