@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T21:45:00.000Z"
+last_updated: "2026-08-14T22:00:17.845Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 7
-  completed_plans: 5
+  completed_plans: 6
   percent: 14
 ---
 
@@ -40,11 +40,11 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 29 (NEXT — El reloj único) — EXECUTING
-Plan: 2 of 4 complete (29-01 + 29-02 done; next: 29-03)
-Status: Wave 2 done — `_applyCallOutcome` escribe y consume el reloj único (NEXT-02/NEXT-04); "En seguimiento" lee `nextAction.origen` (D-09), delta 0 contra datos reales. Wave 3 (29-03, `followUps` retirado — NEXT-03) desbloqueada.
+Plan: 3 of 4 complete (29-01 + 29-02 + 29-03 done; next: 29-04)
+Status: Wave 3 done — followUps retirado como fuente de verdad (NEXT-03): el write-path (PATCH .../followup) programa nextAction al tildar y lo apaga sin pisar compromisos de otra vía al destildar; el read-path (_computeFollowupsDue) deriva de _leadNextAction, excluyendo origen='cadencia' (#150). Medido contra datos reales: badge de follow-ups sube de 0 a 10 (aviso al usuario redactado en 29-03-SUMMARY.md, a comunicar antes del deploy de la Wave 4). Wave 4 (29-04, migración de callbackAt/followUps restantes a nextAction explícito) desbloqueada.
 `/gsd:execute-phase 29`
-Resume file: `.planning/phases/29-next-reloj-unico/29-03-PLAN.md`
-Last activity: 2026-08-14 -- 29-02 ejecutado (_applyCallOutcome sobre nextAction, manualCallbackByOwner migrado, paridad humano↔agente de voz extendida, 11 tests nuevos), suite completa 1268/1268, metrics-consistency intocado y verde
+Resume file: `.planning/phases/29-next-reloj-unico/29-04-PLAN.md`
+Last activity: 2026-08-14 -- 29-03 ejecutado (write-path + read-path del retiro de followUps, medición antes/después sobre copia de datos reales, aviso al usuario redactado), suite completa 1277/1277
 
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
 
@@ -901,6 +901,28 @@ Contra HEAD `a9e4886`:
   bien el checkbox de la lista de planes (`29-02-PLAN.md`, que de todas
   formas ya se había marcado a mano antes de correr el comando). Revertida
   la fila manualmente a `| 29 | NEXT — El reloj único (2/4 planes) |
+
+- **29-03:** `gsd-sdk query state.advance-plan` sigue vivo en PATH esta
+  sesión (a diferencia del mismatch que documentaba `config.json`) y esta
+  vez SÍ actualizó bien el frontmatter (`completed_plans` 5→6) y el texto
+  libre lo reescribimos a mano encima — pero reprodujo el MISMO bug de
+  corrupción de línea no relacionada que ya documentaron 24-04/29-02:
+  pisó `- **Status:** Executing Phase 28` (línea de la sección archivada de
+  Phase 20) con el texto genérico `- **Status:** Ready to execute`.
+  Detectado con `git diff .planning/STATE.md` ANTES de commitear (no
+  confiar en el output del comando solo) y revertido a mano. `state.
+  update-progress` devolvió `{"updated": false, "reason": "Progress field
+  not found in STATE.md"}` — no-op, sin corromper nada. `state.record-
+  metric` y `state.add-decision` devolvieron `{"error": "... required"}`
+  con argumentos posicionales que coinciden con el patrón documentado en
+  `execute-plan.md` (`"${PHASE}" "${PLAN}" "${DURATION}" ...` /
+  `"mensaje"`) — el mensaje de error no aclara el formato esperado y
+  `--help` solo devuelve `"Usage: ... [args...]"` sin detalle. Se
+  actualizaron las métricas y la decisión a mano en este archivo en vez de
+  seguir adivinando el formato. **Regla reforzada para 29-04**: correr
+  `git diff .planning/STATE.md` después de CUALQUIER comando `state.*` de
+  la SDK, antes de tocar nada más — la corrupción es silenciosa y no sale
+  en el output del comando.
   NEXT-01..04 | — |`, preservando el checkbox. `state.record-metric`/
   `state.add-decision`/`requirements.mark-complete` no se probaron esta
   vez — se asume el mismo mismatch de formato para este milestone y se hizo

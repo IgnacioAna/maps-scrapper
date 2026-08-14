@@ -267,9 +267,15 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - [x] **NEXT-02**: `callbackAt` pasa a ser un caso de `nextAction`
   (tipo=callback) sin perder el comportamiento vigente de la cadencia
   automática de no-contacto ni de los callbacks manuales.
-- [ ] **NEXT-03**: El sistema viejo de `followUps` (24h/48h/72h/7d/15d) deja
+- [x] **NEXT-03**: El sistema viejo de `followUps` (24h/48h/72h/7d/15d) deja
   de existir como reloj paralelo; sus pasos sobreviven como plantillas de
   `dueAt`. Los 3 leads que hoy lo usan migran sin perder historia.
+  (29-03: write-path programa `nextAction` al tildar, read-path deriva de
+  `_leadNextAction` — `lead.followUps` dejó de ser fuente de verdad de
+  cualquier vista. Un lead legacy con `followUps` activo ya responde igual
+  que uno migrado vía `_deriveNextActionFromLegacy`, sin esperar al backfill;
+  la migración explícita de los 3 leads restantes — para que dejen de
+  DEPENDER de la derivación — corre en 29-04.)
 - [x] **NEXT-04**: Toda disposición nueva consume el `nextAction` pendiente
   (regla vigente que hay que preservar: evita callbacks viejos clavados
   arriba de la cola).

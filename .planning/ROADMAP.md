@@ -74,7 +74,7 @@ recordarle, el milestone falló.
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
 | 28 | 3/3 | Complete   | 2026-08-14 |
-| 29 | NEXT — El reloj único (2/4 planes) | NEXT-01..04 | — |
+| 29 | NEXT — El reloj único (3/4 planes) | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
@@ -195,7 +195,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 29-03-PLAN.md — Retiro de `followUps` como reloj paralelo: el toggle programa `nextAction`, `_computeFollowupsDue` deriva del modelo nuevo (NEXT-03)
+- [x] 29-03-PLAN.md — Retiro de `followUps` como reloj paralelo: el toggle programa `nextAction`, `_computeFollowupsDue` deriva del modelo nuevo (NEXT-03) (completed 2026-08-14, 29-03-SUMMARY.md)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -371,7 +371,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. QUICK — Alivio inmediato | 3/3 | Complete | 2026-08-14 |
-| 29. NEXT — El reloj único | 1/4 | In Progress | - |
+| 29. NEXT — El reloj único | 3/4 | In Progress | - |
 | 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
 | 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
