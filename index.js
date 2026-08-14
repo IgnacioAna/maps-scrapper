@@ -11642,10 +11642,15 @@ app.get('/api/setters/stats', requireAuth, (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════
-// ── FOLLOW-UPS: programación, vencimientos, notas, reschedule ──
-// Reusa el data model existente: lead.followUps (flags por step), lastContactAt
-// (fecha base para calcular vencimientos), + extensiones nuevas:
-// followUpNotes, followUpDueOverrides, followUpsReactivated.
+// ── FOLLOW-UPS: vista de lectura sobre el reloj único (Phase 29 / D-04) ──
+// Esta sección quedó como VISTA sobre lead.nextAction (~10618): ninguna
+// función de acá lee lead.followUps como fuente de verdad. Los 5 steps
+// (24h/48h/72h/7d/15d) sobreviven solo como plantillas de duración
+// (NEXT_ACTION_TEMPLATES) para recuperar el `step`/`label` de un
+// nextAction cuya duración coincide exacto con una de ellas. El write-path
+// (`PATCH .../followup`, ~10007) sigue escribiendo lead.followUps como
+// registro muerto — la migración de los lectores del frontend es de las
+// fases 30-34.
 // ══════════════════════════════════════════════════════════════
 // Phase 29 (D-04): las 5 duraciones ahora viven en NEXT_ACTION_TEMPLATES
 // (~10618) — sus 5 duraciones sobreviven acá como alias. Una sola fuente.
@@ -11662,47 +11667,58 @@ function _isFollowupHidden(lead) {
   return false;
 }
 
-// Computa el estado de cada follow-up de un lead:
-//   - dueDate: ISO de cuándo vence (override o lastContactAt + step delta)
-//   - status: 'completed' | 'future' | 'dueToday' | 'dueYesterday' | 'overdue'
+// Computa el estado del follow-up de un lead:
+//   - dueDate: ISO de cuándo vence
+//   - status: 'future' | 'dueToday' | 'dueYesterday' | 'overdue'
 //   - note: string (puede ser '')
-// Nueva semántica: el setter tilda UN checkbox para programar el follow-up.
-// Tildar 24h = "voy a contactar en 24h DESDE AHORA". followUpStartedAt = momento
-// del tildado. Solo uno activo a la vez. Si tilda otro, se reemplaza.
-// Si destila el activo (queda en false), no hay follow-up.
+// Phase 29 (D-04/NEXT-03): la fuente es _leadNextAction(lead) — el reloj
+// único — NO lead.followUps. Un lead migrado (nextAction explícito) y uno
+// sin migrar (derivado del modelo legacy vía _deriveNextActionFromLegacy)
+// responden exactamente igual: es el mismo contrato que _leadNextAction
+// garantiza para el resto del backend.
+// EXCLUSIÓN a propósito: origen==='cadencia' nunca entra a esta lista — los
+// reintentos automáticos de no-contacto son plomería interna (#150 de
+// CLAUDE.md), nunca estuvieron acá. Medido contra una copia de los datos de
+// producción (2026-08-14): ~130 callbacks de cadencia en la base — sin este
+// recorte inundarían el banner de follow-ups y las notificaciones de
+// escritorio con reintentos que el SDR nunca programó a mano.
 function _computeFollowupsDue(lead, now = Date.now()) {
   const out = [];
   if (!lead || _isFollowupHidden(lead)) return out;
-  const fu = lead.followUps || {};
-  // Buscar el step activo (el último tildado — solo uno activo).
-  const activeStep = FOLLOWUP_STEPS.find((s) => fu[s.key] === true);
-  if (!activeStep) return out;
-  // Base del contador: followUpStartedAt si existe, sino fallback a lastContactAt
-  // (compat con leads viejos donde el flag está tildado pero followUpStartedAt
-  // todavia no fue seteado).
-  const baseTs = lead.followUpStartedAt
-    ? new Date(lead.followUpStartedAt).getTime()
-    : (lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0);
-  if (!baseTs) return out;
+  const na = _leadNextAction(lead);
+  if (!na || !na.dueAt || na.origen === 'cadencia') return out;
 
+  const dueTs = Date.parse(na.dueAt);
+  if (!dueTs) return out;
+  // baseTs: createdAt del nextAction, con fallback a dueTs cuando falta
+  // (leads legacy derivados sin callLog con timestamp, p.ej. followUps
+  // activo sin followUpStartedAt).
+  const baseTs = Date.parse(na.createdAt) || dueTs;
+
+  // Misma aritmética que antes, sin tocar: ancló el flaky de medianoche
+  // descrito en la nota #163 de CLAUDE.md.
   const startOfToday = _bizStartOfDay(now); // medianoche en TZ de negocio
   const startOfTomorrow = startOfToday + 24 * 60 * 60 * 1000;
   const startOfYesterday = startOfToday - 24 * 60 * 60 * 1000;
 
-  const dueTs = baseTs + activeStep.deltaMs;
   let status;
   if (dueTs >= startOfTomorrow) status = 'future';
   else if (dueTs >= startOfToday && dueTs < startOfTomorrow) status = 'dueToday';
   else if (dueTs >= startOfYesterday && dueTs < startOfToday) status = 'dueYesterday';
   else status = 'overdue';
 
+  // Si la duración coincide exacto con una plantilla, reportamos step/label
+  // originales (así un follow-up de 72h sigue devolviendo step:'72hs'). Si
+  // no (un callback manual con fecha arbitraria), sin step reconocible.
+  const template = _nextActionTemplateForDelta(dueTs - baseTs);
+
   out.push({
-    step: activeStep.key,
-    label: activeStep.label,
+    step: template ? template.key : '',
+    label: template ? template.label : 'próximo paso',
     dueDate: new Date(dueTs).toISOString(),
     startedAt: new Date(baseTs).toISOString(),
     status,
-    note: '',
+    note: na.motivo || '',
   });
   return out;
 }
