@@ -182,11 +182,24 @@ consumo al re-discar).
      representados en `nextAction`, y la suite completa (incluido
      `metrics-consistency`) sigue verde sin cambiar ningún número de
      funnel/atribución.
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
+**Wave 1**
 
-- [ ] 29-01: TBD (definido en plan-phase)
+- [ ] 29-01-PLAN.md — Modelo `nextAction` + helpers (`_setNextAction` / `_clearNextAction` / `_deriveNextActionFromLegacy` / `_leadNextAction`) + invariante de espejo con `callbackAt` en los 7 writers existentes
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 29-02-PLAN.md — `_applyCallOutcome` sobre el reloj único: consumo en toda disposición (NEXT-04), cadencia y callback manual, "En seguimiento" por `origen`, paridad con el agente de voz
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 29-03-PLAN.md — Retiro de `followUps` como reloj paralelo: el toggle programa `nextAction`, `_computeFollowupsDue` deriva del modelo nuevo (NEXT-03)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 29-04-PLAN.md — Migración `POST /api/admin/backfill-next-action` (dryRun + backup + idempotente) + ensayo contra datos reales + one-shot de producción
 
 ### Phase 30: GATE — Cierra la llamada, define el próximo paso
 
@@ -358,7 +371,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. QUICK — Alivio inmediato | 0/3 | Planned | - |
-| 29. NEXT — El reloj único | 0/TBD | Not started | - |
+| 29. NEXT — El reloj único | 0/4 | Planned | - |
 | 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
 | 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
