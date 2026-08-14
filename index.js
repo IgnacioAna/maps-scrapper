@@ -4087,6 +4087,76 @@ app.post('/api/admin/backfill-consumed-callbacks', requireAuth, requireRole('adm
   res.json({ dryRun: false, updated: hits.length, leads: hits.slice(0, 50) });
 });
 
+// Migra lo que _deriveNextActionFromLegacy YA deriva en cada lectura
+// (callbackAt + followUps activo) a lead.nextAction explícito (Phase 29 /
+// NEXT-02 / NEXT-03 / D-05). NO implementa su propia traducción legacy→
+// nextAction: reusa el MISMO helper que usan las lecturas desde 29-01/29-03
+// (index.js ~10749) — migrar no puede cambiar lo que el usuario ve, solo
+// persiste el resultado. lead.followUps / followUpStartedAt NO se borran
+// (D-04): la historia queda, ya dejaron de ser fuente de verdad de ninguna
+// vista (eso lo hizo 29-03). Idempotente: un lead con lead.nextAction ya
+// escrito se saltea (yaMigrados). Un lead sin callbackAt ni followUps activo
+// NO gana la propiedad nextAction (se evita inflar el JSON con
+// "nextAction":null × miles de leads; ensureLeadDefaults ya lo cubre en
+// memoria). dryRun + backup + mutex, mismo patrón que backfill-hangup-cap /
+// backfill-consumed-callbacks (arriba). Body: { dryRun?: boolean }
+app.post('/api/admin/backfill-next-action', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const scan = (leads) => {
+    const hits = [];
+    const counts = {
+      scanned: 0,
+      conCallbackAt: 0,
+      conFollowUpActivo: 0,
+      yaMigrados: 0,
+      byOrigen: { manual: 0, cadencia: 0 },
+      byFuente: { callbackAt: 0, followUps: 0 },
+    };
+    for (const [id, lead] of Object.entries(leads || {})) {
+      if (!lead) continue;
+      counts.scanned++;
+      if (lead.callbackAt) counts.conCallbackAt++;
+      const fu = lead.followUps || {};
+      if (NEXT_ACTION_TEMPLATES.some((t) => fu[t.key] === true)) counts.conFollowUpActivo++;
+      if (lead.nextAction && typeof lead.nextAction === 'object') {
+        counts.yaMigrados++; // idempotencia: ya tiene nextAction, se saltea
+        continue;
+      }
+      const derived = _deriveNextActionFromLegacy(lead);
+      if (!derived) continue; // sin compromiso: no infla el JSON con nextAction:null
+      const fuente = lead.callbackAt ? 'callbackAt' : 'followUps';
+      counts.byOrigen[derived.origen] = (counts.byOrigen[derived.origen] || 0) + 1;
+      counts.byFuente[fuente] = (counts.byFuente[fuente] || 0) + 1;
+      hits.push({ id, name: lead.name || '', origen: derived.origen, tipo: derived.tipo, dueAt: derived.dueAt, fuente, _derived: derived });
+    }
+    return { hits, counts };
+  };
+  const publicHits = (hits) => hits.slice(0, 50).map(({ _derived, ...h }) => h);
+  if (dryRun) {
+    const { hits, counts } = scan(loadSettersData().leads);
+    return res.json({ dryRun: true, matched: hits.length, ...counts, leads: publicHits(hits) });
+  }
+  makeBackup('pre-backfill-next-action');
+  let hits = [], counts = {};
+  await mutateSettersData((data) => {
+    // Re-escanea sobre el snapshot FRESCO del mutex, no sobre el del dryRun
+    // (regla #19 — otro handler pudo escribir entre el dryRun y esta corrida).
+    const scanned = scan(data.leads);
+    hits = scanned.hits;
+    counts = scanned.counts;
+    for (const h of hits) {
+      const lead = data.leads[h.id];
+      // _setNextAction espeja callbackAt por la misma vía que todo lo demás
+      // (D-03). Para los hits derivados de followUps (que hoy NO tienen
+      // callbackAt), el espejo va a ESCRIBIR callbackAt con la fecha del step
+      // — eso es exactamente lo que pide D-03/D-04 y es lo que hace que el
+      // lead pase a verse en las colas de callback.
+      _setNextAction(lead, h._derived, h._derived.createdAt || new Date().toISOString());
+    }
+  });
+  res.json({ dryRun: false, updated: hits.length, ...counts, leads: publicHits(hits) });
+});
+
 app.post('/api/admin/backfill-signals', requireAuth, requireRole('admin'), (req, res) => {
   const { dryRun = false } = req.body || {};
   const data = loadSettersData();
