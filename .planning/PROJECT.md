@@ -2,9 +2,13 @@
 
 > Proyecto interno de la agencia SCM (reactivación de pacientes para clínicas
 > dentales en LATAM/España).
-> Última actualización: 2026-07-31 — milestone v3.0 "Agente de voz".
-> Phase 24 (integración backend Retell) completa: el backend ya recibe y
-> despacha llamadas del agente como si fueran de una SDR humana.
+> Última actualización: 2026-08-13 — milestone v4.0 "Seguimiento bajo control".
+> ⚠️ **Cambio de contexto operativo (2026-08)**: se disolvió el equipo de
+> vendedoras. **Ignacio trabaja solo** con toda la base (4.133 leads
+> propios). Todo el andamiaje multi-SDR (supervisores scoped, reportes por
+> vendedora, distribución del pool, privacidad de la biblioteca) sigue
+> funcionando, pero **dejó de ser una restricción de diseño**: el usuario
+> real del sistema es uno.
 
 ---
 
@@ -21,12 +25,13 @@ transcripción y análisis IA de llamadas + panel de métricas.
 > corre por llamadas. La fuente narrativa del detalle técnico es
 > `CLAUDE.md` (raíz del repo, ~160 notas numeradas).
 
-El sistema lo usan:
-- **3-5 SDRs nuevas** (Judith, Teresa, Brenda, etc.) — llaman con Power
-  Dialer, marcan disposiciones, reciben coaching.
-- **Ignacio (admin) + 2 socios** — supervisan. El milestone v2.0 existe
-  para que NO tengan que entrar al panel.
-- **Supervisores scoped** (Phase 18) — ven solo sus SDRs asignadas.
+El sistema lo usa (desde 2026-08):
+- **Ignacio, solo.** Llama, hace el seguimiento, cierra. Toda la base es
+  suya (4.133 leads, ~52 en seguimiento activo).
+- Histórico: hasta 2026-07 lo usaban 3-5 SDRs (Judith, Teresa, Brenda,
+  Melissa, Paula) + supervisores scoped. **Ese trabajo dejó historial
+  valioso** — notas, "interesado", transcripciones — sobre leads que hoy
+  son de Ignacio. Ese historial es un activo del milestone v4.0, no ruido.
 
 ---
 
@@ -43,7 +48,63 @@ acordarse de abrir ya falló.
 
 ---
 
-## Current Milestone: v3.0 Agente de voz
+## Current Milestone: v4.0 Seguimiento bajo control
+
+**Goal:** Que Ignacio pueda trabajar solo toda la base sin que se le caiga
+un lead: cada lead activo tiene exactamente un próximo paso con fecha, los
+compromisos hablados ("mandame info", "llamame en dos semanas") son objetos
+del sistema y no notas sueltas, y el Power Dialer, Hoy y Llamadas se
+comportan como una sola herramienta en vez de tres.
+
+**Target features:**
+- **Un solo reloj**: `nextAction` como único objeto de próxima acción por
+  lead. Absorbe `callbackAt` y mata el sistema viejo de `followUps`.
+- **Gate de próximo paso**: no se cierra una disposición sin definir el
+  próximo paso o marcar un estado terminal. Con calendario real (hoy es un
+  `datetime-local` nativo y termina contando días a mano).
+- **Compromisos como objeto de primera clase**, distinguiendo quién se
+  comprometió (él o el prospecto).
+- **Acciones desde todas las vistas**: botón de WhatsApp (`wa.me` con
+  plantilla + registro del envío + soporte de número alternativo) y botón
+  de descartar que saque el lead de todas las listas.
+- **Power Dialer como motor único**: entrar al dialer desde cualquier lead,
+  no perderlo al marcar un resultado, ficha rediseñada con el historial de
+  las vendedoras al frente, panel de llamada arrastrable.
+- **Hoy reordenada**, con filtro por país (husos horarios) y panel de
+  higiene.
+
+**Criterio de éxito:** pasa una semana llamando y al abrir el sistema no
+hay ningún lead trabajado sin próximo paso, ningún callback vencido
+olvidado, y sabe de memoria a quién le mandó información y cuándo toca
+volver. Si tiene que acordarse de algo que el sistema debería recordarle,
+el milestone falló.
+
+**Decisiones ya tomadas (no re-litigar):**
+- **Fuente de verdad de los requisitos**:
+  `.planning/research/2026-08-13-requisitos-seguimiento-ignacio.md` (R1-R8,
+  dichos por el user). Si el plan contradice eso, gana eso.
+- El invariante "todo lead activo tiene próximo paso" aplica **solo a leads
+  ya tocados** (137 hoy), nunca al stock virgen (3.699) — si no, la métrica
+  nace inservible.
+- **WhatsApp sale por `wa.me` manual + registro.** Nada de envío
+  automático. wa-multi queda como opción futura *solo* para detectar
+  respuestas (recibir no quema la cuenta; mandar en volumen, sí).
+- **Fuera de alcance**: extracción IA de compromisos desde la transcripción
+  (el research es claro en que falla justo en los condicionales, que son
+  el caso de él). Entra después, con el objeto `commitment` ya rodado.
+- El research externo que fundamenta esto ya está incorporado; **no
+  re-investigar** el dominio.
+
+<details>
+<summary>Milestone v3.0 Agente de voz — PARKEADO 2026-08-13 (referencia)</summary>
+
+> Parkeado con las fases 24-27 archivadas en
+> `.planning/archive/v3.0-agente-voz/`. **No estaba frenado por código**:
+> el plan 26-03 quedó en un checkpoint que depende de que el user haga el
+> setup en los dashboards de Telnyx y Retell. Se retoma después de v4.0, y
+> hay una razón técnica para ese orden: el webhook del agente escribe por
+> `_applyCallOutcome`, el mismo modelo que v4.0 rediseña. Integrarlo antes
+> obligaría a rehacerlo.
 
 **Goal:** Un agente de voz IA (Retell AI + SIP trunk de Telnyx) llama en
 frío a clínicas dentales, pasa la recepción e intenta agendar la reunión
@@ -113,7 +174,7 @@ panel, y aun así los tres saben qué vendedora se cayó y qué llamada hay
 que escuchar. Si el reporte llega pero igual hay que entrar a mirar para
 entender algo, el milestone falló.
 
-**Decisiones ya tomadas (no re-litigar):**
+**Decisiones v2.0 ya tomadas (no re-litigar):**
 - Canal primario = **grupo de WhatsApp** (Ignacio + 2 socios). La razón es
   la conversación: el grupo es donde se discute el reporte.
   ⚠️ **Actualizado el 2026-07-26 por la decisión D-04 de la Phase 21:** el
@@ -133,9 +194,33 @@ entender algo, el milestone falló.
 
 </details>
 
+</details>
+
 ---
 
 ## Context
+
+### Estado real de la base (2026-08-13, condiciona el diseño de v4.0)
+
+Medido sobre la copia del pre-deploy del 12/08, leads de `setter_ignacio`:
+
+| Dato | Valor |
+|---|---|
+| Leads propios | 4.133 (3.819 activos, 571 con al menos una llamada) |
+| **Interesados** | **36** — mediana de **21 días** desde que dijeron que sí |
+| Callbacks manuales pendientes | 16, de los cuales **12 vencidos** |
+| En seguimiento activo | ~52 → banda sana para una persona, sin margen |
+| Leads tocados sin próxima acción | **137** ← baseline de la métrica de higiene |
+| Leads con `followUps` viejo | 3 → migración trivial |
+| Agendados | 1 |
+
+Lecturas que condicionan el diseño:
+- **La cola ya no se vacía**: 12 de 16 callbacks vencidos es el KPI de
+  saturación en rojo. El problema no es volumen de llamadas, es que lo
+  prometido no se cumple.
+- **Los interesados se enfrían en silencio** (21 días de mediana).
+- **El invariante no puede aplicar al stock virgen**: 3.699 leads sin tocar
+  no son "seguimiento", son inventario.
 
 ### Estado real de los datos (2026-07-25, condiciona el diseño)
 

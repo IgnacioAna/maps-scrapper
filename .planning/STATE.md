@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: — estado al switch
-status: executing
-last_updated: "2026-07-31T23:10:00.000Z"
-last_activity: 2026-07-31
+milestone: v4.0
+milestone_name: Seguimiento bajo control
+status: planning
+last_updated: "2026-08-14T00:24:01.064Z"
+last_activity: 2026-08-14
 progress:
-  total_phases: 26
-  completed_phases: 5
-  total_plans: 28
-  completed_plans: 22
-  percent: 19
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # SCM — STATE
@@ -32,189 +32,10 @@ cada phase.
 
 ## Current Position
 
-Phase: 26 (agente-retell-piloto) — EN CURSO (2/6 planes + 26-03 a mitad)
-Plan: **26-03 EN CHECKPOINT BLOQUEANTE (Task 3)** — Tasks 1 y 2 hechas
-(`docs/retell-telnyx-setup.md` escrita, decisión de números tomada). Task 3
-la ejecuta el user en los dashboards de Telnyx y Retell. **Sin SUMMARY
-todavía**: es un plan segmentado por checkpoints, el SUMMARY va al cerrar
-la Task 3.
-
-- **26-03 Tasks 1-2 (2026-07-31)** — `docs/retell-telnyx-setup.md` (433
-  líneas, 10 secciones). **Decisión de números: opción B**, mover
-  `+17867725783` ("USA 3", `telnyx_num_1783725955014_ctkmvz`) a la conexión
-  FQDN del agente — elegido midiendo el callLog de 90 días (el menos usado y
-  no es el `default` del routing). Commits `4dfb319`, `5a048fe`.
-  **Dos correcciones al plan, verificadas contra el código:**
-  (1) el dry-run del dispatch **no puede correr en 26-03** — el handler
-  chequea `enabled !== true` y `agentId` vacío con 409 **antes** de la rama
-  de dry-run, y el plan pide dejar `enabled:false` con el agente sin
-  publicar; queda como chequeo pre-vuelo de 26-04.
-  (2) mover el número **no lo saca del pool del SCM**: la rotación del dialer
-  humano lo va a seguir eligiendo (~1 de cada 3 llamadas), y marcarlo
-  inactivo no sirve como mitigación porque también se lo saca al agente.
-  Las dos salidas reales están escritas en la guía.
-
-- **26-01 + 26-02 EXECUTED (2026-07-31)** — `docs/retell-agent-v1.md`
-  completo y cargable de punta a punta (1.134 líneas). Parte A: Global
-  Settings, global prompt, 10 variables dinámicas, 9 campos de Post Call
-  Data Extraction, tool `book`, webhook y tabla `disconnection_reason` →
-  resultado (todos los nombres leídos del código deployado, no del diseño).
-  Parte B: mapa del flow en modo Rigid, los 9 nodos con prompt textual +
-  transiciones tipadas + settings, 2 Global Nodes, tabla consolidada de 29
-  transiciones y checklist de carga de 10 pasos. Commits `b1022c6`,
-  `20b3915`, `5a83aba`, `081bd07`, `43338ac`, `0498140`, `96fdafc`,
-  `d1a3fbf`. VOICE-08 completado. Detalle en `26-01-SUMMARY.md` y
-  `26-02-SUMMARY.md`.
-  ⚠️ **Decisión abierta antes de publicar el agente**: la línea «Él ya
-  sabe» del guion oficial choca con la regla dura del global prompt (no
-  inventar contacto previo). En el documento quedó la variante neutra;
-  cambiarla implica cambiar también la regla global.
-
-- **Phases 24-25 previas:**
-  Phase 24 (integracion-backend-retell) COMPLETE (5/5 planes).
-  Phase 25 (Panel Agente de voz, VOICE-07) sin empezar — no bloquea a 26.
-
-- **Phase:** 25
-  Los 3 planes previos ejecutaron config+refactor (24-01/24-02), dispatch
-  (24-03) y las 2 superficies públicas auth-only (24-04); este plan cierra
-  el circuito con el procesamiento real del webhook.
-
-- **Plan:** Not started
-- **Status:** Ready to execute
-  (Panel Agente de voz, VOICE-07) o Phase 26/27 en paralelo (sin
-  dependencia entre sí salvo Phase 25→26 deseable).
-
-- **24-01 EXECUTED (2026-07-31)** — refactor `_applyCallOutcome` +
-  hoisting de los helpers de costo Telnyx + test de paridad doble-vía.
-  Commits `57a3543` (Task 1: `TELNYX_RATES_USD_PER_MIN`/
-  `_detectCountryAndType`/`_estimateTelnyxCost` subidos a scope de
-  módulo), `be58347` (Task 2: `_applyCallOutcome(data, lead, logEntry,
-  opts)` extraído verbatim del handler humano + `opts.skipCalendarCreation`
-
-  + `globalThis.__voiceAgent`), `b208aaf` (Task 3: 12 tests de paridad
-  doble-vía en `tests/apply-call-outcome.test.js`). Suite completa
-  **1020/1020** verde, sin editar ningún test preexistente
-  (`git diff --cached --name-only -- tests/` solo lista el archivo nuevo).
-  VOICE-02 completado. Detalle en `24-01-SUMMARY.md`.
-
-- **24-02 EXECUTED (2026-07-31)** — config Retell env>JSON (patrón Telnyx
-  clonado) + log de eventos + endpoints admin-only + regla #21 completa +
-  pseudo-SDR `setter_agente_ia`. Commits `72f175f` (Task 1: módulo de
-  config — `loadRetellConfig`/`saveRetellConfig`/`_publicRetellConfig`
-  con overlay env>JSON, `_retellWebhookSecret` con fallback a `apiKey`
-  [corrección research §2.1: Retell firma con el mismo API key, sin
-  signing secret aparte], `_retellToolSecret` sin fallback, seed de boot
-  del pseudo-SDR guardado por `NODE_ENV !== 'test'`), `b280d18` (Task 2:
-  `GET`/`PUT /api/retell/config` admin-only con 409 env-sourced +
-  self-healing + `retell_config.json`/`retell_events.json` en las 5
-  superficies de la regla #21 — `BACKUP_FILES`, `seedVolumeFromRepo`,
-  export-data [lectura CRUDA sin overlay de env, para que el export nunca
-  filtre el secret efectivo], import-data, `pre-deploy.js`), `649e76e`
-  (Task 3: `tests/retell-config.test.js`, 26 tests — RBAC, no-leak,
-  env-sourced, self-healing, fallback webhookSecret, validaciones,
-  round-trip export/import, pseudo-SDR visible con fila en
-  `team-performance`). Suite completa **1046/1046** verde (1020 + 26
-  nuevos), solo se sumaron 2 claves al `EXPECTED_KEYS` de
-  `export-data-full.test.js` (pactado por el plan). VOICE-01/VOICE-06
-  completados. Detalle en `24-02-SUMMARY.md`.
-
-- **24-03 EXECUTED (2026-07-31)** — dispatch por lote del agente de voz.
-  Commits `dad0be7` (Task 1: `_retellPrefixToIso`/
-  `_retellPickNumberForDestination`/`_retellCallsTodayCount`/
-  `_retellSelectDispatchLeads`/`_retellDynamicVariables` — reusan
-  `_leadIsCallableNow` y el CALL METRICS CORE tal cual, cero lógica de
-  elegibilidad ni conteo nuevos), `fa1fb1d` (Task 2:
-  `POST /api/admin/voice-agent/dispatch` admin-only — guards en orden,
-  `_voiceDispatchInFlight` liberado en `finally`, cap diario
-  `_voiceDispatchedToday` con `_voiceDispatchRollover` por `_bizDayStr`
-  invocado al principio del handler y antes de sumar los éxitos, `dryRun`
-  que corta antes de cualquier fetch/incremento, caller ID resuelto
-  secuencialmente antes del pool [`_runPool` conc 2], error de Retell por
-  lead sin romper el lote, cero escritura a `setters.json`,
-  `_pendingRetellCalls` para 24-05), `0b3a914` (Task 3:
-  `tests/retell-dispatch.test.js`, 30 tests — RBAC, las 6 exclusiones de
-  `_leadIsCallableNow` verificadas ausentes de la selección, cap diario +
-  rollover de día simulado vía `globalThis.__voiceAgent`, caller ID
-  [round-robin persistido leído del archivo vs routing explícito sin
-  rotar vs `active:false` nunca elegido], variables dinámicas [leadId
-  correlacionado + coerción string], robustez ante fallos de Retell por
-  lead, correlación `_pendingRetellCalls`, y callLog de los leads
-  elegibles sin crecer ante ningún dispatch). Suite completa
-  **1076/1076** verde (1046 + 30 nuevos). VOICE-03 completado. Detalle en
-  `24-03-SUMMARY.md`.
-
-- **24-04 EXECUTED (2026-07-31)** — las 2 superficies públicas del agente:
-  la tool `/book` que agenda a mitad de llamada y el shell del webhook.
-  Commits `a63d308` (Task 1: `POST /api/retell/tool/book` — auth por header
-  `x-scm-tool-secret` con `timingSafeEqual`, 401 genérico, 503 fail-closed
-  en producción sin secret; D-24-05: crea SOLO `data.calendar` vía
-  `mutateSettersData`, cero escritura de historial de llamadas, cero cambio
-  de `lead.estado`; tolera las 2 formas del payload de Retell — call+args y
-  "args only" —; idempotencia por `call_id` vía `_pendingBooked` [Map en
-  memoria, TTL 2h, contrato para 24-05]; valida fecha futuro/≤90 días;
-  responde siempre 200 con `ok:false` en los casos de negocio porque Retell
-  no reintenta custom functions), `8995503` (Task 2: `_verifyRetellSignature`
-  — HMAC-SHA256 de `rawBody+timestamp`, formato `v=<ms>,d=<hex>`, ventana
-  anti-replay 5 min, algoritmo verificado contra el source real de
-  `retell-sdk@5.53.0` [research §2.1] — y el shell de
-  `POST /api/retell/webhook`: 401+contador en rechazo, 503 fail-closed en
-  producción sin secret, persiste evento reducido en `retell_events.json`
-  [FIFO 1000, sin transcript/grabación, con `custom_analysis_data`
-  conservado], marcador `// [24-05] punto de inserción del procesamiento de
-  la llamada`), `a9b29a2` (Task 3: `tests/retell-webhook.test.js`, 15 tests
-  — firma válida con fallback `webhookSecret→apiKey`, los 4 modos de ataque
-  [sin firma, secret ajeno, formato malformado, replay/body alterado],
-  fail-closed en producción, health poblada en `GET /api/retell/config`,
-  no-leak, FIFO). Sumado a `tests/retell-book.test.js` (19 tests, Task 1).
-  Suite completa **1104/1104** verde. VOICE-04/VOICE-05 (auth) completados
-  — el procesamiento de la llamada (transcript/outcome/cascada) sigue en
-  24-05. Detalle en `24-04-SUMMARY.md`.
-
-- **24-05 EXECUTED (2026-07-31)** — el procesamiento del webhook: cierra el
-  circuito completo de la fase. Commits `7eb9e61` (Task 1:
-  `RETELL_DISCONNECT_OUTCOME` — tabla de módulo con las 34 claves reales del
-  catálogo de `disconnection_reason` [el research/plan dicen "32" en prosa,
-  desfase documentado como deviation] → `voicemail`/`no_answer`/`hung_up`/
-  `null`, ASSUMED, a revisar con datos del piloto de Phase 26;
-  `_retellTranscriptToSegments` [D-24-08, deriva start/end de `words[]`];
-  `_retellReasonIsNoConnection`; `_retellParseCallbackAt` [futuro ≤90 días,
-  mismo criterio que `/book`]; `_retellDecideOutcome` [7 pasos ordenados,
-  `booked` decide SOLO el outcome]), `87b9775` (Task 2:
-  `_retellProcessCallEvent` enganchado en el marcador de 24-04, fire-and-forget
-  antes del `res.status(200)` [Retell corta a los 10s]; filtra evento,
-  resuelve `leadId` por 3 vías, decide si `call_ended` resuelve solo o espera
-  `call_analyzed` [con red de seguridad a los 10 min, timer solo fuera de
-  test]; arma el `logEntry` [transcript, costo, `by:''`→atribución,
-  `channel:'retell'`, `outcomeSource` auditable] y escribe TODO —idempotencia
-  por `retellCallId` + push + cascada de `_applyCallOutcome`— dentro de UN
-  `mutateSettersData`; persiste la extracción [nota/doctor/email/
-  recepcionista, solo si vacío]. **El blocker fix del plan-checker**:
-  `skipCalendarCreation: !!pendingEntry` deriva EXCLUSIVAMENTE de
-  `_pendingBooked`, nunca de `booked` — verificado por grep [`booked` nunca
-  dentro de las opts de `_applyCallOutcome`] y 2 tests dedicados), `fd38aee`
-  (Task 3: `tests/retell-webhook-process.test.js`, 27 tests — el gate del
-  success criterion 1 del ROADMAP [1 entry con transcript+cascada+nota+
-  atribución, visible en Entrenamiento IA y `cold-call-metrics`],
-  idempotencia [mismo evento 2x, y `call_ended`+`call_analyzed` tardío],
-  los 3 caminos de outcome, booking [con `/book` no duplica, sin `/book`
-  SÍ crea la cita — el test del blocker fix], extracción, robustez, y 6
-  unit tests puros de los helpers de Task 1). Suite completa **1131/1131**
-  verde (1104 + 27 nuevos). VOICE-05 completado — **Phase 24 CERRADA
-  (5/5 planes)**. Detalle en `24-05-SUMMARY.md`.
-
-- **Próximo paso:** Phase 24 completa. Siguiente: planificar Phase 25
-  (Panel Agente de voz, VOICE-07, `/gsd:plan-phase 25`) — o Phase 26/27 en
-  paralelo si el user prefiere adelantar el setup real de Retell / el banco
-  de conocimiento (ninguna de las dos depende de 25 salvo por comodidad
-  operativa).
-
-- **Last activity:** 2026-07-31
-  working tree principal, sin worktree). Phase 24 (Integración backend
-  Retell) queda COMPLETA: los 6 success criteria del ROADMAP verificados
-  (webhook produce la huella completa, suite verde sin cambios de números,
-  dispatch filtra por `_leadIsCallableNow`, auth de `/book`/webhook con los
-  401/503 esperados, atribución de `setter_agente_ia` sin código nuevo,
-  `retell_config.json` sobrevive redeploy).
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-08-14 — Milestone v4.0 started
 
 ## Pending todos (heredados de v2.0 — NO bloquean v3.0)
 
