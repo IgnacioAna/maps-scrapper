@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: planning
-last_updated: "2026-08-14T00:24:01.064Z"
+last_updated: "2026-08-14T16:43:16.357Z"
 last_activity: 2026-08-14
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -39,10 +39,12 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 28 — QUICK: Alivio inmediato — **NO ARRANCADA**
+Phase: 28 — QUICK: Alivio inmediato — contexto capturado
 Plan: —
-Status: Roadmap creado (Phases 28-34), listo para `/gsd:discuss-phase 28`
-Last activity: 2026-08-13 — Milestone v4.0 iniciado, roadmap aprobado
+Status: CONTEXT.md listo (6 áreas discutidas, D-01..D-11) →
+`/gsd-plan-phase 28`
+Resume file: `.planning/phases/28-quick-alivio-inmediato/28-CONTEXT.md`
+Last activity: 2026-08-14 — Phase 28 context gathered
 
 ## Milestone v3.0 — PARKEADO (2026-08-13)
 
