@@ -4705,12 +4705,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     let _dtpState = null;    // { input, opts, view:{year,month}, draft:Date|null }
     let _dtpCleanup = null;  // remueve los listeners agregados en la apertura actual
 
+    // [28-02] D-07: cache del fetch de /api/setters/calendar (TTL 120s) para
+    // no re-pegarle al backend cada vez que se abre el popover en la misma
+    // sesión — el número de carga por día no necesita ser al segundo.
+    let _dtpCalCache = { at: 0, entries: [] };
+
+    async function _dtpFetchCalendar() {
+      if (Date.now() - _dtpCalCache.at < 120000) return _dtpCalCache.entries;
+      try {
+        const r = await fetch(apiUrl('/api/setters/calendar'), { credentials: 'include' });
+        const j = await r.json();
+        _dtpCalCache = { at: Date.now(), entries: j.calendar || [] };
+        return _dtpCalCache.entries;
+      } catch (e) {
+        // T-28-06: un backend caído deja el calendario SIN badges, nunca sin
+        // poder elegir fecha — el popover ya se renderizó antes de este fetch.
+        console.warn('[dtpicker] fetch de calendario falló (D-07 sin badges):', e?.message);
+        return [];
+      }
+    }
+
+    function _dtpLocalCallbackLeads() {
+      try {
+        if (_callsLeadsById && _callsLeadsById.size) return Array.from(_callsLeadsById.values());
+      } catch {}
+      return [];
+    }
+
+    function _dtpPaintLoad(counts) {
+      if (!_dtpPop) return;
+      _dtpPop.querySelectorAll('.dtp-day[data-dtp-key]').forEach((cell) => {
+        const key = cell.getAttribute('data-dtp-key');
+        const n = counts instanceof Map ? (counts.get(key) || 0) : 0;
+        let badge = cell.querySelector('.dtp-load');
+        if (n > 0) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'dtp-load';
+            cell.appendChild(badge);
+          }
+          badge.textContent = String(n);
+        } else if (badge) {
+          badge.remove();
+        }
+      });
+    }
+
+    // Dispara el conteo EN PARALELO a la grilla (Claude's Discretion del
+    // CONTEXT: sin latencia perceptible al abrir) y solo pinta si el popover
+    // sigue abierto mostrando el MISMO mes cuando resuelve — evita pintar
+    // badges de un mes que el user ya dejó atrás navegando rápido.
+    async function _dtpRefreshLoad() {
+      if (!_dtpState || _dtpState.opts.load === false) return;
+      const view = _dtpState.view;
+      const entries = await _dtpFetchCalendar();
+      if (!_dtpState || _dtpState.view.year !== view.year || _dtpState.view.month !== view.month) return;
+      _dtpPaintLoad(_dtpCountByDay(_dtpLocalCallbackLeads(), entries));
+    }
+
     function _dtpCommit(date) {
       if (!_dtpState) return;
       _dtpState.draft = date;
       _dtPickerSet(_dtpState.input, date);
       _dtpRenderGrid();
       _dtpRenderPreview();
+      _dtpRenderLeadTime();
     }
 
     function _dtpRenderGrid() {
@@ -4747,6 +4806,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!_dtpState || !_dtpPop) return;
       const previewEl = _dtpPop.querySelector('.dtp-preview');
       if (previewEl) previewEl.textContent = _dtpState.draft ? _dtpFullLabel(_dtpState.draft, new Date()) : 'Elegí fecha y hora';
+    }
+
+    // [28-02] D-06: hora local del lead para la fecha elegida, en texto plano
+    // — SIN ningún color/aviso (el user lo pidió explícito: "solo mostrar, él
+    // decide"). Vacío si no hay lead (getLead ausente/null) o si el lead no
+    // tiene país mapeado en _LEAD_TZ.
+    function _dtpRenderLeadTime() {
+      if (!_dtpState || !_dtpPop) return;
+      const leadTimeEl = _dtpPop.querySelector('.dtp-leadtime');
+      if (!leadTimeEl) return;
+      leadTimeEl.textContent = '';
+      if (!_dtpState.draft) return;
+      const getLead = _dtpState.opts && _dtpState.opts.getLead;
+      if (typeof getLead !== 'function') return;
+      let lead = null;
+      try { lead = getLead(); } catch { lead = null; }
+      if (!lead) return;
+      const lt = _leadLocalTimeAt(lead, _dtpState.draft);
+      if (!lt) return;
+      const country = (lead.country || '').trim();
+      leadTimeEl.textContent = `= ${lt.time} para el lead` + (country ? ` (${country})` : '');
     }
 
     function _dtpPosition(anchorEl) {
@@ -4802,6 +4882,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           else if (month > 11) { month = 0; year += 1; }
           _dtpState.view = { year, month };
           _dtpRenderGrid();
+          _dtpRefreshLoad(); // D-07: recalcula badges del mes recién navegado
         });
       });
       pop.querySelector('.dtp-today').addEventListener('click', () => {
@@ -4809,6 +4890,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const now = new Date();
         _dtpState.view = { year: now.getFullYear(), month: now.getMonth() };
         _dtpRenderGrid();
+        _dtpRefreshLoad(); // D-07
       });
       pop.querySelector('.dtp-grid').addEventListener('click', (e) => {
         const cell = e.target.closest('.dtp-day');
@@ -4819,6 +4901,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const base = _dtpState.draft || new Date();
         _dtpState.view = { year: y, month: m - 1 };
         _dtpCommit(new Date(y, m - 1, d, base.getHours(), base.getMinutes(), 0, 0));
+        _dtpRefreshLoad(); // D-07: por si el click cayó en un día de mes adyacente
       });
       pop.querySelector('.dtp-slots').addEventListener('click', (e) => {
         const btn = e.target.closest('.dtp-slot');
@@ -4850,7 +4933,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       _dtpState = { input, opts, view: { year: draft.getFullYear(), month: draft.getMonth() }, draft };
       _dtpRenderGrid();
       _dtpRenderPreview();
+      _dtpRenderLeadTime(); // D-06
       _dtpPosition(trigger || input);
+      _dtpRefreshLoad(); // D-07: sin await — la grilla ya se pintó, esto pinta encima cuando resuelve
 
       const onKeydown = (e) => {
         if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); _dtPickerClose(); }
@@ -7422,6 +7507,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       } catch { return null; }
     }
     window._leadLocalTime = _leadLocalTime;
+
+    // ─── [28-02] LEADTIME-AT: INICIO ───
+    // Fase 28 Plan 02 (2026-08-14): D-06 — hora local del lead para una fecha
+    // ARBITRARIA (no "ahora"), la que se elige en el calendario propio del
+    // popover. `_leadLocalTime` (arriba) solo calcula "ahora" y devuelve `ok`
+    // (el semáforo verde/ámbar que usa el chip del Power Dialer) — D-06
+    // prohíbe explícitamente ese semáforo en el popover, por eso esta
+    // variante NUNCA devuelve `ok`. Declaraciones `function` (hoisted): el
+    // componente del picker, definido más arriba en este mismo archivo, ya
+    // puede llamarlas.
+    function _leadTimeAtTz(tzId, date) {
+      if (!tzId || !(date instanceof Date) || isNaN(date.getTime())) return null;
+      try {
+        return date.toLocaleTimeString('es-AR', { timeZone: tzId, hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch { return null; }
+    }
+
+    function _leadLocalTimeAt(lead, date) {
+      const tz = _LEAD_TZ[(lead && lead.country || '').trim()];
+      if (!tz) return null;
+      const time = _leadTimeAtTz(tz, date);
+      if (!time) return null;
+      return { time, tz };
+    }
+    window._leadLocalTimeAt = _leadLocalTimeAt;
+    // ─── [28-02] LEADTIME-AT: FIN ───
 
     // Phase 16: etiquetas cortas de las señales del brief (lo que el SDR usa como
     // ángulo de la cold call). El backend (computeLeadSignals) las deriva de
