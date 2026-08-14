@@ -9688,6 +9688,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const backdrop = document.getElementById('telnyx-call-backdrop');
       if (backdrop) backdrop.style.display = 'block';
       panel.style.display = 'flex'; // flex column: header fijo + medio scrolleable + footer fijo
+      _tlxApplyPos('call'); // Fase 28 (D-10): reaplicar la posición que el user le dejó, si hay
       // Sprint 15: indicador visual en el sidebar logo (pulse) que hay llamada activa
       document.body.classList.add('has-active-call');
       _telnyxCallState.leadId = leadId;
@@ -10430,6 +10431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _openScriptPanel() {
       const panel = document.getElementById('telnyx-script-panel');
       if (panel) panel.style.display = 'flex';
+      _tlxApplyPos('script'); // Fase 28 (D-10): reaplicar la posición que el user le dejó, si hay
       // Body class triggers el shift del call panel a la izquierda vía CSS
       document.body.classList.add('tlx-script-open');
       if (_callScriptsCache.length === 0) _loadCallScripts().then(_renderScriptPanel);

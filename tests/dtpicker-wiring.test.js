@@ -106,8 +106,14 @@ describe("Task 1 — cableado de _dtPickerAttach a los 5 inputs reales", () => {
     }
   });
 
-  it("cache-buster de app.js bumpeado a v=20260814b", () => {
-    expect(indexHtml).toMatch(/app\.js\?v=20260814b/);
+  it("cache-buster de app.js fue bumpeado desde el baseline de este plan (28-02)", () => {
+    // 28-02 lo dejó en v=20260814b; 28-03 lo bumpeó de nuevo (a v=20260814c) al
+    // tocar app.js/index.html — este test solo verifica que NO quedó en un
+    // valor anterior a 28-02, no fija el valor exacto (eso lo hace
+    // tests/panel-drag.test.js para la versión vigente).
+    const m = indexHtml.match(/app\.js\?v=([0-9a-z]+)/i);
+    expect(m).toBeTruthy();
+    expect(m[1] >= "20260814b").toBe(true);
   });
 });
 
