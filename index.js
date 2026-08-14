@@ -10776,15 +10776,16 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
   // El lead siempre permanece en "Llamadas" — la conexion no se mueve a 'enviada'
   if (lead.conexion !== 'sin_wsp') lead.conexion = 'sin_wsp';
 
-  // Esta llamada CONSUME el callback pendiente (2026-08-12). Las ramas que
-  // programan uno nuevo (callback_later, cadencia de no-contacto) lo pisan más
-  // abajo; para el resto de los outcomes el callback viejo ya no aplica — se
-  // habló (o se intentó) DESPUÉS de la fecha prometida. Sin esto, un lead con
-  // callback vencido arrastrado que terminaba en `hung_up` (1er corte) quedaba
-  // con el vencido para siempre → +60 de score → clavado 1° en la cola de
-  // Prioridad sin importar cuántas veces se lo llamara (caso real: lead con
-  // callback de cadencia del 25/7 vencido, corte el 11/8, primero por 18 días).
-  lead.callbackAt = '';
+  // Esta llamada CONSUME el compromiso pendiente (2026-08-12, generalizado a
+  // nextAction en Phase 29 / NEXT-04 / D-08). Las ramas que programan uno
+  // nuevo (callback_later, cadencia de no-contacto) lo pisan más abajo; para
+  // el resto de los outcomes el próximo paso viejo ya no aplica — se habló (o
+  // se intentó) DESPUÉS de la fecha prometida. Sin esto, un lead con callback
+  // vencido arrastrado que terminaba en `hung_up` (1er corte) quedaba con el
+  // vencido para siempre → +60 de score → clavado 1° en la cola de Prioridad
+  // sin importar cuántas veces se lo llamara (caso real: lead con callback de
+  // cadencia del 25/7 vencido, corte el 11/8, primero por 18 días).
+  _clearNextAction(lead);
 
   let calendarEntry = null;
 
@@ -10825,12 +10826,21 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
       lead.estado = 'descartado';
       break;
 
-    case 'callback_later':
+    case 'callback_later': {
       // callbackAt debe venir en ISO. Si no, default a +24hs
-      lead.callbackAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      const _cbDueAt = callbackAt || new Date(Date.now() + 24*60*60*1000).toISOString();
+      _setNextAction(lead, {
+        tipo: 'callback',
+        dueAt: _cbDueAt,
+        canal: 'llamada',
+        motivo: '',
+        origen: 'manual',
+        createdBy: opts.actorName || '',
+      }, opts.nowIso);
       // Phase 17 Ola 2: callback compartido (cualquier setter lo toma) vs privado.
       if (typeof callbackShared === 'boolean') lead.callbackShared = callbackShared;
       break;
+    }
 
     case 'scheduled_with_admin':
       // Crea entrada en data.calendar reusando el mismo formato que /api/setters/calendar
@@ -10899,7 +10909,7 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
     const cortes = lead.callLog.filter((e) => e && e.outcome === 'hung_up').length;
     if (cortes >= MAX_HUNG_UP) {
       lead.estado = 'descartado';
-      lead.callbackAt = '';
+      _clearNextAction(lead);
       lead.autoDiscarded = true;
       lead.autoDiscardReason = `cortes_${MAX_HUNG_UP}x`;
     }
@@ -10923,13 +10933,21 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
     if (streak >= MAX_NO_CONTACT && lead.estado !== 'interesado') {
       // 2do no-contacto seguido → descarte automático (no se llama más).
       lead.estado = 'descartado';
-      lead.callbackAt = '';
+      _clearNextAction(lead);
       lead.cadenceExhausted = true;
       lead.autoDiscarded = true;
       lead.autoDiscardReason = `sin_contacto_${MAX_NO_CONTACT}x`;
     } else {
       // Reintento a las 24h: reaparece en la cola de Llamadas.
-      lead.callbackAt = new Date(Date.now() + 24 * 3600000).toISOString();
+      const _cadDueAt = new Date(Date.now() + 24 * 3600000).toISOString();
+      _setNextAction(lead, {
+        tipo: 'cadencia',
+        dueAt: _cadDueAt,
+        canal: 'llamada',
+        motivo: 'reintento de no-contacto',
+        origen: 'cadencia',
+        createdBy: opts.actorName || '',
+      }, opts.nowIso);
       lead.cadenceExhausted = false;
     }
   }
