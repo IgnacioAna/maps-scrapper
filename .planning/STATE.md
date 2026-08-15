@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T17:00:00.000Z"
+last_updated: "2026-08-15T17:44:17.236Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 14
-  completed_plans: 12
-  percent: 86
+  completed_plans: 13
+  percent: 93
 ---
 
 # SCM — STATE
@@ -40,22 +40,23 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 31 (comm-compromisos) — EXECUTING
-Plan: 2 of 4 (31-01 y 31-02 con SUMMARY; 31-03/04 pendientes)
-Status: 31-02 ejecutado y commiteado (3/3 tasks, commits f87dd54/c7dfd13/5cc9122). call-disposition
-  acepta body.commitment (D-08, whitelist-and-coerce via _sanitizeCommitment, nunca 4xx, aplicado
-  en _applyCallOutcome entre el override del cliente y la red de seguridad GATE-01, con herencia
-  de dueAt desde nextActionOverride cuando el compromiso no trae fecha propia). Endpoint nuevo
-  PATCH /api/setters/leads/:id/commitment (D-09) crea/reemplaza/cierra con los mismos 4 guards
-  que PATCH .../followup. 24 tests HTTP nuevos + verificacion por mutacion del guard de dueno
-  (2/24 en rojo, restaurado exacto). Suite completa 1424/1424 (baseline 31-01: 1400).
-  Task 1 (D-08) llego pre-implementada sin commitear al arrancar el executor -- verificada contra
-  los 6 acceptance criteria del plan y commiteada tal cual. Solo index.js +
-  tests/commitment-endpoints.test.js tocados -- cero cambios en public/, sin bump de cache-buster
-  (a proposito, el plan no toca UI). Nota: entre los commits de Task 2 y Task 3 aterrizo un commit
-  ajeno de una sesion paralela de branding (public/index.html + style.css + marca/*.svg) -- ajeno
-  a este plan, ver 31-02-SUMMARY.md "Issues Encountered".
+Plan: 3 of 4 (31-01, 31-02 y 31-03 con SUMMARY; 31-04 pendiente)
+Status: 31-03 ejecutado y commiteado (3/3 tasks + 1 fix, commits db68f48/d184f93/c10dba4/613256f).
+  Selector de compromiso dentro de #call-next-modal (D-08, repropone la fecha del mapa D-06 al
+  elegir tipo, toggle yo/prospecto) + bloque "Compromiso" editable en la ficha del lead (D-09,
+  window._callsSetCommitment/_callsCloseCommitment) + rama nueva en _dispoDestination que anuncia
+  "Hoy -> Mis compromisos" / "Hoy -> Esperando del prospecto" antes que "interesado". Bloque puro
+  [31-03] COMMITMENT-PURE (misma paridad D-06 que el backend, verificada por test leyendo los 2
+  archivos). 46 tests nuevos en tests/commitment-ui.test.js + verificacion por mutacion (1/46 en
+  rojo, restaurado exacto). Suite completa 1470/1470 (baseline 31-02: 1424).
+  Cache-buster real distinto del asumido por el plan: al arrancar ya estaba en v=20260815e (sesion
+  paralela de branding, commits previos a este plan) -- se bumpeo a v=20260815f. style.css intacto
+  (no lo toca esta fase). Durante la ejecucion otra sesion paralela del user edito y commiteo
+  public/style.css/index.html por un motivo ajeno (fix de z-index del calendario, commit 948ae34) --
+  el test de cache-buster de style.css se ajusto para no pinear un valor exacto (fragil ante
+  cualquier edicion ajena futura), ver 31-03-SUMMARY.md.
 Resume file: None
-Last activity: 2026-08-15 -- Phase 31 plan 02 (endpoints del compromiso) ejecutado.
+Last activity: 2026-08-15 -- Phase 31 plan 03 (carga UI del compromiso) ejecutado.
 
 Phase 30 (gate-proximo-paso): 3/3 planes ejecutados, VERIFICATION: human_needed (18/18
   must-haves en codigo+tests, 1365/1365 tests verdes en su momento; 30-HUMAN-UAT.md con 7 items
@@ -1123,3 +1124,39 @@ planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
   con su cimiento listo [COMM-04 depende del plan 31-04, consulta]. Próximo:
   31-02 [endpoints — `commitment` en `call-disposition` D-08 + `PATCH
   .../commitment` para la ficha D-09]).*
+
+- **31-03:** cache-buster real distinto del asumido por el plan — el plan
+  documentaba baseline `app.js?v=20260815d`, pero al arrancar la ejecución
+  ya era `20260815e` (una sesión paralela de branding, commits `1e71d0f`/
+  `a5a54b2`/`bfe228a`, ya en `main` antes de que este plan empezara).
+  Bumpeado a `20260815f` en vez de reusar `20260815e`. `style.css` intacto.
+
+- **31-03:** `escHtml(c.motivo)` también en la condición ternaria del bloque
+  "Compromiso" de la ficha (no solo en el contenido interpolado) — ajuste de
+  Rule 1 hecho al escribir la aserción T-31-04 de la suite: la condición
+  leía el valor crudo sin envolver (sin fuga real, la condición no se
+  renderiza, pero violaba la regla defensiva del plan en su forma literal).
+
+- **31-03:** confirmado (otra vez) el patrón de corrupción de `gsd-sdk query
+  state.advance-plan` que ya documentan 24-04/29-02/29-03/29-04: pisó
+  `- **Status:** Executing Phase 30` (línea de la sección archivada de
+  Phase 20/30, no relacionada con este plan) con el texto genérico
+  `- **Status:** Ready to execute`, y el "Status" de "Current Position"
+  también quedó con el placeholder genérico en vez del texto real. Detectado
+  con `git diff .planning/STATE.md` (regla reforzada desde 29-03) y
+  corregido a mano, línea por línea, en vez de `git checkout --` completo
+  (para no perder el bump correcto del frontmatter — `completed_plans`
+  12→13 — que el mismo comando SÍ hizo bien). `gsd-sdk query
+  roadmap.update-plan-progress 31` reprodujo el bug ya documentado en 24-01:
+  pisó las columnas `Phase`/`Reqs` de la fila 31 del `## Resumen` de
+  ROADMAP.md (`| 31 | 3/4 | In Progress|  |`, perdiendo el nombre de la fase
+  y los IDs de requirements) aunque SÍ marcó bien el checkbox
+  `31-03-PLAN.md`. Revertida la fila a mano a `| 31 | COMM — Compromisos
+  como objeto (3/4 planes) | COMM-01..04 | 29 |`. `state.record-metric`/
+  `state.add-decision` devolvieron no-op (`"... not found in STATE.md"`)
+  sin corromper nada — el formato custom de este STATE.md no tiene las
+  secciones `## Performance Metrics`/`### Decisions` que esos handlers
+  buscan. `state.record-session` (`--stopped-at`/`--resume-file`) volvió a
+  ser el único comando `state.*` seguro (solo tocó "Resume File").
+  `requirements.mark-complete` fue no-op limpio (COMM-01/COMM-03 ya estaban
+  marcados desde 31-01/31-02).
