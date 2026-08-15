@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T22:00:17.845Z"
+last_updated: "2026-08-14T22:35:00.000Z"
 last_activity: 2026-08-14
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 14
+  completed_plans: 7
+  percent: 29
 ---
 
 # SCM — STATE
@@ -39,13 +39,13 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 29 (NEXT — El reloj único) — EXECUTING
-Plan: 3 of 4 complete (29-01 + 29-02 + 29-03 done; next: 29-04)
-Status: Wave 3 done — followUps retirado como fuente de verdad (NEXT-03): el write-path (PATCH .../followup) programa nextAction al tildar y lo apaga sin pisar compromisos de otra vía al destildar; el read-path (_computeFollowupsDue) deriva de _leadNextAction, excluyendo origen='cadencia' (#150). Medido contra datos reales: badge de follow-ups sube de 0 a 10 (aviso al usuario redactado en 29-03-SUMMARY.md, a comunicar antes del deploy de la Wave 4). Wave 4 (29-04, migración de callbackAt/followUps restantes a nextAction explícito) desbloqueada.
-`/gsd:execute-phase 29`
-Resume file: `.planning/phases/29-next-reloj-unico/29-04-PLAN.md`
-Last activity: 2026-08-14 -- 29-03 ejecutado (write-path + read-path del retiro de followUps, medición antes/después sobre copia de datos reales, aviso al usuario redactado), suite completa 1277/1277
+Phase: 30 (GATE — Cierra la llamada, define el próximo paso) — NOT PLANNED YET (solo `30-CONTEXT.md`, sin `PLAN.md`)
+Status: Phase 29 (NEXT — El reloj único) **COMPLETE** (4/4 planes, 2026-08-14). `lead.nextAction` reemplaza los dos relojes viejos (`callbackAt` suelto + `followUps`), migración ensayada contra una copia de datos reales (166 leads migrables de 6.413) y lista para producción vía `node scripts/one-shot-migrate-next-action-2026-08-14.mjs [--apply]` (idempotente, no rompe nada si no se corre — las lecturas siguen derivando). Próximo paso: `/gsd:plan-phase 30` (aún no planificada) o correr el script de migración en producción tras el deploy.
+`/gsd:plan-phase 30`
+Resume file: None
+Last activity: 2026-08-14 -- 29-04 ejecutado (tests de la migración, ensayo contra datos reales, script one-shot de producción, doc CLAUDE.md #184, fix Rule 1 en _callSetterId), suite completa 1293/1293
 
+Phase 29 (NEXT — El reloj único): **COMPLETE** (4/4 planes, 2026-08-14).
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
 
 ## Milestone v3.0 — PARKEADO (2026-08-13)
@@ -928,6 +928,45 @@ Contra HEAD `a9e4886`:
   vez — se asume el mismo mismatch de formato para este milestone y se hizo
   todo manual para no arriesgar más corrupción.
 
+- **29-04:** `_callSetterId` ganó un guard `if (!entry) return lead.assignedTo
+  || '';` (Rule 1) — bug preexistente de 29-02/29-03 (no de este plan)
+  destapado al escribir el fixture "followUps activo, callLog vacío" que el
+  `<behavior>` de la Task 2 pedía explícitamente: `GET /leads/sin-wsp`
+  crasheaba con 500 (`Cannot read properties of null`) cuando un lead tenía
+  `nextAction.origen==='manual'` pero ningún `callLog` entry — posible desde
+  29-03 (tildar un follow-up programa `nextAction` sin exigir ninguna
+  llamada previa). Reproducido con un probe aislado ANTES de tocar código,
+  arreglado con una línea (mismo fallback ya existente para "sin
+  `entry.by`"), y confirmado que los otros 15 call sites de la función no se
+  ven afectados. Detalle en `29-04-SUMMARY.md`.
+
+- **29-04:** medición previa contra la copia de `data/setters.json` real dio
+  `conCallbackAt: 165` (33 manual, 132 cadencia) y `conFollowUpActivo: 4` (3
+  con `callbackAt`, 1 sin) — **166 leads migrables**, no los "16
+  callbacks/3 followUps" que circulaban en documentos de planificación
+  previos (medición del 2026-08-13 con otro criterio, probablemente solo
+  vencidos, y sobre otro snapshot). El `overdue: 15` de `29-03-SUMMARY.md`
+  SÍ es consistente (subconjunto vencido de los 165 totales). Los números de
+  referencia para decidir si correr la migración en producción son los
+  medidos en `29-04-SUMMARY.md`, no los de contexto/planificación.
+
+- **29-04:** repetido el mismo patrón de corrupción de `gsd-sdk query
+  state.advance-plan` que documentan 24-04/29-02/29-03 — esta vez pisó
+  `- **Status:** Executing Phase 28` (línea de la sección archivada de
+  Phase 20/28) con `- **Status:** Ready to execute` y su `- **Last
+  activity:**` vecino, aunque el frontmatter (`completed_plans` 6→7,
+  `percent` 14→29) y el propio texto de "Current Position" quedaron
+  correctos. Detectado con `git diff .planning/STATE.md` (regla reforzada
+  en 29-03) y revertido con `git checkout -- .planning/STATE.md` ANTES de
+  tocar nada — la actualización de este plan es 100% manual otra vez.
+  `state.record-metric`/`state.add-decision` devolvieron no-op ("... not
+  found in STATE.md") sin corromper nada — confirmado que son inofensivos
+  aunque no sirvan para este formato custom. `state.record-session`
+  (`--stopped-at`/`--resume-file`) SÍ escribió limpio, tocando solo "Resume
+  File" — es el único comando `state.*` verificado seguro para este
+  milestone hasta ahora, pero de todas formas se revirtió junto con el resto
+  para reescribir todo el bloque a mano de una vez.
+
 ---
 
 *Last updated: 2026-08-14 (29-01 ejecutado — el reloj único `nextAction`
@@ -961,6 +1000,27 @@ de cortes, excepción de interesados (#183) y lectura sin migración (D-09).
 Suite completa del repo: 1268/1268 (86 archivos), `metrics-consistency`
 intocado y verde. Requirements NEXT-02/NEXT-04 marcados completos. Próximo:
 plan 29-03 [`followUps` retirado — NEXT-03] — Wave 3, ya desbloqueada).*
+
+---
+
+*Last updated: 2026-08-14 (29-03 + 29-04 ejecutados — **Phase 29 (NEXT — El
+reloj único) COMPLETE, 4/4 planes**. 29-03: `followUps` retirado como fuente
+de verdad [write-path `PATCH .../followup` programa `nextAction` al tildar,
+read-path `_computeFollowupsDue` deriva de `_leadNextAction` excluyendo
+`origen==='cadencia'`]; medido contra datos reales: badge de follow-ups
+0→10 (único cambio visible de toda la fase, aviso redactado en
+`29-03-SUMMARY.md`). 29-04: `POST /api/admin/backfill-next-action` [dryRun
++ backup + mutex + idempotente] ensayado contra copia de `data/setters.json`
+real [6.413 leads]: 166 migrables [165 con `callbackAt`, 1 solo con
+`followUps`], `apply===dryRun`, segunda corrida idempotente
+[`updated:0`]; 16 tests nuevos [`tests/next-action-migration.test.js`];
+script de producción `scripts/one-shot-migrate-next-action-2026-08-14.mjs`
+[simula por default, `--apply` ejecuta]; nota #184 en `CLAUDE.md`; fix
+Rule 1 en `_callSetterId` [null-pointer en `GET /leads/sin-wsp`]. Suite
+completa del repo: 1293/1293. Requirements NEXT-02/NEXT-03 marcados
+completos. Pendiente del usuario: correr el script de migración en
+producción después del deploy — no bloquea la Phase 30. Próximo: planificar
+Phase 30 [GATE — Cierra la llamada, define el próximo paso], `/gsd:plan-phase 30`).*
 
 ---
 

@@ -74,7 +74,7 @@ recordarle, el milestone falló.
 | # | Phase | Reqs | Depende de |
 |---|-------|------|-----------|
 | 28 | 3/3 | Complete   | 2026-08-14 |
-| 29 | NEXT — El reloj único (3/4 planes) | NEXT-01..04 | — |
+| 29 | NEXT — El reloj único (4/4 planes, COMPLETE) | NEXT-01..04 | — |
 | 30 | GATE — Cierra la llamada, define el próximo paso | GATE-01, GATE-02, GATE-04 | 29 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
@@ -82,7 +82,7 @@ recordarle, el milestone falló.
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
-- [ ] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps`
+- [x] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps` (completed 2026-08-14)
 - [ ] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal
 - [ ] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas
 - [ ] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy
@@ -199,7 +199,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 29-04-PLAN.md — Migración `POST /api/admin/backfill-next-action` (dryRun + backup + idempotente) + ensayo contra datos reales + one-shot de producción
+- [x] 29-04-PLAN.md — Migración `POST /api/admin/backfill-next-action` (dryRun + backup + idempotente) + ensayo contra datos reales + one-shot de producción (completed 2026-08-14, 29-04-SUMMARY.md)
 
 ### Phase 30: GATE — Cierra la llamada, define el próximo paso
 
@@ -371,7 +371,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 28. QUICK — Alivio inmediato | 3/3 | Complete | 2026-08-14 |
-| 29. NEXT — El reloj único | 3/4 | In Progress | - |
+| 29. NEXT — El reloj único | 4/4 | Complete | 2026-08-14 |
 | 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
 | 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
