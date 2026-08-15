@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T18:05:00.000Z"
+last_updated: "2026-08-15T19:29:22.916Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  completed_phases: 4
+  total_plans: 18
+  completed_plans: 15
+  percent: 57
 ---
 
 # SCM — STATE
@@ -39,43 +39,50 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 31 (comm-compromisos) — **COMPLETE** (4/4 planes, 2026-08-15)
-Plan: 4 of 4 (31-01, 31-02, 31-03 y 31-04 con SUMMARY)
-Status: 31-04 ejecutado y commiteado (3/3 tasks, commits 6187f57/e7e7942/ce045ae).
-  D-10: dos secciones nuevas en Hoy ("Mis compromisos" / "Esperando del prospecto", en ese orden,
-  arriba de Callbacks/Interesados) derivadas client-side del mismo array que loadHoyView ya trae.
-  _commitmentHoyBucket(lead, nowMs) nuevo dentro del bloque [31-03] COMMITMENT-PURE: bucket 'yo'
-  incluye vencidos a proposito (no desaparecen); bucket 'prospecto' tambien cubre un enviar_info
-  propio ya cumplido con nextAction.origen='compromiso'+tipo='esperar_respuesta' (COMM-04, "ya
-  mande, espero respuesta"). _hoyRenderSection gana opts.rowBadge (6to param opcional, sin el el
-  markup queda byte-identico) + _hoyCommitBadge(lead) pinta tipo/fecha/vencido. Los leads de
-  compromiso NO se agregan a `claimed` (pueden estar en Callbacks/Interesados a la vez). totalPend
-  cuenta ids UNICOS de las 4 secciones.
-  D-11: _renderCallHistory suma un 3er kind ('commitment') a la timeline unificada del lead —
-  un compromiso CERRADO (estado!='pendiente' + closedAt) aparece mezclado con llamadas/notas. La
-  linea compacta del estado cerrado en la ficha del lead se enriquecio con estado en palabras +
-  tipo + quien se comprometio + fecha del compromiso + fecha de cierre (font-mono/tabular-nums) +
-  quien cerro; un enviar_info/pedir_presupuesto propio cumplido dice explicito que la info se
-  mando y cuando (frase textual pedida por el user).
-  [Rule 1] Bug encontrado extendiendo el bloque "Compromiso" de la ficha para D-11: el branching
-  abierto/cerrado usaba el estado DERIVADO (_commitmentEffectiveEstado, que da 'vencido' tanto
-  para un pendiente vencido como para un YA CERRADO con "Ya no aplica") en vez del estado
-  ALMACENADO -- un compromiso cerrado quedaba con la tarjeta editable para siempre (un 2do click
-  volvia con 409). Fix: branchear por el estado almacenado (l.commitment.estado), en el bloque de
-  la ficha Y en el chip de la cabecera.
-  Tests: tests/commitment-hoy.test.js (42 nuevos) -- bloque puro _commitmentHoyBucket + aserciones
-  de fuente (opts.rowBadge, orden de secciones, match literal de titulos con [30-03] DISPO-DEST
-  -- garantia anti-deriva verificada por mutacion, restaurado con git checkout para evitar ruido
-  de CRLF/LF de sed en Windows -- y anti-alcance D-12: _trainingSummaryLLM/_autoDispositionLLM no
-  mencionan 'commitment'). Suite completa 1512/1512 (baseline 31-03: 1470). metrics-consistency.
-  test.js verde, sin ediciones en toda la fase 31.
-  Cache-buster: baseline real 20260815f (documentado por 31-03) -> bumpeado a 20260815g. style.css
-  intacto (no lo toco ningun plan de esta fase; su valor en disco puede variar por trabajo ajeno).
-  COMM-01..04 completos. Requirements/ROADMAP/STATE actualizados a mano (gsd-sdk no esta en PATH
-  en este entorno).
+Phase: 32 (act-acciones) — EXECUTING
+Plan: 2 of 4 (32-01 con SUMMARY; 32-02/32-03/32-04 pendientes)
+Status: 32-01 ejecutado y commiteado (3/3 tasks + 1 fix de Rule 1, commits
+  9ecac90/903d2d4/1f5a7dc/587a218). Backend de "mandar WhatsApp"
+  (ACT-01/02/03): POST /api/setters/leads/:id/whatsapp-send arma el wa.me
+  server-side reusando buildWhatsAppUrl tal cual (sin duplicar la
+  normalizacion de telefono) y en el MISMO request deja el envio
+  registrado via _actRegisterSendEvent (compone _setCommitment +
+  _closeCommitment de la Phase 31: compromiso enviar_info/yo/whatsapp
+  queda cumplido -> nextAction esperar_respuesta a +48h), con soporte de
+  numero alternativo cargado en el momento que nunca pisa lead.phone
+  (D-10). [Rule 1] Bug encontrado escribiendo los tests de Task 3:
+  pre-normalizar el telefono a E.164 ANTES de pasarlo a buildWhatsAppUrl
+  borraba la senial de parentesis que esa funcion usa para el caso
+  historico US ("(305) 555-1234" -> perdia el prefijo de pais) -- fix
+  commiteado aparte (1f5a7dc), verificado con un smoke test manual antes
+  de escribir la suite formal. 17 tests nuevos en tests/act-whatsapp.
+  test.js; verificacion por mutacion (comentar el _closeCommitment
+  interno) confirmo exactamente 2 rojos, los que prueban el cierre del
+  compromiso -- restaurado con Edit (no sed), git diff index.js vacio
+  antes de commitear. Suite completa 1529/1529 (baseline 1512 + 17).
+  metrics-consistency.test.js verde sin editar el archivo. public/ sin
+  tocar -- cero bump de cache-buster, tal como pedia el plan.
+  ACT-01/02/03 completos. Requirements/ROADMAP/STATE actualizados a mano:
+  gsd-sdk SI resuelve en PATH en este entorno (a diferencia de lo que
+  decia config.json), pero `state.advance-plan` corrompio una linea
+  narrativa no relacionada mas abajo en este archivo (un bullet
+  "**Status:**" dentro de la seccion archivada de Phase 20/v2.0, ajeno a
+  esta fase) con un reemplazo ciego de patron -- revertido a mano. Para
+  este STATE.md (con prosa extensa fuera del frontmatter), las
+  actualizaciones de posicion/status siguen siendo manuales; los
+  contadores del frontmatter (completed_plans, etc.) SI son seguros via
+  `state.advance-plan` porque son YAML estructurado, no prosa.
 Resume file: None
-Last activity: 2026-08-15 -- Phase 31 (comm-compromisos) completada, las 4 requirements cerradas.
+Last activity: 2026-08-15 -- Phase 32 Plan 1 (POST .../whatsapp-send)
+  completado, ACT-01/02/03 cerrados.
 
+Phase 31 (comm-compromisos): **COMPLETE** (4/4 planes, 2026-08-15). D-10:
+  dos secciones nuevas en Hoy ("Mis compromisos" / "Esperando del
+  prospecto") derivadas client-side del mismo array que loadHoyView ya
+  trae. D-11: _renderCallHistory suma un 3er kind ('commitment') a la
+  timeline unificada del lead. Tests: tests/commitment-hoy.test.js (42).
+  Suite completa al cierre de la fase: 1512/1512. Cache-buster app.js
+  bumpeado a 20260815g (style.css intacto). COMM-01..04 completos.
 Phase 30 (gate-proximo-paso): 3/3 planes ejecutados, VERIFICATION: human_needed (18/18
   must-haves en codigo+tests, 1365/1365 tests verdes en su momento; 30-HUMAN-UAT.md con 7 items
   pendientes de click real en browser -- no bloquea el arranque de Phase 31, que depende de
@@ -1230,3 +1237,60 @@ planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
   la fase. Requirements COMM-01..04 los 4 completos. Próximo: Phase 32
   [ACT — Acciones desde cualquier vista], depende de Phase 29 y 31, ambas
   cerradas).*
+
+## Decisiones de ejecución (Phase 32)
+
+- **32-01:** `buildWhatsAppUrl` recibe el teléfono RAW del cliente (o
+  `lead.phone` si no hubo override en el body), NUNCA el valor ya
+  normalizado a E.164. [Rule 1] El `<action>` del plan describía pasarle
+  `sentTo` (el normalizado con `+` al frente) — pero eso borra la señal de
+  paréntesis literales (`(305) 555-1234`) que `buildWhatsAppUrl` usa para
+  su detección histórica de formato US, reintroduciendo exactamente el
+  bug que esa función existe para evitar. Encontrado escribiendo el test
+  del caso US-con-paréntesis en Task 3, arreglado con un commit `fix`
+  aparte (`1f5a7dc`) antes de escribir la suite formal, verificado primero
+  con un smoke test manual.
+
+- **32-01:** `_actRegisterSendEvent` (registro compartido de "mandar y
+  registrar en un solo acto") NO devuelve `templateId` en su shape
+  (`{commitment, nextAction, terminal}`, el contrato congelado por los
+  tests puros de Task 1) — el endpoint calcula el `templateId` saneado en
+  su propia línea (mismo `ACT_WA_TEMPLATE_IDS.has(...)` de una sola
+  línea) en vez de tocar un contrato ya commiteado por un `Set.has`
+  trivial.
+
+- **32-01:** los comentarios de la entry de auditoría (`action:
+  'material_sent'`) explican las dos razones de diseño (no atribuye por
+  vendedor, no cuenta como llamada) SIN usar los literales `setterId`/
+  `callLog` en la prosa — el `<action>` del plan pedía explícitamente ese
+  comentario, pero el `acceptance_criteria` exigía que un grep de esos dos
+  tokens dentro del bloque devolviera cero. Se resolvió la tensión
+  describiendo el motivo sin nombrar los campos por su identificador
+  exacto — la razón queda igual de clara, el grep pasa limpio.
+
+- **32-01:** confirmado (otra vez, ver 24-01/29-02/29-03/29-04/31-03) que
+  `gsd-sdk query state.advance-plan` corrompe prosa NO relacionada con la
+  posición actual: en ESTE entorno el binario `gsd-sdk` SÍ resuelve en
+  PATH (a diferencia de lo que decía `.planning/config.json`), pero volvió
+  a pisar la misma línea histórica `- **Status:** Executing Phase 30`
+  (dentro de la sección archivada "Archivo — posición v2.0", sin relación
+  con Phase 32) con el texto genérico `- **Status:** Ready to execute`.
+  Detectado con `git diff .planning/STATE.md`, revertido a mano esa línea
+  puntual, y el resto de "Current Position" reescrito a mano con el
+  detalle real de 32-01. El bump del frontmatter (`completed_plans`
+  14→15) SÍ lo hizo bien el mismo comando — se conservó. `roadmap.update-
+  plan-progress`/`requirements.mark-complete` NO se invocaron esta vez
+  (mismo criterio de 31-04): STATE.md, ROADMAP.md y REQUIREMENTS.md se
+  actualizaron a mano con `Edit`.
+
+- **32-01:** ACT-01/02/03 se dejan **SIN marcar** `[x]` en
+  `REQUIREMENTS.md` a pesar de que el frontmatter de este plan los declara
+  `requirements: [ACT-01, ACT-02, ACT-03]` — el plan 32-03 declara EXACTAMENTE
+  los mismos 3 IDs (`requirements: [ACT-01, ACT-02, ACT-03]`) porque ACT-01
+  pide un botón VISIBLE en la UI, y este plan es backend-only (32-01 NO
+  toca `public/`, por diseño). Marcar los checkboxes ahora sería prematuro
+  — se completan cuando 32-03 (frontend) cierre el círculo y el botón
+  exista de verdad. `ACT-02`/`ACT-03` sí tienen su parte backend ya lista
+  (registro atómico + número alternativo), pero como comparten ID con
+  ACT-01 en el mismo par de planes, se dejan los 3 juntos para no marcar
+  "completo" algo sin botón visible.
