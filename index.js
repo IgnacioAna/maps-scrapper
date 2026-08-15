@@ -5291,8 +5291,22 @@ app.post('/api/admin/rescue-es-mobile', requireAuth, requireRole('admin'), async
 // Bogotá, "North Lima", "Tourism Solutions"). NO reintroducir sin remedir.
 const _doctorSinAcento = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-const _DOCTOR_GENERICOS = ['oral', 'smile', 'dental', 'dentista', 'odonto', 'odontolog', 'clinic', 'consultorio', 'center', 'centro', 'group', 'grupo', 'salud', 'estetic', 'implant', 'ortodon', 'care', 'byocare', 'aliwell', 'clear', 'aligner', 'sonrisa', 'laser', 'especialista', 'doctor', 'doctora', 'endodon', 'periodon', 'protes', 'cirug', 'maxilo', 'infantil', 'kids', 'avanzada', 'integral', 'moderna', 'familiar', 'plus', 'premium', 'studio', 'spa', 'medic', 'face', 'body', 'beauty', 'life', 'vital', 'bio', 'line', 'art', 'new', 'best', 'top'];
-const _doctorEsGenerico = (w) => { const n = _doctorSinAcento(w); return _DOCTOR_GENERICOS.some((g) => n.includes(_doctorSinAcento(g))); };
+// Dos niveles a propósito (fix 2026-08-15). La versión anterior era UNA lista
+// con match por substring, y eso rechazaba nombres reales en silencio: "art"
+// tumbaba a Marta, Martín, Martha, Arturo y Bartolomé; "bio" a Fabio; "care" a
+// Caren; "spa" a Esparza; "line" a Lineth. De 18 nombres de prueba, 12 caían.
+//   - RAICES: términos inequívocos del rubro → matchean por PREFIJO
+//     ("odontolog" tumba "Odontología", pero "art" ya no tumba "Marta").
+//   - EXACTAS: palabras cortas de marketing, ambiguas contra nombres propios
+//     → SOLO coincidencia de palabra completa.
+// Verificado: 0 nombres reales rechazados, 0 genéricos escapados.
+const _DOCTOR_RAICES = ['odontolog', 'odonto', 'dental', 'dentist', 'clinic', 'consultorio', 'centro', 'center', 'estetic', 'implant', 'ortodon', 'sonrisa', 'especialista', 'doctor', 'endodon', 'periodon', 'protes', 'cirug', 'maxilo', 'infantil', 'laser', 'medic', 'premium', 'studio', 'avanzad', 'integral', 'familiar', 'moderna', 'salud', 'grupo', 'group', 'smile', 'oral', 'aligner', 'byocare', 'aliwell', 'beauty'];
+const _DOCTOR_EXACTAS = new Set(['art', 'care', 'new', 'top', 'line', 'spa', 'bio', 'max', 'pro', 'best', 'body', 'face', 'life', 'vital', 'plus', 'kids', 'clear', 'dent', 'lab']);
+const _doctorEsGenerico = (w) => {
+  const n = _doctorSinAcento(w);
+  if (_DOCTOR_EXACTAS.has(n)) return true;
+  return _DOCTOR_RAICES.some((r) => n.startsWith(_doctorSinAcento(r)));
+};
 const _DOCTOR_CONECTORES = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'da', 'dos', 'di', 'san', 'santa']);
 
 function _doctorNormalizar(raw) {
