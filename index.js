@@ -10472,7 +10472,14 @@ app.post('/api/setters/leads/:id/whatsapp-send', requireAuth, (req, res) => {
   }
 
   const cleanMessage = _actSanitizeMessage(message);
-  const whatsappUrl = buildWhatsAppUrl(sentTo, lead.country, cleanMessage);
+  // D-02: buildWhatsAppUrl recibe el RAW (rawTo, o lead.phone si no hubo
+  // override) y NO `sentTo` (el normalizado a E.164 de arriba). Es a
+  // propósito: el caso US-con-paréntesis que buildWhatsAppUrl ya resuelve
+  // (más arriba en este archivo) detecta el formato mirando los paréntesis literales del
+  // string original — normalizarlo ANTES de esta llamada borraría esa señal
+  // y reintroduciría el bug histórico que esa función existe para evitar.
+  // `sentTo` (E.164) queda para persistencia/respuesta, no para armar la URL.
+  const whatsappUrl = buildWhatsAppUrl(rawTo || lead.phone, lead.country, cleanMessage);
   if (!whatsappUrl) {
     // D-04: si no se pudo armar un link confiable, no se abrió ningún chat —
     // cortar ACÁ, antes de registrar nada. El registro no puede mentir sobre
