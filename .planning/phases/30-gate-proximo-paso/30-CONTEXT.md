@@ -110,6 +110,29 @@ Requirements: GATE-01, GATE-02, GATE-04.
 <code_context>
 ## Existing Code Insights
 
+### API real del reloj único (verificada en el código tras la Phase 29)
+
+No inventar nombres: esto es lo que EXISTE en `index.js` y está expuesto para
+tests. Usarlo tal cual.
+
+- `_setNextAction(lead, spec, nowIso)` — escribe `lead.nextAction` **y espeja
+  `lead.callbackAt = nextAction.dueAt`** (D-03). Nunca lanza: coerciona en vez
+  de tirar, porque está en el camino de una disposición real y un throw sería
+  un 500 en la cara del user mientras llama.
+  `spec = {tipo, dueAt, canal, motivo, origen, createdBy}`.
+- `_clearNextAction(lead)` · `_leadNextAction(lead)` ·
+  `_deriveNextActionFromLegacy(lead)` · `_nextActionTemplateForDelta(deltaMs)`
+- Whitelists: `NEXT_ACTION_TIPOS` = `callback` | `cadencia` | `enviar_info` |
+  `esperar_respuesta` | `otro`. `NEXT_ACTION_CANALES` = `llamada` | `whatsapp`
+  | `email` | `''` (vacío es válido = sin canal). `NEXT_ACTION_ORIGENES` =
+  `manual` | `cadencia` | `compromiso`.
+  → **`'compromiso'` ya está reservado para la Phase 31**: no agregarlo de
+  nuevo ni renombrarlo.
+- `NEXT_ACTION_TEMPLATES` — las 5 duraciones (24h/48h/72h/7d/15d). Es la ÚNICA
+  fuente: `FOLLOWUP_STEPS` deriva de este array. Los defaults del mapa D-02 que
+  coincidan con una duración de la tabla deben usar la plantilla, no un número
+  suelto.
+
 ### Reusable Assets
 - `_dispoWhereToast` (public/app.js) — el aviso de destino ya existe, hay que
   universalizarlo
