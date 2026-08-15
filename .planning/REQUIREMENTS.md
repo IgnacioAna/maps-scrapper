@@ -307,12 +307,12 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### ACT — Acciones desde cualquier vista
 
-- [ ] **ACT-01**: Botón de WhatsApp visible desde toda vista donde aparezca
+- [x] **ACT-01**: Botón de WhatsApp visible desde toda vista donde aparezca
   el lead (lista, Power Dialer, ficha, Hoy), que abre `wa.me` con el mensaje
   precargado. *(R4)*
-- [ ] **ACT-02**: El mismo click registra el envío como evento y crea el
+- [x] **ACT-02**: El mismo click registra el envío como evento y crea el
   próximo paso — mandar y registrar son un solo acto, no dos.
-- [ ] **ACT-03**: Puede mandar a un **número alternativo** cargado en el
+- [x] **ACT-03**: Puede mandar a un **número alternativo** cargado en el
   momento (caso real: el número que llamó no tiene WhatsApp y le pasan otro
   durante la llamada). *(R4)*
 - [ ] **ACT-04**: Botón de descartar desde cualquier vista, que saca el lead
