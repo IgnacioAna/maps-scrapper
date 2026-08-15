@@ -696,9 +696,18 @@ function ensureLeadDefaults(lead = {}) {
   if (typeof lead.website !== 'string') lead.website = '';
   if (typeof lead.address !== 'string') lead.address = '';
   if (typeof lead.instagram !== 'string') lead.instagram = '';
+  // De dónde salió lead.instagram — hoy solo distingue 'manual' (el operador lo
+  // pegó tras encontrarlo con el botón de búsqueda del doctor, index.js
+  // /leads/:id/instagram) del resto (scraping/enrichment histórico, source
+  // desconocida). '' = no se sabe / vino de antes de este campo.
+  if (typeof lead.instagramSource !== 'string') lead.instagramSource = '';
   if (typeof lead.facebook !== 'string') lead.facebook = '';
   if (typeof lead.email !== 'string') lead.email = '';
   if (typeof lead.doctor !== 'string') lead.doctor = '';
+  // De dónde salió lead.doctor (parser/parser-debil/web-ai/npi/manual). Guard
+  // por whitelist (DOCTOR_SOURCES, ~5343 más abajo) — cualquier valor fuera
+  // de la lista se coercione a '' en vez de quedar guardado tal cual.
+  if (typeof lead.doctorSource !== 'string' || (lead.doctorSource && !DOCTOR_SOURCES.has(lead.doctorSource))) lead.doctorSource = '';
   if (typeof lead.importedManually !== 'boolean') lead.importedManually = false;
   // Phase 16: categoría del negocio (dental/estética/spa) desde el scraping.
   if (typeof lead.category !== 'string') lead.category = '';
@@ -4539,6 +4548,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
             const parsed = await aiExtractSiteInfo(w.text, { country: c.country, city: c.city });
             if (parsed && parsed.found && (parsed.owner || parsed.name)) {
               out.doctor = parsed.owner || parsed.name;
+              out.doctorSource = 'web-ai';
               if (parsed.role) out.aiRole = String(parsed.role).trim();
               if (parsed.whatsapp) out.aiWhatsApp = String(parsed.whatsapp).replace(/\D/g, '');
               ownersAiFound++;
@@ -4549,7 +4559,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
       if (c.needsOwner) {
         out.npiChecked = true; // registrar el intento (haya match o no) → no reintentar
         const n = await enrichFromNPI({ name: c.name, city: c.city }, { timeoutMs: 6000 });
-        if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
+        if (n && n.npi && !n.error) { out.doctor = n.ownerName || ''; out.doctorSource = 'npi'; out.specialty = n.specialty || ''; out.npi = n.npi; npiMatched++; }
         else if (n && n.error) errors[n.error] = (errors[n.error] || 0) + 1;
       }
       if (c.needsAge) {
@@ -4577,7 +4587,7 @@ app.post('/api/admin/enrich-leads', requireAuth, requireRole('admin'), async (re
         if (!String(lead.emailType || '').trim() && String(lead.email || '').trim()) lead.emailType = classifyEmailType(lead.email);
         if (r.instagram && !String(lead.instagram || '').trim()) lead.instagram = r.instagram;
         if (r.facebook && !String(lead.facebook || '').trim()) lead.facebook = r.facebook;
-        if (r.doctor && !String(lead.doctor || '').trim()) lead.doctor = r.doctor;
+        if (r.doctor && !String(lead.doctor || '').trim()) { lead.doctor = r.doctor; lead.doctorSource = _sanitizeDoctorSource(r.doctorSource); }
         if (r.aiRole && !String(lead.aiRole || '').trim()) lead.aiRole = r.aiRole;
         if (r.aiWhatsApp && !String(lead.aiWhatsApp || '').trim()) lead.aiWhatsApp = r.aiWhatsApp;
         // Igual que el resto: solo si el campo estaba vacío (NPI no pisa lo cargado a mano).
@@ -5264,22 +5274,143 @@ app.post('/api/admin/rescue-es-mobile', requireAuth, requireRole('admin'), async
 // Resultado del bug historico: el setter abre wa.me/PHONE y el WSP se abre vacio
 // aunque hay openMessage almacenado. Este endpoint repara los whatsappUrl
 // para que incluyan el openMessage encoded.
-// Backfill del campo lead.doctor extrayendo "Dr./Dra. Nombre" del lead.name.
-// El scraper IA solo puebla el doctor en ~21% de los casos; muchos otros leads
-// tienen el nombre del profesional en el propio name de la ficha (ej.
-// "Consultorio Odontológico Dra. Agustina Alvarez"). Este endpoint los extrae.
-// dryRun:true para previsualizar sin escribir. Idempotente: skipea leads que
-// ya tengan doctor poblado (no-N/A). Output formato "Dr/a. Nombre" para matchear
-// la convención del scraper original.
-function _extractDoctorFromName(name) {
-  if (!name || typeof name !== 'string') return '';
-  // Acepta: Dr./Dra./Dr/a./Doctor/Doctora seguido de 1 a 4 palabras capitalizadas,
-  // con conectores opcionales (de, del, de la, y).
-  const re = /(?:Dra?\.?\/?[a]?\.?|Doctora?)\s+([A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+(?:\s+(?:de\s+(?:la\s+|los\s+|las\s+)?|del\s+|y\s+)?[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+){0,3})/;
-  const m = name.match(re);
-  if (!m) return '';
-  return 'Dr/a. ' + m[1].trim();
+// Extrae el nombre del titular (doctor/a) del lead.name. El scraper IA solo
+// puebla `doctor` en ~21% de los casos; muchos otros leads tienen el nombre del
+// profesional en el propio `name` de la ficha (ej. "Consultorio Odontológico
+// Dra. Agustina Alvarez", "Carlos Acevedo Odontología", "Oral Line By Luis
+// Fernando Londoño"). Medido sobre la base real (6413 leads, script de
+// referencia en scratchpad medir-doctor.mjs) contra 3 patrones:
+//   - 'dr'  (Dr/Dra/Doctor/Odontólogo/Od. + Nombre): 176 capturas, ~5% basura → FUERTE
+//   - 'by'  (… By Nombre, cierre de nombre de marca): 2 capturas, 0% basura → FUERTE
+//   - 'pre' (Nombre + rubro, ej. "Carlos Acevedo Odontología"): 60 capturas,
+//     ~65% basura → DÉBIL, requiere verificación humana (doctorSource='parser-debil')
+// El patrón inverso 'post' (rubro primero, nombre después) SE MIDIÓ Y SE
+// DESCARTA: ~73% de basura — lo que sigue a "Dental"/"Odontología" casi
+// siempre es una ciudad, un barrio o una marca ("Pedro Montt" es una calle
+// chilena, "Jesus Maria" un distrito de Lima, "Chapinero" un barrio de
+// Bogotá, "North Lima", "Tourism Solutions"). NO reintroducir sin remedir.
+const _doctorSinAcento = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+const _DOCTOR_GENERICOS = ['oral', 'smile', 'dental', 'dentista', 'odonto', 'odontolog', 'clinic', 'consultorio', 'center', 'centro', 'group', 'grupo', 'salud', 'estetic', 'implant', 'ortodon', 'care', 'byocare', 'aliwell', 'clear', 'aligner', 'sonrisa', 'laser', 'especialista', 'doctor', 'doctora', 'endodon', 'periodon', 'protes', 'cirug', 'maxilo', 'infantil', 'kids', 'avanzada', 'integral', 'moderna', 'familiar', 'plus', 'premium', 'studio', 'spa', 'medic', 'face', 'body', 'beauty', 'life', 'vital', 'bio', 'line', 'art', 'new', 'best', 'top'];
+const _doctorEsGenerico = (w) => { const n = _doctorSinAcento(w); return _DOCTOR_GENERICOS.some((g) => n.includes(_doctorSinAcento(g))); };
+const _DOCTOR_CONECTORES = new Set(['de', 'del', 'la', 'las', 'los', 'y', 'da', 'dos', 'di', 'san', 'santa']);
+
+function _doctorNormalizar(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let s = raw.trim();
+  s = s.replace(/^(?:Dr\/a\.?|Dra?\.?|Doctora?|Odont[oó]log[oa]?\.?|Od\.?)\s+/i, '');
+  s = s.replace(/\s*[-–—|,;:]\s*.*$/, '');
+  s = s.replace(/[\s\-–—,;:.]+$/, '');
+  return s.replace(/\s+/g, ' ').trim();
 }
+
+function _doctorEsValido(s) {
+  if (!s) return false;
+  const p = s.split(' ').filter(Boolean);
+  if (p.length < 2 || p.length > 5) return false;
+  if (/[0-9@#&/\\|()"']/.test(s)) return false;
+  const sig = p.filter((w) => !_DOCTOR_CONECTORES.has(_doctorSinAcento(w)));
+  if (sig.length < 2) return false;
+  if (sig.some(_doctorEsGenerico)) return false;
+  if (!sig.every((w) => /^[A-ZÁÉÍÓÚÑÜ]/.test(w))) return false;
+  return true;
+}
+
+// ⚠️ String.raw es OBLIGATORIO en todo trozo de regex con \s: mezclar un
+// template literal común hace que \s colapse a "s" y el patrón no matchea
+// nunca — fue exactamente el bug de 'pre' en la primera pasada de medición.
+const _DOCTOR_NOM = String.raw`[A-ZÁÉÍÓÚÑÜ][a-záéíóúñü]+`;
+
+// FRENO: palabras que terminan un nombre propio. Sin esto el patrón 'dr' es
+// glotón — en "Dr Nelson Serrano Odontologia Premium" se llevaba todo, fallaba
+// la validación por contener un genérico, y el nombre real se perdía (lo
+// rescataba 'pre', el patrón sucio). Con el freno, 'dr' corta solo.
+const _DOCTOR_STOP = String.raw`(?:Odontolog|Odontol[oó]gic|Dental|Dentist|Cl[ií]nic|Consultorio|Centro|Est[eé]tic|Implant|Ortodon|Premium|Integral|Especializad|Familiar|Studio|Clinic|Avanzad|Moderna|Salud|Group|Grupo|Center|Care|Smile|Oral|Laser|L[aá]ser|Rehabilitaci|Cirug|Endodon|Periodon|Protes|Pr[oó]tes|Maxilo|Infantil|Kids|Spa|Plus)`;
+// El nombre no puede seguir por una palabra del rubro.
+const _DOCTOR_SEC = String.raw`(?:\s+(?:de|del|la|las|los|y))?\s+(?!` + _DOCTOR_STOP + String.raw`)` + _DOCTOR_NOM;
+const _DOCTOR_RUBRO = String.raw`Odontolog[ií]a|Odontol[oó]gic[ao]|Dental|Dentista|Consultorio|Cl[ií]nica|Centro`;
+const _DOCTOR_RAW_S = String.raw`\s`;
+const _DOCTOR_PATRONES = [
+  { id: 'dr',  re: new RegExp(String.raw`(?:Dra?\.?\/?a?\.?|Doctora?|Odont[oó]log[oa]|Od\.)\s+(` + _DOCTOR_NOM + `(?:` + _DOCTOR_SEC + `){0,3})`) },
+  { id: 'by',  re: new RegExp(String.raw`\b[Bb]y\s+(` + _DOCTOR_NOM + `(?:` + _DOCTOR_SEC + `){0,3})\s*$`) },
+  { id: 'pre', re: new RegExp(String.raw`^(` + _DOCTOR_NOM + `(?:` + _DOCTOR_SEC + `){1,3})` + _DOCTOR_RAW_S + `+(?:` + _DOCTOR_RUBRO + String.raw`)\b`) },
+  // 'post' (genérico primero, nombre después) SE DESCARTA — ver comentario
+  // arriba. Queda comentado a propósito para que nadie lo reintroduzca sin medir.
+  // { id: 'post', re: ... }
+];
+
+// Devuelve {nombre, patron} o null. `nombre` viene NORMALIZADO (sin el prefijo
+// Dr/a.) — es el valor que se guarda en lead.doctor y el término de búsqueda
+// del botón de Instagram del titular.
+function _extractDoctorFromName(name) {
+  if (!name || typeof name !== 'string') return null;
+  for (const p of _DOCTOR_PATRONES) {
+    const m = name.match(p.re);
+    if (m) {
+      const c = _doctorNormalizar(m[1]);
+      if (_doctorEsValido(c)) return { nombre: c, patron: p.id };
+    }
+  }
+  return null;
+}
+
+// Whitelist estricta de dónde salió lead.doctor (mismo patrón que
+// NEXT_ACTION_TIPOS, ~11211). 'parser'/'parser-debil' = extraído del lead.name
+// por los patrones de arriba (débil = patrón 'pre', requiere verificación
+// humana). 'web-ai' = enrichment por IA sobre el sitio (~4537 más abajo).
+// 'npi' = NPI Registry USA (~4552). 'manual' = lo cargó una persona.
+const DOCTOR_SOURCES = new Set(['parser', 'parser-debil', 'web-ai', 'npi', 'manual']);
+function _sanitizeDoctorSource(v) { return DOCTOR_SOURCES.has(v) ? v : ''; }
+
+// dryRun:true para previsualizar sin escribir. Idempotente: un lead cuyo
+// lead.doctor YA es válido (esValido) no se toca — ni se reemplaza, ni se
+// re-marca la fuente. Copiá la forma EXACTA de backfill-hangup-cap /
+// backfill-next-action (~4246/4327): scan() puro reusado por las dos ramas,
+// apply dentro de mutateSettersData, backup antes de guardar.
+// Números medidos sobre la base real (scratchpad medir-doctor.mjs, 6413
+// leads): 85 nuevos, 153 recuperados, usables 1704 → 1942, por patrón
+// {dr:176, pre:60, by:2}.
+const _DOCTOR_HAS = (v) => v && String(v).trim() && !/^n\/?a$/i.test(String(v).trim());
+function _scanDoctorBackfill(leads) {
+  const hits = [];
+  const counts = { scanned: 0, yaUsable: 0, nuevos: 0, recuperados: 0, sinNada: 0, byPatron: {} };
+  for (const [id, lead] of Object.entries(leads || {})) {
+    if (!lead) continue;
+    counts.scanned++;
+    const actualHas = _DOCTOR_HAS(lead.doctor);
+    const actualNorm = actualHas ? _doctorNormalizar(lead.doctor) : '';
+    if (actualNorm && _doctorEsValido(actualNorm)) { counts.yaUsable++; continue; } // válido → no se toca
+    const ext = _extractDoctorFromName(lead.name);
+    if (!ext) { counts.sinNada++; continue; }
+    counts.byPatron[ext.patron] = (counts.byPatron[ext.patron] || 0) + 1;
+    if (actualHas) counts.recuperados++; else counts.nuevos++;
+    hits.push({ id, name: lead.name || '', before: lead.doctor || '', after: ext.nombre, patron: ext.patron, recovered: actualHas });
+  }
+  return { hits, counts };
+}
+app.post('/api/admin/backfill-doctor', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  if (dryRun) {
+    const { hits, counts } = _scanDoctorBackfill(loadSettersData().leads);
+    return res.json({ dryRun: true, matched: hits.length, ...counts, sample: hits.slice(0, 50) });
+  }
+  makeBackup('pre-backfill-doctor');
+  let hits = [], counts = {};
+  await mutateSettersData((data) => {
+    // Re-escanea sobre el snapshot FRESCO del mutex (regla #19), no sobre uno
+    // cacheado del dryRun — otro handler pudo escribir entre medio.
+    const scanned = _scanDoctorBackfill(data.leads);
+    hits = scanned.hits;
+    counts = scanned.counts;
+    for (const h of hits) {
+      const lead = data.leads[h.id];
+      lead.doctor = h.after;
+      lead.doctorSource = h.patron === 'pre' ? 'parser-debil' : 'parser';
+    }
+  });
+  res.json({ dryRun: false, updated: hits.length, ...counts, sample: hits.slice(0, 50) });
+});
+
 app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, res) => {
   const { setterId = '', dryRun = false, onlySuspicious = true } = req.body || {};
   const data = loadSettersData();
@@ -10122,6 +10253,12 @@ app.patch('/api/setters/leads/:id', requireAuth, (req, res) => {
   for (const field of allowed) {
     if (req.body[field] !== undefined) lead[field] = req.body[field];
   }
+  // 'doctor' está en el mass-assign de arriba — cualquier edición desde acá es
+  // una persona escribiendo, así que la fuente es 'manual' (whitelist
+  // DOCTOR_SOURCES, ~5343). Vaciar el campo también vacía la fuente.
+  if (req.body.doctor !== undefined) {
+    lead.doctorSource = String(req.body.doctor || '').trim() ? 'manual' : '';
+  }
 
   // ── Cascada hacia adelante ──
   if (req.body.conexion === 'enviada') {
@@ -10804,6 +10941,29 @@ app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
   }
   saveSettersData(data);
   res.json({ ok: true, altPhone: lead.altPhone, altPhoneLabel: lead.altPhoneLabel, email: lead.email || '' });
+});
+
+// El botón "Buscar Instagram del Dr." (ficha del lead / Power Dialer) abre una
+// búsqueda de Google en pestaña nueva — nunca escribe nada solo. Este endpoint
+// es el "pegarlo en un paso" cuando el operador encuentra el perfil: guarda
+// lead.instagram + marca instagramSource='manual' (dato confirmado por una
+// persona, distinto del que puede venir de scraping/enrichment). Vaciar el
+// campo también vacía la fuente. Prohibido: nada acá scrapea ni asigna solo.
+app.put('/api/setters/leads/:id/instagram', requireAuth, (req, res) => {
+  if (!req.body || typeof req.body !== 'object') return res.status(400).json({ error: 'Body JSON requerido.' });
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
+  ensureLeadDefaults(lead);
+  const raw = (typeof req.body.instagram === 'string' ? req.body.instagram : '').trim().slice(0, 200);
+  lead.instagram = raw;
+  lead.instagramSource = raw ? 'manual' : '';
+  saveSettersData(data);
+  res.json({ ok: true, instagram: lead.instagram, instagramSource: lead.instagramSource });
 });
 
 // Notas
@@ -15610,7 +15770,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow, _expensiveTariffLabel };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow, _expensiveTariffLabel, _extractDoctorFromName, _doctorNormalizar, _doctorEsValido, _sanitizeDoctorSource, DOCTOR_SOURCES, _scanDoctorBackfill };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
