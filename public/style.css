@@ -4935,6 +4935,14 @@ textarea:disabled {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   padding: 12px;
   font-family: inherit;
+  /* BUG 2026-08-15: el popover se monta en <body> con position:fixed, pero
+     sin z-index quedaba pintado DEBAJO de los modales (.modal-overlay usa
+     10000). El calendario se abría y no se veía: el usuario clickeaba el
+     campo de fecha y no pasaba nada. Los 4 campos de fecha que viven en un
+     modal (callback, agendar ×2, hold por mail) estaban afectados.
+     10050 = encima de los modales (10000/10010), debajo de los avisos
+     flotantes (99999). */
+  z-index: 10050;
 }
 .dtp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .dtp-nav {
