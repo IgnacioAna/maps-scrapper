@@ -1,3 +1,18 @@
 {
-  "pending": []
+  "pending": [
+    {
+      "id": "pc_l_dentistaenmonterreymaasdentist_528113603501_1786812891664",
+      "leadId": "l_dentistaenmonterreymaasdentist_528113603501",
+      "leadName": "Dentista en Monterrey | MAAS Dentistas",
+      "setterId": "setter_ignacio",
+      "userId": "user_admin_ignacio",
+      "startedAt": "2026-08-15T16:54:51.664Z",
+      "endedAt": null,
+      "durationSecs": 0,
+      "fromNumber": "+17866870849",
+      "reachedActive": false,
+      "createdAt": "2026-08-15T16:54:52.958Z",
+      "updatedAt": "2026-08-15T16:54:52.958Z"
+    }
+  ]
 }
