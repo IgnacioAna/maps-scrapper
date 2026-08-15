@@ -6743,7 +6743,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       // el SDR sigue anotando y avanza con el botón "Siguiente lead" (o S).
       if (!_pd.holdCurrent) {
         if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
-        if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
+        // Fase 30 (GATE-01/GATE-02): un interesado SIEMPRE tiene un próximo
+        // paso a futuro (D-02, +3 días por defecto) — expulsarlo acá rompería
+        // el Power Dialer de "Hoy → Interesados" (nota #179: _pdBuildQueueHoy
+        // arma la cola con _hoyState.interesadoIds, sin mirar callbackAt). Un
+        // interesado solo puede estar en la cola del dialer vía la cola de
+        // Hoy: _pdBuildQueue (la cola de Llamadas) ya filtra
+        // ['descartado','agendado','interesado'] — esta excepción no puede
+        // colar un interesado en el dialer de Llamadas. La expulsión por
+        // estado terminal (línea de arriba) queda intacta.
+        if (lead.estado !== 'interesado' && lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
       }
 
       const flagHTML = lead.country ? countryFlagHTML(lead.country, 'lg') : '';
@@ -7205,13 +7214,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
     // dialer. Para outcomes que ABREN modal (callback_later, scheduled_with_admin,
-    // answered_not_interested), NO auto-avanzar — el modal define el flow y al
-    // cerrarse exitosamente _handleCallDisposition ya refresca _callsLeadsCache.
+    // answered_not_interested, y desde Fase 30 answered_interested → "Próximo
+    // paso"), NO auto-avanzar — el modal define el flow y al cerrarse
+    // exitosamente _handleCallDisposition ya refresca _callsLeadsCache.
     // El advance lo dispara el botón explícito del usuario cuando vuelve.
     window._pdHandleDisposition = async function(leadId, selectEl) {
       const outcome = selectEl?.value;
       if (!outcome) return;
-      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
+      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested','answered_interested'].includes(outcome);
       await window._handleCallDisposition(leadId, selectEl);
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
@@ -7231,7 +7241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
       // hasta 30s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
-        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal'];
+        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal','call-next-modal'];
         // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
         let waited = 0;
         const check = () => {
@@ -7248,13 +7258,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           // disposition fue confirmada). Si el SDR canceló, el lead sigue accionable.
           const lead = _callsLeadsById.get(leadId);
           if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
+          // Fase 30: un interesado recién guardado tiene callbackAt futuro
+          // (+3 días, D-02) → stillActionable da false y corre _afterSaved()
+          // (autopiloto avanza; sin autopiloto queda el banner "Resultado
+          // guardado", #151). Si el SDR CANCELA el modal, no se guardó nada,
+          // callbackAt sigue vacío → stillActionable da true y el dialer se
+          // queda en el lead (mismo comportamiento que los otros 3 modales).
           const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
           if (!stillActionable) _afterSaved();
         };
         setTimeout(check, 600);
       } else {
         // Outcomes directos (no_answer, voicemail, wrong_number, invalid_number,
-        // answered_interested, hung_up)
+        // hung_up)
         setTimeout(_afterSaved, 600);
       }
     };
@@ -10635,10 +10651,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
-        // "Interesado" (answered_interested) NO abre la agenda: solo marca el
-        // interés y deja el lead con chip verde esperando agendamiento. Agendar
-        // es una acción aparte (botón/opción "Agendar" → scheduled_with_admin).
-        // Cae al flujo directo de abajo (POST call-disposition).
+        // "Interesado" (answered_interested) NO abre la agenda: agendar es una
+        // acción aparte (botón/opción "Agendar" → scheduled_with_admin, nota
+        // #63 de CLAUDE.md — intencional). Fase 30 (GATE-01/GATE-02): en vez
+        // de caer al flujo directo, abre el paso "Próximo paso" — es el único
+        // outcome no terminal que podía quedar sin próxima acción (D-04: los
+        // interesados nunca se auto-descartan, así que sin este paso el lead
+        // quedaba flotando hasta que alguien lo agendara a mano).
+        if (outcome === 'answered_interested') {
+          openNextStepModal(leadId);
+          selectEl.value = '';
+          selectEl.disabled = false;
+          return;
+        }
         // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
         // El popover deja saltear (skip) si el SDR no quiere taggear.
         if (outcome === 'answered_not_interested') {
@@ -10845,6 +10870,110 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     }
 
+    // Paso "Próximo paso" (GATE-01/GATE-02, Fase 30, 2026-08-15): se abre al
+    // marcar "Interesado" — el único outcome no terminal que hoy podía quedar
+    // sin próxima acción (D-04: los interesados nunca se auto-descartan, así
+    // que este paso es lo único que evita que quede flotando sin fecha). Trae
+    // la propuesta D-02 (+3 días) ya cargada: un click en Guardar alcanza, o
+    // se edita con los atajos / el calendario propio (Phase 28). No deja
+    // confirmar con la fecha vacía.
+    function openNextStepModal(leadId) {
+      const lead = _callsLeadsById.get(leadId);
+      if (!lead) return;
+      const modal = document.getElementById('call-next-modal');
+      const fechaInput = document.getElementById('call-next-fecha');
+      const motivoInput = document.getElementById('call-next-motivo');
+      fechaInput.value = _toDatetimeLocal(_gateInteresadoDefaultDate(new Date()));
+      // [28-02] Calendario propio (D-01): reemplaza el datetime-local nativo.
+      _dtPickerAttach(fechaInput, { getLead: () => _callsLeadsById.get(leadId) });
+
+      // D-03: atajos con la cadencia sugerida (1/3/7/15 días). El de 3 días
+      // (isDefault) queda resaltado de entrada — coincide con lo que ya cargó
+      // fechaInput.value arriba.
+      const picks = _gateInteresadoPicks(new Date());
+      const qpWrap = document.getElementById('call-next-quickpicks');
+      if (qpWrap) {
+        qpWrap.innerHTML = picks.map((p) => `<button type="button" class="cb-quickpick" data-iso="${p.date.toISOString()}" style="padding:9px 11px; background:${p.isDefault ? 'rgba(157,133,242,0.12)' : 'var(--bg-surface)'}; border:1px solid ${p.isDefault ? 'var(--accent)' : 'var(--border-subtle)'}; border-radius:8px; color:var(--text-primary); font-size:12px; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit;">
+          <div style="font-weight:600; font-size:11.5px;">${p.label}</div>
+          <div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">${p.subtitle}</div>
+        </button>`).join('');
+        qpWrap.querySelectorAll('.cb-quickpick').forEach((btn) => {
+          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+          btn.addEventListener('mouseleave', () => { if (btn.getAttribute('data-active') !== '1') { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-surface)'; } });
+          btn.addEventListener('click', () => {
+            const iso = btn.getAttribute('data-iso');
+            fechaInput.value = _toDatetimeLocal(new Date(iso));
+            // [28-02] D-05: el atajo sigue siendo un click directo — solo se
+            // repinta la etiqueta del trigger del calendario.
+            _dtPickerSync(fechaInput);
+            qpWrap.querySelectorAll('.cb-quickpick').forEach((b) => { b.removeAttribute('data-active'); b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
+            btn.setAttribute('data-active', '1');
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.background = 'rgba(157,133,242,0.12)';
+          });
+        });
+      }
+      motivoInput.value = '';
+
+      // 2026-08-11 (fix #181b): el modal se REUSA entre aperturas. Cinturón:
+      // reset SIEMPRE al abrir, no solo la 1ra vez.
+      const confirmBtn = document.getElementById('call-next-confirm');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Guardar';
+      modal.classList.remove('hidden');
+
+      confirmBtn.onclick = async () => {
+        const fecha = fechaInput.value;
+        if (!fecha) {
+          // GATE-01 (aviso claro): un interesado no puede quedar sin fecha. No
+          // deshabilitar el botón — el user puede reintentar sin recargar nada.
+          window.showToast?.('Elegí cuándo volvés a hablarle — un interesado no puede quedar sin fecha.', { type: 'warning' });
+          return;
+        }
+        confirmBtn.disabled = true; confirmBtn.textContent = 'Guardando…';
+        try {
+          const dueAtIso = new Date(fecha).toISOString();
+          const motivo = motivoInput.value.trim();
+          const telnyxMeta = _consumeTelnyxMeta(leadId);
+          const body = {
+            outcome: 'answered_interested',
+            nextAction: { dueAt: dueAtIso, tipo: 'callback', canal: 'llamada', motivo },
+            ..._dispoEnforcementBody(leadId),
+          };
+          if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
+          // Nota rápida del Power Dialer (input pd-call-note) — sin esto la
+          // nota tipeada ahí se perdía al pasar este outcome por modal.
+          const pdNoteEl = document.getElementById('pd-call-note');
+          const pdNote = pdNoteEl?.value?.trim();
+          if (pdNote) { body.notes = pdNote.slice(0, 500); if (pdNoteEl) pdNoteEl.value = ''; }
+          const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+          _flushPendingTranscription(leadId, 'answered_interested').catch(e => console.warn('[transcribe]', e?.message));
+          const data = await resp.json();
+          // _leadStore: escritura única — trae estado/nextAction/callbackAt
+          // frescos, el poller del Power Dialer los lee.
+          if (data.lead) _leadStoreApply(leadId, data.lead);
+          modal.classList.add('hidden');
+          // El aviso universal de destino (D-05/D-06) lo agrega el plan 30-03
+          // desde _dispoAfterSaved — no se duplica acá.
+          _refreshLeadPanels(leadId);
+          renderCallsStats();
+          await loadCallsView();
+        } catch (e) {
+          alert('Error: ' + e.message);
+        } finally {
+          confirmBtn.disabled = false; confirmBtn.textContent = 'Guardar';
+        }
+      };
+    }
+    window.openNextStepModal = openNextStepModal;
+
     // Sprint 23: helper para input datetime-local (necesita formato sin timezone)
     function _toDatetimeLocal(d) {
       const pad = (n) => String(n).padStart(2, '0');
@@ -10990,6 +11119,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('call-obj-skip').onclick = () => submit(false);
       document.getElementById('call-obj-confirm').onclick = () => submit(true);
     }
+
+    // ─── [30-02] GATE-PURE: INICIO ───
+    // Fase 30 (2026-08-15): helpers puros del paso "Próximo paso" que se abre
+    // al marcar "Interesado" (GATE-01/GATE-02). GATE_INTERESADO_DELTA_MS
+    // espeja la constante D-02 del backend (index.js, GATE_INTERESADO_DELTA_MS)
+    // — si una cambia, cambiar las dos. Bloque sin ninguna dependencia del
+    // navegador (nada de DOM, red ni almacenamiento persistente): el test lo
+    // extrae por estos marcadores y lo evalúa aislado (mismo patrón que
+    // [28-01] DTPICKER-PURE, más arriba en este archivo).
+    const GATE_INTERESADO_DELTA_MS = 3 * 24 * 60 * 60 * 1000;
+
+    function _gateInteresadoDefaultDate(now) {
+      return new Date(now.getTime() + GATE_INTERESADO_DELTA_MS);
+    }
+
+    // Cadencia sugerida D-03 para un interesado que no avanza: día 1, 3, 7, 15.
+    // El de 3 días es el default (isDefault:true) — coincide al milisegundo
+    // con _gateInteresadoDefaultDate(now).
+    function _gateInteresadoPicks(now) {
+      const dayNames = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+      const pad = (n) => String(n).padStart(2, '0');
+      const fmt = (d) => `${dayNames[d.getDay()]} ${d.getDate()}/${d.getMonth()+1} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const mk = (daysAhead) => new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+      const d1 = mk(1);
+      const d3 = mk(3);
+      const d7 = mk(7);
+      const d15 = mk(15);
+      return [
+        { label: 'Mañana',      subtitle: fmt(d1),  date: d1 },
+        { label: 'En 3 días',   subtitle: fmt(d3),  date: d3, isDefault: true },
+        { label: 'En 1 semana', subtitle: fmt(d7),  date: d7 },
+        { label: 'En 15 días',  subtitle: fmt(d15), date: d15 },
+      ];
+    }
+    // ─── [30-02] GATE-PURE: FIN ───
 
     // Sprint 23: quick-picks típicos de callback. Devuelve {label, subtitle, date}.
     function _buildCallbackQuickPicks() {

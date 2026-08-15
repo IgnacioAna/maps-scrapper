@@ -1,5 +1,8 @@
-// Test del cableado del calendario propio (Fase 28, Plan 02) a los 5 campos
+// Test del cableado del calendario propio (Fase 28, Plan 02) a los 6 campos
 // de fecha reales de la app + los helpers de hora local del lead (D-06).
+// El 6to campo (#call-next-fecha, el modal "Próximo paso" de la Fase 30
+// Plan 02) se sumó al mismo cableado — ver tests/gate-next-step-ui.test.js
+// para la cobertura propia de ese modal.
 //
 // Es una prueba de CÓDIGO FUENTE, no de DOM: no hay jsdom en el proyecto, así
 // que la Task 1 se verifica leyendo public/app.js como texto (patrón ya usado
@@ -29,16 +32,21 @@ function countOccurrences(str, sub) {
   return count;
 }
 
-describe("Task 1 — cableado de _dtPickerAttach a los 5 inputs reales", () => {
-  it("hay exactamente 5 llamadas a _dtPickerAttach( (sin contar la declaración)", () => {
+describe("Task 1 — cableado de _dtPickerAttach a los 6 inputs reales", () => {
+  it("hay exactamente 6 llamadas a _dtPickerAttach( (sin contar la declaración)", () => {
     const total = countOccurrences(appJs, "_dtPickerAttach(");
     const decl = countOccurrences(appJs, "function _dtPickerAttach(");
     expect(decl).toBe(1);
-    expect(total - decl).toBe(5);
+    expect(total - decl).toBe(6);
   });
 
   it("call-cb-fecha (openCallbackModal, variable fechaInput) está attacheado con getLead de _callsLeadsById", () => {
     expect(appJs).toContain("_dtPickerAttach(fechaInput, { getLead: () => _callsLeadsById.get(leadId) });");
+  });
+
+  it("call-next-fecha (openNextStepModal, Fase 30 Plan 02) reusa el mismo literal — 2 call sites idénticos", () => {
+    const literal = "_dtPickerAttach(fechaInput, { getLead: () => _callsLeadsById.get(leadId) });";
+    expect(countOccurrences(appJs, literal)).toBe(2);
   });
 
   it("call-ph-fecha (openPlaceholderModal, variable fechaIn) está attacheado con getLead: () => lead", () => {
@@ -79,8 +87,8 @@ describe("Task 1 — cableado de _dtPickerAttach a los 5 inputs reales", () => {
     expect(countOccurrences(appJs, "function _scheduleFormatDatetimeLocal")).toBe(1);
   });
 
-  it("los 5 inputs siguen siendo type=\"datetime-local\" en index.html", () => {
-    expect(countOccurrences(indexHtml, 'type="datetime-local"')).toBe(5);
+  it("los 6 inputs siguen siendo type=\"datetime-local\" en index.html (Fase 30 Plan 02 sumó #call-next-fecha)", () => {
+    expect(countOccurrences(indexHtml, 'type="datetime-local"')).toBe(6);
   });
 
   it("los quickpicks/preset de D-05 siguen presentes intactos", () => {
