@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T12:59:00.837Z"
+last_updated: "2026-08-15T16:06:14.000Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 8
-  percent: 29
+  total_plans: 14
+  completed_plans: 9
+  percent: 32
 ---
 
 # SCM — STATE
@@ -39,12 +39,20 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 30 (gate-proximo-paso) — VERIFICATION: human_needed
-Plan: 3 of 3 (30-01, 30-02, 30-03 todos con SUMMARY)
-Status: 30-VERIFICATION.md status=human_needed (18/18 must-haves en codigo+tests, 1365/1365 tests verdes); 30-HUMAN-UAT.md creado con 7 items pendientes de click real en browser
+Phase: 31 (comm-compromisos) — EXECUTING
+Plan: 1 of 4 (31-01 con SUMMARY; 31-02/03/04 pendientes)
+Status: 31-01 ejecutado y commiteado (3/3 tasks, commits ee09a18/4865b9d/d22412a). lead.commitment
+  + whitelists D-02/03/04 + mapa D-06 + _sanitizeCommitment/_setCommitment/_closeCommitment
+  expuestos en globalThis.__voiceAgent. Suite completa 1400/1400 (baseline 1365 + 35 nuevos).
+  Solo index.js + tests/commitment-model.test.js tocados -- cero cambios en public/, sin bump
+  de cache-buster (a proposito, el plan no toca UI).
 Resume file: None
-Last activity: 2026-08-15 -- Phase 30 ejecutada (waves 2 y 3) y verificada; pendiente UAT humano
+Last activity: 2026-08-15 -- Phase 31 plan 01 (modelo del compromiso) ejecutado.
 
+Phase 30 (gate-proximo-paso): 3/3 planes ejecutados, VERIFICATION: human_needed (18/18
+  must-haves en codigo+tests, 1365/1365 tests verdes en su momento; 30-HUMAN-UAT.md con 7 items
+  pendientes de click real en browser -- no bloquea el arranque de Phase 31, que depende de
+  Phase 29, no de Phase 30).
 Phase 29 (NEXT — El reloj único): **COMPLETE** (4/4 planes, 2026-08-14).
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
 
@@ -1069,3 +1077,41 @@ planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
   Requirements GATE-01/GATE-02 marcados completos. Próximo: 30-02
   [frontend — control de UI que obliga a elegir antes de confirmar] y
   30-03 [GATE-04, aviso universal de destino]).*
+
+## Decisiones de ejecución (Phase 31)
+
+- **31-01:** `lead.commitment` se guarda PLANO en el lead (no anidado dentro
+  de `nextAction`), confirmando la preferencia que el CONTEXT.md dejaba a
+  discreción del ejecutor. Así el objeto sobrevive al consumo del reloj
+  (`_clearNextAction` no lo toca) y sirve de base para el historial de
+  compromisos cerrados que va a pedir D-11 en el plan 31-04 — sin necesitar
+  un array de historial nuevo.
+
+- **31-01:** `_sanitizeCommitment` invalida TODO el payload si `tipo` no
+  está en `COMMITMENT_TIPOS`, a diferencia de `_gateSanitizeNextActionOverride`
+  (que coerciona `tipo` a `'callback'`). Decisión deliberada: un compromiso
+  es una declaración completa del SDR, coercionar el tipo fabricaría un
+  compromiso que nadie dijo.
+
+- **31-01:** `vencido` es un estado DERIVADO (`_commitmentEffectiveEstado`)
+  mientras el compromiso sigue `pendiente` en disco y la fecha ya pasó —
+  nunca se escribe solo por el paso del tiempo, para que no desaparezca de
+  Hoy justo cuando más hay que actuar. `vencido` SÍ es un cierre EXPLÍCITO
+  válido (`_closeCommitment`) para el caso "ya no aplica" de un compromiso
+  propio; `incumplido` queda reservado para los del prospecto.
+
+- **31-01:** *Last updated: 2026-08-15 (31-01 ejecutado — el modelo del
+  compromiso hablado: whitelists `COMMITMENT_TIPOS/PARTES/ESTADOS/CIERRES`
+  [D-02/D-03/D-04], mapa D-06 tipo→duración reusando `GATE_INTERESADO_DELTA_MS`/
+  `GATE_CADENCIA_DELTA_MS`/`NEXT_ACTION_TEMPLATES` [única duración nueva:
+  `COMMITMENT_SOCIO_DELTA_MS`, +5 días], y `_sanitizeCommitment`/
+  `_setCommitment`/`_closeCommitment` que atan el compromiso al reloj único
+  con `origen:'compromiso'` [D-05/D-07] + seguimiento post-envío a +48h para
+  un "mandar info" propio cumplido [D-06 fila 1]. 35 tests puros nuevos en
+  `tests/commitment-model.test.js`, verificados por mutación [7/35 en rojo
+  al comentar la llamada a `_setNextAction`, restaurado limpio]. Suite
+  completa 1400/1400 [baseline 1365 + 35]. Cero cambios en `public/` — el
+  plan es backend-only, sin bump de cache-buster. Requirements COMM-01/02/03
+  con su cimiento listo [COMM-04 depende del plan 31-04, consulta]. Próximo:
+  31-02 [endpoints — `commitment` en `call-disposition` D-08 + `PATCH
+  .../commitment` para la ficha D-09]).*
