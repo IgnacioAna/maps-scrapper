@@ -11269,6 +11269,131 @@ function _commitmentDueAtForTipo(tipo, nowIso) {
   return new Date(nowMs + deltaMs).toISOString();
 }
 
+// D-05: traduce el compromiso (COMMITMENT_TIPOS) al vocabulario del reloj
+// (NEXT_ACTION_TIPOS). 'esperar_respuesta' y 'enviar_info' ya existen en
+// NEXT_ACTION_TIPOS desde la Phase 29 justamente para esto — `_dispoDestination`
+// del frontend ya tiene una rama que lee 'esperar_respuesta'.
+function _commitmentNextActionTipo(parte, tipo) {
+  if (parte === 'prospecto') return 'esperar_respuesta';
+  if (tipo === 'enviar_info' || tipo === 'pedir_presupuesto') return 'enviar_info';
+  return 'callback';
+}
+
+// D-03: el string que ve el SDR cuando el lead reaparece — implementación
+// literal de "con el vencimiento como motivo visible". Truncado a 200 chars
+// (mismo tope que el resto de los `motivo` de nextAction).
+function _commitmentMotivo(commitment) {
+  const c = commitment && typeof commitment === 'object' ? commitment : {};
+  const label = COMMITMENT_LABELS[c.tipo] || c.tipo || 'compromiso';
+  const text = c.parte === 'yo' ? `compromiso mío: ${label}` : `compromiso del prospecto: ${label}`;
+  return text.slice(0, 200);
+}
+
+// PURA, no muta. Único lugar que decide "esto está vencido" — los planes
+// 31-03 y 31-04 espejan esta regla en el frontend.
+function _commitmentEffectiveEstado(commitment, nowMs) {
+  if (!commitment || typeof commitment !== 'object') return '';
+  if (commitment.estado !== 'pendiente') return commitment.estado;
+  const dueMs = Date.parse(commitment.dueAt);
+  if (!isNaN(dueMs) && dueMs <= nowMs) return 'vencido';
+  return 'pendiente';
+}
+
+// T-31-01: whitelist-and-coerce, mismo idioma que _gateSanitizeNextActionOverride
+// — nunca lanza, nunca devuelve 4xx. A diferencia de ese sanitizador (que
+// coerciona el tipo), acá un `tipo` desconocido invalida TODO el payload: el
+// objeto entero es el dato, y coercionarlo a 'otro' fabricaría un compromiso
+// que nadie declaró.
+function _sanitizeCommitment(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (!COMMITMENT_TIPOS.has(raw.tipo)) return null;
+  const tipo = raw.tipo;
+  const parte = COMMITMENT_PARTES.has(raw.parte) ? raw.parte : COMMITMENT_DEFAULT_PARTE[tipo];
+  const canal = NEXT_ACTION_CANALES.has(raw.canal) ? raw.canal : COMMITMENT_DEFAULT_CANAL[tipo];
+  const motivo = typeof raw.motivo === 'string' ? raw.motivo.slice(0, 200) : '';
+  const d = new Date(raw.dueAt);
+  const dueAt = isNaN(d.getTime()) ? '' : d.toISOString();
+  return { tipo, parte, canal, motivo, dueAt };
+}
+
+// D-05: crea/reemplaza lead.commitment y setea el reloj único con
+// origen:'compromiso'. Limitación conocida y ACEPTADA de D-01: hay UN
+// compromiso por lead — crear uno nuevo REEMPLAZA al anterior (esté
+// pendiente o cerrado). Un array de historial queda explícitamente fuera de
+// esta fase.
+function _setCommitment(lead, spec, nowIso) {
+  const clean = _sanitizeCommitment(spec);
+  if (!clean) return null;
+  const s = spec && typeof spec === 'object' ? spec : {};
+  const createdBy = typeof s.createdBy === 'string' ? s.createdBy.slice(0, 80) : '';
+  const callId = typeof s.callId === 'string' ? s.callId.slice(0, 40) : '';
+  const createdAt = typeof nowIso === 'string' && nowIso ? nowIso : new Date().toISOString();
+  const dueAt = clean.dueAt || _commitmentDueAtForTipo(clean.tipo, createdAt);
+  lead.commitment = {
+    tipo: clean.tipo,
+    parte: clean.parte,
+    canal: clean.canal,
+    dueAt,
+    estado: 'pendiente',
+    motivo: clean.motivo,
+    callId,
+    createdAt,
+    createdBy,
+    closedAt: '',
+    closedBy: '',
+  };
+  // El espejo del reloj (D-03 de la Phase 29) se asigna SOLO adentro de
+  // _setNextAction — nunca a mano en este bloque.
+  _setNextAction(lead, {
+    tipo: _commitmentNextActionTipo(clean.parte, clean.tipo),
+    dueAt,
+    canal: clean.canal,
+    motivo: _commitmentMotivo(lead.commitment),
+    origen: 'compromiso',
+    createdBy,
+  }, createdAt);
+  return lead.commitment;
+}
+
+// D-07: cierra un compromiso pendiente y apaga el reloj SOLO si sigue siendo
+// el que ese compromiso creó — mismo idioma que la rama de destildado de
+// `PATCH .../followup` (más arriba en este archivo): un compromiso no puede
+// apagar un próximo paso pactado por OTRA vía. Basta chequear `origen`
+// porque 'compromiso' es un valor exclusivo del compromiso (no hace falta un
+// prefijo de motivo como con followUps).
+function _closeCommitment(lead, estado, nowIso, closedBy) {
+  const c = lead && lead.commitment;
+  if (!c || c.estado !== 'pendiente') return null;
+  if (!COMMITMENT_CIERRES.has(estado)) return null;
+  const closedAt = typeof nowIso === 'string' && nowIso ? nowIso : new Date().toISOString();
+  c.estado = estado;
+  c.closedAt = closedAt;
+  c.closedBy = typeof closedBy === 'string' ? closedBy.slice(0, 80) : '';
+  const na = lead.nextAction;
+  if (na && na.origen === 'compromiso') _clearNextAction(lead);
+  // D-06 fila 1, seguimiento post-envío: cerrar "cumplido" un enviar_info /
+  // pedir_presupuesto de parte 'yo' deja al lead esperando respuesta a +48h
+  // en vez de sin próximo paso — segunda mitad literal de D-06 y lo que hace
+  // que COMM-04 se pueda responder (el lead vuelve solo con el motivo
+  // visible de que ya se le mandó la información).
+  if (
+    estado === 'cumplido' &&
+    c.parte === 'yo' &&
+    (c.tipo === 'enviar_info' || c.tipo === 'pedir_presupuesto') &&
+    !GATE_TERMINAL_ESTADOS.has(lead.estado)
+  ) {
+    _setNextAction(lead, {
+      tipo: 'esperar_respuesta',
+      dueAt: new Date((Date.parse(closedAt) || Date.now()) + COMMITMENT_ENVIAR_INFO_DELTA_MS).toISOString(),
+      canal: 'llamada',
+      motivo: 'mandé info — esperando respuesta',
+      origen: 'compromiso',
+      createdBy: c.closedBy,
+    }, closedAt);
+  }
+  return lead.commitment;
+}
+
 // D-24-02: la cascada de dispositions extraída a helper puro reusable por
 // el handler humano y el webhook del agente de voz (VOICE-05, plan 24-05).
 // T-24-01-01: este helper NO contiene ningún control de acceso ni lee
@@ -11533,6 +11658,12 @@ globalThis.__voiceAgent = {
   // en los tests, no como helper puro.
   GATE_INTERESADO_DELTA_MS, GATE_CADENCIA_DELTA_MS, GATE_PLACEHOLDER_DELTA_MS,
   GATE_TERMINAL_ESTADOS,
+  // Phase 31: compromisos (el compromiso hablado como objeto, D-01..D-07).
+  _sanitizeCommitment, _setCommitment, _closeCommitment, _commitmentDueAtForTipo,
+  _commitmentNextActionTipo, _commitmentMotivo, _commitmentEffectiveEstado,
+  COMMITMENT_TIPOS, COMMITMENT_PARTES, COMMITMENT_ESTADOS, COMMITMENT_CIERRES,
+  COMMITMENT_LABELS, COMMITMENT_DEFAULT_PARTE, COMMITMENT_DEFAULT_CANAL,
+  COMMITMENT_DELTA_MS_BY_TIPO, COMMITMENT_SOCIO_DELTA_MS, COMMITMENT_ENVIAR_INFO_DELTA_MS,
 };
 
 const CALL_OUTCOMES = new Set([
