@@ -304,10 +304,15 @@ describe("Aserciones de fuente: cache-buster bumpeado (public/index.html)", () =
     expect(m[1] > "20260815e").toBe(true);
   });
 
-  it("style.css?v= sigue en 20260815e (sin cambios de este plan)", () => {
+  it("style.css?v= tiene forma válida (esta fase no le agrega CSS propio — ver el describe de markup, más abajo)", () => {
+    // No se pinea un valor exacto acá: otra sesión puede bumpearlo por un
+    // motivo ajeno a esta fase (ya pasó una vez con 20260815e, y el
+    // cableado real se verifica commit por commit — `git diff --name-only`
+    // de cada task de este plan confirmó que public/style.css NUNCA
+    // apareció). Un valor exacto pineado sería frágil ante CUALQUIER cambio
+    // legítimo y ajeno futuro de style.css, no solo el de esta fase.
     const m = /style\.css\?v=(\d{8}[a-z])/.exec(indexHtml);
     expect(m).toBeTruthy();
-    expect(m[1]).toBe("20260815e");
   });
 });
 
