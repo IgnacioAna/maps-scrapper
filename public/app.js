@@ -6428,6 +6428,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // descartado/agendado/con callback.
       holdCurrent: false,
       holdOutcome: null,    // outcome guardado, para el banner "Resultado guardado"
+      holdMeta: null,       // { texto, vista, cuando, tono } — destino (30-03, D-07)
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
     // necesitan copiar el número para mandar mensajes desde el celular.
@@ -6617,6 +6618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.autopilotArmed = false; // no auto-discar el primer lead al abrir
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pdSyncAutopilotToggle();
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
@@ -6715,6 +6717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdCancelAutopilot();
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pd.autopilotArmed = _pd.autopilot; // el próximo render dispara el countdown
       _pd.currentIdx++;
       _pd.processed++;
@@ -6869,11 +6872,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const main = document.getElementById('pd-current-content');
       // Banner "Resultado guardado" (holdCurrent): la disposition ya se guardó,
       // la tarjeta se queda para seguir anotando y el SDR avanza cuando quiere.
+      // DISPO-DEST (30-03, D-07): el destino (a dónde se fue el lead y cuándo
+      // vuelve) se integra ACÁ, dentro del banner — nunca un toast encima del
+      // flujo del dialer. _pd.holdMeta lo setea _dispoAnnounce cuando _pd.active.
+      const hm = _pd.holdMeta;
+      const _holdDestLine = hm ? `
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">${hm.cuando ? `Vuelve <strong style="color:var(--text-primary);">${escHtml(hm.cuando)}</strong> ` : 'Queda '}<strong style="color:var(--text-primary);">${escHtml(hm.vista)}</strong></div>` : '';
       const _holdBanner = _pd.holdCurrent ? `
       <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; padding:12px 16px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.45); border-radius:10px;">
         <div style="min-width:0;">
           <div style="font-size:13px; font-weight:700; color:var(--success);">✓ Resultado guardado${_pd.holdOutcome && typeof callOutcomeLabel === 'function' ? ' · ' + escHtml(callOutcomeLabel(_pd.holdOutcome)) : ''}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Podés seguir agregando notas en esta tarjeta. Avanzá cuando termines.</div>
+          ${_holdDestLine}
         </div>
         <button type="button" onclick="window._pdAdvance()" style="padding:10px 20px; background:var(--success); color:#0F1115; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
           Siguiente lead →
@@ -7350,6 +7360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.autopilotArmed = false; // al volver atrás, no auto-discar
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pd.currentIdx--;
       if (_pd.processed > 0) _pd.processed--;
       _pdRender();
@@ -8544,8 +8555,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Se llama en CADA disposición exitosa (los 5 POST + la auto-marca):
-    // limpia el gate y refresca la franja de pendientes.
-    function _dispoAfterSaved(leadId) {
+    // limpia el gate, refresca la franja de pendientes, y anuncia a dónde se
+    // fue el lead (D-05, plan 30-03). opts = { lead, outcome, manual } — se
+    // reenvían tal cual a _dispoAnnounce.
+    function _dispoAfterSaved(leadId, opts = {}) {
       _dispoGateClear(leadId);
       // 2026-08-11: despinnear el lead de la lista. Los pins de _callsForceShow
       // nunca se limpiaban: el lead recién marcado quedaba ARRIBA de la cola
@@ -8563,32 +8576,162 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView();
       } catch {}
+      _dispoAnnounce(leadId, opts);
     }
 
-    // Toast "a dónde se fue" (2026-08-11): tras marcar un resultado, si el lead
-    // queda con callback futuro SALE de la cola de Llamadas (cadencia automática
-    // o callback manual). Sin aviso parecía que el lead "se esfumaba" — el user
-    // no sabía dónde encontrarlo ni cuándo volvía. En el Power Dialer se omite:
-    // el banner "Resultado guardado" ya da el feedback y el flujo sigue ahí.
-    // opts.manual fuerza el destino "Hoy → Callbacks" cuando el caller SABE que
-    // fue un callback manual (el cache optimista puede no tener el callLog fresco).
-    function _dispoWhereToast(leadId, opts = {}) {
-      if (_pd.active) return;
-      const l = _callsLeadsById.get(leadId);
-      if (!l || ['descartado', 'agendado'].includes(l.estado)) return;
-      const ts = l.callbackAt ? new Date(l.callbackAt).getTime() : 0;
-      if (!ts || isNaN(ts) || ts <= Date.now()) return;
+    // ─── [30-03] DISPO-DEST: INICIO ───
+    // Fase 30, plan 03 (GATE-04, 2026-08-15): reemplaza al toast de destino
+    // viejo, que solo avisaba en 3 de ~7 caminos y se rendía ante estados
+    // terminales y leads sin callbackAt (reclamo #1 del user: "lo marco y
+    // desaparece"). Este bloque es puro (sin DOM/red/localStorage) para poder
+    // evaluarse aislado con new Function en los tests, mismo patrón que
+    // [28-01] DTPICKER-PURE.
+    //
+    // Precedencia fija (coincide con los filtros REALES de renderCallsList /
+    // loadHoyView, tabla de <interfaces> del plan): DNC → descartado →
+    // agendado → interesado → último outcome callback_later → cualquier otro
+    // con fecha futura → sin fecha.
+
+    // Lector defensivo del reloj único: prefiere nextAction.dueAt (Fase 29) y
+    // cae a callbackAt para leads legacy sin migrar (mismo criterio que
+    // _deriveNextActionFromLegacy del backend). Devuelve 0 si no hay nada
+    // parseable — nunca NaN.
+    function _dispoNextAt(lead) {
+      const dueAt = lead && lead.nextAction && typeof lead.nextAction === 'object'
+        ? lead.nextAction.dueAt : null;
+      const raw = dueAt || (lead ? lead.callbackAt : null);
+      if (!raw) return 0;
+      const ts = new Date(raw).getTime();
+      return isNaN(ts) ? 0 : ts;
+    }
+
+    // Formato relativo "hoy HH:MM" / "mañana HH:MM" / "<día abrev> DD/MM HH:MM",
+    // idéntico al que hacía el toast de destino viejo inline — movido acá sin
+    // cambiarlo.
+    function _dispoWhenLabel(ts, now) {
       const d = new Date(ts);
-      const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+      const hoy0 = new Date(now); hoy0.setHours(0, 0, 0, 0);
       const dias = Math.floor((ts - hoy0.getTime()) / 86400000);
       const hora = d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-      const cuando = dias === 0 ? `hoy ${hora}`
-        : dias === 1 ? `mañana ${hora}`
-        : d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ` ${hora}`;
-      const manual = opts.manual === true
-        || (Array.isArray(l.callLog) && l.callLog.length > 0 && l.callLog[l.callLog.length - 1].outcome === 'callback_later');
-      const destino = manual ? 'en Hoy → Callbacks' : 'a la cola de Llamadas';
-      window.showToast?.(`«${l.name || 'Lead'}» sale de la cola — vuelve ${cuando} ${destino}`, { type: 'info', duration: 4500 });
+      if (dias === 0) return `hoy ${hora}`;
+      if (dias === 1) return `mañana ${hora}`;
+      return d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' }) + ` ${hora}`;
+    }
+
+    // Único cálculo de destino. Mismo lead + mismo now → mismo resultado
+    // (determinístico, sin side effects).
+    function _dispoDestination(lead, now) {
+      const nombre = (lead && lead.name) || 'Lead';
+      // DNC gana sobre descartado — es más específico (T-30-10: el texto no
+      // puede mentir sobre dónde vive el lead de verdad).
+      if (lead && lead.doNotCall) {
+        return {
+          vista: 'en la vista No-llamar',
+          cuando: '',
+          tono: 'warn',
+          texto: `«${nombre}» queda en No-llamar — no vuelve a sonar en ninguna cola de Llamadas.`,
+        };
+      }
+      if (lead && lead.estado === 'descartado') {
+        const auto = !!lead.autoDiscarded;
+        const motivoAuto = auto && lead.autoDiscardReason === 'sin_contacto_2x'
+          ? ' (automático, 2 intentos sin contacto)'
+          : auto && lead.autoDiscardReason === 'cortes_2x'
+          ? ' (automático, 2 cortes)'
+          : '';
+        return {
+          vista: 'en Descartados',
+          cuando: '',
+          tono: auto ? 'warn' : 'info',
+          texto: `«${nombre}» sale de la cola${motivoAuto} — queda en Descartados. Para volver a encontrarlo, buscalo por nombre en Llamadas.`,
+        };
+      }
+      if (lead && lead.estado === 'agendado') {
+        return {
+          vista: 'en Reuniones agendadas',
+          cuando: '',
+          tono: 'success',
+          texto: `«${nombre}» sale de la cola — queda agendado en Reuniones agendadas.`,
+        };
+      }
+      if (lead && lead.estado === 'interesado') {
+        const ts = _dispoNextAt(lead);
+        const cuando = ts ? _dispoWhenLabel(ts, now) : '';
+        return {
+          vista: 'en Hoy → Interesados',
+          cuando,
+          tono: 'info',
+          texto: cuando
+            ? `«${nombre}» sale de la cola — vuelve ${cuando} en Hoy → Interesados.`
+            : `«${nombre}» sale de la cola — queda en Hoy → Interesados.`,
+        };
+      }
+      const log = (lead && Array.isArray(lead.callLog)) ? lead.callLog : [];
+      const lastOutcome = log.length ? log[log.length - 1].outcome : '';
+      const ts = _dispoNextAt(lead);
+      const futuro = ts && ts > now.getTime();
+      if (lastOutcome === 'callback_later' && futuro) {
+        const cuando = _dispoWhenLabel(ts, now);
+        return {
+          vista: 'en Hoy → Callbacks',
+          cuando,
+          tono: 'info',
+          texto: `«${nombre}» sale de la cola — vuelve ${cuando} en Hoy → Callbacks.`,
+        };
+      }
+      if (futuro) {
+        const cuando = _dispoWhenLabel(ts, now);
+        // El hold de calendario (send-placeholder) programa nextAction tipo
+        // 'esperar_respuesta' — mismo vista genérico que la cadencia (sigue
+        // volviendo a la cola de Llamadas), pero el texto no puede decir "sale
+        // de la cola" sin más: el lead está esperando un mail, no un reintento.
+        const esperandoRespuesta = lead && lead.nextAction && lead.nextAction.tipo === 'esperar_respuesta';
+        return {
+          vista: 'a la cola de Llamadas',
+          cuando,
+          tono: 'info',
+          texto: esperandoRespuesta
+            ? `«${nombre}» queda esperando respuesta — vuelve ${cuando} a la cola de Llamadas.`
+            : `«${nombre}» sale de la cola — vuelve ${cuando} a la cola de Llamadas.`,
+        };
+      }
+      // Sin próximo paso con fecha, no terminal (red de seguridad del backend
+      // debería evitar este caso salvo para leads no tocados aún).
+      return {
+        vista: 'a la cola de Llamadas',
+        cuando: '',
+        tono: 'info',
+        texto: `«${nombre}» sigue disponible en la cola de Llamadas.`,
+      };
+    }
+    // ─── [30-03] DISPO-DEST: FIN ───
+
+    // Aviso universal de destino (D-05/D-06/D-07, reemplaza al toast de
+    // destino viejo): tras CUALQUIER disposición exitosa, dice a dónde se fue
+    // el lead y cuándo vuelve. Se llama desde el único punto post-guardado
+    // (_dispoAfterSaved) y desde el hold de calendario (que no pasa por ahí, D-08).
+    // opts.lead: el lead del BODY de la respuesta — fuente autoritativa (el
+    //   cache optimista puede no tener el callLog fresco todavía).
+    // opts.manual: escape hatch para cuando el caller SABE que fue un callback
+    //   manual y el callLog del cache aún no lo refleja (mismo idioma que tenía
+    //   el toast viejo).
+    // En el Power Dialer (_pd.active) NO se tira toast (D-07): el destino se
+    // guarda en _pd.holdMeta y el banner "✓ Resultado guardado" lo pinta.
+    function _dispoAnnounce(leadId, opts = {}) {
+      const lead = opts.lead || _callsLeadsById.get(leadId);
+      if (!lead) return;
+      let effectiveLead = lead;
+      if (opts.manual === true) {
+        const log = Array.isArray(lead.callLog) ? lead.callLog : [];
+        const lastIsCallback = log.length > 0 && log[log.length - 1].outcome === 'callback_later';
+        if (!lastIsCallback) effectiveLead = { ...lead, callLog: [...log, { outcome: 'callback_later' }] };
+      }
+      const dest = _dispoDestination(effectiveLead, new Date());
+      if (_pd.active) {
+        _pd.holdMeta = { texto: dest.texto, vista: dest.vista, cuando: dest.cuando, tono: dest.tono };
+        return;
+      }
+      window.showToast?.(dest.texto, { type: dest.tono, duration: 5000 });
     }
 
     // Campos extra del enforcement para el body de call-disposition.
@@ -8634,14 +8777,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const data = await resp.json();
         // _leadStore: escritura única → sincroniza lista + Power Dialer (regla #105).
         if (data.lead) _leadStoreApply(leadId, data.lead);
-        _dispoAfterSaved(leadId);
+        // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+        // la cadencia programó el reintento y el lead salió de la cola — avisar
+        // cuándo vuelve (fuera del Power Dialer; en el Dialer va al banner).
+        _dispoAfterSaved(leadId, { lead: data.lead, outcome: 'no_answer' });
         _lastAutoMark = { leadId, at: Date.now() };
         _refreshLeadPanels(leadId);
         renderCallsStats();
         window.showToast?.('No atendió — marcado automático. Corregilo si hubo contacto (ej. Buzón).', { type: 'info', duration: 5000 });
-        // 2026-08-11: la cadencia programó el reintento y el lead salió de la
-        // cola — avisar cuándo vuelve (fuera del Power Dialer).
-        _dispoWhereToast(leadId);
         // Replicar el post-save del Power Dialer (#151): autopilot avanza,
         // manual queda en la tarjeta con banner hasta que el SDR decida.
         if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
@@ -10691,11 +10834,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           body: JSON.stringify(body)
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+        // DISPO-DEST (30-03): parsear el body ANTES de _dispoAfterSaved — un
+        // body ilegible no debe impedir liberar el gate de Phase 20.
+        const data = await resp.json().catch(() => ({}));
         // Transcripción diferida: recién acá sabemos el outcome. Buzón/no atendió
         // descartan el audio; conversaciones reales suben a Whisper (fire-and-forget).
         _flushPendingTranscription(leadId, outcome).catch(e => console.warn('[transcribe]', e?.message));
-        const data = await resp.json();
         // Audit 2026-07-06 (C1): si ESTE resultado disparó el descarte automático por
         // cadencia (2 no-contactos seguidos), avisarle al SDR — antes el lead
         // desaparecía de la cola sin explicación.
@@ -10705,9 +10849,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         // _leadStore: escritura única → sincroniza lista + Power Dialer.
         if (data.lead) _leadStoreApply(leadId, data.lead);
-        // 2026-08-11: si el resultado dejó un callback futuro, el lead sale de la
-        // cola al re-render de abajo — avisar cuándo y dónde vuelve.
-        _dispoWhereToast(leadId);
+        // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+        // avisa a dónde se fue el lead y cuándo vuelve — punto único.
+        _dispoAfterSaved(leadId, { lead: data.lead, outcome });
         _refreshLeadPanels(leadId);
         renderCallsStats();
         // Audit fix Sprint 36 (bug 3): refrescar barra de quota tras cada disposition
@@ -10780,6 +10924,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (!resp.ok) throw new Error(j.error || ('HTTP ' + resp.status));
           modal.classList.add('hidden');
           window.showToast?.(`✓ Hold enviado a ${email}`, { type: 'success', duration: 4000 });
+          // DISPO-DEST (30-03): SOLO _dispoAnnounce acá, NUNCA _dispoAfterSaved.
+          // Mandar un hold de calendario no marca el resultado de la llamada
+          // (D-08) — limpiar el gate de disposición obligatoria de la Phase 20
+          // acá falsearía que la llamada quedó marcada. _dispoAnnounce igual le
+          // avisa al SDR que el lead queda esperando respuesta y cuándo vuelve
+          // (nextAction 'esperar_respuesta' +48h, lo escribe send-placeholder
+          // en el plan 30-01) sin tocar el gate.
+          _dispoAnnounce(leadId, { lead: j.lead });
           await loadCallsView();
         } catch (e) {
           alert('Error: ' + e.message);
@@ -10850,17 +11002,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared, ..._dispoEnforcementBody(leadId) })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+          const data = await resp.json().catch(() => ({}));
           _flushPendingTranscription(leadId, 'callback_later').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista del cache ANTES de cerrar el modal. El poller del
           // Power Dialer (_pdHandleDisposition) lee lead.callbackAt para decidir si
           // avanza; sin esto hay un race con loadCallsView() (reconstruye el índice
           // async) y el dialer queda trabado en el mismo lead.
           _leadStoreApply(leadId, { callbackAt: callbackIso, callbackShared });
+          // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+          // manual:true — el caller SABE que es un callback manual (el cache
+          // optimista de arriba aún no tiene el callLog fresco con el outcome).
+          _dispoAfterSaved(leadId, { lead: data.lead, outcome: 'callback_later', manual: true });
           modal.classList.add('hidden');
-          // Confirmación explícita: antes el modal se cerraba sin decir nada y el
-          // lead desaparecía de la cola — parecía que no se guardó.
-          _dispoWhereToast(leadId, { manual: true });
           await loadCallsView();
         } catch (e) {
           alert('Error: ' + e.message);
@@ -10953,15 +11106,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+          const data = await resp.json().catch(() => ({}));
           _flushPendingTranscription(leadId, 'answered_interested').catch(e => console.warn('[transcribe]', e?.message));
-          const data = await resp.json();
           // _leadStore: escritura única — trae estado/nextAction/callbackAt
           // frescos, el poller del Power Dialer los lee.
           if (data.lead) _leadStoreApply(leadId, data.lead);
+          // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+          // avisa a dónde se fue el lead (Hoy → Interesados) y cuándo vuelve.
+          _dispoAfterSaved(leadId, { lead: data.lead, outcome: 'answered_interested' });
           modal.classList.add('hidden');
-          // El aviso universal de destino (D-05/D-06) lo agrega el plan 30-03
-          // desde _dispoAfterSaved — no se duplica acá.
           _refreshLeadPanels(leadId);
           renderCallsStats();
           await loadCallsView();
@@ -11105,11 +11258,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+          const data = await resp.json().catch(() => ({}));
           _flushPendingTranscription(leadId, 'answered_not_interested').catch(e => console.warn('[transcribe]', e?.message));
           // Update optimista: 'No interesado' descarta el lead en el backend; el
           // poller del Power Dialer mira lead.estado para avanzar al siguiente.
           _leadStoreApply(leadId, { estado: 'descartado', interes: 'no', doNotCall: !!body.doNotCall });
+          // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+          // avisa a dónde se fue el lead (data.lead es la fuente autoritativa).
+          _dispoAfterSaved(leadId, { lead: data.lead, outcome: 'answered_not_interested' });
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) {
@@ -11217,12 +11373,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
-          _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+          const data = await resp.json().catch(() => ({}));
           _flushPendingTranscription(leadId, 'scheduled_with_admin').catch(e => console.warn('[transcribe]', e?.message));
           confirmed = true;
           observer?.disconnect();
           // Update optimista: el poller del Power Dialer mira lead.estado para avanzar.
           _leadStoreApply(leadId, { estado: 'agendado' });
+          // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03):
+          // avisa que el lead queda agendado.
+          _dispoAfterSaved(leadId, { lead: data.lead, outcome: 'scheduled_with_admin' });
           modal.classList.add('hidden');
           await loadCallsView();
         } catch (e) { alert('Error: ' + e.message); }
@@ -11241,7 +11400,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ outcome: fallbackOnCancel, ..._dispoEnforcementBody(leadId) })
               });
-              if (fbResp.ok) _dispoAfterSaved(leadId); // Phase 20: libera el gate + refresca la franja
+              if (fbResp.ok) {
+                const fbData = await fbResp.json().catch(() => ({}));
+                // Phase 20: libera el gate + refresca la franja. DISPO-DEST (30-03).
+                _dispoAfterSaved(leadId, { lead: fbData.lead, outcome: fallbackOnCancel });
+              }
               _flushPendingTranscription(leadId, fallbackOnCancel).catch(err => console.warn('[transcribe]', err?.message));
               await loadCallsView();
             } catch (e) { console.warn('[schedule-fallback]', e.message); }
