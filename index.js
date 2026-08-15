@@ -11457,6 +11457,84 @@ function _closeCommitment(lead, estado, nowIso, closedBy) {
   return lead.commitment;
 }
 
+// ══════════════════════════════════════════════════════════════
+// ── ACCIONES: mandar y registrar en un solo acto (Phase 32) ──
+// D-03: un solo click abre el wa.me Y deja el registro — si fueran dos
+// llamadas separadas, la segunda no se hace nunca (el problema real que
+// describió el user). _actRegisterSendEvent es el registro COMPARTIDO por
+// WhatsApp (32-01) y email (32-02): compone _setCommitment/_closeCommitment
+// (Phase 31) de arriba para dejar al lead esperando respuesta a +48h, más
+// una entry de auditoría inocua (ver los dos comentarios dentro de la
+// función). Ver 32-CONTEXT.md D-01..D-11.
+// ══════════════════════════════════════════════════════════════
+
+// D-06: los 3 ids de plantilla de WhatsApp. El frontend (32-03) espeja estas
+// claves; su test verifica la paridad leyendo los dos archivos como texto.
+const ACT_WA_TEMPLATE_IDS = new Set(['post_llamada', 'envio_info', 'reconfirmar_reunion']);
+
+// Canales por los que se puede registrar un envío de material — ambos ya
+// están en NEXT_ACTION_CANALES, no hace falta sumar nada ahí.
+const ACT_SEND_CANALES = new Set(['whatsapp', 'email']);
+
+// Tope del cuerpo del mensaje antes de meterlo en la URL. wa.me acepta más,
+// pero un texto largo en un query param es un vector de abuso y el mensaje
+// real del SDR nunca pasa de un par de párrafos.
+const ACT_MESSAGE_MAX = 900;
+
+// Nunca lanza, nunca null. D-08 / nota #119: el texto lo ve el PROSPECTO, así
+// que la marca nunca puede colarse aunque el cliente mande un cuerpo arbitrario.
+function _actSanitizeMessage(raw) {
+  if (typeof raw !== 'string') return '';
+  return _stripBrandMentions(raw.trim().slice(0, ACT_MESSAGE_MAX)).trim();
+}
+
+// D-04/D-05: registro compartido por WhatsApp (32-01) y email (32-02).
+// spec = { canal, templateId, to, byId, byName }. Devuelve
+// { commitment, nextAction, terminal }.
+function _actRegisterSendEvent(lead, spec, nowIso) {
+  const s = spec && typeof spec === 'object' ? spec : {};
+  const canal = ACT_SEND_CANALES.has(s.canal) ? s.canal : 'whatsapp';
+  // D-07: se guarda cuál plantilla se usó; un id desconocido NO invalida el
+  // envío, solo se guarda como '' (whitelist-and-coerce, nunca bloquea).
+  const templateId = ACT_WA_TEMPLATE_IDS.has(s.templateId) ? s.templateId : '';
+  const to = String(s.to || '').slice(0, 40);
+
+  if (!Array.isArray(lead.interactions)) lead.interactions = [];
+  // Entry de auditoría pensada para no distorsionar ninguna métrica: (1) a
+  // propósito NO incluye el identificador de vendedor que usa el agregador
+  // de rendimiento para atribuir "lead trabajado" por interacción — sumarlo
+  // movería el embudo legacy de setteo; (2) a propósito NO se agrega al
+  // historial de llamadas del lead — el agregador del funnel de cold-calling
+  // cuenta cada entry de ese historial como un dial, y mandar WhatsApp no es
+  // una llamada.
+  lead.interactions.push({
+    action: 'material_sent', canal, templateId, to,
+    by: s.byId || '', byName: s.byName || '', createdAt: nowIso,
+  });
+  if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
+
+  // Un lead descartado/agendado/cerrado nunca lleva nextAction (regla dura de
+  // la Phase 30) — el envío igual queda auditado, solo que sin compromiso.
+  if (GATE_TERMINAL_ESTADOS.has(lead.estado)) {
+    return { commitment: lead.commitment || null, nextAction: lead.nextAction || null, terminal: true };
+  }
+
+  const motivo = canal === 'whatsapp' ? 'mandé info por WhatsApp' : 'mandé material por email';
+  // Crear-y-cerrar en el mismo acto es lo que traduce D-04 ("abrí el chat
+  // para mandar X", no "el mensaje fue entregado") al modelo de la Phase 31
+  // — _closeCommitment es el que programa solo el esperar_respuesta a +48h
+  // (COMMITMENT_ENVIAR_INFO_DELTA_MS). Consecuencia asumida: como hay UN
+  // compromiso por lead (D-01 de la Phase 31), esto REEMPLAZA un compromiso
+  // pendiente previo — el envío es el hecho más nuevo.
+  _setCommitment(lead, {
+    tipo: 'enviar_info', parte: 'yo', canal, motivo,
+    createdBy: s.byName || '', callId: '',
+  }, nowIso);
+  _closeCommitment(lead, 'cumplido', nowIso, s.byName || '');
+
+  return { commitment: lead.commitment, nextAction: lead.nextAction, terminal: false };
+}
+
 // D-24-02: la cascada de dispositions extraída a helper puro reusable por
 // el handler humano y el webhook del agente de voz (VOICE-05, plan 24-05).
 // T-24-01-01: este helper NO contiene ningún control de acceso ni lee
@@ -11753,6 +11831,8 @@ globalThis.__voiceAgent = {
   COMMITMENT_TIPOS, COMMITMENT_PARTES, COMMITMENT_ESTADOS, COMMITMENT_CIERRES,
   COMMITMENT_LABELS, COMMITMENT_DEFAULT_PARTE, COMMITMENT_DEFAULT_CANAL,
   COMMITMENT_DELTA_MS_BY_TIPO, COMMITMENT_SOCIO_DELTA_MS, COMMITMENT_ENVIAR_INFO_DELTA_MS,
+  // Phase 32: acciones desde cualquier vista (ACT-01..05).
+  _actRegisterSendEvent, _actSanitizeMessage, ACT_WA_TEMPLATE_IDS, ACT_SEND_CANALES,
 };
 
 const CALL_OUTCOMES = new Set([
