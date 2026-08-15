@@ -333,15 +333,11 @@ body {
 .logo-mark {
   width: 24px;
   height: 24px;
-  border-radius: 7px;
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  background: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 13px;
   line-height: 1;
-  color: var(--bg-app);
   flex-shrink: 0;
   transition: var(--transition-fast);
 }
@@ -3455,23 +3451,14 @@ a:focus-visible {
 .auth-logo-mark {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
-  background:
-    radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%),
-    linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  /* marca/README regla 2: color plano, sin degradado ni glow. El símbolo
+     ya trae su propio color; el contenedor no lo pinta. */
+  background: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Geist', system-ui, sans-serif;
-  font-weight: 700;
-  font-size: 26px;
   line-height: 1;
-  color: var(--bg-app);
-  letter-spacing: -0.02em;
-  box-shadow:
-    0 8px 24px var(--accent-strong),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 0 1px var(--accent-strong);
+  box-shadow: none;
   margin-bottom: 10px;
 }
 
@@ -3570,13 +3557,9 @@ a:focus-visible {
 /* Sidebar logo-mark refinado: la S original, con inner highlight + ring sutil */
 .logo-mark {
   position: relative;
-  background:
-    radial-gradient(110% 80% at 30% 20%, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 55%),
-    linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-  box-shadow:
-    0 4px 10px var(--accent-strong),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 0 1px var(--accent-medium);
+  /* marca/README regla 2: plano. El símbolo transparente trae su color. */
+  background: none;
+  box-shadow: none;
 }
 
 .logo-toggle:hover .logo-mark {
