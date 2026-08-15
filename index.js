@@ -655,6 +655,12 @@ function ensureLeadDefaults(lead = {}) {
   // próximo paso"). Un guard estilo `if (!lead.x)` lo estaría re-escribiendo
   // a `null` en cada load aunque ya tuviera un objeto escrito.
   if (lead.nextAction === undefined) lead.nextAction = null;
+  // Phase 31 (D-01): el compromiso hablado como objeto. Mismo criterio que
+  // nextAction arriba — guard por `undefined`, NO por falsedad: `null` es un
+  // valor CON significado ("el lead no tiene compromiso pendiente"). Un
+  // guard estilo `if (!lead.x)` lo re-escribiría a `null` en cada load
+  // pisando un objeto ya guardado.
+  if (lead.commitment === undefined) lead.commitment = null;
   // Phase 17 Ola 2: callback compartido (cualquier setter lo puede tomar, no solo
   // el dueño). false = privado (comportamiento histórico).
   if (typeof lead.callbackShared !== 'boolean') lead.callbackShared = false;
@@ -11142,6 +11148,125 @@ function _deriveNextActionFromLegacy(lead) {
 function _leadNextAction(lead) {
   if (lead && typeof lead.nextAction === 'object' && lead.nextAction !== null) return lead.nextAction;
   return _deriveNextActionFromLegacy(lead);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── COMPROMISOS: el compromiso hablado como objeto (Phase 31) ──
+// D-01: lead.commitment — UN compromiso pendiente por lead (no un array),
+// simétrico con nextAction y por la misma razón (dos relojes vivos a la vez
+// es el problema de siempre). D-02/D-03/D-04: whitelists estrictas de tipo/
+// parte/estado. D-05/D-07: un compromiso pendiente SETEA nextAction con
+// origen:'compromiso' (ya reservado en NEXT_ACTION_ORIGENES desde la Phase
+// 29); cerrarlo apaga ese reloj SOLO si sigue siendo el vigente. D-06: mapa
+// tipo → próximo paso. Ver 31-CONTEXT.md.
+// ══════════════════════════════════════════════════════════════
+
+// D-02: tipos de compromiso — whitelist estricta. NO es NEXT_ACTION_TIPOS
+// aunque comparta el nombre 'enviar_info': este vocabulario describe el
+// COMPROMISO (qué se prometió, D-02); NEXT_ACTION_TIPOS describe el RELOJ
+// que ese compromiso setea (D-05) — dos vocabularios distintos que conviven.
+const COMMITMENT_TIPOS = new Set([
+  'enviar_info',        // se comprometió a mandar info/precio por WhatsApp o email
+  'hablar_con_socio',   // el prospecto lo va a hablar con su socio/decisor
+  'llamar_despues',     // volver a llamar en una fecha pactada
+  'pensarlo',            // el prospecto dijo que lo iba a pensar
+  'pedir_presupuesto',  // se comprometió a mandar un presupuesto
+  'otro',
+]);
+
+// D-03: de quién es la tarea. Es la distinción que da valor: 'yo' = tarea
+// propia (si no la cumplo, es mi deuda); 'prospecto' = expectativa (si vence
+// sin novedad, dispara MI seguimiento, con el vencimiento como motivo visible).
+const COMMITMENT_PARTES = new Set(['yo', 'prospecto']);
+
+// D-04: pendiente → cumplido | incumplido | vencido.
+const COMMITMENT_ESTADOS = new Set(['pendiente', 'cumplido', 'incumplido', 'vencido']);
+
+// Los 3 estados que CIERRAN un compromiso (D-04). El estado ALMACENADO se
+// queda en 'pendiente' hasta que un humano lo cierra explícitamente — un
+// compromiso cuya fecha pasó se REPORTA como 'vencido' de forma DERIVADA
+// (_commitmentEffectiveEstado, más abajo), nunca escrito a disco solo por el
+// paso del tiempo: si se escribiera solo, un compromiso vencido
+// desaparecería de la vista de Hoy justo cuando más hay que actuar sobre él.
+// 'vencido' SÍ es un cierre EXPLÍCITO válido para el caso "ya no aplica" de
+// un compromiso PROPIO ('incumplido' queda reservado para los del prospecto
+// que no se cumplieron — dato de scoring futuro, no un reproche, D-04).
+const COMMITMENT_CIERRES = new Set(['cumplido', 'incumplido', 'vencido']);
+
+// Etiqueta legible en español, minúscula — la usa _commitmentMotivo (D-03)
+// para que el vencimiento sea visible como motivo cuando el lead reaparece.
+const COMMITMENT_LABELS = {
+  enviar_info: 'mandar info',
+  hablar_con_socio: 'hablar con su socio',
+  llamar_despues: 'volver a llamar',
+  pensarlo: 'lo iba a pensar',
+  pedir_presupuesto: 'mandar presupuesto',
+  otro: 'compromiso',
+};
+
+// Default de `parte` por tipo — SOLO un default: la UI siempre muestra el
+// toggle de parte, porque D-03 dice que esa distinción es la que da valor.
+// 'otro' cae en 'yo' a propósito: un compromiso sin clasificar se muestra
+// como deuda propia, que es el bucket más visible.
+const COMMITMENT_DEFAULT_PARTE = {
+  enviar_info: 'yo',
+  pedir_presupuesto: 'yo',
+  llamar_despues: 'yo',
+  hablar_con_socio: 'prospecto',
+  pensarlo: 'prospecto',
+  otro: 'yo',
+};
+
+// Default de `canal` por tipo. Los valores siempre caen dentro de
+// NEXT_ACTION_CANALES.
+const COMMITMENT_DEFAULT_CANAL = {
+  enviar_info: 'whatsapp',
+  pedir_presupuesto: 'whatsapp',
+  hablar_con_socio: 'llamada',
+  llamar_despues: 'llamada',
+  pensarlo: 'llamada',
+  otro: 'llamada',
+};
+
+// D-06, fila 'hablar_con_socio': +5 días. Es la ÚNICA duración nueva que
+// esta fase necesita declarar — no hay plantilla ni constante existente con
+// este valor.
+const COMMITMENT_SOCIO_DELTA_MS = 5 * 24 * 60 * 60 * 1000;
+
+// D-06, fila 1 ("mandar hoy, y seguimiento a +48h si no responde"): el
+// seguimiento post-envío. DERIVADA de NEXT_ACTION_TEMPLATES (única fuente)
+// — nunca escribir la duración a mano, misma regla que GATE_PLACEHOLDER_DELTA_MS.
+const COMMITMENT_ENVIAR_INFO_DELTA_MS = NEXT_ACTION_TEMPLATES.find((t) => t.key === '48hs').deltaMs;
+
+// Piso para que un compromiso de "mandar hoy" cargado a último momento del
+// día de negocio no nazca vencido (1 hora mínima desde que se carga).
+const COMMITMENT_ENVIAR_INFO_MIN_MS = 60 * 60 * 1000;
+
+// D-06: mapa tipo → deltaMs, REUSANDO constantes existentes en vez de
+// números sueltos. 'enviar_info' NO va en este mapa a propósito: su fecha
+// inicial es "hoy" (fin del día de negocio), no un delta desde ahora — la
+// resuelve _commitmentDueAtForTipo aparte.
+const COMMITMENT_DELTA_MS_BY_TIPO = {
+  hablar_con_socio: COMMITMENT_SOCIO_DELTA_MS,
+  pensarlo: GATE_INTERESADO_DELTA_MS,
+  pedir_presupuesto: GATE_INTERESADO_DELTA_MS,
+  llamar_despues: GATE_CADENCIA_DELTA_MS,
+  otro: GATE_INTERESADO_DELTA_MS,
+};
+
+// D-06 fila 1: "mandar hoy" — fin del día de negocio (BUSINESS_TZ, nota #113
+// de CLAUDE.md), con un piso de COMMITMENT_ENVIAR_INFO_MIN_MS para que
+// cargarlo a último momento del día no nazca vencido. Para el resto de los
+// tipos, nowMs + el delta del mapa D-06 (default GATE_INTERESADO_DELTA_MS si
+// el tipo no está en el mapa). Nunca lanza.
+function _commitmentDueAtForTipo(tipo, nowIso) {
+  const nowMs = Date.parse(nowIso) || Date.now();
+  if (tipo === 'enviar_info') {
+    const endOfDay = _bizStartOfDay(nowMs) + 24 * 60 * 60 * 1000 - 60000;
+    return new Date(Math.max(endOfDay, nowMs + COMMITMENT_ENVIAR_INFO_MIN_MS)).toISOString();
+  }
+  const deltaMs = COMMITMENT_DELTA_MS_BY_TIPO[tipo] ?? GATE_INTERESADO_DELTA_MS;
+  return new Date(nowMs + deltaMs).toISOString();
 }
 
 // D-24-02: la cascada de dispositions extraída a helper puro reusable por
