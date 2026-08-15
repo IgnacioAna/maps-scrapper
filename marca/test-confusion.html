@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0E1013;font-family:"Source Sans 3",sans-serif;padding:24px 30px;color:#A9B0B7}
+h1{font-size:16px;font-weight:600;color:#F2F4F5;margin-bottom:4px}
+.sub{font-size:13.5px;color:#7E858C;margin-bottom:22px}
+.fila{display:flex;align-items:flex-end;gap:40px;margin-bottom:26px}
+.col{display:flex;flex-direction:column;align-items:center;gap:9px}
+.caja{display:inline-flex;align-items:center;justify-content:center;background:#141619;border-radius:22%}
+.et{font-size:12px;color:#7E858C;text-align:center;line-height:1.35;max-width:110px}
+.et b{color:#F2F4F5;font-weight:600}
+.rot{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#7E858C;
+     margin:24px 0 13px;padding-top:20px;border-top:1px solid #23282F}
+</style></head>
+<body>
+<h1>La prueba de confusión</h1>
+<p class="sub">El símbolo elegido al lado de los íconos de sistema que más se le parecen. A 32 px, que es el tamaño de una barra de herramientas.</p>
+
+<div class="fila">
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100" fill="none"><path d="M31 22 L72 34 L72 66 L31 78 Z" stroke="#3FA872" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et"><b>El elegido</b><br>la puerta</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100" fill="none"><path d="M32 20 L78 50 L32 80 Z" stroke="#8D96A0" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et">play<br>contorneado</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100" fill="none"><path d="M30 24 L74 24 L74 76 L30 76 Z" stroke="#8D96A0" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et">detener<br>o marco</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100" fill="none"><path d="M28 26 L76 26 L64 74 L40 74 Z" stroke="#8D96A0" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et">proyector<br>o foco</span>
+  </div>
+</div>
+
+<div class="rot">A 16 px · la pestaña del navegador</div>
+<div class="fila">
+  <div class="col">
+    <span class="caja" style="width:22px;height:22px"><svg width="16" height="16" viewBox="0 0 100 100" fill="none"><path d="M31 22 L72 34 L72 66 L31 78 Z" stroke="#3FA872" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et">el elegido</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:22px;height:22px"><svg width="16" height="16" viewBox="0 0 100 100" fill="none"><path d="M32 20 L78 50 L32 80 Z" stroke="#8D96A0" stroke-width="11" stroke-linejoin="round"/></svg></span>
+    <span class="et">play</span>
+  </div>
+</div>
+
+<div class="rot">La alternativa segura, al lado</div>
+<div class="fila">
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#3FA872" stroke-width="9" stroke-linecap="round" stroke-dasharray="184 29.6" transform="rotate(-65 50 50)"/><circle cx="50" cy="50" r="11" fill="#3FA872"/></svg></span>
+    <span class="et"><b>anillo con corte</b><br>clara pero genérica</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="#8D96A0" stroke-width="9"/><circle cx="50" cy="50" r="11" fill="#8D96A0"/></svg></span>
+    <span class="et">grabando<br>o en vivo</span>
+  </div>
+  <div class="col">
+    <span class="caja" style="width:52px;height:52px"><svg width="36" height="36" viewBox="0 0 100 100"><circle cx="50" cy="38" r="20" fill="none" stroke="#8D96A0" stroke-width="9"/><circle cx="50" cy="38" r="7" fill="#8D96A0"/><path d="M50 60 L50 84" stroke="#8D96A0" stroke-width="9" stroke-linecap="round"/></svg></span>
+    <span class="et">ubicación<br>o pin</span>
+  </div>
+</div>
+</body></html>

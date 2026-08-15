@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCM — la familia del verde</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#141619;color:#F2F4F5;font-family:Inter,sans-serif;padding:28px 18px;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:1rem;font-weight:600;margin-bottom:4px}
+  .sub{color:#A9B0B7;font-size:.9rem;margin-bottom:24px;line-height:1.5}
+  .rot{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:#A9B0B7;margin:28px 0 12px}
+  .fila{display:flex;gap:14px;flex-wrap:wrap}
+  .op{flex:1;min-width:280px;background:#1E2227;border:1px solid #31373E;border-radius:12px;padding:18px}
+  .op h2{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .op .hex{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#A9B0B7;margin-bottom:14px}
+  .op .why{font-size:.82rem;color:#A9B0B7;line-height:1.5;margin-top:14px}
+  .wm{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.4rem;letter-spacing:.06em;margin-bottom:14px}
+  .card{background:#141619;border:1px solid #31373E;border-radius:9px;padding:14px;margin-bottom:9px}
+  .nom{font-weight:600;font-size:.95rem;margin-bottom:3px}
+  .tel{font-family:'JetBrains Mono',monospace;color:#A9B0B7;font-size:.82rem;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:.76rem;font-weight:600;margin-bottom:12px;border:1px solid}
+  .chip.gris{color:#7E858C;border-color:#3A4149;background:rgba(126,133,140,.10);margin-bottom:0}
+  .card.off{opacity:.62}
+  .btn{display:block;width:100%;text-align:center;font-weight:600;font-size:.9rem;padding:9px;border-radius:8px;border:none;color:#141619}
+  .kpi{display:flex;gap:10px;margin-bottom:12px}
+  .k{flex:1;background:#141619;border:1px solid #31373E;border-radius:8px;padding:10px}
+  .k .l{font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#A9B0B7;margin-bottom:4px}
+  .k .v{font-size:1.4rem;font-weight:700;line-height:1}
+
+  .m h2,.m .k .v.on,.m .wm{color:#3FA872} .m .btn{background:#3FA872}
+  .m .chip{color:#3FA872;border-color:rgba(63,168,114,.45);background:rgba(63,168,114,.12)}
+  .n h2,.n .k .v.on,.n .wm{color:#4ADE80} .n .btn{background:#4ADE80}
+  .n .chip{color:#4ADE80;border-color:rgba(74,222,128,.45);background:rgba(74,222,128,.12)}
+  .o h2,.o .k .v.on,.o .wm{color:#2AA79B} .o .btn{background:#2AA79B}
+  .o .chip{color:#2AA79B;border-color:rgba(42,167,155,.45);background:rgba(42,167,155,.12)}
+  .p h2,.p .k .v.on,.p .wm{color:#8FA054} .p .btn{background:#8FA054}
+  .p .chip{color:#8FA054;border-color:rgba(143,160,84,.45);background:rgba(143,160,84,.12)}
+
+  .par{display:flex;gap:0;border-radius:12px;overflow:hidden;margin-top:6px}
+  .mitad{flex:1;padding:26px 20px;min-height:110px;color:#141619}
+  .mitad .et{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;opacity:.75;margin-bottom:5px}
+  .mitad .hx{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.05rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SCM · la familia del verde</h1>
+  <p class="sub">Acá el acento de marca y el estado "habilitado" son el mismo color: la marca ES el permiso. El bloqueado queda gris y sin botón.</p>
+
+  <div class="fila">
+    <div class="op m">
+      <h2>M · Verde bosque</h2><div class="hex">#3FA872</div><div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div><div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span><button class="btn">Llamar</button>
+      </div>
+      <div class="card off">
+        <div class="nom">Odontología Integral Sur</div><div class="tel">+57 604 555 0198</div>
+        <span class="chip gris">✕ En registro de exclusión</span>
+      </div>
+      <p class="why">Serio y equilibrado. Es verde de aprobación sin ser fosforescente. El más fácil de sostener en una interfaz de trabajo.</p>
+    </div>
+
+    <div class="op n">
+      <h2>N · Menta brillante</h2><div class="hex">#4ADE80</div><div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div><div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span><button class="btn">Llamar</button>
+      </div>
+      <div class="card off">
+        <div class="nom">Odontología Integral Sur</div><div class="tel">+57 604 555 0198</div>
+        <span class="chip gris">✕ En registro de exclusión</span>
+      </div>
+      <p class="why">El de más luminancia: sobrevive cualquier compresión y salta en pantalla. Riesgo: energía de terminal, puede leerse tecnológico de más.</p>
+    </div>
+
+    <div class="op o">
+      <h2>O · Verde azulado</h2><div class="hex">#2AA79B</div><div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div><div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span><button class="btn">Llamar</button>
+      </div>
+      <div class="card off">
+        <div class="nom">Odontología Integral Sur</div><div class="tel">+57 604 555 0198</div>
+        <span class="chip gris">✕ En registro de exclusión</span>
+      </div>
+      <p class="why">Más calmo y profesional, tira a turquesa. Riesgo: es el territorio de Aircall y Toky, dos de los competidores del relevamiento.</p>
+    </div>
+
+    <div class="op p">
+      <h2>P · Verde oliva</h2><div class="hex">#8FA054</div><div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div><div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span><button class="btn">Llamar</button>
+      </div>
+      <div class="card off">
+        <div class="nom">Odontología Integral Sur</div><div class="tel">+57 604 555 0198</div>
+        <span class="chip gris">✕ En registro de exclusión</span>
+      </div>
+      <p class="why">Terroso y raro, primo lejano del bronce de Vincca. El más distintivo de la familia. Riesgo: es el que más divide opiniones.</p>
+    </div>
+  </div>
+
+  <div class="rot">Los cuatro contra el bronce de Vincca</div>
+  <div class="par">
+    <div class="mitad" style="background:#D4A853"><div class="et">Vincca</div><div class="hx">#D4A853</div></div>
+    <div class="mitad" style="background:#3FA872"><div class="et">M</div><div class="hx">#3FA872</div></div>
+    <div class="mitad" style="background:#4ADE80"><div class="et">N</div><div class="hx">#4ADE80</div></div>
+    <div class="mitad" style="background:#2AA79B"><div class="et">O</div><div class="hx">#2AA79B</div></div>
+    <div class="mitad" style="background:#8FA054"><div class="et">P</div><div class="hx">#8FA054</div></div>
+  </div>
+</div>
+</body>
+</html>

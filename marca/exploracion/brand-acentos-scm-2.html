@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCM — segunda tanda de acentos</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#141619;color:#F2F4F5;font-family:Inter,sans-serif;padding:28px 18px;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:1rem;font-weight:600;margin-bottom:4px}
+  .sub{color:#A9B0B7;font-size:.9rem;margin-bottom:24px;line-height:1.5}
+  .fila{display:flex;gap:14px;flex-wrap:wrap}
+  .op{flex:1;min-width:280px;background:#1E2227;border:1px solid #31373E;border-radius:12px;padding:18px}
+  .op h2{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .op .hex{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#A9B0B7;margin-bottom:16px}
+  .op .why{font-size:.82rem;color:#A9B0B7;line-height:1.5;margin-top:14px}
+  .card{background:#141619;border:1px solid #31373E;border-radius:9px;padding:14px;margin-bottom:10px}
+  .nom{font-weight:600;font-size:.95rem;margin-bottom:3px}
+  .tel{font-family:'JetBrains Mono',monospace;color:#A9B0B7;font-size:.82rem;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:.76rem;font-weight:600;
+        color:#3FB77E;border:1px solid rgba(63,183,126,.45);background:rgba(63,183,126,.12);margin-bottom:12px}
+  .btn{display:block;width:100%;text-align:center;font-weight:600;font-size:.9rem;padding:9px;border-radius:8px;border:none;color:#141619}
+  .kpi{display:flex;gap:10px;margin-bottom:12px}
+  .k{flex:1;background:#141619;border:1px solid #31373E;border-radius:8px;padding:10px}
+  .k .l{font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#A9B0B7;margin-bottom:4px}
+  .k .v{font-size:1.4rem;font-weight:700;line-height:1}
+  .wm{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.4rem;letter-spacing:.06em;margin-bottom:14px}
+
+  .e h2,.e .k .v.on,.e .wm{color:#F0753F} .e .btn{background:#F0753F}
+  .f h2,.f .k .v.on,.f .wm{color:#22D3EE} .f .btn{background:#22D3EE}
+  .g h2,.g .k .v.on,.g .wm{color:#F2F4F5} .g .btn{background:#F2F4F5}
+  .h h2,.h .k .v.on,.h .wm{color:#A3E635} .h .btn{background:#A3E635}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SCM · segunda tanda</h1>
+  <p class="sub">Cuatro direcciones que no habíamos mirado. El verde del chip nunca cambia: es estado, no marca.</p>
+
+  <div class="fila">
+    <div class="op e">
+      <h2>E · Naranja SCM (el tuyo, ajustado)</h2>
+      <div class="hex">#F0753F</div>
+      <div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">Es el color que SCM ya tenía, bajado de saturación para que no vibre en video. Altísima luminancia, sobrevive perfecto. Y separa limpio del bronce de Vincca: uno es naranja, el otro dorado.</p>
+    </div>
+
+    <div class="op f">
+      <h2>F · Cian eléctrico</h2>
+      <div class="hex">#22D3EE</div>
+      <div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">Técnico, frío, muy legible en oscuro. Riesgo: lee "cripto" y compite con el verde del chip por ser vecinos de familia.</p>
+    </div>
+
+    <div class="op g">
+      <h2>G · Monocromo</h2>
+      <div class="hex">#F2F4F5 · sin color de marca</div>
+      <div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">Lo que hacen Linear y Vercel: el acento es blanco y el color queda solo para los estados. Imposible que envejezca mal, imposible que se ensucie en video. Riesgo: no tenés color propio para nada fuera de la pantalla.</p>
+    </div>
+
+    <div class="op h">
+      <h2>H · Lima brillante</h2>
+      <div class="hex">#A3E635</div>
+      <div class="wm">SCM</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">El más distintivo de todos y el que mejor aguanta compresión. Riesgo: energía gamer, y pisa al verde del chip.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

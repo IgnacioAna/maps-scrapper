@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <!-- Favicon SCM: solo la puerta, sin los puntos laterales (se pierden bajo 24px) -->
+  <rect width="100" height="100" rx="18" fill="#141619"/>
+  <path d="M31 22 L72 34 L72 66 L31 78 Z" stroke="#3FA872" stroke-width="11" stroke-linejoin="round"/>
+</svg>

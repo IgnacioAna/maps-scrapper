@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0E1013;font-family:"Source Sans 3",sans-serif;padding:24px 30px;color:#A9B0B7}
+h1{font-size:16px;font-weight:600;color:#F2F4F5;margin-bottom:18px}
+.rot{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#7E858C;margin:20px 0 11px}
+.fila{display:flex;align-items:center;gap:34px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center;gap:6px}
+.et{font-size:11.5px;color:#7E858C}
+.claro{background:#F2F4F5;padding:10px;border-radius:9px}
+.lk{display:inline-flex;align-items:center;gap:13px}
+.lk span{font-family:'JetBrains Mono',monospace;font-weight:700;color:#F2F4F5;letter-spacing:.02em}
+</style></head>
+<body>
+<h1>Archivos finales · verificación</h1>
+
+<div class="rot">favicon.svg · con fondo</div>
+<div class="fila">
+  <div class="col"><img src="favicon.svg" width="64"><span class="et">64</span></div>
+  <div class="col"><img src="favicon.svg" width="32"><span class="et">32</span></div>
+  <div class="col"><img src="favicon.svg" width="16"><span class="et">16</span></div>
+</div>
+
+<div class="rot">favicon-transparente.svg · sobre claro y sobre oscuro</div>
+<div class="fila">
+  <div class="col"><span class="claro"><img src="favicon-transparente.svg" width="32"></span><span class="et">32 claro</span></div>
+  <div class="col"><img src="favicon-transparente.svg" width="32"><span class="et">32 oscuro</span></div>
+  <div class="col"><span class="claro"><img src="favicon-transparente.svg" width="16"></span><span class="et">16 claro</span></div>
+</div>
+
+<div class="rot">simbolo-scm.svg · el bloque con las letras</div>
+<div class="fila">
+  <span class="lk"><img src="simbolo-scm.svg" width="46"><span style="font-size:34px">SCM</span></span>
+  <span class="lk"><img src="simbolo-scm.svg" width="26"><span style="font-size:19px">SCM</span></span>
+</div>
+
+<div class="rot">simbolo-scm-claro.svg · documentos y facturas</div>
+<div class="fila">
+  <span class="claro lk" style="padding:12px 18px"><img src="simbolo-scm-claro.svg" width="36"><span style="font-size:27px;color:#141619">SCM</span></span>
+</div>
+</body></html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCM — elegir acento</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Lexend:wght@600&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#141619;color:#F2F4F5;font-family:Inter,sans-serif;padding:28px 18px;font-variant-numeric:tabular-nums}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:1rem;font-weight:600;margin-bottom:4px}
+  .sub{color:#A9B0B7;font-size:.9rem;margin-bottom:26px;line-height:1.5}
+  .rot{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:#A9B0B7;margin:30px 0 12px}
+
+  .fila{display:flex;gap:14px;flex-wrap:wrap}
+  .op{flex:1;min-width:280px;background:#1E2227;border:1px solid #31373E;border-radius:12px;padding:18px}
+  .op h2{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+  .op .hex{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:#A9B0B7;margin-bottom:16px}
+  .op .why{font-size:.82rem;color:#A9B0B7;line-height:1.5;margin-top:14px}
+
+  .card{background:#141619;border:1px solid #31373E;border-radius:9px;padding:14px;margin-bottom:10px}
+  .nom{font-weight:600;font-size:.95rem;margin-bottom:3px}
+  .tel{font-family:'JetBrains Mono',monospace;color:#A9B0B7;font-size:.82rem;margin-bottom:10px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:.76rem;font-weight:600;
+        color:#3FB77E;border:1px solid rgba(63,183,126,.45);background:rgba(63,183,126,.12);margin-bottom:12px}
+  .btn{display:block;width:100%;text-align:center;font-weight:600;font-size:.9rem;padding:9px;border-radius:8px;border:none;color:#141619}
+  .kpi{display:flex;gap:10px;margin-bottom:12px}
+  .k{flex:1;background:#141619;border:1px solid #31373E;border-radius:8px;padding:10px}
+  .k .l{font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:#A9B0B7;margin-bottom:4px}
+  .k .v{font-size:1.4rem;font-weight:700;line-height:1}
+
+  /* acentos */
+  .a1 h2, .a1 .k .v.on{color:#C4B843} .a1 .btn{background:#C4B843}
+  .a2 h2, .a2 .k .v.on{color:#E0A83C} .a2 .btn{background:#E0A83C}
+  .a3 h2, .a3 .k .v.on{color:#4FA3D9} .a3 .btn{background:#4FA3D9}
+  .a4 h2, .a4 .k .v.on{color:#8B5CF6} .a4 .btn{background:#8B5CF6;color:#F2F4F5}
+
+  .marcas{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .m{flex:1;min-width:230px;background:#1E2227;border:1px solid #31373E;border-radius:12px;padding:22px}
+  .m .tag{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#A9B0B7;margin-bottom:14px}
+  .wm-vincca{font-family:Lexend,sans-serif;font-weight:600;font-size:2rem;letter-spacing:-.01em;color:#EDEAE3}
+  .wm-vincca i{color:#D4A853;font-style:normal}
+  .wm-scm{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:2rem;letter-spacing:.06em;color:#C4B843}
+  .m .why{font-size:.8rem;color:#A9B0B7;line-height:1.5;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SCM · elegir el acento</h1>
+  <p class="sub">La misma pantalla con tres acentos. El verde del chip no cambia: es estado, no marca.</p>
+
+  <div class="fila">
+    <div class="op a1">
+      <h2>A · Ámbar verdoso</h2>
+      <div class="hex">#C4B843</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">El más lejos de todo lo quemado. Sobrevive mejor la compresión de video. Riesgo: puede leerse mostaza.</p>
+    </div>
+
+    <div class="op a2">
+      <h2>B · Ámbar cálido</h2>
+      <div class="hex">#E0A83C</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">Más limpio y más fácil de querer. Riesgo: se acerca al bronce de Vincca, así que las marcas se parecen más de lo conveniente.</p>
+    </div>
+
+    <div class="op a3">
+      <h2>C · Azul acero</h2>
+      <div class="hex">#4FA3D9</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">El más cómodo a la vista y el más convencional. Riesgo: es exactamente el color que usa el 70% del software y que el research desaconseja.</p>
+    </div>
+  </div>
+
+    <div class="op a4">
+      <h2>D · Violeta (el actual)</h2>
+      <div class="hex">#8B5CF6</div>
+      <div class="kpi">
+        <div class="k"><div class="l">En cola</div><div class="v">752</div></div>
+        <div class="k"><div class="l">Agendadas</div><div class="v on">14</div></div>
+      </div>
+      <div class="card">
+        <div class="nom">Clínica Dental del Norte</div>
+        <div class="tel">+57 601 555 0142</div>
+        <span class="chip">✓ Número habilitado</span>
+        <button class="btn">Llamar</button>
+      </div>
+      <p class="why">Cero trabajo, ya está puesto. Dos riesgos: es el color que peor sobrevive la compresión de video sobre fondo oscuro, y hoy lee como "otra herramienta de IA".</p>
+    </div>
+  </div>
+
+  <div class="rot">Los dos wordmarks, uno al lado del otro</div>
+  <div class="marcas">
+    <div class="m">
+      <div class="tag">Vincca · el servicio</div>
+      <div class="wm-vincca"><i>V</i>incca</div>
+      <p class="why">Sans humanista, inicial en bronce, para médicos de 45 a 60.</p>
+    </div>
+    <div class="m">
+      <div class="tag">SCM · la herramienta</div>
+      <div class="wm-scm">SCM</div>
+      <p class="why">Mono, sin inicial destacada, un solo color. Nadie en el nicho usa mono: es hueco libre y separa las marcas por estructura, no solo por tono.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCM — muestra de marca</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root{
+    --base:#141619; --sup:#1E2227; --sup-alta:#262B31; --linea:#31373E;
+    --texto:#F2F4F5; --suave:#A9B0B7;
+    --acento:#C4B843; --acento-hover:#D6C95A;
+    --habilitado:#3FB77E; --bloqueado:#C4564A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--base);color:var(--texto);font-family:Inter,sans-serif;padding:28px 18px;
+       font-variant-numeric:tabular-nums}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{font-size:1rem;font-weight:600;margin-bottom:4px}
+  .sub{color:var(--suave);font-size:.9rem;margin-bottom:26px;line-height:1.5}
+  .rot{font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;color:var(--suave);margin:26px 0 10px}
+
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .sw{flex:1;min-width:110px;border:1px solid var(--linea);border-radius:8px;padding:12px 10px}
+  .sw b{display:block;font-size:.72rem;font-weight:600}
+  .sw span{font-size:.66rem;color:var(--suave)}
+  .sw.base{background:var(--base)} .sw.sup{background:var(--sup)} .sw.alta{background:var(--sup-alta)}
+  .sw.ac{background:var(--acento)} .sw.ac b,.sw.ac span{color:#141619}
+  .sw.hab{background:var(--habilitado)} .sw.hab b,.sw.hab span{color:#0d1f17}
+  .sw.blo{background:var(--bloqueado)} .sw.blo b,.sw.blo span{color:#1d0f0d}
+
+  /* simulacion de UI */
+  .app{display:flex;border:1px solid var(--linea);border-radius:14px;overflow:hidden;min-height:420px}
+  .side{width:196px;background:var(--sup);border-right:1px solid var(--linea);padding:16px 10px;flex-shrink:0}
+  .marca{font-weight:700;font-size:1.05rem;letter-spacing:-.01em;padding:0 8px 18px;color:var(--texto)}
+  .marca i{color:var(--acento);font-style:normal}
+  .nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--suave);
+         text-decoration:none;font-size:.9rem;margin-bottom:2px}
+  .nav a.on{background:rgba(196,184,67,.13);color:var(--acento);font-weight:600;
+            box-shadow:inset 3px 0 0 var(--acento)}
+  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.7}
+
+  .main{flex:1;padding:22px;background:var(--base)}
+  .kpis{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+  .kpi{flex:1;min-width:120px;background:var(--sup);border:1px solid var(--linea);border-radius:10px;padding:14px}
+  .kpi .lab{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--suave);margin-bottom:6px}
+  .kpi .val{font-size:1.9rem;font-weight:700;line-height:1}
+  .kpi .val.oro{color:var(--acento)}
+
+  .lead{background:var(--sup);border:1px solid var(--linea);border-radius:10px;padding:16px;margin-bottom:10px}
+  .lead .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+  .lead .nom{font-weight:600;font-size:1.02rem}
+  .tel{font-family:'JetBrains Mono',monospace;color:var(--suave);font-size:.88rem}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;
+        font-size:.8rem;font-weight:600;border:1px solid}
+  .chip.ok{color:var(--habilitado);border-color:rgba(63,183,126,.45);background:rgba(63,183,126,.12)}
+  .chip.no{color:var(--bloqueado);border-color:rgba(196,86,74,.45);background:rgba(196,86,74,.12)}
+  .btn{display:inline-block;background:var(--acento);color:#141619;font-weight:600;font-size:.92rem;
+       padding:10px 20px;border-radius:8px;border:none;cursor:pointer;margin-top:6px}
+  .nota{color:var(--suave);font-size:.84rem;line-height:1.5;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>SCM · muestra de marca</h1>
+  <p class="sub">El instrumento que te deja llamar tranquilo. Mirá el chip de estado: es el diferencial hecho pixel.</p>
+
+  <div class="rot">Paleta</div>
+  <div class="swatches">
+    <div class="sw base"><b>base</b><span>#141619</span></div>
+    <div class="sw sup"><b>superficie</b><span>#1E2227</span></div>
+    <div class="sw alta"><b>elevada</b><span>#262B31</span></div>
+    <div class="sw ac"><b>acento</b><span>#C4B843</span></div>
+    <div class="sw hab"><b>habilitado</b><span>#3FB77E</span></div>
+    <div class="sw blo"><b>bloqueado</b><span>#C4564A</span></div>
+  </div>
+
+  <div class="rot">La interfaz, como se vería en cámara</div>
+  <div class="app">
+    <div class="side">
+      <div class="marca"><i>S</i>CM</div>
+      <nav class="nav">
+        <a href="#"><span class="dot"></span>Hoy</a>
+        <a href="#" class="on"><span class="dot"></span>Llamadas</a>
+        <a href="#"><span class="dot"></span>Entrenamiento</a>
+        <a href="#"><span class="dot"></span>Mi rendimiento</a>
+      </nav>
+    </div>
+    <div class="main">
+      <div class="kpis">
+        <div class="kpi"><div class="lab">En cola</div><div class="val">752</div></div>
+        <div class="kpi"><div class="lab">Agendadas</div><div class="val oro">14</div></div>
+        <div class="kpi"><div class="lab">Verificados</div><div class="val">3.246</div></div>
+      </div>
+
+      <div class="lead">
+        <div class="top">
+          <div>
+            <div class="nom">Clínica Dental del Norte</div>
+            <div class="tel">+57 601 555 0142 · Bogotá</div>
+          </div>
+          <span class="chip ok">✓ Número habilitado</span>
+        </div>
+        <button class="btn">Llamar</button>
+      </div>
+
+      <div class="lead">
+        <div class="top">
+          <div>
+            <div class="nom">Odontología Integral Sur</div>
+            <div class="tel">+57 604 555 0198 · Medellín</div>
+          </div>
+          <span class="chip no">✕ En registro de exclusión</span>
+        </div>
+      </div>
+
+      <p class="nota">El bloqueado no tiene botón. El sistema no permite marcarlo, no avisa y deja seguir.</p>
+    </div>
+  </div>
+
+  <p class="nota">Sin degradados oscuros amplios (generan bandas al comprimir). Un solo acento saturado. El verde aparece únicamente como estado, nunca en botones ni navegación. Los teléfonos van en tipografía mono, los números alineados.</p>
+</div>
+</body>
+</html>
