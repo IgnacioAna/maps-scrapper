@@ -7864,6 +7864,147 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
 
+    // Fase 32, plan 03 (ACT-01/02/03, D-01/D-02/D-03): overlay de "Mandar
+    // WhatsApp" — el mismo componente para las 4 superficies vía
+    // _actButtonsHTML. Un click abre el chat con el mensaje ya cargado
+    // (window.open, D-02: JAMÁS un envío automático) y deja el envío
+    // anotado en el mismo acto (el backend de 32-01 compone
+    // _setCommitment+_closeCommitment). z-index:10060 porque este overlay
+    // también se abre desde la ficha de Hoy, que YA es un .modal-overlay
+    // (10000/10010) — ver public/style.css:4938-4945 (nota del comentario
+    // del date-picker, mismo criterio).
+    window._actWhatsApp = (leadId) => {
+      const lead = _callsLeadsById.get(leadId) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      if (!lead) { window.showToast?.('No encontré ese lead.', { type: 'error' }); return; }
+      const old = document.getElementById('act-wa-overlay'); if (old) old.remove();
+      const ov = document.createElement('div');
+      ov.id = 'act-wa-overlay';
+      ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10060; display:flex; align-items:center; justify-content:center; padding:20px;';
+      const hasAlt = !!lead.altPhone;
+      const defaultKey = 'envio_info';
+      const initialBody = _interpolateScript(_actTemplateById(defaultKey).body, lead);
+      // Markup del overlay: todo dato del lead interpolado acá pasa por
+      // escHtml (T-32-12) — la fuente de verdad para números/label/etiqueta
+      // sigue siendo lead.phone/lead.altPhone crudos en la lógica del
+      // handler (más abajo, fuera de este innerHTML), donde NO hace falta
+      // escapar porque no se interpolan en HTML.
+      ov.innerHTML = `
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:480px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Mandar WhatsApp — ${escHtml(lead.name || '')}</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Elegí plantilla y número. Se abre el chat con el mensaje cargado — vos lo mandás.</div>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Plantilla</label>
+          <select id="act-wa-template" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            ${ACT_WA_TEMPLATES.map((t) => `<option value="${escHtml(t.key)}"${t.key === defaultKey ? ' selected' : ''}>${escHtml(t.label)}</option>`).join('')}
+          </select>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Mensaje</label>
+          <textarea id="act-wa-msg" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:14px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit; min-height:110px; resize:vertical;">${escHtml(initialBody)}</textarea>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Mandar a</label>
+          <div style="display:flex; flex-direction:column; gap:7px; margin-bottom:10px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-primary); cursor:pointer;">
+              <input type="radio" name="act-wa-dest" value="principal" checked style="accent-color:var(--accent);">
+              Principal — <span class="scm-phone">${escHtml(lead.phone || 'sin número')}</span>
+            </label>
+            ${hasAlt ? `<label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-primary); cursor:pointer;">
+              <input type="radio" name="act-wa-dest" value="alt" style="accent-color:var(--accent);">
+              ${escHtml(lead.altPhoneLabel || 'Alternativo')} — <span class="scm-phone">${escHtml(lead.altPhone)}</span>
+            </label>` : ''}
+            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-primary); cursor:pointer;">
+              <input type="radio" name="act-wa-dest" value="otro" style="accent-color:var(--accent);">
+              Otro número
+            </label>
+          </div>
+          <input id="act-wa-other-phone" type="tel" disabled placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:8px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:14px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">
+          <label style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-secondary); margin-bottom:6px; cursor:pointer;">
+            <input type="checkbox" id="act-wa-save-alt" disabled style="accent-color:var(--accent);"> Guardar como contacto secundario
+          </label>
+          <input id="act-wa-alt-label" type="text" disabled placeholder="Encargado, Dra. Pérez, Recepción…" style="width:100%; box-sizing:border-box; padding:9px 12px; margin-bottom:14px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13px; font-family:inherit;">
+
+          <a href="javascript:void(0)" id="act-wa-edit-alt" style="display:inline-block; font-size:11.5px; color:var(--text-tertiary); margin-bottom:16px; text-decoration:underline;">editar contacto secundario</a>
+
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" id="act-wa-send" class="btn-accent" style="flex:1; padding:11px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit;">Abrir WhatsApp</button>
+            <button type="button" id="act-wa-cancel" style="padding:11px 14px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-default); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+
+      const onKeydown = (e) => { if (e.key === 'Escape') close(); };
+      const close = () => { ov.remove(); document.removeEventListener('keydown', onKeydown); };
+      document.addEventListener('keydown', onKeydown);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.getElementById('act-wa-cancel').onclick = close;
+
+      const templateSel = document.getElementById('act-wa-template');
+      const msgEl = document.getElementById('act-wa-msg');
+      templateSel.onchange = () => {
+        msgEl.value = _interpolateScript(_actTemplateById(templateSel.value).body, lead);
+      };
+
+      const otherPhoneInput = document.getElementById('act-wa-other-phone');
+      const saveAltChk = document.getElementById('act-wa-save-alt');
+      const altLabelInput = document.getElementById('act-wa-alt-label');
+      ov.querySelectorAll('input[name="act-wa-dest"]').forEach((r) => {
+        r.onchange = () => {
+          const otroChecked = ov.querySelector('input[name="act-wa-dest"][value="otro"]').checked;
+          otherPhoneInput.disabled = !otroChecked;
+          saveAltChk.disabled = !otroChecked;
+          altLabelInput.disabled = !otroChecked;
+          if (otroChecked) otherPhoneInput.focus();
+        };
+      });
+
+      document.getElementById('act-wa-edit-alt').onclick = () => { close(); window._callsAltContact(leadId); };
+
+      const sendBtn = document.getElementById('act-wa-send');
+      sendBtn.onclick = async () => {
+        const destSel = ov.querySelector('input[name="act-wa-dest"]:checked')?.value || 'principal';
+        let phone = '';
+        if (destSel === 'alt') phone = lead.altPhone || '';
+        else if (destSel === 'otro') phone = (otherPhoneInput.value || '').trim();
+        const templateId = templateSel.value;
+        const message = msgEl.value;
+        const saveAsAltPhone = destSel === 'otro' && saveAltChk.checked;
+        const altPhoneLabel = (altLabelInput.value || '').trim();
+        sendBtn.disabled = true;
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/whatsapp-send'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ templateId, message, phone, saveAsAltPhone, altPhoneLabel }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            window.showToast?.(d.error || ('Error mandando WhatsApp: HTTP ' + r.status), { type: 'error' });
+            return;
+          }
+          const opened = window.open(d.whatsappUrl, '_blank', 'noopener');
+          if (!opened) {
+            // Bloqueador de pop-ups: el registro YA quedó hecho (el backend
+            // no pisa nada si el chat no se abre acá), el SDR tiene que
+            // poder mandar igual copiando el link.
+            window.showToast?.('El navegador bloqueó la pestaña — abrila a mano: ' + d.whatsappUrl, { type: 'warn', duration: 10000 });
+          }
+          if (d.lead) _leadStoreApply(leadId, d.lead);
+          // D-07: acá NO se fuerza ningún redibujado del Power Dialer — el
+          // envío programa nextAction a +48h y ese redibujado expulsa la
+          // tarjeta cuando hay un próximo paso a futuro (más arriba en este
+          // archivo), lo que le sacaría de la pantalla al SDR el lead que
+          // está trabajando. Tampoco se toca el flag que pinta
+          // "✓ Resultado guardado" en el dialer: no se marcó ninguna
+          // disposición y el gate de la Phase 20 sigue abierto.
+          _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
+        } catch (e) {
+          window.showToast?.('Error de red mandando WhatsApp: ' + e.message, { type: 'error' });
+        } finally {
+          sendBtn.disabled = false;
+          close();
+          _refreshLeadPanels(leadId);
+        }
+      };
+    };
+
     // Toggle del formulario "Cambiar" (punto 1 del bloque Compromiso): el
     // formulario de carga queda oculto por defecto cuando ya hay un
     // compromiso vigente, y este botón lo muestra/oculta sin recargar nada.
@@ -8975,6 +9116,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             : `«${nombre}» sale de la cola — queda en Hoy → Esperando del prospecto.`,
         };
       }
+      // Fase 32 (D-06, ACT-01/02/03): un compromiso PROPIO ya CUMPLIDO
+      // (enviar_info/pedir_presupuesto registrado por el botón de WhatsApp,
+      // 32-03, o por el envío de material por mail, 32-02) deja al lead
+      // esperando respuesta — MISMO 3er bucket que _commitmentHoyBucket
+      // (bloque COMMITMENT-PURE, más abajo en este archivo). Sin esta rama
+      // el caso caía en el genérico "a la cola de Llamadas" (más abajo,
+      // esperar_respuesta), que es MENTIRA: el lead vive en
+      // Hoy → Esperando del prospecto. El título está duplicado a propósito
+      // entre loadHoyView y este bloque (el `new Function` del test no
+      // tiene el resto del archivo en scope) y hay un test que ata los dos.
+      // Restricción dura: esta rama solo usa literales y campos del lead.
+      if (
+        lead && lead.commitment && lead.commitment.estado === 'cumplido' &&
+        lead.commitment.parte === 'yo' &&
+        lead.nextAction && lead.nextAction.origen === 'compromiso' &&
+        lead.nextAction.tipo === 'esperar_respuesta'
+      ) {
+        const ts = _dispoNextAt(lead);
+        const cuando = ts ? _dispoWhenLabel(ts, now) : '';
+        const viaWhatsapp = lead.commitment.canal === 'whatsapp';
+        const texto = viaWhatsapp
+          ? (cuando
+            ? `«${nombre}» — anotado: le abriste el chat para mandarle info. Vuelve ${cuando} en Hoy → Esperando del prospecto.`
+            : `«${nombre}» — anotado: le abriste el chat para mandarle info. Queda en Hoy → Esperando del prospecto.`)
+          : (cuando
+            ? `«${nombre}» — anotado: le mandaste el material. Vuelve ${cuando} en Hoy → Esperando del prospecto.`
+            : `«${nombre}» — anotado: le mandaste el material. Queda en Hoy → Esperando del prospecto.`);
+        return {
+          vista: 'en Hoy → Esperando del prospecto',
+          cuando,
+          tono: 'info',
+          texto,
+        };
+      }
       if (lead && lead.estado === 'interesado') {
         const ts = _dispoNextAt(lead);
         const cuando = ts ? _dispoWhenLabel(ts, now) : '';
@@ -9048,6 +9223,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!lastIsCallback) effectiveLead = { ...lead, callLog: [...log, { outcome: 'callback_later' }] };
       }
       const dest = _dispoDestination(effectiveLead, new Date());
+      // Fase 32 (ACT-01/04): el descarte y el envío de material son acciones
+      // EXPLÍCITAS del SDR, no el cierre de una llamada — el banner
+      // "✓ Resultado guardado" del dialer no las representa (diría que se
+      // marcó un resultado que no se marcó). opts.forceToast salta la rama
+      // del hold del Power Dialer y tira el toast igual, aunque el dialer
+      // esté abierto.
+      if (opts.forceToast) {
+        window.showToast?.(dest.texto, { type: dest.tono, duration: 5000 });
+        return;
+      }
       if (_pd.active) {
         _pd.holdMeta = { texto: dest.texto, vista: dest.vista, cuando: dest.cuando, tono: dest.tono };
         return;
