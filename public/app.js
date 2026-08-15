@@ -7994,8 +7994,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">Nunca llamado</span>');
         if (l.estado === 'interesado') _expChips.push('<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>');
         // Fase 31 (D-09): chip de compromiso pendiente/vencido en la cabecera.
-        const _chipCEstado = _commitmentEffectiveEstado(l.commitment, Date.now());
-        if (_chipCEstado === 'pendiente' || _chipCEstado === 'vencido') {
+        // [Rule 1 - 31-04] El chip solo se muestra mientras el compromiso
+        // sigue ABIERTO — hay que mirar el estado ALMACENADO (l.commitment.estado
+        // === 'pendiente'), no el derivado: _commitmentEffectiveEstado devuelve
+        // 'vencido' tanto para un compromiso todavía pendiente cuya fecha ya
+        // pasó como para uno YA CERRADO con "Ya no aplica" (estado
+        // almacenado:'vencido') — sin este chequeo, un compromiso cerrado
+        // seguía mostrando el chip "vencido" para siempre.
+        if (l.commitment && l.commitment.estado === 'pendiente') {
+          const _chipCEstado = _commitmentEffectiveEstado(l.commitment, Date.now());
           const _chipVenc = _chipCEstado === 'vencido';
           // Fondo de acento SÓLIDO (vencido) → texto var(--on-accent). Fondo
           // translúcido (pendiente) → texto var(--text-primary).
@@ -8091,9 +8098,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           }).join('');
 
       // Fase 31 (D-09): bloque "Compromiso" — mecanismo PRINCIPAL de
-      // seguimiento; el follow-up de abajo queda como registro legacy. Tres
-      // estados de render decididos con _commitmentEffectiveEstado (misma
-      // regla que el backend, sin mutar nada).
+      // seguimiento; el follow-up de abajo queda como registro legacy. Fase
+      // 31 plan 04 (D-11) extiende el estado CERRADO con el detalle completo.
+      // [Rule 1 - 31-04, bug encontrado extendiendo este bloque para D-11] El
+      // branching ABIERTO/CERRADO usa el estado ALMACENADO (_commitRaw =
+      // l.commitment.estado), NO el derivado (_commitEstado):
+      // _commitmentEffectiveEstado devuelve 'vencido' tanto para un
+      // compromiso todavía pendiente cuya fecha ya pasó (sigue abierto, con
+      // botones de cierre) como para uno YA CERRADO con "Ya no aplica"
+      // (estado almacenado:'vencido', closedAt seteado) — ramificar solo por
+      // el valor derivado dejaba la tarjeta editable para siempre después de
+      // cerrarlo (un segundo click en cualquier botón de cierre volvía con
+      // 409, "no había compromiso pendiente").
+      // D-01 (limitación conocida y ACEPTADA): hay UN lead.commitment por
+      // lead — cargar uno nuevo REEMPLAZA al anterior, y el historial visible
+      // acá (y en la timeline de _renderCallHistory) es el del ÚLTIMO
+      // compromiso cerrado. Un array de compromisos quedó explícitamente
+      // fuera de esta fase; si en el futuro hace falta, este es el lugar a
+      // cambiar.
+      const _commitRaw = l.commitment && typeof l.commitment === 'object' ? l.commitment.estado : '';
       const _commitEstado = _commitmentEffectiveEstado(l.commitment, Date.now());
       // Formulario de carga (punto 3): reusado tal cual, oculto por defecto
       // cuando hay un compromiso vigente que el usuario puede "Cambiar", y
@@ -8114,7 +8137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>`;
 
       let commitmentBlockHtml;
-      if (_commitEstado === 'pendiente' || _commitEstado === 'vencido') {
+      if (_commitRaw === 'pendiente') {
         const c = l.commitment;
         const _cVenc = _commitEstado === 'vencido';
         const _cCol = _cVenc ? 'var(--warning)' : 'var(--accent)';
@@ -8138,11 +8161,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           ${_commitFormHtml(false)}
         </div>`;
-      } else if (_commitEstado === 'cumplido' || _commitEstado === 'incumplido') {
+      } else if (_commitRaw === 'cumplido' || _commitRaw === 'incumplido' || _commitRaw === 'vencido') {
+        // D-11: detalle del CIERRE — responde COMM-04 sin abrir nada más
+        // (estado en palabras, tipo, quién se había comprometido, fecha del
+        // compromiso, fecha de cierre y quién lo cerró).
         const c = l.commitment;
-        const _cClosedTxt = _commitEstado === 'cumplido' ? 'Cumplido' : 'No cumplió';
+        const _cClosedTxt = { cumplido: 'Cumplido', incumplido: 'No cumplió', vencido: 'Ya no aplica' }[_commitRaw] || _commitRaw;
+        const _cParteTxt = c.parte === 'yo' ? 'Me comprometí yo' : 'Se comprometió él';
+        const _cFecha = c.dueAt ? new Date(c.dueAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
         const _cClosedAt = c.closedAt ? new Date(c.closedAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-        commitmentBlockHtml = `<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:10px;">${escHtml(_cClosedTxt)} — ${escHtml(_commitmentLabel(c.tipo))}${_cClosedAt ? ` · ${escHtml(_cClosedAt)}` : ''}</div>
+        // Frase textual pedida por el user ("saber que esa persona ya le
+        // mandé información y le puedo hacer el seguimiento"): un
+        // enviar_info/pedir_presupuesto PROPIO cerrado como cumplido dice
+        // explícito que la info se mandó y cuándo, en vez del genérico
+        // "Cumplido — mandar info".
+        const _cEsEnvioPropioCumplido = _commitRaw === 'cumplido' && c.parte === 'yo' && (c.tipo === 'enviar_info' || c.tipo === 'pedir_presupuesto');
+        const _cHeadline = _cEsEnvioPropioCumplido
+          ? `Le mandé ${c.tipo === 'pedir_presupuesto' ? 'el presupuesto' : 'la información'}${_cClosedAt ? ' · ' + escHtml(_cClosedAt) : ''}`
+          : `${escHtml(_cClosedTxt)} — ${escHtml(_commitmentLabel(c.tipo))}`;
+        commitmentBlockHtml = `<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:10px;">
+          <div style="color:var(--text-primary); font-weight:600; margin-bottom:2px;">${_cHeadline}</div>
+          <div style="margin-bottom:2px;">${escHtml(_cParteTxt)}${c.canal ? ` · ${escHtml(c.canal)}` : ''}</div>
+          <div style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${_cFecha ? `comprometido: ${escHtml(_cFecha)}` : ''}${_cFecha && _cClosedAt ? ' · ' : ''}${_cClosedAt ? `cerrado: ${escHtml(_cClosedAt)}` : ''}</div>
+          ${c.closedBy ? `<div style="margin-top:2px;">por ${escHtml(c.closedBy)}</div>` : ''}
+        </div>
           ${_commitFormHtml(true)}`;
       } else {
         commitmentBlockHtml = _commitFormHtml(true);
@@ -9985,6 +10027,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       const events = [];
       for (const c of log) events.push({ kind: 'call', ts: c.ts ? new Date(c.ts).getTime() : 0, outcome: c.outcome, notes: c.notes, duration: c.duration });
       for (const n of notes) events.push({ kind: 'note', ts: (n.date || n.ts) ? new Date(n.date || n.ts).getTime() : 0, text: n.text, by: n.by });
+      // Fase 31 plan 04 (D-11): un compromiso CERRADO es un evento más de esta
+      // timeline unificada — es lo que el SDR mira DURANTE la llamada, y ahí es
+      // cuando importa saber "a este ya le mandé la info". Solo entra si de
+      // verdad se cerró (estado !== 'pendiente' Y closedAt seteado): uno
+      // todavía pendiente o vencido-DERIVADO (D-01/D-04, sigue con estado
+      // almacenado 'pendiente') no es un evento pasado, sigue siendo una
+      // tarea abierta que vive en Hoy, no en el histórico.
+      if (lead && lead.commitment && typeof lead.commitment === 'object' && lead.commitment.estado !== 'pendiente' && lead.commitment.closedAt) {
+        events.push({
+          kind: 'commitment',
+          ts: new Date(lead.commitment.closedAt).getTime(),
+          estado: lead.commitment.estado,
+          tipo: lead.commitment.tipo,
+          parte: lead.commitment.parte,
+        });
+      }
       if (events.length === 0) { box.style.display = 'none'; return; }
       events.sort((a, b) => b.ts - a.ts);
       const outcomeMap = {
@@ -10004,6 +10062,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           const o = outcomeMap[e.outcome] || e.outcome || '—';
           const dur = e.duration ? ` · ${Math.floor(e.duration / 60)}:${String(e.duration % 60).padStart(2, '0')}` : '';
           return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">📞 <strong>${o}</strong> <span style="opacity:0.5;">· ${when}${dur}</span>${e.notes ? `<div style="margin-top:2px; font-size:10.5px; color:rgba(255,255,255,0.55); font-style:italic;">"${escHtml(e.notes.substring(0, 100))}${e.notes.length > 100 ? '…' : ''}"</div>` : ''}</div>`;
+        }
+        // Fase 31 plan 04 (D-11): mismo lenguaje visual que las otras dos
+        // filas (padding/border-bottom/opacidad del "· <cuando>"), sin emoji
+        // nuevo (las notas tampoco llevan). "vencido" acá es el cierre
+        // EXPLÍCITO "Ya no aplica" (D-04) — no confundir con el derivado que
+        // se ve en las secciones de Hoy.
+        if (e.kind === 'commitment') {
+          const _hEstadoTxt = e.estado === 'cumplido' ? 'Compromiso cumplido'
+            : e.estado === 'incumplido' ? 'Compromiso no cumplió'
+            : e.estado === 'vencido' ? 'Compromiso vencido'
+            : 'Compromiso cerrado';
+          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml(_hEstadoTxt)}: ${escHtml(_commitmentLabel(e.tipo))} <span style="opacity:0.5;">· ${when}</span></div>`;
         }
         return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
       }).join('');
