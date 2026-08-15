@@ -76,7 +76,7 @@ recordarle, el milestone falló.
 | 28 | 3/3 | Complete   | 2026-08-14 |
 | 29 | NEXT — El reloj único (4/4 planes, COMPLETE) | NEXT-01..04 | — |
 | 30 | 3/3 | Complete   | 2026-08-15 |
-| 31 | COMM — Compromisos como objeto (1/4 planes) | COMM-01..04 | 29 |
+| 31 | COMM — Compromisos como objeto (2/4 planes) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
 | 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
@@ -261,7 +261,7 @@ canal y fecha — no texto suelto dentro de una nota.
 Plans:
 
 - [x] 31-01-PLAN.md — Modelo del compromiso: whitelists D-02/03/04, mapa D-06 y los helpers que lo atan al reloj único (wave 1)
-- [ ] 31-02-PLAN.md — Endpoints: `commitment` en call-disposition (D-08) + `PATCH .../commitment` para la ficha (D-09) (wave 2)
+- [x] 31-02-PLAN.md — Endpoints: `commitment` en call-disposition (D-08) + `PATCH .../commitment` para la ficha (D-09) (wave 2)
 - [ ] 31-03-PLAN.md — Carga en UI: selector en el modal “Próximo paso”, bloque en la ficha y destino nombrando la sección real (wave 3)
 - [ ] 31-04-PLAN.md — Consulta: secciones de compromisos en Hoy (D-10) + el cerrado en el timeline del lead (D-11) (wave 4)
 
@@ -377,8 +377,8 @@ Plans:
 |-------|----------------|--------|-----------|
 | 28. QUICK — Alivio inmediato | 3/3 | Complete | 2026-08-14 |
 | 29. NEXT — El reloj único | 4/4 | Complete | 2026-08-14 |
-| 30. GATE — Cierra la llamada, define el próximo paso | 0/TBD | Not started | - |
-| 31. COMM — Compromisos como objeto | 0/TBD | Not started | - |
+| 30. GATE — Cierra la llamada, define el próximo paso | 3/3 | human_needed (UAT pendiente) | 2026-08-15 |
+| 31. COMM — Compromisos como objeto | 2/4 | Executing | - |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
 | 33. DIAL — Power Dialer como motor único | 0/TBD | Not started | - |
 | 34. HOY — La vista diaria | 0/TBD | Not started | - |

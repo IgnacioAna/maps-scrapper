@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T16:06:14.000Z"
+last_updated: "2026-08-15T17:00:00.000Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 14
-  completed_plans: 9
-  percent: 32
+  completed_plans: 12
+  percent: 86
 ---
 
 # SCM — STATE
@@ -40,14 +40,22 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 31 (comm-compromisos) — EXECUTING
-Plan: 1 of 4 (31-01 con SUMMARY; 31-02/03/04 pendientes)
-Status: 31-01 ejecutado y commiteado (3/3 tasks, commits ee09a18/4865b9d/d22412a). lead.commitment
-  + whitelists D-02/03/04 + mapa D-06 + _sanitizeCommitment/_setCommitment/_closeCommitment
-  expuestos en globalThis.__voiceAgent. Suite completa 1400/1400 (baseline 1365 + 35 nuevos).
-  Solo index.js + tests/commitment-model.test.js tocados -- cero cambios en public/, sin bump
-  de cache-buster (a proposito, el plan no toca UI).
+Plan: 2 of 4 (31-01 y 31-02 con SUMMARY; 31-03/04 pendientes)
+Status: 31-02 ejecutado y commiteado (3/3 tasks, commits f87dd54/c7dfd13/5cc9122). call-disposition
+  acepta body.commitment (D-08, whitelist-and-coerce via _sanitizeCommitment, nunca 4xx, aplicado
+  en _applyCallOutcome entre el override del cliente y la red de seguridad GATE-01, con herencia
+  de dueAt desde nextActionOverride cuando el compromiso no trae fecha propia). Endpoint nuevo
+  PATCH /api/setters/leads/:id/commitment (D-09) crea/reemplaza/cierra con los mismos 4 guards
+  que PATCH .../followup. 24 tests HTTP nuevos + verificacion por mutacion del guard de dueno
+  (2/24 en rojo, restaurado exacto). Suite completa 1424/1424 (baseline 31-01: 1400).
+  Task 1 (D-08) llego pre-implementada sin commitear al arrancar el executor -- verificada contra
+  los 6 acceptance criteria del plan y commiteada tal cual. Solo index.js +
+  tests/commitment-endpoints.test.js tocados -- cero cambios en public/, sin bump de cache-buster
+  (a proposito, el plan no toca UI). Nota: entre los commits de Task 2 y Task 3 aterrizo un commit
+  ajeno de una sesion paralela de branding (public/index.html + style.css + marca/*.svg) -- ajeno
+  a este plan, ver 31-02-SUMMARY.md "Issues Encountered".
 Resume file: None
-Last activity: 2026-08-15 -- Phase 31 plan 01 (modelo del compromiso) ejecutado.
+Last activity: 2026-08-15 -- Phase 31 plan 02 (endpoints del compromiso) ejecutado.
 
 Phase 30 (gate-proximo-paso): 3/3 planes ejecutados, VERIFICATION: human_needed (18/18
   must-haves en codigo+tests, 1365/1365 tests verdes en su momento; 30-HUMAN-UAT.md con 7 items
