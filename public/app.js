@@ -8075,7 +8075,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:12.5px; color:var(--text-primary); font-weight:600; margin-bottom:3px;">${escHtml(_commitmentLabel(c.tipo))}${_cVenc ? ' <span style="color:var(--warning); font-weight:600;">· vencido</span>' : ''}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:2px;">${escHtml(_cParteTxt)}${c.canal ? ` · ${escHtml(c.canal)}` : ''}</div>
           <div style="font-size:11.5px; color:${_cCol}; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escHtml(_cFecha)}</div>
-          ${c.motivo ? `<div style="font-size:11.5px; color:var(--text-tertiary); margin-top:4px;">${escHtml(c.motivo)}</div>` : ''}
+          ${escHtml(c.motivo) ? `<div style="font-size:11.5px; color:var(--text-tertiary); margin-top:4px;">${escHtml(c.motivo)}</div>` : ''}
           <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
             <button class="call-action-btn" onclick="window._callsCloseCommitment('${escHtml(l.id)}', 'cumplido')">Cumplido</button>
             ${_cCloseBtn}
