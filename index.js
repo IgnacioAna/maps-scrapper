@@ -12584,7 +12584,8 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
       });
     }
     // Mismo esqueleto que send-placeholder (más arriba), con el cuerpo
-    // escapado por _actEmailHtml. Sin ningún <img> (D-18: no tracking).
+    // escapado por _actEmailHtml. Cero imágenes/beacons embebidos (D-18: no
+    // se mide si el prospecto abrió el mail — ver la cabecera del endpoint).
     const htmlBody = `
       <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px; color:#1e1f20;">
         <p>Hola ${_icsEscape(toName)},</p>
