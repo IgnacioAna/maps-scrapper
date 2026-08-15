@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T17:44:17.236Z"
+last_updated: "2026-08-15T18:05:00.000Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 100
 ---
 
 # SCM — STATE
@@ -39,24 +39,42 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 31 (comm-compromisos) — EXECUTING
-Plan: 3 of 4 (31-01, 31-02 y 31-03 con SUMMARY; 31-04 pendiente)
-Status: 31-03 ejecutado y commiteado (3/3 tasks + 1 fix, commits db68f48/d184f93/c10dba4/613256f).
-  Selector de compromiso dentro de #call-next-modal (D-08, repropone la fecha del mapa D-06 al
-  elegir tipo, toggle yo/prospecto) + bloque "Compromiso" editable en la ficha del lead (D-09,
-  window._callsSetCommitment/_callsCloseCommitment) + rama nueva en _dispoDestination que anuncia
-  "Hoy -> Mis compromisos" / "Hoy -> Esperando del prospecto" antes que "interesado". Bloque puro
-  [31-03] COMMITMENT-PURE (misma paridad D-06 que el backend, verificada por test leyendo los 2
-  archivos). 46 tests nuevos en tests/commitment-ui.test.js + verificacion por mutacion (1/46 en
-  rojo, restaurado exacto). Suite completa 1470/1470 (baseline 31-02: 1424).
-  Cache-buster real distinto del asumido por el plan: al arrancar ya estaba en v=20260815e (sesion
-  paralela de branding, commits previos a este plan) -- se bumpeo a v=20260815f. style.css intacto
-  (no lo toca esta fase). Durante la ejecucion otra sesion paralela del user edito y commiteo
-  public/style.css/index.html por un motivo ajeno (fix de z-index del calendario, commit 948ae34) --
-  el test de cache-buster de style.css se ajusto para no pinear un valor exacto (fragil ante
-  cualquier edicion ajena futura), ver 31-03-SUMMARY.md.
+Phase: 31 (comm-compromisos) — **COMPLETE** (4/4 planes, 2026-08-15)
+Plan: 4 of 4 (31-01, 31-02, 31-03 y 31-04 con SUMMARY)
+Status: 31-04 ejecutado y commiteado (3/3 tasks, commits 6187f57/e7e7942/ce045ae).
+  D-10: dos secciones nuevas en Hoy ("Mis compromisos" / "Esperando del prospecto", en ese orden,
+  arriba de Callbacks/Interesados) derivadas client-side del mismo array que loadHoyView ya trae.
+  _commitmentHoyBucket(lead, nowMs) nuevo dentro del bloque [31-03] COMMITMENT-PURE: bucket 'yo'
+  incluye vencidos a proposito (no desaparecen); bucket 'prospecto' tambien cubre un enviar_info
+  propio ya cumplido con nextAction.origen='compromiso'+tipo='esperar_respuesta' (COMM-04, "ya
+  mande, espero respuesta"). _hoyRenderSection gana opts.rowBadge (6to param opcional, sin el el
+  markup queda byte-identico) + _hoyCommitBadge(lead) pinta tipo/fecha/vencido. Los leads de
+  compromiso NO se agregan a `claimed` (pueden estar en Callbacks/Interesados a la vez). totalPend
+  cuenta ids UNICOS de las 4 secciones.
+  D-11: _renderCallHistory suma un 3er kind ('commitment') a la timeline unificada del lead —
+  un compromiso CERRADO (estado!='pendiente' + closedAt) aparece mezclado con llamadas/notas. La
+  linea compacta del estado cerrado en la ficha del lead se enriquecio con estado en palabras +
+  tipo + quien se comprometio + fecha del compromiso + fecha de cierre (font-mono/tabular-nums) +
+  quien cerro; un enviar_info/pedir_presupuesto propio cumplido dice explicito que la info se
+  mando y cuando (frase textual pedida por el user).
+  [Rule 1] Bug encontrado extendiendo el bloque "Compromiso" de la ficha para D-11: el branching
+  abierto/cerrado usaba el estado DERIVADO (_commitmentEffectiveEstado, que da 'vencido' tanto
+  para un pendiente vencido como para un YA CERRADO con "Ya no aplica") en vez del estado
+  ALMACENADO -- un compromiso cerrado quedaba con la tarjeta editable para siempre (un 2do click
+  volvia con 409). Fix: branchear por el estado almacenado (l.commitment.estado), en el bloque de
+  la ficha Y en el chip de la cabecera.
+  Tests: tests/commitment-hoy.test.js (42 nuevos) -- bloque puro _commitmentHoyBucket + aserciones
+  de fuente (opts.rowBadge, orden de secciones, match literal de titulos con [30-03] DISPO-DEST
+  -- garantia anti-deriva verificada por mutacion, restaurado con git checkout para evitar ruido
+  de CRLF/LF de sed en Windows -- y anti-alcance D-12: _trainingSummaryLLM/_autoDispositionLLM no
+  mencionan 'commitment'). Suite completa 1512/1512 (baseline 31-03: 1470). metrics-consistency.
+  test.js verde, sin ediciones en toda la fase 31.
+  Cache-buster: baseline real 20260815f (documentado por 31-03) -> bumpeado a 20260815g. style.css
+  intacto (no lo toco ningun plan de esta fase; su valor en disco puede variar por trabajo ajeno).
+  COMM-01..04 completos. Requirements/ROADMAP/STATE actualizados a mano (gsd-sdk no esta en PATH
+  en este entorno).
 Resume file: None
-Last activity: 2026-08-15 -- Phase 31 plan 03 (carga UI del compromiso) ejecutado.
+Last activity: 2026-08-15 -- Phase 31 (comm-compromisos) completada, las 4 requirements cerradas.
 
 Phase 30 (gate-proximo-paso): 3/3 planes ejecutados, VERIFICATION: human_needed (18/18
   must-haves en codigo+tests, 1365/1365 tests verdes en su momento; 30-HUMAN-UAT.md con 7 items
@@ -1160,3 +1178,55 @@ planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
   ser el único comando `state.*` seguro (solo tocó "Resume File").
   `requirements.mark-complete` fue no-op limpio (COMM-01/COMM-03 ya estaban
   marcados desde 31-01/31-02).
+
+- **31-04:** dado el patrón de corrupción de `gsd-sdk query state.*`/
+  `roadmap.update-plan-progress` ya confirmado por 24-01/29-02/29-03/29-04/
+  31-03 (pisa columnas/lineas ajenas del formato custom de este STATE.md y
+  de la tabla `## Resumen` de ROADMAP.md), este plan actualizó STATE.md,
+  ROADMAP.md y REQUIREMENTS.md **a mano** con Edit, sin invocar ningún
+  `gsd-sdk query` — mismo criterio que ya usaban 24-02 y las notas previas
+  de esta fase ("`gsd-sdk` no está en PATH en este entorno").
+
+- **31-04:** [Rule 1] al extender el bloque "Compromiso" de la ficha del
+  lead para D-11 (detalle del cierre), se encontró que el branching
+  abierto/cerrado usaba el estado DERIVADO (`_commitmentEffectiveEstado`,
+  que devuelve `'vencido'` tanto para un compromiso todavía pendiente cuya
+  fecha ya pasó como para uno YA CERRADO explícitamente con "Ya no aplica")
+  en vez del estado ALMACENADO (`l.commitment.estado`) — un compromiso
+  cerrado con "Ya no aplica" quedaba mostrando la tarjeta editable para
+  siempre, y un segundo click en cualquier botón de cierre volvía con 409
+  ("no había compromiso pendiente"). Fix: branchear por el estado
+  almacenado, tanto en el bloque de la ficha como en el chip de la
+  cabecera (`_expChips`) que tenía el mismo bug. Documentado en el código
+  con el tag `[Rule 1 - 31-04]`.
+
+- **31-04:** `_commitmentHoyBucket(lead, nowMs)` NO usa `nowMs` para decidir
+  los buckets `'yo'`/`'prospecto'` — mira el estado ALMACENADO
+  (`commitment.estado === 'pendiente'`), a propósito: un compromiso vencido
+  sigue con estado `pendiente` hasta que un humano lo cierra, así que tiene
+  que seguir en la sección de Hoy. El parámetro se conserva por paridad de
+  firma con el resto del bloque `[31-03] COMMITMENT-PURE` y por si una
+  fase futura necesita filtrar por antigüedad.
+
+- **31-04:** verificación por mutación del test de coincidencia de títulos
+  (pedida por el plan): se cambió temporalmente el string `'Mis compromisos'`
+  de `loadHoyView` con `sed` → 3 tests en rojo (los 2 de título exacto + la
+  garantía anti-deriva). Restaurado con `git checkout -- public/app.js` en
+  vez de revertir el `sed` a mano: `core.autocrlf=true` del repo hace que
+  `sed -i` en Git Bash dejara esa única línea con terminador LF en vez de
+  CRLF — el contenido quedaba byte-idéntico pero `git status` marcaba el
+  archivo como modificado igual. `git checkout --` es la única forma de
+  garantizar cero rastro (contenido Y terminadores) tras una mutación de
+  verificación en este repo.
+
+- **31-04:** *Last updated: 2026-08-15 (31-04 ejecutado — Phase 31 completa,
+  4/4 planes. D-10: secciones "Mis compromisos"/"Esperando del prospecto"
+  en Hoy, agrupadas por parte, arriba de Callbacks/Interesados, derivadas
+  client-side sin pedir ningún endpoint nuevo. D-11: el compromiso cerrado
+  aparece en la timeline unificada del lead (`_renderCallHistory`) y con
+  detalle completo en la ficha. 42 tests nuevos en
+  `tests/commitment-hoy.test.js`. Suite completa 1512/1512 [baseline 31-03:
+  1470]. `tests/metrics-consistency.test.js` verde, sin ediciones en toda
+  la fase. Requirements COMM-01..04 los 4 completos. Próximo: Phase 32
+  [ACT — Acciones desde cualquier vista], depende de Phase 29 y 31, ambas
+  cerradas).*

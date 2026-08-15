@@ -76,7 +76,7 @@ recordarle, el milestone falló.
 | 28 | 3/3 | Complete   | 2026-08-14 |
 | 29 | NEXT — El reloj único (4/4 planes, COMPLETE) | NEXT-01..04 | — |
 | 30 | 3/3 | Complete   | 2026-08-15 |
-| 31 | COMM — Compromisos como objeto (3/4 planes) | COMM-01..04 | 29 |
+| 31 | COMM — Compromisos como objeto (4/4 planes, COMPLETE) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
 | 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
@@ -84,7 +84,7 @@ recordarle, el milestone falló.
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
 - [x] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps` (completed 2026-08-14)
 - [x] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal (completed 2026-08-15)
-- [ ] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas
+- [x] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas (completed 2026-08-15)
 - [ ] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy
 - [ ] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente
 - [ ] **Phase 34: HOY — La vista diaria** — reordenada por prioridad, filtro por país, red de seguridad de higiene
@@ -263,7 +263,7 @@ Plans:
 - [x] 31-01-PLAN.md — Modelo del compromiso: whitelists D-02/03/04, mapa D-06 y los helpers que lo atan al reloj único (wave 1)
 - [x] 31-02-PLAN.md — Endpoints: `commitment` en call-disposition (D-08) + `PATCH .../commitment` para la ficha (D-09) (wave 2)
 - [x] 31-03-PLAN.md — Carga en UI: selector en el modal “Próximo paso”, bloque en la ficha y destino nombrando la sección real (wave 3)
-- [ ] 31-04-PLAN.md — Consulta: secciones de compromisos en Hoy (D-10) + el cerrado en el timeline del lead (D-11) (wave 4)
+- [x] 31-04-PLAN.md — Consulta: secciones de compromisos en Hoy (D-10) + el cerrado en el timeline del lead (D-11) (wave 4)
 
 ### Phase 32: ACT — Acciones desde cualquier vista
 
@@ -378,7 +378,7 @@ Plans:
 | 28. QUICK — Alivio inmediato | 3/3 | Complete | 2026-08-14 |
 | 29. NEXT — El reloj único | 4/4 | Complete | 2026-08-14 |
 | 30. GATE — Cierra la llamada, define el próximo paso | 3/3 | human_needed (UAT pendiente) | 2026-08-15 |
-| 31. COMM — Compromisos como objeto | 2/4 | Executing | - |
+| 31. COMM — Compromisos como objeto | 4/4 | Complete | 2026-08-15 |
 | 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
 | 33. DIAL — Power Dialer como motor único | 0/TBD | Not started | - |
 | 34. HOY — La vista diaria | 0/TBD | Not started | - |

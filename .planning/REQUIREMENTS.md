@@ -302,7 +302,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - [x] **COMM-03**: Se distingue quién se comprometió: si fue él, es una tarea
   propia; si fue el prospecto, es una expectativa cuyo incumplimiento
   dispara su follow-up.
-- [ ] **COMM-04**: Puede consultar en cualquier momento a quién le mandó
+- [x] **COMM-04**: Puede consultar en cualquier momento a quién le mandó
   información, cuándo, y qué falta responder.
 
 ### ACT — Acciones desde cualquier vista
