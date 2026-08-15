@@ -6428,6 +6428,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // descartado/agendado/con callback.
       holdCurrent: false,
       holdOutcome: null,    // outcome guardado, para el banner "Resultado guardado"
+      holdMeta: null,       // { texto, vista, cuando, tono } — destino (30-03, D-07)
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
     // necesitan copiar el número para mandar mensajes desde el celular.
@@ -6617,6 +6618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.autopilotArmed = false; // no auto-discar el primer lead al abrir
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pdSyncAutopilotToggle();
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
@@ -6715,6 +6717,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pdCancelAutopilot();
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pd.autopilotArmed = _pd.autopilot; // el próximo render dispara el countdown
       _pd.currentIdx++;
       _pd.processed++;
@@ -6869,11 +6872,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       const main = document.getElementById('pd-current-content');
       // Banner "Resultado guardado" (holdCurrent): la disposition ya se guardó,
       // la tarjeta se queda para seguir anotando y el SDR avanza cuando quiere.
+      // DISPO-DEST (30-03, D-07): el destino (a dónde se fue el lead y cuándo
+      // vuelve) se integra ACÁ, dentro del banner — nunca un toast encima del
+      // flujo del dialer. _pd.holdMeta lo setea _dispoAnnounce cuando _pd.active.
+      const hm = _pd.holdMeta;
+      const _holdDestLine = hm ? `
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-top:4px;">${hm.cuando ? `Vuelve <strong style="color:var(--text-primary);">${escHtml(hm.cuando)}</strong> ` : 'Queda '}<strong style="color:var(--text-primary);">${escHtml(hm.vista)}</strong></div>` : '';
       const _holdBanner = _pd.holdCurrent ? `
       <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px; padding:12px 16px; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.45); border-radius:10px;">
         <div style="min-width:0;">
           <div style="font-size:13px; font-weight:700; color:var(--success);">✓ Resultado guardado${_pd.holdOutcome && typeof callOutcomeLabel === 'function' ? ' · ' + escHtml(callOutcomeLabel(_pd.holdOutcome)) : ''}</div>
           <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Podés seguir agregando notas en esta tarjeta. Avanzá cuando termines.</div>
+          ${_holdDestLine}
         </div>
         <button type="button" onclick="window._pdAdvance()" style="padding:10px 20px; background:var(--success); color:#0F1115; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
           Siguiente lead →
@@ -7350,6 +7360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.autopilotArmed = false; // al volver atrás, no auto-discar
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
+      _pd.holdMeta = null;
       _pd.currentIdx--;
       if (_pd.processed > 0) _pd.processed--;
       _pdRender();
