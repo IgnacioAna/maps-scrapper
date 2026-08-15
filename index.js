@@ -7424,6 +7424,14 @@ function _buildUserSetterMap() {
   return m;
 }
 function _callSetterId(entry, lead, userMap) {
+  // Phase 29 / plan 29-04 (Rule 1 — bug preexistente destapado al testear la
+  // migración): un lead con nextAction origen='manual' pero callLog VACÍO
+  // (posible desde 29-03: tildar un follow-up programa nextAction sin exigir
+  // ninguna llamada previa) hacía que index.js:~8462 llamara a esta función
+  // con `entry=null` (el "último callLog entry" de un array vacío) → crash
+  // 500 de GET /leads/sin-wsp, la cola de llamadas. Mismo fallback que ya
+  // existe para "sin entry.by": sin señal de quién llamó, el dueño actual.
+  if (!entry) return lead.assignedTo || '';
   // 2026-07-31 (CR-01 del code review de Phase 24): atribución FIJA en la
   // entry. Las llamadas de un agente automático pertenecen al pseudo-SDR que
   // las hizo, no a quien tenga el lead hoy. Sin esto, reasignar a una SDR
