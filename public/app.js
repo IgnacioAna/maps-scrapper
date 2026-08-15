@@ -6103,6 +6103,32 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>`;
     }
 
+    // Fase 32, plan 03 (D-01, ACT-01/02/03): botón "Mandar WhatsApp" — un
+    // solo componente para las 4 superficies (lista de Llamadas, Power
+    // Dialer, ficha expandida, Hoy), con variante de estilo por superficie
+    // (mismo patrón que _dispoSelectHTML de arriba: un builder, N call
+    // sites, una perilla de tamaño/clase por contexto — duplicarlo ya
+    // mordió una vez, nota #156 de CLAUDE.md). Punto de extensión ÚNICO:
+    // 32-04 agrega acá el botón de descartar en vez de tocar las 4
+    // superficies otra vez.
+    function _actButtonsHTML(leadId, opts = {}) {
+      const variant = opts.variant || 'row';
+      const id = escHtml(leadId);
+      const title = escHtml('Mandar WhatsApp: elegís plantilla y número, se abre el chat con el mensaje cargado y el envío queda anotado');
+      if (variant === 'pd') {
+        return `<button type="button" class="pd-quick-link" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>`;
+      }
+      if (variant === 'ficha') {
+        return `<button type="button" class="call-action-btn is-wsp" onclick="window._actWhatsApp('${id}')" title="${title}">Mandar WhatsApp</button>`;
+      }
+      if (variant === 'hoy') {
+        return `<button type="button" class="hoy-ficha-btn" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>`;
+      }
+      // 'row' (lista de Llamadas): pill chico calcado del botón "+ contacto"
+      // (la fila tiene su propio manejo de click, de ahí stopPropagation).
+      return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>`;
+    }
+
     function _hoyRenderSection(title, leads, accent, hint, dialerMode, opts = {}) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
@@ -6131,6 +6157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
+          ${_actButtonsHTML(l.id, { variant: 'hoy' })}
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
           <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
         </div>`;
@@ -7031,12 +7058,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>` : ''}
 
       <!-- Bloque 4: Quick-links acción — sin emojis, look uniforme outline -->
-      ${(mapsUrl || safeW || igUrl || validEmail || lead.whatsappUrl) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+      <!-- El link de WhatsApp legacy (wa-multi, feature parkeada, leía un
+           campo armado en tiempo de import desde el openMessage viejo de
+           Setteo) se sacó de acá (32-03, D-01): dos botones de WhatsApp con
+           comportamientos distintos en la misma tarjeta es peor que uno. Su
+           handler y el badge "ver chat" de renderCallsList no se tocan —
+           ese badge es otra cosa (abrir una conversación YA existente). -->
+      ${(mapsUrl || safeW || igUrl || validEmail) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
         ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Maps</a>` : ''}
         ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
-        ${lead.whatsappUrl ? `<a href="${escHtml(safeUrl(lead.whatsappUrl) || '#')}" target="_blank" rel="noopener noreferrer" class="pd-quick-link" onclick="return window._waBtnClick(this, event, '${escHtml(lead.id)}');">WhatsApp</a>` : ''}
+        ${_actButtonsHTML(lead.id, { variant: 'pd' })}
       </div>` : ''}
 
       <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
@@ -8203,6 +8236,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="call-history-timeline">${historyHtml}</div>
 
           <div class="call-action-row">
+            ${_actButtonsHTML(l.id, { variant: 'ficha' })}
             ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:var(--accent-hover); font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
               Reactivar lead
             </button>` : ''}
@@ -8508,6 +8542,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
               ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:var(--accent-hover); cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
+              ${_actButtonsHTML(l.id, { variant: 'row' })}
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
               ${l.phone ? `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
@@ -11801,6 +11836,41 @@ document.addEventListener('DOMContentLoaded', async () => {
       return null;
     }
     // ─── [31-03] COMMITMENT-PURE: FIN ───
+
+    // ─── [32-03] ACT-PURE: INICIO ───
+    // Fase 32, plan 03 (D-06/D-08, ACT-01/02/03): catálogo de plantillas del
+    // botón de WhatsApp. Estas 3 claves ESPEJAN ACT_WA_TEMPLATE_IDS de
+    // index.js (bloque ACCIONES, Phase 32) — si cambia una, cambian las dos;
+    // el test lee los dos archivos como texto para verificarlo, mismo
+    // criterio que la paridad de COMMITMENT_UI_TIPOS más arriba. Bloque sin
+    // ninguna dependencia del navegador (nada de DOM, red ni almacenamiento
+    // persistente): el test lo extrae por estos marcadores y lo evalúa
+    // aislado, mismo patrón que [31-03] COMMITMENT-PURE / [30-02] GATE-PURE.
+    const ACT_WA_TEMPLATES = [
+      {
+        key: 'post_llamada',
+        label: 'Después de la llamada',
+        body: 'Hola {name}, soy {setterName}. Te escribo después de la llamada que tuvimos recién, para dejarte mi contacto directo acá.\n\nCualquier duda que te surja mientras lo pensás, me escribís sin problema.',
+      },
+      {
+        key: 'envio_info',
+        label: 'Envío de información',
+        body: 'Hola {name}, te paso por acá la información que hablamos por teléfono para la clínica en {city}.\n\nCualquier consulta que tengas, quedo atento. Saludos, {setterName}.',
+      },
+      {
+        key: 'reconfirmar_reunion',
+        label: 'Reconfirmar reunión',
+        body: 'Hola {name}, te escribo para reconfirmar la reunión que coordinamos.\n\nSi surge algún cambio de horario, avisame por acá con tiempo. Nos vemos pronto — {setterName}.',
+      },
+    ];
+
+    // La plantilla cuyo key coincide, o la primera del array si no coincide
+    // ninguna — nunca undefined (el caller siempre tiene un mensaje para
+    // mostrar en el textarea del overlay).
+    function _actTemplateById(key) {
+      return ACT_WA_TEMPLATES.find((t) => t.key === key) || ACT_WA_TEMPLATES[0];
+    }
+    // ─── [32-03] ACT-PURE: FIN ───
 
     // Sprint 23: quick-picks típicos de callback. Devuelve {label, subtitle, date}.
     function _buildCallbackQuickPicks() {
