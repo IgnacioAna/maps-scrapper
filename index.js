@@ -3907,7 +3907,113 @@ function _repairColombianPhone(phone) {
   if (dg.startsWith('3')) return `+57${dg}`;            // celular sin código de país
   return null;
 }
-globalThis.__phoneRepair = { _repairColombianPhone };
+// ---------------------------------------------------------------------------
+// MÉXICO — números de 10 dígitos a los que se les perdió el código de país.
+//
+// Tal cual quedan son INDISCABLES: `+6195029242` no es "+52 algo", sale hacia
+// Australia (+61). Pero NO todos son mexicanos: las clínicas de la frontera
+// publican su número de EE.UU. (619 y 858 = San Diego, 760 = California, 928 =
+// Arizona). Ese número es real y se disca a $0.007/min — el arreglo ahí es
+// `+1`, no `+52`. Meterle +52 a un 619 lo deja igual de muerto.
+//
+// El problema es que LADA mexicana y área NANP se pisan (818 = Monterrey 81-8…
+// pero también Los Ángeles; 832 = Tamaulipas pero también Houston). Por eso el
+// criterio NO es un prefijo suelto: se exige que el prefijo coincida con la
+// LADA de la CIUDAD del lead y que el largo cierre (LADA de 2 díg + 8, o de 3
+// díg + 7). Si el prefijo no está en ninguna de las dos tablas, o la ciudad no
+// lo respalda, devuelve null y el lead queda para revisar a mano. Preferimos
+// dejarlo marcado antes que inventarle un país.
+const _MX_CITY_LADA = {
+  tijuana: ['664', '665', '661', '663'], mexicali: ['686'], ensenada: ['646'],
+  guadalajara: ['33'], zapopan: ['33'], tlaquepaque: ['33'], tonala: ['33'],
+  monterrey: ['81'], 'san pedro garza garcia': ['81'], guadalupe: ['81'], apodaca: ['81'],
+  'ciudad de mexico': ['55'], cdmx: ['55'], mexico: ['55'], 'mexico city': ['55'],
+  naucalpan: ['55'], tlalnepantla: ['55'], ecatepec: ['55'], nezahualcoyotl: ['55'],
+  puebla: ['222'], queretaro: ['442'], leon: ['477'], toluca: ['722'],
+  'ciudad juarez': ['656'], juarez: ['656'], chihuahua: ['614'], hermosillo: ['662'],
+  culiacan: ['667'], mazatlan: ['669'], saltillo: ['844'], torreon: ['871'],
+  durango: ['618'], aguascalientes: ['449'], morelia: ['443'], 'san luis potosi': ['444'],
+  veracruz: ['229'], xalapa: ['228'], acapulco: ['744'], cuernavaca: ['777'],
+  oaxaca: ['951'], 'tuxtla gutierrez': ['961'], villahermosa: ['993'], tampico: ['833'],
+  pachuca: ['771'], cancun: ['998'], 'playa del carmen': ['984'], merida: ['999'],
+  campeche: ['981'], chetumal: ['983'], colima: ['312'], tepic: ['311'], zacatecas: ['492']
+};
+// Áreas NANP que aparecen en listados mexicanos de frontera. Ninguna es LADA.
+const _US_BORDER_AREA = new Set(['619', '858', '760', '928', '915', '956', '520', '602', '480']);
+
+function _mxNormalizeCity(city) {
+  return String(city || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+function _repairMexicanPhone(phone, city) {
+  const dg = String(phone || '').replace(/\D/g, '');
+  // 52 + 1 + 10: formato viejo de móvil mexicano. México sacó ese "1" en 2019 y
+  // el E.164 vigente son 12 dígitos. Acá NO hay ambigüedad de país (el 52 ya
+  // está), así que alcanza con que el nacional cierre — no se pide la ciudad.
+  if (dg.length === 13 && dg.startsWith('521')) {
+    const nac = dg.slice(3);
+    if (!/^[2-9]/.test(nac)) return null;         // un nacional no arranca en 0 ni 1
+    return `+52${nac}`;
+  }
+  if (dg.length !== 10) return null;              // 12 (52+10) ya está bien; otros largos = roto, no reparable
+  const a3 = dg.slice(0, 3);
+  if (_US_BORDER_AREA.has(a3)) return `+1${dg}`;  // número de EE.UU. publicado por la clínica
+  const ladas = _MX_CITY_LADA[_mxNormalizeCity(city)];
+  if (!ladas) return null;                        // ciudad desconocida: no adivinamos
+  for (const lada of ladas) {
+    if (!dg.startsWith(lada)) continue;
+    if (dg.length - lada.length !== (lada.length === 2 ? 8 : 7)) continue; // el largo tiene que cerrar
+    return `+52${dg}`;
+  }
+  return null;
+}
+globalThis.__phoneRepair = { _repairColombianPhone, _repairMexicanPhone };
+
+// POST /api/admin/repair-mx-phones — gemelo de repair-co-phones (dryRun por
+// defecto, guarda el número viejo en `phoneBroken`, resetea el lookup porque el
+// número CAMBIÓ, y no crea duplicados). `unresolved` devuelve los que quedaron
+// sin tocar para revisarlos a mano.
+app.post('/api/admin/repair-mx-phones', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = true } = req.body || {};
+  const data = loadSettersData();
+  const leads = data.leads || {};
+  const enUso = new Set();
+  for (const id of Object.keys(leads)) {
+    const p = String(leads[id]?.phone || '').replace(/\D/g, '');
+    if (p) enUso.add(p);
+  }
+  let scanned = 0, repaired = 0, collided = 0;
+  const sample = [], unresolved = [], byFix = { mx: 0, us: 0 };
+  for (const id of Object.keys(leads)) {
+    const l = leads[id];
+    if (!l || l.country !== 'México' || !l.phone) continue;
+    const dg = String(l.phone).replace(/\D/g, '');
+    if (dg.startsWith('52') && dg.length === 12) continue;   // ya está bien
+    if (dg.startsWith('1') && dg.length === 11) continue;    // +1 válido
+    scanned++;
+    const nuevo = _repairMexicanPhone(l.phone, l.city);
+    if (!nuevo) {
+      if (unresolved.length < 40) unresolved.push({ id, name: l.name, phone: l.phone, city: l.city });
+      continue;
+    }
+    if (enUso.has(nuevo.replace(/\D/g, ''))) { collided++; continue; }
+    if (nuevo.startsWith('+1')) byFix.us++; else byFix.mx++;
+    if (sample.length < 12) sample.push({ id, name: l.name, city: l.city, antes: l.phone, despues: nuevo });
+    if (!dryRun) {
+      l.phoneBroken = l.phone;
+      l.phone = nuevo;
+      l.phoneRepairedAt = new Date().toISOString();
+      l.lookupAt = ''; l.phoneType = ''; l.lookupCarrier = ''; l.lookupError = '';
+      enUso.add(nuevo.replace(/\D/g, ''));
+    }
+    repaired++;
+  }
+  if (!dryRun && repaired) {
+    try { makeBackup('repair-mx-phones'); } catch {}
+    saveSettersData(data);
+  }
+  res.json({ ok: true, dryRun, scanned, repaired, collided, byFix, sample, unresolved });
+});
 
 // POST /api/admin/repair-co-phones — dryRun por defecto. Guarda el número viejo
 // en `phoneBroken` y resetea el lookup (el número nuevo nunca se validó).
