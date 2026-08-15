@@ -10429,6 +10429,87 @@ app.patch('/api/setters/leads/:id/commitment', requireAuth, (req, res) => {
   });
 });
 
+// Phase 32 (D-03): UN SOLO REQUEST que devuelve el link de WhatsApp Y deja
+// el registro — si mandar y registrar fueran dos llamadas separadas, la
+// segunda no se hace nunca (el problema real que describió el user). La URL
+// se arma acá, server-side, para reusar `buildWhatsAppUrl` TAL CUAL (D-02):
+// esa función ya resuelve los casos raros de teléfono (US con paréntesis,
+// México frontera, móvil argentino, alias de país) — duplicar esa lógica en
+// el frontend reintroduciría esos bugs históricos. Escritura SÍNCRONA a
+// propósito (mismo criterio que PATCH .../commitment, arriba): no hay ningún
+// `await` entre loadSettersData y saveSettersData, así que NO hace falta el
+// mutex de escrituras async (regla #19). Si en el futuro se agrega algo
+// async acá, ENTONCES sí hay que envolver la mutación en ese mutex.
+app.post('/api/setters/leads/:id/whatsapp-send', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
+  ensureLeadDefaults(lead);
+
+  const { templateId, message, phone, saveAsAltPhone, altPhoneLabel } = req.body || {};
+
+  // Resolución del destino (ACT-03/D-09/D-10). Misma normalización EXACTA
+  // que PUT .../alt-contact (más abajo en este archivo): un rawTo vacío usa el
+  // teléfono principal del lead tal cual, sin pasar por esta validación.
+  const rawTo = (typeof phone === 'string' ? phone : '').trim();
+  let normalizedTo = '';
+  if (rawTo) {
+    const cleanedDigits = rawTo.replace(/[^\d+]/g, '');
+    if (!/^\+?\d{6,15}$/.test(cleanedDigits)) {
+      return res.status(400).json({ error: 'Teléfono inválido. Formato E.164: +5491112345678' });
+    }
+    normalizedTo = cleanedDigits.startsWith('+') ? cleanedDigits : '+' + cleanedDigits;
+  }
+  // D-10: el alternativo NUNCA reemplaza al principal — el lead sigue
+  // discándose por su número original. Este endpoint no escribe lead.phone.
+  const sentTo = normalizedTo || lead.phone;
+  if (!sentTo) {
+    return res.status(400).json({ error: 'El lead no tiene teléfono y no pasaste uno alternativo.' });
+  }
+
+  const cleanMessage = _actSanitizeMessage(message);
+  const whatsappUrl = buildWhatsAppUrl(sentTo, lead.country, cleanMessage);
+  if (!whatsappUrl) {
+    // D-04: si no se pudo armar un link confiable, no se abrió ningún chat —
+    // cortar ACÁ, antes de registrar nada. El registro no puede mentir sobre
+    // un envío que nunca pasó.
+    return res.status(400).json({ error: 'No pude armar un link de WhatsApp confiable con ese número. Cargá el número con código de país (ej: +5491112345678).' });
+  }
+
+  // Persistencia opcional del alternativo (D-09): mismo campo que ya usa el
+  // modal de contacto secundario (nota #156 de CLAUDE.md) — "número
+  // alternativo" tiene una sola fuente de verdad en toda la app.
+  if (saveAsAltPhone === true && sentTo !== lead.phone) {
+    lead.altPhone = sentTo;
+    lead.altPhoneLabel = (typeof altPhoneLabel === 'string' ? altPhoneLabel : '').trim().slice(0, 60);
+  }
+
+  const nowIso = new Date().toISOString();
+  const reg = _actRegisterSendEvent(lead, {
+    canal: 'whatsapp',
+    templateId,
+    to: sentTo,
+    byId: req.auth?.user?.id || '',
+    byName: req.auth?.user?.name || '',
+  }, nowIso);
+  const sentTemplateId = ACT_WA_TEMPLATE_IDS.has(templateId) ? templateId : '';
+
+  saveSettersData(data);
+  res.json({
+    ok: true,
+    whatsappUrl,
+    sentTo,
+    templateId: sentTemplateId,
+    commitment: reg.commitment,
+    nextAction: reg.nextAction,
+    lead: { id: req.params.id, ...lead },
+  });
+});
+
 // Sprint 31: Bulk operations en Llamadas. Admin only. Acciones soportadas:
 // 'mark_wrong', 'mark_invalid', 'discard', 'assign', 'move_to_setteo'.
 // Body: { leadIds: [], action: '...', assignTo?: setterId }. Devuelve count.
