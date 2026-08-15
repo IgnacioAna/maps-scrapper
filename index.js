@@ -10675,6 +10675,86 @@ app.post('/api/setters/leads/:id/reactivate', requireAuth, requireRole('admin'),
   res.json({ ok: true, lead: { id: req.params.id, ...lead } });
 });
 
+// Phase 32 (ACT-04, D-12..D-16): descartar UN lead, disponible para
+// cualquier rol — no solo admin. Tres razones de ser: (1) el único descarte
+// de un lead suelto vivía en POST .../bulk, que es requireRole('admin'); un
+// SDR recibiría 403 desde las 4 superficies donde trabaja (lista de
+// Llamadas, Power Dialer, ficha expandida, Hoy); (2) copia el `case
+// 'discard'` del bulk en vez de aflojar ese endpoint, que mueve hasta 500
+// leads con 7 acciones distintas — ese endpoint queda intacto y admin-only;
+// (3) es síncrono (no hay ningún `await` entre loadSettersData y
+// saveSettersData), así que no hace falta el mutex de escrituras async
+// (regla #19).
+app.post('/api/setters/leads/:id/discard', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
+  ensureLeadDefaults(lead);
+
+  const { reason, doNotCall } = req.body || {};
+  // Whitelist-and-coerce: una razón fuera de la lista o ausente nunca
+  // bloquea el descarte (D-14) — un descarte sin motivo es mejor que un
+  // lead que sigue en la cola porque el formulario era largo.
+  const cleanReason = (typeof reason === 'string' && DISQUALIFY_REASONS.has(reason)) ? reason : '';
+  const nowIso = new Date().toISOString();
+
+  // Estado terminal (copiado literal del `case 'discard'` de POST .../bulk,
+  // más arriba — ese endpoint no se toca).
+  lead.estado = 'descartado';
+  lead.interes = 'no';
+  if (cleanReason) lead.disqualifyReason = cleanReason;
+
+  // DNC (mismo criterio que _applyCallOutcome, más arriba): una razón que
+  // implica "no me llames más" saca al lead de TODA cola, igual que hoy hace
+  // la disposición de llamada.
+  if (doNotCall === true || DNC_REASONS.has(cleanReason)) {
+    lead.doNotCall = true;
+    lead.doNotCallReason = cleanReason || 'manual';
+    lead.doNotCallAt = nowIso;
+    lead.doNotCallBy = req.auth?.user?.name || '';
+  }
+
+  // Cerrar el compromiso pendiente y apagar el reloj — la parte que NO
+  // existe en el bulk y que ACT-04 exige: sin esto un lead descartado con un
+  // "mandame info" pendiente queda flotando en Hoy → Mis compromisos para
+  // siempre (loadHoyView no filtra por estado terminal). 'vencido' es el
+  // cierre de "ya no aplica" para un compromiso propio — es el único cierre
+  // que NO dispara el seguimiento post-envío de +48h que sí dispara
+  // 'cumplido'. _clearNextAction va SIEMPRE aparte, porque _closeCommitment
+  // solo apaga el reloj cuando el nextAction vigente tiene origen:'compromiso'
+  // — un lead terminal nunca puede llevar nextAction (regla dura de la Phase
+  // 30, GATE_TERMINAL_ESTADOS).
+  const commitmentClosed = !!(lead.commitment && lead.commitment.estado === 'pendiente' && _closeCommitment(lead, 'vencido', nowIso, req.auth?.user?.name || ''));
+  _clearNextAction(lead);
+
+  // Auditoría: sin setterId (no distorsiona el agregador de rendimiento que
+  // lo lee para atribuir "lead trabajado" por interacción) y sin entry en
+  // callLog (no es una llamada — el agregador del funnel de cold-calling
+  // cuenta cada entry de ese historial como un dial), mismo criterio que
+  // _actRegisterSendEvent (Phase 32, más abajo).
+  if (!Array.isArray(lead.interactions)) lead.interactions = [];
+  lead.interactions.push({
+    action: 'discard',
+    reason: cleanReason,
+    by: req.auth?.user?.id || '',
+    byName: req.auth?.user?.name || req.auth?.user?.email || '',
+    createdAt: nowIso,
+  });
+  if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
+
+  saveSettersData(data);
+  res.json({
+    ok: true,
+    lead: { id: req.params.id, ...lead },
+    commitmentClosed,
+    doNotCall: !!lead.doNotCall,
+  });
+});
+
 // Sprint 24: Nota pre-call (planificación). Texto único editable por el setter
 // antes de discar. Distinto de notes[] (post-interacción).
 app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
