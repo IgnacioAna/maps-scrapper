@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T19:29:22.916Z"
+last_updated: "2026-08-15T19:53:43.978Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
   percent: 57
 ---
 
@@ -40,41 +40,44 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 32 (act-acciones) — EXECUTING
-Plan: 2 of 4 (32-01 con SUMMARY; 32-02/32-03/32-04 pendientes)
-Status: 32-01 ejecutado y commiteado (3/3 tasks + 1 fix de Rule 1, commits
-  9ecac90/903d2d4/1f5a7dc/587a218). Backend de "mandar WhatsApp"
-  (ACT-01/02/03): POST /api/setters/leads/:id/whatsapp-send arma el wa.me
-  server-side reusando buildWhatsAppUrl tal cual (sin duplicar la
-  normalizacion de telefono) y en el MISMO request deja el envio
-  registrado via _actRegisterSendEvent (compone _setCommitment +
-  _closeCommitment de la Phase 31: compromiso enviar_info/yo/whatsapp
-  queda cumplido -> nextAction esperar_respuesta a +48h), con soporte de
-  numero alternativo cargado en el momento que nunca pisa lead.phone
-  (D-10). [Rule 1] Bug encontrado escribiendo los tests de Task 3:
-  pre-normalizar el telefono a E.164 ANTES de pasarlo a buildWhatsAppUrl
-  borraba la senial de parentesis que esa funcion usa para el caso
-  historico US ("(305) 555-1234" -> perdia el prefijo de pais) -- fix
-  commiteado aparte (1f5a7dc), verificado con un smoke test manual antes
-  de escribir la suite formal. 17 tests nuevos en tests/act-whatsapp.
-  test.js; verificacion por mutacion (comentar el _closeCommitment
-  interno) confirmo exactamente 2 rojos, los que prueban el cierre del
-  compromiso -- restaurado con Edit (no sed), git diff index.js vacio
-  antes de commitear. Suite completa 1529/1529 (baseline 1512 + 17).
-  metrics-consistency.test.js verde sin editar el archivo. public/ sin
-  tocar -- cero bump de cache-buster, tal como pedia el plan.
-  ACT-01/02/03 completos. Requirements/ROADMAP/STATE actualizados a mano:
-  gsd-sdk SI resuelve en PATH en este entorno (a diferencia de lo que
-  decia config.json), pero `state.advance-plan` corrompio una linea
-  narrativa no relacionada mas abajo en este archivo (un bullet
-  "**Status:**" dentro de la seccion archivada de Phase 20/v2.0, ajeno a
-  esta fase) con un reemplazo ciego de patron -- revertido a mano. Para
-  este STATE.md (con prosa extensa fuera del frontmatter), las
-  actualizaciones de posicion/status siguen siendo manuales; los
-  contadores del frontmatter (completed_plans, etc.) SI son seguros via
-  `state.advance-plan` porque son YAML estructurado, no prosa.
+Plan: 3 of 4 (32-01/32-02 con SUMMARY; 32-03/32-04 pendientes)
+Status: 32-02 ejecutado y commiteado (3/3 tasks + 2 fixes menores de Rule 1,
+  commits bd8a29e/8084071/e171777). POST /api/setters/leads/:id/discard
+  (ACT-04): copia el case 'discard' del bulk masivo (POST /leads/bulk,
+  que queda requireRole('admin') intacto y sin ninguna linea tocada) para
+  que CUALQUIER rol pueda descartar un lead propio, con los 2 guards de
+  dueno/visibilidad ya establecidos. Cierra el compromiso pendiente como
+  'vencido' y SIEMPRE llama _clearNextAction(lead) -- la parte que el
+  bulk nunca tuvo, para que un descarte no deje un lead colgado en Hoy.
+  Razon que implica DNC (no_contactar o doNotCall:true) marca los 4
+  campos con el nombre del user autenticado, nunca del body; razon fuera
+  de whitelist -> 200 sin razon (D-14, nunca 4xx). POST
+  /api/setters/leads/:id/send-material (ACT-05): mismo modelo de evento
+  que WhatsApp (reusa _actRegisterSendEvent de 32-01 con canal:'email'),
+  via resend (Resend real, corta con 409/502 sin registrar nada si falla)
+  o mailto (solo arma el link, honesto igual que WhatsApp), cero tracking
+  de apertura (D-18). _sendPlaceholderEmail gano un adjunto .ics OPCIONAL
+  sin cambiar send-placeholder. [Rule 1] dos fixes menores encontrados
+  escribiendo la Task 3: (a) un comentario que citaba literal "<img" y
+  luego "pixel" disparaba en falso su propio test de fuente D-18 --
+  reescrito en prosa; (b) el fixture del test 7 de la verificacion por
+  mutacion no ejercitaba la linea que debia probar (_closeCommitment ya
+  apaga el reloj solo cuando origen='compromiso', que es el caso del test
+  6 -- el _clearNextAction propio del endpoint solo importa para OTROS
+  origenes de nextAction), se le agrego un nextAction manual pre-existente
+  al fixture. Verificacion por mutacion post-fix: 1/21 rojo (el 7, no los
+  2 que el plan predecia) -- documentado en el SUMMARY con el porque
+  exacto. 21 tests nuevos en tests/act-discard-email.test.js. Suite
+  completa 1550/1550 (baseline 1529 + 21). git diff | grep fetch( vacio
+  en la Task 2 (ningun call site nuevo a la API de Resend, aunque el grep
+  literal de "api.resend.com/emails" del plan asumia 1 ocurrencia total en
+  el archivo cuando ya habia 3 pre-existentes -- documentado en el
+  SUMMARY). public/ sin tocar -- cero bump de cache-buster.
+  ACT-04/05 completos.
 Resume file: None
-Last activity: 2026-08-15 -- Phase 32 Plan 1 (POST .../whatsapp-send)
-  completado, ACT-01/02/03 cerrados.
+Last activity: 2026-08-15 -- Phase 32 Plan 2 (discard + send-material)
+  completado, ACT-04/05 cerrados. Quedan 32-03 (frontend WhatsApp) y
+  32-04 (frontend descartar).
 
 Phase 31 (comm-compromisos): **COMPLETE** (4/4 planes, 2026-08-15). D-10:
   dos secciones nuevas en Hoy ("Mis compromisos" / "Esperando del
