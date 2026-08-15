@@ -7147,6 +7147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : `<div style="margin-bottom:12px;">
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar contacto que me pasaron (tel / email)</button>
         </div>`}
+        ${_doctorIgBlockHtml(lead)}
         <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px;"></div>
         <div class="pd-disposition-grid">
           ${[
@@ -8370,6 +8371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${_expChips.length ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">${_expChips.join('')}</div>` : ''}
           ${_briefBlock}
           ${_altBlock}
+          ${_doctorIgBlockHtml(l)}
           <h4 class="call-detail-section-title">Ficha del lead</h4>
           <div class="call-detail-grid">${fichaItems.join('')}</div>
 
@@ -8792,6 +8794,75 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       return '';
     }
+
+    // Saltear la recepción y llegar al doctor: botón que busca el Instagram DEL
+    // TITULAR (no el de la clínica — ese ya lo tienen y lo maneja un community
+    // manager, no sirve para esto). Google restringido a site:instagram.com en
+    // vez del buscador interno de IG (malo para nombres de personas). Solo
+    // habilitado si lead.doctor es un nombre usable — sin nombre, no hay término
+    // de búsqueda posible.
+    function _doctorSearchTerm(lead) {
+      const doctor = String((lead && lead.doctor) || '').trim();
+      if (!doctor || doctor.includes('N/A')) return '';
+      const city = String((lead && lead.city) || '').trim();
+      return `site:instagram.com "${doctor}" odontólogo${city ? ' ' + city : ''}`;
+    }
+    function _doctorSearchUrl(lead) {
+      const term = _doctorSearchTerm(lead);
+      return term ? 'https://www.google.com/search?q=' + encodeURIComponent(term) : '';
+    }
+    // Bloque reusado en la ficha del lead y en el Power Dialer. Sin doctor
+    // válido: botón deshabilitado (gris --blocked, nunca rojo) con el motivo a
+    // la vista. Con doctor válido: link de búsqueda (pestaña nueva, con el
+    // término exacto en el title) + input para pegar el perfil encontrado en
+    // un paso — _callsSaveDoctorInstagram persiste con instagramSource='manual'
+    // (dato confirmado por una persona). Nunca escribe nada por su cuenta.
+    function _doctorIgBlockHtml(l) {
+      if (!l) return '';
+      const term = _doctorSearchTerm(l);
+      const idAttr = escHtml(l.id);
+      if (!term) {
+        return `<div style="margin:0 0 12px; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:8px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <button type="button" disabled title="Sin nombre del titular — no se puede armar la búsqueda" style="padding:7px 13px; background:var(--blocked-soft); color:var(--blocked); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px; font-weight:600; cursor:not-allowed; font-family:inherit;">Buscar Instagram del Dr.</button>
+          <span style="font-size:11px; color:var(--text-tertiary);">sin nombre del titular</span>
+        </div>`;
+      }
+      const url = _doctorSearchUrl(l);
+      const weak = l.doctorSource === 'parser-debil';
+      const curIg = String(l.instagram || '').trim();
+      const savedManual = l.instagramSource === 'manual' && curIg;
+      return `<div style="margin:0 0 12px; padding:11px 13px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent); border-radius:8px;">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer" title="Busca: ${escHtml(term)}" style="padding:7px 13px; background:var(--accent); color:var(--on-accent); border-radius:7px; font-size:11.5px; font-weight:700; text-decoration:none; white-space:nowrap;">Buscar Instagram del Dr.</a>
+          <span style="font-size:11.5px; color:var(--text-secondary); overflow:hidden; text-overflow:ellipsis;">${escHtml(l.doctor)}</span>
+          ${weak ? '<span style="font-size:10.5px; color:var(--warning); font-weight:600;">nombre inferido · verificar</span>' : ''}
+        </div>
+        <div style="display:flex; gap:6px; margin-top:9px; align-items:center;">
+          <input id="doctor-ig-input-${idAttr}" type="text" value="${escHtml(curIg)}" placeholder="@usuario o link de instagram.com/…" style="flex:1; min-width:160px; box-sizing:border-box; padding:7px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; font-family:inherit;">
+          <button type="button" onclick="window._callsSaveDoctorInstagram('${idAttr}')" style="padding:7px 12px; background:var(--accent); color:var(--on-accent); border:none; border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar</button>
+        </div>
+        ${savedManual ? '<div style="font-size:10px; color:var(--text-tertiary); margin-top:5px;">confirmado manualmente</div>' : ''}
+      </div>`;
+    }
+    window._doctorSearchUrl = _doctorSearchUrl;
+    // Guarda el perfil que el operador encontró — en un paso, sin salir del
+    // flujo. Lee el input del DOM (no el valor por parámetro): un handle/URL
+    // pegado puede traer comillas/caracteres que romperían un onclick armado a
+    // mano. Vaciar el campo borra instagram + su fuente.
+    window._callsSaveDoctorInstagram = async function(leadId) {
+      const input = document.getElementById('doctor-ig-input-' + leadId);
+      if (!input) return;
+      const instagram = (input.value || '').trim();
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/instagram'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ instagram }) });
+        const d = await r.json();
+        if (!r.ok) { window.showToast?.(d.error || 'Error', { type: 'error' }); return; }
+        if (window._leadStoreApply) window._leadStoreApply(leadId, { instagram: d.instagram, instagramSource: d.instagramSource });
+        window.showToast?.(d.instagram ? 'Instagram guardado' : 'Instagram borrado', { type: 'success' });
+        if (typeof _refreshLeadPanels === 'function') _refreshLeadPanels(leadId);
+        if (typeof _pd !== 'undefined' && _pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdRender();
+      } catch (e) { window.showToast?.('Error de red', { type: 'error' }); }
+    };
 
     // Interpreta el error REAL de SerpApi (errors.serpDetail del backend) en vez de
     // asumir siempre "throttle 200/hora". Devuelve { msg, isThrottle }.
