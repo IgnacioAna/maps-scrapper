@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-14T22:35:00.000Z"
-last_activity: 2026-08-14
+last_updated: "2026-08-15T02:48:11.795Z"
+last_activity: 2026-08-15
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 10
+  completed_plans: 8
   percent: 29
 ---
 
@@ -39,11 +39,10 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 30 (GATE — Cierra la llamada, define el próximo paso) — NOT PLANNED YET (solo `30-CONTEXT.md`, sin `PLAN.md`)
-Status: Phase 29 (NEXT — El reloj único) **COMPLETE** (4/4 planes, 2026-08-14). `lead.nextAction` reemplaza los dos relojes viejos (`callbackAt` suelto + `followUps`), migración ensayada contra una copia de datos reales (166 leads migrables de 6.413) y lista para producción vía `node scripts/one-shot-migrate-next-action-2026-08-14.mjs [--apply]` (idempotente, no rompe nada si no se corre — las lecturas siguen derivando). Próximo paso: `/gsd:plan-phase 30` (aún no planificada) o correr el script de migración en producción tras el deploy.
-`/gsd:plan-phase 30`
+Phase: 30 (GATE — Cierra la llamada, define el próximo paso) — planificada en 3 planes (30-01 backend, 30-02 frontend, 30-03 feedback GATE-04); 1/3 ejecutado.
+Status: 30-01 (Backend: defaults D-02 + red de seguridad GATE-01 + override sanitizado + esperar_respuesta) **COMPLETE** (2026-08-15). `_applyCallOutcome` garantiza por construcción que ningún outcome no-terminal deja el lead sin `nextAction`: `answered_interested` → callback +3 días manual, `hung_up` 1er corte → cadencia +24h, `placeholder_sent` → esperar_respuesta +48h, override sanitizado del cliente sobre `call-disposition`, y una red de seguridad final que nunca responde 4xx (protege también el webhook del agente de voz). Próximo paso: 30-02 (frontend — el control de UI que obliga a elegir antes de confirmar, D-01 capa cliente) y 30-03 (GATE-04, aviso universal de destino).
 Resume file: None
-Last activity: 2026-08-14 -- 29-04 ejecutado (tests de la migración, ensayo contra datos reales, script one-shot de producción, doc CLAUDE.md #184, fix Rule 1 en _callSetterId), suite completa 1293/1293
+Last activity: 2026-08-15 -- 30-01 ejecutado (defaults D-02, red de seguridad GATE-01, override sanitizado, esperar_respuesta en send-placeholder, 12 tests nuevos en tests/gate-next-action.test.js + 2 aserciones desactualizadas de la Phase 29 corregidas), suite completa 1320/1320
 
 Phase 29 (NEXT — El reloj único): **COMPLETE** (4/4 planes, 2026-08-14).
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
@@ -1036,3 +1035,32 @@ prueban el camino de respaldo [`agendo:true` sin `/book` previo SÍ crea la
 cita]. 27 tests nuevos, suite completa 1131/1131 verde. VOICE-05 completado
 — **Phase 24 (Integración backend Retell) CERRADA, 5/5 planes**. Próximo:
 planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
+
+## Decisiones de ejecución (Phase 30)
+
+- **30-01:** el mapa D-02 se implementó literal contra el CONTEXT, pero 2
+  tests preexistentes (agregados en sesiones de la Phase 20/2026-08-12,
+  ANTES del research que fundamentó D-02) codificaban el comportamiento
+  viejo: esperaban `callbackAt` vacío tras un `hung_up` 1er corte o tras
+  corregir una auto-marca a `answered_interested`, cuando D-02 ahora
+  reemplaza esos huecos con un default fresco en vez de dejarlos en blanco.
+  Actualizados (`tests/hangup-cap.test.js`, `tests/disposition-enforcement.test.js`)
+  — no estaban en `files_modified` del plan pero son consecuencia directa
+  de D-02. Detalle completo en `30-01-SUMMARY.md`.
+- **30-01:** `_gateSanitizeNextActionOverride` NO se expone en
+  `globalThis.__voiceAgent` — el acceptance criterion pedía "exactamente 2
+  hits" del nombre de la función en todo `index.js` (declaración + uso en
+  el endpoint). Se ejercita solo vía HTTP en los tests.
+- **30-01:** *Last updated: 2026-08-15 (30-01 ejecutado — el backend del
+  gate: defaults D-02 por outcome dentro de `_applyCallOutcome`
+  [`answered_interested` → callback +3d manual, `hung_up` 1er corte →
+  cadencia +24h], red de seguridad GATE-01 [cualquier outcome no-terminal
+  sin `nextAction` recibe un default, nunca 4xx — protege también el
+  webhook del agente de voz], override sanitizado del cliente sobre
+  `call-disposition` [`_gateSanitizeNextActionOverride`, `origen` siempre
+  forzado a `'manual'`], y `esperar_respuesta` +48h en `send-placeholder`.
+  12 tests nuevos en `tests/gate-next-action.test.js`, suite completa
+  1320/1320 verde, `metrics-consistency` sin mover un número [D-09].
+  Requirements GATE-01/GATE-02 marcados completos. Próximo: 30-02
+  [frontend — control de UI que obliga a elegir antes de confirmar] y
+  30-03 [GATE-04, aviso universal de destino]).*

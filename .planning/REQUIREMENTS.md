@@ -282,10 +282,10 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### GATE — Cerrar la llamada define el próximo paso
 
-- [ ] **GATE-01**: No se puede cerrar una disposición sin definir un
+- [x] **GATE-01**: No se puede cerrar una disposición sin definir un
   `nextAction` o marcar un estado terminal. Un lead con interés declarado no
   puede quedar sin fecha.
-- [ ] **GATE-02**: Cada resultado de llamada propone un próximo paso por
+- [x] **GATE-02**: Cada resultado de llamada propone un próximo paso por
   defecto, editable (interesado, "mandame info", "llamame en X").
 - [ ] **GATE-03**: Al programar una fecha, se ve un calendario real con el
   mes a la vista y etiquetas relativas ("en 3 días", "el martes"), sin tener
