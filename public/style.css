@@ -5,38 +5,68 @@
 ═════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ───── BACKGROUNDS (cálidos, baja fatiga) ───── */
-  --bg-app: #0F1115;
-  --bg-surface: #161922;
-  --bg-elevated: #1C2030;
-  --bg-hover: #1F2433;
-  --bg-input: #11141B;
-  --bg-sidebar: #0C0E13;
+  /* ═══════════════════════════════════════════════════════════════
+     PALETA DE MARCA SCM — fuente: BRAND-SCM.md (2026-08-14)
+     "El instrumento que te deja llamar tranquilo."
+     Los 4 tokens de superficie, la línea, los 2 de texto y el acento
+     salen LITERAL del kit. Los derivados (hover, input, sidebar,
+     bordes sutil/fuerte) siguen su regla de micro-elevación: cada
+     capa 3-6% más clara, superficies planas, sin gradientes amplios.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* ───── BACKGROUNDS (escalera de elevación, nunca negro puro) ───── */
+  --bg-app: #141619;       /* kit: base */
+  --bg-surface: #1E2227;   /* kit: superficie — paneles, tarjetas */
+  --bg-elevated: #262B31;  /* kit: superficie-alta — modales, elevados */
+  --bg-hover: #2B3037;     /* derivado: un escalón sobre elevada */
+  --bg-input: #191C21;     /* derivado: hundido respecto de superficie */
+  --bg-sidebar: #101317;   /* derivado: bajo la base, para separar */
 
   /* ───── BORDERS ───── */
-  --border-subtle: #1F2433;
-  --border-default: #262B3B;
-  --border-strong: #323847;
+  --border-subtle: #262B31;   /* derivado: = superficie-alta, casi invisible */
+  --border-default: #31373E;  /* kit: linea */
+  --border-strong: #3D444C;   /* derivado: un escalón sobre la línea */
 
-  /* ───── TEXT (no blanco puro, blanco cálido) ───── */
-  --text-primary: #E5E7E2;
-  --text-secondary: #B4B8C2;
-  --text-tertiary: #7E8494;
-  /* UX audit 2026-05-23: --text-faint era #565C6E sobre bg-app #0F1115 ≈ 2.82:1
-     contrast — falla WCAG AA. Subido a #7E8494 (igual a --text-tertiary,
-     5.05:1 → pasa AA) para labels footer/meta. */
-  --text-faint: #7E8494;
+  /* ───── TEXT ─────
+     Medido sobre la paleta nueva (WCAG 2.1):
+       texto        sobre base 16.9:1 · superficie 14.9:1
+       texto-suave  sobre base  8.3:1 · superficie  7.3:1 · elevada 6.5:1
+     El objetivo del kit es 7:1 porque la interfaz se graba en video.
+     La combinación suave-sobre-elevada queda en 6.5:1 — es el único par
+     por debajo del objetivo; anotado para la prueba de 60s en celular. */
+  --text-primary: #F2F4F5;    /* kit: texto */
+  --text-secondary: #A9B0B7;  /* kit: texto-suave */
+  /* Regla 5 del kit: 7:1 en TODO lo que aparezca en cámara. Por eso
+     terciario y faint NO bajan de texto-suave — un gris más apagado
+     rompería el objetivo de contraste apenas entre en pantalla. */
+  --text-tertiary: #A9B0B7;
+  --text-faint: #A9B0B7;
 
-  /* ───── ACCENT (violeta menos saturado, sostenible 8h) ───── */
-  --accent: #9D85F2;
-  --accent-hover: #B19CF5;
-  --accent-soft: rgba(157, 133, 242, 0.10);
-  --accent-medium: rgba(157, 133, 242, 0.18);
-  --accent-strong: rgba(157, 133, 242, 0.30);
+  /* ───── ACENTO ─────
+     Regla central del kit: el acento de marca ES el verde de "número
+     habilitado". Un solo color, sin competencia interna. Por eso
+     --success apunta acá abajo en vez de ser un verde propio. */
+  --accent: #3FA872;        /* kit: acento */
+  --accent-hover: #4FBF84;  /* kit: acento-hover */
+  --accent-soft: rgba(63, 168, 114, 0.10);
+  --accent-medium: rgba(63, 168, 114, 0.18);
+  --accent-strong: rgba(63, 168, 114, 0.30);
+  /* Texto sobre fondo acento: el blanco da 2.7:1 (falla). El oscuro de
+     base da 6.1:1. Todo CTA de fondo verde lleva label oscuro. */
+  --on-accent: #141619;
+
+  /* ───── ESTADO BLOQUEADO / EXCLUIDO ─────
+     El kit lo dice explícito: un número que no se puede marcar no
+     necesita alarma, necesita ausencia de acción. Gris atenuado,
+     nunca rojo, y sin botón de llamar. */
+  --blocked: #7E858C;       /* kit: bloqueado-gris */
+  --blocked-soft: rgba(126, 133, 140, 0.12);
 
   /* ───── SEMANTIC (sólo cuando son funcionales) ───── */
-  --success: #4ADE80;
-  --success-soft: rgba(74, 222, 128, 0.10);
+  /* success COLAPSA en el acento (regla "un solo acento saturado"):
+     el verde de habilitado y el de marca son el mismo color. */
+  --success: var(--accent);
+  --success-soft: var(--accent-soft);
   --warning: #FBBF24;
   --warning-soft: rgba(251, 191, 36, 0.10);
   --danger: #F87171;
@@ -140,7 +170,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top, var(--accent-soft), transparent 36%), var(--bg-app);
+  background: var(--bg-app); /* gradiente amplio de fondo (hero) aplanado — kit: sin gradientes amplios */
   z-index: 2000;
   padding: var(--space-6);
 }
@@ -304,7 +334,7 @@ body {
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  background: linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1024,7 +1054,7 @@ body:has(#view-social.active) .global-location-panel {
   background: rgba(255, 255, 255, 0.012);
 }
 #setter-table[data-mode="simple"] tbody tr:hover {
-  background: rgba(157, 133, 242, 0.07);
+  background: var(--accent-soft);
 }
 /* Cuando modo simple esta activo, ocultar el floating scrollbar (no necesario) */
 #view-crm:has(#setter-table[data-mode="simple"]) #crm-floating-scrollbar {
@@ -1036,14 +1066,14 @@ body:has(#view-social.active) .global-location-panel {
   font-size: 11px;
   padding: 5px 10px;
   border-radius: 6px;
-  background: rgba(157, 133, 242, 0.08);
-  color: var(--accent, #9d85f2);
-  border: 1px solid rgba(157, 133, 242, 0.25);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent-strong);
   cursor: pointer;
   margin-left: 8px;
 }
 .table-mode-toggle:hover {
-  background: rgba(157, 133, 242, 0.15);
+  background: var(--accent-medium);
 }
 
 /* ── Widget "Hoy" ────────────────────────────────────────── */
@@ -1053,8 +1083,8 @@ body:has(#view-social.active) .global-location-panel {
   gap: 10px;
   padding: 16px 20px;
   margin: 10px 0 14px;
-  background: linear-gradient(135deg, rgba(157, 133, 242, 0.08) 0%, rgba(157, 133, 242, 0.02) 100%);
-  border: 1px solid rgba(157, 133, 242, 0.22);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%);
+  border: 1px solid var(--accent-medium);
   border-radius: 14px;
 }
 .hoy-greet {
@@ -1093,8 +1123,8 @@ body:has(#view-social.active) .global-location-panel {
   transition: all 0.15s ease;
 }
 .hoy-action-chip:hover {
-  background: rgba(157, 133, 242, 0.10);
-  border-color: var(--accent, #9d85f2);
+  background: var(--accent-soft);
+  border-color: var(--accent);
   transform: translateY(-1px);
 }
 .hoy-action-chip.urgent {
@@ -1151,7 +1181,7 @@ body:has(#view-social.active) .global-location-panel {
   background: rgba(255, 255, 255, 0.03);
 }
 .lead-tab-btn.active {
-  background: var(--accent, #9d85f2);
+  background: var(--accent);
   color: #0E1117;
   font-weight: 600;
 }
@@ -1170,8 +1200,8 @@ body:has(#view-social.active) .global-location-panel {
   gap: 16px;
   padding: 0;
   margin: 0 0 16px;
-  background: linear-gradient(135deg, rgba(157, 133, 242, 0.12) 0%, rgba(91, 185, 116, 0.06) 100%);
-  border: 1px solid rgba(157, 133, 242, 0.30);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, rgba(91, 185, 116, 0.06) 100%);
+  border: 1px solid var(--accent-strong);
   border-radius: 14px;
   position: relative;
   overflow: hidden;
@@ -1179,7 +1209,7 @@ body:has(#view-social.active) .global-location-panel {
 .welcome-banner::before {
   content: '';
   width: 5px;
-  background: linear-gradient(180deg, var(--accent, #9d85f2) 0%, var(--success, #5bb974) 100%);
+  background: linear-gradient(180deg, var(--accent) 0%, var(--success, #5bb974) 100%);
 }
 .welcome-content {
   padding: 18px 20px;
@@ -1267,7 +1297,7 @@ body:has(#view-social.active) .global-location-panel {
 }
 #view-crm .table-container::-webkit-scrollbar { height: 14px; width: 14px; }
 #view-crm .table-container::-webkit-scrollbar-thumb {
-  background: var(--accent, #9d85f2);
+  background: var(--accent);
   border-radius: 7px;
   border: 2px solid var(--bg-app, #0f1115);
 }
@@ -1289,7 +1319,7 @@ body:has(#view-social.active) .global-location-panel {
 #crm-floating-scrollbar > div { height: 1px; }
 #crm-floating-scrollbar::-webkit-scrollbar { height: 14px; }
 #crm-floating-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--accent, #9d85f2);
+  background: var(--accent);
   border-radius: 7px;
   border: 2px solid var(--bg-app, #0f1115);
 }
@@ -1390,7 +1420,7 @@ tbody tr:hover td {
   border-radius: var(--radius-md);
   background: var(--accent-soft);
   border: 1px solid var(--accent-strong);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%239D85F2' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cline x1='12' y1='18' x2='12' y2='12'/%3E%3Cline x1='9' y1='15' x2='15' y2='15'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%233FA872' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8'/%3E%3Cline x1='12' y1='18' x2='12' y2='12'/%3E%3Cline x1='9' y1='15' x2='15' y2='15'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: center;
   margin-bottom: var(--space-2);
@@ -1645,8 +1675,8 @@ td.empty-state .empty-state-content::before {
   gap: 10px;
   padding: 8px 16px;
   margin: 8px 0 0;
-  background: rgba(157,133,242,0.06);
-  border: 1px solid rgba(157,133,242,0.25);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-strong);
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -1749,7 +1779,7 @@ td.empty-state .empty-state-content::before {
   border-radius: 16px;
   background:
     radial-gradient(130% 130% at 0% 0%, color-mix(in srgb, var(--tile-accent) 9%, transparent) 0%, transparent 46%),
-    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.22);
   display: flex;
@@ -1858,7 +1888,7 @@ td.empty-state .empty-state-content::before {
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.myp-toolbar-field select:hover { border-color: rgba(157, 133, 242, 0.4); }
+.myp-toolbar-field select:hover { border-color: var(--accent-strong); }
 /* Rango personalizado (2026-07-24): inputs date del período custom */
 .myp-date-input {
   padding: 7px 9px;
@@ -1871,7 +1901,7 @@ td.empty-state .empty-state-content::before {
   color-scheme: dark;
   transition: border-color 0.15s;
 }
-.myp-date-input:hover, .myp-date-input:focus { border-color: rgba(157, 133, 242, 0.4); outline: none; }
+.myp-date-input:hover, .myp-date-input:focus { border-color: var(--accent-strong); outline: none; }
 .myp-range-chip {
   margin-left: auto;
   font-size: 11.5px;
@@ -1906,8 +1936,8 @@ td.empty-state .empty-state-content::before {
 }
 .seg-btn:hover { color: var(--text-primary); }
 .seg-btn.active {
-  background: rgba(157, 133, 242, 0.16);
-  border-color: rgba(157, 133, 242, 0.35);
+  background: var(--accent-medium);
+  border-color: var(--accent-strong);
   color: var(--accent);
   font-weight: 600;
 }
@@ -1998,7 +2028,7 @@ td.empty-state .empty-state-content::before {
   position: relative;
   border-radius: 16px;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.5) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.20);
 }
@@ -2091,14 +2121,14 @@ td.empty-state .empty-state-content::before {
 .hoy-ficha-btn:hover {
   color: var(--text-primary);
   border-color: var(--accent);
-  background: rgba(157, 133, 242, 0.08);
+  background: var(--accent-soft);
 }
 .hoy-empty { padding: 4px 18px 16px; color: var(--text-tertiary); font-size: 11.5px; }
 
 /* Biblioteca de llamadas (Entrenamiento IA) — tarjeta premium */
 .train-call-card {
   border-radius: 14px;
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.5) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 6px 18px rgba(0, 0, 0, 0.16);
   min-width: 0;
@@ -2180,15 +2210,15 @@ td.empty-state .empty-state-content::before {
   font-weight: 600;
   padding: 6px 14px;
   border-radius: 8px;
-  background: rgba(157, 133, 242, 0.13);
-  border: 1px solid rgba(157, 133, 242, 0.35);
+  background: var(--accent-medium);
+  border: 1px solid var(--accent-strong);
   color: var(--accent);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
   transition: background 0.15s, border-color 0.15s;
 }
-.tr-open-btn:hover { background: rgba(157, 133, 242, 0.22); border-color: var(--accent); }
+.tr-open-btn:hover { background: var(--accent-medium); border-color: var(--accent); }
 .training-call-body { padding: 0 16px 16px; }
 .tr-airead {
   display: flex;
@@ -2202,9 +2232,9 @@ td.empty-state .empty-state-content::before {
 .tr-airead-reason { color: var(--text-secondary); }
 .tr-summary {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(157, 133, 242, 0.10) 0%, transparent 50%),
-    rgba(157, 133, 242, 0.04);
-  border: 1px solid rgba(157, 133, 242, 0.22);
+    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 50%),
+    var(--accent-soft);
+  border: 1px solid var(--accent-medium);
   border-radius: 12px;
   padding: 13px 16px;
   margin-bottom: 12px;
@@ -2289,8 +2319,8 @@ td.empty-state .empty-state-content::before {
   border-bottom-left-radius: 5px;
 }
 .tr-msg.setter .tr-bubble {
-  background: rgba(157, 133, 242, 0.10);
-  border: 1px solid rgba(157, 133, 242, 0.22);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-medium);
   color: var(--text-primary);
   border-bottom-right-radius: 5px;
 }
@@ -2307,7 +2337,7 @@ td.empty-state .empty-state-content::before {
   resize: vertical;
   transition: border-color 0.15s;
 }
-.tr-coach-input:focus { outline: none; border-color: rgba(157, 133, 242, 0.5); }
+.tr-coach-input:focus { outline: none; border-color: var(--accent-strong); }
 .tr-coach-btn {
   margin-top: 12px;
   padding: 10px 22px;
@@ -2324,8 +2354,8 @@ td.empty-state .empty-state-content::before {
 .tr-coach-btn:hover { filter: brightness(1.1); }
 .tr-coach-answer {
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(157, 133, 242, 0.08) 0%, transparent 50%),
-    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 50%),
+    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 12px;
   padding: 15px 18px;
@@ -2378,8 +2408,8 @@ td.empty-state .empty-state-content::before {
   padding: 16px 20px;
   border-radius: 16px;
   background:
-    radial-gradient(130% 120% at 0% 0%, rgba(157, 133, 242, 0.08) 0%, transparent 44%),
-    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+    radial-gradient(130% 120% at 0% 0%, var(--accent-soft) 0%, transparent 44%),
+    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.18);
   font-size: 13px;
@@ -3396,10 +3426,7 @@ a:focus-visible {
 
 /* Login / Auth screen — hero rediseñado */
 .auth-screen {
-  background:
-    radial-gradient(ellipse at top right, rgba(157, 133, 242, 0.18), transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(157, 133, 242, 0.08), transparent 45%),
-    var(--bg-app);
+  background: var(--bg-app); /* gradiente amplio de fondo (hero) aplanado — kit: sin gradientes amplios */
 }
 
 .auth-card {
@@ -3431,7 +3458,7 @@ a:focus-visible {
   border-radius: 12px;
   background:
     radial-gradient(120% 90% at 30% 20%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%),
-    linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%);
+    linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3442,9 +3469,9 @@ a:focus-visible {
   color: var(--bg-app);
   letter-spacing: -0.02em;
   box-shadow:
-    0 8px 24px rgba(157, 133, 242, 0.30),
+    0 8px 24px var(--accent-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 0 0 1px rgba(157, 133, 242, 0.25);
+    0 0 0 1px var(--accent-strong);
   margin-bottom: 10px;
 }
 
@@ -3481,18 +3508,15 @@ a:focus-visible {
    con más profundidad.
 ═════════════════════════════════════════════════════════════════ */
 .auth-screen {
-  background:
-    radial-gradient(ellipse 70% 55% at 50% -8%, rgba(157, 133, 242, 0.22), transparent 60%),
-    radial-gradient(ellipse at bottom left, rgba(157, 133, 242, 0.07), transparent 45%),
-    var(--bg-app);
+  background: var(--bg-app); /* gradiente amplio de fondo (hero) aplanado — kit: sin gradientes amplios */
 }
 .auth-card {
   max-width: 428px;
   border-radius: 22px;
   padding: 34px 32px;
   background:
-    radial-gradient(130% 90% at 0% 0%, rgba(157, 133, 242, 0.07) 0%, transparent 42%),
-    linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.7) 100%);
+    radial-gradient(130% 90% at 0% 0%, var(--accent-soft) 0%, transparent 42%),
+    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.04) inset,
@@ -3531,14 +3555,14 @@ a:focus-visible {
   border-radius: 12px;
   font-weight: 600;
   background: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
-  box-shadow: 0 8px 22px rgba(157, 133, 242, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 22px var(--accent-strong), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   transition: transform 0.14s ease, box-shadow 0.18s ease, filter 0.15s ease;
 }
 .auth-form .pill-btn:hover,
 .auth-form .btn-primary:hover {
   transform: translateY(-1px);
   filter: brightness(1.04);
-  box-shadow: 0 12px 30px rgba(157, 133, 242, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 30px var(--accent-strong), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .auth-form .pill-btn:active,
 .auth-form .btn-primary:active { transform: translateY(0); }
@@ -3548,19 +3572,19 @@ a:focus-visible {
   position: relative;
   background:
     radial-gradient(110% 80% at 30% 20%, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0) 55%),
-    linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%);
+    linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   box-shadow:
-    0 4px 10px rgba(157, 133, 242, 0.25),
+    0 4px 10px var(--accent-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 0 1px rgba(157, 133, 242, 0.2);
+    0 0 0 1px var(--accent-medium);
 }
 
 .logo-toggle:hover .logo-mark {
   transform: scale(1.06);
   box-shadow:
-    0 6px 16px rgba(157, 133, 242, 0.4),
+    0 6px 16px var(--accent-strong),
     inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 0 0 1px rgba(157, 133, 242, 0.35);
+    0 0 0 1px var(--accent-strong);
 }
 
 /* Sidebar branding con tagline mini */
@@ -3618,7 +3642,7 @@ a:focus-visible {
 
 .btn-primary.pill-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(157, 133, 242, 0.32);
+  box-shadow: 0 6px 16px var(--accent-strong);
 }
 
 .btn-primary.pill-btn:active {
@@ -3627,8 +3651,8 @@ a:focus-visible {
 
 /* Subtle pulse en el logo del sidebar cuando hay llamada activa */
 @keyframes scmLogoPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(157, 133, 242, 0); }
-  50% { box-shadow: 0 0 0 6px rgba(157, 133, 242, 0.18); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); }
+  50% { box-shadow: 0 0 0 6px var(--accent-medium); }
 }
 
 body.has-active-call .sidebar .logo-mark {
@@ -3650,7 +3674,7 @@ body.has-active-call .sidebar .logo-mark {
 
 /* Cards más definidas con borde + sombra interna sutil */
 .card {
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.4) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.03) inset,
@@ -3704,7 +3728,7 @@ body.has-active-call .sidebar .logo-mark {
 }
 
 .menu-item.active {
-  background: linear-gradient(90deg, rgba(157, 133, 242, 0.1), rgba(157, 133, 242, 0.02));
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent-soft));
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -3712,9 +3736,7 @@ body.has-active-call .sidebar .logo-mark {
    los tiles/cards. Solo estética; estructura y colapsado intactos.
 ═════════════════════════════════════════════════════════════════ */
 .sidebar {
-  background:
-    linear-gradient(180deg, #10131C 0%, var(--bg-sidebar) 44%),
-    var(--bg-sidebar);
+  background: var(--bg-sidebar); /* gradiente amplio de fondo (panel persistente) aplanado */
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 1px 0 0 rgba(0, 0, 0, 0.35), 10px 0 30px rgba(0, 0, 0, 0.18);
 }
@@ -3763,7 +3785,7 @@ body.has-active-call .sidebar .logo-mark {
 /* Activo refinado (2026-07-07): tinte que se desvanece a la derecha (no caja
    dura), texto/ícono en acento, barra fina redondeada con glow sutil. */
 .menu-item.active {
-  background: linear-gradient(90deg, rgba(157, 133, 242, 0.15) 0%, rgba(157, 133, 242, 0.04) 62%, transparent 100%);
+  background: linear-gradient(90deg, var(--accent-medium) 0%, var(--accent-soft) 62%, transparent 100%);
   color: var(--accent-hover);
   font-weight: 600;
 }
@@ -3773,12 +3795,12 @@ body.has-active-call .sidebar .logo-mark {
   width: 3px;
   border-radius: 0 3px 3px 0;
   background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  box-shadow: 0 0 8px rgba(157, 133, 242, 0.35);
+  box-shadow: 0 0 8px var(--accent-strong);
 }
 /* Colapsado: el ítem activo se ve como chip de acento suave, no barra lateral */
 .sidebar.collapsed .menu-item.active {
-  background: rgba(157, 133, 242, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(157, 133, 242, 0.22);
+  background: var(--accent-medium);
+  box-shadow: inset 0 0 0 1px var(--accent-medium);
 }
 .sidebar.collapsed .menu-item.active::before { display: none; }
 
@@ -3790,7 +3812,7 @@ body.has-active-call .sidebar .logo-mark {
 
 /* Stats prominentes con sombra interna sutil */
 .stat-card {
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(255, 255, 255, 0.01) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
   transition: transform 0.15s ease, border-color 0.15s ease;
@@ -3798,7 +3820,7 @@ body.has-active-call .sidebar .logo-mark {
 
 .stat-card:hover {
   transform: translateY(-1px);
-  border-color: rgba(157, 133, 242, 0.18);
+  border-color: var(--accent-medium);
 }
 
 /* Inputs con focus state más prominente */
@@ -3811,7 +3833,7 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--accent) !important;
-  box-shadow: 0 0 0 3px rgba(157, 133, 242, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* Modal overlays con backdrop más sofisticado */
@@ -3856,7 +3878,7 @@ select:focus {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(157, 133, 242, 0.3);
+  background: var(--accent-strong);
   background-clip: padding-box;
 }
 
@@ -3892,7 +3914,7 @@ textarea:disabled {
 
 /* Selection color con brand */
 ::selection {
-  background: rgba(157, 133, 242, 0.35);
+  background: var(--accent-strong);
   color: #fff;
 }
 
@@ -3927,15 +3949,15 @@ textarea:disabled {
 .calls-country-chip:hover {
   border-color: var(--accent);
   color: var(--text-primary);
-  background: rgba(157, 133, 242, 0.06);
+  background: var(--accent-soft);
 }
 
 .calls-country-chip.is-active {
-  background: linear-gradient(135deg, rgba(157, 133, 242, 0.18) 0%, rgba(124, 93, 219, 0.12) 100%);
+  background: linear-gradient(135deg, var(--accent-medium) 0%, var(--accent-soft) 100%);
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(157, 133, 242, 0.18);
+  box-shadow: 0 2px 8px var(--accent-medium);
 }
 
 .calls-country-chip .chip-count {
@@ -3949,7 +3971,7 @@ textarea:disabled {
 }
 
 .calls-country-chip.is-active .chip-count {
-  background: rgba(157, 133, 242, 0.25);
+  background: var(--accent-strong);
   color: #fff;
 }
 
@@ -3965,7 +3987,7 @@ textarea:disabled {
 
 .call-row.is-expanded {
   border-color: var(--accent) !important;
-  box-shadow: 0 4px 18px rgba(157, 133, 242, 0.12);
+  box-shadow: 0 4px 18px var(--accent-soft);
 }
 
 .call-expand-btn {
@@ -3986,7 +4008,7 @@ textarea:disabled {
 .call-expand-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(157, 133, 242, 0.05);
+  background: var(--accent-soft);
 }
 
 .call-expand-btn.is-open {
@@ -4081,7 +4103,7 @@ textarea:disabled {
 .call-fup-chip:hover { border-color: var(--accent); color: var(--text-primary); }
 
 .call-fup-chip.is-on {
-  background: rgba(157, 133, 242, 0.18);
+  background: var(--accent-medium);
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
@@ -4158,7 +4180,7 @@ textarea:disabled {
 .call-note-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(157, 133, 242, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .call-note-add-btn {
@@ -4176,7 +4198,7 @@ textarea:disabled {
 
 .call-note-add-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(157, 133, 242, 0.3);
+  box-shadow: 0 3px 10px var(--accent-strong);
 }
 
 .call-history-timeline {
@@ -4236,7 +4258,7 @@ textarea:disabled {
 .call-action-btn:hover {
   border-color: var(--accent);
   color: var(--text-primary);
-  background: rgba(157, 133, 242, 0.06);
+  background: var(--accent-soft);
 }
 
 .call-action-btn.is-wsp:hover {
@@ -4267,13 +4289,13 @@ textarea:disabled {
 }
 .guide-tab:hover { color: var(--text-primary); }
 .guide-tab.active {
-  color: var(--accent, #9D85F2);
-  border-bottom-color: var(--accent, #9D85F2);
+  color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 .guide-section {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.5) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.18);
   margin-bottom: 12px;
   overflow: hidden;
@@ -4281,7 +4303,7 @@ textarea:disabled {
 }
 .guide-section:hover { border-color: var(--accent-strong); }
 .guide-section.open { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 30px rgba(0, 0, 0, 0.26); }
-.guide-section:hover { border-color: rgba(157,133,242,0.35); }
+.guide-section:hover { border-color: var(--accent-strong); }
 .guide-section-header {
   display: flex;
   align-items: center;
@@ -4291,7 +4313,7 @@ textarea:disabled {
   cursor: pointer;
   user-select: none;
 }
-.guide-section-header:hover { background: rgba(157,133,242,0.04); }
+.guide-section-header:hover { background: var(--accent-soft); }
 .guide-section-title {
   display: flex;
   align-items: center;
@@ -4307,8 +4329,8 @@ textarea:disabled {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(157,133,242,0.15);
-  color: var(--accent, #9D85F2);
+  background: var(--accent-medium);
+  color: var(--accent);
   font-size: 12px;
   font-weight: 700;
 }
@@ -4330,16 +4352,16 @@ textarea:disabled {
 .guide-section-body li { margin-bottom: 6px; }
 .guide-section-body strong { color: var(--text-primary); font-weight: 600; }
 .guide-section-body code {
-  background: rgba(157,133,242,0.12);
-  color: var(--accent, #9D85F2);
+  background: var(--accent-soft);
+  color: var(--accent);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Geist Mono', ui-monospace, monospace;
   font-size: 12.5px;
 }
 .guide-section-body .guide-callout {
-  border-left: 3px solid var(--accent, #9D85F2);
-  background: rgba(157,133,242,0.06);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
   padding: 10px 14px;
   border-radius: 0 6px 6px 0;
   margin: 12px 0;
@@ -4361,15 +4383,15 @@ textarea:disabled {
   margin-top: 4px;
   padding: 6px 12px;
   border-radius: 6px;
-  background: rgba(157,133,242,0.12);
-  color: var(--accent, #9D85F2);
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   border: 0;
   transition: background .15s;
 }
-.guide-section-body .guide-goto:hover { background: rgba(157,133,242,0.22); }
+.guide-section-body .guide-goto:hover { background: var(--accent-medium); }
 .guide-search-hit { background: rgba(245,158,11,0.25); border-radius: 3px; padding: 0 2px; }
 .guide-empty {
   text-align: center;
@@ -4418,7 +4440,7 @@ textarea:disabled {
   align-items: center;
   gap: 7px;
   padding: 9px 16px;
-  background: linear-gradient(135deg, var(--accent) 0%, #7C5DDB 100%);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
   color: #0F1115;
   border: none;
   border-radius: 9px;
@@ -4426,10 +4448,10 @@ textarea:disabled {
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.12s, box-shadow 0.15s;
-  box-shadow: 0 2px 10px rgba(157,133,242,0.2);
+  box-shadow: 0 2px 10px var(--accent-medium);
   font-family: inherit;
 }
-.calls-cta-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(157,133,242,0.35); }
+.calls-cta-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px var(--accent-strong); }
 .calls-cta-primary:active { transform: translateY(0); }
 .calls-cta-secondary {
   display: inline-flex;
@@ -4491,7 +4513,7 @@ textarea:disabled {
 .calls-filter-select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(157,133,242,0.12);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .calls-search-wrap {
@@ -4514,7 +4536,7 @@ textarea:disabled {
 .calls-search-input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(157,133,242,0.12);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .calls-search-input::placeholder { color: var(--text-tertiary); }
 
@@ -4547,7 +4569,7 @@ textarea:disabled {
   position: relative;
   padding: 15px 18px;
   border-radius: 14px;
-  background: linear-gradient(180deg, var(--bg-surface) 0%, rgba(15, 17, 21, 0.55) 100%);
+  background: var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.20);
   display: flex;
@@ -4560,7 +4582,7 @@ textarea:disabled {
   border-color: var(--accent-strong);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28), 0 0 0 1px var(--accent-medium);
 }
-.calls-kpi:hover { background: rgba(157,133,242,0.03); }
+.calls-kpi:hover { background: var(--accent-soft); }
 .calls-kpi-label {
   font-size: 10.5px;
   color: var(--text-tertiary);
@@ -4695,10 +4717,10 @@ textarea:disabled {
 .pd-disp-neutral:hover .pd-disp-label { color: var(--text-primary); }
 .pd-disp-neutral:hover .pd-disp-key { background: rgba(255,255,255,0.12); color: var(--text-primary); }
 
-.pd-disp-accent { color: #9D85F2; border-color: rgba(157,133,242,0.4); }
-.pd-disp-accent:hover { background: rgba(157,133,242,0.09); border-color: rgba(157,133,242,0.55); }
-.pd-disp-accent:hover .pd-disp-label { color: #9D85F2; }
-.pd-disp-accent:hover .pd-disp-key { background: rgba(157,133,242,0.22); color: #9D85F2; border-color: rgba(157,133,242,0.4); }
+.pd-disp-accent { color: var(--accent); border-color: var(--accent-strong); }
+.pd-disp-accent:hover { background: var(--accent-soft); border-color: var(--accent-strong); }
+.pd-disp-accent:hover .pd-disp-label { color: var(--accent); }
+.pd-disp-accent:hover .pd-disp-key { background: var(--accent-medium); color: var(--accent); border-color: var(--accent-strong); }
 
 /* Quick-links: outline limpio sin emojis */
 .pd-quick-link {
@@ -4718,7 +4740,7 @@ textarea:disabled {
 .pd-quick-link:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(157,133,242,0.06);
+  background: var(--accent-soft);
 }
 
 /* Phase 13: dialpad 3×4 (modal de discar + DTMF en llamada) */
@@ -4730,7 +4752,7 @@ textarea:disabled {
   transition: background 0.12s, transform 0.05s, border-color 0.12s;
 }
 .dialpad-key:hover { background: var(--surface-color); border-color: var(--accent); }
-.dialpad-key:active { transform: scale(0.95); background: rgba(157,133,242,0.15); }
+.dialpad-key:active { transform: scale(0.95); background: var(--accent-medium); }
 .dk-sub { font-size: 9px; color: var(--text-tertiary); letter-spacing: 1px; margin-top: 2px; font-weight: 500; }
 
 
@@ -4916,7 +4938,7 @@ textarea:disabled {
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
-.dtp-trigger:hover { border-color: var(--accent); background: rgba(157, 133, 242, 0.06); }
+.dtp-trigger:hover { border-color: var(--accent); background: var(--accent-soft); }
 .dtp-pop {
   width: 300px;
   max-width: 92vw;
@@ -4992,11 +5014,11 @@ textarea:disabled {
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s;
 }
-.dtp-day:hover { border-color: var(--accent); background: rgba(157, 133, 242, 0.06); }
+.dtp-day:hover { border-color: var(--accent); background: var(--accent-soft); }
 .dtp-day.is-out { color: var(--text-tertiary); opacity: 0.5; }
 .dtp-day.is-past { opacity: 0.55; }
 .dtp-day.is-today { border-color: var(--border-strong); font-weight: 600; }
-.dtp-day.is-sel { background: rgba(157, 133, 242, 0.18); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.dtp-day.is-sel { background: var(--accent-medium); border-color: var(--accent); color: var(--accent); font-weight: 700; }
 .dtp-load {
   position: absolute;
   top: 2px;
@@ -5026,8 +5048,8 @@ textarea:disabled {
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.dtp-slot:hover { border-color: var(--accent); background: rgba(157, 133, 242, 0.06); }
-.dtp-slot.is-sel { background: rgba(157, 133, 242, 0.18); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.dtp-slot:hover { border-color: var(--accent); background: var(--accent-soft); }
+.dtp-slot.is-sel { background: var(--accent-medium); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 .dtp-time {
   width: 84px;
   padding: 6px 8px;
@@ -5062,5 +5084,114 @@ textarea:disabled {
   font-family: inherit;
   transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
-.dtp-done:hover { color: var(--text-primary); border-color: var(--accent); background: rgba(157, 133, 242, 0.08); }
+.dtp-done:hover { color: var(--text-primary); border-color: var(--accent); background: var(--accent-soft); }
 .cmd-cell-sub { font-size: 10.5px; color: var(--text-tertiary); font-weight: 400; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MARCA SCM — utilidades de tipografía y estado
+   Fuente: BRAND-SCM.md (2026-08-14). Reglas 3 y 5 del kit:
+   ningún dato crítico depende del color (forma + ícono + etiqueta), y
+   contraste objetivo 7:1 porque la interfaz se graba en video.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Teléfonos e identificadores en mono: refuerza el registro técnico y
+   ocupa uno de los huecos libres del nicho (kit, sección Tipografía). */
+.scm-phone,
+.scm-id {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+/* Números de colas y métricas: cifras tabulares alineadas a la derecha
+   (patrón Stripe). Alinear a la derecha hace que las unidades se apilen
+   y el ojo compare magnitudes sin leer. */
+.scm-num,
+.scm-metric-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  text-align: right;
+  font-weight: var(--weight-semibold);
+}
+
+/* La métrica protagonista de cada pantalla (kit, regla 4: una sola). */
+.scm-metric-hero {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Chip de número HABILITADO — el componente estrella del kit.
+   Usa el acento de marca porque acá el verde ya significa "podés
+   llamar". Lleva ícono + etiqueta: en video comprimido el color se
+   degrada, la forma no. */
+.scm-chip-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-medium);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-normal);
+  white-space: nowrap;
+}
+
+/* Estado EXCLUIDO — gris atenuado, nunca rojo. Un número que no se
+   puede marcar no necesita alarma, necesita ausencia de acción. */
+.scm-chip-blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: var(--blocked-soft);
+  border: 1px solid var(--blocked);
+  color: var(--blocked);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+
+/* La fila de un lead excluido baja de jerarquía sin desaparecer: se
+   sigue leyendo, pero no compite con lo llamable. */
+.scm-row-blocked {
+  opacity: 0.72;
+}
+.scm-row-blocked .scm-phone {
+  color: var(--blocked);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+/* El botón de llamar NO existe en un lead excluido — no alcanza con
+   deshabilitarlo visualmente (kit: "sin botón de llamar"). Este guard
+   es la red por si alguna vista lo renderiza igual. */
+.scm-row-blocked .call-btn,
+.scm-row-blocked [data-action="call"] {
+  display: none !important;
+}
+
+/* CTA sobre fondo acento: label OSCURO. El blanco sobre #3FA872 da
+   2.7:1 y falla; el oscuro de base da 6.1:1. */
+.btn-accent {
+  background: var(--accent);
+  color: var(--on-accent);
+  border: 1px solid var(--accent);
+  font-weight: var(--weight-semibold);
+}
+.btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* Foco visible con el acento de marca, un solo color en toda la app. */
+.scm-focusable:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

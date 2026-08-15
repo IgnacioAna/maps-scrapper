@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         C.defaults.color = '#8A90A0';
         Object.assign(C.defaults.plugins.tooltip, {
           backgroundColor: 'rgba(17, 20, 27, 0.96)',
-          borderColor: 'rgba(157, 133, 242, 0.25)',
+          borderColor: 'var(--accent-strong)',
           borderWidth: 1,
           titleColor: '#E5E7E2',
           bodyColor: '#B4B8C2',
@@ -993,7 +993,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const kws = _MAPS_KEYWORDS[country] || (country ? _MAPS_KEYWORDS_DEFAULT : null);
       if (!kws) { box.style.display = 'none'; chips.innerHTML = ''; return; }
       box.style.display = 'block';
-      chips.innerHTML = kws.map(k => `<button type="button" class="kw-chip" data-kw="${k.replace(/"/g, '&quot;')}" style="font-size:11px; margin:2px 4px 2px 0; padding:3px 9px; background:rgba(157,133,242,0.12); color:var(--accent); border:1px solid rgba(157,133,242,0.3); border-radius:999px; cursor:pointer;">+ ${escHtml(k)}</button>`).join('');
+      chips.innerHTML = kws.map(k => `<button type="button" class="kw-chip" data-kw="${k.replace(/"/g, '&quot;')}" style="font-size:11px; margin:2px 4px 2px 0; padding:3px 9px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-strong); border-radius:999px; cursor:pointer;">+ ${escHtml(k)}</button>`).join('');
       chips.querySelectorAll('.kw-chip').forEach(btn => {
         btn.addEventListener('click', () => {
           const q = document.getElementById('query');
@@ -1391,7 +1391,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         accounts.map(a => {
           const conn = a.status === 'CONNECTED';
           const dot = conn ? '🟢' : (a.status === 'QR_PENDING' ? '🟡' : '⚪');
-          return `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='rgba(157,133,242,0.10)'" onmouseout="this.style.background='transparent'">
+          return `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='transparent'">
           <span style="font-size:14px;">${dot}</span>
           <span style="flex:1; min-width:0;"><div style="font-weight:600;">${escHtml(a.label || 'Cuenta')}</div><div style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">${escHtml(a.phone || '')}</div></span>
         </button>`;
@@ -3694,7 +3694,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `<span class="chip-semantic" style="background:${bg}; color:${col}; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">${icon} ${label}</span>`;
       }
       if (lead.interes === 'si') return `<span class="chip-semantic" style="background:rgba(248,81,73,0.15); color:#f85149; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Interesado</span>`;
-      if (lead.calificado === true) return `<span class="chip-semantic" style="background:rgba(157,133,242,0.18); color:#9d85f2; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">✓ Calificado</span>`;
+      if (lead.calificado === true) return `<span class="chip-semantic" style="background:var(--accent-medium); color:var(--accent); padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">✓ Calificado</span>`;
       if (lead.respondio === true) return `<span class="chip-semantic" style="background:rgba(255,165,80,0.15); color:#ffa550; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Respondió</span>`;
       if (lead.conexion === 'enviada') return `<span class="chip-semantic" style="background:rgba(121,184,255,0.15); color:#79b8ff; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Enviado</span>`;
       return `<span class="chip-semantic" style="background:rgba(126,132,148,0.12); color:#9CA3AF; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:600;">Sin contactar</span>`;
@@ -3705,7 +3705,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (lead.estado === 'agendado') return ['Esperar reunión', '#5bb974'];
       if (lead.estado === 'cerrado' || lead.estado === 'descartado') return ['Listo', '#7E8494'];
       if (lead.interes === 'si') return ['Agendar reunión', '#f85149'];
-      if (lead.calificado === true && lead.interes !== 'no') return ['Marcar interés', '#9d85f2'];
+      if (lead.calificado === true && lead.interes !== 'no') return ['Marcar interés', 'var(--accent)'];
       if (lead.respondio === true) return ['Calificar', '#ffa550'];
       if (lead.conexion === 'enviada') {
         const lc = lead.lastContactAt ? new Date(lead.lastContactAt).getTime() : 0;
@@ -3740,7 +3740,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ];
       const fuHtml = fuSteps.map(s => {
         const active = !!fu[s.k];
-        const bg = active ? 'background:rgba(157,133,242,0.18); color:#9d85f2; border:1px solid rgba(157,133,242,0.40);' : 'background:transparent; color:var(--text-tertiary); border:1px solid var(--border-color);';
+        const bg = active ? 'background:var(--accent-medium); color:var(--accent); border:1px solid var(--accent-strong);' : 'background:transparent; color:var(--text-tertiary); border:1px solid var(--border-color);';
         return `<label style="display:inline-flex; align-items:center; justify-content:center; min-width:34px; padding:4px 6px; margin:0 2px; border-radius:6px; cursor:pointer; font-size:10px; font-weight:600; ${bg} transition:all 0.15s;" title="Follow-up programado a ${s.label}">
           <input type="checkbox" class="fu-cb" data-id="${escHtml(lead.id)}" data-step="${s.k}" ${active ? 'checked' : ''} onclick="event.stopPropagation(); window._toggleFU(this);" style="display:none;">
           ${s.label}
@@ -3756,7 +3756,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' + fuHtml + '</td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' +
           (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp (WAMULTI si sos Ignacio)" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');">💬</a>' : '') +
-          '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(157,133,242,0.10); color:#9d85f2; margin:0 2px; display:inline-block;">📋</a>' +
+          '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:var(--accent-soft); color:var(--accent); margin:0 2px; display:inline-block;">📋</a>' +
           '<a href="#" title="Programar seguimiento custom" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
         '</td>' +
       '</tr>';
@@ -5081,7 +5081,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (list.length === 0) { cont.innerHTML = ''; return; }
         const statusChip = (s) => {
           const map = {
-            pending: ['rgba(157,133,242,0.15)', 'var(--accent)', 'Pendiente'],
+            pending: ['var(--accent-medium)', 'var(--accent)', 'Pendiente'],
             sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
             failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
             cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
@@ -5451,11 +5451,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               '<span class="variant-card-assign-label">SDRs con esta variante:</span>' +
               ' <strong class="variant-card-assign-value" style="color:var(--accent);">' + (assignedNames || 'Ninguno') + '</strong>' +
             '</div>' +
-            '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 10px; background:rgba(157,133,242,0.04); border:1px solid var(--border-color); border-radius:8px;">' +
+            '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:8px 10px; background:var(--accent-soft); border:1px solid var(--border-color); border-radius:8px;">' +
               '<span style="font-size:11px; color:var(--text-secondary); margin-right:4px;">Tildá los SDRs que la van a usar:</span>' +
               settersList.map(s => {
                 const isAssigned = allAssignedIds.includes(s.id);
-                return '<label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:4px 10px; border-radius:8px; background:' + (isAssigned ? 'rgba(157,133,242,0.15)' : 'transparent') + '; border:1px solid ' + (isAssigned ? 'var(--accent)' : 'var(--border-color)') + '; transition:all 0.15s;">' +
+                return '<label style="display:inline-flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; padding:4px 10px; border-radius:8px; background:' + (isAssigned ? 'var(--accent-medium)' : 'transparent') + '; border:1px solid ' + (isAssigned ? 'var(--accent)' : 'var(--border-color)') + '; transition:all 0.15s;">' +
                   '<input type="checkbox" ' + (isAssigned ? 'checked' : '') + ' onchange="window._toggleVariantSetter(\'' + v.id + '\', \'' + s.id + '\', this.checked)" style="cursor:pointer;">' +
                   escHtml(s.name) +
                 '</label>';
@@ -6069,7 +6069,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
               ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
-              <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:rgba(157,133,242,0.12); border:1px solid rgba(157,133,242,0.3); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
+              <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
@@ -6161,7 +6161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
     // los nuevos se trabajan en Llamadas/Power Dialer, ya ordenados por prioridad.
     function _hoyNewLeadsPointer(count) {
-      return `<div class="hoy-section" style="--sec-accent:#9D85F2;">
+      return `<div class="hoy-section" style="--sec-accent:var(--accent);">
         <div style="display:flex; align-items:center; gap:12px; padding:15px 16px 15px 18px;">
           <span class="hoy-section-dot"></span>
           <div style="flex:1; min-width:0;">
@@ -6345,7 +6345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Click handler — abrir el lead en la lista principal
       body.querySelectorAll('.cb-agenda-item').forEach(btn => {
-        btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+        btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-soft)'; });
         btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-app)'; });
         btn.addEventListener('click', () => {
           const id = btn.getAttribute('data-lead-id');
@@ -6460,7 +6460,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!wrap) return;
       const banner = document.createElement('div');
       banner.id = 'pd-autopilot-countdown';
-      banner.style.cssText = 'margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:linear-gradient(135deg, rgba(157,133,242,0.16) 0%, rgba(157,133,242,0.05) 100%); border:1px solid rgba(157,133,242,0.4); border-radius:12px;';
+      banner.style.cssText = 'margin-top:14px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:linear-gradient(135deg, var(--accent-medium) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-radius:12px;';
       const render = () => { banner.innerHTML = `<span style="font-size:13px; color:var(--text-primary);">Autopiloto: llamando a <strong>${escHtml(lead.name)}</strong> en <strong style="color:var(--accent); font-variant-numeric:tabular-nums;">${secs}</strong>…</span><button type="button" onclick="window._pdCancelAutopilotNow()" style="padding:7px 14px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:8px; cursor:pointer; font-size:12px;">Cancelar (P)</button>`; };
       render();
       wrap.appendChild(banner);
@@ -6478,7 +6478,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btn = document.getElementById('pd-autopilot-toggle');
       if (!btn) return;
       if (_pd.autopilot) {
-        btn.style.background = 'rgba(157,133,242,0.22)';
+        btn.style.background = 'var(--accent-medium)';
         btn.style.borderColor = 'var(--accent)';
         btn.style.color = 'var(--text-primary)';
         btn.innerHTML = 'Autopiloto: ON';
@@ -6705,8 +6705,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const convosEl = document.getElementById('pd-today-convos');
       if (convosEl) convosEl.textContent = `${s.conversations}`;
       // El chip se pone verde al cumplir la meta.
-      el.style.borderColor = done ? 'rgba(91,185,116,0.6)' : 'rgba(157,133,242,0.35)';
-      el.style.background = done ? 'rgba(91,185,116,0.14)' : 'rgba(157,133,242,0.12)';
+      el.style.borderColor = done ? 'rgba(91,185,116,0.6)' : 'var(--accent-strong)';
+      el.style.background = done ? 'rgba(91,185,116,0.14)' : 'var(--accent-soft)';
       el.title = `Objetivo de hoy: ${goal} llamadas (click para cambiar) · Llevás ${s.dials}`
         + (s.interesados ? ` · ${s.interesados} interesados` : '')
         + (s.agendados ? ` · ${s.agendados} agendados` : '');
@@ -6834,8 +6834,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           let _statusLabel, _statusColor, _bgGradient, _borderColor;
           if (_pdFuDue > _now + 12 * 3600 * 1000) {
             _statusLabel = 'Programado'; _statusColor = 'var(--accent)';
-            _bgGradient = 'linear-gradient(135deg, rgba(157,133,242,0.10) 0%, rgba(157,133,242,0.03) 100%)';
-            _borderColor = 'rgba(157,133,242,0.32)';
+            _bgGradient = 'linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%)';
+            _borderColor = 'var(--accent-strong)';
           } else if (_pdFuDue >= _now - 12 * 3600 * 1000) {
             _statusLabel = 'Vence ahora'; _statusColor = '#5bb974';
             _bgGradient = 'linear-gradient(135deg, rgba(91,185,116,0.12) 0%, rgba(91,185,116,0.03) 100%)';
@@ -6930,7 +6930,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (regla). Se OCULTA si el Brief IA
            ya trae un gancho personalizado (sino se repite el mismo ángulo genérico en
            todos los leads que corren ads). -->
-      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has) ? `<div style="margin-top:16px; background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.03) 100%); border:1px solid rgba(157,133,242,0.32); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
+      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has) ? `<div style="margin-top:16px; background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
         <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">Ángulo sugerido</div>
         <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
       </div>` : ''}
@@ -7007,7 +7007,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
               const rowInner = `
                 <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
-                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:#9D85F2;">🎤</span>' : ''}</span>
+                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--accent);">🎤</span>' : ''}</span>
                 <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px; display:flex; gap:8px; align-items:center;">${costStr}${t}</span>`;
               if (!hasTr) {
                 return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">${rowInner}</div>`;
@@ -7050,7 +7050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:stretch;">
           <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada — ej: contestó la secre, pedir por Dr. X el martes" style="flex:1; min-width:240px; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
-          <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:rgba(157,133,242,0.18); color:var(--accent); border:1px solid rgba(157,133,242,0.45); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
+          <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:var(--accent-medium); color:var(--accent); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
         </div>
         ${lead.altPhone ? `<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid #5BB974; border-radius:8px;">
           <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:ui-monospace,monospace; color:var(--accent);">${escHtml(lead.altPhone)}</span></span>
@@ -7059,7 +7059,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : `<div style="margin-bottom:12px;">
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar contacto que me pasaron (tel / email)</button>
         </div>`}
-        <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:rgba(157,133,242,0.10); border:1px solid rgba(157,133,242,0.35); border-radius:8px; font-size:12.5px;"></div>
+        <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px;"></div>
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'marca interés',       color:'success' },
@@ -7582,7 +7582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (s === 'ads_activos' && Array.isArray(lead.adPlatforms) && lead.adPlatforms.length) {
           label = 'Corre anuncios · ' + lead.adPlatforms.join(', ');
         }
-        return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:#C4B5FD; background:rgba(157,133,242,0.16); border:1px solid rgba(157,133,242,0.3); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
+        return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:var(--accent); background:var(--accent-medium); border:1px solid var(--accent-strong); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
       }).join('');
     }
     window._signalChips = _signalChips;
@@ -7905,7 +7905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
             const rowHtml = `<div class="call-history-item">
               <span class="call-history-icon">${icon}</span>
-              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:#9D85F2;">🎤</span>' : ''}</span>
+              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--accent);">🎤</span>' : ''}</span>
               <span class="call-history-time">${time}</span>
               ${objTagsHtml}
             </div>`;
@@ -8195,7 +8195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notesCount = Array.isArray(l.notes) ? l.notes.length : 0;
         const fups = l.followUps || {};
         const hasFup = ['24hs','48hs','72hs','7d','15d'].some(k => fups[k]);
-        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:rgba(157,133,242,0.12); padding:2px 7px; border-radius:6px;">${notesCount}</span>` : '';
+        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:var(--accent-soft); padding:2px 7px; border-radius:6px;">${notesCount}</span>` : '';
         const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">follow-up</span>' : '';
         // Sprint 23: badge de callback programado (si está en el futuro)
         let callbackBadge = '';
@@ -9643,7 +9643,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 16: ángulo sugerido (regla) + chips. Se OCULTA si el Brief IA ya trae
       // gancho personalizado (sino repite el mismo ángulo genérico en todos los ads-leads).
       if (lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has)) {
-        rows.push(`<div style="background:linear-gradient(135deg, rgba(157,133,242,0.12) 0%, rgba(157,133,242,0.04) 100%); border:1px solid rgba(157,133,242,0.35); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+        rows.push(`<div style="background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">Ángulo sugerido</div>
           <div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
         </div>`);
@@ -9686,7 +9686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Notas previas (últimas 2)
       const recentNotes = (lead.notes || []).slice(-2);
       if (recentNotes.length) {
-        const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid rgba(157,133,242,0.3); color:rgba(255,255,255,0.65);">${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
+        const notesHtml = recentNotes.map(n => `<div style="margin-top:4px; padding-left:8px; border-left:2px solid var(--accent-strong); color:rgba(255,255,255,0.65);">${escHtml((n.text || '').substring(0, 100))}${(n.text || '').length > 100 ? '…' : ''}</div>`).join('');
         rows.push(`<div style="margin-top:6px;">${notesHtml}</div>`);
       }
       // Quick-links: abrir website / Google Maps / Instagram / Facebook en pestaña nueva
@@ -10370,7 +10370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
         ask_meeting: '#FFB341', confirm: '#FFB341',
         objection_brushoff: '#FFB341', objection_real: '#f85149',
-        callback: '#9D85F2', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
+        callback: 'var(--accent)', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
         first_call: '#5bb974', objection: '#f85149',
         scheduling: '#FFB341', voicemail: '#7dd3fc', general: 'rgba(255,255,255,0.5)',
       };
@@ -10411,9 +10411,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('.tlx-script-btn').forEach(btn => {
         const active = btn.dataset.scriptId === scriptId;
         if (active) {
-          btn.style.background = 'rgba(157,133,242,0.18)';
+          btn.style.background = 'var(--accent-medium)';
           btn.style.borderColor = 'var(--accent)';
-          btn.style.boxShadow = '0 0 0 1px rgba(157,133,242,0.4)';
+          btn.style.boxShadow = '0 0 0 1px var(--accent-strong)';
           btn.style.fontWeight = '600';
         } else {
           btn.style.background = 'rgba(255,255,255,0.03)';
@@ -10668,9 +10668,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const blocks = Array.isArray(d.blocks) && d.blocks.length ? d.blocks : (d.text ? [d.text] : []);
         if (!blocks.length) { _mercOut.innerHTML = '<div style="color:#FFB341; font-size:11.5px; padding:6px 2px;">Mercury no devolvió respuesta. Probá reformular.</div>'; return; }
         _mercOut.innerHTML = blocks.map((b, i) => `
-          <div style="background:rgba(255,255,255,0.04); border:1px solid rgba(157,133,242,0.25); border-radius:8px; padding:9px 11px;">
+          <div style="background:rgba(255,255,255,0.04); border:1px solid var(--accent-strong); border-radius:8px; padding:9px 11px;">
             <div style="color:#fff; font-size:12.5px; line-height:1.5; white-space:pre-wrap;">${escHtml(b)}</div>
-            <button type="button" class="tlx-merc-copy" data-block="${i}" style="margin-top:7px; font-size:10.5px; padding:5px 10px; background:rgba(157,133,242,0.15); border:1px solid rgba(157,133,242,0.35); color:#fff; border-radius:6px; cursor:pointer;">Copiar</button>
+            <button type="button" class="tlx-merc-copy" data-block="${i}" style="margin-top:7px; font-size:10.5px; padding:5px 10px; background:var(--accent-medium); border:1px solid var(--accent-strong); color:#fff; border-radius:6px; cursor:pointer;">Copiar</button>
           </div>`).join('') +
           (d.usedFallback ? '<div style="color:rgba(255,255,255,0.4); font-size:10px; padding:2px;">respuesta del banco (fallback)</div>' : '');
         _mercOut.querySelectorAll('.tlx-merc-copy').forEach(btn => {
@@ -10895,7 +10895,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             _dtPickerSync(fechaIn);
             qp.querySelectorAll('.ph-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
             btn.style.borderColor = 'var(--accent)';
-            btn.style.background = 'rgba(157,133,242,0.12)';
+            btn.style.background = 'var(--accent-soft)';
           });
         });
       }
@@ -10963,7 +10963,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">${p.subtitle}</div>
         </button>`).join('');
         qpWrap.querySelectorAll('.cb-quickpick').forEach(btn => {
-          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-soft)'; });
           btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-surface)'; });
           btn.addEventListener('click', () => {
             const iso = btn.getAttribute('data-iso');
@@ -10974,7 +10974,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Highlight selected
             qpWrap.querySelectorAll('.cb-quickpick').forEach(b => { b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
             btn.style.borderColor = 'var(--accent)';
-            btn.style.background = 'rgba(157,133,242,0.12)';
+            btn.style.background = 'var(--accent-soft)';
           });
         });
       }
@@ -11046,12 +11046,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const picks = _gateInteresadoPicks(new Date());
       const qpWrap = document.getElementById('call-next-quickpicks');
       if (qpWrap) {
-        qpWrap.innerHTML = picks.map((p) => `<button type="button" class="cb-quickpick" data-iso="${p.date.toISOString()}" style="padding:9px 11px; background:${p.isDefault ? 'rgba(157,133,242,0.12)' : 'var(--bg-surface)'}; border:1px solid ${p.isDefault ? 'var(--accent)' : 'var(--border-subtle)'}; border-radius:8px; color:var(--text-primary); font-size:12px; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit;">
+        qpWrap.innerHTML = picks.map((p) => `<button type="button" class="cb-quickpick" data-iso="${p.date.toISOString()}" style="padding:9px 11px; background:${p.isDefault ? 'var(--accent-soft)' : 'var(--bg-surface)'}; border:1px solid ${p.isDefault ? 'var(--accent)' : 'var(--border-subtle)'}; border-radius:8px; color:var(--text-primary); font-size:12px; cursor:pointer; text-align:left; transition:all 0.15s; font-family:inherit;">
           <div style="font-weight:600; font-size:11.5px;">${p.label}</div>
           <div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">${p.subtitle}</div>
         </button>`).join('');
         qpWrap.querySelectorAll('.cb-quickpick').forEach((btn) => {
-          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; });
+          btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-soft)'; });
           btn.addEventListener('mouseleave', () => { if (btn.getAttribute('data-active') !== '1') { btn.style.borderColor = 'var(--border-subtle)'; btn.style.background = 'var(--bg-surface)'; } });
           btn.addEventListener('click', () => {
             const iso = btn.getAttribute('data-iso');
@@ -11062,7 +11062,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             qpWrap.querySelectorAll('.cb-quickpick').forEach((b) => { b.removeAttribute('data-active'); b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
             btn.setAttribute('data-active', '1');
             btn.style.borderColor = 'var(--accent)';
-            btn.style.background = 'rgba(157,133,242,0.12)';
+            btn.style.background = 'var(--accent-soft)';
           });
         });
       }
@@ -11208,7 +11208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             selectedTags.add(k);
             btn.style.borderColor = 'var(--accent)';
-            btn.style.background = 'rgba(157,133,242,0.14)';
+            btn.style.background = 'var(--accent-medium)';
           }
         });
       });
@@ -11909,7 +11909,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (baseStatsEl) {
           const _pool = ct.unassignedCallable || 0;
           baseStatsEl.innerHTML =
-            _cmdTile('Para llamar (equipo)', ct.callableTotal || 0, 'cola real de todos los SDRs', '#9D85F2',
+            _cmdTile('Para llamar (equipo)', ct.callableTotal || 0, 'cola real de todos los SDRs', 'var(--accent)',
               'Leads discables AHORA. Mismo criterio que la cola de cada SDR y que la vista Distribución.') +
             _cmdTile('Sin asignar (pool)', _pool, (ct.unassignedTotal || 0) + ' en total sin dueño', _pool > 0 ? '#FFB341' : '',
               'Leads llamables que todavía no tienen SDR. Es el stock disponible para repartir desde Distribución.') +
@@ -12318,7 +12318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<button onclick="window._resetOnboarding(\'' + escHtml(userId) + '\', decodeURIComponent(\'' + sname + '\'))" style="font-size:12px; background:rgba(248,81,73,0.10); color:var(--danger); border:1px solid rgba(248,81,73,0.25); padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:600;">Resetear progreso</button>' +
         '</div>' +
         '<div style="color:var(--text-secondary); font-size:13px; margin-bottom:16px;">' + ratioLabel + '</div>' +
-        '<table style="width:100%; border-collapse:collapse;"><thead><tr style="background:rgba(167,139,250,0.06);">' +
+        '<table style="width:100%; border-collapse:collapse;"><thead><tr style="background:var(--accent-soft);">' +
           '<th style="text-align:left; padding:8px; font-size:12px; color:var(--text-secondary);">Módulo</th>' +
           '<th style="text-align:left; padding:8px; font-size:12px; color:var(--text-secondary);">Estado</th>' +
           '<th style="text-align:center; padding:8px; font-size:12px; color:var(--text-secondary);">Intentos</th>' +
@@ -13092,7 +13092,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const resultRows = [
           { k: 'interesados', label: 'Interesados', col: '#5BB974', hint: 'dijeron que sí → viven en Hoy hasta agendar' },
           { k: 'agendados', label: 'Agendados', col: '#4ADE80', hint: 'reunión reservada' },
-          { k: 'callbackPendiente', label: 'Callbacks', col: '#A78BFA', hint: 'quedaron en volver a llamar' },
+          { k: 'callbackPendiente', label: 'Callbacks', col: 'var(--warning)', hint: 'quedaron en volver a llamar' },
           { k: 'intentados', label: 'A reintentar', col: '#79B8FF', hint: 'discados sin atender — vuelven a la cola' },
           { k: 'descartados', label: 'Descartados', col: '#F87171', hint: 'no interesado / número malo / agotado' },
           { k: 'dnc', label: 'No-llamar', col: '#F87171', hint: 'marcados DNC' },
@@ -14761,7 +14761,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         border-radius:14px; padding:18px 18px 16px; position:relative; overflow:hidden;
         transition:all 0.2s; cursor:pointer;
       "
-      onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px rgba(167,139,250,0.15)';"
+      onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px var(--accent-medium)';"
       onmouseout="this.style.borderColor='${borderColor}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
           <div style="font-size:28px; font-weight:700; color:var(--accent); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
@@ -15446,7 +15446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="muted" style="font-size:11px;">💬 <span class="cand-msg" style="color:var(--text-secondary);"></span></div>
             <span class="muted" style="font-size:10px; flex-shrink:0;">${when} · ${escHtml(g.setterName || '')}</span>
           </div>
-          <div class="cand-out" style="font-size:13px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; padding:8px 10px; background:rgba(157,133,242,0.04); border-left:3px solid var(--accent); border-radius:6px;"></div>
+          <div class="cand-out" style="font-size:13px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; padding:8px 10px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:6px;"></div>
           <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end;">
             <button class="btn-secondary cand-skip" style="font-size:11px; padding:5px 10px;">Saltar</button>
             <button class="btn-primary cand-approve" style="font-size:11px; padding:5px 10px;">Promover al banco</button>
@@ -15496,7 +15496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       wrap.style.display = 'block';
       const renderCol = (label, x, accent) => `
-        <div style="padding:10px; border:1px solid ${accent}; border-radius:8px; background:rgba(157,133,242,0.02);">
+        <div style="padding:10px; border:1px solid ${accent}; border-radius:8px; background:var(--accent-soft);">
           <div style="font-size:11px; font-weight:700; color:${accent}; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">${label}</div>
           <div style="font-size:11px; color:var(--text-primary); line-height:1.7;">
             Total: <strong>${x.total}</strong><br>
@@ -15726,7 +15726,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="flex:1; min-width:0;">
             <div class="ej-pregunta" style="font-weight:500; color:var(--text-primary); font-size:13px;"></div>
             <div class="muted" style="font-size:10px; margin-top:3px;">
-              <span class="ej-cat" style="padding:1px 7px; background:rgba(157,133,242,0.12); color:var(--accent); border-radius:6px; font-weight:500;"></span>
+              <span class="ej-cat" style="padding:1px 7px; background:var(--accent-soft); color:var(--accent); border-radius:6px; font-weight:500;"></span>
               <span style="margin-left:6px;">score: <span class="ej-score"></span></span>
               <span style="margin-left:6px; opacity:0.7;">click para ver respuesta</span>
             </div>
@@ -15753,7 +15753,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const open = w.style.display !== 'none';
         w.style.display = open ? 'none' : 'block';
         t.textContent = open ? '▸' : '▾';
-        li.style.borderColor = open ? 'var(--border-color)' : 'rgba(157,133,242,0.4)';
+        li.style.borderColor = open ? 'var(--border-color)' : 'var(--accent-strong)';
       });
       li.querySelector('.ej-copy').addEventListener('click', async () => {
         try {
@@ -15784,7 +15784,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     agendamiento: { label: 'Quiere agendar', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
     precio: { label: 'Pregunta precio', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
     objecion: { label: 'Objeción', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
-    duda_tecnica: { label: 'Duda técnica', color: 'var(--accent)', bg: 'rgba(157,133,242,0.10)', border: 'rgba(157,133,242,0.4)' },
+    duda_tecnica: { label: 'Duda técnica', color: 'var(--accent)', bg: 'var(--accent-soft)', border: 'var(--accent-strong)' },
     indeciso: { label: 'Indeciso / frío', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
     saludo: { label: 'Saludo', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
     despedida: { label: 'Cierre', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
@@ -16189,7 +16189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       pendiente: { text: 'Pendiente', bg: 'rgba(180,180,180,0.10)', color: '#9aa0a6', border: 'rgba(180,180,180,0.30)' },
       approved: { text: '✓ Oro', bg: 'rgba(91,185,116,0.12)', color: '#5bb974', border: 'rgba(91,185,116,0.45)' },
       rejected: { text: '✗ Rechazada', bg: 'rgba(248,81,73,0.10)', color: '#f85149', border: 'rgba(248,81,73,0.45)' },
-      rewritten: { text: '✎ Reescrita', bg: 'rgba(157,133,242,0.14)', color: '#9D85F2', border: 'rgba(157,133,242,0.50)' },
+      rewritten: { text: '✎ Reescrita', bg: 'var(--accent-medium)', color: 'var(--accent)', border: 'var(--accent-strong)' },
       reviewed: { text: 'Con nota', bg: 'rgba(255,200,40,0.12)', color: '#ffc828', border: 'rgba(255,200,40,0.45)' },
     };
     const m = map[g.status] || map.pendiente;
@@ -16201,7 +16201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const map = {
       good: { text: 'SDR: ✓ buena', color: '#5bb974' },
       bad: { text: 'SDR: ✗ descartó', color: '#f85149' },
-      edited: { text: 'SDR: ✎ editó', color: '#9D85F2' },
+      edited: { text: 'SDR: ✎ editó', color: 'var(--accent)' },
     };
     const m = map[g.setterAction];
     if (!m) return '';
@@ -16225,7 +16225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     div.onmouseover = () => {
       div.style.borderColor = 'var(--accent)';
       div.style.transform = 'translateY(-2px)';
-      div.style.boxShadow = '0 8px 24px rgba(157,133,242,0.10)';
+      div.style.boxShadow = '0 8px 24px var(--accent-soft)';
       _mrShowPreview(div, g);
     };
     div.onmouseout = () => {
@@ -16238,7 +16238,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const setterInitial = _mrInitial(g.setterName);
     const variantTag = g.variantUsed?.name
-      ? `<span style="padding:2px 7px; font-size:9px; background:rgba(157,133,242,0.10); color:var(--accent); border:1px solid rgba(157,133,242,0.35); border-radius:999px; white-space:nowrap;">${_mrEscape(g.variantUsed.name)}</span>`
+      ? `<span style="padding:2px 7px; font-size:9px; background:var(--accent-soft); color:var(--accent); border:1px solid var(--accent-strong); border-radius:999px; white-space:nowrap;">${_mrEscape(g.variantUsed.name)}</span>`
       : '';
     const violationsTag = (g.violations || []).length
       ? `<span title="${_mrEscape(g.violations.join(', '))}" style="padding:2px 7px; font-size:9px; background:rgba(248,81,73,0.10); color:#f85149; border:1px solid rgba(248,81,73,0.35); border-radius:999px; white-space:nowrap;">⚠️</span>`
@@ -16252,7 +16252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     div.innerHTML = `
       <div style="display:flex; align-items:center; gap:8px;">
-        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${setterInitial}</div>
+        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${setterInitial}</div>
         <div style="flex:1; min-width:0;">
           <div style="font-size:13px; font-weight:600; color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${_mrEscape(g.setterName || '—')}</div>
           <div class="muted" style="font-size:10px; margin-top:1px;">${new Date(g.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</div>
@@ -16280,7 +16280,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     tooltip.id = 'mr-hover-preview';
     tooltip.style.cssText = 'position:fixed; z-index:1500; max-width:380px; background:var(--surface-color); border:1px solid var(--accent); border-radius:12px; padding:14px 16px; box-shadow:0 12px 32px rgba(0,0,0,0.55); pointer-events:none;';
     const blocks = g.output.blocks.map((b, i) => `
-      <div style="padding:8px 10px; background:rgba(157,133,242,0.06); border-left:2px solid var(--accent); border-radius:6px; margin-bottom:6px;">
+      <div style="padding:8px 10px; background:var(--accent-soft); border-left:2px solid var(--accent); border-radius:6px; margin-bottom:6px;">
         <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); opacity:0.6; font-weight:600; margin-bottom:3px;">Bloque ${i + 1}</div>
         <div style="font-size:12px; line-height:1.5; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">${_mrEscape(b)}</div>
       </div>
@@ -16323,14 +16323,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('mr-detail-meta').innerHTML = `${new Date(g.createdAt).toLocaleString()} · prompt v${g.promptVersion ?? '—'}${g.variantUsed?.name ? ' · ' + _mrEscape(g.variantUsed.name) : ''}${g.usedFallback ? ' · <span style="color:#ffc828;">fallback</span>' : ''}${(g.violations||[]).length ? ' · <span style="color:#f85149;">⚠️ ' + _mrEscape(g.violations.join(', ')) + '</span>' : ''}`;
 
     const blocksHtml = (g.output?.blocks || []).map((b, i) => `
-      <div style="position:relative; padding:14px 16px 14px 18px; background:rgba(157,133,242,0.05); border-left:3px solid var(--accent); border-radius:10px; font-size:14px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">
+      <div style="position:relative; padding:14px 16px 14px 18px; background:var(--accent-soft); border-left:3px solid var(--accent); border-radius:10px; font-size:14px; line-height:1.55; color:var(--text-primary); white-space:pre-wrap; word-break:break-word;">
         <div style="position:absolute; top:8px; right:10px; font-size:9px; text-transform:uppercase; letter-spacing:0.6px; color:var(--accent); opacity:0.55; font-weight:600;">B${i + 1}</div>
         ${_mrEscape(b)}
       </div>
     `).join('');
 
     const finalSentHtml = g.finalSent
-      ? `<div style="padding:12px 14px; border-left:3px solid #9D85F2; background:rgba(157,133,242,0.06); border-radius:8px;">
+      ? `<div style="padding:12px 14px; border-left:3px solid var(--accent); background:var(--accent-soft); border-radius:8px;">
           <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Versión final que envió el SDR</div>
           <div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.finalSent)}</div>
         </div>` : '';
@@ -16604,7 +16604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // honestos; una línea sugiere continuidad que no existe).
     const datasets = _mypActiveSeries.map((k) => {
       const def = MYP_METRIC_DEFS.find((x) => x.key === k);
-      const color = def?.color || '#9D85F2';
+      const color = def?.color || 'var(--accent)';
       return {
         type: 'bar',
         label: def?.label || k,
@@ -16827,7 +16827,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${stage('Sin contactar', sinContactar.length, '#8892A6')}
           ${stage('En seguimiento', enSeguimiento.length, '#5BA3F2')}
           ${stage('Interesados', interesados.length, '#5BB974')}
-          ${stage('Reuniones próximas', proximas.length, '#9D85F2')}
+          ${stage('Reuniones próximas', proximas.length, 'var(--accent)')}
           ${stage('Ganadas', ganadas.length, '#FFB341', ganadasValor > 0 ? '$' + ganadasValor.toLocaleString() : (realizadas ? realizadas + ' realizadas' : ''))}
         </div>
         ${proximas.length ? `
@@ -16924,7 +16924,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dur = c.duration ? `${Math.floor(c.duration / 60)}:${String(c.duration % 60).padStart(2, '0')}` : '—';
       const transcriptIcon = c.hasTranscript ? '🎤' : '';
       const isSelected = _chistSelected && _chistSelected.leadId === c.leadId && _chistSelected.callIdx === c.callIdx;
-      return `<li onclick="window._chistSelect('${escHtml(c.leadId)}', ${c.callIdx})" style="padding:10px 12px; background:${isSelected ? 'rgba(157,133,242,0.12)' : 'var(--bg-app)'}; border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-color)'}; border-radius:9px; cursor:pointer; transition:all 0.15s;">
+      return `<li onclick="window._chistSelect('${escHtml(c.leadId)}', ${c.callIdx})" style="padding:10px 12px; background:${isSelected ? 'var(--accent-soft)' : 'var(--bg-app)'}; border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-color)'}; border-radius:9px; cursor:pointer; transition:all 0.15s;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
           <div style="flex:1; min-width:0;">
             <div style="font-size:12.5px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
@@ -16995,7 +16995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _chistRenderMercuryAnalysis(c.mercuryAnalysis, leadId, callIdx);
       } else if (c.transcript?.segments?.length) {
         analysisBlockEl.innerHTML = `
-          <div style="padding:14px; background:rgba(157,133,242,0.05); border:1px dashed rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
+          <div style="padding:14px; background:var(--accent-soft); border:1px dashed var(--accent-strong); border-radius:10px; text-align:center;">
             <div style="font-size:13px; color:var(--text-primary); margin-bottom:8px; font-weight:600;">Análisis Mercury IA disponible</div>
             <button onclick="window._chistAnalyzeWithMercury('${escHtml(leadId)}', ${callIdx})" class="btn-primary" style="padding:9px 16px; border-radius:9px; font-size:12.5px;">Analizar con Mercury IA</button>
             <div style="font-size:10.5px; color:var(--text-secondary); margin-top:6px;">Evalúa según framework PACE, 3-S, opener 27s, reglas SCM v2</div>
@@ -17015,7 +17015,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           let text = escHtml(s.text);
           if (searchTerm && text.toLowerCase().includes(searchTerm)) {
             const re = new RegExp('(' + searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-            text = text.replace(re, '<mark style="background:rgba(157,133,242,0.35); color:#fff; padding:0 2px; border-radius:2px;">$1</mark>');
+            text = text.replace(re, '<mark style="background:var(--accent-strong); color:#fff; padding:0 2px; border-radius:2px;">$1</mark>');
           }
           const ts = `${Math.floor(s.start / 60)}:${String(Math.floor(s.start % 60)).padStart(2, '0')}`;
           return `<div style="display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
@@ -17036,7 +17036,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const block = document.getElementById('chist-d-mercury');
     if (!block) return;
     block.innerHTML = `
-      <div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center;">
+      <div style="padding:16px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:10px; text-align:center;">
         <div style="font-size:13px; color:var(--text-primary); margin-bottom:6px;">Mercury analizando…</div>
         <div style="font-size:11px; color:var(--text-secondary);">Esto puede tardar 5-15 seg según largo del transcript.</div>
       </div>`;
@@ -17072,7 +17072,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const opportunities = Array.isArray(a.missedOpportunities) ? a.missedOpportunities : [];
     const suggestions = Array.isArray(a.specificSuggestions) ? a.specificSuggestions : [];
     block.innerHTML = `
-      <div style="padding:16px; background:linear-gradient(135deg, rgba(157,133,242,0.08) 0%, rgba(157,133,242,0.02) 100%); border:1px solid rgba(157,133,242,0.3); border-radius:12px;">
+      <div style="padding:16px; background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-radius:12px;">
         <!-- Header: score + estado opener + PACE -->
         <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
           <div style="display:flex; align-items:center; gap:10px;">
@@ -17123,7 +17123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </ul>
         </div>` : ''}
 
-        ${a.nextCallTip ? `<div style="padding:12px; background:rgba(157,133,242,0.1); border:1px solid rgba(157,133,242,0.35); border-radius:9px; text-align:center;">
+        ${a.nextCallTip ? `<div style="padding:12px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:9px; text-align:center;">
           <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">Cambio #1 para la próxima</div>
           <div style="font-size:12.5px; color:#fff; font-weight:600; line-height:1.5;">${escHtml(a.nextCallTip)}</div>
         </div>` : ''}
@@ -17138,7 +17138,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window._chistReAnalyze = async (leadId, callIdx) => {
     const block = document.getElementById('chist-d-mercury');
     if (!block) return;
-    block.innerHTML = `<div style="padding:16px; background:rgba(157,133,242,0.08); border:1px solid rgba(157,133,242,0.3); border-radius:10px; text-align:center; color:var(--text-secondary); font-size:12px;">Re-analizando con Mercury…</div>`;
+    block.innerHTML = `<div style="padding:16px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:10px; text-align:center; color:var(--text-secondary); font-size:12px;">Re-analizando con Mercury…</div>`;
     try {
       const r = await fetch(apiUrl(`/api/telnyx/calls/${encodeURIComponent(leadId)}/${callIdx}/analyze`), {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -17272,7 +17272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const statusChip = (s) => {
       const map = {
-        pending: ['rgba(157,133,242,0.15)', 'var(--accent)', 'Pendiente'],
+        pending: ['var(--accent-medium)', 'var(--accent)', 'Pendiente'],
         sent: ['rgba(91,185,116,0.15)', 'var(--success)', '✓ Enviado'],
         failed: ['rgba(248,81,73,0.15)', 'var(--danger)', '✗ Fallido'],
         cancelled: ['rgba(126,132,148,0.15)', 'var(--text-tertiary)', '⊘ Cancelado'],
@@ -17459,12 +17459,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       const zebra = idx % 2 === 1 ? 'background:rgba(255,255,255,0.012);' : '';
       tr.style.cssText = `border-bottom:1px solid var(--border-color); cursor:pointer; transition:background-color 0.15s; ${zebra}`;
       tr.dataset.setterId = s.id;
-      tr.onmouseover = () => { tr.style.backgroundColor = 'rgba(157,133,242,0.06)'; };
+      tr.onmouseover = () => { tr.style.backgroundColor = 'var(--accent-soft)'; };
       tr.onmouseout = () => { tr.style.backgroundColor = ''; };
       tr.innerHTML = `
         <td style="padding:14px 10px; font-weight:500; color:var(--text-primary);">
           <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
+            <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
             <span class="t-name"></span>${alertBadge}${assignedBadge}${leaveBadge}${leaveEditBtn}
           </div>
         </td>
@@ -17534,7 +17534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Paleta distinguible por SDR (no arcoíris — tomada del design system).
-  const _TEAM_SERIES_COLORS = ['#9D85F2', '#6E8BF0', '#4ADE80', '#F5B301', '#F87171', '#38BDF8', '#F472B6', '#A3E635', '#FB923C', '#818CF8'];
+  const _TEAM_SERIES_COLORS = ['#2DD4BF', '#6E8BF0', '#4ADE80', '#F5B301', '#F87171', '#38BDF8', '#F472B6', '#A3E635', '#FB923C', '#818CF8'];
 
   function _teamRenderChart(d) {
     // 2026-07-24: barras APILADAS por SDR (las N líneas superpuestas eran
@@ -17670,7 +17670,7 @@ document.addEventListener('DOMContentLoaded', async () => {
              onmouseover="this.style.borderColor='color-mix(in srgb, var(--accent) 40%, transparent)'; this.style.transform='translateY(-2px)';"
              onmouseout="this.style.borderColor='rgba(255,255,255,0.06)'; this.style.transform='';">
           <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <div style="width:26px; height:26px; flex-shrink:0; background:linear-gradient(135deg, var(--accent), #7a5ff0); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px;">${initial}</div>
+            <div style="width:26px; height:26px; flex-shrink:0; background:linear-gradient(135deg, var(--accent), var(--accent-hover)); border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:12px;">${initial}</div>
             <span class="tf-name" style="font-weight:600; font-size:13.5px; color:var(--text-primary);"></span>
           </div>
           ${step('Dials', c.dials, '#8892A6')}
@@ -17860,7 +17860,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <strong style="font-size:12.5px; color:var(--accent); font-variant-numeric:tabular-nums;">${it.count}</strong>
             </div>
             <div style="height:4px; background:var(--bg-app); border-radius:3px; overflow:hidden;">
-              <div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--accent) 0%, #7C5DDB 100%); border-radius:3px; transition:width 0.4s;"></div>
+              <div style="height:100%; width:${pct}%; background:linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:3px; transition:width 0.4s;"></div>
             </div>
           </div>
         </div>`;
@@ -17889,7 +17889,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <td style="padding:7px 8px; color:var(--text-primary);">${escHtml(c)}</td>
               ${allTags.map(t => {
                 const n = (d.tagByCountry[c] || {})[t] || 0;
-                const bg = n > 0 ? `background:rgba(157,133,242,${Math.min(0.06 + n * 0.025, 0.35)});` : '';
+                const bg = n > 0 ? `background:rgba(63,168,114,${Math.min(0.06 + n * 0.025, 0.35)});` : '';
                 return `<td style="text-align:center; padding:7px 4px; color:${n > 0 ? 'var(--text-primary)' : 'var(--text-tertiary)'}; font-variant-numeric:tabular-nums; ${bg}">${n || '—'}</td>`;
               }).join('')}
             </tr>`).join('')}
@@ -18252,7 +18252,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="width:32px; height:32px; flex-shrink:0; border-radius:50%; background:rgba(255,255,255,0.04); border:1px dashed var(--border-color); display:flex; align-items:center; justify-content:center; font-size:14px;">∅</div>
         <div style="flex:1;"><strong>Sin asignar</strong><div style="font-size:11px; opacity:0.7;">Importar sin SDR (queda sin dueño)</div></div>
       `;
-      item.onmouseover = () => { item.style.borderColor = 'var(--accent)'; item.style.background = 'rgba(157,133,242,0.06)'; };
+      item.onmouseover = () => { item.style.borderColor = 'var(--accent)'; item.style.background = 'var(--accent-soft)'; };
       item.onmouseout = () => { _pickSetterUpdateActive(); };
       item.onclick = () => _pickSetterSelect(item, '');
       list.appendChild(item);
@@ -18271,13 +18271,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.dataset.setterId = s.id;
       btn.style.cssText = 'display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); cursor:pointer; text-align:left; font-size:13px; transition:all 0.15s;';
       btn.innerHTML = `
-        <div style="width:32px; height:32px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px;">${initial}</div>
+        <div style="width:32px; height:32px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:13px;">${initial}</div>
         <div style="flex:1; min-width:0;">
           <div style="font-weight:600; color:var(--text-primary);">${(s.name || '—').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</div>
           <div style="font-size:11px; color:var(--text-secondary); margin-top:1px;">${(s.id || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</div>
         </div>
       `;
-      btn.onmouseover = () => { if (_pickSetterCurrent !== s.id) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(157,133,242,0.06)'; } };
+      btn.onmouseover = () => { if (_pickSetterCurrent !== s.id) { btn.style.borderColor = 'var(--accent)'; btn.style.background = 'var(--accent-soft)'; } };
       btn.onmouseout = () => { _pickSetterUpdateActive(); };
       btn.onclick = () => _pickSetterSelect(btn, s.id);
       list.appendChild(btn);
@@ -18293,7 +18293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isActive = btn.dataset.setterId === _pickSetterCurrent;
       if (isActive) {
         btn.style.borderColor = 'var(--accent)';
-        btn.style.background = 'rgba(157,133,242,0.10)';
+        btn.style.background = 'var(--accent-soft)';
       } else {
         btn.style.borderColor = 'var(--border-color)';
         btn.style.background = 'var(--bg-app)';
@@ -18353,7 +18353,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const safeName = String(s.name || '—').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
       row.innerHTML = `
         <input type="checkbox" data-dist-check="${s.id}" style="width:16px; height:16px; cursor:pointer;">
-        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, #7a5ff0 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
+        <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
         <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div>${typeof s.callable === 'number' ? `<div style="font-size:11px; color:#5BB974;">${s.callable} llamables hoy</div>` : ''}</div>
         <input type="number" min="0" step="1" data-dist-count="${s.id}" placeholder="0" style="width:90px; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-elevated); color:var(--text-primary); text-align:right;">
         <span style="font-size:11px; color:var(--text-secondary); width:48px; text-align:right;">leads</span>
@@ -18593,7 +18593,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const colors = {
       success: { bg: 'rgba(91,185,116,0.12)', border: 'rgba(91,185,116,0.5)', text: '#5bb974', icon: '✓' },
       error:   { bg: 'rgba(248,81,73,0.12)',  border: 'rgba(248,81,73,0.5)',  text: '#f85149', icon: '✗' },
-      info:    { bg: 'rgba(157,133,242,0.12)', border: 'rgba(157,133,242,0.5)', text: 'var(--accent)', icon: 'ℹ' },
+      info:    { bg: 'var(--accent-soft)', border: 'var(--accent-strong)', text: 'var(--accent)', icon: 'ℹ' },
       warn:    { bg: 'rgba(255,200,40,0.12)', border: 'rgba(255,200,40,0.5)', text: '#ffc828', icon: '⚠️' },
     };
     const c = colors[type] || colors.info;
@@ -19106,7 +19106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     _cmdkResults.forEach((item, idx) => {
       const li = document.createElement('li');
       const selected = idx === _cmdkSelectedIdx;
-      li.style.cssText = 'padding:9px 14px; cursor:pointer; display:flex; gap:10px; align-items:center; border-radius:8px; margin:1px 0; transition:background 0.1s; background:' + (selected ? 'rgba(157,133,242,0.18)' : 'transparent') + ';';
+      li.style.cssText = 'padding:9px 14px; cursor:pointer; display:flex; gap:10px; align-items:center; border-radius:8px; margin:1px 0; transition:background 0.1s; background:' + (selected ? 'var(--accent-medium)' : 'transparent') + ';';
       li.innerHTML = '<span style="font-size:16px; flex-shrink:0;">' + item.icon + '</span>' +
         '<div style="flex:1; min-width:0; overflow:hidden;">' +
           '<div style="font-size:13px; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>' +
@@ -19654,11 +19654,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     empty.style.display = 'none';
     const triggerColors = {
       // v2 SCM
-      rules: '#9D85F2', before_call: '#7dd3fc',
+      rules: 'var(--accent)', before_call: '#7dd3fc',
       gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
       ask_meeting: '#ffc828', confirm: '#ffc828',
       objection_brushoff: '#ffc828', objection_real: '#f85149',
-      callback: '#9D85F2', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
+      callback: 'var(--accent)', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
       // legacy
       first_call: '#5bb974', objection: '#f85149', scheduling: 'var(--accent)',
       voicemail: '#7dd3fc', general: 'var(--text-secondary)',
@@ -20488,8 +20488,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('app-update-banner')) return;
     const div = document.createElement('div');
     div.id = 'app-update-banner';
-    div.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#1A1D24;border:1px solid #9D85F2;color:#E5E7E2;padding:10px 16px;border-radius:10px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:13px;';
-    div.innerHTML = 'Hay una versión nueva del sistema. <button id="app-update-reload" style="background:#9D85F2;color:#14151A;border:none;border-radius:8px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:13px;">Actualizar ahora</button>';
+    div.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;background:#1A1D24;border:1px solid var(--accent);color:#E5E7E2;padding:10px 16px;border-radius:10px;display:flex;gap:12px;align-items:center;box-shadow:0 8px 24px rgba(0,0,0,.5);font-size:13px;';
+    div.innerHTML = 'Hay una versión nueva del sistema. <button id="app-update-reload" style="background:var(--accent);color:#14151A;border:none;border-radius:8px;padding:6px 14px;font-weight:600;cursor:pointer;font-size:13px;">Actualizar ahora</button>';
     document.body.appendChild(div);
     document.getElementById('app-update-reload').addEventListener('click', () => {
       if (window._telnyx?.activeCall) {

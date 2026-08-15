@@ -1604,7 +1604,7 @@ function renderWarmingNetPool(pool) {
           let boostBadge = "";
           if (m.boostUntil && new Date(m.boostUntil).getTime() > Date.now()) {
             const hrs = Math.ceil((new Date(m.boostUntil).getTime() - Date.now()) / 3600000);
-            boostBadge = `<span class="chip" style="font-size:10px; background:rgba(157,133,242,0.15); color:var(--accent); margin-left:6px;" title="Modo boost: ignora replySpeed natural, manda cada 1-30 min y saltea ventana horaria humana. Util para arrancar la red rapido.">⚡ boost ${hrs}h</span>`;
+            boostBadge = `<span class="chip" style="font-size:10px; background:var(--accent-medium); color:var(--accent); margin-left:6px;" title="Modo boost: ignora replySpeed natural, manda cada 1-30 min y saltea ventana horaria humana. Util para arrancar la red rapido.">⚡ boost ${hrs}h</span>`;
           }
           return `<tr>
             <td>${escHtml(accountLabel)}</td>
