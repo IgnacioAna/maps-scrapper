@@ -173,10 +173,16 @@ describe('tope de cortes ("Me cortó")', () => {
     };
     fs.writeFileSync(p, JSON.stringify(d, null, 2));
 
-    // "Me cortó" (1er corte): sigue vivo, pero el callback viejo queda consumido.
+    // "Me cortó" (1er corte): sigue vivo, y el callback VIEJO arrastrado se
+    // reemplaza por una cadencia FRESCA a +24h (Phase 30/D-02: un 1er corte
+    // ya no deja el lead sin próximo paso — antes de ese gate quedaba vacío
+    // acá, ahora queda un reintento nuevo, nunca el vencido).
     const r = await disp('zombie', { outcome: 'hung_up' });
     expect(r.body.lead.estado).not.toBe('descartado');
-    expect(r.body.lead.callbackAt).toBe('');
+    expect(r.body.lead.callbackAt).not.toBe(stale);
+    const cbHours = (new Date(r.body.lead.callbackAt).getTime() - Date.now()) / 3600000;
+    expect(cbHours).toBeGreaterThan(23);
+    expect(cbHours).toBeLessThan(25);
 
     const r2 = await disp('zombie2', { outcome: 'no_answer' });
     const cb = new Date(r2.body.lead.callbackAt).getTime();

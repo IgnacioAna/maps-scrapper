@@ -11001,6 +11001,54 @@ const NEXT_ACTION_TEMPLATES = [
   { key: '15d',  label: '15d', deltaMs: 15 * 24 * 60 * 60 * 1000 },
 ];
 
+// ══════════════════════════════════════════════════════════════
+// ── GATE: cierra la llamada, define el próximo paso (Phase 30) ──
+// GATE-01/GATE-02: ningún outcome no-terminal deja el lead sin nextAction —
+// defaults por outcome (D-02) + override sanitizado del cliente + red de
+// seguridad final. Ver 30-CONTEXT.md D-01..D-04.
+// ══════════════════════════════════════════════════════════════
+
+// D-03: la cadencia sugerida por el research para un interesado que no
+// avanza es día 1/3/7/14 — este +3 días es el primer paso de esa cadencia,
+// no una duración de NEXT_ACTION_TEMPLATES (a propósito: no hay ninguna
+// entry con este propósito semántico). _nextActionTemplateForDelta(este
+// valor) devuelve null y _computeFollowupsDue lo reporta con label:'próximo
+// paso' en vez de un step reconocido — comportamiento esperado, no un bug.
+const GATE_INTERESADO_DELTA_MS = 3 * 24 * 60 * 60 * 1000;
+
+// Reintento tras un 1er corte ("Me cortó"): misma duración que la cadencia
+// de no-contacto. DERIVADA de NEXT_ACTION_TEMPLATES (única fuente) — nunca
+// escribir 24*3600000 a mano acá.
+const GATE_CADENCIA_DELTA_MS = NEXT_ACTION_TEMPLATES.find((t) => t.key === '24hs').deltaMs;
+
+// Hold de calendario (send-placeholder): espera de respuesta +48h. Misma
+// regla de derivación que arriba.
+const GATE_PLACEHOLDER_DELTA_MS = NEXT_ACTION_TEMPLATES.find((t) => t.key === '48hs').deltaMs;
+
+// Un lead en cualquiera de estos estados es terminal: NO lleva próximo paso
+// (ni default D-02, ni override del cliente, ni red de seguridad).
+const GATE_TERMINAL_ESTADOS = new Set(['descartado', 'agendado', 'cerrado']);
+
+// T-30-01/T-30-02: whitelist-and-coerce (mismo idioma que cleanReason, más
+// abajo) del nextAction que el cliente puede mandar en el body de
+// call-disposition. Devuelve null si dueAt no es una fecha válida — el
+// override se ignora en silencio, NUNCA un 400 (D-01: backend permisivo).
+function _gateSanitizeNextActionOverride(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const d = new Date(raw.dueAt);
+  if (isNaN(d.getTime())) return null;
+  // 'cadencia' es del sistema — un override del cliente siempre es intención
+  // humana, así que si viene 'cadencia' (o algo fuera de la whitelist) cae a
+  // 'callback'.
+  const tipo = (NEXT_ACTION_TIPOS.has(raw.tipo) && raw.tipo !== 'cadencia') ? raw.tipo : 'callback';
+  const canal = NEXT_ACTION_CANALES.has(raw.canal) ? raw.canal : 'llamada';
+  const motivo = typeof raw.motivo === 'string' ? raw.motivo.slice(0, 200) : '';
+  // origen SIEMPRE 'manual', ignorando lo que venga del body: 'compromiso'
+  // está reservado para la Phase 31 (el compromiso hablado en vivo que esa
+  // fase todavía no valida) — aceptarlo acá permitiría fabricar uno falso.
+  return { dueAt: d.toISOString(), tipo, canal, motivo, origen: 'manual' };
+}
+
 // Devuelve la plantilla cuyo deltaMs coincide EXACTO con el argumento, o
 // null. Sin tolerancia ni "más cercana": la coincidencia exacta es lo que
 // permite recuperar el `step` original de un follow-up derivado.
@@ -11134,7 +11182,19 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
       lead.calificado = true;
       lead.interes = 'si';
       lead.estado = 'interesado';
-      // Sigue en Llamadas con chip verde, esperando agendamiento
+      // Sigue en Llamadas con chip verde, esperando agendamiento. GATE-02/D-03
+      // (Phase 30): default de seguimiento a +3 días — el primer paso de la
+      // cadencia día 1/3/7/14 que sugiere el research para un interesado que
+      // no avanza. Es un default editable en el momento desde el calendario
+      // de la Phase 28 (D-01: nunca bloqueante), no una regla fija.
+      _setNextAction(lead, {
+        tipo: 'callback',
+        dueAt: new Date((Date.parse(opts.nowIso) || Date.now()) + GATE_INTERESADO_DELTA_MS).toISOString(),
+        canal: 'llamada',
+        motivo: 'seguimiento de interesado',
+        origen: 'manual',
+        createdBy: opts.actorName || '',
+      }, opts.nowIso);
       break;
 
     case 'answered_not_interested':
@@ -11251,6 +11311,19 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
       _clearNextAction(lead);
       lead.autoDiscarded = true;
       lead.autoDiscardReason = `cortes_${MAX_HUNG_UP}x`;
+    } else {
+      // GATE-02/D-02 (Phase 30): antes del gate, un 1er corte dejaba el lead
+      // SIN próximo paso — flotando, sin cadencia, listo para volver a la
+      // cola al instante sin ningún reloj corriendo. Ahora reintenta a +24h,
+      // igual que la cadencia de no-contacto.
+      _setNextAction(lead, {
+        tipo: 'cadencia',
+        dueAt: new Date((Date.parse(opts.nowIso) || Date.now()) + GATE_CADENCIA_DELTA_MS).toISOString(),
+        canal: 'llamada',
+        motivo: 'reintento tras corte',
+        origen: 'cadencia',
+        createdBy: opts.actorName || '',
+      }, opts.nowIso);
     }
   }
 
@@ -11291,6 +11364,34 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
     }
   }
 
+  // T-30-01/T-30-02: override de próximo paso mandado por el cliente (ya
+  // sanitizado en el endpoint por _gateSanitizeNextActionOverride — nunca
+  // llega acá basura). Se aplica DESPUÉS de todos los defaults/cadencias de
+  // arriba (gana sobre cualquiera de ellos) y SOLO si el lead no quedó
+  // terminal: un estado terminal siempre gana sobre lo que haya mandado el
+  // cliente (T-30-02, ej. no se puede "revivir" un descartado con una fecha).
+  if (opts.nextActionOverride && !GATE_TERMINAL_ESTADOS.has(lead.estado)) {
+    _setNextAction(lead, { ...opts.nextActionOverride, origen: 'manual', createdBy: opts.actorName || '' }, opts.nowIso);
+  }
+
+  // Red de seguridad (GATE-01, D-01): cualquier lead que llegue hasta acá en
+  // estado NO terminal y sin nextAction (ningún outcome/cadencia/override de
+  // arriba lo cubrió) recibe un default de cadencia +24h. NUNCA lanza ni
+  // devuelve error: _applyCallOutcome lo comparte el webhook del agente de
+  // voz (v3.0 parkeado) y un throw/4xx ahí lo rompería al reactivarse.
+  // Garantizar un default acá es MÁS fuerte para el objetivo real (que
+  // ningún lead quede flotando) que rechazar.
+  if (!GATE_TERMINAL_ESTADOS.has(lead.estado) && !lead.nextAction) {
+    _setNextAction(lead, {
+      tipo: 'cadencia',
+      dueAt: new Date((Date.parse(opts.nowIso) || Date.now()) + GATE_CADENCIA_DELTA_MS).toISOString(),
+      canal: 'llamada',
+      motivo: 'sin próximo paso definido',
+      origen: 'cadencia',
+      createdBy: opts.actorName || '',
+    }, opts.nowIso);
+  }
+
   return { calendarEntry };
 }
 
@@ -11302,6 +11403,9 @@ globalThis.__voiceAgent = {
   _setNextAction, _clearNextAction, _deriveNextActionFromLegacy, _leadNextAction,
   _nextActionTemplateForDelta,
   NEXT_ACTION_TIPOS, NEXT_ACTION_CANALES, NEXT_ACTION_ORIGENES, NEXT_ACTION_TEMPLATES,
+  // Phase 30 (GATE): defaults D-02 + red de seguridad + override sanitizado.
+  GATE_INTERESADO_DELTA_MS, GATE_CADENCIA_DELTA_MS, GATE_PLACEHOLDER_DELTA_MS,
+  GATE_TERMINAL_ESTADOS, _gateSanitizeNextActionOverride,
 };
 
 const CALL_OUTCOMES = new Set([
