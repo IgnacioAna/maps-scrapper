@@ -774,7 +774,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _playBeepSound();
       // Crear toast prominente custom (no usar showToast normal — este es VIP)
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:fixed; top:24px; right:24px; max-width:380px; background:linear-gradient(135deg, #5bb974 0%, #3a8e4e 100%); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 12px 40px rgba(91,185,116,0.5), 0 0 0 2px rgba(255,255,255,0.1); z-index:99999; animation:tlxSlideInRight 0.3s cubic-bezier(0.16,1,0.3,1); cursor:pointer;';
+      wrap.style.cssText = 'position:fixed; top:24px; right:24px; max-width:380px; background:linear-gradient(135deg, var(--accent-hover) 0%, #3a8e4e 100%); color:#fff; padding:14px 18px; border-radius:14px; box-shadow:0 12px 40px rgba(91,185,116,0.5), 0 0 0 2px rgba(255,255,255,0.1); z-index:99999; animation:tlxSlideInRight 0.3s cubic-bezier(0.16,1,0.3,1); cursor:pointer;';
       const cityCountry = [resp.leadCity, resp.leadCountry].filter(Boolean).join(', ');
       wrap.innerHTML = `
         <div style="display:flex; align-items:flex-start; gap:10px;">
@@ -801,7 +801,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const row = document.querySelector(`.call-row[data-id="${resp.leadId}"]`);
           if (row) {
             row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            row.style.boxShadow = '0 0 0 3px #5bb974';
+            row.style.boxShadow = '0 0 0 3px var(--accent-hover)';
             setTimeout(() => { row.style.boxShadow = ''; }, 3000);
           } else {
             window.showToast?.(`El lead ${resp.leadName} está en Setteo (WA), no en Llamadas.`, { type: 'info' });
@@ -1186,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const tot = rw.touched.length + rw.virgin.length;
           const touchedHtml = rw.touched.sort((a, b) => b.maxPage - a.maxPage).map(t =>
             `<span title="${escHtml(t.detail.map(d => d.query + ' → pág ' + d.page).join('\n'))}" style="display:inline-block; font-size:11px; background:rgba(255,179,65,0.10); border:1px solid rgba(255,179,65,0.3); color:#FFB341; padding:2px 8px; border-radius:6px; margin:0 4px 4px 0; cursor:default;">${escHtml(t.city)} · ${t.kws} kw · pág ${t.maxPage}</span>`).join('');
-          const virginHtml = rw.virgin.map(c => `<span style="display:inline-block; font-size:11px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); color:#5BB974; padding:2px 8px; border-radius:6px; margin:0 4px 4px 0;">${escHtml(c)}</span>`).join('');
+          const virginHtml = rw.virgin.map(c => `<span style="display:inline-block; font-size:11px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); color:var(--accent-hover); padding:2px 8px; border-radius:6px; margin:0 4px 4px 0;">${escHtml(c)}</span>`).join('');
           return `<details style="margin-bottom:6px;"><summary style="cursor:pointer; font-size:12.5px; padding:5px 0; color:var(--text-primary);">${escHtml(rw.pais)} <span style="color:var(--text-tertiary);">— ${rw.touched.length}/${tot} barridas · ${rw.virgin.length} vírgenes</span></summary>
             <div style="padding:6px 0 4px;">
               ${rw.touched.length ? `<div style="font-size:10.5px; color:var(--text-tertiary); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.4px;">Barridas (hover = detalle por keyword)</div>${touchedHtml}` : ''}
@@ -1393,7 +1393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const dot = conn ? '🟢' : (a.status === 'QR_PENDING' ? '🟡' : '⚪');
           return `<button type="button" data-acc="${escHtml(a.id)}" style="display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:9px 10px; border:none; background:transparent; color:var(--text-primary); border-radius:7px; cursor:pointer; font-size:13px; font-family:inherit;" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='transparent'">
           <span style="font-size:14px;">${dot}</span>
-          <span style="flex:1; min-width:0;"><div style="font-weight:600;">${escHtml(a.label || 'Cuenta')}</div><div style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">${escHtml(a.phone || '')}</div></span>
+          <span style="flex:1; min-width:0;"><div style="font-weight:600;">${escHtml(a.label || 'Cuenta')}</div><div style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escHtml(a.phone || '')}</div></span>
         </button>`;
         }).join('');
       document.body.appendChild(pop);
@@ -2747,7 +2747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _micChain = chain;
         _audioCfg._boostCleanup = chain.cleanup;
         if (old?.cleanup) { try { old.cleanup(); } catch {} }
-        say('Listo: ahora usás ' + (label || 'el micrófono elegido') + '.', '#5bb974');
+        say('Listo: ahora usás ' + (label || 'el micrófono elegido') + '.', 'var(--accent-hover)');
         return true;
       } catch (e) {
         console.warn('[audio] cambio de mic en vivo falló:', e?.message);
@@ -3089,7 +3089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const level = Math.min(100, Math.pow(rms / 255, 0.45) * 140);
         if (bar) {
           bar.style.width = level.toFixed(0) + '%';
-          bar.style.background = level > 78 ? '#f85149' : level > 28 ? '#5bb974' : '#FFB341';
+          bar.style.background = level > 78 ? '#f85149' : level > 28 ? 'var(--accent-hover)' : '#FFB341';
         }
         raf = requestAnimationFrame(tick);
       };
@@ -3334,7 +3334,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       let statusLabel, statusColor;
       if (dueTs > now + 12 * 3600 * 1000) { statusLabel = 'Programado'; statusColor = 'var(--accent)'; }
-      else if (dueTs >= now - 12 * 3600 * 1000) { statusLabel = 'Vence ahora'; statusColor = '#5bb974'; }
+      else if (dueTs >= now - 12 * 3600 * 1000) { statusLabel = 'Vence ahora'; statusColor = 'var(--accent-hover)'; }
       else if (dueTs >= now - 36 * 3600 * 1000) { statusLabel = 'Vencido ayer'; statusColor = '#ff8a3d'; }
       else { statusLabel = 'Atrasado'; statusColor = '#f85149'; }
 
@@ -3684,8 +3684,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Helper: derivar chip de estado semántico (modo simple)
     function _semanticStatusChip(lead) {
       const map = {
-        agendado: ['📅', 'Agendado', 'rgba(91,185,116,0.18)', '#5bb974'],
-        cerrado: ['✅', 'Cerrado', 'rgba(91,185,116,0.15)', '#5bb974'],
+        agendado: ['📅', 'Agendado', 'rgba(91,185,116,0.18)', 'var(--accent-hover)'],
+        cerrado: ['✅', 'Cerrado', 'rgba(91,185,116,0.15)', 'var(--accent-hover)'],
         descartado: ['🚫', 'Descartado', 'rgba(248,81,73,0.15)', '#f85149'],
         sin_wsp: ['📞', 'Sin WSP', 'rgba(255,200,40,0.12)', '#ffc828'],
       };
@@ -3702,7 +3702,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Helper: inferir "próximo paso" sugerido al SDR
     function _nextStepFor(lead) {
-      if (lead.estado === 'agendado') return ['Esperar reunión', '#5bb974'];
+      if (lead.estado === 'agendado') return ['Esperar reunión', 'var(--accent-hover)'];
       if (lead.estado === 'cerrado' || lead.estado === 'descartado') return ['Listo', '#7E8494'];
       if (lead.interes === 'si') return ['Agendar reunión', '#f85149'];
       if (lead.calificado === true && lead.interes !== 'no') return ['Marcar interés', 'var(--accent)'];
@@ -3755,7 +3755,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<td><span style="font-size:12px; color:' + nextColor + '; font-weight:500;">' + nextStep + '</span></td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' + fuHtml + '</td>' +
         '<td style="text-align:center; white-space:nowrap;" onclick="event.stopPropagation()">' +
-          (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp (WAMULTI si sos Ignacio)" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:#5bb974; margin:0 2px; display:inline-block;" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');">💬</a>' : '') +
+          (phone ? '<a href="' + escHtml(waUrl) + '" target="_blank" title="Abrir WhatsApp (WAMULTI si sos Ignacio)" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(91,185,116,0.10); color:var(--accent-hover); margin:0 2px; display:inline-block;" onclick="return window._waBtnClick(this, event, \'' + escHtml(lead.id) + '\');">💬</a>' : '') +
           '<a href="#" title="Abrir info del lead" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\');" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:var(--accent-soft); color:var(--accent); margin:0 2px; display:inline-block;">📋</a>' +
           '<a href="#" title="Programar seguimiento custom" onclick="event.preventDefault(); window._openLeadModal(\'' + escHtml(lead.id) + '\'); setTimeout(()=>window._switchLeadTab(\'programar\'), 100);" style="text-decoration:none; padding:6px 10px; border-radius:6px; background:rgba(121,184,255,0.10); color:#79b8ff; margin:0 2px; display:inline-block;">📅</a>' +
         '</td>' +
@@ -4016,7 +4016,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Chip pequeño con el número propio del SDR usado (si está seteado)
         const myPh = lead.setterPhoneId ? (_myPhones || []).find(p => p.id === lead.setterPhoneId) : null;
-        const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:#5bb974; border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
+        const myWaChip = myPh ? '<span class="chip" style="display:inline-flex; align-items:center; gap:3px; padding:1px 6px; font-size:9px; background:rgba(91,185,116,0.10); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.32); border-radius:6px; margin-left:4px; vertical-align:middle;" title="Contactado desde ' + escHtml(myPh.label || '') + (myPh.phone ? ' (' + escHtml(myPh.phone) + ')' : '') + '">' + escHtml((myPh.label || '').substring(0, 12)) + '</span>' : '';
 
         return '<tr data-lead-id="' + escHtml(lead.id) + '" onclick="window._openLeadModal(\'' + escHtml(lead.id) + '\')">' +
           '<td style="color:var(--text-secondary);">' + (lead.num || '') + '</td>' +
@@ -6012,7 +6012,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         secEl.innerHTML =
           _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
-          _hoyRenderSection('Interesados sin agendar', interesados, '#5BB974', 'Marcaron interés — agendar', 'hoy-interesados') +
+          _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
           _hoyNewLeadsPointer(virgenesCount);
       } catch (e) {
         console.error('[hoy]', e);
@@ -6061,7 +6061,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const owner = _hoyOwnerName(l);
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
-        const scColor = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
+        const scColor = sc >= 70 ? 'var(--accent-hover)' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
         return `<div class="hoy-row" data-id="${escHtml(l.id)}">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
@@ -6072,7 +6072,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
@@ -6334,7 +6334,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const overdue = ts <= now;
             const flag = fmtCountry(l.country) || '📞';
             return `<button type="button" class="cb-agenda-item" data-lead-id="${escHtml(l.id)}" style="display:grid; grid-template-columns:54px 20px 1fr auto; gap:10px; align-items:center; padding:7px 10px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; cursor:pointer; transition:all 0.15s; font-family:inherit; text-align:left;">
-              <span style="font-family:ui-monospace,monospace; font-weight:600; color:${overdue ? 'var(--warning)' : 'var(--accent)'}; font-size:12.5px; font-variant-numeric:tabular-nums;">${hour}</span>
+              <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:600; color:${overdue ? 'var(--warning)' : 'var(--accent)'}; font-size:12.5px; font-variant-numeric:tabular-nums;">${hour}</span>
               <span style="font-size:14px;">${flag}</span>
               <span style="color:var(--text-primary); font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' · <span style=\"color:var(--text-tertiary);\">' + escHtml(l.city) + '</span>' : ''}</span>
               <span style="font-size:10px; color:var(--text-tertiary);">${overdue ? 'vencido' : 'click para abrir →'}</span>
@@ -6701,7 +6701,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const labelEl = document.getElementById('pd-today-label');
       const barEl = document.getElementById('pd-today-bar');
       if (labelEl) labelEl.textContent = `${s.dials} / ${goal}${done ? ' ✓' : ''}`;
-      if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = done ? '#5BB974' : 'var(--accent)'; }
+      if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = done ? 'var(--accent-hover)' : 'var(--accent)'; }
       const convosEl = document.getElementById('pd-today-convos');
       if (convosEl) convosEl.textContent = `${s.conversations}`;
       // El chip se pone verde al cumplir la meta.
@@ -6837,7 +6837,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             _bgGradient = 'linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%)';
             _borderColor = 'var(--accent-strong)';
           } else if (_pdFuDue >= _now - 12 * 3600 * 1000) {
-            _statusLabel = 'Vence ahora'; _statusColor = '#5bb974';
+            _statusLabel = 'Vence ahora'; _statusColor = 'var(--accent-hover)';
             _bgGradient = 'linear-gradient(135deg, rgba(91,185,116,0.12) 0%, rgba(91,185,116,0.03) 100%)';
             _borderColor = 'rgba(91,185,116,0.38)';
           } else if (_pdFuDue >= _now - 36 * 3600 * 1000) {
@@ -6863,7 +6863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                   ${_pdFuNote ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-top:6px; padding:6px 9px; background:rgba(255,255,255,0.04); border-radius:6px; line-height:1.4; white-space:pre-wrap;">${escHtml(_pdFuNote)}</div>` : ''}
                 </div>
               </div>
-              <button type="button" onclick="window._pdMarkFollowupDone('${escHtml(lead.id)}', '${_pdFuActive}')" style="padding:8px 14px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">✓ Marcar hecho</button>
+              <button type="button" onclick="window._pdMarkFollowupDone('${escHtml(lead.id)}', '${_pdFuActive}')" style="padding:8px 14px; background:rgba(91,185,116,0.18); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.4); border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;">✓ Marcar hecho</button>
             </div>
           </div>`;
         }
@@ -6885,9 +6885,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px;">Podés seguir agregando notas en esta tarjeta. Avanzá cuando termines.</div>
           ${_holdDestLine}
         </div>
-        <button type="button" onclick="window._pdAdvance()" style="padding:10px 20px; background:var(--success); color:#0F1115; border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
+        <button type="button" onclick="window._pdAdvance()" style="padding:10px 20px; background:var(--success); color: var(--on-accent); border:none; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap;">
           Siguiente lead →
-          <kbd style="font-family:ui-monospace,monospace; font-size:10px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px;">S</kbd>
+          <kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px;">S</kbd>
         </button>
       </div>` : '';
       main.innerHTML = `
@@ -6901,12 +6901,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
           </div>
           <div style="margin-top:8px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-            <span style="font-family:ui-monospace,monospace; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(_phoneShown(lead.phone))}</span>
-            <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:ui-monospace,monospace;">·</span>
+            <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(_phoneShown(lead.phone))}</span>
+            <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">·</span>
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
-            ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`; })()}
-            ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? '#5BB974' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">${lt.time}${lt.ok ? '' : ' ⚠️'}</span>`; })()}
+            ${(() => { const sc = Math.round(_callScore(lead)); const col = sc >= 70 ? 'var(--accent-hover)' : sc >= 50 ? '#FFB341' : '#7E8494'; return `<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`; })()}
+            ${(() => { const lt = _leadLocalTime(lead); if (!lt) return ''; const col = lt.ok ? 'var(--accent-hover)' : '#FFB341'; return `<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">${lt.time}${lt.ok ? '' : ' ⚠️'}</span>`; })()}
             ${attempts > 0 ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${attempts} intento${attempts>1?'s':''}</span>` : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">Nunca llamado</span>'}
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
@@ -6915,14 +6915,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
         </div>
         <div style="display:flex; flex-direction:column; gap:9px; min-width:200px;">
-          <button onclick="window._startTelnyxCall('${escHtml(lead.id)}')" style="padding:16px 22px; font-size:16px; font-weight:700; background:var(--success); color:#0F1115; border:none; border-radius:12px; cursor:pointer; box-shadow:0 6px 22px rgba(91,185,116,0.32); display:flex; align-items:center; justify-content:center; gap:8px;">
+          <button onclick="window._startTelnyxCall('${escHtml(lead.id)}')" style="padding:16px 22px; font-size:16px; font-weight:700; background:var(--success); color: var(--on-accent); border:none; border-radius:12px; cursor:pointer; box-shadow:0 6px 22px rgba(91,185,116,0.32); display:flex; align-items:center; justify-content:center; gap:8px;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             <span>Llamar</span>
-            <kbd style="font-family:ui-monospace,monospace; font-size:11px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px; margin-left:4px;">C</kbd>
+            <kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px; padding:1px 5px; background:rgba(15,17,21,0.18); border:1px solid rgba(15,17,21,0.25); border-radius:4px; margin-left:4px;">C</kbd>
           </button>
           <button onclick="window._pdSkip()" style="padding:9px 18px; background:transparent; border:1px solid var(--border-default); color:var(--text-secondary); border-radius:10px; cursor:pointer; font-size:12.5px; display:flex; align-items:center; justify-content:center; gap:6px;">
             <span>Saltar</span>
-            <kbd style="font-family:ui-monospace,monospace; font-size:10px; padding:1px 5px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:4px;">S</kbd>
+            <kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px; padding:1px 5px; background:var(--bg-input); border:1px solid var(--border-subtle); border-radius:4px;">S</kbd>
           </button>
         </div>
       </div>
@@ -6991,7 +6991,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex; flex-direction:column; gap:5px;">
             ${lastCalls.map(entry => {
               // Dot de color por outcome — más sobrio que emoji
-              const dotColor = ({ answered_interested:'#5BB974', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)', hung_up:'#F47272', placeholder_sent:'#7DD3FC' })[entry.outcome] || '#888';
+              const dotColor = ({ answered_interested:'var(--accent-hover)', answered_not_interested:'#F47272', no_answer:'#888', voicemail:'#FFB341', wrong_number:'#888', invalid_number:'#888', callback_later:'#5BA3F2', scheduled_with_admin:'var(--accent)', hung_up:'#F47272', placeholder_sent:'#7DD3FC' })[entry.outcome] || '#888';
               const t = entry.ts ? new Date(entry.ts).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
               // Costo: real (reconciliado de CDR) si existe, sino estimado.
               // Solo admin/supervisor — al SDR el costo por llamada no le aporta.
@@ -7015,7 +7015,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               // Con transcript: fila expandible inline (details nativo, sin JS).
               // Reagrupar en turnos → conversación legible, no frases sueltas picadas.
               const segsHtml = _mergeTranscriptTurns(segs).map(s => {
-                const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+                const col = s.speaker === 'setter' ? 'var(--accent-hover)' : '#FFB341';
                 const lbl = s.speaker === 'setter' ? 'SDR' : 'Lead';
                 return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
               }).join('');
@@ -7052,9 +7052,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <input id="pd-call-note" type="text" maxlength="500" placeholder="Nota de esta llamada — ej: contestó la secre, pedir por Dr. X el martes" style="flex:1; min-width:240px; box-sizing:border-box; padding:9px 12px; border-radius:8px; border:1px solid var(--border-subtle); background:var(--bg-app); color:var(--text-primary); font-size:12.5px; font-family:inherit;">
           <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:var(--accent-medium); color:var(--accent); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
         </div>
-        ${lead.altPhone ? `<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid #5BB974; border-radius:8px;">
-          <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:ui-monospace,monospace; color:var(--accent);">${escHtml(lead.altPhone)}</span></span>
-          <button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}', '${escHtml(lead.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
+        ${lead.altPhone ? `<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent-hover); border-radius:8px;">
+          <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--accent);">${escHtml(lead.altPhone)}</span></span>
+          <button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}', '${escHtml(lead.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:6px 10px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px; cursor:pointer; font-family:inherit;">editar</button>
         </div>` : `<div style="margin-bottom:12px;">
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:7px 13px; background:transparent; color:var(--text-secondary); border:1px dashed var(--border-default); border-radius:8px; font-size:12px; cursor:pointer; font-family:inherit;">+ Cargar contacto que me pasaron (tel / email)</button>
@@ -7094,7 +7094,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span style="display:flex; align-items:center;">${f}</span>
           <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' <span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}${l.doctor && !l.doctor.includes('N/A') ? ' <span style="color:var(--text-tertiary); font-size:11px;">· ' + escHtml(l.doctor) + '</span>' : ''}</span>
           ${att > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-app); padding:1px 6px; border-radius:5px;">${att} int</span>` : ''}
-          <span style="color:var(--text-tertiary); font-family:ui-monospace,monospace; font-size:11px;">${escHtml(_phoneShown(l.phone))}</span>
+          <span style="color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px;">${escHtml(_phoneShown(l.phone))}</span>
         </div>`;
       }).join('');
 
@@ -7111,7 +7111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (r && r.found) {
             const moneda = '$' + r.ratePerMin.toFixed(4);
             const tipo = r.isMobile ? 'móvil' : 'fijo';
-            badge.style.color = r.ratePerMin > 0.10 ? '#F47272' : (r.ratePerMin > 0.05 ? '#FFB341' : '#5BB974');
+            badge.style.color = r.ratePerMin > 0.10 ? '#F47272' : (r.ratePerMin > 0.05 ? '#FFB341' : 'var(--accent-hover)');
             badge.innerHTML = `<span title="Tarifa real Telnyx (prefijo ${r.matchedPrefix})">${moneda}/min · ${r.country} ${tipo}</span>`;
           } else {
             badge.style.color = 'var(--text-tertiary)';
@@ -7796,7 +7796,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Ficha rica
       const fichaItems = [];
       // Tel enmascarado para SDRs (2026-07-10): ven solo los últimos 4 dígitos.
-      if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:ui-monospace,monospace;">${escHtml(_phoneShown(l.phone))}</span>`);
+      if (l.phone) fichaItems.push(`<span class="label">Tel</span><span class="value" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escHtml(_phoneShown(l.phone))}</span>`);
       if (l.rating) fichaItems.push(`<span class="label">Rating</span><span class="value">${escHtml(String(l.rating))}${l.reviews ? ' · ' + l.reviews + ' reseñas' : ''}</span>`);
       if (l.address) fichaItems.push(`<span class="label">Dirección</span><span class="value">${escHtml(l.address)}</span>`);
       // Sprint 37 (VULN-A1): pasar todas las URLs por safeUrl antes de href
@@ -7838,11 +7838,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const _expChips = [];
       {
         const sc = Math.round(_callScore(l));
-        const col = sc >= 70 ? '#5BB974' : sc >= 50 ? '#FFB341' : '#7E8494';
+        const col = sc >= 70 ? 'var(--accent-hover)' : sc >= 50 ? '#FFB341' : '#7E8494';
         _expChips.push(`<span title="Score de prioridad (reseñas, rating, intentos, interés)" style="font-size:10.5px; color:${col}; background:${col}22; padding:3px 9px; border-radius:6px; font-weight:700;">Prioridad ${sc}</span>`);
         const lt = _leadLocalTime(l);
         if (lt) {
-          const ltCol = lt.ok ? '#5BB974' : '#FFB341';
+          const ltCol = lt.ok ? 'var(--accent-hover)' : '#FFB341';
           _expChips.push(`<span title="Hora local del lead (${escHtml(lt.tz)})${lt.ok ? ' · horario hábil' : ' · fuera de horario'}" style="font-size:10.5px; color:${ltCol}; background:${ltCol}22; padding:3px 9px; border-radius:6px; font-weight:700;">${lt.time}${lt.ok ? '' : ' ⚠️'}</span>`);
         }
         const _att = l.callAttempts || 0;
@@ -7870,9 +7870,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Contacto alternativo que le pasaron al SDR (mismo bloque que el dialer)
-      const _altBlock = l.altPhone ? `<div style="display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid #5BB974; border-radius:8px;">
-        <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(l.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:ui-monospace,monospace; color:var(--accent);">${escHtml(l.altPhone)}</span></span>
-        <button type="button" onclick="window._startTelnyxCall('${escHtml(l.id)}', '${escHtml(l.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:#5bb974; border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
+      const _altBlock = l.altPhone ? `<div style="display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent-hover); border-radius:8px;">
+        <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(l.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--accent);">${escHtml(l.altPhone)}</span></span>
+        <button type="button" onclick="window._startTelnyxCall('${escHtml(l.id)}', '${escHtml(l.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
       </div>` : '';
 
       // Histórico
@@ -7911,7 +7911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
             if (!hasTr) return rowHtml;
             const segsHtml = _mergeTranscriptTurns(segs).map(s => {
-              const col = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+              const col = s.speaker === 'setter' ? 'var(--accent-hover)' : '#FFB341';
               const lbl = s.speaker === 'setter' ? 'SDR' : 'Lead';
               return `<div style="display:flex; gap:8px; margin-bottom:4px;"><span style="color:${col}; font-weight:600; width:48px; flex-shrink:0; font-size:10px;">${lbl}</span><span style="flex:1 1 auto; min-width:0; color:var(--text-secondary); overflow-wrap:anywhere;">${escHtml(s.text || '')}</span></div>`;
             }).join('');
@@ -7949,7 +7949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="call-history-timeline">${historyHtml}</div>
 
           <div class="call-action-row">
-            ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:#5bb974; font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
+            ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:var(--accent-hover); font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
               Reactivar lead
             </button>` : ''}
             ${(() => {
@@ -8241,7 +8241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${attempts > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-input); padding:2px 7px; border-radius:6px;">${attempts} intento${attempts>1?'s':''}</span>` : ''}
               ${l.phoneStatus === 'voicemail' ? '<span style="font-size:10px; color:var(--warning); background:var(--warning-soft); padding:2px 7px; border-radius:6px;">buzón</span>' : ''}
               ${typeof l.businessStatus === 'string' && l.businessStatus.startsWith('CLOSED') ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.10); border:1px solid rgba(248,81,73,0.3); padding:2px 7px; border-radius:6px;" title="Google lo marca cerrado (${escHtml(l.businessStatus)}) — verificar antes de discar">⚠️ Cerrado</span>` : ''}
-              ${l.phoneType === 'mobile' ? '<span style="font-size:10px; color:#5BB974; background:rgba(91,185,116,0.1); padding:2px 7px; border-radius:6px;" title="Línea móvil (validada Telnyx)">móvil</span>' : (l.phoneType === 'landline' ? '<span style="font-size:10px; color:var(--text-tertiary); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:6px;" title="Línea fija (validada Telnyx)">fijo</span>' : '')}
+              ${l.phoneType === 'mobile' ? '<span style="font-size:10px; color:var(--accent-hover); background:rgba(91,185,116,0.1); padding:2px 7px; border-radius:6px;" title="Línea móvil (validada Telnyx)">móvil</span>' : (l.phoneType === 'landline' ? '<span style="font-size:10px; color:var(--text-tertiary); background:rgba(255,255,255,0.05); padding:2px 7px; border-radius:6px;" title="Línea fija (validada Telnyx)">fijo</span>' : '')}
               ${l.doNotCall ? `<span style="font-size:10px; color:#f85149; background:rgba(248,81,73,0.12); border:1px solid rgba(248,81,73,0.35); padding:2px 7px; border-radius:6px;" title="No llamar (DNC)${l.doNotCallReason ? ' · ' + escHtml(l.doNotCallReason) : ''}">No llamar</span> <button type="button" onclick="event.stopPropagation(); window._callsClearDnc('${escHtml(l.id)}')" title="Quitar DNC y devolver a la cola" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Quitar</button>` : ''}
               ${notesBadge}
               ${fupBadge}
@@ -8249,11 +8249,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${typeof _signalChips === 'function' ? _signalChips(l) : ''}
               ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:#25D366; background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
-              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:#5BB974; cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
+              ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:var(--accent-hover); cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
-              ${l.phone ? `<span style="font-family:ui-monospace,monospace; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
+              ${l.phone ? `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
             ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
@@ -8281,10 +8281,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // lead no se expone en la UI de la lista — el botón disca igual.
             const btnTitle = cooldownWarn || (_telnyx.configured ? `title="Llamar por Telnyx WebRTC"` : `title="Telnyx no configurado, abre dialer del SO"`);
             return (_telnyx.configured && _telnyx.numbers.length > 0)
-              ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color:#0F1115; border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" ${btnTitle}>
+              ? `<button onclick="window._startTelnyxCall('${escHtml(l.id)}')" class="pill-btn" style="background:var(--success); color: var(--on-accent); border:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px; cursor:pointer;" ${btnTitle}>
                   Llamar${lastBadge}
                 </button>`
-              : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" ${btnTitle}>
+              : `<a href="tel:${tel}" class="pill-btn" style="background:var(--success); color: var(--on-accent); text-decoration:none; padding:10px 18px; font-weight:600; font-size:13px; display:inline-flex; align-items:center; gap:6px;" ${btnTitle}>
                   Llamar${lastBadge}
                 </a>`;
           })()}
@@ -9401,10 +9401,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         bar.style.width = pct + '%';
         const saturando = st.peak > 0.95;
         const bien = st.peak >= 0.18;
-        bar.style.background = saturando ? '#f85149' : bien ? '#5bb974' : '#FFB341';
+        bar.style.background = saturando ? '#f85149' : bien ? 'var(--accent-hover)' : '#FFB341';
         if (verdict) {
           verdict.textContent = saturando ? 'Saturando' : bien ? 'Bien' : (st.peak > 0.03 ? 'Baja' : 'Sin voz');
-          verdict.style.color = saturando ? '#f85149' : bien ? '#5bb974' : '#FFB341';
+          verdict.style.color = saturando ? '#f85149' : bien ? 'var(--accent-hover)' : '#FFB341';
         }
         // Aviso de voz baja: solo tras hablar un rato flojo (no por un silencio).
         if (st.peak > 0.03 && st.peak < 0.18) st.quiet++; else if (st.peak >= 0.18) { st.quiet = 0; st.spoke++; }
@@ -9530,7 +9530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Umbrales de telefonía: <2% pérdida y <30ms jitter es una línea sana;
         // el ocultamiento es el que se OYE (por eso pesa aunque no haya pérdida).
         let label, color, bg;
-        if (lossPct < 2 && jitterMs < 30 && concealPct < 4) { label = 'Línea buena'; color = '#5bb974'; bg = 'rgba(91,185,116,0.12)'; }
+        if (lossPct < 2 && jitterMs < 30 && concealPct < 4) { label = 'Línea buena'; color = 'var(--accent-hover)'; bg = 'rgba(91,185,116,0.12)'; }
         else if (lossPct < 6 && jitterMs < 60 && concealPct < 12) { label = 'Línea regular'; color = '#FFB341'; bg = 'rgba(255,179,65,0.12)'; }
         else { label = 'Línea mala'; color = '#f85149'; bg = 'rgba(248,81,73,0.12)'; }
         const el = chip();
@@ -9655,7 +9655,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // visible para cargarlo en el momento de la llamada.
       if (interactive) {
         const altCall = lead.altPhone
-          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color:#0F1115; border:none; font-weight:600; cursor:pointer; font-family:inherit;">Llamar</button></div>`
+          ? `<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;"><span style="font-size:12px; color:#fff;"><b>${escHtml(lead.altPhoneLabel || 'Contacto')}</b>: ${escHtml(lead.altPhone)}</span><button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}','${escHtml(lead.altPhone)}')" style="font-size:11px; padding:4px 12px; border-radius:7px; background:var(--success); color: var(--on-accent); border:none; font-weight:600; cursor:pointer; font-family:inherit;">Llamar</button></div>`
           : `<div style="font-size:11px; color:rgba(255,255,255,0.6);">Si te pasan otro número (encargado/decisor), cargalo acá.</div>`;
         rows.push(`<div style="background:rgba(121,184,255,0.07); border:1px solid rgba(121,184,255,0.25); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
           <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:#79B8FF; margin-bottom:5px;">Contacto secundario</div>
@@ -9699,7 +9699,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Google Maps directo desde nombre + ciudad
       if (lead.name) {
         const mapsQuery = encodeURIComponent(`${lead.name} ${lead.city || ''} ${lead.country || ''}`.trim());
-        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:#5bb974; border-radius:5px; text-decoration:none;">Maps</a>`);
+        linkBtns.push(`<a href="https://www.google.com/maps/search/?api=1&query=${mapsQuery}" target="_blank" rel="noopener" title="Buscar en Google Maps" style="font-size:12.5px; padding:7px 13px; font-weight:600; background:rgba(91,185,116,0.12); border:1px solid rgba(91,185,116,0.3); color:var(--accent-hover); border-radius:5px; text-decoration:none;">Maps</a>`);
       }
       if (lead.instagram && !lead.instagram.includes('N/A')) {
         const igRaw = String(lead.instagram).trim();
@@ -9777,7 +9777,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const colorMap = {
           connecting: '#FFB341',  // ámbar
           ringing: '#FFB341',     // ámbar (mismo, suena)
-          active: '#5BB974',      // verde
+          active: 'var(--accent-hover)',      // verde
           ending: '#9CA3AF',      // gris
         };
         const color = colorMap[state] || '#FFB341';
@@ -10367,11 +10367,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       const triggerColors = {
         before_call: '#7dd3fc',
-        gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
+        gatekeeper: 'var(--accent-hover)', opener: 'var(--accent-hover)', pitch: 'var(--accent-hover)',
         ask_meeting: '#FFB341', confirm: '#FFB341',
         objection_brushoff: '#FFB341', objection_real: '#f85149',
-        callback: 'var(--accent)', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
-        first_call: '#5bb974', objection: '#f85149',
+        callback: 'var(--accent)', whatsapp_msg: 'var(--accent-hover)', email_template: '#7dd3fc',
+        first_call: 'var(--accent-hover)', objection: '#f85149',
         scheduling: '#FFB341', voicemail: '#7dd3fc', general: 'rgba(255,255,255,0.5)',
       };
       const sortedTriggers = Object.keys(grouped).sort((a, b) => {
@@ -11494,7 +11494,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Contacto secundario</div>
           <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">El número y/o email que te pasaron (encargado / decisor / recepción).</div>
           <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Número (con código de país)</label>
-          <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:8px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:15px; font-family:ui-monospace,monospace; text-align:center; letter-spacing:1px;">
+          <input id="alt-contact-phone" type="tel" value="${escHtml(curPhone)}" placeholder="+5491112345678" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:8px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:15px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; text-align:center; letter-spacing:1px;">
           <div id="alt-contact-keypad" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:16px;">
             ${['1','2','3','4','5','6','7','8','9','+','0','⌫'].map(k => `<button type="button" data-k="${k}" style="padding:11px 0; background:var(--bg-app); border:1px solid var(--border-default); border-radius:9px; color:var(--text-primary); font-size:16px; font-weight:600; cursor:pointer; font-family:inherit;">${k}</button>`).join('')}
           </div>
@@ -11715,7 +11715,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (el && !el.value && val) el.value = val;
         }
         enrichEl.innerHTML = `
-          <div style="font-size:11px; color:#5bb974; font-weight:600; margin-bottom:5px;">✓ Encontrado en Google Maps</div>
+          <div style="font-size:11px; color:var(--accent-hover); font-weight:600; margin-bottom:5px;">✓ Encontrado en Google Maps</div>
           <div style="line-height:1.5;">
             <strong>${escHtml(d.best.name)}</strong><br>
             ${d.best.rating ? '★ ' + escHtml(String(d.best.rating)) + ' · ' : ''}${d.best.reviews ? d.best.reviews + ' reseñas' : ''}<br>
@@ -11901,7 +11901,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             _cmdTile('Conversaciones', _convers, _pctConvers + '% de las atendidas', '#A97DEE',
               'Con cuántas personas se habló de verdad: atendieron y la charla duró 30 segundos o más, o terminó agendando.') +
             _cmdTile('Interesados', ct.interesadosHistorico || 0, 'dijeron que sí', '#FFB341') +
-            _cmdTile('Agendados', ct.agendadosConAdmin || 0, (ct.pctConversion || '0.0') + '% de las atendidas', '#5bb974') +
+            _cmdTile('Agendados', ct.agendadosConAdmin || 0, (ct.pctConversion || '0.0') + '% de las atendidas', 'var(--accent-hover)') +
             _cmdTile('Marcadas hoy', ct.llamadasHoy || 0, (ct.pctAtendidasHoy || '0.0') + '% atendieron', '');
         }
 
@@ -11916,7 +11916,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             _cmdTile('Números muertos', ct.numerosMuertos || 0, (ct.pctNumerosMuertos || '0.0') + '% de la cola', '#f85149') +
             _cmdTile('Reuniones pendientes', ct.agendamientoPendientes || 0, 'en cola de agenda', '#FFB341') +
             _cmdTile('Reuniones realizadas', ct.agendamientoRealizados || 0,
-              (ct.agendamientoNoShows || 0) + ' no-show', '#5bb974');
+              (ct.agendamientoNoShows || 0) + ' no-show', 'var(--accent-hover)');
         }
 
         // Tabla por SDR (calls). Las 3 primeras columnas responden la pregunta
@@ -12375,7 +12375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '<div id="vs-setter-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:18px;">' + (rows || '<div style="color:var(--text-tertiary); font-size:13px;">No hay SDRs.</div>') + '</div>' +
         '<div style="display:flex; gap:8px; justify-content:flex-end;">' +
           '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="font-size:13px; background:none; color:var(--text-secondary); border:1px solid var(--border-subtle); padding:8px 16px; border-radius:8px; cursor:pointer;">Cancelar</button>' +
-          '<button id="vs-save-btn" style="font-size:13px; background:var(--accent); color:#0F1115; border:none; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:600;" data-user="' + escHtml(userId) + '">Guardar</button>' +
+          '<button id="vs-save-btn" style="font-size:13px; background:var(--accent); color: var(--on-accent); border:none; padding:8px 18px; border-radius:8px; cursor:pointer; font-weight:600;" data-user="' + escHtml(userId) + '">Guardar</button>' +
         '</div>' +
         '</div></div>';
       const wrap = document.createElement('div');
@@ -12734,7 +12734,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         body.innerHTML = d.rows.map(x => {
           const estado = x.verdict === 'low' ? chip('Voz baja', '#f85149', 'rgba(248,81,73,0.13)')
             : x.verdict === 'clipping' ? chip('Satura', '#FFB341', 'rgba(255,179,65,0.13)')
-            : x.verdict === 'ok' ? chip('Bien', '#5bb974', 'rgba(91,185,116,0.13)')
+            : x.verdict === 'ok' ? chip('Bien', 'var(--accent-hover)', 'rgba(91,185,116,0.13)')
             : chip('Sin datos', 'var(--text-secondary)', 'rgba(255,255,255,0.06)');
           const nivelColor = x.verdict === 'low' ? '#f85149' : x.verdict === 'clipping' ? '#FFB341' : 'var(--text-primary)';
           // El micrófono interno se marca: suele ser la causa de la voz baja.
@@ -12745,7 +12745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           return `<tr style="border-bottom:1px solid var(--border-subtle);">
             <td style="padding:8px 10px; font-weight:500;">${esc(x.setterName)}</td>
             <td style="padding:8px 10px;">${x.measured ?? 0}</td>
-            <td style="padding:8px 10px; font-family:ui-monospace,monospace; color:${nivelColor}; font-weight:600;">${x.voiceAvg ?? '—'}</td>
+            <td style="padding:8px 10px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:${nivelColor}; font-weight:600;">${x.voiceAvg ?? '—'}</td>
             <td style="padding:8px 10px;">${x.lowPct != null ? x.lowPct + '%' : '—'}</td>
             <td style="padding:8px 10px;">${mic}</td>
             <td style="padding:8px 10px;">${estado}</td>
@@ -13015,7 +13015,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           const callable = (typeof s.callable === 'number') ? s.callable : s.total;
           const gap = s.total - callable;
           const tip = `Click para ver el desglose por país y etapa. ${s.total} asignados` + (gap > 0 ? ` · ${gap} no llamables` : '');
-          return `<tr title="${escHtml(tip)}" style="cursor:pointer;" onclick="window._poolSetterBreakdown('${escHtml(s.id)}')"><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''} <span style="color:var(--text-tertiary); font-size:10px;">›</span></td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:#5BB974;">${callable}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched}</td></tr>`;
+          return `<tr title="${escHtml(tip)}" style="cursor:pointer;" onclick="window._poolSetterBreakdown('${escHtml(s.id)}')"><td style="padding:7px 10px;">${escHtml(s.name)}${s.orphanSetter ? ' <span style="color:var(--danger); font-size:10px;">(huérfano)</span>' : ''} <span style="color:var(--text-tertiary); font-size:10px;">›</span></td><td style="padding:7px 10px; text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:var(--accent-hover);">${callable}</td><td style="padding:7px 10px; text-align:right; color:var(--text-tertiary); font-variant-numeric:tabular-nums;">${s.untouched}</td></tr>`;
         }).join('');
         // ¿A qué país llamar AHORA? — hora local de cada país + flag horario hábil.
         const countryTiming = (d.byCountry || [])
@@ -13023,7 +13023,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           .map(c => { const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime({ country: c.country }) : null; return { country: c.country, count: c.count, time: lt ? lt.time : null, ok: lt ? lt.ok : false, hasTz: !!lt }; });
         countryTiming.sort((a, b) => (Number(b.ok) - Number(a.ok)) || (b.count - a.count));
         const callNowHtml = countryTiming.slice(0, 14).map(c => {
-          const col = !c.hasTz ? '#7E8494' : c.ok ? '#5BB974' : '#FFB341';
+          const col = !c.hasTz ? '#7E8494' : c.ok ? 'var(--accent-hover)' : '#FFB341';
           const dot = !c.hasTz ? '' : c.ok ? '🟢' : '🟡';
           return `<span title="${c.ok ? 'horario hábil' : (c.hasTz ? 'fuera de horario' : 'sin zona horaria')}" style="font-size:11.5px; color:${col}; background:${col}18; padding:4px 10px; border-radius:7px; margin:0 5px 5px 0; display:inline-block; font-weight:600;">${dot} ${escHtml(c.country)}${c.time ? ' · ' + c.time : ''} · <strong>${c.count}</strong></span>`;
         }).join('');
@@ -13037,7 +13037,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:8px;">Prioridad de re-contacto (orden en que conviene distribuir)</div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px;">
-            ${tierChip('1 · Interesados', t.interesado, '#5BB974')}
+            ${tierChip('1 · Interesados', t.interesado, 'var(--accent-hover)')}
             ${tierChip('2 · Sin contactar', t.sin_contactar, '#79B8FF')}
             ${tierChip('3 · A medias', t.medio, '#FFB341')}
             ${tierChip('4 · No interesados', t.no_interesado, '#7E8494')}
@@ -13090,7 +13090,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const called = d.calledLeads || 0;
         // Cómo va: solo etapas de resultado, y solo si tienen algo.
         const resultRows = [
-          { k: 'interesados', label: 'Interesados', col: '#5BB974', hint: 'dijeron que sí → viven en Hoy hasta agendar' },
+          { k: 'interesados', label: 'Interesados', col: 'var(--accent-hover)', hint: 'dijeron que sí → viven en Hoy hasta agendar' },
           { k: 'agendados', label: 'Agendados', col: '#4ADE80', hint: 'reunión reservada' },
           { k: 'callbackPendiente', label: 'Callbacks', col: 'var(--warning)', hint: 'quedaron en volver a llamar' },
           { k: 'intentados', label: 'A reintentar', col: '#79B8FF', hint: 'discados sin atender — vuelven a la cola' },
@@ -13102,7 +13102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="flex:1; min-width:0;"><span style="font-weight:600; color:var(--text-primary); font-size:13px;">${x.label}</span> <span style="color:var(--text-tertiary); font-size:11px;">— ${x.hint}</span></div>
           <span style="font-variant-numeric:tabular-nums; font-weight:700; color:${x.col};">${act[x.k]}</span>
         </div>`;
-        const countryRows = (d.byCountry || []).filter(c => c.callable > 0).map(c => `<tr><td style="padding:5px 10px;">${escHtml(c.country)}</td><td style="padding:5px 10px; text-align:right; color:#5BB974; font-weight:600; font-variant-numeric:tabular-nums;">${c.callable}</td></tr>`).join('');
+        const countryRows = (d.byCountry || []).filter(c => c.callable > 0).map(c => `<tr><td style="padding:5px 10px;">${escHtml(c.country)}</td><td style="padding:5px 10px; text-align:right; color:var(--accent-hover); font-weight:600; font-variant-numeric:tabular-nums;">${c.callable}</td></tr>`).join('');
         // Bloque de actividad: si no llamó a nadie, lo decimos claro.
         const activityBlock = called === 0
           ? `<div style="padding:12px 14px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; color:var(--text-secondary); font-size:13px;">Todavía no llamó a nadie.</div>`
@@ -13116,7 +13116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <h3 style="margin:0; font-size:17px;">${escHtml(d.setterName)}</h3>
             <button class="modal-close-btn" onclick="document.getElementById('pool-breakdown-modal')?.remove()">×</button>
           </div>
-          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;"><span style="color:#5BB974; font-weight:600;">${d.callable} llamables</span> ahora</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px;"><span style="color:var(--accent-hover); font-weight:600;">${d.callable} llamables</span> ahora</div>
 
           <div style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:6px;">Actividad de llamadas</div>
           <div style="margin-bottom:20px;">${activityBlock}</div>
@@ -15071,7 +15071,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${lead ? `<div style="font-size:12px; color:var(--text-tertiary);">${escHtml(lead.phone || '')} · ${escHtml(lead.city || '')}${lead.city && lead.country ? ' / ' : ''}${escHtml(lead.country || '')}${lead.doctor && !String(lead.doctor).includes('N/A') ? ' · ' + escHtml(lead.doctor) : ''}${lead.callAttempts ? ` · ${lead.callAttempts} intento${lead.callAttempts>1?'s':''}` : ''}</div>` : ''}
           ${e.notas ? `<div style="font-size:12px; color:var(--text-secondary); margin-top:6px; padding:8px 10px; background:var(--bg-input); border-radius:6px;">${escHtml(e.notas)}</div>` : ''}
         </div>
-        ${telLink ? `<a href="tel:${escHtml(telLink)}" class="pill-btn" style="background:var(--success); color:#0F1115; text-decoration:none; padding:9px 16px; font-weight:600; font-size:12px;">Llamar</a>` : ''}
+        ${telLink ? `<a href="tel:${escHtml(telLink)}" class="pill-btn" style="background:var(--success); color: var(--on-accent); text-decoration:none; padding:9px 16px; font-weight:600; font-size:12px;">Llamar</a>` : ''}
         <select onchange="window._updateScheduledStatus('${escHtml(e.id)}', this.value)" style="padding:8px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12px; min-width:160px; cursor:pointer; font-family:inherit;">
           <option value="">— Cambiar estado —</option>
           <option value="realizada">Marcar realizada</option>
@@ -15381,7 +15381,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>`;
         cards.innerHTML =
           card('Total', t.total, `${days}d`) +
-          card('Buenas', `${(t.goodRate * 100).toFixed(0)}%`, `${t.good} marcadas`, '#5bb974') +
+          card('Buenas', `${(t.goodRate * 100).toFixed(0)}%`, `${t.good} marcadas`, 'var(--accent-hover)') +
           card('Malas', `${(t.badRate * 100).toFixed(0)}%`, `${t.bad} descartadas`, '#f85149') +
           card('Usadas', `${(t.usedRate * 100).toFixed(0)}%`, `${t.used} enviadas`, 'var(--accent)') +
           card('Violaciones', `${(t.violationsRate * 100).toFixed(0)}%`, `${t.violations} con flags`, '#ffc828');
@@ -15506,7 +15506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ⚠️ Violations: <strong>${(x.violationsRate * 100).toFixed(0)}%</strong>
           </div>
         </div>`;
-      grid.innerHTML = renderCol('Prompt A (actual)', ab.A, '#5bb974') + renderCol('Prompt B (experimental)', ab.B, 'var(--accent)');
+      grid.innerHTML = renderCol('Prompt A (actual)', ab.A, 'var(--accent-hover)') + renderCol('Prompt B (experimental)', ab.B, 'var(--accent)');
     } catch (e) {
       console.warn('mercury-ab:', e.message);
     }
@@ -15781,14 +15781,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Pill informativa de intención detectada
   const INTENT_LABELS = {
     pide_asset: { label: 'Pide info / asset', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
-    agendamiento: { label: 'Quiere agendar', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    agendamiento: { label: 'Quiere agendar', color: 'var(--accent-hover)', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
     precio: { label: 'Pregunta precio', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
     objecion: { label: 'Objeción', color: '#f85149', bg: 'rgba(248,81,73,0.10)', border: 'rgba(248,81,73,0.4)' },
     duda_tecnica: { label: 'Duda técnica', color: 'var(--accent)', bg: 'var(--accent-soft)', border: 'var(--accent-strong)' },
     indeciso: { label: 'Indeciso / frío', color: '#ffc828', bg: 'rgba(255,200,40,0.10)', border: 'rgba(255,200,40,0.4)' },
     saludo: { label: 'Saludo', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
     despedida: { label: 'Cierre', color: 'var(--text-secondary)', bg: 'rgba(255,255,255,0.04)', border: 'var(--border-color)' },
-    calificacion: { label: 'Da info clínica', color: '#5bb974', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
+    calificacion: { label: 'Da info clínica', color: 'var(--accent-hover)', bg: 'rgba(91,185,116,0.10)', border: 'rgba(91,185,116,0.4)' },
     otro: null,
   };
   function _asstRenderIntent(intent) {
@@ -16187,7 +16187,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function _mrStatusPill(g) {
     const map = {
       pendiente: { text: 'Pendiente', bg: 'rgba(180,180,180,0.10)', color: '#9aa0a6', border: 'rgba(180,180,180,0.30)' },
-      approved: { text: '✓ Oro', bg: 'rgba(91,185,116,0.12)', color: '#5bb974', border: 'rgba(91,185,116,0.45)' },
+      approved: { text: '✓ Oro', bg: 'rgba(91,185,116,0.12)', color: 'var(--accent-hover)', border: 'rgba(91,185,116,0.45)' },
       rejected: { text: '✗ Rechazada', bg: 'rgba(248,81,73,0.10)', color: '#f85149', border: 'rgba(248,81,73,0.45)' },
       rewritten: { text: '✎ Reescrita', bg: 'var(--accent-medium)', color: 'var(--accent)', border: 'var(--accent-strong)' },
       reviewed: { text: 'Con nota', bg: 'rgba(255,200,40,0.12)', color: '#ffc828', border: 'rgba(255,200,40,0.45)' },
@@ -16199,7 +16199,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   function _mrSetterActionPill(g) {
     if (!g.setterAction) return '';
     const map = {
-      good: { text: 'SDR: ✓ buena', color: '#5bb974' },
+      good: { text: 'SDR: ✓ buena', color: 'var(--accent-hover)' },
       bad: { text: 'SDR: ✗ descartó', color: '#f85149' },
       edited: { text: 'SDR: ✎ editó', color: 'var(--accent)' },
     };
@@ -16336,7 +16336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>` : '';
 
     const adminBlocks = [];
-    if (g.adminAction === 'rewritten' && g.adminRewrite) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #5bb974; background:rgba(91,185,116,0.06); border-radius:8px;"><div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div></div>`);
+    if (g.adminAction === 'rewritten' && g.adminRewrite) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid var(--accent-hover); background:rgba(91,185,116,0.06); border-radius:8px;"><div style="font-size:10px; color:var(--accent-hover); text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Reescritura del admin</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRewrite)}</div></div>`);
     if (g.adminAction === 'suggested_improvement' && g.adminNote) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #ffc828; background:rgba(255,200,40,0.06); border-radius:8px;"><div style="font-size:10px; color:#ffc828; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Nota de mejora</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminNote)}</div></div>`);
     if (g.adminAction === 'rejected' && g.adminRejectReason) adminBlocks.push(`<div style="padding:12px 14px; border-left:3px solid #f85149; background:rgba(248,81,73,0.06); border-radius:8px;"><div style="font-size:10px; color:#f85149; text-transform:uppercase; letter-spacing:0.6px; font-weight:600; margin-bottom:4px;">Razón del rechazo</div><div style="font-size:13px; color:var(--text-primary); line-height:1.55; white-space:pre-wrap;">${_mrEscape(g.adminRejectReason)}</div></div>`);
 
@@ -16826,7 +16826,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:10px;">
           ${stage('Sin contactar', sinContactar.length, '#8892A6')}
           ${stage('En seguimiento', enSeguimiento.length, '#5BA3F2')}
-          ${stage('Interesados', interesados.length, '#5BB974')}
+          ${stage('Interesados', interesados.length, 'var(--accent-hover)')}
           ${stage('Reuniones próximas', proximas.length, 'var(--accent)')}
           ${stage('Ganadas', ganadas.length, '#FFB341', ganadasValor > 0 ? '$' + ganadasValor.toLocaleString() : (realizadas ? realizadas + ' realizadas' : ''))}
         </div>
@@ -16839,7 +16839,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${interesados.length ? `
         <div style="margin-top:12px; display:flex; align-items:center; gap:10px; padding:10px 12px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.3); border-radius:9px;">
           <span style="font-size:12.5px; color:var(--text-primary);"><strong>${interesados.length}</strong> interesado${interesados.length > 1 ? 's' : ''} esperando que ${effectiveSetter || role === 'setter' ? 'los agendes' : 'se agenden'}</span>
-          <button onclick="document.querySelector('[data-target=&quot;view-hoy&quot;]')?.click()" style="margin-left:auto; background:var(--success); color:#0F1115; border:none; padding:6px 13px; border-radius:7px; font-weight:600; font-size:11.5px; cursor:pointer; font-family:inherit;">Ir a Hoy</button>
+          <button onclick="document.querySelector('[data-target=&quot;view-hoy&quot;]')?.click()" style="margin-left:auto; background:var(--success); color: var(--on-accent); border:none; padding:6px 13px; border-radius:7px; font-weight:600; font-size:11.5px; cursor:pointer; font-family:inherit;">Ir a Hoy</button>
         </div>` : ''}
       </div>`;
   }
@@ -17010,7 +17010,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Renderizar segments con speaker tags. Resaltar el keyword si hay búsqueda activa.
         const searchTerm = (document.getElementById('chist-search')?.value || '').toLowerCase().trim();
         transcriptEl.innerHTML = _mergeTranscriptTurns(c.transcript.segments).map(s => {
-          const speakerColor = s.speaker === 'setter' ? '#5bb974' : '#FFB341';
+          const speakerColor = s.speaker === 'setter' ? 'var(--accent-hover)' : '#FFB341';
           const speakerLabel = s.speaker === 'setter' ? 'SDR' : 'Lead';
           let text = escHtml(s.text);
           if (searchTerm && text.toLowerCase().includes(searchTerm)) {
@@ -17019,7 +17019,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
           const ts = `${Math.floor(s.start / 60)}:${String(Math.floor(s.start % 60)).padStart(2, '0')}`;
           return `<div style="display:flex; gap:8px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
-            <span style="flex-shrink:0; font-size:10px; color:var(--text-tertiary); font-family:ui-monospace,monospace; padding-top:2px;">${ts}</span>
+            <span style="flex-shrink:0; font-size:10px; color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; padding-top:2px;">${ts}</span>
             <span style="flex-shrink:0; font-size:10px; color:${speakerColor}; font-weight:600; padding-top:2px; min-width:65px;">${speakerLabel}</span>
             <span style="flex:1; color:var(--text-primary);">${text}</span>
           </div>`;
@@ -17064,8 +17064,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!block || !a) return;
     // Score color: verde >=7, ámbar 5-6, rojo <5
     const score = a.score || 0;
-    const scoreColor = score >= 7 ? '#5bb974' : score >= 5 ? '#FFB341' : '#f85149';
-    const passedColor = a.passedOpener ? '#5bb974' : '#f85149';
+    const scoreColor = score >= 7 ? 'var(--accent-hover)' : score >= 5 ? '#FFB341' : '#f85149';
+    const passedColor = a.passedOpener ? 'var(--accent-hover)' : '#f85149';
     const paceOk = a.paceCompliance?.objections_handled_correctly || 0;
     const paceFail = a.paceCompliance?.objections_failed || 0;
     const violations = Array.isArray(a.ruleViolations) ? a.ruleViolations : [];
@@ -17084,14 +17084,14 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <div style="flex:1; min-width:120px; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
             <span style="font-size:10.5px; padding:3px 9px; background:${passedColor}22; color:${passedColor}; border:1px solid ${passedColor}55; border-radius:6px; font-weight:600;">${a.passedOpener ? 'Pasó opener' : 'No pasó opener'}</span>
-            <span style="font-size:10px; color:var(--text-secondary);">PACE: <strong style="color:#5bb974;">${paceOk} ✓</strong> · <strong style="color:#f85149;">${paceFail} ✗</strong></span>
+            <span style="font-size:10px; color:var(--text-secondary);">PACE: <strong style="color:var(--accent-hover);">${paceOk} ✓</strong> · <strong style="color:#f85149;">${paceFail} ✗</strong></span>
           </div>
         </div>
 
         <!-- Strength + Mistake -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
           ${a.biggestStrength ? `<div style="padding:10px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.25); border-radius:8px;">
-            <div style="font-size:10px; color:#5bb974; text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">Tu fortaleza</div>
+            <div style="font-size:10px; color:var(--accent-hover); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:4px;">Tu fortaleza</div>
             <div style="font-size:11.5px; color:var(--text-primary); line-height:1.5;">${escHtml(a.biggestStrength)}</div>
           </div>` : ''}
           ${a.biggestMistake ? `<div style="padding:10px; background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.25); border-radius:8px;">
@@ -17341,7 +17341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const abs = d.abs || 0;
     if (abs === 0) return '';
     const arrow = abs > 0 ? '▲' : '▼';
-    const color = abs > 0 ? '#5bb974' : '#f85149';
+    const color = abs > 0 ? 'var(--accent-hover)' : '#f85149';
     return ` <span style="color:${color}; font-size:10px; opacity:0.85;">${arrow}${Math.abs(abs)}</span>`;
   }
 
@@ -17362,7 +17362,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let bg = 'transparent';
     let color = 'var(--text-primary)';
     if (today > threshold) { bg = 'rgba(248,81,73,0.10)'; color = '#f85149'; }
-    else if (today > 0) { bg = 'rgba(91,185,116,0.07)'; color = '#5bb974'; }
+    else if (today > 0) { bg = 'rgba(91,185,116,0.07)'; color = 'var(--accent-hover)'; }
     const overdueChip = overdue > 0 ? ` <span title="Atrasados (>1 día)" style="font-size:10px; padding:1px 6px; background:rgba(255,138,61,0.15); color:#ff8a3d; border-radius:6px; margin-left:4px;">+${overdue}</span>` : '';
     return `<td style="padding:14px 10px; text-align:right; background:${bg}; font-variant-numeric:tabular-nums; color:${color}; font-weight:${today > 0 ? '600' : '400'};">${today}${overdueChip}</td>`;
   }
@@ -17435,7 +17435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (totalAssigned > 0) {
         const ratio = untouched / totalAssigned;
         const bgColor = ratio >= 0.5 ? 'rgba(248,81,73,0.12)' : ratio > 0.2 ? 'rgba(255,200,40,0.12)' : 'rgba(91,185,116,0.12)';
-        const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : '#5bb974';
+        const txtColor = ratio >= 0.5 ? '#f85149' : ratio > 0.2 ? '#ffc828' : 'var(--accent-hover)';
         assignedBadge = ` <span title="Total asignados al SDR (no del período). ${untouched} llamables que todavía no abrió — el mismo número que 'le quedan' en el Centro de Comando (descuenta números muertos, no-llamar, tarifa cara y callbacks a futuro)." style="font-size:10px; padding:2px 6px; background:${bgColor}; color:${txtColor}; border-radius:6px; vertical-align:middle;">${totalAssigned}${untouched > 0 ? ` · ${untouched} por llamar` : ''}</span>`;
       }
       // Phase 21 (D-18): licencia con fecha de vencimiento. El badge lo ve todo el
@@ -18022,7 +18022,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function _shStateChip(b) {
     if (b.sentToSetter) {
-      return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(91,185,116,0.12); color:#5bb974; border-radius:999px;">Enviado a ${_shEsc(b.sentToSetter.setterId)}</span>`;
+      return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(91,185,116,0.12); color:var(--accent-hover); border-radius:999px;">Enviado a ${_shEsc(b.sentToSetter.setterId)}</span>`;
     }
     return `<span class="chip" style="padding:2px 8px; font-size:10px; background:rgba(255,200,40,0.12); color:#ffc828; border-radius:999px;">Pendiente</span>`;
   }
@@ -18050,7 +18050,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <td style="padding:10px 8px; color:var(--text-primary);">${_shEsc(queriesShort)}</td>
           <td style="padding:10px 8px; color:var(--text-secondary);">${_shEsc(locsShort)}</td>
           <td style="padding:10px 8px; text-align:right; font-weight:600;">${b.resultsCount}</td>
-          <td style="padding:10px 8px; text-align:right; color:#5bb974;">${b.stats?.newCount ?? 0}</td>
+          <td style="padding:10px 8px; text-align:right; color:var(--accent-hover);">${b.stats?.newCount ?? 0}</td>
           <td style="padding:10px 8px;">${_shStateChip(b)}</td>
           <td style="padding:10px 8px; text-align:right;"><button class="btn-secondary sh-open" data-id="${b.id}" style="font-size:11px;">Ver / Reasignar</button></td>
         `;
@@ -18095,7 +18095,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         tr.style.cssText = 'border-bottom:1px solid var(--border-color);';
         const stateChip = lead.alreadyScraped
           ? `<span class="chip" style="padding:1px 6px; font-size:10px; background:rgba(180,180,180,0.12); color:#aaa; border-radius:999px;">ya scrapeado</span>`
-          : `<span class="chip" style="padding:1px 6px; font-size:10px; background:rgba(91,185,116,0.12); color:#5bb974; border-radius:999px;">nuevo</span>`;
+          : `<span class="chip" style="padding:1px 6px; font-size:10px; background:rgba(91,185,116,0.12); color:var(--accent-hover); border-radius:999px;">nuevo</span>`;
         tr.innerHTML = `
           <td style="padding:6px 8px; color:var(--text-primary);">${_shEsc(lead.name || '—')}</td>
           <td style="padding:6px 8px; color:var(--text-secondary);">${_shEsc(lead.phone || '—')}</td>
@@ -18354,7 +18354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.innerHTML = `
         <input type="checkbox" data-dist-check="${s.id}" style="width:16px; height:16px; cursor:pointer;">
         <div style="width:28px; height:28px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:12px;">${initial}</div>
-        <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div>${typeof s.callable === 'number' ? `<div style="font-size:11px; color:#5BB974;">${s.callable} llamables hoy</div>` : ''}</div>
+        <div style="flex:1; min-width:0;"><div style="font-weight:600; color:var(--text-primary); font-size:13px;">${safeName}</div>${typeof s.callable === 'number' ? `<div style="font-size:11px; color:var(--accent-hover);">${s.callable} llamables hoy</div>` : ''}</div>
         <input type="number" min="0" step="1" data-dist-count="${s.id}" placeholder="0" style="width:90px; padding:7px 10px; font-size:13px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-elevated); color:var(--text-primary); text-align:right;">
         <span style="font-size:11px; color:var(--text-secondary); width:48px; text-align:right;">leads</span>
       `;
@@ -18591,7 +18591,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const container = document.getElementById('toast-container');
     if (!container) { console.log('[toast]', message); return; }
     const colors = {
-      success: { bg: 'rgba(91,185,116,0.12)', border: 'rgba(91,185,116,0.5)', text: '#5bb974', icon: '✓' },
+      success: { bg: 'rgba(91,185,116,0.12)', border: 'rgba(91,185,116,0.5)', text: 'var(--accent-hover)', icon: '✓' },
       error:   { bg: 'rgba(248,81,73,0.12)',  border: 'rgba(248,81,73,0.5)',  text: '#f85149', icon: '✗' },
       info:    { bg: 'var(--accent-soft)', border: 'var(--accent-strong)', text: 'var(--accent)', icon: 'ℹ' },
       warn:    { bg: 'rgba(255,200,40,0.12)', border: 'rgba(255,200,40,0.5)', text: '#ffc828', icon: '⚠️' },
@@ -19298,7 +19298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (statusEl) {
       if (_tlxAdminCache.hasApiKey && (_tlxAdminCache.hasSipCredentials || _tlxAdminCache.sipConnectionId)) {
         statusEl.textContent = '✓ Configurado';
-        statusEl.style.background = 'rgba(91,185,116,0.15)'; statusEl.style.color = '#5bb974';
+        statusEl.style.background = 'rgba(91,185,116,0.15)'; statusEl.style.color = 'var(--accent-hover)';
       } else if (_tlxAdminCache.hasApiKey) {
         statusEl.textContent = '⚠️ Falta SIP';
         statusEl.style.background = 'rgba(255,200,40,0.15)'; statusEl.style.color = '#ffc828';
@@ -19377,7 +19377,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<li style="display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px; ${active ? '' : 'opacity:0.5;'}">
         <span style="font-size:18px;">${country === 'ES' ? '🇪🇸' : country === 'MX' ? '🇲🇽' : country === 'CO' ? '🇨🇴' : country === 'AR' ? '🇦🇷' : country === 'CL' ? '🇨🇱' : country === 'PE' ? '🇵🇪' : country === 'US' ? '🇺🇸' : country === 'EC' ? '🇪🇨' : country === 'UY' ? '🇺🇾' : country === 'BO' ? '🇧🇴' : '🌐'}</span>
         <div style="flex:1; min-width:0;">
-          <div style="font-size:13px; font-weight:500; color:var(--text-primary); font-family:ui-monospace,monospace;">${escHtml(n.phone)}</div>
+          <div style="font-size:13px; font-weight:500; color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escHtml(n.phone)}</div>
           <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">${escHtml(n.label || '(sin label)')} · ${escHtml(country)}</div>
         </div>
         <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-secondary); cursor:pointer;">
@@ -19439,7 +19439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const fetched = d.fetchedAt ? new Date(d.fetchedAt).toLocaleString('es-AR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—';
       if (cards) {
         cards.innerHTML =
-          card('Crédito disponible', fmt(d.availableCredit), d.cached ? 'cacheado · ' + fetched : 'al ' + fetched, d.low ? '#f85149' : '#5bb974') +
+          card('Crédito disponible', fmt(d.availableCredit), d.cached ? 'cacheado · ' + fetched : 'al ' + fetched, d.low ? '#f85149' : 'var(--accent-hover)') +
           card('Saldo', fmt(d.balance), 'balance', 'var(--text-primary)') +
           card('Límite de crédito', fmt(d.creditLimit), 'credit limit', 'var(--text-secondary)');
       }
@@ -19480,7 +19480,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (cards) {
         cards.innerHTML =
           card('Gasto real', money(t.costUSD || 0), `${cur} · ${d.cached ? 'cacheado' : 'al día'}`, '#ffc828') +
-          card('Llamadas conectadas', t.connectedCalls || 0, `de ${t.calls || 0} intentos`, '#5bb974') +
+          card('Llamadas conectadas', t.connectedCalls || 0, `de ${t.calls || 0} intentos`, 'var(--accent-hover)') +
           card('Costo prom./conectada', money(t.avgCostPerConnected || 0), `${(t.minutes || 0).toFixed(1)} min total`, 'var(--accent)');
       }
       const countryUl = document.getElementById('tlx-realcost-countries');
@@ -19525,7 +19525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>`;
         cards.innerHTML =
           card('Llamadas', t.calls || 0, range, 'var(--accent)') +
-          card('Minutos', t.minutes?.toFixed(1) || '0', `prom ${t.avgMinutesPerCall || 0}/llamada`, '#5bb974') +
+          card('Minutos', t.minutes?.toFixed(1) || '0', `prom ${t.avgMinutesPerCall || 0}/llamada`, 'var(--accent-hover)') +
           card('Costo USD (estimado)', '$' + (t.costUSD || 0).toFixed(2), `tabla local · real arriba ↑`, '#ffc828');
       }
       // Por setter
@@ -19554,7 +19554,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rows = (d.byTariff || []).slice(0, 10);
         tariffUl.innerHTML = rows.length ? rows.map(t => `
           <li style="display:flex; justify-content:space-between; gap:8px; padding:5px 8px; background:var(--bg-app); border-radius:6px;">
-            <span style="color:var(--text-primary); font-family:ui-monospace,monospace; font-size:10px;">${escHtml(t.tariffKey)}</span>
+            <span style="color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">${escHtml(t.tariffKey)}</span>
             <span class="muted">${t.calls} · $${t.costUSD.toFixed(2)}</span>
           </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
       }
@@ -19576,7 +19576,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const kpiCards = document.getElementById('tlx-eff-kpis');
       if (kpiCards) {
         // Color del ratio opener: verde si >=70%, ámbar si >=50%, rojo si <50%
-        const openerColor = ratios.openerPassedPct >= 70 ? '#5bb974' : ratios.openerPassedPct >= 50 ? '#FFB341' : '#f85149';
+        const openerColor = ratios.openerPassedPct >= 70 ? 'var(--accent-hover)' : ratios.openerPassedPct >= 50 ? '#FFB341' : '#f85149';
         const card = (icon, label, value, sub, color = 'var(--text-primary)', tooltip = '') => `
           <div title="${tooltip}" style="padding:14px 16px; background:var(--bg-app); border:1px solid var(--border-color); border-radius:10px;">
             <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:6px;">${icon} ${label}</div>
@@ -19584,13 +19584,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:10px; color:var(--text-secondary); margin-top:5px;">${sub}</div>
           </div>`;
         const ab = d.abandoned || {};
-        const abColor = ab.over ? '#f85149' : (ab.pct >= 12 ? '#FFB341' : '#5bb974');
+        const abColor = ab.over ? '#f85149' : (ab.pct >= 12 ? '#FFB341' : 'var(--accent-hover)');
         kpiCards.innerHTML =
           card('📞', 'Total llamadas', totals.calls || 0, `${totals.minutes || 0} min · $${(totals.costUSD || 0).toFixed(2)}`, 'var(--accent)') +
           card(ab.over ? '🚨' : '⚖️', 'Tasa de abandono', `${ab.pct || 0}%`, `${ab.abandoned || 0} no atendidas / ${totals.calls || 0} · Telnyx cobra si > ${ab.threshold || 20}%`, abColor, 'Llamadas terminadas antes de que atiendan (no atendió, buzón, inválido). Telnyx aplica recargo si supera 20% al cierre de mes. Bajalo: validá números antes de discar y llamá en horario hábil.') +
           card('🎯', 'Ratio opener (>30s)', `${ratios.openerPassedPct || 0}%`, `Target: 70%+ — ${d.breakdown?.openerPassedCount || 0} pasaron`, openerColor, 'Si está debajo de 70%, hay algo roto en la apertura. Cambiá script.') +
           card('👋', 'Atendidas', `${ratios.reachedHumanPct || 0}%`, `${d.breakdown?.reachedCount || 0} atendidas · buzón ${ratios.voicemailPct || 0}%`, '#7dd3fc', 'Definición canónica de "atendida" — la MISMA que Mi rendimiento, Equipo y Comando (levantó el teléfono, aunque corte enseguida). El buzón va aparte.') +
-          card('📅', 'Agendadas / atendidas', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, '#5bb974', 'De los que atendieron, cuántos terminaron agendando.') +
+          card('📅', 'Agendadas / atendidas', `${ratios.scheduledFromReachedPct || 0}%`, `${d.breakdown?.scheduledCount || 0} reuniones`, 'var(--accent-hover)', 'De los que atendieron, cuántos terminaron agendando.') +
           card('✅', 'Interés / atendidas', `${ratios.interestedFromReachedPct || 0}%`, `${d.breakdown?.interestedCount || 0} interesados o agendados`, '#FFB341', 'Interesado O agendado sobre atendidas (métrica de intención — no es el "Agendadas" del funnel).');
       }
       // Por país
@@ -19601,7 +19601,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li style="display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
             <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px;">${escHtml(c.country)}</span>
             <span class="muted" style="font-size:10px; text-align:right;">${c.calls} calls</span>
-            <span style="color:${c.scheduledPct >= 5 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${c.scheduledPct}% 📅</span>
+            <span style="color:${c.scheduledPct >= 5 ? 'var(--accent-hover)' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${c.scheduledPct}% 📅</span>
           </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">Sin datos.</li>';
       }
       // Por hora
@@ -19610,9 +19610,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rows = (d.byHour || []);
         ulHours.innerHTML = rows.length ? rows.map(h => `
           <li style="display:grid; grid-template-columns:0.6fr 1fr 1fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
-            <span style="color:var(--text-primary); font-family:ui-monospace,monospace; font-size:11px;">${String(h.hour).padStart(2, '0')}h</span>
+            <span style="color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px;">${String(h.hour).padStart(2, '0')}h</span>
             <span class="muted" style="font-size:10px; text-align:right;">${h.calls}</span>
-            <span style="color:${h.reachedPct >= 25 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${h.reachedPct}% 👋</span>
+            <span style="color:${h.reachedPct >= 25 ? 'var(--accent-hover)' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${h.reachedPct}% 👋</span>
           </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
       }
       // Por día de la semana
@@ -19623,7 +19623,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li style="display:grid; grid-template-columns:1fr 0.7fr 0.7fr; gap:6px; padding:5px 8px; background:var(--bg-app); border-radius:6px; align-items:center;">
             <span style="color:var(--text-primary); font-size:11px;">${escHtml(day.dayLabel)}</span>
             <span class="muted" style="font-size:10px; text-align:right;">${day.calls}</span>
-            <span style="color:${day.reachedPct >= 25 ? '#5bb974' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${day.reachedPct}%</span>
+            <span style="color:${day.reachedPct >= 25 ? 'var(--accent-hover)' : 'var(--text-secondary)'}; font-size:10px; text-align:right;">${day.reachedPct}%</span>
           </li>`).join('') : '<li class="muted" style="text-align:center; padding:8px;">—</li>';
       }
     } catch (e) { console.warn('[tlx-effectiveness]', e.message); }
@@ -19655,12 +19655,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const triggerColors = {
       // v2 SCM
       rules: 'var(--accent)', before_call: '#7dd3fc',
-      gatekeeper: '#5bb974', opener: '#5bb974', pitch: '#5bb974',
+      gatekeeper: 'var(--accent-hover)', opener: 'var(--accent-hover)', pitch: 'var(--accent-hover)',
       ask_meeting: '#ffc828', confirm: '#ffc828',
       objection_brushoff: '#ffc828', objection_real: '#f85149',
-      callback: 'var(--accent)', whatsapp_msg: '#5bb974', email_template: '#7dd3fc',
+      callback: 'var(--accent)', whatsapp_msg: 'var(--accent-hover)', email_template: '#7dd3fc',
       // legacy
-      first_call: '#5bb974', objection: '#f85149', scheduling: 'var(--accent)',
+      first_call: 'var(--accent-hover)', objection: '#f85149', scheduling: 'var(--accent)',
       voicemail: '#7dd3fc', general: 'var(--text-secondary)',
     };
     list.innerHTML = _tlxScriptsCache.map(s => `
@@ -19832,7 +19832,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
       if (msg) {
         msg.style.display = 'block';
-        msg.style.background = 'rgba(91,185,116,0.12)'; msg.style.color = '#5bb974';
+        msg.style.background = 'rgba(91,185,116,0.12)'; msg.style.color = 'var(--accent-hover)';
         msg.textContent = `✓ ${j.matched} llamada(s) actualizada(s) con costo real (de ${j.sessionsFound} sesiones, ${j.leadsTouched} leads). Ya aparece en el historial de cada lead.`;
       }
     } catch (err) {
@@ -20302,7 +20302,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <li>Andá a <strong>Google Maps</strong>.</li>
           <li>Elegí país + ciudades + keyword. Hay <strong>keywords sugeridas por país</strong> (en el idioma local): clic para agregarlas.</li>
           <li>Backend usa SerpAPI con dedup estricta contra <code>history.json</code> (por nombre+dirección normalizados y teléfono) — leads ya scrapeados NO se vuelven a scrapear.</li>
-          <li>Resultados con indicador <span style="color:#5bb974">verde</span> (nuevo) o gris (ya scrapeado).</li>
+          <li>Resultados con indicador <span style="color:var(--accent-hover)">verde</span> (nuevo) o gris (ya scrapeado).</li>
           <li><strong>Enviar a SDRs</strong> permite asignar a varios SDRs a la vez con cantidad por cada uno.</li>
         </ol>
         <p><strong>Multi-país:</strong> además de LatAm/España, el scraper soporta EE.UU., Canadá, Reino Unido, Alemania, Francia, Italia y Brasil (query e idioma localizados). Cada lead nuevo ya captura <code>placeId</code>, coordenadas, horarios, categoría y si el negocio está <strong>cerrado</strong> (chip ⚠).</p>

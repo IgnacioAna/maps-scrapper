@@ -401,7 +401,7 @@ body {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.13em;
-  color: rgba(229, 231, 226, 0.35);
+  color: var(--text-secondary);
   font-weight: 700;
   padding: 0 12px;
   margin-top: 18px;
@@ -416,7 +416,7 @@ body {
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(90deg, rgba(229, 231, 226, 0.08), transparent 80%);
+  background: var(--bg-hover);
 }
 
 .menu-group-label:first-child { margin-top: 4px; }
@@ -1209,7 +1209,7 @@ body:has(#view-social.active) .global-location-panel {
 .welcome-banner::before {
   content: '';
   width: 5px;
-  background: linear-gradient(180deg, var(--accent) 0%, var(--success, #5bb974) 100%);
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-hover) 100%);
 }
 .welcome-content {
   padding: 18px 20px;
@@ -1576,12 +1576,12 @@ td.empty-state .empty-state-content::before {
    cuando hay items pendientes (filter-badge visible). */
 .pipe-filter-urgent.has-items {
   border-color: rgba(91, 185, 116, 0.5);
-  color: #5bb974;
+  color: var(--accent-hover);
 }
 .pipe-filter-urgent.has-items.active {
   background: rgba(91, 185, 116, 0.10);
-  border-color: #5bb974;
-  color: #5bb974;
+  border-color: var(--accent-hover);
+  color: var(--accent-hover);
 }
 .pipe-filter-overdue.has-items {
   border-color: rgba(255, 138, 61, 0.55);
@@ -1601,7 +1601,7 @@ td.empty-state .empty-state-content::before {
   padding: 0 6px;
   border-radius: 999px;
   background: rgba(91, 185, 116, 0.20);
-  color: #5bb974;
+  color: var(--accent-hover);
   font-size: 10px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1626,7 +1626,7 @@ td.empty-state .empty-state-content::before {
 }
 .followup-chip-today {
   background: rgba(91, 185, 116, 0.12);
-  color: #5bb974;
+  color: var(--accent-hover);
   border-color: rgba(91, 185, 116, 0.40);
 }
 .followup-chip-yesterday {
@@ -1697,7 +1697,7 @@ td.empty-state .empty-state-content::before {
   font-size: 11px; font-weight: 500; cursor: pointer;
   transition: all 0.15s;
 }
-.followups-banner .fb-cta:hover { background: var(--accent); color: white; }
+.followups-banner .fb-cta:hover { background: var(--accent); color: var(--on-accent); }
 .followups-banner .fb-dismiss {
   background: transparent; color: var(--text-secondary); border: none;
   padding: 2px 6px; cursor: pointer; font-size: 14px; line-height: 1;
@@ -2088,7 +2088,7 @@ td.empty-state .empty-state-content::before {
 }
 .hoy-call-btn {
   background: var(--success);
-  color: #0F1115;
+  color: var(--on-accent);
   border: none;
   padding: 7px 16px;
   border-radius: 9px;
@@ -2142,7 +2142,7 @@ td.empty-state .empty-state-content::before {
   border-color: var(--accent-strong);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
 }
-.train-call-card.win { border-left: 3px solid #5BB974; }
+.train-call-card.win { border-left: 3px solid var(--accent-hover); }
 
 /* ── Entrenamiento IA — rediseño premium (2026-07-08) ── */
 .tr-toolbar {
@@ -2342,7 +2342,7 @@ td.empty-state .empty-state-content::before {
   margin-top: 12px;
   padding: 10px 22px;
   background: var(--accent);
-  color: #0F1115;
+  color: var(--on-accent);
   border: none;
   border-radius: 9px;
   font-size: 13px;
@@ -3499,7 +3499,7 @@ a:focus-visible {
   line-height: 1.55;
   max-width: 320px;
   margin-top: 8px !important;
-  color: rgba(229, 231, 226, 0.65) !important;
+  color: var(--text-secondary) !important;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -3761,7 +3761,7 @@ body.has-active-call .sidebar .logo-mark {
 }
 /* Etiquetas de grupo — más aire y sutileza */
 .menu-group-label {
-  color: rgba(229, 231, 226, 0.30);
+  color: var(--text-secondary);
   letter-spacing: 0.15em;
   margin-top: 20px;
   margin-bottom: 7px;
@@ -3964,15 +3964,19 @@ textarea:disabled {
   font-size: 10.5px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.06);
-  color: var(--text-tertiary);
+  /* El contador es un DATO, no una etiqueta: va en texto principal para
+     no quedar bajo el objetivo de 7:1 sobre el fondo aclarado del badge. */
+  color: var(--text-primary);
   padding: 1px 7px;
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
 }
 
+/* Activo: acento SOLIDO con label oscuro. El blanco sobre accent-strong
+   translúcido daba 2.98:1 — falla el objetivo del kit. */
 .calls-country-chip.is-active .chip-count {
-  background: var(--accent-strong);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .calls-country-chip .chip-flag {
@@ -4441,7 +4445,7 @@ textarea:disabled {
   gap: 7px;
   padding: 9px 16px;
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-  color: #0F1115;
+  color: var(--on-accent);
   border: none;
   border-radius: 9px;
   font-size: 13px;
@@ -4665,7 +4669,7 @@ textarea:disabled {
   height: 22px;
   border-radius: 5px;
   background: rgba(255,255,255,0.08);
-  font-family: ui-monospace, monospace;
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums;
   font-size: 11px;
   font-weight: 700;
   color: var(--text-secondary);
@@ -4691,10 +4695,10 @@ textarea:disabled {
 }
 
 /* Color variants */
-.pd-disp-success { color: #5BB974; }
+.pd-disp-success { color: var(--accent-hover); }
 .pd-disp-success:hover { background: rgba(91,185,116,0.07); border-color: rgba(91,185,116,0.4); }
-.pd-disp-success:hover .pd-disp-label { color: #5BB974; }
-.pd-disp-success:hover .pd-disp-key { background: rgba(91,185,116,0.2); color: #5BB974; border-color: rgba(91,185,116,0.35); }
+.pd-disp-success:hover .pd-disp-label { color: var(--accent-hover); }
+.pd-disp-success:hover .pd-disp-key { background: rgba(91,185,116,0.2); color: var(--accent-hover); border-color: rgba(91,185,116,0.35); }
 
 .pd-disp-danger { color: #F47272; }
 .pd-disp-danger:hover { background: rgba(244,114,114,0.07); border-color: rgba(244,114,114,0.4); }

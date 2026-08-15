@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%233FA872%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20180%20180%27%3E%3Cdefs%3E%3ClinearGradient%20id%3D%27g%27%20x1%3D%270%27%20y1%3D%270%27%20x2%3D%271%27%20y2%3D%271%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%233FA872%27%2F%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%234FBF84%27%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D%27180%27%20height%3D%27180%27%20rx%3D%2740%27%20fill%3D%27url%28%23g%29%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27Inter%2Csystem-ui%2Csans-serif%27%20font-weight%3D%27800%27%20font-size%3D%27120%27%20fill%3D%27%230F1115%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260815c">
+  <link rel="stylesheet" href="/style.css?v=20260815d">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -268,7 +268,7 @@
       <div id="view-as-banner" class="hidden" style="position:sticky; top:0; z-index:50; padding:8px 16px; background:linear-gradient(90deg, var(--accent-medium), var(--accent-soft)); border-bottom:1px solid var(--accent-strong); display:flex; align-items:center; gap:12px; font-size:13px;">
         <span style="font-size:14px;">👁</span>
         <span>Estás viendo el sistema como <strong id="view-as-label">—</strong>. Tus permisos siguen siendo de admin.</span>
-        <button id="view-as-exit" type="button" style="margin-left:auto; padding:4px 12px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:500;">Volver a admin</button>
+        <button id="view-as-exit" type="button" style="margin-left:auto; padding:4px 12px; background:var(--accent); color:var(--on-accent); border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Volver a admin</button>
       </div>
       <!-- SELECTORES GLOBALES DE UBICACIÓN -->
       <div class="global-location-panel" style="padding: 16px 32px 0; border-bottom: 0px solid var(--border-color);">
@@ -430,7 +430,7 @@
               </select>
             </div>
             <div class="ai-input-group expanded">
-              <input type="text" value="TOKEN: Configurado en .env" readonly style="background: rgba(255,255,255,0.05); color: #5bb974;">
+              <input type="text" value="TOKEN: Configurado en .env" readonly style="background: rgba(255,255,255,0.05); color: var(--accent-hover);">
             </div>
           </div>
 
@@ -502,7 +502,7 @@
             <select id="variable-select" class="setter-select">
               <option value="">Todas las variables</option>
             </select>
-            <button id="export-setters-csv" class="btn-table-action" style="color:#5bb974;">Exportar CSV</button>
+            <button id="export-setters-csv" class="btn-table-action" style="color:var(--accent-hover);">Exportar CSV</button>
             <button id="manage-variants-btn" class="btn-table-action" style="color:#e3b341;">Variantes</button>
             <button id="session-btn" class="btn-primary pill-btn" disabled>
               <span class="btn-text">Iniciar Sesión</span>
@@ -535,7 +535,7 @@
           <div class="stat-card"><span class="stat-num" id="stat-apertura">0</span><span class="stat-pct-sub" id="stat-pct-apertura">0%</span><span class="stat-label">Apertura</span></div>
           <div class="stat-card"><span class="stat-num" id="stat-calificacion">0</span><span class="stat-pct-sub" id="stat-pct-calificacion">0%</span><span class="stat-label">Calificación</span></div>
           <div class="stat-card stat-card-accent"><span class="stat-num" id="stat-interesado">0</span><span class="stat-label">Interesados</span></div>
-          <div class="stat-card" style="border-color:#5bb974;"><span class="stat-num" id="stat-agendado" style="color:#5bb974;">0</span><span class="stat-label">Agendados</span></div>
+          <div class="stat-card" style="border-color:var(--accent-hover);"><span class="stat-num" id="stat-agendado" style="color:var(--accent-hover);">0</span><span class="stat-label">Agendados</span></div>
         </div>
 
         <!-- Variante activa del setter -->
@@ -844,7 +844,7 @@
             </div>
             <div style="padding:20px;">
               <label style="display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-tertiary);margin-bottom:8px;">N&uacute;mero (formato E.164)</label>
-              <input id="manual-dial-input" type="tel" autocomplete="off" placeholder="+5491112345678" style="width:100%;padding:12px 14px;background:var(--bg-app);border:1px solid var(--border-color);border-radius:10px;color:var(--text-primary);font-size:18px;font-family:ui-monospace,monospace;letter-spacing:0.5px;box-sizing:border-box;">
+              <input id="manual-dial-input" type="tel" autocomplete="off" placeholder="+5491112345678" style="width:100%;padding:12px 14px;background:var(--bg-app);border:1px solid var(--border-color);border-radius:10px;color:var(--text-primary);font-size:18px;font-family:var(--font-mono); font-variant-numeric:tabular-nums;letter-spacing:0.5px;box-sizing:border-box;">
               <!-- Phase 13: keypad 3×4 real -->
               <div id="manual-dial-keypad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;">
                 <button type="button" class="dialpad-key" data-k="1">1</button>
@@ -923,7 +923,7 @@
                 <label class="audio-cfg-label" for="audio-gain">Refuerzo de volumen (boost)</label>
                 <div style="display:flex;align-items:center;gap:12px;">
                   <input type="range" id="audio-gain" min="1" max="3" step="0.1" value="1" style="flex:1;">
-                  <span id="audio-gain-val" style="font-family:ui-monospace,monospace;font-size:13px;color:var(--accent);min-width:42px;text-align:right;">1.0×</span>
+                  <span id="audio-gain-val" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;font-size:13px;color:var(--accent);min-width:42px;text-align:right;">1.0×</span>
                 </div>
                 <label class="audio-cfg-check" style="margin-top:8px;"><input type="checkbox" id="audio-gain-live"> <span>Aplicar el boost también en las llamadas reales <em>(experimental — primero probalo con el botón de arriba)</em>.</span></label>
                 <p class="audio-cfg-help">Amplifica tu voz por software. Subí de a poco: si te distorsiona en la prueba, bajalo. Recomendado entre 1.3× y 2×.</p>
@@ -995,7 +995,7 @@
                 </label>
                 <label style="display:flex; flex-direction:column; gap:5px;">
                   <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Teléfono E.164 <span style="color:var(--danger);">*</span></span>
-                  <input type="tel" id="calls-manual-phone" placeholder="+5491156789012" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:ui-monospace,monospace;">
+                  <input type="tel" id="calls-manual-phone" placeholder="+5491156789012" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:13px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">
                   <span style="font-size:10px; color:var(--text-tertiary);">Debe empezar con + seguido del código país. Ej: <code style="background:var(--bg-app); padding:1px 4px; border-radius:3px;">+5491156789012</code> (AR), <code style="background:var(--bg-app); padding:1px 4px; border-radius:3px;">+5215512345678</code> (MX)</span>
                 </label>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -1016,7 +1016,7 @@
               <!-- Sprint 13: Enriquecer desde Google Maps -->
               <div id="calls-manual-enrich-result" style="display:none; margin-top:14px; padding:11px 13px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.25); border-radius:9px; font-size:11.5px; color:var(--text-primary);"></div>
               <div style="display:flex; gap:10px; margin-top:20px; justify-content:space-between; align-items:center;">
-                <button id="calls-manual-enrich-btn" style="padding:9px 14px; border-radius:8px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.35); color:#5bb974; font-size:12px; font-weight:500; cursor:pointer;" title="Busca en Google Maps por nombre + ciudad y pre-llena rating, reseñas, website automáticamente">Enriquecer desde Maps</button>
+                <button id="calls-manual-enrich-btn" style="padding:9px 14px; border-radius:8px; background:rgba(91,185,116,0.1); border:1px solid rgba(91,185,116,0.35); color:var(--accent-hover); font-size:12px; font-weight:500; cursor:pointer;" title="Busca en Google Maps por nombre + ciudad y pre-llena rating, reseñas, website automáticamente">Enriquecer desde Maps</button>
                 <div style="display:flex; gap:10px;">
                   <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('calls-manual-modal').classList.add('hidden')">Cancelar</button>
                   <button class="btn-primary pill-btn" id="calls-manual-submit">＋ Crear lead</button>
@@ -1118,7 +1118,7 @@
             <div style="display:flex; align-items:center; gap:6px;">
               <button id="calls-pag-first" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Primera página">⟪</button>
               <button id="calls-pag-prev" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Anterior">←</button>
-              <span style="font-size:12px; color:var(--text-primary); padding:0 10px; font-family:ui-monospace,monospace;">
+              <span style="font-size:12px; color:var(--text-primary); padding:0 10px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">
                 <span id="calls-pag-current" style="font-weight:700; color:var(--accent);">1</span> / <span id="calls-pag-last" style="color:var(--text-secondary);">1</span>
               </span>
               <button id="calls-pag-next" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Siguiente">→</button>
@@ -1132,7 +1132,7 @@
       <div id="view-call-history" class="module-view hidden" data-roles="admin">
         <header class="page-header">
           <div style="display:flex; align-items:flex-start; gap:14px;">
-            <div style="flex-shrink:0; width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, #5bb974 0%, #3a8e4e 100%); display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 6px 18px rgba(91,185,116,0.35);">⏱</div>
+            <div style="flex-shrink:0; width:48px; height:48px; border-radius:14px; background:linear-gradient(135deg, var(--accent-hover) 0%, #3a8e4e 100%); display:flex; align-items:center; justify-content:center; font-size:24px; box-shadow:0 6px 18px rgba(91,185,116,0.35);">⏱</div>
             <div style="flex:1;">
               <h2 class="page-title" style="margin:0;">Historial de llamadas</h2>
               <p class="muted" style="margin-top:4px; font-size:13px;">Todas las llamadas Telnyx con transcripción Whisper (si está disponible). Buscá por keyword en el contenido para encontrar patrones.</p>
@@ -1208,7 +1208,7 @@
           </div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#FFB341;">P</strong>ausa 2-3s</span>
-            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#5bb974;">A</strong>ceptar (sin pero)</span>
+            <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:var(--accent-hover);">A</strong>ceptar (sin pero)</span>
             <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#7dd3fc;">C</strong>onsentimiento</span>
             <span style="padding:1px 6px; background:rgba(255,255,255,0.05); border-radius:4px;"><strong style="color:#f85149;">E</strong>ngage (pregunta)</span>
           </div>
@@ -1275,7 +1275,7 @@
         <div style="max-width:1100px; margin:0 auto; padding:32px 28px; min-height:100vh; display:flex; flex-direction:column; gap:24px;">
           <header style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <span style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; padding:5px 12px; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color:#0F1115; border-radius:999px;">Power Dialer</span>
+              <span style="font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; padding:5px 12px; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); color: var(--on-accent); border-radius:999px;">Power Dialer</span>
               <span style="font-size:13px; color:var(--text-secondary);">Modo continuous calling · Esc para salir</span>
             </div>
             <div style="display:flex; align-items:center; gap:12px;">
@@ -1303,14 +1303,14 @@
 
           <!-- Shortcuts ayuda -->
           <footer style="font-size:11px; color:var(--text-tertiary); padding:10px 0; border-top:1px solid var(--border-subtle); display:flex; gap:18px; flex-wrap:wrap;">
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">C</kbd> Llamar</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">S</kbd> Saltar lead</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">B</kbd> Lead anterior</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">1-8</kbd> Resultado de la llamada</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">N</kbd> Nota</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">A</kbd> Autopiloto</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">P</kbd> Pausar autopiloto</span>
-            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:ui-monospace,monospace; font-size:10px;">Esc</kbd> Salir</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">C</kbd> Llamar</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">S</kbd> Saltar lead</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">B</kbd> Lead anterior</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">1-8</kbd> Resultado de la llamada</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">N</kbd> Nota</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">A</kbd> Autopiloto</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">P</kbd> Pausar autopiloto</span>
+            <span><kbd style="background:var(--bg-input); padding:2px 6px; border-radius:4px; border:1px solid var(--border-subtle); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px;">Esc</kbd> Salir</span>
           </footer>
         </div>
       </div>
@@ -1320,7 +1320,7 @@
         <div id="telnyx-call-panel-header" class="tlx-drag-handle" style="flex-shrink:0; padding:18px 20px 14px; background:linear-gradient(180deg, var(--accent-medium) 0%, var(--accent-soft) 100%); border-bottom:1px solid rgba(255,255,255,0.06);">
           <div style="display:flex; align-items:center; gap:14px;">
             <!-- Avatar circular con inicial -->
-            <div id="telnyx-call-avatar" style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:#fff; box-shadow:0 4px 12px var(--accent-strong);">—</div>
+            <div id="telnyx-call-avatar" style="flex-shrink:0; width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--on-accent); box-shadow:0 4px 12px var(--accent-strong);">—</div>
             <div style="flex:1; min-width:0;">
               <div id="telnyx-call-lead-name" style="font-size:15px; font-weight:600; color:#fff; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
               <div id="telnyx-call-lead-meta" style="font-size:11.5px; color:rgba(255,255,255,0.55); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</div>
@@ -1372,7 +1372,7 @@
               <span id="telnyx-mic-verdict" style="font-size:10px; font-weight:600; color:rgba(255,255,255,0.5);">—</span>
             </div>
             <div style="height:8px; background:rgba(255,255,255,0.07); border-radius:5px; overflow:hidden;">
-              <div id="telnyx-mic-meter" style="height:100%; width:0%; background:#5bb974; border-radius:5px; transition:width 0.1s linear;"></div>
+              <div id="telnyx-mic-meter" style="height:100%; width:0%; background:var(--accent-hover); border-radius:5px; transition:width 0.1s linear;"></div>
             </div>
             <div style="display:flex; align-items:center; gap:8px; margin-top:9px;">
               <span style="font-size:10px; color:rgba(255,255,255,0.5); white-space:nowrap;">Ganancia</span>
@@ -1826,7 +1826,7 @@
               <div id="onboarding-subheader" style="font-size:13px; color:var(--text-secondary); margin-top:3px;">8 módulos · ~46 min total · 0 de 8 completados</div>
             </div>
             <div id="onboarding-progress-bar" style="width:140px; height:8px; background:var(--accent-medium); border-radius:4px; overflow:hidden;">
-              <div id="onboarding-progress-fill" style="width:0%; height:100%; background:linear-gradient(90deg, var(--accent), #5bb974); transition:width 0.3s;"></div>
+              <div id="onboarding-progress-fill" style="width:0%; height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-hover)); transition:width 0.3s;"></div>
             </div>
           </div>
           <div id="onboarding-cards" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; margin-bottom:28px;"></div>
@@ -1936,7 +1936,7 @@
               </label>
               <label style="display:flex; flex-direction:column; gap:5px;">
                 <span style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600;">Cantidad</span>
-                <input type="number" id="pool-count" min="1" placeholder="Todos" class="calls-filter-select" style="font-family:ui-monospace,monospace;">
+                <input type="number" id="pool-count" min="1" placeholder="Todos" class="calls-filter-select" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">
               </label>
             </div>
             <div style="display:flex; align-items:center; gap:14px; margin-top:16px;">
@@ -2035,8 +2035,8 @@
             </div>
             <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
               <input id="invite-result-url" type="text" readonly class="setter-input" style="flex:1; min-width:250px; font-size:12px; cursor:text;">
-              <button id="invite-copy-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Copiar link</button>
-              <button id="invite-wa-btn" class="btn-table-action" style="color:#5bb974; white-space:nowrap;">Enviar por WhatsApp</button>
+              <button id="invite-copy-btn" class="btn-table-action" style="color:var(--accent-hover); white-space:nowrap;">Copiar link</button>
+              <button id="invite-wa-btn" class="btn-table-action" style="color:var(--accent-hover); white-space:nowrap;">Enviar por WhatsApp</button>
             </div>
           </div>
           <div class="table-container compact-table" style="margin-top:12px;">
@@ -2162,7 +2162,7 @@
             <button id="cmd-backfill-websites-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Limpieza única: cuando el campo 'website' es en realidad un wa.me / Instagram / Facebook, lo mueve a su campo (IG/FB) o lo limpia, para que el botón 'Sitio web' no abra WhatsApp. Idempotente + backup.">Limpiar websites basura</button>
             <button id="cmd-cleanup-emails-btn" data-roles="admin" class="btn-table-action" style="color:#79B8FF;" title="Borra emails basura guardados por el scraper viejo (tracking tipo sentry/wixpress, placeholders, assets). Primero muestra cuántos encontró y pide confirmación. Idempotente + backup.">Limpiar emails basura</button>
             <button id="cmd-clear-btn" data-roles="admin" class="btn-table-action" style="color:#f85149;">Borrar leads de SDR</button>
-            <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:#5bb974;"></span>
+            <span id="cmd-dedup-result" class="hidden" style="font-size:12px; color:var(--accent-hover);"></span>
           </div>
 
           <div class="cmd-tool-row" data-roles="admin">
@@ -2204,8 +2204,8 @@
               Importar CSV a SDR
               <input type="file" id="cmd-import-csv" accept=".csv" style="display:none;">
             </label>
-            <button id="cmd-export-leads-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Exporta un listado LIMPIO para prospección/outreach (Nombre, Email, Teléfono, Web, Instagram, Doctor, Categoría, Dirección, Ciudad, País, Rating, Reseñas). Abre prolijo en Excel. Podés filtrar por país y solo los que tienen email.">Exportar listado (Excel)</button>
-            <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:#5bb974;" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
+            <button id="cmd-export-leads-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:var(--accent-hover);" title="Exporta un listado LIMPIO para prospección/outreach (Nombre, Email, Teléfono, Web, Instagram, Doctor, Categoría, Dirección, Ciudad, País, Rating, Reseñas). Abre prolijo en Excel. Podés filtrar por país y solo los que tienen email.">Exportar listado (Excel)</button>
+            <button id="cmd-serpapi-usage-btn" data-roles="admin,supervisor" class="btn-table-action" style="color:var(--accent-hover);" title="Muestra cuántas búsquedas de SerpApi te quedan este mes y el límite por hora del plan.">Uso SerpApi</button>
           </div>
 
           <div id="cmd-serpapi-usage-result" class="cmd-tool-result"></div>
@@ -2227,7 +2227,7 @@
               <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                 <span id="history-total-badge" style="font-size:12px; color:var(--text-secondary);"></span>
                 <button id="history-dedup-btn" class="btn-table-action" style="color:#e3b341;">Limpiar Duplicados</button>
-                <button id="history-export-btn" class="btn-table-action" style="color:#5bb974;">Exportar CSV</button>
+                <button id="history-export-btn" class="btn-table-action" style="color:var(--accent-hover);">Exportar CSV</button>
                 <label class="btn-table-action" style="color:#a8c7fa; cursor:pointer;">
                   Importar CSV
                   <input type="file" id="history-import-csv" accept=".csv" style="display:none;">
@@ -2703,7 +2703,7 @@
 
             <!-- Acciones del setter -->
             <div id="asst-actions" style="display:flex; gap:8px; margin-top:18px; flex-wrap:wrap;">
-              <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:#5bb974; font-weight:500;">✓ Buena respuesta</button>
+              <button class="btn-secondary asst-act-good" data-action="good" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:var(--accent-hover); font-weight:500;">✓ Buena respuesta</button>
               <button class="btn-secondary asst-act-bad" data-action="bad" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; color:#f85149; font-weight:500;">✗ No la usaría</button>
               <button class="btn-secondary asst-act-edit" data-action="edit" style="font-size:13px; flex:1; min-width:130px; padding:10px; border-radius:10px; font-weight:500;">✎ Editar y enviar</button>
             </div>
@@ -2719,7 +2719,7 @@
             </div>
 
             <!-- Status post-accion -->
-            <div id="asst-status" style="display:none; margin-top:14px; padding:10px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.3); border-radius:8px; color:#5bb974; font-size:12px;"></div>
+            <div id="asst-status" style="display:none; margin-top:14px; padding:10px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.3); border-radius:8px; color:var(--accent-hover); font-size:12px;"></div>
 
             <!-- Ejemplos del banco — oculto por ahora -->
             <details id="asst-ejemplos-wrap" style="display:none;">
@@ -2781,7 +2781,7 @@
               <button id="sh-modal-close" class="btn-secondary" style="font-size:12px;">Cerrar</button>
             </div>
 
-            <div id="sh-modal-already-sent" style="display:none; padding:10px 12px; border-radius:8px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.4); color:#5bb974; font-size:12px; margin-bottom:12px;"></div>
+            <div id="sh-modal-already-sent" style="display:none; padding:10px 12px; border-radius:8px; background:rgba(91,185,116,0.08); border:1px solid rgba(91,185,116,0.4); color:var(--accent-hover); font-size:12px; margin-bottom:12px;"></div>
 
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
               <!-- 2026-07-11: el dropdown de 1 SDR se reemplazó por el modal multi-SDR (el botón lo abre). -->
@@ -2790,7 +2790,7 @@
                 Solo enviar los nuevos (no ya scrapeados antes)
               </label>
               <button id="sh-modal-send" class="btn-primary" style="font-size:12px; padding:8px 16px;">Enviar a SDRs…</button>
-              <button id="sh-modal-download" class="btn-secondary" style="font-size:12px; padding:8px 16px; color:#5bb974;" title="Enriquece los emails de este batch (baja la web de cada clínica) y descarga el listado prolijo en CSV + Excel: Nombre, Email, Teléfono (con +), Dirección, Ciudad, País, Web, Instagram, Facebook, Rating, Reseñas. Sin link de WhatsApp.">Descargar (CSV + Excel)</button>
+              <button id="sh-modal-download" class="btn-secondary" style="font-size:12px; padding:8px 16px; color:var(--accent-hover);" title="Enriquece los emails de este batch (baja la web de cada clínica) y descarga el listado prolijo en CSV + Excel: Nombre, Email, Teléfono (con +), Dirección, Ciudad, País, Web, Instagram, Facebook, Rating, Reseñas. Sin link de WhatsApp.">Descargar (CSV + Excel)</button>
               <span id="sh-modal-download-progress" style="font-size:11px; color:var(--text-secondary);"></span>
               <button id="sh-modal-delete" class="btn-secondary" style="font-size:12px; padding:8px 14px; color:#f85149; margin-left:auto;">Borrar batch</button>
             </div>
@@ -2997,7 +2997,7 @@
             </div>
             <div id="mr-detail-body" style="padding:18px 24px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:14px;"></div>
             <div style="padding:14px 24px 18px; display:flex; gap:8px; flex-wrap:wrap; background:rgba(0,0,0,0.18); border-top:1px solid var(--border-color);">
-              <button id="mr-detail-approve" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#5bb974; font-weight:500;">✓ Aprobar oro</button>
+              <button id="mr-detail-approve" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent-hover); font-weight:500;">✓ Aprobar oro</button>
               <button id="mr-detail-rewrite" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:var(--accent); font-weight:500;">✎ Reescribir</button>
               <button id="mr-detail-suggest" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#ffc828; font-weight:500;">Sugerir mejora</button>
               <button id="mr-detail-reject" class="btn-secondary" style="font-size:12px; padding:9px 14px; border-radius:8px; flex:1; min-width:130px; color:#f85149; font-weight:500;">✗ Rechazar</button>
@@ -3038,30 +3038,30 @@
                   <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:var(--accent-medium); border-radius:7px;">🔑</span>
                   Credenciales Telnyx
                 </strong>
-                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Recomendado: cargar secrets como env vars en Railway (<code style="font-family:ui-monospace,monospace; font-size:11px; padding:1px 5px; background:var(--bg-app); border-radius:3px;">TELNYX_API_KEY</code>, etc.) — no tocan disco del Volume.</div>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">Recomendado: cargar secrets como env vars en Railway (<code style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px; padding:1px 5px; background:var(--bg-app); border-radius:3px;">TELNYX_API_KEY</code>, etc.) — no tocan disco del Volume.</div>
               </div>
             </div>
             <div id="tlx-cfg-env-banner" style="display:none; padding:12px 16px; background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-radius:10px; font-size:12.5px; color:var(--text-primary); margin-bottom:14px; line-height:1.5;"></div>
             <div style="display:grid; gap:10px; grid-template-columns:1fr 1fr;">
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">API Key (Bearer)</span>
-                <input type="password" id="tlx-cfg-apikey" placeholder="KEY..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+                <input type="password" id="tlx-cfg-apikey" placeholder="KEY..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px;">
               </label>
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Connection ID <span style="opacity:0.5;">(opcional, para ephemeral creds)</span></span>
-                <input type="text" id="tlx-cfg-connid" placeholder="123456" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+                <input type="text" id="tlx-cfg-connid" placeholder="123456" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px;">
               </label>
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Username (fallback)</span>
-                <input type="text" id="tlx-cfg-sipuser" placeholder="username del SIP Connection" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+                <input type="text" id="tlx-cfg-sipuser" placeholder="username del SIP Connection" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px;">
               </label>
               <label style="display:flex; flex-direction:column; gap:4px;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">SIP Password (fallback)</span>
-                <input type="password" id="tlx-cfg-sippass" placeholder="•••••••••" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:12px;">
+                <input type="password" id="tlx-cfg-sippass" placeholder="•••••••••" style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px;">
               </label>
               <label style="display:flex; flex-direction:column; gap:4px; grid-column:1/-1;">
                 <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">Signature Public Key (base64) <span style="opacity:0.5;">— para validar webhooks</span></span>
-                <input type="text" id="tlx-cfg-sigkey" placeholder="MCowBQYDK2VwAyEA..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:ui-monospace,monospace; font-size:11px;">
+                <input type="text" id="tlx-cfg-sigkey" placeholder="MCowBQYDK2VwAyEA..." style="padding:9px 12px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-app); color:var(--text-primary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px;">
               </label>
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top:14px;">
@@ -3113,7 +3113,7 @@
                   <span style="display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:rgba(255,179,65,0.15); border-radius:7px;">📝</span>
                   Guiones de llamada
                 </strong>
-                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El SDR los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{SDRName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:ui-monospace,monospace;">{time}</code></div>
+                <div class="muted" style="font-size:12px; margin-top:6px; line-height:1.5;">El SDR los ve durante una llamada activa. Variables soportadas: <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">{name}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">{city}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">{SDRName}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">{date}</code> <code style="font-size:10.5px; padding:2px 5px; background:var(--bg-app); border-radius:4px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">{time}</code></div>
               </div>
               <div style="display:flex; gap:8px; align-items:center;">
                 <button id="tlx-script-reset-seed-btn" class="btn-secondary" style="font-size:12.5px; padding:9px 14px;" title="Recarga los guiones desde scripts/seed/call-scripts.json (versión oficial SCM Cold Call v2). Reemplaza TODOS los guiones actuales — guarda backup automático.">Recargar oficial v2</button>
@@ -3448,19 +3448,19 @@
       <div style="padding:14px 18px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:10px; background:linear-gradient(180deg, var(--accent-soft) 0%, transparent 100%);">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent); flex-shrink:0;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="cmdk-input" type="text" placeholder="Buscar leads, SDRs, acciones… (Esc para cerrar)" autocomplete="off" spellcheck="false" style="flex:1; background:transparent; border:none; outline:none; font-size:15px; color:var(--text-primary); font-family:inherit;">
-        <kbd style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); border-radius:4px; color:var(--text-secondary); font-family:ui-monospace,monospace;">Esc</kbd>
+        <kbd style="font-size:10px; padding:2px 6px; background:rgba(255,255,255,0.08); border:1px solid var(--border-color); border-radius:4px; color:var(--text-secondary); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">Esc</kbd>
       </div>
       <ul id="cmdk-results" style="list-style:none; padding:6px; margin:0; max-height:400px; overflow-y:auto;"></ul>
       <div id="cmdk-footer" style="padding:8px 14px; border-top:1px solid var(--border-color); display:flex; gap:14px; font-size:11px; color:var(--text-secondary); background:rgba(0,0,0,0.18);">
-        <span><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↑↓</kbd> navegar</span>
-        <span><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↵</kbd> abrir</span>
-        <span style="margin-left:auto;"><kbd style="font-family:ui-monospace,monospace; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">Ctrl+K</kbd> para volver a abrir</span>
+        <span><kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↑↓</kbd> navegar</span>
+        <span><kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">↵</kbd> abrir</span>
+        <span style="margin-left:auto;"><kbd style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; padding:1px 5px; background:rgba(255,255,255,0.06); border-radius:3px;">Ctrl+K</kbd> para volver a abrir</span>
       </div>
     </div>
   </div>
 
   <!-- Banner pidiendo permisos de notificación (one-time, dismissible) -->
-  <div id="notif-perm-banner" style="display:none; position:fixed; bottom:24px; left:24px; z-index:2100; max-width:360px; padding:14px 18px; background:linear-gradient(135deg, var(--accent-strong) 0%, color-mix(in srgb, var(--accent) 70%, #fff) 100%); color:#fff; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,0.4); font-size:13px; line-height:1.5;">
+  <div id="notif-perm-banner" style="display:none; position:fixed; bottom:24px; left:24px; z-index:2100; max-width:360px; padding:14px 18px; background:var(--accent); color:var(--on-accent); border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,0.4); font-size:13px; line-height:1.5;">
     <div style="display:flex; align-items:flex-start; gap:12px;">
       <span style="font-size:22px; flex-shrink:0;">🔔</span>
       <div style="flex:1;">
@@ -3512,7 +3512,7 @@
         </div>
         <!-- Política fija: solo se mueven leads sin trabajar -->
         <div style="padding:11px 14px; background:rgba(91,185,116,0.06); border:1px solid rgba(91,185,116,0.30); border-radius:10px; font-size:12px; line-height:1.55; color:var(--text-secondary);">
-          <strong style="color:#5bb974;">Solo se mueven leads sin trabajar.</strong>
+          <strong style="color:var(--accent-hover);">Solo se mueven leads sin trabajar.</strong>
           Por política, la reasignación únicamente toma leads que nunca fueron contactados (sin conexión, sin lastContactAt, sin interacciones). Los que algún SDR ya trabajó NO se mueven — evita que el SDR destino herede conversaciones ajenas.
         </div>
         <input id="reassign-untouched" type="checkbox" checked style="display:none;">
@@ -3637,7 +3637,7 @@
     </div>
     <div id="wsp-timer-display" style="font-size:24px; font-weight:700; text-align:center; color:var(--text-primary); font-variant-numeric:tabular-nums;">--:--</div>
     <div style="display:flex; gap:6px;">
-      <button id="wsp-timer-start" class="btn-table-action" style="flex:1; font-size:11px; color:#5bb974;">Start</button>
+      <button id="wsp-timer-start" class="btn-table-action" style="flex:1; font-size:11px; color:var(--accent-hover);">Start</button>
       <button id="wsp-timer-stop" class="btn-table-action" style="flex:1; font-size:11px; color:#f85149;">Stop</button>
     </div>
   </div>
@@ -3647,7 +3647,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260815c"></script>
+  <script type="module" src="/app.js?v=20260815d"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>
