@@ -1570,6 +1570,33 @@
         </div>
       </div>
 
+      <!-- Modal: próximo paso al marcar "Interesado" (GATE-01/GATE-02, Fase 30) -->
+      <div id="call-next-modal" class="modal-overlay hidden" style="z-index:10000;">
+        <div class="modal-card" style="max-width:420px; width:95vw;">
+          <div class="modal-header">
+            <h3>Próximo paso</h3>
+            <button type="button" aria-label="Cerrar" onclick="document.getElementById('call-next-modal').classList.add('hidden')" style="background:none;border:none;color:var(--text-secondary);font-size:20px;cursor:pointer;">✕</button>
+          </div>
+          <div style="padding:20px 24px;">
+            <p style="color:var(--text-secondary); font-size:13px; margin:0 0 14px;">El lead queda en <strong>Hoy → Interesados</strong>. Esta es la fecha en la que volvés a hablarle — ya viene propuesta, aceptala con Guardar o ajustala.</p>
+
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:8px; font-weight:600;">Atajos</label>
+            <div id="call-next-quickpicks" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:18px;"></div>
+
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin-bottom:6px; font-weight:600;">O fecha exacta</label>
+            <input type="datetime-local" id="call-next-fecha" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+
+            <label style="font-size:11px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; display:block; margin:14px 0 6px; font-weight:600;">Motivo (opcional)</label>
+            <input type="text" id="call-next-motivo" maxlength="200" placeholder="Ej: pidió llamarlo cuando vuelva del congreso" style="width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:14px;">
+
+            <div style="display:flex; gap:10px; margin-top:18px; justify-content:flex-end;">
+              <button class="pill-btn" style="background:transparent; border:1px solid var(--border-default); color:var(--text-secondary);" onclick="document.getElementById('call-next-modal').classList.add('hidden')">Cancelar</button>
+              <button class="btn-primary pill-btn" id="call-next-confirm">Guardar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- VISTA FAQ: BANCO DE RESPUESTAS -->
       <div id="view-faqs" class="module-view hidden">
         <div class="content-header">
