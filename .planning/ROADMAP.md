@@ -293,11 +293,14 @@ como evento del mismo modelo que los compromisos.
   5. El envío de material por email queda registrado con el mismo modelo
      de evento que el WhatsApp (mismo timeline del lead), sin ningún
      tracking de apertura.
-**Plans**: TBD
+**Plans**: 4 plans (4 olas — backend WhatsApp, backend descarte+email, UI WhatsApp, UI descarte+material)
 
 Plans:
 
-- [ ] 32-01: TBD (definido en plan-phase)
+- [ ] 32-01-PLAN.md — Backend: `_actRegisterSendEvent` (compromiso cumplido → seguimiento +48h) + `POST .../whatsapp-send` con número alternativo (wave 1)
+- [ ] 32-02-PLAN.md — Backend: `POST .../discard` usable por el SDR (cierra el hueco de RBAC del bulk) + `POST .../send-material` sin tracking (wave 2)
+- [ ] 32-03-PLAN.md — UI: 3 plantillas, `_actButtonsHTML` en las 4 superficies, overlay de envío y rama de destino post-envío (wave 3)
+- [ ] 32-04-PLAN.md — UI: botón de descartar en el mismo builder, estado bloqueado de marca, Hoy sin terminales y material por email (wave 4)
 
 ### Phase 33: DIAL — Power Dialer como motor único
 
@@ -379,7 +382,7 @@ Plans:
 | 29. NEXT — El reloj único | 4/4 | Complete | 2026-08-14 |
 | 30. GATE — Cierra la llamada, define el próximo paso | 3/3 | human_needed (UAT pendiente) | 2026-08-15 |
 | 31. COMM — Compromisos como objeto | 4/4 | Complete | 2026-08-15 |
-| 32. ACT — Acciones desde cualquier vista | 0/TBD | Not started | - |
+| 32. ACT — Acciones desde cualquier vista | 0/4 | Planned | - |
 | 33. DIAL — Power Dialer como motor único | 0/TBD | Not started | - |
 | 34. HOY — La vista diaria | 0/TBD | Not started | - |
 
