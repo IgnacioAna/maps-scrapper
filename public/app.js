@@ -6743,7 +6743,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       // el SDR sigue anotando y avanza con el botón "Siguiente lead" (o S).
       if (!_pd.holdCurrent) {
         if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
-        if (lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
+        // Fase 30 (GATE-01/GATE-02): un interesado SIEMPRE tiene un próximo
+        // paso a futuro (D-02, +3 días por defecto) — expulsarlo acá rompería
+        // el Power Dialer de "Hoy → Interesados" (nota #179: _pdBuildQueueHoy
+        // arma la cola con _hoyState.interesadoIds, sin mirar callbackAt). Un
+        // interesado solo puede estar en la cola del dialer vía la cola de
+        // Hoy: _pdBuildQueue (la cola de Llamadas) ya filtra
+        // ['descartado','agendado','interesado'] — esta excepción no puede
+        // colar un interesado en el dialer de Llamadas. La expulsión por
+        // estado terminal (línea de arriba) queda intacta.
+        if (lead.estado !== 'interesado' && lead.callbackAt && new Date(lead.callbackAt).getTime() > Date.now()) { _pdAdvance(); return; }
       }
 
       const flagHTML = lead.country ? countryFlagHTML(lead.country, 'lg') : '';
@@ -7205,13 +7214,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Audit fix Sprint 36 (bug 1): handler de disposition específico al power
     // dialer. Para outcomes que ABREN modal (callback_later, scheduled_with_admin,
-    // answered_not_interested), NO auto-avanzar — el modal define el flow y al
-    // cerrarse exitosamente _handleCallDisposition ya refresca _callsLeadsCache.
+    // answered_not_interested, y desde Fase 30 answered_interested → "Próximo
+    // paso"), NO auto-avanzar — el modal define el flow y al cerrarse
+    // exitosamente _handleCallDisposition ya refresca _callsLeadsCache.
     // El advance lo dispara el botón explícito del usuario cuando vuelve.
     window._pdHandleDisposition = async function(leadId, selectEl) {
       const outcome = selectEl?.value;
       if (!outcome) return;
-      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested'].includes(outcome);
+      const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested','answered_interested'].includes(outcome);
       await window._handleCallDisposition(leadId, selectEl);
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
@@ -7231,7 +7241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
       // hasta 30s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
-        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal'];
+        const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal','call-next-modal'];
         // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
         let waited = 0;
         const check = () => {
@@ -7248,13 +7258,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           // disposition fue confirmada). Si el SDR canceló, el lead sigue accionable.
           const lead = _callsLeadsById.get(leadId);
           if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
+          // Fase 30: un interesado recién guardado tiene callbackAt futuro
+          // (+3 días, D-02) → stillActionable da false y corre _afterSaved()
+          // (autopiloto avanza; sin autopiloto queda el banner "Resultado
+          // guardado", #151). Si el SDR CANCELA el modal, no se guardó nada,
+          // callbackAt sigue vacío → stillActionable da true y el dialer se
+          // queda en el lead (mismo comportamiento que los otros 3 modales).
           const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
           if (!stillActionable) _afterSaved();
         };
         setTimeout(check, 600);
       } else {
         // Outcomes directos (no_answer, voicemail, wrong_number, invalid_number,
-        // answered_interested, hung_up)
+        // hung_up)
         setTimeout(_afterSaved, 600);
       }
     };
@@ -10635,10 +10651,19 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectEl.disabled = false;
           return;
         }
-        // "Interesado" (answered_interested) NO abre la agenda: solo marca el
-        // interés y deja el lead con chip verde esperando agendamiento. Agendar
-        // es una acción aparte (botón/opción "Agendar" → scheduled_with_admin).
-        // Cae al flujo directo de abajo (POST call-disposition).
+        // "Interesado" (answered_interested) NO abre la agenda: agendar es una
+        // acción aparte (botón/opción "Agendar" → scheduled_with_admin, nota
+        // #63 de CLAUDE.md — intencional). Fase 30 (GATE-01/GATE-02): en vez
+        // de caer al flujo directo, abre el paso "Próximo paso" — es el único
+        // outcome no terminal que podía quedar sin próxima acción (D-04: los
+        // interesados nunca se auto-descartan, así que sin este paso el lead
+        // quedaba flotando hasta que alguien lo agendara a mano).
+        if (outcome === 'answered_interested') {
+          openNextStepModal(leadId);
+          selectEl.value = '';
+          selectEl.disabled = false;
+          return;
+        }
         // Sprint 25: si dijo "No interesado", pedir motivo antes de descartar.
         // El popover deja saltear (skip) si el SDR no quiere taggear.
         if (outcome === 'answered_not_interested') {
