@@ -11656,6 +11656,20 @@ function _actSanitizeMessage(raw) {
   return _stripBrandMentions(raw.trim().slice(0, ACT_MESSAGE_MAX)).trim();
 }
 
+// Phase 32 (ACT-05): el texto de "mandar material por email" lo tipea el SDR
+// y termina dentro de un HTML que abre el PROSPECTO — escapar es obligatorio
+// (mismo criterio de seguridad que cualquier otro texto de cliente que se
+// inyecta en un email, ver send-placeholder unas líneas más abajo). Nunca
+// lanza, nunca null.
+function _actEmailHtml(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .split('\n').join('<br>');
+}
+
 // D-04/D-05: registro compartido por WhatsApp (32-01) y email (32-02).
 // spec = { canal, templateId, to, byId, byName }. Devuelve
 // { commitment, nextAction, terminal }.
@@ -12000,7 +12014,7 @@ globalThis.__voiceAgent = {
   COMMITMENT_LABELS, COMMITMENT_DEFAULT_PARTE, COMMITMENT_DEFAULT_CANAL,
   COMMITMENT_DELTA_MS_BY_TIPO, COMMITMENT_SOCIO_DELTA_MS, COMMITMENT_ENVIAR_INFO_DELTA_MS,
   // Phase 32: acciones desde cualquier vista (ACT-01..05).
-  _actRegisterSendEvent, _actSanitizeMessage, ACT_WA_TEMPLATE_IDS, ACT_SEND_CANALES,
+  _actRegisterSendEvent, _actSanitizeMessage, _actEmailHtml, ACT_WA_TEMPLATE_IDS, ACT_SEND_CANALES,
 };
 
 const CALL_OUTCOMES = new Set([
@@ -12386,28 +12400,35 @@ function _buildPlaceholderICS({ uid, organizerEmail, organizerName, attendeeEmai
   ].join('\r\n');
 }
 
+// Phase 32 (ACT-05): esta función pasa a servir a los dos envíos — el hold
+// de calendario con .ics (send-placeholder) y el material sin adjunto
+// (send-material) — un solo call site de Resend en todo el archivo. El
+// adjunto es OPCIONAL: solo se arma cuando llega un icsContent no vacío.
 async function _sendPlaceholderEmail({ toEmail, toName, subject, htmlBody, icsContent, fromOverride }) {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return { sent: false, reason: 'RESEND_API_KEY no configurada' };
   // 2026-07-06: este email lo recibe el PROSPECTO — sin nombre de empresa (pedido del user).
   const fromEmail = fromOverride || process.env.INVITE_FROM_EMAIL || 'Agenda <onboarding@resend.dev>';
+  const payload = {
+    from: fromEmail,
+    to: [toEmail],
+    subject,
+    html: htmlBody,
+  };
+  if (typeof icsContent === 'string' && icsContent) {
+    payload.attachments = [{
+      filename: 'reunion-tentativa.ics',
+      content: Buffer.from(icsContent, 'utf8').toString('base64'),
+      // Resend respeta content_type para attachments y el cliente de mail
+      // detecta el .ics como invitación de calendario.
+      content_type: 'text/calendar; charset=utf-8; method=REQUEST',
+    }];
+  }
   try {
     const resp = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [toEmail],
-        subject,
-        html: htmlBody,
-        attachments: [{
-          filename: 'reunion-tentativa.ics',
-          content: Buffer.from(icsContent, 'utf8').toString('base64'),
-          // Resend respeta content_type para attachments y el cliente de mail
-          // detecta el .ics como invitación de calendario.
-          content_type: 'text/calendar; charset=utf-8; method=REQUEST',
-        }],
-      })
+      body: JSON.stringify(payload)
     });
     if (resp.ok) return { sent: true };
     const err = await resp.json().catch(() => ({}));
@@ -12511,6 +12532,109 @@ app.post('/api/setters/leads/:id/send-placeholder', requireAuth, async (req, res
     return l;
   });
   res.json({ ok: true, lead: updated || lead, sentTo: toEmail, when: startISO });
+});
+
+// Phase 32 (ACT-05, D-17/D-18): mandar material/información por email dejando
+// EXACTAMENTE el mismo evento que el WhatsApp (index.js ~10443) — se reusa
+// _actRegisterSendEvent, así que el timeline del lead es uno solo sin
+// importar el canal. Cero tracking de apertura (D-18): ni pixel, ni link de
+// redirección, ni webhook — Apple Mail Privacy Protection precarga el pixel
+// en más de la mitad de los opens y esa métrica se mediría como ruido. Dos
+// vías porque RESEND_API_KEY puede no estar configurada en producción: si no
+// está, el frontend puede ofrecer igual el mailto: del cliente de mail del SDR.
+app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
+  ensureLeadDefaults(lead);
+
+  const u = req.auth?.user || {};
+  const { via, email, subject, message, templateId } = req.body || {};
+  // Whitelist-and-coerce: cualquier valor fuera de la lista cae a 'resend'.
+  const cleanVia = (via === 'mailto') ? 'mailto' : 'resend';
+
+  const toEmail = String(email || lead.email || '').trim();
+  if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+    return res.status(400).json({ error: 'Falta o es inválido el email del prospect.' });
+  }
+  const toName = lead.doctor && !String(lead.doctor).toUpperCase().includes('N/A') ? lead.doctor : (lead.name || toEmail);
+
+  const cleanSubject = _stripBrandMentions(String(subject || '').trim()).slice(0, 140) || 'La información que te prometí';
+  const cleanMessage = _actSanitizeMessage(message);
+  if (!cleanMessage) {
+    return res.status(400).json({ error: 'El mensaje no puede estar vacío.' });
+  }
+
+  // Se devuelve en TODAS las respuestas (200, 409) para que el frontend
+  // pueda ofrecer la salida manual sin recalcular nada.
+  const mailtoUrl = 'mailto:' + encodeURIComponent(toEmail) + '?subject=' + encodeURIComponent(cleanSubject) + '&body=' + encodeURIComponent(cleanMessage);
+
+  let sent = false;
+  if (cleanVia === 'resend') {
+    if (!process.env.RESEND_API_KEY) {
+      // Nada salió — cortar ACÁ, antes de registrar nada.
+      return res.status(409).json({
+        error: 'El envío por el sistema no está configurado. Podés abrirlo en tu cliente de mail.',
+        resendUnavailable: true,
+        mailtoUrl,
+      });
+    }
+    // Mismo esqueleto que send-placeholder (más arriba), con el cuerpo
+    // escapado por _actEmailHtml. Sin ningún <img> (D-18: no tracking).
+    const htmlBody = `
+      <div style="font-family:sans-serif; max-width:520px; margin:0 auto; padding:24px; color:#1e1f20;">
+        <p>Hola ${_icsEscape(toName)},</p>
+        <p>${_actEmailHtml(cleanMessage)}</p>
+        <p style="color:#666; font-size:13px; margin-top:24px;">— ${_actEmailHtml(u.name || 'Equipo')}</p>
+      </div>`;
+    const result = await _sendPlaceholderEmail({
+      toEmail, toName,
+      subject: cleanSubject,
+      htmlBody,
+      fromOverride: process.env.PLACEHOLDER_FROM_EMAIL || undefined,
+    });
+    if (!result.sent) {
+      // Nada salió — cortar ACÁ, el registro no puede decir que sí.
+      return res.status(502).json({ error: 'No se pudo enviar el mail.', detail: result.reason });
+    }
+    sent = true;
+  }
+  // Rama 'mailto': no se intenta enviar nada, sent queda false. El registro
+  // es igual de honesto que el del WhatsApp (D-04) — se anota "abrí el mail
+  // para mandar X", no "lo recibió".
+
+  const nowIso = new Date().toISOString();
+  // Regla #19: la rama 'resend' tiene un `await` antes de esta mutación — se
+  // usa el mismo camino para las dos vías para no tener dos escrituras
+  // distintas del mismo evento.
+  const updated = await mutateSettersData((fresh) => {
+    const l = fresh.leads?.[req.params.id];
+    if (!l) return null;
+    ensureLeadDefaults(l);
+    _actRegisterSendEvent(l, {
+      canal: 'email',
+      templateId,
+      to: toEmail,
+      byId: u.id || '',
+      byName: u.name || '',
+    }, nowIso);
+    return l;
+  });
+
+  res.json({
+    ok: true,
+    sent,
+    via: cleanVia,
+    sentTo: toEmail,
+    mailtoUrl,
+    commitment: (updated || lead).commitment,
+    nextAction: (updated || lead).nextAction,
+    lead: { id: req.params.id, ...(updated || lead) },
+  });
 });
 
 // ── Deduplicar leads de setters (conserva el más viejo / más trabajado) ──
