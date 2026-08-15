@@ -224,11 +224,13 @@ fecha ya existe desde la Phase 28.)
      lead y cómo volver a encontrarlo (qué vista, qué fecha) — el reclamo
      "desaparece" (R2) queda resuelto sin tener que adivinar ni navegar a
      ciegas.
-**Plans**: TBD
+**Plans**: 3 plans (3 olas — backend, paso de próximo paso, feedback de destino)
 
 Plans:
 
-- [ ] 30-01: TBD (definido en plan-phase)
+- [ ] 30-01-PLAN.md — Backend: defaults D-02 por outcome + red de seguridad GATE-01 + override sanitizado + esperar_respuesta en el hold (wave 1)
+- [ ] 30-02-PLAN.md — Frontend: paso "Próximo paso" para Interesado (+3 días propuestos, atajos y calendario) + fix de expulsión del Power Dialer (wave 2)
+- [ ] 30-03-PLAN.md — Feedback GATE-04: destino universal por vista real + integración en el banner del Power Dialer (wave 3)
 
 ### Phase 31: COMM — Compromisos como objeto
 
