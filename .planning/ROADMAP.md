@@ -256,11 +256,14 @@ canal y fecha — no texto suelto dentro de una nota.
   4. Existe una vista o filtro donde puede consultar, en cualquier
      momento, a quién le mandó información, cuándo, y cuáles compromisos
      siguen sin resolver.
-**Plans**: TBD
+**Plans**: 4 plans (4 olas — modelo, endpoints, carga en UI, consulta)
 
 Plans:
 
-- [ ] 31-01: TBD (definido en plan-phase)
+- [ ] 31-01-PLAN.md — Modelo del compromiso: whitelists D-02/03/04, mapa D-06 y los helpers que lo atan al reloj único (wave 1)
+- [ ] 31-02-PLAN.md — Endpoints: `commitment` en call-disposition (D-08) + `PATCH .../commitment` para la ficha (D-09) (wave 2)
+- [ ] 31-03-PLAN.md — Carga en UI: selector en el modal “Próximo paso”, bloque en la ficha y destino nombrando la sección real (wave 3)
+- [ ] 31-04-PLAN.md — Consulta: secciones de compromisos en Hoy (D-10) + el cerrado en el timeline del lead (D-11) (wave 4)
 
 ### Phase 32: ACT — Acciones desde cualquier vista
 
