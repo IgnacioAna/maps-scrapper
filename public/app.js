@@ -5973,6 +5973,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 2) Interesados sin agendar
         const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
         interesados.forEach(l => claimed.add(l.id));
+        // Fase 31 (D-10): compromisos pendientes, agrupados por parte (los
+        // propios primero — son deuda propia). NO participan del Set
+        // `claimed`: responden una pregunta distinta ("quién me debe algo",
+        // no "cuándo vuelvo a llamar") — un lead puede estar en Callbacks o
+        // en Interesados Y además tener un compromiso pendiente al mismo
+        // tiempo, y eso es correcto, no un duplicado a evitar.
+        const nowMsHoy = now;
+        const misCompromisos = leads.filter(l => notDnc(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
+          .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
+        const compromisosProspecto = leads.filter(l => notDnc(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
+          .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
         // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
         // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
         // al 3er no-contacto se descartan automáticamente (backend).
@@ -5980,7 +5991,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
         // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
         const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
-        _hoyState = { callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id), at: Date.now() };
+        _hoyState = {
+          callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id),
+          commitYoIds: misCompromisos.map(l => l.id), commitProspectoIds: compromisosProspecto.map(l => l.id),
+          at: Date.now(),
+        };
 
         // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
         // mini-funnel del día: llamadas → conectadas → conversaciones → agendadas,
@@ -6007,10 +6022,15 @@ document.addEventListener('DOMContentLoaded', async () => {
               '</div>';
           } catch {}
         }
-        const totalPend = callbacks.length + interesados.length;
+        // Set de ids ÚNICOS: un lead puede estar en Callbacks/Interesados Y en
+        // una sección de compromiso a la vez (no participan de `claimed`) —
+        // sumar los .length contaría dos veces al mismo lead.
+        const totalPend = new Set([...callbacks, ...interesados, ...misCompromisos, ...compromisosProspecto].map(l => l.id)).size;
         if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
 
         secEl.innerHTML =
+          _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge }) +
+          _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — si vence, seguimiento', null, { rowBadge: _hoyCommitBadge }) +
           _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
           _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
           _hoyNewLeadsPointer(virgenesCount);
@@ -6025,6 +6045,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!id) return 'Sin asignar';
       const s = (window.__settersList || []).find(x => x.id === id);
       return s ? (s.name || id) : id;
+    }
+
+    // D-10 (31-04): badge de compromiso para las filas de "Mis compromisos" /
+    // "Esperando del prospecto" en Hoy. Cadena vacía si el lead no tiene
+    // compromiso. Toda interpolación de un campo del compromiso pasa por
+    // escHtml (T-31-04), aunque la fecha formateada sea siempre numérica.
+    function _hoyCommitBadge(lead) {
+      const c = lead && lead.commitment;
+      if (!c || typeof c !== 'object') return '';
+      const nowMs = Date.now();
+      const efectivo = _commitmentEffectiveEstado(c, nowMs);
+      const fmt = (iso) => {
+        const d = iso ? new Date(iso) : null;
+        if (!d || isNaN(d.getTime())) return '';
+        return `${String(d.getDate()).padStart(2, '0')}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      };
+      // Caso "ya mandé, espero respuesta" (3er bucket de _commitmentHoyBucket):
+      // el compromiso propio YA se cumplió — mostrar la fecha de ENVÍO
+      // (closedAt), no la del compromiso original (dueAt, que quedó en el
+      // pasado apenas se cumple). Es la respuesta textual a COMM-04.
+      if (efectivo === 'cumplido' && c.parte === 'yo') {
+        const fecha = fmt(c.closedAt);
+        return `<span title="Información mandada" style="font-size:10px; color:var(--text-primary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml('info mandada')}${fecha ? ` <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">· ${escHtml(fecha)}</span>` : ''}</span>`;
+      }
+      const vencido = efectivo === 'vencido';
+      const bg = vencido ? 'var(--warning)' : 'var(--accent-soft)';
+      const border = vencido ? 'var(--warning)' : 'var(--accent-strong)';
+      const color = vencido ? 'var(--on-accent)' : 'var(--text-primary)';
+      const fecha = fmt(c.dueAt);
+      return `<span title="Compromiso${vencido ? ' vencido' : ''}" style="font-size:10px; color:${color}; background:${bg}; border:1px solid ${border}; padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(_commitmentLabel(c.tipo))}${fecha ? ` <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">· ${escHtml(fecha)}</span>` : ''}${vencido ? ' · ' + escHtml('vencido') : ''}</span>`;
     }
     // Selector de resultado de llamada — FUENTE ÚNICA (2026-07-28). Lo usan la
     // lista de Llamadas y las cards de Hoy. Vivía inline solo en Llamadas, y por
@@ -6053,7 +6103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </select>`;
     }
 
-    function _hoyRenderSection(title, leads, accent, hint, dialerMode) {
+    function _hoyRenderSection(title, leads, accent, hint, dialerMode, opts = {}) {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
@@ -6062,12 +6112,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
         const scColor = sc >= 70 ? 'var(--accent-hover)' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
+        // D-10 (31-04): badge opcional por fila (hoy solo lo usan las
+        // secciones de compromiso). Sin opts.rowBadge el markup queda
+        // byte-idéntico al de antes de este plan.
+        const badgeHtml = (typeof opts.rowBadge === 'function') ? (opts.rowBadge(l) || '') : '';
         return `<div class="hoy-row" data-id="${escHtml(l.id)}">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
               <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
               ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
+              ${badgeHtml}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
               <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
@@ -11642,6 +11697,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dueMs = Date.parse(c.dueAt);
       if (!isNaN(dueMs) && dueMs <= nowMs) return 'vencido';
       return 'pendiente';
+    }
+
+    // D-10 (31-04): en qué sección de Hoy cae un lead según su compromiso.
+    // Función PURA: no muta el lead, no toca DOM ni red. `nowMs` se recibe
+    // por paridad de firma con el resto del bloque puro (no se usa para
+    // decidir 'yo'/'prospecto' — ver nota de vencido abajo).
+    function _commitmentHoyBucket(lead, nowMs) {
+      const c = lead && typeof lead === 'object' ? lead.commitment : null;
+      if (!c || typeof c !== 'object') return null;
+      // El estado ALMACENADO manda, no el derivado (_commitmentEffectiveEstado):
+      // un compromiso vencido sigue con estado:'pendiente' hasta que un humano
+      // lo cierra — tiene que seguir visible en Hoy, es justo cuando más hay
+      // que actuar. Si se filtrara por el estado derivado, un vencido
+      // desaparecería de la sección apenas pasa la fecha.
+      if (c.estado === 'pendiente') {
+        if (c.parte === 'yo') return 'yo';
+        if (c.parte === 'prospecto') return 'prospecto';
+        return null;
+      }
+      // COMM-04: "a quién le mandé información, cuándo, y qué falta
+      // responder" — un enviar_info/pedir_presupuesto PROPIO ya cumplido deja
+      // al lead esperando respuesta (D-06 fila 1: _closeCommitment programa
+      // nextAction {origen:'compromiso', tipo:'esperar_respuesta'}). Ese lead
+      // sigue a la vista en "Esperando del prospecto" con la fecha de envío
+      // (closedAt) en vez de desaparecer apenas se marca Cumplido.
+      if (c.estado === 'cumplido' && c.parte === 'yo') {
+        const na = lead.nextAction;
+        if (na && typeof na === 'object' && na.origen === 'compromiso' && na.tipo === 'esperar_respuesta') {
+          return 'prospecto';
+        }
+      }
+      return null;
     }
     // ─── [31-03] COMMITMENT-PURE: FIN ───
 
