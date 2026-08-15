@@ -75,7 +75,7 @@ recordarle, el milestone falló.
 |---|-------|------|-----------|
 | 28 | 3/3 | Complete   | 2026-08-14 |
 | 29 | NEXT — El reloj único (4/4 planes, COMPLETE) | NEXT-01..04 | — |
-| 30 | 2/3 | In Progress|  |
+| 30 | 3/3 | Complete   | 2026-08-15 |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
 | 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
@@ -83,7 +83,7 @@ recordarle, el milestone falló.
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
 - [x] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps` (completed 2026-08-14)
-- [ ] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal
+- [x] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal (completed 2026-08-15)
 - [ ] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas
 - [ ] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy
 - [ ] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente
@@ -230,7 +230,7 @@ Plans:
 
 - [x] 30-01-PLAN.md — Backend: defaults D-02 por outcome + red de seguridad GATE-01 + override sanitizado + esperar_respuesta en el hold (wave 1)
 - [x] 30-02-PLAN.md — Frontend: paso "Próximo paso" para Interesado (+3 días propuestos, atajos y calendario) + fix de expulsión del Power Dialer (wave 2)
-- [ ] 30-03-PLAN.md — Feedback GATE-04: destino universal por vista real + integración en el banner del Power Dialer (wave 3)
+- [x] 30-03-PLAN.md — Feedback GATE-04: destino universal por vista real + integración en el banner del Power Dialer (wave 3)
 
 ### Phase 31: COMM — Compromisos como objeto
 
