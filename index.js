@@ -11624,6 +11624,32 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
     _setNextAction(lead, { ...opts.nextActionOverride, origen: 'manual', createdBy: opts.actorName || '' }, opts.nowIso);
   }
 
+  // Phase 31 (D-08): compromiso hablado durante la llamada. Precedencia:
+  // outcome → DNC → tope de cortes → cadencia → override del cliente →
+  // COMPROMISO → red de seguridad. Corre solo si vino un compromiso limpio Y
+  // el lead no quedó terminal — un lead terminal nunca lleva compromiso
+  // (misma regla que el override, T-30-02): no se le debe información a un
+  // lead que se acaba de descartar. Como _setCommitment escribe el reloj vía
+  // _setNextAction, el compromiso gana sobre el override del cliente por
+  // construcción (misma fecha si no trae la suya, pero con
+  // origen:'compromiso' y el motivo del compromiso) — el compromiso es el
+  // POR QUÉ, el nextAction es el CUÁNDO.
+  if (opts.commitment && !GATE_TERMINAL_ESTADOS.has(lead.estado)) {
+    // Regla de fecha, explícita: si el spec NO trae dueAt y el cliente SÍ
+    // mandó un nextActionOverride con fecha propia, el compromiso HEREDA ese
+    // dueAt. Sin esto, un compromiso sin fecha recalcularía del mapa D-06 y
+    // pisaría la fecha que el usuario eligió a mano en el modal.
+    const _commitmentSpec = { ...opts.commitment };
+    if (!_commitmentSpec.dueAt && opts.nextActionOverride && opts.nextActionOverride.dueAt) {
+      _commitmentSpec.dueAt = opts.nextActionOverride.dueAt;
+    }
+    _setCommitment(lead, {
+      ..._commitmentSpec,
+      createdBy: opts.actorName || '',
+      callId: logEntry.ts || '', // ata el compromiso a ESTA llamada (D-01)
+    }, opts.nowIso);
+  }
+
   // Red de seguridad (GATE-01, D-01): cualquier lead que llegue hasta acá en
   // estado NO terminal y sin nextAction (ningún outcome/cadencia/override de
   // arriba lo cubrió) recibe un default de cadencia +24h. NUNCA lanza ni
@@ -11713,7 +11739,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.callbackShared = false;
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction, commitment } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -11723,6 +11749,11 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   // próximo paso. Se sanitiza acá (whitelist-and-coerce, nunca 400) y se pasa
   // a _applyCallOutcome — null si no vino nada o vino inválido.
   const cleanNextActionOverride = _gateSanitizeNextActionOverride(nextAction);
+  // Phase 31 (D-08): compromiso hablado durante la llamada. Mismo idioma que
+  // cleanReason/cleanNextActionOverride — whitelist-and-coerce, null si vino
+  // basura, NUNCA un 400 (D-01 de la Phase 30: este endpoint lo comparte el
+  // webhook del agente de voz).
+  const cleanCommitment = _sanitizeCommitment(commitment);
   // Sprint 25: tags de objeción válidos (solo para answered_not_interested,
   // pero los permitimos en cualquier outcome por si en el futuro se usan
   // en otros casos). Whitelist estricta para evitar inyección de tags raros.
@@ -11861,6 +11892,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     actorSetterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
     actorName: req.auth?.user?.name || '',
     nextActionOverride: cleanNextActionOverride,
+    commitment: cleanCommitment,
   });
 
   // Phase 20: resolver (eliminar) EXACTAMENTE UN registro pendiente de este
