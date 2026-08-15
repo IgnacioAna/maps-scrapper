@@ -10366,6 +10366,69 @@ app.patch('/api/setters/leads/:id/followup', requireAuth, (req, res) => {
   });
 });
 
+// Phase 31 (D-09): compromiso hablado, editable/cerrable FUERA de una
+// llamada (desde la ficha del lead). El compromiso es un objeto único por
+// lead (D-01) — crear, reemplazar y cerrar son transiciones del MISMO
+// objeto, por eso es un solo endpoint con dos acciones por body:
+//   A) crear/reemplazar: { tipo, parte?, canal?, motivo?, dueAt? }
+//   B) cerrar:           { estado: 'cumplido'|'incumplido'|'vencido' }
+// Escritura SÍNCRONA a propósito (mismo criterio que PATCH .../followup, más
+// arriba): no hay ningún `await` entre loadSettersData y saveSettersData, así
+// que NO hace falta el mutex de escrituras async (regla #19). Si en el
+// futuro se agrega algo async acá, ENTONCES sí hay que envolver la mutación
+// en ese mutex.
+app.patch('/api/setters/leads/:id/commitment', requireAuth, (req, res) => {
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: "Lead no encontrado." });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: "No autorizado para este lead." });
+  }
+  { const visibleSet = _visibleSetterIds(req.auth.user); if (visibleSet && !_setterIsVisible(lead.assignedTo, visibleSet)) return res.status(403).json({ error: 'Lead fuera de tu visibilidad.' }); }
+  ensureLeadDefaults(lead);
+
+  const { tipo, parte, canal, motivo, dueAt, estado } = req.body || {};
+  const nowIso = new Date().toISOString();
+
+  if (estado !== undefined) {
+    // Rama CIERRE. Se permite en CUALQUIER estado del lead (incluso
+    // descartado) — marcar "ya lo hice" nunca puede estar bloqueado por el
+    // estado del lead, a diferencia de crear uno nuevo.
+    if (!COMMITMENT_CIERRES.has(estado)) {
+      return res.status(400).json({ error: "Estado inválido. Esperado uno de: cumplido, incumplido, vencido." });
+    }
+    const closed = _closeCommitment(lead, estado, nowIso, req.auth?.user?.name || '');
+    if (!closed) {
+      return res.status(409).json({ error: "El lead no tiene un compromiso pendiente." });
+    }
+  } else {
+    // Rama CREAR/REEMPLAZAR.
+    if (!COMMITMENT_TIPOS.has(tipo)) {
+      return res.status(400).json({ error: `tipo inválido. Esperado uno de: ${[...COMMITMENT_TIPOS].join(', ')}` });
+    }
+    if (GATE_TERMINAL_ESTADOS.has(lead.estado)) {
+      return res.status(409).json({ error: "El lead está descartado/agendado — reactivalo antes de cargarle un compromiso." });
+    }
+    const created = _setCommitment(lead, {
+      tipo, parte, canal, motivo, dueAt,
+      createdBy: req.auth?.user?.name || '',
+      callId: '', // D-09: este camino NO nace de una llamada.
+    }, nowIso);
+    if (!created) {
+      // Defensa en profundidad: el chequeo de `tipo` de arriba ya lo cubre.
+      return res.status(400).json({ error: "Compromiso inválido." });
+    }
+  }
+
+  saveSettersData(data);
+  res.json({
+    ok: true,
+    commitment: lead.commitment,
+    nextAction: lead.nextAction,
+    lead: { id: req.params.id, ...lead },
+  });
+});
+
 // Sprint 31: Bulk operations en Llamadas. Admin only. Acciones soportadas:
 // 'mark_wrong', 'mark_invalid', 'discard', 'assign', 'move_to_setteo'.
 // Body: { leadIds: [], action: '...', assignTo?: setterId }. Devuelve count.
