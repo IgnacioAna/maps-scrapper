@@ -7709,6 +7709,94 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     };
 
+    // Fase 31 (D-09): compromiso hablado, editable/cerrable desde la ficha
+    // del lead — FUERA de una llamada. Mismo esqueleto que
+    // _callsToggleFollowup: apiUrl + _leadStoreApply(leadId, d.lead) con el
+    // lead COMPLETO (regla #105) + _refreshLeadPanels (nota #175, SIEMPRE al
+    // final vía finally, incluso en el camino de error de negocio — el panel
+    // puede estar viendo datos viejos). NO llama al aviso universal de
+    // destino de una disposición ni a su wrapper de post-guardado: esto no es
+    // una disposición de llamada y liberaría el gate de la Phase 20 sin que
+    // se haya marcado ninguna (mismo criterio que
+    // tomó 30-03 con el hold de calendario).
+    window._callsSetCommitment = async function(leadId) {
+      const tipoSel = document.getElementById('call-commit-tipo-' + leadId);
+      const parteSel = document.getElementById('call-commit-parte-' + leadId);
+      const motivoEl = document.getElementById('call-commit-motivo-' + leadId);
+      const tipo = tipoSel ? tipoSel.value : '';
+      if (!tipo) {
+        window.showToast?.('Elegí qué se comprometió antes de guardar.', { type: 'warning' });
+        return;
+      }
+      const parte = parteSel ? parteSel.value : 'yo';
+      const motivo = (motivoEl?.value || '').trim();
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/commitment'), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tipo, parte, motivo })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          // Los 409 de lead terminal traen un mensaje útil (d.error) — se lo
+          // mostramos tal cual en vez de un genérico "HTTP 409".
+          window.showToast?.(d.error || ('Error guardando compromiso: HTTP ' + r.status), { type: 'error' });
+          return;
+        }
+        if (d.lead) _leadStoreApply(leadId, d.lead);
+        const _fecha = d.commitment?.dueAt ? new Date(d.commitment.dueAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+        window.showToast?.('Compromiso guardado — ' + _commitmentLabel(tipo) + (_fecha ? (' para ' + _fecha) : ''), { type: 'success', duration: 3000 });
+      } catch (e) {
+        window.showToast?.('Error guardando compromiso: ' + e.message, { type: 'error' });
+      } finally {
+        _refreshLeadPanels(leadId);
+      }
+    };
+
+    window._callsCloseCommitment = async function(leadId, estado) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/commitment'), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado })
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          // Si el server contesta que ya no había compromiso pendiente (409),
+          // el panel estaba viendo datos viejos — se muestra el mensaje y se
+          // refresca igual (finally, abajo).
+          window.showToast?.(d.error || ('Error cerrando compromiso: HTTP ' + r.status), { type: 'error' });
+          return;
+        }
+        if (d.lead) _leadStoreApply(leadId, d.lead);
+        const _closeLabel = { cumplido: 'Compromiso cumplido', incumplido: 'Compromiso marcado como no cumplido', vencido: 'Compromiso cerrado' }[estado] || 'Compromiso cerrado';
+        window.showToast?.(_closeLabel, { type: estado === 'cumplido' ? 'success' : 'info', duration: 2500 });
+      } catch (e) {
+        window.showToast?.('Error cerrando compromiso: ' + e.message, { type: 'error' });
+      } finally {
+        _refreshLeadPanels(leadId);
+      }
+    };
+
+    // Toggle del formulario "Cambiar" (punto 1 del bloque Compromiso): el
+    // formulario de carga queda oculto por defecto cuando ya hay un
+    // compromiso vigente, y este botón lo muestra/oculta sin recargar nada.
+    window._callCommitToggleForm = function(leadId) {
+      const el = document.getElementById('call-commit-form-' + leadId);
+      if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+    };
+
+    // Hint de una línea con la fecha que va a proponer el mapa D-06 — el
+    // formulario de la ficha no tiene campo de fecha (la propone el backend).
+    window._callCommitHintUpdate = function(leadId) {
+      const tipoSel = document.getElementById('call-commit-tipo-' + leadId);
+      const hintEl = document.getElementById('call-commit-hint-' + leadId);
+      if (!tipoSel || !hintEl) return;
+      const tipo = tipoSel.value;
+      if (!tipo) { hintEl.textContent = ''; return; }
+      const d = _commitmentDefaultDate(tipo, new Date());
+      const fechaTxt = d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      hintEl.textContent = 'Va a proponer: ' + fechaTxt + ' (se puede ajustar después de guardar)';
+    };
+
     // Sprint 28: Reactivar lead descartado (admin only)
     window._callsReactivate = async function(leadId) {
       if (!confirm('¿Reactivar este lead? Va a volver a estado "sin contactar" y vas a poder llamarlo de nuevo. El histórico de llamadas anteriores se conserva.')) return;
@@ -7850,6 +7938,17 @@ document.addEventListener('DOMContentLoaded', async () => {
           ? `<span style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-input); padding:3px 9px; border-radius:6px; font-weight:500;">${_att} intento${_att > 1 ? 's' : ''}</span>`
           : '<span style="font-size:10.5px; color:var(--success); background:rgba(91,185,116,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">Nunca llamado</span>');
         if (l.estado === 'interesado') _expChips.push('<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>');
+        // Fase 31 (D-09): chip de compromiso pendiente/vencido en la cabecera.
+        const _chipCEstado = _commitmentEffectiveEstado(l.commitment, Date.now());
+        if (_chipCEstado === 'pendiente' || _chipCEstado === 'vencido') {
+          const _chipVenc = _chipCEstado === 'vencido';
+          // Fondo de acento SÓLIDO (vencido) → texto var(--on-accent). Fondo
+          // translúcido (pendiente) → texto var(--text-primary).
+          const _chipBg = _chipVenc ? 'var(--warning)' : 'var(--accent-soft)';
+          const _chipBorder = _chipVenc ? 'var(--warning)' : 'var(--accent-strong)';
+          const _chipColor = _chipVenc ? 'var(--on-accent)' : 'var(--text-primary)';
+          _expChips.push(`<span title="Compromiso${_chipVenc ? ' vencido' : ''}" style="background:${_chipBg}; border:1px solid ${_chipBorder}; color:${_chipColor}; padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">${escHtml(_commitmentLabel(l.commitment.tipo))}${_chipVenc ? ' · vencido' : ''}</span>`);
+        }
       }
 
       // Brief IA (mismo bloque que el Power Dialer): dolores + gancho + fit.
@@ -7936,6 +8035,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>`;
           }).join('');
 
+      // Fase 31 (D-09): bloque "Compromiso" — mecanismo PRINCIPAL de
+      // seguimiento; el follow-up de abajo queda como registro legacy. Tres
+      // estados de render decididos con _commitmentEffectiveEstado (misma
+      // regla que el backend, sin mutar nada).
+      const _commitEstado = _commitmentEffectiveEstado(l.commitment, Date.now());
+      // Formulario de carga (punto 3): reusado tal cual, oculto por defecto
+      // cuando hay un compromiso vigente que el usuario puede "Cambiar", y
+      // siempre visible cuando no hay compromiso o el último quedó cerrado
+      // (para cargar el siguiente). Poblado desde COMMITMENT_UI_TIPOS.
+      const _commitFormHtml = (visible) => `<div id="call-commit-form-${escHtml(l.id)}" style="${visible ? '' : 'display:none; margin-top:10px;'}">
+        <select id="call-commit-tipo-${escHtml(l.id)}" onchange="window._callCommitHintUpdate('${escHtml(l.id)}')" style="width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; cursor:pointer; margin-bottom:6px;">
+          <option value="">Sin compromiso</option>
+          ${COMMITMENT_UI_TIPOS.map(t => `<option value="${escHtml(t.key)}">${escHtml(t.label)}</option>`).join('')}
+        </select>
+        <select id="call-commit-parte-${escHtml(l.id)}" style="width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; cursor:pointer; margin-bottom:6px;">
+          <option value="yo">Me comprometí yo</option>
+          <option value="prospecto">Se comprometió él</option>
+        </select>
+        <input type="text" id="call-commit-motivo-${escHtml(l.id)}" maxlength="200" placeholder="Motivo (opcional)" style="width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:12.5px; font-family:inherit; margin-bottom:4px;">
+        <div id="call-commit-hint-${escHtml(l.id)}" style="font-size:10px; color:var(--text-tertiary); margin-bottom:8px;"></div>
+        <button class="call-action-btn" onclick="window._callsSetCommitment('${escHtml(l.id)}')">Guardar compromiso</button>
+      </div>`;
+
+      let commitmentBlockHtml;
+      if (_commitEstado === 'pendiente' || _commitEstado === 'vencido') {
+        const c = l.commitment;
+        const _cVenc = _commitEstado === 'vencido';
+        const _cCol = _cVenc ? 'var(--warning)' : 'var(--accent)';
+        const _cFecha = c.dueAt ? new Date(c.dueAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+        const _cParteTxt = c.parte === 'yo' ? 'Me comprometí yo' : 'Se comprometió él';
+        // D-04: 'incumplido' se reserva para compromisos del PROSPECTO ("No
+        // cumplió" — dato de scoring futuro, no un reproche); el cierre de un
+        // compromiso PROPIO que ya no corresponde usa 'vencido' ("Ya no aplica").
+        const _cCloseBtn = c.parte === 'prospecto'
+          ? `<button class="call-action-btn" onclick="window._callsCloseCommitment('${escHtml(l.id)}', 'incumplido')">No cumplió</button>`
+          : `<button class="call-action-btn" onclick="window._callsCloseCommitment('${escHtml(l.id)}', 'vencido')">Ya no aplica</button>`;
+        commitmentBlockHtml = `<div style="margin:0 0 12px; padding:10px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${_cCol}; border-radius:8px;">
+          <div style="font-size:12.5px; color:var(--text-primary); font-weight:600; margin-bottom:3px;">${escHtml(_commitmentLabel(c.tipo))}${_cVenc ? ' <span style="color:var(--warning); font-weight:600;">· vencido</span>' : ''}</div>
+          <div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:2px;">${escHtml(_cParteTxt)}${c.canal ? ` · ${escHtml(c.canal)}` : ''}</div>
+          <div style="font-size:11.5px; color:${_cCol}; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${escHtml(_cFecha)}</div>
+          ${c.motivo ? `<div style="font-size:11.5px; color:var(--text-tertiary); margin-top:4px;">${escHtml(c.motivo)}</div>` : ''}
+          <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+            <button class="call-action-btn" onclick="window._callsCloseCommitment('${escHtml(l.id)}', 'cumplido')">Cumplido</button>
+            ${_cCloseBtn}
+            <button class="call-action-btn" onclick="window._callCommitToggleForm('${escHtml(l.id)}')">Cambiar</button>
+          </div>
+          ${_commitFormHtml(false)}
+        </div>`;
+      } else if (_commitEstado === 'cumplido' || _commitEstado === 'incumplido') {
+        const c = l.commitment;
+        const _cClosedTxt = _commitEstado === 'cumplido' ? 'Cumplido' : 'No cumplió';
+        const _cClosedAt = c.closedAt ? new Date(c.closedAt).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+        commitmentBlockHtml = `<div style="font-size:11.5px; color:var(--text-secondary); margin-bottom:10px;">${escHtml(_cClosedTxt)} — ${escHtml(_commitmentLabel(c.tipo))}${_cClosedAt ? ` · ${escHtml(_cClosedAt)}` : ''}</div>
+          ${_commitFormHtml(true)}`;
+      } else {
+        commitmentBlockHtml = _commitFormHtml(true);
+      }
+
       return `<div class="call-detail-panel">
         <!-- Columna izquierda: ficha + histórico -->
         <div class="call-detail-section">
@@ -7973,6 +8130,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <h4 class="call-detail-section-title">Nota pre-call (qué decir / contexto)</h4>
           <textarea id="call-precall-note-${escHtml(l.id)}" class="call-note-input" style="min-height:60px; max-height:140px;" placeholder="Antes de discar: contexto del lead, ángulo de apertura, info que vi en su web…" onblur="window._callsSavePrecallNote('${escHtml(l.id)}')">${escHtml(l.precallNote || '')}</textarea>
           <p style="font-size:10px; color:var(--text-tertiary); margin:-4px 0 8px;">Se guarda al hacer click afuera. Aparece también en el panel de llamada activa.</p>
+
+          <h4 class="call-detail-section-title">Compromiso</h4>
+          ${commitmentBlockHtml}
 
           <h4 class="call-detail-section-title">Follow-up programado</h4>
           <div class="call-followups">
