@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T02:48:11.795Z"
+last_updated: "2026-08-15T12:59:00.837Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
@@ -39,10 +39,11 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 30 (GATE — Cierra la llamada, define el próximo paso) — planificada en 3 planes (30-01 backend, 30-02 frontend, 30-03 feedback GATE-04); 1/3 ejecutado.
-Status: 30-01 (Backend: defaults D-02 + red de seguridad GATE-01 + override sanitizado + esperar_respuesta) **COMPLETE** (2026-08-15). `_applyCallOutcome` garantiza por construcción que ningún outcome no-terminal deja el lead sin `nextAction`: `answered_interested` → callback +3 días manual, `hung_up` 1er corte → cadencia +24h, `placeholder_sent` → esperar_respuesta +48h, override sanitizado del cliente sobre `call-disposition`, y una red de seguridad final que nunca responde 4xx (protege también el webhook del agente de voz). Próximo paso: 30-02 (frontend — el control de UI que obliga a elegir antes de confirmar, D-01 capa cliente) y 30-03 (GATE-04, aviso universal de destino).
+Phase: 30 (gate-proximo-paso) — EXECUTING
+Plan: 1 of 3
+Status: Executing Phase 30
 Resume file: None
-Last activity: 2026-08-15 -- 30-01 ejecutado (defaults D-02, red de seguridad GATE-01, override sanitizado, esperar_respuesta en send-placeholder, 12 tests nuevos en tests/gate-next-action.test.js + 2 aserciones desactualizadas de la Phase 29 corregidas), suite completa 1320/1320
+Last activity: 2026-08-15 -- Phase 30 execution started
 
 Phase 29 (NEXT — El reloj único): **COMPLETE** (4/4 planes, 2026-08-14).
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
@@ -235,13 +236,13 @@ modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
 
-- **Status:** Executing Phase 28
+- **Status:** Executing Phase 30
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
 
-- **Last activity:** 2026-08-14
+- **Last activity:** 2026-08-15
   preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
   push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
   `20260725c`, los 3 endpoints nuevos responden 401 (vivos). ⚠️ El push
@@ -1009,7 +1010,9 @@ read-path `_computeFollowupsDue` deriva de `_leadNextAction` excluyendo
 `origen==='cadencia'`]; medido contra datos reales: badge de follow-ups
 0→10 (único cambio visible de toda la fase, aviso redactado en
 `29-03-SUMMARY.md`). 29-04: `POST /api/admin/backfill-next-action` [dryRun
+
 + backup + mutex + idempotente] ensayado contra copia de `data/setters.json`
+
 real [6.413 leads]: 166 migrables [165 con `callbackAt`, 1 solo con
 `followUps`], `apply===dryRun`, segunda corrida idempotente
 [`updated:0`]; 16 tests nuevos [`tests/next-action-migration.test.js`];
@@ -1047,10 +1050,12 @@ planificar Phase 25 [Panel Agente de voz] o adelantar 26/27 en paralelo).*
   Actualizados (`tests/hangup-cap.test.js`, `tests/disposition-enforcement.test.js`)
   — no estaban en `files_modified` del plan pero son consecuencia directa
   de D-02. Detalle completo en `30-01-SUMMARY.md`.
+
 - **30-01:** `_gateSanitizeNextActionOverride` NO se expone en
   `globalThis.__voiceAgent` — el acceptance criterion pedía "exactamente 2
   hits" del nombre de la función en todo `index.js` (declaración + uso en
   el endpoint). Se ejercita solo vía HTTP en los tests.
+
 - **30-01:** *Last updated: 2026-08-15 (30-01 ejecutado — el backend del
   gate: defaults D-02 por outcome dentro de `_applyCallOutcome`
   [`answered_interested` → callback +3d manual, `hung_up` 1er corte →

@@ -75,7 +75,7 @@ recordarle, el milestone falló.
 |---|-------|------|-----------|
 | 28 | 3/3 | Complete   | 2026-08-14 |
 | 29 | NEXT — El reloj único (4/4 planes, COMPLETE) | NEXT-01..04 | — |
-| 30 | GATE — Cierra la llamada, define el próximo paso (1/3 planes) | GATE-01, GATE-02, GATE-04 | 29 |
+| 30 | 2/3 | In Progress|  |
 | 31 | COMM — Compromisos como objeto | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista | ACT-01..05 | 29, 31 |
 | 33 | DIAL — Power Dialer como motor único | DIAL-01..04 | 29, 30, 32 |
@@ -229,7 +229,7 @@ fecha ya existe desde la Phase 28.)
 Plans:
 
 - [x] 30-01-PLAN.md — Backend: defaults D-02 por outcome + red de seguridad GATE-01 + override sanitizado + esperar_respuesta en el hold (wave 1)
-- [ ] 30-02-PLAN.md — Frontend: paso "Próximo paso" para Interesado (+3 días propuestos, atajos y calendario) + fix de expulsión del Power Dialer (wave 2)
+- [x] 30-02-PLAN.md — Frontend: paso "Próximo paso" para Interesado (+3 días propuestos, atajos y calendario) + fix de expulsión del Power Dialer (wave 2)
 - [ ] 30-03-PLAN.md — Feedback GATE-04: destino universal por vista real + integración en el banner del Power Dialer (wave 3)
 
 ### Phase 31: COMM — Compromisos como objeto
