@@ -115,9 +115,12 @@ describe("PANEL-DRAG-PURE: aserciones de fuente sobre public/index.html (D-11)",
     expect((htmlSrc.match(/id="telnyx-script-recenter"/g) || []).length).toBe(1);
   });
 
-  it("cache-buster de app.js bumpeado a v=20260814c", () => {
+  it("cache-buster de app.js bumpeado desde el baseline de este plan (28-03/20260814c)", () => {
+    // Fase 30 Plan 02 (2026-08-15) bumpeó de nuevo el cache-buster al tocar
+    // app.js/index.html — mismo criterio que tests/dtpicker-wiring.test.js
+    // ("no quedó en un valor anterior", no fija el valor exacto).
     const m = htmlSrc.match(/app\.js\?v=([0-9a-z]+)/i);
-    expect(m && m[1]).toBe("20260814c");
+    expect(m && m[1] >= "20260814c").toBe(true);
   });
 });
 
