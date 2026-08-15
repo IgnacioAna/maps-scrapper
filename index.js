@@ -3967,53 +3967,96 @@ function _repairMexicanPhone(phone, city) {
   }
   return null;
 }
-globalThis.__phoneRepair = { _repairColombianPhone, _repairMexicanPhone };
+// ---------------------------------------------------------------------------
+// Reparación genérica del resto de los países.
+//
+// Mismo problema que México, otras formas. Verificado uno por uno contra la
+// base (2026-08-14) antes de escribir cada regla:
+//
+//   nacional sin código de país  España `605 14 00 77`, Costa Rica `55059966`.
+//                                Se le antepone el código. Los largos nacionales
+//                                son fijos (ES 9, CR 8), así que no hay duda.
+//   prefijo de troncal 0         Ecuador `099 583 9310`, Uruguay `+598097444555`.
+//                                El 0 es para marcar DENTRO del país; en E.164 se cae.
+//   basura concatenada           Colombia `5731750311112202033202020200`. Los
+//                                primeros 12 dígitos son un celular válido y el
+//                                resto es relleno repetido (`2020202…`).
+//   área de EE.UU.               Costa Rica `+7866860703` (Miami), Colombia
+//                                `+8569869465`. Turismo dental: la clínica
+//                                publica una línea gringa. Igual que Tijuana.
+//
+// Lo que NO se toca, con el motivo (sale en `unresolved`):
+//   · Chile `+566006560240` — los 600 son números de servicio chilenos, no se
+//     alcanzan desde el exterior. Están bien escritos y son inalcanzables igual.
+//   · Perú `514856001` — 51 + 7 dígitos: le falta UNO. Se podría suponer que es
+//     el 1 de Lima, pero eso es inventar un dígito, no repararlo.
+//   · Uruguay `5985511989395459` — es un número BRASILEÑO con un 598 pegado
+//     adelante (cadenas de la frontera en Salto). Sacárselo lo deja discable en
+//     un mercado que no se trabaja, y con el país mal cargado.
+//   · País mal cargado (`+33…` en España, `+58…`, `+595…`): el número está
+//     perfecto, lo que está mal es la etiqueta. Es otro arreglo, no éste.
+const _NATIONAL_NO_CC = {
+  'España': { cc: '34', len: 9, start: /^[6789]/ },
+  'Costa Rica': { cc: '506', len: 8, start: /^[2-8]/ }
+};
+const _TRUNK_ZERO = {
+  'Ecuador': { cc: '593', len: 10, start: /^09/ },   // 09X XXX XXXX → +593 9X XXX XXXX
+  'Uruguay': { cc: '598', len: 9, start: /^09/ }     // 09X XXX XXX  → +598 9X XXX XXX
+};
+// Áreas NANP que aparecen en fichas latinoamericanas (turismo dental / frontera).
+// Ninguna colisiona con el formato nacional de esos países.
+const _NANP_EN_LATAM = new Set([
+  '619', '858', '760', '928', '915', '956', '520', '602', '480', // frontera MX
+  '786', '561', '954', '305', '702', '856', '212',               // Miami / NJ / Vegas
+  '866', '877', '888', '855'                                     // toll-free de EE.UU.
+]);
 
-// POST /api/admin/repair-mx-phones — gemelo de repair-co-phones (dryRun por
-// defecto, guarda el número viejo en `phoneBroken`, resetea el lookup porque el
-// número CAMBIÓ, y no crea duplicados). `unresolved` devuelve los que quedaron
-// sin tocar para revisarlos a mano.
-app.post('/api/admin/repair-mx-phones', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = true } = req.body || {};
-  const data = loadSettersData();
-  const leads = data.leads || {};
-  const enUso = new Set();
-  for (const id of Object.keys(leads)) {
-    const p = String(leads[id]?.phone || '').replace(/\D/g, '');
-    if (p) enUso.add(p);
+function _repairGenericPhone(phone, country) {
+  let dg = String(phone || '').replace(/\D/g, '');
+  if (!dg) return null;
+
+  // 1) Nacional sin código de país.
+  const nat = _NATIONAL_NO_CC[country];
+  if (nat && dg.length === nat.len && nat.start.test(dg)) return `+${nat.cc}${dg}`;
+
+  // 2) Troncal 0, con o sin el código de país ya delante.
+  const tz = _TRUNK_ZERO[country];
+  if (tz) {
+    const sinCC = dg.startsWith(tz.cc) ? dg.slice(tz.cc.length) : dg;
+    if (sinCC.length === tz.len && tz.start.test(sinCC)) return `+${tz.cc}${sinCC.slice(1)}`;
   }
-  let scanned = 0, repaired = 0, collided = 0;
-  const sample = [], unresolved = [], byFix = { mx: 0, us: 0 };
-  for (const id of Object.keys(leads)) {
-    const l = leads[id];
-    if (!l || l.country !== 'México' || !l.phone) continue;
-    const dg = String(l.phone).replace(/\D/g, '');
-    if (dg.startsWith('52') && dg.length === 12) continue;   // ya está bien
-    if (dg.startsWith('1') && dg.length === 11) continue;    // +1 válido
-    scanned++;
-    const nuevo = _repairMexicanPhone(l.phone, l.city);
-    if (!nuevo) {
-      if (unresolved.length < 40) unresolved.push({ id, name: l.name, phone: l.phone, city: l.city });
-      continue;
-    }
-    if (enUso.has(nuevo.replace(/\D/g, ''))) { collided++; continue; }
-    if (nuevo.startsWith('+1')) byFix.us++; else byFix.mx++;
-    if (sample.length < 12) sample.push({ id, name: l.name, city: l.city, antes: l.phone, despues: nuevo });
-    if (!dryRun) {
-      l.phoneBroken = l.phone;
-      l.phone = nuevo;
-      l.phoneRepairedAt = new Date().toISOString();
-      l.lookupAt = ''; l.phoneType = ''; l.lookupCarrier = ''; l.lookupError = '';
-      enUso.add(nuevo.replace(/\D/g, ''));
-    }
-    repaired++;
+
+  // 3) Colombia con basura pegada: los primeros 12 dígitos son el celular real.
+  //    Se exige que lo que queda sea un celular válido (573 + 9) — si el número
+  //    recortado no cierra, no se recorta.
+  if (country === 'Colombia' && dg.length > 12 && dg.startsWith('573')) {
+    const corto = dg.slice(0, 12);
+    if (/^573\d{9}$/.test(corto)) return `+${corto}`;
   }
-  if (!dryRun && repaired) {
-    try { makeBackup('repair-mx-phones'); } catch {}
-    saveSettersData(data);
+
+  // 4) Línea de EE.UU. publicada por una clínica latinoamericana.
+  //    Va ÚLTIMO a propósito: primero tienen que correr las reglas nacionales,
+  //    porque un celular colombiano suelto (3XXXXXXXXX) también mide 10 dígitos.
+  if (dg.length === 10 && _NANP_EN_LATAM.has(dg.slice(0, 3))) return `+1${dg}`;
+
+  return null;
+}
+
+// Enruta cada lead al reparador de su país. México y Colombia tienen los suyos
+// (la LADA vs. área de EE.UU. y la migración de numeración de 2022 no entran en
+// ninguna regla genérica); el resto cae en `_repairGenericPhone`.
+function _repairLeadPhone(lead) {
+  if (!lead || !lead.phone) return null;
+  const country = lead.country;
+  if (country === 'México') return _repairMexicanPhone(lead.phone, lead.city);
+  if (country === 'Colombia') {
+    return _repairColombianPhone(lead.phone) || _repairGenericPhone(lead.phone, country);
   }
-  res.json({ ok: true, dryRun, scanned, repaired, collided, byFix, sample, unresolved });
-});
+  return _repairGenericPhone(lead.phone, country);
+}
+globalThis.__phoneRepair = {
+  _repairColombianPhone, _repairMexicanPhone, _repairGenericPhone, _repairLeadPhone
+};
 
 // POST /api/admin/repair-co-phones — dryRun por defecto. Guarda el número viejo
 // en `phoneBroken` y resetea el lookup (el número nuevo nunca se validó).
@@ -4052,6 +4095,75 @@ app.post('/api/admin/repair-co-phones', requireAuth, requireRole('admin'), (req,
     saveSettersData(data);
   }
   res.json({ ok: true, dryRun, scanned, repaired, skipped, collided, sample });
+});
+
+// POST /api/admin/repair-phones — repara los teléfonos rotos de TODA la base.
+// dryRun por defecto. Guarda el número viejo en `phoneBroken`, resetea el lookup
+// (el número cambió: lo que sabíamos del anterior no aplica) y no crea duplicados.
+//
+// `onlyAlive` (default true) se queda con los leads que se van a llamar de
+// verdad: fuera descartados, agendados, cerrados y los marcados no-llamar. No
+// tiene sentido gastar validaciones en leads que nadie va a discar.
+//
+// `unresolved` devuelve lo que quedó sin tocar, con el motivo, para revisarlo.
+app.post('/api/admin/repair-phones', requireAuth, requireRole('admin'), (req, res) => {
+  const { dryRun = true, onlyAlive = true } = req.body || {};
+  const data = loadSettersData();
+  const leads = data.leads || {};
+  const enUso = new Set();
+  for (const id of Object.keys(leads)) {
+    const p = String(leads[id]?.phone || '').replace(/\D/g, '');
+    if (p) enUso.add(p);
+  }
+  const _vivo = (l) => !l.doNotCall && !['descartado', 'agendado', 'cerrado'].includes(l.estado);
+  // Largos E.164 válidos por país: lo que no cierra, es candidato a reparar.
+  const _OK = {
+    'Colombia': ['57', [12]], 'España': ['34', [11]], 'Perú': ['51', [10, 11]],
+    'Uruguay': ['598', [11]], 'Chile': ['56', [11]], 'Ecuador': ['593', [11, 12]],
+    'Costa Rica': ['506', [11]], 'México': ['52', [12]], 'Estados Unidos': ['1', [11]],
+    'Argentina': ['54', [12, 13]], 'Bolivia': ['591', [11]], 'Panamá': ['507', [11]],
+    'Guatemala': ['502', [11]], 'Paraguay': ['595', [12]], 'Brasil': ['55', [12, 13]]
+  };
+  const _roto = (l) => {
+    const dg = String(l.phone || '').replace(/\D/g, '');
+    if (!dg) return false;
+    if (dg.startsWith('1') && dg.length === 11) return false;   // +1 válido, venga de donde venga
+    const spec = _OK[l.country];
+    if (!spec) return false;                                    // país sin regla: no opinamos
+    return !(dg.startsWith(spec[0]) && spec[1].includes(dg.length));
+  };
+
+  let scanned = 0, repaired = 0, collided = 0;
+  const sample = [], unresolved = [], byCountry = {};
+  for (const id of Object.keys(leads)) {
+    const l = leads[id];
+    if (!l || !l.phone) continue;
+    if (onlyAlive && !_vivo(l)) continue;
+    if (!_roto(l)) continue;
+    scanned++;
+    const nuevo = _repairLeadPhone(l);
+    if (!nuevo) {
+      if (unresolved.length < 60) unresolved.push({ id, name: l.name, phone: l.phone, country: l.country, city: l.city });
+      continue;
+    }
+    if (enUso.has(nuevo.replace(/\D/g, ''))) { collided++; continue; }
+    const k = `${l.country} → ${nuevo.slice(0, 3)}`;
+    byCountry[k] = (byCountry[k] || 0) + 1;
+    if (sample.length < 20) sample.push({ id, name: l.name, country: l.country, antes: l.phone, despues: nuevo });
+    if (!dryRun) {
+      l.phoneBroken = l.phone;
+      l.phone = nuevo;
+      l.phoneRepairedAt = new Date().toISOString();
+      l.lookupAt = ''; l.phoneType = ''; l.lookupCarrier = ''; l.lookupError = '';
+      enUso.add(nuevo.replace(/\D/g, ''));
+    }
+    repaired++;
+  }
+  if (!dryRun && repaired) {
+    try { makeBackup('repair-phones'); } catch {}
+    saveSettersData(data);
+  }
+  res.json({ ok: true, dryRun, onlyAlive, scanned, repaired, collided, byCountry, sample, unresolved });
 });
 
 app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req, res) => {

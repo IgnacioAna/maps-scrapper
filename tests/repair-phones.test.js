@@ -10,14 +10,14 @@ process.env.OPENAI_API_KEY = '';
 process.env.MERCURY_API_KEY = '';
 process.env.QWEN_API_KEY = '';
 
-let _repairMexicanPhone;
+let _repairMexicanPhone, _repairGenericPhone, _repairLeadPhone;
 
 beforeAll(async () => {
   fs.writeFileSync(path.join(tmpData, 'auth.json'), JSON.stringify({ users: [], sessions: [], invites: [] }));
   fs.writeFileSync(path.join(tmpData, 'setters.json'), JSON.stringify({ setters: [], leads: {}, calendar: [] }));
   fs.writeFileSync(path.join(tmpData, 'history.json'), JSON.stringify({ entries: {} }));
   await import('../index.js');
-  _repairMexicanPhone = globalThis.__phoneRepair._repairMexicanPhone;
+  ({ _repairMexicanPhone, _repairGenericPhone, _repairLeadPhone } = globalThis.__phoneRepair);
 });
 
 describe('_repairMexicanPhone', () => {
@@ -71,5 +71,67 @@ describe('_repairMexicanPhone', () => {
     expect(_repairMexicanPhone(fix, 'Tijuana')).toBeNull();
     const fix2 = _repairMexicanPhone('+6647480639', 'Tijuana');
     expect(_repairMexicanPhone(fix2, 'Tijuana')).toBeNull();
+  });
+});
+
+describe('_repairGenericPhone — resto de los países', () => {
+  it('nacional sin código de país: España (9 dígitos) y Costa Rica (8)', () => {
+    expect(_repairGenericPhone('605 14 00 77', 'España')).toBe('+34605140077');   // móvil
+    expect(_repairGenericPhone('963 32 00 07', 'España')).toBe('+34963320007');   // fijo
+    expect(_repairGenericPhone('640689468', 'España')).toBe('+34640689468');
+    expect(_repairGenericPhone('55059966', 'Costa Rica')).toBe('+50655059966');
+  });
+
+  it('cae el 0 de troncal: Ecuador y Uruguay', () => {
+    expect(_repairGenericPhone('099 583 9310', 'Ecuador')).toBe('+593995839310');
+    expect(_repairGenericPhone('+598097444555', 'Uruguay')).toBe('+59897444555');
+  });
+
+  it('Colombia con basura concatenada: se recorta al celular real', () => {
+    expect(_repairGenericPhone('5731750311112202033202020200', 'Colombia')).toBe('+573175031111');
+    expect(_repairGenericPhone('57320286003220202020202020312033', 'Colombia')).toBe('+573202860032');
+    expect(_repairGenericPhone('+57313203656082', 'Colombia')).toBe('+573132036560');
+    // Si lo que queda al recortar NO es un celular válido, no se recorta.
+    expect(_repairGenericPhone('+5713434530255', 'Colombia')).toBeNull();
+  });
+
+  it('línea de EE.UU. en una clínica latinoamericana (turismo dental)', () => {
+    expect(_repairGenericPhone('+7866860703', 'Costa Rica')).toBe('+17866860703'); // Miami
+    expect(_repairGenericPhone('+8662181036', 'Costa Rica')).toBe('+18662181036'); // toll-free
+    expect(_repairGenericPhone('+8569869465', 'Colombia')).toBe('+18569869465');   // New Jersey
+  });
+
+  it('la regla del país corre ANTES que la de EE.UU.: un celular colombiano suelto también mide 10 dígitos', () => {
+    // 3186944802 es celular colombiano, no un área NANP. Va por _repairColombianPhone.
+    expect(_repairLeadPhone({ phone: '+3186944802', country: 'Colombia' })).toBe('+573186944802');
+  });
+
+  it('NO repara lo que no tiene arreglo honesto', () => {
+    // Chile 600: número de servicio nacional, inalcanzable desde el exterior.
+    expect(_repairGenericPhone('+566006560240', 'Chile')).toBeNull();
+    // Perú 51 + 7 dígitos: falta UN dígito, suponerlo sería inventarlo.
+    expect(_repairGenericPhone('514856001', 'Perú')).toBeNull();
+    // Uruguay con un número brasileño pegado detrás del 598.
+    expect(_repairGenericPhone('5985511989395459', 'Uruguay')).toBeNull();
+    // País mal cargado: el número está bien, la etiqueta no. No es este arreglo.
+    expect(_repairGenericPhone('+33628270118', 'España')).toBeNull();
+    expect(_repairGenericPhone('+584144713978', 'España')).toBeNull();
+  });
+
+  it('no toca lo que ya está en E.164 correcto', () => {
+    expect(_repairGenericPhone('+34951818818', 'España')).toBeNull();
+    expect(_repairGenericPhone('+50661443030', 'Costa Rica')).toBeNull();
+    expect(_repairGenericPhone('+573222561204', 'Colombia')).toBeNull();
+    expect(_repairGenericPhone('+59898500850', 'Uruguay')).toBeNull();
+  });
+
+  it('es idempotente en todos los países', () => {
+    for (const [phone, country] of [['605 14 00 77', 'España'], ['55059966', 'Costa Rica'],
+      ['099 583 9310', 'Ecuador'], ['5731750311112202033202020200', 'Colombia'],
+      ['+7866860703', 'Costa Rica']]) {
+      const fix = _repairGenericPhone(phone, country);
+      expect(fix).toBeTruthy();
+      expect(_repairGenericPhone(fix, country)).toBeNull();
+    }
   });
 });
