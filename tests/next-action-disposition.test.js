@@ -149,13 +149,22 @@ describe('nextAction — el reloj único en disposiciones (Phase 29-02)', () => 
     expect(r.body.lead.callbackAt).toBeFalsy();
   });
 
-  it('consumo con vencido: callback manual VENCIDO + hung_up (1er corte) → nextAction null (caso real 2026-08-12)', async () => {
+  it('consumo con vencido: callback manual VENCIDO + hung_up (1er corte) → cadencia fresca +24h, NO el vencido (caso real 2026-08-12, default Phase 30)', async () => {
+    // El caso real del 2026-08-12 era que el callback viejo quedaba
+    // arrastrado para siempre (+60 de score, lead clavado 1° en Prioridad).
+    // La Phase 29 lo consumía dejando nextAction null; la Phase 30 (D-02) va
+    // un paso más allá: el 1er corte ya no deja el lead sin próximo paso —
+    // programa una cadencia +24h que reemplaza al vencido.
     const stale = new Date(Date.now() - 18 * 24 * 3600000).toISOString();
     await disp('l_consume_stale', { outcome: 'callback_later', callbackAt: stale });
     const r = await disp('l_consume_stale', { outcome: 'hung_up' });
     expect(r.body.lead.estado).not.toBe('descartado'); // 1er corte, sigue vivo
-    expect(r.body.lead.nextAction).toBeNull();
-    expect(r.body.lead.callbackAt).toBeFalsy();
+    expect(r.body.lead.nextAction).toBeTruthy();
+    expect(r.body.lead.nextAction.origen).toBe('cadencia');
+    expect(hoursFromNow(r.body.lead.nextAction.dueAt)).toBeGreaterThan(23);
+    expect(hoursFromNow(r.body.lead.nextAction.dueAt)).toBeLessThan(25);
+    expect(new Date(r.body.lead.nextAction.dueAt).getTime()).toBeGreaterThan(Date.now());
+    expect(r.body.lead.callbackAt).toBe(r.body.lead.nextAction.dueAt); // espejo D-03
   });
 
   it('2do hung_up → descartado, nextAction null', async () => {
@@ -165,13 +174,19 @@ describe('nextAction — el reloj único en disposiciones (Phase 29-02)', () => 
     expect(r.body.lead.nextAction).toBeNull();
   });
 
-  it('answered_interested → nextAction null (hoy no exige uno; la Phase 30 sí)', async () => {
+  it('answered_interested → nextAction callback manual a +3 días (Phase 30/D-02: default de seguimiento del interesado)', async () => {
     const r = await disp('l_interested_terminal', { outcome: 'answered_interested' });
     expect(r.body.lead.estado).toBe('interesado');
-    expect(r.body.lead.nextAction).toBeNull();
+    const { nextAction, callbackAt } = r.body.lead;
+    expect(nextAction).toBeTruthy();
+    expect(nextAction.tipo).toBe('callback');
+    expect(nextAction.origen).toBe('manual');
+    expect(hoursFromNow(nextAction.dueAt)).toBeGreaterThan(71);
+    expect(hoursFromNow(nextAction.dueAt)).toBeLessThan(73);
+    expect(callbackAt).toBe(nextAction.dueAt); // espejo D-03
   });
 
-  it('scheduled_with_admin → nextAction null (hoy no exige uno; la Phase 30 sí)', async () => {
+  it('scheduled_with_admin → nextAction null (terminal, sin cambios en Phase 30)', async () => {
     const fecha = new Date(Date.now() + 2 * 24 * 3600000).toISOString();
     const r = await disp('l_scheduled', { outcome: 'scheduled_with_admin', scheduled: { fecha, nombre: 'Dra. Test' } });
     expect(r.body.lead.estado).toBe('agendado');
