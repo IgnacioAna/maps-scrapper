@@ -11365,11 +11365,11 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
   }
 
   // T-30-01/T-30-02: override de próximo paso mandado por el cliente (ya
-  // sanitizado en el endpoint por _gateSanitizeNextActionOverride — nunca
-  // llega acá basura). Se aplica DESPUÉS de todos los defaults/cadencias de
-  // arriba (gana sobre cualquiera de ellos) y SOLO si el lead no quedó
-  // terminal: un estado terminal siempre gana sobre lo que haya mandado el
-  // cliente (T-30-02, ej. no se puede "revivir" un descartado con una fecha).
+  // sanitizado en el endpoint — whitelist-and-coerce, nunca llega acá
+  // basura). Se aplica DESPUÉS de todos los defaults/cadencias de arriba
+  // (gana sobre cualquiera de ellos) y SOLO si el lead no quedó terminal: un
+  // estado terminal siempre gana sobre lo que haya mandado el cliente
+  // (T-30-02, ej. no se puede "revivir" un descartado con una fecha).
   if (opts.nextActionOverride && !GATE_TERMINAL_ESTADOS.has(lead.estado)) {
     _setNextAction(lead, { ...opts.nextActionOverride, origen: 'manual', createdBy: opts.actorName || '' }, opts.nowIso);
   }
@@ -11403,9 +11403,11 @@ globalThis.__voiceAgent = {
   _setNextAction, _clearNextAction, _deriveNextActionFromLegacy, _leadNextAction,
   _nextActionTemplateForDelta,
   NEXT_ACTION_TIPOS, NEXT_ACTION_CANALES, NEXT_ACTION_ORIGENES, NEXT_ACTION_TEMPLATES,
-  // Phase 30 (GATE): defaults D-02 + red de seguridad + override sanitizado.
+  // Phase 30 (GATE): defaults D-02 + red de seguridad. El sanitizador del
+  // override del cliente NO se expone acá a propósito — se ejercita vía HTTP
+  // en los tests, no como helper puro.
   GATE_INTERESADO_DELTA_MS, GATE_CADENCIA_DELTA_MS, GATE_PLACEHOLDER_DELTA_MS,
-  GATE_TERMINAL_ESTADOS, _gateSanitizeNextActionOverride,
+  GATE_TERMINAL_ESTADOS,
 };
 
 const CALL_OUTCOMES = new Set([
@@ -11455,12 +11457,16 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.callbackShared = false;
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
   // Phase 17: razón de descalificación (whitelist). Solo se persiste si es válida.
   const cleanReason = (typeof disqualifyReason === 'string' && DISQUALIFY_REASONS.has(disqualifyReason)) ? disqualifyReason : '';
+  // GATE-02 (Phase 30, D-01): el cliente puede proponer su propia fecha de
+  // próximo paso. Se sanitiza acá (whitelist-and-coerce, nunca 400) y se pasa
+  // a _applyCallOutcome — null si no vino nada o vino inválido.
+  const cleanNextActionOverride = _gateSanitizeNextActionOverride(nextAction);
   // Sprint 25: tags de objeción válidos (solo para answered_not_interested,
   // pero los permitimos en cualquier outcome por si en el futuro se usan
   // en otros casos). Whitelist estricta para evitar inyección de tags raros.
@@ -11598,6 +11604,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     doNotCall,
     actorSetterId: req.auth?.user?.role === 'setter' ? req.auth.user.setterId : (lead.assignedTo || ''),
     actorName: req.auth?.user?.name || '',
+    nextActionOverride: cleanNextActionOverride,
   });
 
   // Phase 20: resolver (eliminar) EXACTAMENTE UN registro pendiente de este
@@ -11890,6 +11897,18 @@ app.post('/api/setters/leads/:id/send-placeholder', requireAuth, async (req, res
     if (l.callLog.length > 500) l.callLog = l.callLog.slice(-500);
     l.placeholderSentAt = nowIso;
     l.lastContactAt = nowIso;
+    // GATE-02 (Phase 30, D-02): el hold de calendario deja al lead esperando
+    // respuesta +48h — antes del gate quedaba en la cola de Llamadas como si
+    // no hubiera pasado nada. Sale por 48h (el filtro de callbackAt futuro
+    // del frontend) y vuelve solo cuando vence.
+    _setNextAction(l, {
+      tipo: 'esperar_respuesta',
+      dueAt: new Date(Date.parse(nowIso) + GATE_PLACEHOLDER_DELTA_MS).toISOString(),
+      canal: 'email',
+      motivo: 'esperando respuesta del hold',
+      origen: 'manual',
+      createdBy: u.name || '',
+    }, nowIso);
     return l;
   });
   res.json({ ok: true, lead: updated || lead, sentTo: toEmail, when: startISO });

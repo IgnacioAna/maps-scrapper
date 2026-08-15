@@ -261,12 +261,17 @@ describe("auto-marca y corrección (D-03)", () => {
     expect(r3.status).toBe(200);
     expect(r3.body.lead.estado).toBe("interesado");
     expect(r3.body.lead.autoDiscarded).toBe(false);
-    // El snapshot restaura cb1 (deshace la cadencia fantasma), pero la
-    // disposición corregida lo CONSUME después (regla 2026-08-12: toda
+    // El snapshot restaura cb1 (deshace la cadencia fantasma), y la
+    // disposición corregida CONSUME ese vencido (regla 2026-08-12: toda
     // disposición consume el callback pendiente) — atendió y está interesado,
-    // el reintento de cadencia ya no aplica. Sin esto, corregir a "me cortó"
-    // reabriría el bug del callback zombie por la vía de la corrección.
-    expect(r3.body.lead.callbackAt).toBeFalsy();
+    // el reintento de cadencia ya no aplica. Phase 30/D-02: un
+    // answered_interested SIEMPRE programa el default de seguimiento a +3
+    // días (aunque llegue vía corrección) — reemplaza al vencido, no lo deja
+    // vacío.
+    const cbHours = (new Date(r3.body.lead.callbackAt).getTime() - Date.now()) / 3600000;
+    expect(cbHours).toBeGreaterThan(71);
+    expect(cbHours).toBeLessThan(73);
+    expect(r3.body.lead.nextAction.origen).toBe("manual");
     expect(r3.body.lead.callLog.length).toBe(2); // la corrección reemplazó a la auto-marca
     expect(r3.body.lead.cadenceStep).toBe(0); // el connect resetea la racha
   });
