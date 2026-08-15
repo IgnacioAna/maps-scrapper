@@ -290,7 +290,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - [ ] **GATE-03**: Al programar una fecha, se ve un calendario real con el
   mes a la vista y etiquetas relativas ("en 3 días", "el martes"), sin tener
   que contar días a mano. Conserva los atajos rápidos existentes. *(R7)*
-- [ ] **GATE-04**: Al guardar, el sistema dice **a dónde se fue el lead** y
+- [x] **GATE-04**: Al guardar, el sistema dice **a dónde se fue el lead** y
   cómo volver a encontrarlo — hoy "desaparece" y ese es el reclamo #1. *(R2)*
 
 ### COMM — Compromisos como objeto

@@ -39,11 +39,11 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 30 (gate-proximo-paso) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 30
+Phase: 30 (gate-proximo-paso) — VERIFICATION: human_needed
+Plan: 3 of 3 (30-01, 30-02, 30-03 todos con SUMMARY)
+Status: 30-VERIFICATION.md status=human_needed (18/18 must-haves en codigo+tests, 1365/1365 tests verdes); 30-HUMAN-UAT.md creado con 7 items pendientes de click real en browser
 Resume file: None
-Last activity: 2026-08-15 -- Phase 30 execution started
+Last activity: 2026-08-15 -- Phase 30 ejecutada (waves 2 y 3) y verificada; pendiente UAT humano
 
 Phase 29 (NEXT — El reloj único): **COMPLETE** (4/4 planes, 2026-08-14).
 Phase 28 (QUICK — Alivio inmediato): **COMPLETE** (3/3 planes, 2026-08-14).
