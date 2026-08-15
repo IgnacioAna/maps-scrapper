@@ -8654,6 +8654,35 @@ document.addEventListener('DOMContentLoaded', async () => {
           texto: `«${nombre}» sale de la cola — queda agendado en Reuniones agendadas.`,
         };
       }
+      // Phase 31 (D-05/D-10): un compromiso pendiente tiene su propia
+      // sección de Hoy — gana sobre "interesado" porque además de la
+      // expectativa declara quién se comprometió (D-03). Restricción dura:
+      // esta rama solo usa literales y campos del lead — nada de
+      // _commitmentLabel/COMMITMENT_UI_TIPOS, que viven fuera de estos
+      // marcadores y el `new Function` de tests/gate-destination.test.js no
+      // los tendría en scope.
+      if (lead && lead.commitment && lead.commitment.estado === 'pendiente') {
+        const ts = _dispoNextAt(lead);
+        const cuando = ts ? _dispoWhenLabel(ts, now) : '';
+        if (lead.commitment.parte === 'yo') {
+          return {
+            vista: 'en Hoy → Mis compromisos',
+            cuando,
+            tono: 'info',
+            texto: cuando
+              ? `«${nombre}» sale de la cola — vuelve ${cuando} en Hoy → Mis compromisos.`
+              : `«${nombre}» sale de la cola — queda en Hoy → Mis compromisos.`,
+          };
+        }
+        return {
+          vista: 'en Hoy → Esperando del prospecto',
+          cuando,
+          tono: 'info',
+          texto: cuando
+            ? `«${nombre}» sale de la cola — vuelve ${cuando} en Hoy → Esperando del prospecto.`
+            : `«${nombre}» sale de la cola — queda en Hoy → Esperando del prospecto.`,
+        };
+      }
       if (lead && lead.estado === 'interesado') {
         const ts = _dispoNextAt(lead);
         const cuando = ts ? _dispoWhenLabel(ts, now) : '';
@@ -11068,6 +11097,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       motivoInput.value = '';
 
+      // Fase 31 (D-08): compromiso hablado. El modal se REUSA entre leads —
+      // un compromiso pegado del lead anterior sería un dato falso. Reset
+      // SIEMPRE al abrir (cinturón), ANTES de mostrar el modal.
+      const commitTipoSelect = document.getElementById('call-next-commitment-tipo');
+      const commitParteWrap = document.getElementById('call-next-commitment-parte');
+      if (commitTipoSelect) commitTipoSelect.value = '';
+      const _commitPaintParte = (activeParte) => {
+        if (!commitParteWrap) return;
+        commitParteWrap.querySelectorAll('[data-parte]').forEach((b) => {
+          const active = activeParte && b.getAttribute('data-parte') === activeParte;
+          if (active) b.setAttribute('data-parte-active', '1'); else b.removeAttribute('data-parte-active');
+          b.style.borderColor = active ? 'var(--accent)' : 'var(--border-subtle)';
+          b.style.background = active ? 'var(--accent-soft)' : 'var(--bg-surface)';
+        });
+      };
+      _commitPaintParte(null);
+      if (commitParteWrap) commitParteWrap.style.display = 'none';
+      if (commitParteWrap) {
+        commitParteWrap.querySelectorAll('[data-parte]').forEach((b) => {
+          b.onclick = () => _commitPaintParte(b.getAttribute('data-parte'));
+        });
+      }
+      if (commitTipoSelect) {
+        commitTipoSelect.onchange = () => {
+          const tipo = commitTipoSelect.value;
+          qpWrap?.querySelectorAll('.cb-quickpick').forEach((b) => { b.removeAttribute('data-active'); b.style.borderColor = 'var(--border-subtle)'; b.style.background = 'var(--bg-surface)'; });
+          if (!tipo) {
+            fechaInput.value = _toDatetimeLocal(_gateInteresadoDefaultDate(new Date()));
+            _dtPickerSync(fechaInput);
+            if (commitParteWrap) commitParteWrap.style.display = 'none';
+            _commitPaintParte(null);
+            return;
+          }
+          fechaInput.value = _toDatetimeLocal(_commitmentDefaultDate(tipo, new Date()));
+          _dtPickerSync(fechaInput);
+          if (commitParteWrap) commitParteWrap.style.display = '';
+          _commitPaintParte(_commitmentDefaultParte(tipo));
+        };
+      }
+
       // 2026-08-11 (fix #181b): el modal se REUSA entre aperturas. Cinturón:
       // reset SIEMPRE al abrir, no solo la 1ra vez.
       const confirmBtn = document.getElementById('call-next-confirm');
@@ -11094,6 +11163,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             ..._dispoEnforcementBody(leadId),
           };
           if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
+          // Fase 31 (D-08): si el user eligió un tipo de compromiso, viaja en
+          // el MISMO body — mismo dueAtIso que nextAction, para que la fecha
+          // elegida a mano mande sobre el mapa D-06 del backend. "Sin
+          // compromiso específico" no manda nada (commitTipoSelect.value === '').
+          const _commitTipo = commitTipoSelect ? commitTipoSelect.value : '';
+          if (_commitTipo) {
+            const _commitParteBtn = commitParteWrap?.querySelector('[data-parte-active]');
+            const _commitParte = _commitParteBtn ? _commitParteBtn.getAttribute('data-parte') : _commitmentDefaultParte(_commitTipo);
+            body.commitment = {
+              tipo: _commitTipo,
+              parte: _commitParte,
+              canal: _commitmentDefaultCanal(_commitTipo),
+              motivo,
+              dueAt: dueAtIso,
+            };
+          }
           // Nota rápida del Power Dialer (input pd-call-note) — sin esto la
           // nota tipeada ahí se perdía al pasar este outcome por modal.
           const pdNoteEl = document.getElementById('pd-call-note');
@@ -11310,6 +11395,95 @@ document.addEventListener('DOMContentLoaded', async () => {
       ];
     }
     // ─── [30-02] GATE-PURE: FIN ───
+
+    // ─── [31-03] COMMITMENT-PURE: INICIO ───
+    // Fase 31 (2026-08-15): helpers puros del selector de compromiso dentro
+    // del modal "Próximo paso" (D-08) y de la ficha del lead (D-09). Estas
+    // duraciones ESPEJAN el mapa D-06 del backend (COMMITMENT_DELTA_MS_BY_TIPO
+    // en index.js) — si una cambia, cambiar las dos; el test verifica que los
+    // valores coincidan leyendo los dos archivos como texto (mismo criterio
+    // que GATE_INTERESADO_DELTA_MS más arriba). Bloque sin ninguna dependencia
+    // del navegador (nada de DOM, red ni almacenamiento persistente): el test
+    // lo extrae por estos marcadores y lo evalúa aislado, mismo patrón que
+    // [30-02] GATE-PURE / [28-01] DTPICKER-PURE.
+    const COMMITMENT_DELTAS_MS = {
+      hablar_con_socio: 5 * 24 * 60 * 60 * 1000,
+      pensarlo: 3 * 24 * 60 * 60 * 1000,
+      pedir_presupuesto: 3 * 24 * 60 * 60 * 1000,
+      llamar_despues: 24 * 60 * 60 * 1000,
+      otro: 3 * 24 * 60 * 60 * 1000,
+    };
+    // 'enviar_info' NO va en el mapa de arriba a propósito: su fecha inicial
+    // es "hoy" (fin del día), no un delta desde ahora — la resuelve
+    // _commitmentDefaultDate. Piso para que cargarlo a último momento del día
+    // no nazca vencido (mismo criterio que COMMITMENT_ENVIAR_INFO_MIN_MS del
+    // backend).
+    const COMMITMENT_ENVIAR_INFO_MIN_MS = 60 * 60 * 1000;
+
+    // D-08: orden exacto del <select> del modal (idéntico al markup literal
+    // de public/index.html) y default de parte/canal por tipo — los 6 `key`
+    // y los defaults coinciden con COMMITMENT_TIPOS/COMMITMENT_DEFAULT_PARTE/
+    // COMMITMENT_DEFAULT_CANAL del backend.
+    const COMMITMENT_UI_TIPOS = [
+      { key: 'enviar_info',       label: 'Le mando info',                parte: 'yo',        canal: 'whatsapp' },
+      { key: 'pedir_presupuesto', label: 'Le mando presupuesto',         parte: 'yo',        canal: 'whatsapp' },
+      { key: 'llamar_despues',    label: 'Lo llamo en la fecha pactada', parte: 'yo',        canal: 'llamada' },
+      { key: 'hablar_con_socio',  label: 'Lo habla con su socio',        parte: 'prospecto', canal: 'llamada' },
+      { key: 'pensarlo',          label: 'Lo va a pensar',               parte: 'prospecto', canal: 'llamada' },
+      { key: 'otro',              label: 'Otro compromiso',              parte: 'yo',        canal: 'llamada' },
+    ];
+
+    // Etiqueta corta en minúscula para textos inline — espeja COMMITMENT_LABELS
+    // del backend.
+    const COMMITMENT_LABELS_UI = {
+      enviar_info: 'mandar info',
+      pedir_presupuesto: 'mandar presupuesto',
+      llamar_despues: 'volver a llamar',
+      hablar_con_socio: 'hablar con su socio',
+      pensarlo: 'lo iba a pensar',
+      otro: 'compromiso',
+    };
+    function _commitmentLabel(tipo) {
+      return COMMITMENT_LABELS_UI[tipo] || tipo || 'compromiso';
+    }
+
+    function _commitmentDefaultParte(tipo) {
+      const t = COMMITMENT_UI_TIPOS.find((x) => x.key === tipo);
+      return t ? t.parte : 'yo';
+    }
+
+    function _commitmentDefaultCanal(tipo) {
+      const t = COMMITMENT_UI_TIPOS.find((x) => x.key === tipo);
+      return t ? t.canal : 'llamada';
+    }
+
+    // D-06: para 'enviar_info', el fin del día LOCAL del navegador (23:59 del
+    // mismo día) o now + 1 hora, el que sea mayor — es "mandar hoy" de D-06
+    // fila 1. Para el resto, now + el delta del mapa (fallback 3 días). El
+    // frontend SIEMPRE manda un dueAt explícito, así que el mapa del backend
+    // queda como red de seguridad; la pequeña diferencia entre el fin de día
+    // local y el de la TZ de negocio es intencional y sin efecto.
+    function _commitmentDefaultDate(tipo, now) {
+      if (tipo === 'enviar_info') {
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 0, 0);
+        const floor = new Date(now.getTime() + COMMITMENT_ENVIAR_INFO_MIN_MS);
+        return endOfDay.getTime() > floor.getTime() ? endOfDay : floor;
+      }
+      const deltaMs = COMMITMENT_DELTAS_MS[tipo] ?? (3 * 24 * 60 * 60 * 1000);
+      return new Date(now.getTime() + deltaMs);
+    }
+
+    // Misma regla que el backend (_commitmentEffectiveEstado, index.js): no
+    // muta nada. '' sin compromiso, el estado almacenado si no es 'pendiente',
+    // 'vencido' si es 'pendiente' y dueAt ya pasó, 'pendiente' si no.
+    function _commitmentEffectiveEstado(c, nowMs) {
+      if (!c || typeof c !== 'object') return '';
+      if (c.estado !== 'pendiente') return c.estado;
+      const dueMs = Date.parse(c.dueAt);
+      if (!isNaN(dueMs) && dueMs <= nowMs) return 'vencido';
+      return 'pendiente';
+    }
+    // ─── [31-03] COMMITMENT-PURE: FIN ───
 
     // Sprint 23: quick-picks típicos de callback. Devuelve {label, subtitle, date}.
     function _buildCallbackQuickPicks() {
