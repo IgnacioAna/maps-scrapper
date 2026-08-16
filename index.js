@@ -5425,6 +5425,113 @@ app.post('/api/admin/backfill-doctor', requireAuth, requireRole('admin'), async 
   res.json({ dryRun: false, updated: hits.length, ...counts, sample: hits.slice(0, 50) });
 });
 
+// Higiene de nombres (2026-08-16). Portado 1:1 de scripts/one-shot-higiene-2026-08-16.mjs
+// (que corrió solo contra la copia local data/setters.json — producción sigue sucia).
+// Toca SOLO: lead.name en MAYÚSCULAS → Title Case, emoji en lead.name, lead.doctor en
+// MAYÚSCULAS → Title Case, prefijo Dr/a. y basura al final de lead.doctor, placeholders
+// de lead.doctor ("No se menciona"/"N/A"/"-") → vaciado, y espacios dobles/bordes en
+// ambos campos. NO toca teléfonos, emails, webs, direcciones, estados ni callLog. NO
+// inventa ortografía: si la fuente escribió "Gonzales", queda "Gonzales". Copiá la forma
+// EXACTA de backfill-hangup-cap/backfill-next-action/backfill-doctor (arriba): scan()
+// puro reusado por las dos ramas, dryRun, backup antes de escribir, apply dentro de
+// mutateSettersData. Idempotente por diseño (correrlo dos veces no cambia nada la 2da).
+const HIGIENE_MINUS = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en', 'a', 'al', 'por', 'para', 'con', 'da', 'do', 'dos', 'das']);
+const HIGIENE_SIGLAS = new Set(['SCM', 'CED', 'ASISA', 'IMED', 'UDLA', 'UCM', 'SA', 'SRL', 'SAS', 'SL', 'LTDA', 'EIRL', 'CA', 'AC', 'RUT', 'NIT', 'DDS', 'DMD', 'ONG', 'IPS', 'EPS', 'UBA', 'USA', 'UK', 'VIP', 'PH', 'TJ', 'GDL', 'CDMX', 'BDC']);
+const HIGIENE_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/gu;
+const HIGIENE_DOCTOR_BASURA = /^(?:n\/?a|no\s+se\s+menciona|no\s+menciona|sin\s+nombre|desconocid[oa]|ningun[oa]?|-+|\.+|_+)$/i;
+
+const _higSoloLetras = (s) => s.replace(/[^A-Za-zÁÉÍÓÚÑÜáéíóúñü]/g, '');
+const _higEsTodoMayus = (s) => { const l = _higSoloLetras(s); return l.length > 4 && l === l.toUpperCase(); };
+
+function _higTitleCase(str) {
+  const partes = str.split(/(\s+|[-/&|,.()])/); // conserva separadores
+  let primeraPalabra = true;
+  return partes
+    .map((tok) => {
+      if (!/[A-Za-zÁÉÍÓÚÑÜáéíóúñü]/.test(tok)) return tok; // separador
+      if (HIGIENE_SIGLAS.has(tok.toUpperCase())) { primeraPalabra = false; return tok.toUpperCase(); }
+      if (/\d/.test(tok)) { primeraPalabra = false; return tok; } // deja "360", "3D"
+      const bajo = tok.toLowerCase();
+      const salida = (!primeraPalabra && HIGIENE_MINUS.has(bajo))
+        ? bajo
+        : bajo.charAt(0).toUpperCase() + bajo.slice(1);
+      primeraPalabra = false;
+      return salida;
+    })
+    .join('');
+}
+
+const _higLimpiarEspacios = (s) => s.replace(/\s+/g, ' ').trim();
+const _higSacarEmoji = (s) => _higLimpiarEspacios(s.replace(HIGIENE_EMOJI, ''));
+
+function _higLimpiarDoctor(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let s = _higLimpiarEspacios(raw);
+  if (HIGIENE_DOCTOR_BASURA.test(s)) return '';
+  s = s.replace(/^(?:Dr\/a\.?|Dra?\.?|Doctora?|Odont[oó]log[oa]?\.?|Od\.?)\s+/i, ''); // prefijo
+  s = s.replace(/\s*[-–—|,;:]\s*.*$/, '');   // todo lo que sigue a un guion
+  s = s.replace(/[\s\-–—,;:.]+$/, '');       // basura al final
+  s = _higLimpiarEspacios(s);
+  if (HIGIENE_DOCTOR_BASURA.test(s)) return '';
+  if (_higEsTodoMayus(s)) s = _higTitleCase(s);
+  return s;
+}
+
+function _scanHigieneNombres(leads) {
+  const counts = { scanned: 0, nameMayus: 0, nameEmoji: 0, nameEspacios: 0, doctorMayus: 0, doctorPrefijo: 0, doctorVaciado: 0 };
+  const hits = [];
+  for (const [id, lead] of Object.entries(leads || {})) {
+    if (!lead) continue;
+    counts.scanned++;
+
+    const nombreOrig = typeof lead.name === 'string' ? lead.name : '';
+    if (nombreOrig) {
+      let n = nombreOrig;
+      if (HIGIENE_EMOJI.test(n)) { HIGIENE_EMOJI.lastIndex = 0; const s = _higSacarEmoji(n); if (s !== n) { n = s; counts.nameEmoji++; } }
+      HIGIENE_EMOJI.lastIndex = 0;
+      if (_higEsTodoMayus(n)) { const t = _higTitleCase(n); if (t !== n) { n = t; counts.nameMayus++; } }
+      const compacto = _higLimpiarEspacios(n);
+      if (compacto !== n) { n = compacto; counts.nameEspacios++; }
+      if (n && n !== nombreOrig) hits.push({ id, field: 'name', before: nombreOrig, after: n });
+    }
+
+    const docOrig = typeof lead.doctor === 'string' ? lead.doctor : '';
+    if (docOrig) {
+      const d = _higLimpiarDoctor(docOrig);
+      if (d !== docOrig.trim()) {
+        if (!d) counts.doctorVaciado++;
+        else if (_higEsTodoMayus(docOrig)) counts.doctorMayus++;
+        else counts.doctorPrefijo++;
+        hits.push({ id, field: 'doctor', before: docOrig, after: d });
+      }
+    }
+  }
+  return { hits, counts };
+}
+
+app.post('/api/admin/higiene-nombres', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  if (dryRun) {
+    const { hits, counts } = _scanHigieneNombres(loadSettersData().leads);
+    return res.json({ dryRun: true, matched: hits.length, ...counts, sample: hits.slice(0, 50) });
+  }
+  makeBackup('pre-higiene-nombres');
+  let hits = [], counts = {};
+  await mutateSettersData((data) => {
+    // Re-escanea sobre el snapshot FRESCO del mutex (regla #19), no sobre uno
+    // cacheado del dryRun — otro handler pudo escribir entre medio.
+    const scanned = _scanHigieneNombres(data.leads);
+    hits = scanned.hits;
+    counts = scanned.counts;
+    for (const h of hits) {
+      const lead = data.leads[h.id];
+      if (h.field === 'name') lead.name = h.after;
+      else if (h.field === 'doctor') lead.doctor = h.after;
+    }
+  });
+  res.json({ dryRun: false, updated: hits.length, ...counts, sample: hits.slice(0, 50) });
+});
+
 app.post('/api/admin/regen-openings', requireAuth, requireRole('admin'), (req, res) => {
   const { setterId = '', dryRun = false, onlySuspicious = true } = req.body || {};
   const data = loadSettersData();
@@ -15784,7 +15891,7 @@ function detectMercuryIntent(message, history = "") {
 // Lo dejamos accesible via globalThis.__mercury para que tests puros lo testeen sin import.
 globalThis.__mercury = { sanitizeMercuryStyle, detectMercuryViolations, parseMercuryOutput, detectMercuryIntent };
 // Phase 16: helpers puros del scraper i18n + señales, accesibles para tests.
-globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow, _expensiveTariffLabel, _extractDoctorFromName, _doctorNormalizar, _doctorEsValido, _sanitizeDoctorSource, DOCTOR_SOURCES, _scanDoctorBackfill };
+globalThis.__phase16 = { localeForCountry, _isSectorRelevant, computeLeadSignals, _leadHasRealWebsite, _parseTelnyxLookup, _telnyxNumberLookup, _buildBriefMessages, _buildWebsiteBriefMessages, _briefSystemPrompt, _parseBriefOutput, _classifyBriefArray, _synthBriefText, _fallbackBriefFromReviews, _looksLikePromptNoise, _briefTooThin, _buildHistoryDedupIndex, _isAlreadyScraped, _buildSettersDedupIndex, _isInSettersIndex, _runPool, _leadIsConfirmedDeadNumber, _lookupErrorIsTransient, _leadIsCallableNow, _expensiveTariffLabel, _extractDoctorFromName, _doctorNormalizar, _doctorEsValido, _sanitizeDoctorSource, DOCTOR_SOURCES, _scanDoctorBackfill, _higTitleCase, _higEsTodoMayus, _higSacarEmoji, _higLimpiarDoctor, _higLimpiarEspacios, _scanHigieneNombres };
 
 // ── Config Mercury: system prompt editable + feedback notes (admin only) ──
 const MERCURY_CONFIG_FILE = path.join(DATA_DIR, "mercury_config.json");
