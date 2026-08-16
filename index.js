@@ -7957,6 +7957,10 @@ function _setterCalledLead(lead, sid, userMap) {
 }
 // Expuestos para tests puros (patrón globalThis.__phase16 / __mercury).
 globalThis.__metricsAudit = { _bizOffsetMs, _bizStartOfDay, _bizDayStr, _bizHour, _bizDayOfWeek, _buildUserSetterMap, _callSetterId };
+// Fase 34 (HOY-05): expuesto para tests aislados. _hoyHygieneScope se declara
+// más abajo (junto al endpoint POST /hoy-hygiene-snapshot) pero por hoisting
+// de function declarations ya está disponible acá.
+globalThis.__hoyHygiene = { _hoyHygieneScope };
 
 // Phase 18 — scoping del rol supervisor por subconjunto de setters visibles.
 // Devuelve null si NO hay restricción (admin, setter, o supervisor SIN
@@ -8295,6 +8299,79 @@ app.get('/api/setters/cold-call-metrics', requireAuth, (req, res) => {
     rates: agg.rates,
     avgConvDurationS: agg.avgConvDurationS,
     ...extra,
+  });
+});
+
+// Fase 34 (HOY-05, D-12/D-13): a qué "cajón" de hoyHygieneSnapshots escribe
+// cada request. Un supervisor SCOPED sin setter puntual usa su propio userId
+// como clave — su agregado ("mi equipo") es un scope distinto del agregado
+// global del admin, y dos supervisores distintos no deben pisarse entre sí.
+// Asume que ya corrió el guard de "setter sin setterId → 403" del endpoint —
+// por eso el branch 'setter' puede devolver eff.setterId directo, sabiendo
+// que nunca llega vacío hasta acá.
+function _hoyHygieneScope(req, requestedSetter) {
+  const eff = getEffectiveAuth(req);
+  if (eff.role === 'setter') return eff.setterId || '';
+  if (requestedSetter) return requestedSetter;
+  const visibleSet = _visibleSetterIds(req.auth.user);
+  return visibleSet ? ('supervisor_' + (req.auth.user.id || '')) : '__all__';
+}
+
+// Fase 34 (HOY-05): el panel de higiene de Hoy manda los 2 números que YA
+// computó al clasificar (cuántos "vencen hoy", cuántos "tocados sin próximo
+// paso") — el backend los persiste con fecha (TZ de negocio) dentro de
+// setters.json (sin archivo nuevo, sin wiring de export/pre-deploy: es una
+// key más del objeto que loadSettersData/saveSettersData ya redondean
+// completo, regla #21 de CLAUDE.md) y devuelve el de AYER + la tendencia
+// (creciendo/bajando/estable) — el KPI de saturación que D-13 pide.
+app.post('/api/setters/hoy-hygiene-snapshot', requireAuth, (req, res) => {
+  const eff = getEffectiveAuth(req);
+  if (!['admin', 'supervisor', 'setter'].includes(eff.role)) {
+    return res.status(403).json({ error: 'No autorizado.' });
+  }
+  // Mismo guard que cold-call-metrics (index.js ~8171-8193): un setter sin
+  // setterId vinculado no puede grabar/leer NINGÚN scope — sin esto caía al
+  // fallback `eff.setterId || ''` y pisaba silenciosamente el scope
+  // compartido ''.
+  if (eff.role === 'setter' && !eff.setterId) {
+    return res.status(403).json({ error: 'Tu cuenta no tiene un setter vinculado.' });
+  }
+  const requestedSetter = eff.role === 'setter' ? '' : String(req.body?.setter || '');
+  if (eff.role !== 'setter') {
+    const visibleSet = _visibleSetterIds(req.auth.user);
+    if (visibleSet && requestedSetter && !visibleSet.has(requestedSetter)) {
+      return res.status(403).json({ error: 'Setter fuera de tu visibilidad.' });
+    }
+  }
+  const scope = _hoyHygieneScope(req, requestedSetter);
+  // Whitelist-and-coerce (mismo idioma que el resto del proyecto): un body
+  // raro nunca tira 4xx, se clampea a 0.
+  const toCount = (v) => { const n = Math.trunc(Number(v)); return Number.isFinite(n) && n >= 0 ? n : 0; };
+  const vencidos = toCount(req.body?.vencidos);
+  const redSeguridad = toCount(req.body?.redSeguridad);
+  const data = loadSettersData();
+  if (!data.hoyHygieneSnapshots || typeof data.hoyHygieneSnapshots !== 'object') data.hoyHygieneSnapshots = {};
+  if (!data.hoyHygieneSnapshots[scope] || typeof data.hoyHygieneSnapshots[scope] !== 'object') data.hoyHygieneSnapshots[scope] = {};
+  const bucket = data.hoyHygieneSnapshots[scope];
+  const now = Date.now();
+  const todayStr = _bizDayStr(now);
+  const yesterdayStr = _bizDayStr(_bizStartOfDay(now) - 1);
+  bucket[todayStr] = { vencidos, redSeguridad, updatedAt: new Date(now).toISOString() };
+  // Poda: últimas 14 fechas por scope (mismo criterio que el cap de
+  // callLog/interactions, CLAUDE.md nota #28 — evita crecimiento sin fin).
+  const keys = Object.keys(bucket).sort();
+  if (keys.length > 14) for (const k of keys.slice(0, keys.length - 14)) delete bucket[k];
+  saveSettersData(data);
+  const yesterday = bucket[yesterdayStr] || null;
+  let trend = 'sin_dato_previo';
+  if (yesterday) {
+    trend = vencidos > yesterday.vencidos ? 'creciendo' : vencidos < yesterday.vencidos ? 'bajando' : 'estable';
+  }
+  res.json({
+    scope, date: todayStr,
+    today: { vencidos, redSeguridad, date: todayStr },
+    yesterday: yesterday ? { vencidos: yesterday.vencidos, redSeguridad: yesterday.redSeguridad, date: yesterdayStr } : null,
+    trend,
   });
 });
 
@@ -8970,6 +9047,13 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
     const _log = Array.isArray(l.callLog) ? l.callLog : [];
     const _last = _log.length ? _log[_log.length - 1] : null;
     const _na = _leadNextAction(l);
+    // Fase 34 (HOY-04/HOY-05): sobreescribir con el reloj RESUELTO — un lead
+    // legacy sin migrar (nextAction:null en disco pero derivable de
+    // callbackAt/followUps) tiene que responder IGUAL que uno ya migrado, para
+    // que la clasificación en secciones de Hoy (34-02/34-03) no lo clasifique
+    // mal. No-op para leads migrados: _leadNextAction devuelve la MISMA
+    // referencia cuando lead.nextAction ya es un objeto.
+    l.nextAction = _na;
     l.manualCallbackByOwner = !!(_na && _na.dueAt && _na.origen === 'manual'
       && _callSetterId(_last, l, _swUserMap) === l.assignedTo);
   }
