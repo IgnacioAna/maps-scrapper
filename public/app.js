@@ -6110,6 +6110,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         retryIds: reintentos.map(l => l.id),
         at: Date.now(),
       };
+      // HOY-05 (D-12/D-13) — blocker fix (checker 2026-08-16): clasificación
+      // PARALELA, sobre TODO el pipeline (allLeadsForHygiene, sin filtro de
+      // país), con un claimed set propio. Reusa los mismos predicados que ya
+      // calculó esta misma función más arriba — no son sensibles al país.
+      // Es intencionalmente una segunda pasada, no una optimización
+      // prematura: es lo que garantiza que el panel de higiene sea
+      // invariante al filtro de país, que es justamente el punto del fix.
+      // NO reusar callbacks.length/misCompromisos.length/etc.: esos 5 arrays
+      // ya están filtrados por país (34-02) y el snapshot de higiene tiene
+      // que medir TODO el pipeline sin importar qué país esté filtrado en
+      // pantalla en ese momento.
+      const claimedHygiene = new Set();
+      let vencidosHygiene = 0;
+      for (const l of allLeadsForHygiene) {
+        if (!notDnc(l) || terminal(l)) continue;
+        if (l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later') {
+          claimedHygiene.add(l.id); vencidosHygiene++; continue;
+        }
+        const bucket = _commitmentHoyBucket(l, nowMsHoy);
+        if (bucket === 'yo') {
+          const d = _commitDueAt(l);
+          if (d && new Date(d).getTime() <= endTodayTs) { claimedHygiene.add(l.id); vencidosHygiene++; continue; }
+        } else if (bucket === 'prospecto') {
+          const d = _commitDueAt(l);
+          if (d && new Date(d).getTime() <= now) { claimedHygiene.add(l.id); vencidosHygiene++; continue; }
+        }
+      }
+      for (const l of allLeadsForHygiene) {
+        if (claimedHygiene.has(l.id) || !notDnc(l) || terminal(l)) continue;
+        const na = l.nextAction;
+        if (na && na.origen === 'cadencia' && na.dueAt && new Date(na.dueAt).getTime() <= endTodayTs) {
+          claimedHygiene.add(l.id); vencidosHygiene++;
+        }
+      }
+      let redSeguridadHygiene = 0;
+      for (const l of allLeadsForHygiene) {
+        if (claimedHygiene.has(l.id) || !notDnc(l) || terminal(l)) continue;
+        if (Array.isArray(l.callLog) && l.callLog.length > 0 && !(l.nextAction && l.nextAction.dueAt)) redSeguridadHygiene++;
+      }
+      _hoyState.hygiene = { vencidos: vencidosHygiene, redSeguridad: redSeguridadHygiene };
       // Set de ids ÚNICOS: un lead puede estar en Callbacks/Interesados Y en
       // una sección de compromiso a la vez (no participan de `claimed`) —
       // sumar los .length contaría dos veces al mismo lead. Red de seguridad
@@ -6119,11 +6159,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
 
       secEl.innerHTML =
-        _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', null, { rowBadge: _hoyCommitBadge }) +
-        _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', null, { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', 'hoy-compromisos', { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', 'hoy-esperando', { rowBadge: _hoyCommitBadge }) +
         _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
         _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
-        _hoyRenderSection('Reintentos de no-contacto', reintentos, '#8892A6', 'No atendieron — bajo esfuerzo, alto volumen', null) +
+        _hoyRenderSection('Reintentos de no-contacto', reintentos, '#8892A6', 'No atendieron — bajo esfuerzo, alto volumen', 'hoy-reintentos') +
         (tier123Empty ? _hoyNewLeadsPointer(virgenesCount) : '') +
         _hoyRenderSection('Red de seguridad', redSeguridad, 'var(--text-tertiary)', 'Tocados sin próxima acción — resolvé desde acá', null, { collapsible: true });
       _hoyRenderedVersion = _leadStoreVersion;
@@ -6177,6 +6217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // llama antes del fetch con la lista de setters).
         _hoyPopulateCountryFilter(leads);
         _hoyRenderFromStore(leads);
+        _hoyRenderHygienePanel();
 
         // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
         // mini-funnel del día: llamadas → conectadas → conversaciones → agendadas,
@@ -6492,6 +6533,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       </div>`;
     }
+    // HOY-05: panel de higiene, 3 números — nunca un dashboard (D-12). Manda
+    // los 2 conteos que _hoyRenderFromStore YA calculó (sobre TODO el
+    // pipeline, invariante al filtro de país — ver el bloque de arriba); el
+    // backend (34-01) solo persiste y compara contra ayer.
+    async function _hoyRenderHygienePanel() {
+      const el = document.getElementById('hoy-hygiene');
+      if (!el) return;
+      const h = _hoyState.hygiene || { vencidos: 0, redSeguridad: 0 };
+      let resp = null;
+      try {
+        const r = await fetch(apiUrl('/api/setters/hoy-hygiene-snapshot'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ vencidos: h.vencidos, redSeguridad: h.redSeguridad, setter: _hoySelectedSetter() }),
+        });
+        if (r.ok) resp = await r.json();
+      } catch {}
+      // D-14: nada en cero — un 0 desnudo entrena a ignorar el panel.
+      const tile = (label, n, okText) => {
+        const shown = n > 0 ? String(n) : okText;
+        const color = n > 0 ? 'var(--warning)' : 'var(--text-secondary)';
+        return `<div class="myp-tile" style="--tile-accent:${color};">
+          <div class="myp-tile-label">${escHtml(label)}</div>
+          <div class="myp-tile-num" style="color:${color};">${escHtml(shown)}</div>
+        </div>`;
+      };
+      let trendHtml = '';
+      if (resp) {
+        const map = {
+          creciendo: ['↑ creciendo', 'var(--warning)'],
+          bajando: ['↓ bajando', 'var(--text-secondary)'],
+          estable: ['→ estable', 'var(--text-secondary)'],
+          sin_dato_previo: ['Sin dato de ayer todavía', 'var(--text-tertiary)'],
+        };
+        const [txt, col] = map[resp.trend] || map.sin_dato_previo;
+        trendHtml = `<div class="myp-tile" style="--tile-accent:${col};">
+          <div class="myp-tile-label">Cola de vencidos vs. ayer</div>
+          <div class="myp-tile-num" style="color:${col}; font-size:15px;">${escHtml(txt)}</div>
+        </div>`;
+      }
+      el.innerHTML = tile('Tocados sin próximo paso', h.redSeguridad, 'Al día — sin backlog')
+        + tile('Compromisos vencidos hoy', h.vencidos, 'Sin vencidos')
+        + trendHtml;
+    }
+    window._hoyRenderHygienePanel = _hoyRenderHygienePanel;
     window.loadHoyView = loadHoyView;
 
     async function loadCallsView() {
@@ -6741,7 +6826,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const _pd = {
       active: false,
       mode: 'calls',      // 'calls' = cola de Llamadas | 'hoy' = seguimientos de Hoy (2026-08-10)
-      hoyFilter: null,    // en modo hoy: null (todo) | 'callbacks' | 'interesados' (botón por sección)
+      hoyFilter: null,    // en modo hoy: null (todo) | 'compromisos' | 'esperando' | 'callbacks' | 'interesados' | 'reintentos' (botón por sección, Fase 34-03)
       queue: [],          // array de lead IDs en orden
       currentIdx: 0,
       processed: 0,
@@ -6896,27 +6981,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       return leads.map(l => l.id);
     }
     // Cola del dialer en modo Hoy (2026-08-10, pedido del user: "es poco práctico
-    // trabajar ahí" clickeando Llamar fila por fila). Orden = el de la vista:
-    // callbacks manuales YA VENCIDOS primero (por hora), después interesados sin
-    // agendar. Los callbacks programados para más tarde HOY se ven en la vista
-    // pero NO entran a la cola: el SDR prometió llamar a esa hora, el dialer no
-    // tiene derecho a adelantarse (además _pdRender los expulsaría por
-    // callbackAt futuro). Al re-abrir el dialer más tarde, entran solos.
-    // filter: 'callbacks' | 'interesados' | null (ambas, callbacks primero).
+    // trabajar ahí" clickeando Llamar fila por fila; extendido 2026-08-16,
+    // Fase 34-03/D-07/D-08, a las 5 secciones reclamables de la cascada de
+    // 34-02). Orden = D-01: compromisos → esperando → callbacks → interesados
+    // → reintentos. Los 3 sub-relojes basados en nextAction (compromisos/
+    // esperando/reintentos) y los callbacks manuales solo entran si YA
+    // VENCIERON EN ESTE INSTANTE — mismo criterio histórico de Callbacks: el
+    // SDR prometió llamar a esa hora, el dialer no tiene derecho a adelantarse
+    // (además _pdRender los expulsaría por callbackAt futuro). Al re-abrir el
+    // dialer más tarde, entran solos. `l.callbackAt` es el espejo del reloj
+    // único (nextAction.dueAt), sirve para los 4 sub-relojes.
+    // filter: 'compromisos' | 'esperando' | 'callbacks' | 'interesados' |
+    // 'reintentos' | null (las 5, en orden D-01).
     function _pdBuildQueueHoy(filter) {
       const now = Date.now();
-      const due = filter === 'interesados' ? [] : _hoyState.callbackIds
-        .map(id => _callsLeadsById.get(id))
-        .filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() <= now);
-      const interesados = filter === 'callbacks' ? [] : _hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean);
-      return due.concat(interesados).map(l => l.id);
+      const dueNow = (ids) => ids.map(id => _callsLeadsById.get(id))
+        .filter(l => l && (!l.callbackAt || new Date(l.callbackAt).getTime() <= now));
+      const parts = [];
+      if (!filter || filter === 'compromisos') parts.push(...dueNow(_hoyState.commitYoIds));
+      if (!filter || filter === 'esperando') parts.push(...dueNow(_hoyState.commitProspectoIds));
+      if (!filter || filter === 'callbacks') parts.push(...dueNow(_hoyState.callbackIds));
+      if (!filter || filter === 'interesados') parts.push(..._hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean));
+      if (!filter || filter === 'reintentos') parts.push(...dueNow(_hoyState.retryIds));
+      // Defensivo: por construcción de 34-02 ningún lead debería estar en 2 de
+      // estos arrays a la vez, pero si `claimed` cambió entre el render y el
+      // click, esto evita discarlo 2 veces en la misma sesión de dialer.
+      const seen = new Set();
+      return parts.filter(l => l && !seen.has(l.id) && (seen.has(l.id) ? false : (seen.add(l.id), true))).map(l => l.id);
     }
     window._pdStart = async function(mode, opts = {}) {
       // 'hoy' = seguimientos completos (callbacks vencidos → interesados);
       // 'hoy-callbacks' / 'hoy-interesados' = solo esa sección (botón por sección).
       const isHoy = typeof mode === 'string' && mode.startsWith('hoy');
       _pd.mode = isHoy ? 'hoy' : 'calls';
-      _pd.hoyFilter = mode === 'hoy-callbacks' ? 'callbacks' : mode === 'hoy-interesados' ? 'interesados' : null;
+      _pd.hoyFilter = mode === 'hoy-callbacks' ? 'callbacks'
+        : mode === 'hoy-interesados' ? 'interesados'
+        : mode === 'hoy-compromisos' ? 'compromisos'
+        : mode === 'hoy-esperando' ? 'esperando'
+        : mode === 'hoy-reintentos' ? 'reintentos'
+        : null;
       // DIAL-01 (33-01): "Discar acá" pide arrancar sobre un lead puntual.
       // La semilla se captura ANTES del refresh — si el refresh lo deja
       // afuera del cache (país filtrado, cambió de dueño, ya no cumple el
@@ -6963,6 +7066,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             ? `Nada para discar ahora — ${later} callback${later > 1 ? 's' : ''} de hoy entra${later > 1 ? 'n' : ''} a su hora.`
             : (_pd.hoyFilter === 'interesados' ? 'Sin interesados por agendar.'
               : _pd.hoyFilter === 'callbacks' ? 'Sin callbacks pendientes hoy.'
+              : _pd.hoyFilter === 'compromisos' ? 'Sin compromisos propios que venzan hoy.'
+              : _pd.hoyFilter === 'esperando' ? 'Nada esperando respuesta vencida.'
+              : _pd.hoyFilter === 'reintentos' ? 'Sin reintentos pendientes hoy.'
               : 'Sin seguimientos pendientes en Hoy.'), { type: 'info', duration: 3500 });
         } else {
           window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
@@ -7003,6 +7109,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.showToast?.(_pd.mode === 'hoy'
           ? (_pd.hoyFilter === 'callbacks' ? `Power dialer · ${_n} callback${_n > 1 ? 's' : ''} en cola`
             : _pd.hoyFilter === 'interesados' ? `Power dialer · ${_n} interesado${_n > 1 ? 's' : ''} por agendar en cola`
+            : _pd.hoyFilter === 'compromisos' ? `Power dialer · ${_n} compromiso${_n > 1 ? 's' : ''} propio${_n > 1 ? 's' : ''} en cola`
+            : _pd.hoyFilter === 'esperando' ? `Power dialer · ${_n} en espera vencida en cola`
+            : _pd.hoyFilter === 'reintentos' ? `Power dialer · ${_n} reintento${_n > 1 ? 's' : ''} en cola`
             : `Power dialer · ${_n} seguimiento${_n > 1 ? 's' : ''} de Hoy en cola`)
           : `Power dialer activado · ${_n} leads en cola`, { type: 'success', duration: 2500 });
       }

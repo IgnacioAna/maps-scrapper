@@ -215,12 +215,17 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
   // cascada de 5 tiers acota Mis compromisos/Esperando del prospecto a lo que
   // VENCE HOY (antes mostraban todo el pendiente sin filtrar fecha). Ver
   // 34-02-PLAN.md Task 1, paso 11, y 34-02-SUMMARY.md.
-  it("las 2 llamadas nuevas existen con los títulos LITERALES, dialerMode null y rowBadge", () => {
+  // 2026-08-16 (Fase 34, plan 03, HOY-03/D-07/D-08): dialerMode pasó de `null`
+  // a `'hoy-compromisos'`/`'hoy-esperando'` — las 2 secciones ganan su propio
+  // botón de Power Dialer. Gap anticipado por el propio 34-03-PLAN.md ("si
+  // algún test de 34-02 depende de que sea null específicamente, es un gap a
+  // corregir acá, documentado"). Ver 34-03-SUMMARY.md.
+  it("las 2 llamadas nuevas existen con los títulos LITERALES, dialerMode propio y rowBadge", () => {
     expect(appJs).toContain(
-      "_hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', null, { rowBadge: _hoyCommitBadge })"
+      "_hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', 'hoy-compromisos', { rowBadge: _hoyCommitBadge })"
     );
     expect(appJs).toContain(
-      "_hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', null, { rowBadge: _hoyCommitBadge })"
+      "_hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', 'hoy-esperando', { rowBadge: _hoyCommitBadge })"
     );
   });
 
