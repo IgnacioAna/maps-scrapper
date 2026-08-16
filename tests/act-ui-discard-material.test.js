@@ -218,23 +218,41 @@ describe("Marca del estado bloqueado (D-16/D-11)", () => {
 });
 
 describe("Hoy — las secciones de compromiso dejan de mostrar terminales (ACT-04)", () => {
-  it("las 2 líneas de filtro con _commitmentHoyBucket contienen !terminal(l)", () => {
-    const lines = appJs
-      .split("\n")
-      .filter((l) => l.includes("_commitmentHoyBucket(l, nowMsHoy)"));
-    expect(lines.length).toBe(2);
-    for (const line of lines) {
-      expect(line).toContain("!terminal(l)");
+  // 2026-08-16 (Fase 34, plan 02, HOY-01/D-01/D-06): la cascada de 5 tiers
+  // reformateó misCompromisos/compromisosProspecto a MULTI-línea (acotan
+  // "vence hoy"/"vencido" con _commitDueAt, ver 34-02-PLAN.md Task 1, paso
+  // 3) — !terminal(l)/notDnc(l) siguen ahí, pero ya no comparten línea con
+  // _commitmentHoyBucket(l, nowMsHoy) (antes todo el filtro cabía en 1
+  // línea). Se verifica sobre la expresión `filter(...)` completa, balanceada
+  // por paréntesis, no línea por línea.
+  function filterExprFor(varName) {
+    const startLiteral = `const ${varName} = leads.filter(l =>`;
+    const startIdx = appJs.indexOf(startLiteral);
+    expect(startIdx).toBeGreaterThan(-1);
+    const openIdx = startIdx + startLiteral.indexOf("filter(") + "filter(".length - 1;
+    let depth = 0;
+    let i = openIdx;
+    for (; i < appJs.length; i++) {
+      if (appJs[i] === "(") depth++;
+      else if (appJs[i] === ")") {
+        depth--;
+        if (depth === 0) {
+          i++;
+          break;
+        }
+      }
     }
+    return appJs.slice(startIdx, i);
+  }
+
+  it("misCompromisos y compromisosProspecto filtran por !terminal(l)", () => {
+    expect(filterExprFor("misCompromisos")).toContain("!terminal(l)");
+    expect(filterExprFor("compromisosProspecto")).toContain("!terminal(l)");
   });
 
-  it("las 2 líneas siguen filtrando notDnc(l) (no se pisó el filtro existente)", () => {
-    const lines = appJs
-      .split("\n")
-      .filter((l) => l.includes("_commitmentHoyBucket(l, nowMsHoy)"));
-    for (const line of lines) {
-      expect(line).toContain("notDnc(l)");
-    }
+  it("misCompromisos y compromisosProspecto siguen filtrando notDnc(l) (no se pisó el filtro existente)", () => {
+    expect(filterExprFor("misCompromisos")).toContain("notDnc(l)");
+    expect(filterExprFor("compromisosProspecto")).toContain("notDnc(l)");
   });
 });
 

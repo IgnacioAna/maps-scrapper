@@ -5939,6 +5939,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
     }
+    // HOY-02 (Fase 34, D-04/D-05/D-06): mismo patrón que calls_country_filter_
+    // de Llamadas, pero el desplegable se ordena por horario hábil (D-05: "a
+    // quién puedo llamar AHORA"), no alfabético — misma lógica que "¿A qué
+    // país llamar ahora?" de Distribución (app.js ~14536-14537).
+    function _hoySelectedCountry() {
+      return document.getElementById('hoy-country-filter')?.value || '';
+    }
+    function _hoyPopulateCountryFilter(leads) {
+      const sel = document.getElementById('hoy-country-filter');
+      if (!sel) return;
+      const counts = {};
+      for (const l of leads) {
+        const c = (l.country || '').trim();
+        if (c) counts[c] = (counts[c] || 0) + 1;
+      }
+      const rows = Object.keys(counts).map(c => {
+        const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime({ country: c }) : null;
+        return { country: c, count: counts[c], ok: lt ? lt.ok : false, hasTz: !!lt };
+      });
+      rows.sort((a, b) => (Number(b.ok) - Number(a.ok)) || (b.count - a.count));
+      // Mismo patrón que calls_country_filter_ (loadCallsView): el literal se
+      // repite en la lectura y en la escritura, sin variable compartida.
+      const cur = sel.value || localStorage.getItem('hoy_country_filter_' + (currentUser?.id || 'anon')) || '';
+      sel.innerHTML = '<option value="">Todos los países</option>' + rows.map(r =>
+        `<option value="${escHtml(r.country)}">${r.ok ? '🟢 ' : r.hasTz ? '🟡 ' : ''}${escHtml(r.country)} (${r.count})</option>`
+      ).join('');
+      if (cur && counts[cur]) sel.value = cur;
+      if (!sel.dataset.wired) {
+        sel.dataset.wired = '1';
+        sel.addEventListener('change', () => {
+          try { localStorage.setItem('hoy_country_filter_' + (currentUser?.id || 'anon'), sel.value); } catch {}
+          _hoyRenderedVersion = -1; // fuerza el repintado (no hubo escritura de estado que suba _leadStoreVersion)
+          _hoyRenderFromStore();
+        });
+      }
+    }
     // Snapshot de las secciones de Hoy (ids en el orden renderizado). Lo consume
     // el Power Dialer en modo 'hoy' (2026-08-10): la cola del dialer tiene que
     // ser EXACTAMENTE lo que la vista muestra, no una re-derivación aparte.
@@ -5986,64 +6022,110 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         leads = [...idSet].map(id => _callsLeadsById.get(id)).filter(Boolean);
       }
+      // Fase 34 (HOY-05, blocker de consistencia — checker 2026-08-16): esta
+      // es la copia COMPLETA de leads, previa al filtro de país. El panel
+      // de higiene (34-03) clasifica sobre ESTA copia, nunca sobre `leads`
+      // ya filtrado — el filtro de país es una preferencia visual que
+      // cambia durante el día, la higiene es del pipeline entero.
+      const allLeadsForHygiene = leads;
+      const countryFilter = (typeof _hoySelectedCountry === 'function') ? _hoySelectedCountry() : '';
+      if (countryFilter) leads = leads.filter(l => (l.country || '').trim() === countryFilter);
       const now = Date.now();
       const _endToday = new Date(); _endToday.setHours(23, 59, 59, 999); const endTodayTs = _endToday.getTime();
       const claimed = new Set();
       const notDnc = (l) => !l.doNotCall;
-      const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
+      // Fase 9 introdujo estado:'cerrado' para deals ganados — sin excluirlo
+      // acá, un lead CERRADO con callLog podía colarse en Red de seguridad
+      // como si le faltara un próximo paso, cuando ya no necesita ninguno.
+      const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado' || l.estado === 'cerrado';
       const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
-      // 1) Callbacks MANUALES que tocan HOY (vencidos + programados para hoy). El
-      // setter eligió "volver a llamar" → aparecen en Hoy el día que toca, no solo
-      // cuando ya se pasaron. (Los reintentos automáticos de no_answer/voicemail NO
-      // entran acá — esos viven solo en la cola de Llamadas/Power Dialer.)
-      const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later')
+      // D-06: la fecha VIGENTE para decidir "vence hoy" de un compromiso es la
+      // del reloj único (lead.nextAction), cuando ese reloj sigue siendo el
+      // que puso el compromiso — cubre 'esperando del prospecto' (cumplido:
+      // el dueAt del compromiso original ya quedó en el pasado, lo que
+      // importa es cuándo vence la ESPERA). Fallback a commitment.dueAt si el
+      // reloj fue pisado por otra cosa.
+      const _commitDueAt = (l) => (l.nextAction && l.nextAction.origen === 'compromiso' && l.nextAction.dueAt)
+        ? l.nextAction.dueAt
+        : (l.commitment ? l.commitment.dueAt : null);
+      // Tier 1 — "Compromisos que vencen hoy" (D-01 #1): 3 tarjetas con UN
+      // `claimed` compartido (D-02, exclusividad real — Fase 31 dejó a Mis
+      // compromisos/Esperando del prospecto FUERA de `claimed` a propósito;
+      // Fase 34 los suma).
+      // 1a. Callbacks MANUALES que vencen hoy. (Los reintentos automáticos de
+      // no_answer/voicemail NO entran acá — van al tier 3.)
+      const callbacks = leads.filter(l => notDnc(l) && !terminal(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later')
         .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
       callbacks.forEach(l => claimed.add(l.id));
-      // 2) Interesados sin agendar
-      const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
-      interesados.forEach(l => claimed.add(l.id));
-      // Fase 31 (D-10): compromisos pendientes, agrupados por parte (los
-      // propios primero — son deuda propia). NO participan del Set
-      // `claimed`: responden una pregunta distinta ("quién me debe algo",
-      // no "cuándo vuelvo a llamar") — un lead puede estar en Callbacks o
-      // en Interesados Y además tener un compromiso pendiente al mismo
-      // tiempo, y eso es correcto, no un duplicado a evitar.
       const nowMsHoy = now;
-      // Fase 32, plan 04 (ACT-04): el descarte NUEVO (window._actDiscard,
-      // 32-02) cierra el compromiso pendiente solo — pero un lead
-      // descartado por OTRA vía (el bulk de admin, un
-      // answered_not_interested) conserva su compromiso pendiente y sin
-      // este !terminal(l) se quedaría en estas 2 secciones para siempre.
-      // Este filtro es la red que hace verdadera la promesa de ACT-04
-      // ("sale de todas las listas de una").
-      const misCompromisos = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
-        .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
-      const compromisosProspecto = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
-        .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
-      // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
-      // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
-      // al 3er no-contacto se descartan automáticamente (backend).
-      // 3) Leads nuevos (nunca llamados): SOLO los contamos para el puntero. El orden
-      // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
-      // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
+      // 1b. Mis compromisos (parte 'yo', pendiente) QUE VENCEN HOY — antes
+      // mostraba TODOS los pendientes sin importar la fecha (D-01).
+      const misCompromisos = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l)
+          && _commitmentHoyBucket(l, nowMsHoy) === 'yo'
+          && new Date(_commitDueAt(l)).getTime() <= endTodayTs)
+        .sort((a, b) => new Date(_commitDueAt(a)) - new Date(_commitDueAt(b)));
+      misCompromisos.forEach(l => claimed.add(l.id));
+      // 1c. Esperando del prospecto — VENCIDO (el plazo de espera ya pasó;
+      // antes mostraba TODOS los pendientes/cumplidos sin filtrar fecha).
+      const compromisosProspecto = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l)
+          && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto'
+          && new Date(_commitDueAt(l)).getTime() <= now)
+        .sort((a, b) => new Date(_commitDueAt(a)) - new Date(_commitDueAt(b)));
+      compromisosProspecto.forEach(l => claimed.add(l.id));
+      // Tier 2 — "Interesados con próximo paso vencido o sin próximo paso"
+      // (D-01 #2): SIN acotar por fecha (D-03 protege que el interesado
+      // aparezca todos los días hasta agendar/descartar), solo excluye lo ya
+      // reclamado por el tier 1.
+      const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && l.estado === 'interesado');
+      interesados.forEach(l => claimed.add(l.id));
+      // Tier 3 — "Reintentos de no-contacto que vencen hoy" (D-01 #3, NUEVO):
+      // leads cuyo reloj es de ORIGEN cadencia (no_answer/voicemail
+      // reintentados automáticamente) y vence hoy. Siguen viviendo TAMBIÉN en
+      // Llamadas/Power Dialer — esto no los saca de ahí, los suma a Hoy.
+      const reintentos = leads.filter(l => {
+          if (claimed.has(l.id) || !notDnc(l) || terminal(l)) return false;
+          const na = l.nextAction;
+          return !!(na && na.origen === 'cadencia' && na.dueAt && new Date(na.dueAt).getTime() <= endTodayTs);
+        })
+        .sort((a, b) => new Date(a.nextAction.dueAt) - new Date(b.nextAction.dueAt));
+      reintentos.forEach(l => claimed.add(l.id));
+      // Tier 5 — "Red de seguridad" (D-09/D-10/D-11): SOLO leads TOCADOS
+      // (callLog.length > 0 — nunca el stock virgen, D-10 es la restricción
+      // transversal de la fase) sin próxima acción, no reclamados arriba.
+      // Se calcula acá (antes del tier 4) para que `claimed` ya los excluya.
+      const redSeguridad = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l)
+          && Array.isArray(l.callLog) && l.callLog.length > 0
+          && !(l.nextAction && l.nextAction.dueAt));
+      redSeguridad.forEach(l => claimed.add(l.id));
+      // Tier 4 — "Nuevos por score" (D-01 #4), GATEADO: solo se cuenta/muestra
+      // si los tiers 1-3 están vacíos (protege el pipeline futuro sin
+      // canibalizar el seguimiento). El cálculo de virgenesCount NO cambia de
+      // línea (protege el test anti-deriva existente) — lo que cambia es que
+      // su render queda condicionado.
       const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
+      const tier123Empty = (callbacks.length + misCompromisos.length + compromisosProspecto.length + interesados.length + reintentos.length) === 0;
       _hoyState = {
         callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id),
         commitYoIds: misCompromisos.map(l => l.id), commitProspectoIds: compromisosProspecto.map(l => l.id),
+        retryIds: reintentos.map(l => l.id),
         at: Date.now(),
       };
       // Set de ids ÚNICOS: un lead puede estar en Callbacks/Interesados Y en
       // una sección de compromiso a la vez (no participan de `claimed`) —
-      // sumar los .length contaría dos veces al mismo lead.
-      const totalPend = new Set([...callbacks, ...interesados, ...misCompromisos, ...compromisosProspecto].map(l => l.id)).size;
+      // sumar los .length contaría dos veces al mismo lead. Red de seguridad
+      // NO participa de totalPend: es un backlog aparte, con su propio
+      // número en el panel de higiene de 34-03.
+      const totalPend = new Set([...callbacks, ...interesados, ...misCompromisos, ...compromisosProspecto, ...reintentos].map(l => l.id)).size;
       if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
 
       secEl.innerHTML =
-        _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge }) +
-        _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — si vence, seguimiento', null, { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', null, { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', null, { rowBadge: _hoyCommitBadge }) +
         _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
         _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
-        _hoyNewLeadsPointer(virgenesCount);
+        _hoyRenderSection('Reintentos de no-contacto', reintentos, '#8892A6', 'No atendieron — bajo esfuerzo, alto volumen', null) +
+        (tier123Empty ? _hoyNewLeadsPointer(virgenesCount) : '') +
+        _hoyRenderSection('Red de seguridad', redSeguridad, 'var(--text-tertiary)', 'Tocados sin próxima acción — resolvé desde acá', null, { collapsible: true });
       _hoyRenderedVersion = _leadStoreVersion;
     }
     window._hoyRenderFromStore = _hoyRenderFromStore;
@@ -6089,6 +6171,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         _hoyLeadIds = leads.map(l => l.id);
         _hoyFetchedAt = Date.now();
         _leadStoreDirty.clear();
+        // HOY-02 (Fase 34): poblar el filtro de país con los países presentes
+        // en ESTE fetch, ANTES de pintar — el desplegable necesita los leads
+        // recién traídos (a diferencia de _hoyPopulateSetterSelect, que se
+        // llama antes del fetch con la lista de setters).
+        _hoyPopulateCountryFilter(leads);
         _hoyRenderFromStore(leads);
 
         // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
@@ -6308,16 +6395,23 @@ document.addEventListener('DOMContentLoaded', async () => {
           title="Discar solo esta sección, uno atrás de otro"
           style="padding:5px 12px; background:color-mix(in srgb, ${accent} 14%, transparent); border:1px solid color-mix(in srgb, ${accent} 45%, transparent); color:var(--text-primary); border-radius:8px; cursor:pointer; font-size:11.5px; font-weight:600; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Power dialer</button>` : '';
-      return `<div class="hoy-section" style="--sec-accent:${accent};">
-        <div class="hoy-section-head">
+      // Fase 34 (D-09): Red de seguridad es colapsable — extensión NO invasiva
+      // (mismo criterio que opts.rowBadge, Fase 31): sin opts.collapsible el
+      // markup queda byte-idéntico al de antes de este plan. Empieza ABIERTA
+      // si hay algo que resolver ("idealmente vacía" no es "escondida").
+      const outerTag = opts.collapsible ? 'details' : 'div';
+      const headTag = opts.collapsible ? 'summary' : 'div';
+      const openAttr = opts.collapsible && leads.length ? ' open' : '';
+      return `<${outerTag} class="hoy-section" style="--sec-accent:${accent};"${openAttr}>
+        <${headTag} class="hoy-section-head"${opts.collapsible ? ' style="cursor:pointer;"' : ''}>
           <span class="hoy-section-dot"></span>
           <span class="hoy-section-title">${title}</span>
           <span class="hoy-section-count">${leads.length}</span>
           <span class="hoy-section-hint">${hint}</span>
           ${dialBtn}
-        </div>
+        </${headTag}>
         ${leads.length ? rows : '<div class="hoy-empty">Sin pendientes.</div>'}
-      </div>`;
+      </${outerTag}>`;
     }
     // Ficha completa del lead desde Hoy (2026-07-10, pedido del user): reutiliza
     // el MISMO panel expandido de la lista de Llamadas (_callsRenderExpandedPanel)

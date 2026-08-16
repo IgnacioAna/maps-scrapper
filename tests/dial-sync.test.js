@@ -176,8 +176,14 @@ describe("Los 4 títulos literales de Hoy siguen en _hoyRenderFromStore (anti-de
     expect(body).toContain("_hoyRenderSection('Interesados sin agendar'");
   });
 
-  it("_hoyRenderSection( aparece exactamente 5 veces en todo el archivo (1 declaración + 4 llamadas) — igual que antes del refactor", () => {
-    expect(countOccurrences(appJs, "_hoyRenderSection(")).toBe(5);
+  // 2026-08-16 (Fase 34, plan 02, HOY-01/D-01): la cascada de 5 tiers sumó 2
+  // llamadas nuevas a _hoyRenderSection ('Reintentos de no-contacto' y 'Red
+  // de seguridad', ver 34-02-PLAN.md) — el conteo sube de 5 a 7 (1
+  // declaración + 6 llamadas). Deviation Rule 1 documentada en
+  // 34-02-SUMMARY.md: el plan asumía este test sin cambios, pero el diseño
+  // explícito del mismo plan lo rompe — se corrige el número, no el diseño.
+  it("_hoyRenderSection( aparece exactamente 7 veces en todo el archivo (1 declaración + 6 llamadas, tras la cascada de 5 tiers de Fase 34)", () => {
+    expect(countOccurrences(appJs, "_hoyRenderSection(")).toBe(7);
   });
 });
 

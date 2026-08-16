@@ -210,12 +210,17 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
   // `loadHoyView` ahora extraen el de `_hoyRenderFromStore` — el contenido y
   // el propósito de cada assertion no cambian, solo DÓNDE vive el código que
   // verifican. Ver "Deviations" en 33-03-SUMMARY.md.
+  // 2026-08-16 (Fase 34, plan 02, HOY-01/D-01): los hints cambiaron de "falta
+  // cumplirlo"/"si vence, seguimiento" a "vence hoy"/"el plazo venció" — la
+  // cascada de 5 tiers acota Mis compromisos/Esperando del prospecto a lo que
+  // VENCE HOY (antes mostraban todo el pendiente sin filtrar fecha). Ver
+  // 34-02-PLAN.md Task 1, paso 11, y 34-02-SUMMARY.md.
   it("las 2 llamadas nuevas existen con los títulos LITERALES, dialerMode null y rowBadge", () => {
     expect(appJs).toContain(
-      "_hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge })"
+      "_hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — vence hoy', null, { rowBadge: _hoyCommitBadge })"
     );
     expect(appJs).toContain(
-      "_hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — si vence, seguimiento', null, { rowBadge: _hoyCommitBadge })"
+      "_hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — el plazo venció', null, { rowBadge: _hoyCommitBadge })"
     );
   });
 
@@ -237,12 +242,21 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
     expect(body).toContain("_commitmentHoyBucket(l, nowMsHoy) === 'prospecto'");
   });
 
-  it("_hoyRenderFromStore NO llama claimed.add para los leads de compromiso — el conteo global sigue en 2", () => {
-    // Los 2 usos preexistentes son callbacks.forEach(...) e interesados.forEach(...).
-    expect(countOccurrences(appJs, "claimed.add")).toBe(2);
+  // 2026-08-16 (Fase 34, plan 02, HOY-01/D-02): la intención se invirtió a
+  // propósito. Fase 31 dejó a Mis compromisos/Esperando del prospecto FUERA
+  // de `claimed` (respondían "quién me debe algo", no "cuándo vuelvo a
+  // llamar" — un lead podía estar en 2 secciones a la vez). Fase 34 pide
+  // exclusividad REAL entre los 5 tiers reclamables (D-02): ahora SÍ
+  // participan de `claimed`, junto con los 2 tiers nuevos (Reintentos y Red
+  // de seguridad) — 6 usos de claimed.add en total. Ver 34-02-PLAN.md.
+  it("_hoyRenderFromStore SÍ llama claimed.add para los 5 tiers reclamables (D-02) — el conteo global sube a 6", () => {
+    // callbacks / misCompromisos / compromisosProspecto / interesados / reintentos + redSeguridad.
+    expect(countOccurrences(appJs, "claimed.add")).toBe(6);
     const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
-    expect(body).not.toContain("misCompromisos.forEach(l => claimed.add");
-    expect(body).not.toContain("compromisosProspecto.forEach(l => claimed.add");
+    expect(body).toContain("misCompromisos.forEach(l => claimed.add");
+    expect(body).toContain("compromisosProspecto.forEach(l => claimed.add");
+    expect(body).toContain("reintentos.forEach(l => claimed.add");
+    expect(body).toContain("redSeguridad.forEach(l => claimed.add");
   });
 
   it("_hoyState incluye commitYoIds y commitProspectoIds", () => {
