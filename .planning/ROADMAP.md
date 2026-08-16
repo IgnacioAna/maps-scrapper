@@ -79,7 +79,7 @@ recordarle, el milestone falló.
 | 31 | COMM — Compromisos como objeto (4/4 planes, COMPLETE) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista (4/4 planes, COMPLETE) | ACT-01..05 | 29, 31 |
 | 33 | DIAL — Power Dialer como motor único (4/4 planes, COMPLETE) | DIAL-01..04 | 29, 30, 32 |
-| 34 | HOY — La vista diaria (3 planes planificados) | HOY-01..05 | 29, 30, 33 |
+| 34 | HOY — La vista diaria (1/3 planes) | HOY-01..05 | 29, 30, 33 |
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
 - [x] **Phase 29: NEXT — El reloj único** — `nextAction` como único objeto de próxima acción por lead, absorbe `callbackAt` y mata `followUps` (completed 2026-08-14)
@@ -87,7 +87,7 @@ recordarle, el milestone falló.
 - [x] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas (completed 2026-08-15)
 - [x] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy (completed 2026-08-15)
 - [x] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente (completed 2026-08-16)
-- [ ] **Phase 34: HOY — La vista diaria** — reordenada por prioridad, filtro por país, red de seguridad de higiene (planificada 2026-08-16, 3 planes listos para ejecutar)
+- [ ] **Phase 34: HOY — La vista diaria** — reordenada por prioridad, filtro por país, red de seguridad de higiene (Wave 1/3 ejecutada 2026-08-16: backend de nextAction resuelto + snapshot de higiene)
 
 > **Por qué la Phase 28 existe**: decisión del user (2026-08-13). Las dos
 > mejoras que más se sienten a diario (contar días a mano para programar un
@@ -384,7 +384,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 34-01-PLAN.md — HOY-04/HOY-05 (backend): `l.nextAction` resuelto en `/leads/sin-wsp` + `POST /api/setters/hoy-hygiene-snapshot`
+- [x] 34-01-PLAN.md — HOY-04/HOY-05 (backend): `l.nextAction` resuelto en `/leads/sin-wsp` + `POST /api/setters/hoy-hygiene-snapshot` (completed 2026-08-16, 34-01-SUMMARY.md)
 
 **Wave 2** *(depende de 34-01)*
 
@@ -408,7 +408,7 @@ Plans:
 | 31. COMM — Compromisos como objeto | 4/4 | Complete | 2026-08-15 |
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
 | 33. DIAL — Power Dialer como motor único | 3/4 | Executing | - |
-| 34. HOY — La vista diaria | 0/3 | Planned | - |
+| 34. HOY — La vista diaria | 1/3 | Executing | - |
 
 ---
 

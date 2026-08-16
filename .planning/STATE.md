@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T06:00:00.000Z"
+last_updated: "2026-08-16T15:10:45.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 22
-  completed_plans: 22
-  percent: 100
+  total_plans: 25
+  completed_plans: 24
+  percent: 86
 ---
 
 # SCM — STATE
@@ -39,17 +39,37 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 34 (hoy-vista-diaria) -- sin plan generado todavia (0/TBD en
-  ROADMAP.md, requiere discuss-phase/plan-phase). Directorio
-  `.planning/phases/34-hoy-vista-diaria/` ya existe pero vacio de PLAN.md
-  al cierre de Phase 33.
-Plan: N/A -- ultimo trabajo cerrado es 33-04 (ver bloque "Phase 33
-  COMPLETE" mas abajo)
+Phase: 34 (hoy-vista-diaria) -- 3 planes generados (34-01/34-02/34-03-PLAN.md),
+  Wave 1 (34-01) EXECUTED 2026-08-16. Wave 2 (34-02) depende de 34-01
+  (ya cumplido); Wave 3 (34-03) depende de 34-02.
+Plan: 34-01 EXECUTED (HOY-04/HOY-05, backend puro). Commits: `76555d4`
+  (feat, `l.nextAction` resuelto en `GET /leads/sin-wsp` vía
+  `_leadNextAction` + `POST /api/setters/hoy-hygiene-snapshot` con
+  `_hoyHygieneScope`, guard 403 para setter sin setterId vinculado) y
+  `a785a1c` (test, 16 tests nuevos en `tests/hoy-hygiene-snapshot.test.js`).
+  Backend-only, cero cambios en `public/*` -- sin bump de cache-buster.
+  **HOY-04/HOY-05 NO se marcan [x] en REQUIREMENTS.md todavia**: el
+  ROADMAP.md reparte cada uno en 2 planes (HOY-04: 34-01 backend + 34-02
+  "Red de seguridad" D-09/D-10/D-11 frontend; HOY-05: 34-01 backend +
+  34-03 "panel de higiene" D-12/D-13/D-14 frontend) -- la conducta
+  visible al user recien queda completa cuando termine el plan de
+  frontend correspondiente. Ver 34-01-SUMMARY.md.
+  Baseline de `npm test` medido con `index.js` stasheado a su estado
+  pre-plan: 1801/1801 (106 archivos). Con el plan aplicado: 1817/1817
+  (107 archivos), 0 regresiones. `next-action-model.test.js` y
+  `next-action-disposition.test.js` sin editar (diff vacio), confirmando
+  que resolver `l.nextAction` no rompio los 2 casos que ya lo chequeaban.
 Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
   marcados [x] en REQUIREMENTS.md. ROADMAP.md actualizado a mano (Phase 33
   Complete 4/4, gsd-sdk no disponible en este entorno -- riesgo de
   corrupcion documentado en 24-04/29-02/29-03/29-04/31-03/31-04, edicion
-  manual + git diff antes de commitear).
+  manual + git diff antes de commitear). **Phase 34 (HOY) EN EJECUCION:
+  1/3 planes (34-01 EXECUTED, 34-02/34-03 pendientes).** ROADMAP.md
+  actualizado a mano (34-01 checkbox [x], progreso 1/3, Executing) por el
+  mismo motivo (gsd-sdk no disponible: `state.advance-plan` responde
+  "Cannot parse Current Plan or Total Plans in Phase from STATE.md" y
+  `state.update-progress` responde "Progress field not found" contra el
+  formato manual de este STATE.md).
   33-04 (DIAL-04, ficha con historial de las vendedoras al frente) cerro
   en 3 commits: ad04823 (backend, _buildUserNameMap + userNames en
   GET /leads/sin-wsp), a43e4be (bloque [33-04] HISTORY-PURE +
