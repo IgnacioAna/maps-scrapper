@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T22:40:00.000Z"
-last_activity: 2026-08-15
+last_updated: "2026-08-16T03:35:00.000Z"
+last_activity: 2026-08-16
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 22
+  completed_plans: 19
   percent: 71
 ---
 
@@ -39,7 +39,57 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
+Phase: 33 (dial-motor-unico): Plan 1 of 4 executed (2026-08-16)
+Plan: 1 of 4 -- 33-01 con SUMMARY (33-01-SUMMARY.md)
+Status: 33-01 ejecutado y commiteado (commits d0b9187 punto de entrada
+  puntual + _pd.forced, 1e65f1f boton "Discar aca" en las 4 superficies,
+  5af406a suite de tests + cache-buster). window._pdDialHere(leadId,
+  mode): con el dialer cerrado lo abre posicionado en ese lead
+  (window._pdStart(mode, opts = {}) con opts.startAtLeadId; D-02: el
+  resto de la cola queda detras en su orden -- se posiciona con
+  currentIdx si ya esta en la cola, o se hace unshift + _pd.forced.add si
+  no); con el dialer YA abierto, salta a el sin cerrar ni rearmar nada.
+  _pd.forced (Set) sostiene en pantalla un lead pedido a mano
+  (interesado/callback futuro/hasta descartado) -- el guard de expulsion
+  de _pdRender (`!_pd.holdCurrent && !_pd.forced.has(currentId)`) lo
+  respeta. _pdInferDialerMode() resuelve 'hoy' vs 'calls' por la vista
+  visible, cero modos nuevos (D-03). La cola vacia de la vista ya NO
+  bloquea abrir el dialer si hay un lead puntual resoluble. Boton "Discar
+  aca" cableado en el builder unico _actButtonsHTML (variantes row/ficha/
+  hoy; NO en 'pd' a proposito) + un 4to punto de entrada en la fila de la
+  cola siguiente del propio dialer (#pd-queue). _actButtonsHTML sigue en
+  5 call sites (declaracion + 4), sin multiplicarse. Cache-buster app.js
+  20260815j -> 20260816a (style.css intacto, git diff vacio). Deviation
+  Rule 1: se invirtio el orden de reset holdMeta/holdOutcome dentro de
+  _pdDialHere para no agregar una 4ta ocurrencia del patron que
+  gate-destination.test.js (Phase 30) fija en exactamente 3 -- mismo
+  efecto, test ajeno sin editar. Verificacion por mutacion: romper el
+  guard !_pd.forced.has(currentId) puso en rojo exactamente 1/25 tests
+  nuevos; restaurado con git checkout -- public/app.js, diff vacio
+  confirmado antes de seguir. 25 tests nuevos en
+  tests/dial-start-at.test.js (>=18 pedidos). Suite completa: 1688/1688
+  (baseline 1663 de 32-04 + 25 nuevos, cero flaky esta corrida).
+  DIAL-01 completo (REQUIREMENTS.md marcado [x]). ROADMAP.md actualizado
+  a mano (Phase 33 1/4 planes). Nota operativa: gsd-sdk SI resolvio en
+  PATH esta sesion (v1.42.3, a diferencia de lo que decia config.json._
+  notes), pero `gsd-sdk query state.advance-plan` sobreescribio bloques
+  narrativos completos de este mismo archivo (los "Status:"/"Last
+  activity:" de las secciones de Phase 32 Y Phase 20 quedaron
+  reemplazados por texto generico "Phase complete — ready for
+  verification", perdiendo el detalle real) -- revertido de inmediato con
+  `git checkout -- .planning/STATE.md` y hecho a mano. Mismo patron de
+  precaucion que 24-01/24-02: este archivo tiene un formato custom que
+  las verbs genericas de gsd-sdk no entienden, no usarlas para
+  state.advance-plan/roadmap.update-plan-progress sobre STATE.md/
+  ROADMAP.md de este proyecto sin revisar el diff resultante antes de
+  dejarlo.
+Resume file: None
+Last activity: 2026-08-16 -- Phase 33 Plan 1 (punto de entrada puntual al
+  Power Dialer) completado, DIAL-01 cerrado. Siguiente: 33-02 (DIAL-02,
+  hold universal via _pdHold + _pd.pendingSave), Wave 2 del plan de la
+  fase, bloqueado hasta que este plan (Wave 1) quede confirmado.
+
+Phase 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
 Plan: 4 of 4 -- las 4 con SUMMARY (32-01/32-02/32-03/32-04)
 Status: 32-04 ejecutado y commiteado (commits adf3e55 descarte,
   9bf6503 material por email). window._actDiscard(leadId): overlay de
