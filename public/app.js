@@ -18133,7 +18133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const fmtFecha = (iso) => { const d = new Date(iso); return `${String(d.getDate()).padStart(2, '0')}/${d.getMonth() + 1} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
     const meetingRows = proximas.slice(0, 5).map((c) => `
       <div style="display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid var(--border-subtle); font-size:12.5px;">
-        <span style="color:var(--accent); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;">${fmtFecha(c.fecha)}</span>
+        <span style="color:var(--text-primary); font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;">${fmtFecha(c.fecha)}</span>
         <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(c.nombre || '(sin nombre)')}</span>
         ${new Date(c.fecha).getTime() < now ? '<span style="font-size:10px; color:#FFB341; margin-left:auto; white-space:nowrap;">vencida — actualizar</span>' : ''}
       </div>`).join('');
@@ -18443,9 +18443,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           </ul>
         </div>` : ''}
 
-        ${a.nextCallTip ? `<div style="padding:12px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:9px; text-align:center;">
-          <div style="font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">Cambio #1 para la próxima</div>
-          <div style="font-size:12.5px; color:#fff; font-weight:600; line-height:1.5;">${escHtml(a.nextCallTip)}</div>
+        ${a.nextCallTip ? `<div style="padding:12px; background:var(--bg-elevated); border:1px solid var(--border-default); border-left:3px solid var(--accent); border-radius:9px; text-align:center;">
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.5px; font-weight:600; margin-bottom:5px;">Cambio #1 para la próxima</div>
+          <div style="font-size:12.5px; color:var(--text-primary); font-weight:600; line-height:1.5;">${escHtml(a.nextCallTip)}</div>
         </div>` : ''}
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid rgba(255,255,255,0.05);">
