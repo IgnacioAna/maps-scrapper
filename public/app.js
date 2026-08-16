@@ -8108,6 +8108,116 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     };
 
+    // Fase 32, plan 04 (ACT-05, D-17/D-18): overlay de "Mandar material" por
+    // email — gemelo del de WhatsApp (mismo z-index:10060, mismo patrón de
+    // cierre, mismo _leadStoreApply/_dispoAnnounce(forceToast)/finally).
+    // Reusa el mismo catálogo de plantillas D-06 (ACT_WA_TEMPLATES) para que
+    // el material diga lo mismo por los dos canales. Dos vías, las dos
+    // visibles a la vez (D-15): "Mandar por el sistema" (Resend real) y
+    // "Abrir mi cliente de mail" (mailto, nunca intenta enviar — el backend
+    // arma igual el link y el registro queda hecho, D-04).
+    window._actSendMaterial = (leadId) => {
+      const lead = _callsLeadsById.get(leadId) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      if (!lead) { window.showToast?.('No encontré ese lead.', { type: 'error' }); return; }
+      const old = document.getElementById('act-material-overlay'); if (old) old.remove();
+      const ov = document.createElement('div');
+      ov.id = 'act-material-overlay';
+      ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10060; display:flex; align-items:center; justify-content:center; padding:20px;';
+      const defaultKey = 'envio_info';
+      const initialBody = _interpolateScript(_actTemplateById(defaultKey).body, lead);
+      const defaultSubject = 'La información que te prometí';
+      ov.innerHTML = `
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:480px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Mandar material — ${escHtml(lead.name || '')}</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Elegí plantilla, revisá el destinatario. Queda anotado el envío.</div>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Para</label>
+          <input id="act-mat-email" type="email" value="${escHtml(lead.email || '')}" placeholder="mail@clinica.com" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Plantilla</label>
+          <select id="act-mat-template" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            ${ACT_WA_TEMPLATES.map((t) => `<option value="${escHtml(t.key)}"${t.key === defaultKey ? ' selected' : ''}>${escHtml(t.label)}</option>`).join('')}
+          </select>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Asunto</label>
+          <input id="act-mat-subject" type="text" value="${escHtml(defaultSubject)}" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Mensaje</label>
+          <textarea id="act-mat-msg" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:16px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit; min-height:110px; resize:vertical;">${escHtml(initialBody)}</textarea>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button type="button" id="act-mat-send-resend" class="btn-accent" style="padding:11px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit;">Mandar por el sistema</button>
+            <button type="button" id="act-mat-send-mailto" class="call-action-btn" style="padding:11px; border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit; text-align:center;">Abrir mi cliente de mail</button>
+            <button type="button" id="act-mat-cancel" style="padding:9px 14px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-default); border-radius:9px; font-size:12.5px; cursor:pointer; font-family:inherit;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+
+      const onKeydown = (e) => { if (e.key === 'Escape') close(); };
+      const close = () => { ov.remove(); document.removeEventListener('keydown', onKeydown); };
+      document.addEventListener('keydown', onKeydown);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.getElementById('act-mat-cancel').onclick = close;
+
+      const templateSel = document.getElementById('act-mat-template');
+      const msgEl = document.getElementById('act-mat-msg');
+      templateSel.onchange = () => {
+        msgEl.value = _interpolateScript(_actTemplateById(templateSel.value).body, lead);
+      };
+
+      const resendBtn = document.getElementById('act-mat-send-resend');
+      const mailtoBtn = document.getElementById('act-mat-send-mailto');
+
+      const doSend = async (via) => {
+        const email = document.getElementById('act-mat-email').value;
+        const subject = document.getElementById('act-mat-subject').value;
+        const message = msgEl.value;
+        const templateId = templateSel.value;
+        resendBtn.disabled = true;
+        mailtoBtn.disabled = true;
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/send-material'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ via, email, subject, message, templateId }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (r.status === 409 && d.resendUnavailable) {
+            // Nada salió — nada se registra del lado del cliente (D-04,
+            // mismo criterio que el 409 del backend). El mailtoUrl ya viene
+            // en la respuesta por si el SDR quiere reintentar con la otra vía.
+            window.showToast?.(d.error || 'El envío por el sistema no está configurado — usá "Abrir mi cliente de mail".', { type: 'warn', duration: 6000 });
+            return;
+          }
+          if (r.status === 502) {
+            window.showToast?.(d.detail || 'No se pudo enviar el mail.', { type: 'error' });
+            return;
+          }
+          if (!r.ok) {
+            window.showToast?.(d.error || ('Error mandando material: HTTP ' + r.status), { type: 'error' });
+            return;
+          }
+          if (via === 'mailto' && d.mailtoUrl) {
+            const opened = window.open(d.mailtoUrl, '_blank', 'noopener');
+            if (!opened) {
+              window.showToast?.('El navegador bloqueó la pestaña — abrila a mano: ' + d.mailtoUrl, { type: 'warn', duration: 10000 });
+            }
+          }
+          if (d.lead) _leadStoreApply(leadId, d.lead);
+          _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
+        } catch (e) {
+          window.showToast?.('Error de red mandando material: ' + e.message, { type: 'error' });
+        } finally {
+          resendBtn.disabled = false;
+          mailtoBtn.disabled = false;
+          close();
+          _refreshLeadPanels(leadId);
+        }
+      };
+
+      resendBtn.onclick = () => doSend('resend');
+      mailtoBtn.onclick = () => doSend('mailto');
+    };
+
     // Toggle del formulario "Cambiar" (punto 1 del bloque Compromiso): el
     // formulario de carga queda oculto por defecto cuando ya hay un
     // compromiso vigente, y este botón lo muestra/oculta sin recargar nada.
@@ -8485,10 +8595,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:var(--accent-hover); font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
               Reactivar lead
             </button>` : ''}
-            ${(() => {
-              const safeEmail = String(l.email || '').trim();
-              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">Mandar mail</a>` : '';
-            })()}
+            <!-- Fase 32, plan 04 (ACT-05, D-17/D-18): reemplaza el link
+                 mailto viejo, que abria el cliente de mail con el cuerpo
+                 vacio y SIN dejar ningun registro -- exactamente el
+                 problema que ACT-05 cierra. Se renderiza SIEMPRE (con o
+                 sin lead.email): el overlay permite tipear el
+                 destinatario. -->
+            <button type="button" class="call-action-btn" onclick="window._actSendMaterial('${escHtml(l.id)}')">Mandar material</button>
             ${(() => {
               const safeW = safeUrl(l.website || '');
               return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Abrir web</a>` : '';
@@ -10436,6 +10549,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           estado: lead.commitment.estado,
           tipo: lead.commitment.tipo,
           parte: lead.commitment.parte,
+          // Fase 32, plan 04 (ACT-05, D-17): el canal por el que se cerró
+          // el compromiso — distingue "por WhatsApp" de "por email" en la
+          // línea de abajo, sin necesitar una vista nueva.
+          canal: lead.commitment.canal,
         });
       }
       if (events.length === 0) { box.style.display = 'none'; return; }
@@ -10468,7 +10585,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             : e.estado === 'incumplido' ? 'Compromiso no cumplió'
             : e.estado === 'vencido' ? 'Compromiso vencido'
             : 'Compromiso cerrado';
-          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml(_hEstadoTxt)}: ${escHtml(_commitmentLabel(e.tipo))} <span style="opacity:0.5;">· ${when}</span></div>`;
+          // Fase 32, plan 04 (ACT-05, D-17): canal del envío, cuando el
+          // compromiso lo tiene — es lo que hace verdadera la frase "mismo
+          // timeline del lead" sin agregar una vista nueva.
+          const _hCanalTxt = e.canal === 'whatsapp' ? ' por WhatsApp' : (e.canal === 'email' ? ' por email' : '');
+          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml(_hEstadoTxt)}: ${escHtml(_commitmentLabel(e.tipo))}${escHtml(_hCanalTxt)} <span style="opacity:0.5;">· ${when}</span></div>`;
         }
         return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
       }).join('');
