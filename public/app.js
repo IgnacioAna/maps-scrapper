@@ -6554,8 +6554,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // DIAL-02 (33-02): señal determinística de que una disposición se
       // GUARDÓ de verdad — la escribe el único punto post-guardado
       // (_dispoAfterSaved), en reemplazo de re-derivar el estado del lead
-      // para adivinarlo (la heurística stillActionable que este plan
-      // elimina). Shape: { leadId, outcome, at }.
+      // para adivinarlo (la heurística vieja que este plan elimina, ver
+      // window._pdHandleDisposition). Shape: { leadId, outcome, at }.
       pendingSave: null,
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
@@ -6995,6 +6995,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // un descartado — el user ya decidió que lo quiere discar y el dialer
       // no tiene derecho a sacárselo de la pantalla. _pd.forced lo sostiene
       // igual que holdCurrent.
+      // DIAL-02 (33-02, D-04): este guard NO mira _pd.mode ni _pd.hoyFilter —
+      // el hold es idéntico en la cola de Llamadas y en las 3 variantes de
+      // Hoy (completa/callbacks/interesados). Verificado leyendo el código:
+      // la premisa histórica ("hoy funciona solo en el dialer de Llamadas")
+      // ya no aplica desde que _pdHold es el único camino.
       if (!_pd.holdCurrent && !_pd.forced.has(currentId)) {
         if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
         // Fase 30 (GATE-01/GATE-02): un interesado SIEMPRE tiene un próximo
@@ -7493,24 +7498,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       const outcome = selectEl?.value;
       if (!outcome) return;
       const modalOpening = ['callback_later','scheduled_with_admin','answered_not_interested','answered_interested'].includes(outcome);
+      // DIAL-02 (33-02): capturar el arranque y limpiar cualquier pendingSave
+      // viejo ANTES de disparar el guardado — lo que quede en _pd.pendingSave
+      // después es necesariamente de ESTE flujo, nunca un residuo de una
+      // disposición anterior sobre el mismo lead (T-33-05).
+      const _startedAt = Date.now();
+      _pd.pendingSave = null;
       await window._handleCallDisposition(leadId, selectEl);
       // Audit fix Sprint 37 (BUG-A1): garantizar select usable después del flow
       // (el handler base lo deshabilita y solo lo limpia en algunos branches).
       if (selectEl) { selectEl.disabled = false; selectEl.value = ''; }
+      // DIAL-02: consume la señal solo si es de ESTE lead y de ESTE arranque.
+      const _consumeSaved = () => {
+        const ps = _pd.pendingSave;
+        if (!ps || ps.leadId !== leadId || ps.at < _startedAt) return null;
+        _pd.pendingSave = null;
+        return ps;
+      };
       // 2026-07-22: sin autopiloto, guardar el resultado NO saca al SDR de la
       // tarjeta — queda un banner "Resultado guardado" y avanza cuando quiere
       // (botón Siguiente / tecla S). Con autopiloto ON se mantiene el flow
-      // automático de siempre.
-      const _afterSaved = () => {
-        if (_pd.autopilot) { _pdAdvance(); return; }
-        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
-          _pd.holdCurrent = true;
-          _pd.holdOutcome = outcome;
-          _pdRender();
-        }
-      };
-      // Esperar a que se cierre el modal (si abrió uno) — chequear cada 300ms
-      // hasta 30s. Si el SDR cierra sin guardar (cancel), no avanza.
+      // automático de siempre (D-05) — _pdHold ya decide todo esto y valida
+      // que la tarjeta actual siga siendo este lead.
+      const _afterSaved = (ps) => _pdHold(leadId, (ps && ps.outcome) || outcome, {});
+      // Esperar a que se cierre el modal (si abrió uno) — chequear cada 400ms
+      // hasta 60s. Si el SDR cierra sin guardar (cancel), no avanza.
       if (modalOpening) {
         const modalIds = ['call-callback-modal','call-schedule-modal','call-objection-modal','call-next-modal'];
         // Esperar hasta que TODOS los modales relevantes estén hidden (o cancelaron)
@@ -7525,24 +7537,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(check, 400);
             return;
           }
-          // Avanzar/holdear solo si el lead realmente cambió de estado (la
-          // disposition fue confirmada). Si el SDR canceló, el lead sigue accionable.
           const lead = _callsLeadsById.get(leadId);
           if (!lead) { _pdAdvance(); return; } // lead borrado durante el flow
-          // Fase 30: un interesado recién guardado tiene callbackAt futuro
-          // (+3 días, D-02) → stillActionable da false y corre _afterSaved()
-          // (autopiloto avanza; sin autopiloto queda el banner "Resultado
-          // guardado", #151). Si el SDR CANCELA el modal, no se guardó nada,
-          // callbackAt sigue vacío → stillActionable da true y el dialer se
-          // queda en el lead (mismo comportamiento que los otros 3 modales).
-          const stillActionable = !['descartado','agendado'].includes(lead.estado) && (!lead.callbackAt || new Date(lead.callbackAt).getTime() <= Date.now());
-          if (!stillActionable) _afterSaved();
+          // DIAL-02: la heurística vieja de acá adentro (re-derivar "¿el
+          // lead sigue accionable?" desde el cache optimista para ADIVINAR
+          // si se guardó) se eliminó — daba falsos negativos cuando la
+          // respuesta del server no traía `lead`, y obligaba a que cada
+          // resultado nuevo (Phase 34 en adelante) dejara al lead en estado
+          // terminal o con fecha futura para que el hold funcionara. La
+          // señal ahora la da el guardado mismo: si hay un pendingSave de
+          // este lead y de este arranque, la disposición se confirmó. Si el
+          // SDR canceló el modal, no hay señal — no se holdea ni se avanza,
+          // el lead sigue siendo la tarjeta actual y accionable.
+          const ps = _consumeSaved();
+          if (ps) _afterSaved(ps);
         };
         setTimeout(check, 600);
       } else {
         // Outcomes directos (no_answer, voicemail, wrong_number, invalid_number,
-        // hung_up)
-        setTimeout(_afterSaved, 600);
+        // hung_up): en vez del setTimeout ciego de 600ms, esperar a que la
+        // señal aparezca con un polling acotado (T-33-06: techo duro 6s, 200ms
+        // por vuelta). Si el POST falló o el handler no confirmó, no hay
+        // pendingSave y no se holdea — el lead sigue siendo la tarjeta actual
+        // y accionable, que es el comportamiento correcto ante un error.
+        const _deadline = Date.now() + 6000;
+        const pollDirect = () => {
+          const ps = _consumeSaved();
+          if (ps) { _afterSaved(ps); return; }
+          if (Date.now() >= _deadline) return; // se agotó: no holdear
+          setTimeout(pollDirect, 200);
+        };
+        pollDirect();
       }
     };
 
@@ -8244,7 +8269,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           // tarjeta actual, la tarjeta dejó de corresponder — _pdAdvance ya
           // resetea holdCurrent/holdOutcome/holdMeta y pinta el siguiente
           // lead. No se setea el flag que pinta "✓ Resultado guardado": acá
-          // no se marcó ninguna disposición de llamada.
+          // no se marcó ninguna disposición de llamada. DIAL-02 (33-02):
+          // decisión explícita heredada de 32-04, no un olvido — nunca
+          // llamar a _pdHold desde acá.
           if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdAdvance();
           // Mismo guard que usa _dispoAfterSaved para refrescar Hoy si es la
           // vista visible (un descarte fuera de una llamada puede pasar
