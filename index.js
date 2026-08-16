@@ -7899,6 +7899,23 @@ function _buildUserSetterMap() {
   try { (loadAuthData().users || []).forEach((u) => { if (u.id && u.setterId) m[u.id] = u.setterId; }); } catch {}
   return m;
 }
+// Plan 33-04 (DIAL-04, R1/R6): callLog[].by es un id de usuario y la ficha
+// del lead necesita decir QUIÉN marcó la última disposición — el historial
+// de las vendedoras es un activo, no debe quedar como un id crudo. Devuelve
+// SOLO los ids pedidos (nunca el padrón entero) y SOLO el nombre — nunca el
+// email, que es un dato de contacto de un empleado sin uso en el bloque de
+// historial. Los ids de usuarios borrados simplemente no entran al mapa (el
+// frontend degrada solo, ver nota #149 de CLAUDE.md).
+function _buildUserNameMap(ids) {
+  const m = {};
+  if (!ids || !ids.size) return m;
+  try {
+    (loadAuthData().users || []).forEach((u) => {
+      if (u.id && ids.has(u.id) && u.name) m[u.id] = u.name;
+    });
+  } catch {}
+  return m;
+}
 function _callSetterId(entry, lead, userMap) {
   // Phase 29 / plan 29-04 (Rule 1 — bug preexistente destapado al testear la
   // migración): un lead con nextAction origen='manual' pero callLog VACÍO
@@ -8926,6 +8943,17 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
   // "este SDR lo trabajó" — sin este flag, "En seguimiento" de Mi rendimiento
   // contaba herencia de SDRs anteriores (Judith: 55 mostrados vs 21 propios).
   const _swUserMap = _buildUserSetterMap();
+  // Plan 33-04 (DIAL-04): juntamos los ids de `callLog[].by` de los leads que
+  // esta respuesta ya va a devolver, para resolver del lado del frontend
+  // quién marcó cada disposición (el bloque [33-04] HISTORY-PURE de la
+  // ficha). Solo los ids referenciados en ESTA cola — nunca el padrón
+  // completo de usuarios (T-33-12).
+  const _swNameIds = new Set();
+  for (const l of leads) {
+    const _log = Array.isArray(l.callLog) ? l.callLog : [];
+    for (const e of _log) { if (e && e.by) _swNameIds.add(e.by); }
+  }
+  const userNames = _buildUserNameMap(_swNameIds);
   for (const l of leads) {
     l.calledByOwner = _setterCalledLead(l, l.assignedTo, _swUserMap);
     // 2026-07-22 (criterio del user): "En seguimiento" del pipeline = SOLO
@@ -8945,7 +8973,7 @@ app.get('/api/setters/leads/sin-wsp', requireAuth, (req, res) => {
     l.manualCallbackByOwner = !!(_na && _na.dueAt && _na.origen === 'manual'
       && _callSetterId(_last, l, _swUserMap) === l.assignedTo);
   }
-  res.json({ leads });
+  res.json({ leads, userNames });
 });
 
 // Sprint 32: Analytics de objeciones agregadas. Devuelve counts por tag,
