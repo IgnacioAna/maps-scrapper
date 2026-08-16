@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-15T20:19:09.000Z"
+last_updated: "2026-08-15T22:40:00.000Z"
 last_activity: 2026-08-15
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 18
-  completed_plans: 17
-  percent: 57
+  completed_plans: 18
+  percent: 71
 ---
 
 # SCM — STATE
@@ -39,47 +39,54 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 32 (act-acciones) — EXECUTING
-Plan: 4 of 4 (32-01/32-02/32-03 con SUMMARY; 32-04 pendiente)
-Status: 32-03 ejecutado y commiteado (3/3 tasks, commits 2197783/76db3c0/
-  53c056b). Bloque puro [32-03] ACT-PURE (3 plantillas D-06, keys
-  espejadas con ACT_WA_TEMPLATE_IDS del backend, sin marca, sin ¿/¡,
-  vocabulario {name}/{city}/{setterName}). _actButtonsHTML(leadId, opts):
-  builder unico del boton de WhatsApp cableado en las 4 superficies
-  (renderCallsList/row, _pdRender/pd, _callsRenderExpandedPanel/ficha,
-  _hoyRenderSection/hoy) -- 5 ocurrencias totales (declaracion + 4 call
-  sites). Removido el quick-link legacy de wa-multi (lead.whatsappUrl +
-  _waBtnClick) del Power Dialer -- dos botones de WhatsApp distintos en
-  la misma tarjeta era peor que uno; _waBtnClick/_waMultiClick intactos.
-  window._actWhatsApp(leadId): overlay con plantilla editable + destino
-  (principal/alternativo/otro numero con guardado opcional, reusa
-  window._callsAltContact para el editor completo) + CTA que hace POST
-  .../whatsapp-send (32-01) -> window.open(whatsappUrl, '_blank',
-  'noopener') -> _leadStoreApply -> _dispoAnnounce(forceToast:true); si
-  el popup se bloquea, avisa con el link para abrirlo a mano. NUNCA llama
-  a ningun redibujado del Power Dialer ni toca el flag de "Resultado
-  guardado" (el gate de la Phase 20 sigue abierto -- no se marco ninguna
-  disposicion). _dispoDestination gana una rama nueva (entre compromiso
-  pendiente e interesado): commitment cumplido/yo + nextAction
-  {origen:'compromiso', tipo:'esperar_respuesta'} -> vista 'en Hoy ->
-  Esperando del prospecto' (antes caia en el generico "a la cola de
-  Llamadas", que mentia). _dispoAnnounce gana opts.forceToast como
-  early-return ANTES del if (_pd.active) existente (no se toco su
-  literal, protegido por tests/gate-destination.test.js que lo verifica
-  por string match exacto). [Rule 1] 2 comentarios propios reescritos en
-  prosa (evitando los literales lead.whatsappUrl/_waBtnClick/_pdRender(/
-  _pd.holdCurrent) porque sus propios acceptance criteria de grep exigian
-  la AUSENCIA de esos tokens -- mismo patron que 32-01 documento con
-  setterId/callLog. Cache-buster app.js 20260815g -> 20260815h (style.css
-  intacto). Verificacion por mutacion: romper la llamada de
-  _hoyRenderSection puso en rojo exactamente 2/38 tests; restaurado con
-  git checkout, diff vacio confirmado. 38 tests nuevos en
-  tests/act-ui-whatsapp.test.js. Suite completa 1588/1588 (baseline 1550
-  + 38, sin flaky). ACT-01/02/03 completos (REQUIREMENTS.md marcado).
+Phase: 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
+Plan: 4 of 4 -- las 4 con SUMMARY (32-01/32-02/32-03/32-04)
+Status: 32-04 ejecutado y commiteado (commits adf3e55 descarte,
+  9bf6503 material por email). window._actDiscard(leadId): overlay de
+  un solo paso (razon opcional via DISQUALIFY_REASONS_UI + checkbox DNC)
+  -- POST .../discard -> _leadStoreApply -> _dispoAnnounce(forceToast:
+  true) -> _pdAdvance si es la tarjeta actual del Power Dialer -> refresh
+  de Hoy si es la vista visible; NUNCA _dispoAfterSaved (no toca el gate
+  de la Phase 20). _actButtonsHTML gana el boton Descartar en las 4
+  superficies (mismo builder que WhatsApp, sin multiplicar los call
+  sites): un lead ya descartado muestra el chip .scm-chip-blocked (gris,
+  icono + etiqueta, nunca rojo -- D-16) en vez del boton. renderCallsList
+  marca la fila descartada con .scm-row-blocked; los telefonos de la
+  lista y de Hoy llevan class="scm-phone" (tachado automatico via CSS ya
+  existente, no tocada). loadHoyView: las 2 secciones de compromiso
+  ("Mis compromisos"/"Esperando del prospecto") filtran !terminal(l) --
+  un lead descartado por otra via (bulk admin, answered_not_interested)
+  ya no queda flotando ahi para siempre; es la red que hace verdadera la
+  promesa de ACT-04 ("sale de todas las listas de una"). window.
+  _actSendMaterial(leadId): overlay gemelo del de WhatsApp (Para/
+  Plantilla/Asunto/Mensaje editables, reusa ACT_WA_TEMPLATES +
+  _interpolateScript de 32-03), dos CTAs visibles a la vez (D-15):
+  "Mandar por el sistema" (via:'resend') y "Abrir mi cliente de mail"
+  (via:'mailto', window.open del mailtoUrl). 409/resendUnavailable y 502
+  no registran nada del lado del cliente; 200 hace _leadStoreApply +
+  _dispoAnnounce(forceToast) -- sin _pdRender (el envio programa
+  nextAction a +48h, mismo criterio que 32-03). El link mailto viejo de
+  la ficha (sin registro, cuerpo vacio) se reemplazo por el boton
+  "Mandar material", siempre visible con o sin lead.email.
+  _renderCallHistory distingue "por WhatsApp"/"por email" en la linea
+  del compromiso cerrado (mismo timeline, ACT-05). Cache-buster app.js
+  20260815i -> 20260815j (style.css intacto, git diff vacio). Verificacion
+  por mutacion: romper el !terminal(l) de una de las 2 lineas de Hoy puso
+  en rojo exactamente 1/44 tests nuevos; restaurado con git checkout --
+  public/app.js, diff vacio confirmado. 44 tests nuevos en
+  tests/act-ui-discard-material.test.js (>=19 pedidos, 0 ocurrencias del
+  literal de fecha pineado). Suite completa: 1663/1663 (1583 en la
+  corrida en paralelo + 80 de 7 archivos no relacionados que dieron hook-
+  timeout por contencion de recursos bajo carga total y pasaron 80/80 al
+  re-correrlos aislados -- ninguno toca app.js/index.js de esta fase, ver
+  detalle en 32-04-SUMMARY.md). ACT-01..05 completos (REQUIREMENTS.md
+  marcado [x]). ROADMAP.md actualizado a mano (Phase 32 Complete 4/4,
+  gsd-sdk no disponible en este entorno).
 Resume file: None
-Last activity: 2026-08-15 -- Phase 32 Plan 3 (frontend WhatsApp)
-  completado, ACT-01/02/03 cerrados. Queda solo 32-04 (frontend
-  descartar + material por email, que ademas cierra ACT-04/05 en la UI).
+Last activity: 2026-08-15 -- Phase 32 Plan 4 (frontend descartar +
+  material por email) completado, ACT-04/05 cerrados. **Fase 32 (ACT)
+  COMPLETA (4/4 planes)**. Siguiente: Phase 33 (dial-power-dialer) --
+  sin plan generado todavia (0/TBD en ROADMAP.md, requiere plan-phase).
 
 Phase 31 (comm-compromisos): **COMPLETE** (4/4 planes, 2026-08-15). D-10:
   dos secciones nuevas en Hoy ("Mis compromisos" / "Esperando del

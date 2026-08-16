@@ -5980,9 +5980,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         // en Interesados Y además tener un compromiso pendiente al mismo
         // tiempo, y eso es correcto, no un duplicado a evitar.
         const nowMsHoy = now;
-        const misCompromisos = leads.filter(l => notDnc(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
+        // Fase 32, plan 04 (ACT-04): el descarte NUEVO (window._actDiscard,
+        // 32-02) cierra el compromiso pendiente solo — pero un lead
+        // descartado por OTRA vía (el bulk de admin, un
+        // answered_not_interested) conserva su compromiso pendiente y sin
+        // este !terminal(l) se quedaría en estas 2 secciones para siempre.
+        // Este filtro es la red que hace verdadera la promesa de ACT-04
+        // ("sale de todas las listas de una").
+        const misCompromisos = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
           .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
-        const compromisosProspecto = leads.filter(l => notDnc(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
+        const compromisosProspecto = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
           .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
         // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
         // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
@@ -6115,18 +6122,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       const variant = opts.variant || 'row';
       const id = escHtml(leadId);
       const title = escHtml('Mandar WhatsApp: elegís plantilla y número, se abre el chat con el mensaje cargado y el envío queda anotado');
+      // Fase 32, plan 04 (D-12..D-16, ACT-04): segundo botón del mismo
+      // builder — "Descartar". La función resuelve el lead acá adentro
+      // (defensivo: si no está en caché, se comporta como lead NO
+      // descartado — se ve el botón, no el chip). Si el lead ya está
+      // descartado, en vez del botón se emite el chip de estado bloqueado
+      // de marca (D-16: gris atenuado, ícono + etiqueta, nunca rojo).
+      const lead = _callsLeadsById?.get?.(leadId);
+      const discardTitle = escHtml('Descartar: razón opcional — saca el lead de Llamadas, del Power Dialer y de Hoy de una sola vez');
+      const discardChip = `<span class="scm-chip-blocked" title="Lead descartado"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Descartado</span>`;
+      const isDiscardedLead = !!(lead && lead.estado === 'descartado');
       if (variant === 'pd') {
-        return `<button type="button" class="pd-quick-link" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>`;
+        const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="pd-quick-link" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
+        return `<button type="button" class="pd-quick-link" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>${discardHtml}`;
       }
       if (variant === 'ficha') {
-        return `<button type="button" class="call-action-btn is-wsp" onclick="window._actWhatsApp('${id}')" title="${title}">Mandar WhatsApp</button>`;
+        const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="call-action-btn" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
+        return `<button type="button" class="call-action-btn is-wsp" onclick="window._actWhatsApp('${id}')" title="${title}">Mandar WhatsApp</button>${discardHtml}`;
       }
       if (variant === 'hoy') {
-        return `<button type="button" class="hoy-ficha-btn" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>`;
+        const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="hoy-ficha-btn" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
+        return `<button type="button" class="hoy-ficha-btn" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>${discardHtml}`;
       }
       // 'row' (lista de Llamadas): pill chico calcado del botón "+ contacto"
       // (la fila tiene su propio manejo de click, de ahí stopPropagation).
-      return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>`;
+      const discardHtml = isDiscardedLead ? discardChip : `<button type="button" onclick="event.stopPropagation(); window._actDiscard('${id}')" title="${discardTitle}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Descartar</button>`;
+      return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>${discardHtml}`;
     }
 
     function _hoyRenderSection(title, leads, accent, hint, dialerMode, opts = {}) {
@@ -6153,7 +6174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
-            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
+            <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span class="scm-phone" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
@@ -8006,6 +8027,197 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
     };
 
+    // Fase 32, plan 04 (ACT-04, D-12..D-16): overlay de "Descartar" — el
+    // mismo componente para las 4 superficies vía _actButtonsHTML. Un solo
+    // paso (D-15): razón (opcional) + DNC visibles a la vez, sin pantalla de
+    // confirmación aparte — un descarte sin motivo se completa igual (D-14).
+    // z-index:10060, mismo criterio que window._actWhatsApp (este overlay
+    // también se abre desde la ficha de Hoy, que ya es un .modal-overlay en
+    // 10000).
+    window._actDiscard = (leadId) => {
+      const lead = _callsLeadsById.get(leadId) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      if (!lead) { window.showToast?.('No encontré ese lead.', { type: 'error' }); return; }
+      const old = document.getElementById('act-discard-overlay'); if (old) old.remove();
+      const ov = document.createElement('div');
+      ov.id = 'act-discard-overlay';
+      ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10060; display:flex; align-items:center; justify-content:center; padding:20px;';
+      ov.innerHTML = `
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:420px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Descartar — ${escHtml(lead.name || '')}</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Sale de Llamadas, del Power Dialer y de Hoy. La razón es opcional.</div>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Razón (opcional)</label>
+          <select id="act-discard-reason" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            ${DISQUALIFY_REASONS_UI.map((r) => `<option value="${escHtml(r.key)}">${escHtml(r.label)}</option>`).join('')}
+          </select>
+
+          <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-primary); margin-bottom:6px; cursor:pointer;">
+            <input type="checkbox" id="act-discard-dnc" style="accent-color:var(--accent);"> No volver a llamar (DNC)
+          </label>
+          <p style="font-size:10.5px; color:var(--text-tertiary); margin:0 0 16px; line-height:1.4;">Elegir "Pidió NO ser contactado (DNC)" ya lo marca solo.</p>
+
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" id="act-discard-confirm" class="call-action-btn" style="flex:1; padding:11px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit; text-align:center; font-weight:600;">Descartar</button>
+            <button type="button" id="act-discard-cancel" style="padding:11px 14px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-default); border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+
+      const onKeydown = (e) => { if (e.key === 'Escape') close(); };
+      const close = () => { ov.remove(); document.removeEventListener('keydown', onKeydown); };
+      document.addEventListener('keydown', onKeydown);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.getElementById('act-discard-cancel').onclick = close;
+
+      const confirmBtn = document.getElementById('act-discard-confirm');
+      confirmBtn.onclick = async () => {
+        const reason = document.getElementById('act-discard-reason').value;
+        const doNotCall = !!document.getElementById('act-discard-dnc').checked;
+        confirmBtn.disabled = true;
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/discard'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason, doNotCall }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            window.showToast?.(d.error || ('Error descartando: HTTP ' + r.status), { type: 'error' });
+            return;
+          }
+          if (d.lead) _leadStoreApply(leadId, d.lead);
+          _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
+          _callsRenderCountryChips?.();
+          renderCallsStats?.();
+          // Si el Power Dialer está activo y el lead descartado es el de la
+          // tarjeta actual, la tarjeta dejó de corresponder — _pdAdvance ya
+          // resetea holdCurrent/holdOutcome/holdMeta y pinta el siguiente
+          // lead. No se setea el flag que pinta "✓ Resultado guardado": acá
+          // no se marcó ninguna disposición de llamada.
+          if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdAdvance();
+          // Mismo guard que usa _dispoAfterSaved para refrescar Hoy si es la
+          // vista visible (un descarte fuera de una llamada puede pasar
+          // igual desde ahí, ej. la ficha abierta con window._hoyOpenFicha).
+          try { if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView(); } catch {}
+        } catch (e) {
+          window.showToast?.('Error de red descartando: ' + e.message, { type: 'error' });
+        } finally {
+          confirmBtn.disabled = false;
+          close();
+          _refreshLeadPanels(leadId);
+        }
+      };
+    };
+
+    // Fase 32, plan 04 (ACT-05, D-17/D-18): overlay de "Mandar material" por
+    // email — gemelo del de WhatsApp (mismo z-index:10060, mismo patrón de
+    // cierre, mismo _leadStoreApply/_dispoAnnounce(forceToast)/finally).
+    // Reusa el mismo catálogo de plantillas D-06 (ACT_WA_TEMPLATES) para que
+    // el material diga lo mismo por los dos canales. Dos vías, las dos
+    // visibles a la vez (D-15): "Mandar por el sistema" (Resend real) y
+    // "Abrir mi cliente de mail" (mailto, nunca intenta enviar — el backend
+    // arma igual el link y el registro queda hecho, D-04).
+    window._actSendMaterial = (leadId) => {
+      const lead = _callsLeadsById.get(leadId) || (callsLeadsCache || []).find((x) => x.id === leadId);
+      if (!lead) { window.showToast?.('No encontré ese lead.', { type: 'error' }); return; }
+      const old = document.getElementById('act-material-overlay'); if (old) old.remove();
+      const ov = document.createElement('div');
+      ov.id = 'act-material-overlay';
+      ov.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:10060; display:flex; align-items:center; justify-content:center; padding:20px;';
+      const defaultKey = 'envio_info';
+      const initialBody = _interpolateScript(_actTemplateById(defaultKey).body, lead);
+      const defaultSubject = 'La información que te prometí';
+      ov.innerHTML = `
+        <div style="background:var(--bg-card,#181b21); border:1px solid var(--border-default); border-radius:14px; width:100%; max-width:480px; padding:22px; box-shadow:0 20px 60px rgba(0,0,0,0.5); max-height:90vh; overflow-y:auto;">
+          <div style="font-size:15px; font-weight:700; color:var(--text-primary); margin-bottom:3px;">Mandar material — ${escHtml(lead.name || '')}</div>
+          <div style="font-size:12px; color:var(--text-secondary); margin-bottom:16px; line-height:1.5;">Elegí plantilla, revisá el destinatario. Queda anotado el envío.</div>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Para</label>
+          <input id="act-mat-email" type="email" value="${escHtml(lead.email || '')}" placeholder="mail@clinica.com" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Plantilla</label>
+          <select id="act-mat-template" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+            ${ACT_WA_TEMPLATES.map((t) => `<option value="${escHtml(t.key)}"${t.key === defaultKey ? ' selected' : ''}>${escHtml(t.label)}</option>`).join('')}
+          </select>
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Asunto</label>
+          <input id="act-mat-subject" type="text" value="${escHtml(defaultSubject)}" style="width:100%; box-sizing:border-box; padding:10px 12px; margin-bottom:12px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit;">
+
+          <label style="display:block; font-size:10.5px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.4px; font-weight:600; margin-bottom:5px;">Mensaje</label>
+          <textarea id="act-mat-msg" style="width:100%; box-sizing:border-box; padding:11px 13px; margin-bottom:16px; border-radius:9px; border:1px solid var(--border-default); background:var(--bg-app); color:var(--text-primary); font-size:13.5px; font-family:inherit; min-height:110px; resize:vertical;">${escHtml(initialBody)}</textarea>
+
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button type="button" id="act-mat-send-resend" class="btn-accent" style="padding:11px; border-radius:9px; font-size:13.5px; cursor:pointer; font-family:inherit;">Mandar por el sistema</button>
+            <button type="button" id="act-mat-send-mailto" class="call-action-btn" style="padding:11px; border-radius:9px; font-size:13px; cursor:pointer; font-family:inherit; text-align:center;">Abrir mi cliente de mail</button>
+            <button type="button" id="act-mat-cancel" style="padding:9px 14px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-default); border-radius:9px; font-size:12.5px; cursor:pointer; font-family:inherit;">Cancelar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(ov);
+
+      const onKeydown = (e) => { if (e.key === 'Escape') close(); };
+      const close = () => { ov.remove(); document.removeEventListener('keydown', onKeydown); };
+      document.addEventListener('keydown', onKeydown);
+      ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+      document.getElementById('act-mat-cancel').onclick = close;
+
+      const templateSel = document.getElementById('act-mat-template');
+      const msgEl = document.getElementById('act-mat-msg');
+      templateSel.onchange = () => {
+        msgEl.value = _interpolateScript(_actTemplateById(templateSel.value).body, lead);
+      };
+
+      const resendBtn = document.getElementById('act-mat-send-resend');
+      const mailtoBtn = document.getElementById('act-mat-send-mailto');
+
+      const doSend = async (via) => {
+        const email = document.getElementById('act-mat-email').value;
+        const subject = document.getElementById('act-mat-subject').value;
+        const message = msgEl.value;
+        const templateId = templateSel.value;
+        resendBtn.disabled = true;
+        mailtoBtn.disabled = true;
+        try {
+          const r = await fetch(apiUrl('/api/setters/leads/' + encodeURIComponent(leadId) + '/send-material'), {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ via, email, subject, message, templateId }),
+          });
+          const d = await r.json().catch(() => ({}));
+          if (r.status === 409 && d.resendUnavailable) {
+            // Nada salió — nada se registra del lado del cliente (D-04,
+            // mismo criterio que el 409 del backend). El mailtoUrl ya viene
+            // en la respuesta por si el SDR quiere reintentar con la otra vía.
+            window.showToast?.(d.error || 'El envío por el sistema no está configurado — usá "Abrir mi cliente de mail".', { type: 'warn', duration: 6000 });
+            return;
+          }
+          if (r.status === 502) {
+            window.showToast?.(d.detail || 'No se pudo enviar el mail.', { type: 'error' });
+            return;
+          }
+          if (!r.ok) {
+            window.showToast?.(d.error || ('Error mandando material: HTTP ' + r.status), { type: 'error' });
+            return;
+          }
+          if (via === 'mailto' && d.mailtoUrl) {
+            const opened = window.open(d.mailtoUrl, '_blank', 'noopener');
+            if (!opened) {
+              window.showToast?.('El navegador bloqueó la pestaña — abrila a mano: ' + d.mailtoUrl, { type: 'warn', duration: 10000 });
+            }
+          }
+          if (d.lead) _leadStoreApply(leadId, d.lead);
+          _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
+        } catch (e) {
+          window.showToast?.('Error de red mandando material: ' + e.message, { type: 'error' });
+        } finally {
+          resendBtn.disabled = false;
+          mailtoBtn.disabled = false;
+          close();
+          _refreshLeadPanels(leadId);
+        }
+      };
+
+      resendBtn.onclick = () => doSend('resend');
+      mailtoBtn.onclick = () => doSend('mailto');
+    };
+
     // Toggle del formulario "Cambiar" (punto 1 del bloque Compromiso): el
     // formulario de carga queda oculto por defecto cuando ya hay un
     // compromiso vigente, y este botón lo muestra/oculta sin recargar nada.
@@ -8383,10 +8595,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${l.estado === 'descartado' ? `<button class="call-action-btn" onclick="window._callsReactivate('${escHtml(l.id)}')" style="background:rgba(91,185,116,0.12); border-color:rgba(91,185,116,0.4); color:var(--accent-hover); font-weight:600;" title="Volver el lead a estado sin_contactar para llamarlo de nuevo">
               Reactivar lead
             </button>` : ''}
-            ${(() => {
-              const safeEmail = String(l.email || '').trim();
-              return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(safeEmail) ? `<a href="mailto:${escHtml(safeEmail)}" class="call-action-btn">Mandar mail</a>` : '';
-            })()}
+            <!-- Fase 32, plan 04 (ACT-05, D-17/D-18): reemplaza el link
+                 mailto viejo, que abria el cliente de mail con el cuerpo
+                 vacio y SIN dejar ningun registro -- exactamente el
+                 problema que ACT-05 cierra. Se renderiza SIEMPRE (con o
+                 sin lead.email): el overlay permite tipear el
+                 destinatario. -->
+            <button type="button" class="call-action-btn" onclick="window._actSendMaterial('${escHtml(l.id)}')">Mandar material</button>
             ${(() => {
               const safeW = safeUrl(l.website || '');
               return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Abrir web</a>` : '';
@@ -8663,7 +8878,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Sprint 38: usar flag-icons (SVG) en lugar de emoji para look B2B consistente
         const flagIcon = l.country ? countryFlagHTML(l.country, 'lg') : '<svg width="22" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.55;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-        const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}${isSelected ? ' is-selected' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}; ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: ${gridCols}; gap:14px; align-items:center;">
+        // Fase 32, plan 04 (D-16): marca de estado bloqueado — degrada la fila
+        // (opacidad + teléfono tachado vía .scm-phone) sin ocultarla.
+        const rowHtml = `<div class="call-row${isExpanded ? ' is-expanded' : ''}${isSelected ? ' is-selected' : ''}${isDiscarded ? ' scm-row-blocked' : ''}" data-id="${escHtml(l.id)}" style="background:var(--bg-surface); border:1px solid ${isSelected ? 'var(--accent)' : 'var(--border-subtle)'}; ${cardBorder} border-radius:12px; padding:14px 18px; display:grid; grid-template-columns: ${gridCols}; gap:14px; align-items:center;">
           ${checkboxCol}
           <div style="display:flex; align-items:center; justify-content:center;">${flagIcon}</div>
 
@@ -8688,7 +8905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${_actButtonsHTML(l.id, { variant: 'row' })}
             </div>
             <div style="font-size:12px; color:var(--text-secondary); margin-top:3px;">
-              ${l.phone ? `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
+              ${l.phone ? `<span class="scm-phone" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
             ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
@@ -10332,6 +10549,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           estado: lead.commitment.estado,
           tipo: lead.commitment.tipo,
           parte: lead.commitment.parte,
+          // Fase 32, plan 04 (ACT-05, D-17): el canal por el que se cerró
+          // el compromiso — distingue "por WhatsApp" de "por email" en la
+          // línea de abajo, sin necesitar una vista nueva.
+          canal: lead.commitment.canal,
         });
       }
       if (events.length === 0) { box.style.display = 'none'; return; }
@@ -10364,7 +10585,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             : e.estado === 'incumplido' ? 'Compromiso no cumplió'
             : e.estado === 'vencido' ? 'Compromiso vencido'
             : 'Compromiso cerrado';
-          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml(_hEstadoTxt)}: ${escHtml(_commitmentLabel(e.tipo))} <span style="opacity:0.5;">· ${when}</span></div>`;
+          // Fase 32, plan 04 (ACT-05, D-17): canal del envío, cuando el
+          // compromiso lo tiene — es lo que hace verdadera la frase "mismo
+          // timeline del lead" sin agregar una vista nueva.
+          const _hCanalTxt = e.canal === 'whatsapp' ? ' por WhatsApp' : (e.canal === 'email' ? ' por email' : '');
+          return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml(_hEstadoTxt)}: ${escHtml(_commitmentLabel(e.tipo))}${escHtml(_hCanalTxt)} <span style="opacity:0.5;">· ${when}</span></div>`;
         }
         return `<div style="padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">${escHtml((e.text || '').substring(0, 110))}${(e.text || '').length > 110 ? '…' : ''} <span style="opacity:0.5;">· ${when}${e.by ? ' · ' + escHtml(e.by) : ''}</span></div>`;
       }).join('');

@@ -315,9 +315,9 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - [x] **ACT-03**: Puede mandar a un **número alternativo** cargado en el
   momento (caso real: el número que llamó no tiene WhatsApp y le pasan otro
   durante la llamada). *(R4)*
-- [ ] **ACT-04**: Botón de descartar desde cualquier vista, que saca el lead
+- [x] **ACT-04**: Botón de descartar desde cualquier vista, que saca el lead
   de todas las listas de una. *(R5)*
-- [ ] **ACT-05**: El envío de material por email queda registrado con el
+- [x] **ACT-05**: El envío de material por email queda registrado con el
   mismo modelo de evento que WhatsApp. Sin tracking de aperturas (Apple MPP
   las volvió ruido).
 
