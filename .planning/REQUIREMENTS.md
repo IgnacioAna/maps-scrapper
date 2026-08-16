@@ -343,11 +343,11 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   nuevos por score. *(R3)*
 - [x] **HOY-02**: Puede filtrar Hoy por país, para saber a quién puede
   llamar ahora según huso horario. *(R3)*
-- [ ] **HOY-03**: Cada sección se trabaja en modo cola (una tarjeta, marcar
+- [x] **HOY-03**: Cada sección se trabaja en modo cola (una tarjeta, marcar
   y siguiente) con contador de cuántas quedan.
 - [x] **HOY-04**: Hay una red de seguridad visible: los leads tocados que
   quedaron sin próxima acción. Objetivo: vacía.
-- [ ] **HOY-05**: Un panel de higiene muestra si la cola de vencidos crece o
+- [x] **HOY-05**: Un panel de higiene muestra si la cola de vencidos crece o
   se vacía — el indicador de si está por encima de su capacidad.
 
 ---

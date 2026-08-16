@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T15:30:00.000Z"
+last_updated: "2026-08-16T16:10:00.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 25
   completed_plans: 25
-  percent: 86
+  percent: 100
 ---
 
 # SCM — STATE
@@ -39,12 +39,32 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 34 (hoy-vista-diaria) -- 3 planes generados (34-01/34-02/34-03-PLAN.md),
-  Wave 1 (34-01) EXECUTED 2026-08-16. Wave 2 (34-02) EXECUTED 2026-08-16
-  (dependia de 34-01, ya cumplido). Wave 3 (34-03) depende de 34-02 (ya
-  cumplido) -- unico plan que falta para cerrar la Fase 34 y el milestone
-  v4.0.
-Plan: 34-02 EXECUTED (HOY-01/HOY-02/HOY-04, frontend puro, un solo commit
+Phase: 34 (hoy-vista-diaria) -- **COMPLETE, 3/3 planes ejecutados**
+  (34-01/34-02/34-03), cierra el milestone v4.0 (7/7 phases, 25/25 planes).
+Plan: N/A -- ultimo trabajo cerrado es 34-03 (ver bloque "Phase 34
+  (hoy-vista-diaria): COMPLETE" mas abajo para el detalle completo, y
+  `34-03-SUMMARY.md`).
+Status: **Milestone v4.0 "Seguimiento bajo control" completo a nivel de
+  ejecucion (7/7 phases, 25/25 planes, 2026-08-16)**. HOY-01..05 marcados
+  [x] en REQUIREMENTS.md (27/27 requirements del milestone mapeados y
+  completos). Pendiente: verificacion/cierre formal del milestone --
+  fuera del scope de este executor (lo maneja el orquestador por fuera de
+  esta sesion, ver "Next Phase Readiness" en `34-03-SUMMARY.md`).
+Last activity: 2026-08-16 -- Phase 34 Plan 3 (HOY-03/HOY-05: Power Dialer
+  por seccion extendido a las 5 tiers reclamables D-07/D-08 + panel de
+  higiene invariante al filtro de pais D-12/D-13/D-14) completado.
+  **Fase 34 (HOY) COMPLETA (3/3 planes). Milestone v4.0 completo.**
+
+## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
+
+Plan: 3 of 3 -- las 3 con SUMMARY (34-01-SUMMARY.md, 34-02-SUMMARY.md,
+  34-03-SUMMARY.md)
+Status: 34-03 ejecutado (HOY-03/HOY-05, frontend puro). Ver
+  `34-03-SUMMARY.md` para el detalle completo (Power Dialer extendido a
+  5 sub-colas + panel de higiene invariante al filtro de pais, 37 tests
+  nuevos en `tests/hoy-dialer-hygiene.test.js`, suite completa
+  1887/1887).
+Plan anterior: 34-02 EXECUTED (HOY-01/HOY-02/HOY-04, frontend puro, un solo commit
   `304926d`). `_hoyRenderFromStore` reescrito de 4 buckets sueltos a la
   cascada de 5 tiers exclusivos que pide D-01: Mis compromisos (vencen
   hoy) -> Esperando del prospecto (plazo vencido) -> Callbacks (vencen
@@ -121,58 +141,38 @@ Plan: 34-02 EXECUTED (HOY-01/HOY-02/HOY-04, frontend puro, un solo commit
   edicion manual de este bloque -- gsd-sdk sigue no disponible en este
   entorno, edicion manual + git diff antes de commitear (mismo patron que
   33-01..34-01).
-Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
+34-01 EXECUTED (HOY-04/HOY-05 backend): commit `feat`
   (feat, `l.nextAction` resuelto en `GET /leads/sin-wsp` vía
   `_leadNextAction` + `POST /api/setters/hoy-hygiene-snapshot` con
   `_hoyHygieneScope`, guard 403 para setter sin setterId vinculado) y
   `a785a1c` (test, 16 tests nuevos en `tests/hoy-hygiene-snapshot.test.js`).
   Backend-only, cero cambios en `public/*` -- sin bump de cache-buster.
-  **HOY-04/HOY-05 NO se marcan [x] en REQUIREMENTS.md todavia**: el
-  ROADMAP.md reparte cada uno en 2 planes (HOY-04: 34-01 backend + 34-02
-  "Red de seguridad" D-09/D-10/D-11 frontend; HOY-05: 34-01 backend +
-  34-03 "panel de higiene" D-12/D-13/D-14 frontend) -- la conducta
-  visible al user recien queda completa cuando termine el plan de
-  frontend correspondiente. Ver 34-01-SUMMARY.md.
   Baseline de `npm test` medido con `index.js` stasheado a su estado
   pre-plan: 1801/1801 (106 archivos). Con el plan aplicado: 1817/1817
   (107 archivos), 0 regresiones. `next-action-model.test.js` y
   `next-action-disposition.test.js` sin editar (diff vacio), confirmando
   que resolver `l.nextAction` no rompio los 2 casos que ya lo chequeaban.
-Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
-  marcados [x] en REQUIREMENTS.md. ROADMAP.md actualizado a mano (Phase 33
-  Complete 4/4, gsd-sdk no disponible en este entorno -- riesgo de
-  corrupcion documentado en 24-04/29-02/29-03/29-04/31-03/31-04, edicion
-  manual + git diff antes de commitear). **Phase 34 (HOY) EN EJECUCION:
-  2/3 planes (34-01 EXECUTED, 34-02 EXECUTED, 34-03 pendiente -- ultimo
-  plan del milestone v4.0).** ROADMAP.md actualizado a mano (34-01/34-02
-  checkbox [x], progreso 2/3, Executing) por el mismo motivo (gsd-sdk no
-  disponible: `state.advance-plan` responde "Cannot parse Current Plan or
-  Total Plans in Phase from STATE.md" y `state.update-progress` responde
-  "Progress field not found" contra el formato manual de este STATE.md).
-  33-04 (DIAL-04, ficha con historial de las vendedoras al frente) cerro
-  en 3 commits: ad04823 (backend, _buildUserNameMap + userNames en
-  GET /leads/sin-wsp), a43e4be (bloque [33-04] HISTORY-PURE +
-  _leadHistoryHTML cableado en _pdRender/window._leadFileHtml/
-  _callsRenderExpandedPanel), y 41636b3 (49 tests en
-  tests/dial-history.test.js + cache-buster app.js 20260816c->20260816e,
-  cierre de una sesion posterior a la que corto el proceso tras el
-  codigo). Verificado con gsd-verifier (33-VERIFICATION.md): 4/4
-  requirements con evidencia de codigo real (no solo SUMMARY), D-09
-  respetado (0 literales de suscripcion/Proxy en public/app.js,
-  _leadStoreApply sigue siendo mutador directo), npm test 1801/1801 (106
-  archivos), veredicto human_needed solo por 4 items visuales/en-vivo sin
-  browser en el entorno (ninguno bloqueante).
-  33-01 EXECUTED (DIAL-01): _pdDialHere + startAtLeadId + _pd.forced,
-  boton "Discar aca" en las 4 superficies.
-  33-02 EXECUTED (DIAL-02): _pdHold unico camino al hold + _pd.pendingSave
-  senal deterministica, elimina la heuristica stillActionable.
-  33-03 EXECUTED (DIAL-03): _hoyRenderFromStore (Hoy se pinta desde el
-  estado, no desde fetch) + _leadStoreVersion/_leadStoreDirty +
-  _callsShowView/_hoyShowView (repintar al mostrar si hay datos frescos
-  <5min, LEAD_STORE_STALE_MS) -- sin el store reactivo completo (limite
-  D-09, deliberadamente NO construido).
-  33-04 EXECUTED (DIAL-04): detalle completo en el bloque de abajo (el
-  que era "Current Position" hasta este cierre).
+34-03 EXECUTED (HOY-03/HOY-05, cierra Fase 34 y el milestone v4.0): ver
+  `34-03-SUMMARY.md` para el detalle completo. Resumen: `_pdBuildQueueHoy`
+  reescrito a 5 sub-colas (compromisos/esperando/callbacks/interesados/
+  reintentos, orden D-01) + botones de Power Dialer en las 3 secciones
+  que faltaban (D-07/D-08); panel de higiene `#hoy-hygiene` cableado
+  contra `POST /api/setters/hoy-hygiene-snapshot` (34-01), clasificando
+  sobre `allLeadsForHygiene` con un `claimedHygiene` propio -- invariante
+  al filtro de pais (blocker del checker 2026-08-16, resuelto y cubierto
+  por test funcional con `new Function`, no solo asercion de fuente).
+  37 tests nuevos en `tests/hoy-dialer-hygiene.test.js`. Cache-buster
+  app.js `20260816g` -> `20260816h` (style.css intacto). Suite completa:
+  1887/1887 (baseline 1850 + 37 nuevos), 0 regresiones.
+  Gap de 34-02 anticipado por el propio 34-03-PLAN.md: 2 assertions de
+  `tests/commitment-hoy.test.js` pineaban `dialerMode: null` para "Mis
+  compromisos"/"Esperando del prospecto" -- corregidas al valor nuevo
+  (`'hoy-compromisos'`/`'hoy-esperando'`), documentado como deviation.
+  HOY-01..05 marcados [x] en REQUIREMENTS.md (27/27 requirements del
+  milestone completos). ROADMAP.md actualizado a mano (Phase 34 Complete
+  3/3 en las 3 tablas). **Milestone v4.0 completo a nivel de ejecucion
+  (7/7 phases, 25/25 planes) -- verificacion/cierre formal queda para el
+  orquestador, fuera del scope de este executor.**
 
 ## Phase 33 (dial-motor-unico): COMPLETE (4/4 planes, 2026-08-16)
 
