@@ -5924,11 +5924,106 @@ document.addEventListener('DOMContentLoaded', async () => {
     // el Power Dialer en modo 'hoy' (2026-08-10): la cola del dialer tiene que
     // ser EXACTAMENTE lo que la vista muestra, no una re-derivación aparte.
     let _hoyState = { callbackIds: [], interesadoIds: [], at: 0 };
+    // Fase 33, plan 03 (DIAL-03): ids del ÚLTIMO fetch de Hoy + su timestamp —
+    // población por defecto de _hoyRenderFromStore cuando repinta sin fetch.
+    let _hoyLeadIds = [];
+    let _hoyFetchedAt = 0;
+
+    // Fase 33, plan 03 (DIAL-03): Hoy se pinta desde ACÁ — tanto loadHoyView
+    // (tras el fetch) como los handlers de escritura de la Task 2 (repintado
+    // sin red). Cero fetch/await en este cuerpo a propósito: repintar no toca
+    // la red (D-09 — esto NO es un store reactivo, es un renderer que se
+    // vuelve a llamar en los puntos donde antes se hacía un fetch completo).
+    function _hoyRenderFromStore(leadsArg) {
+      const secEl = document.getElementById('hoy-sections');
+      const greetEl = document.getElementById('hoy-greeting');
+      if (!secEl) return;
+      let leads;
+      if (leadsArg) {
+        leads = leadsArg;
+      } else {
+        // Población del repintado sin fetch (llamado tras una escritura, sin
+        // volver a preguntarle al server): unión de los ids del ÚLTIMO fetch
+        // de Hoy + los que se ensuciaron después. Sin el segundo conjunto, un
+        // lead que EMPIEZA a corresponder a Hoy por una marca hecha en
+        // Llamadas (ej. un callback_later nuevo) no aparecería hasta el
+        // próximo fetch completo.
+        const selSetter = _hoySelectedSetter();
+        const idSet = new Set(_hoyLeadIds);
+        for (const id of _leadStoreDirty) {
+          const l = _callsLeadsById.get(id);
+          if (!l) continue;
+          // El filtro de SDR de la vista no se puede saltar por la puerta de
+          // atrás: un id sucio de OTRO SDR solo entra si no hay filtro activo.
+          if (selSetter && l.assignedTo !== selSetter) continue;
+          idSet.add(id);
+        }
+        leads = [...idSet].map(id => _callsLeadsById.get(id)).filter(Boolean);
+      }
+      const now = Date.now();
+      const _endToday = new Date(); _endToday.setHours(23, 59, 59, 999); const endTodayTs = _endToday.getTime();
+      const claimed = new Set();
+      const notDnc = (l) => !l.doNotCall;
+      const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
+      const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
+      // 1) Callbacks MANUALES que tocan HOY (vencidos + programados para hoy). El
+      // setter eligió "volver a llamar" → aparecen en Hoy el día que toca, no solo
+      // cuando ya se pasaron. (Los reintentos automáticos de no_answer/voicemail NO
+      // entran acá — esos viven solo en la cola de Llamadas/Power Dialer.)
+      const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later')
+        .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
+      callbacks.forEach(l => claimed.add(l.id));
+      // 2) Interesados sin agendar
+      const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
+      interesados.forEach(l => claimed.add(l.id));
+      // Fase 31 (D-10): compromisos pendientes, agrupados por parte (los
+      // propios primero — son deuda propia). NO participan del Set
+      // `claimed`: responden una pregunta distinta ("quién me debe algo",
+      // no "cuándo vuelvo a llamar") — un lead puede estar en Callbacks o
+      // en Interesados Y además tener un compromiso pendiente al mismo
+      // tiempo, y eso es correcto, no un duplicado a evitar.
+      const nowMsHoy = now;
+      // Fase 32, plan 04 (ACT-04): el descarte NUEVO (window._actDiscard,
+      // 32-02) cierra el compromiso pendiente solo — pero un lead
+      // descartado por OTRA vía (el bulk de admin, un
+      // answered_not_interested) conserva su compromiso pendiente y sin
+      // este !terminal(l) se quedaría en estas 2 secciones para siempre.
+      // Este filtro es la red que hace verdadera la promesa de ACT-04
+      // ("sale de todas las listas de una").
+      const misCompromisos = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
+        .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
+      const compromisosProspecto = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
+        .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
+      // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
+      // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
+      // al 3er no-contacto se descartan automáticamente (backend).
+      // 3) Leads nuevos (nunca llamados): SOLO los contamos para el puntero. El orden
+      // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
+      // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
+      const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
+      _hoyState = {
+        callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id),
+        commitYoIds: misCompromisos.map(l => l.id), commitProspectoIds: compromisosProspecto.map(l => l.id),
+        at: Date.now(),
+      };
+      // Set de ids ÚNICOS: un lead puede estar en Callbacks/Interesados Y en
+      // una sección de compromiso a la vez (no participan de `claimed`) —
+      // sumar los .length contaría dos veces al mismo lead.
+      const totalPend = new Set([...callbacks, ...interesados, ...misCompromisos, ...compromisosProspecto].map(l => l.id)).size;
+      if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
+
+      secEl.innerHTML =
+        _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — si vence, seguimiento', null, { rowBadge: _hoyCommitBadge }) +
+        _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
+        _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
+        _hoyNewLeadsPointer(virgenesCount);
+    }
+    window._hoyRenderFromStore = _hoyRenderFromStore;
 
     async function loadHoyView() {
       const kpisEl = document.getElementById('hoy-kpis');
       const secEl = document.getElementById('hoy-sections');
-      const greetEl = document.getElementById('hoy-greeting');
       if (!secEl) return;
       secEl.innerHTML = '<div style="color:var(--text-tertiary); padding:20px;">Cargando…</div>';
       try {
@@ -5957,52 +6052,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (idx >= 0) callsLeadsCache[idx] = l; else callsLeadsCache.push(l);
         });
         _rebuildCallsLeadsIndex();
-        const now = Date.now();
-        const _endToday = new Date(); _endToday.setHours(23, 59, 59, 999); const endTodayTs = _endToday.getTime();
-        const claimed = new Set();
-        const notDnc = (l) => !l.doNotCall;
-        const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado';
-        const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
-        // 1) Callbacks MANUALES que tocan HOY (vencidos + programados para hoy). El
-        // setter eligió "volver a llamar" → aparecen en Hoy el día que toca, no solo
-        // cuando ya se pasaron. (Los reintentos automáticos de no_answer/voicemail NO
-        // entran acá — esos viven solo en la cola de Llamadas/Power Dialer.)
-        const callbacks = leads.filter(l => notDnc(l) && l.callbackAt && new Date(l.callbackAt).getTime() <= endTodayTs && lastOutcome(l) === 'callback_later')
-          .sort((a, b) => new Date(a.callbackAt) - new Date(b.callbackAt));
-        callbacks.forEach(l => claimed.add(l.id));
-        // 2) Interesados sin agendar
-        const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && l.estado === 'interesado');
-        interesados.forEach(l => claimed.add(l.id));
-        // Fase 31 (D-10): compromisos pendientes, agrupados por parte (los
-        // propios primero — son deuda propia). NO participan del Set
-        // `claimed`: responden una pregunta distinta ("quién me debe algo",
-        // no "cuándo vuelvo a llamar") — un lead puede estar en Callbacks o
-        // en Interesados Y además tener un compromiso pendiente al mismo
-        // tiempo, y eso es correcto, no un duplicado a evitar.
-        const nowMsHoy = now;
-        // Fase 32, plan 04 (ACT-04): el descarte NUEVO (window._actDiscard,
-        // 32-02) cierra el compromiso pendiente solo — pero un lead
-        // descartado por OTRA vía (el bulk de admin, un
-        // answered_not_interested) conserva su compromiso pendiente y sin
-        // este !terminal(l) se quedaría en estas 2 secciones para siempre.
-        // Este filtro es la red que hace verdadera la promesa de ACT-04
-        // ("sale de todas las listas de una").
-        const misCompromisos = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'yo')
-          .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
-        const compromisosProspecto = leads.filter(l => notDnc(l) && !terminal(l) && _commitmentHoyBucket(l, nowMsHoy) === 'prospecto')
-          .sort((a, b) => new Date(a.commitment.dueAt) - new Date(b.commitment.dueAt));
-        // NOTA: los no_answer/voicemail NO van en Hoy. Reaparecen solos en Llamadas
-        // y el Power Dialer cuando vence su reintento de 24h (cadencia), hasta que
-        // al 3er no-contacto se descartan automáticamente (backend).
-        // 3) Leads nuevos (nunca llamados): SOLO los contamos para el puntero. El orden
-        // por prioridad vive en Llamadas/Power Dialer (que ya defaultean a 'score'), no
-        // duplicamos una lista ordenada acá. Hoy = seguimientos (callbacks + interesados).
-        const virgenesCount = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && (Number(l.callAttempts || 0) === 0)).length;
-        _hoyState = {
-          callbackIds: callbacks.map(l => l.id), interesadoIds: interesados.map(l => l.id),
-          commitYoIds: misCompromisos.map(l => l.id), commitProspectoIds: compromisosProspecto.map(l => l.id),
-          at: Date.now(),
-        };
+        // Fase 33, plan 03 (DIAL-03): registrar la población de este fetch +
+        // limpiar lo sucio (ya quedó fresco) → delegar clasificación y pintado.
+        _hoyLeadIds = leads.map(l => l.id);
+        _hoyFetchedAt = Date.now();
+        _leadStoreDirty.clear();
+        _hoyRenderFromStore(leads);
 
         // KPIs hoy — tiles premium (mismo lenguaje que Mi rendimiento). Son el
         // mini-funnel del día: llamadas → conectadas → conversaciones → agendadas,
@@ -6029,18 +6084,6 @@ document.addEventListener('DOMContentLoaded', async () => {
               '</div>';
           } catch {}
         }
-        // Set de ids ÚNICOS: un lead puede estar en Callbacks/Interesados Y en
-        // una sección de compromiso a la vez (no participan de `claimed`) —
-        // sumar los .length contaría dos veces al mismo lead.
-        const totalPend = new Set([...callbacks, ...interesados, ...misCompromisos, ...compromisosProspecto].map(l => l.id)).size;
-        if (greetEl) greetEl.textContent = `${totalPend} para seguir`;
-
-        secEl.innerHTML =
-          _hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge }) +
-          _hoyRenderSection('Esperando del prospecto', compromisosProspecto, 'var(--accent)', 'Se comprometió él — si vence, seguimiento', null, { rowBadge: _hoyCommitBadge }) +
-          _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
-          _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
-          _hoyNewLeadsPointer(virgenesCount);
       } catch (e) {
         console.error('[hoy]', e);
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
@@ -6183,7 +6226,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
               ${badgeHtml}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
-              <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--accent-soft); border:1px solid var(--accent-strong); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
+              <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--bg-elevated); border:1px solid var(--border-default); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
               ${sigs}
             </div>
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span class="scm-phone" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
@@ -7157,7 +7200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escHtml(lead.city || '')}${lead.city && lead.country ? ' · ' : ''}${escHtml(lead.country || '')}
           </div>
           <div style="margin-top:8px; display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-            <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:17px; color:var(--accent); font-weight:600; letter-spacing:0.02em;">${escHtml(_phoneShown(lead.phone))}</span>
+            <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:17px; color:var(--text-primary); font-weight:600; letter-spacing:0.02em;">${escHtml(_phoneShown(lead.phone))}</span>
             <span id="pd-rate-badge" data-phone="${escHtml(lead.phone)}" style="font-size:11px; color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums;">·</span>
           </div>
           <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
@@ -7186,9 +7229,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (regla). Se OCULTA si el Brief IA
            ya trae un gancho personalizado (sino se repite el mismo ángulo genérico en
            todos los leads que corren ads). -->
-      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has) ? `<div style="margin-top:16px; background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
-        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:5px;">Ángulo sugerido</div>
-        <div style="color:#fff; font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
+      ${lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has) ? `<div style="margin-top:16px; background:var(--bg-elevated); border:1px solid var(--border-default); border-left:3px solid var(--accent); padding:12px 14px; border-radius:10px;">
+        <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:5px;">Ángulo sugerido</div>
+        <div style="color:var(--text-primary); font-size:13.5px; line-height:1.55;">${escHtml(lead.openingAngle)}</div>
       </div>` : ''}
 
       <!-- Bloque 1.6: Lead Brief IA (reseñas mineadas: dolor+cita+hook+fit) -->
@@ -7315,7 +7358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <button type="button" onclick="window._pdSaveNote('${escHtml(lead.id)}')" title="Guarda la nota en la ficha del lead sin cerrar la llamada con un resultado" style="padding:9px 16px; background:var(--accent-medium); color:var(--accent); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Guardar nota</button>
         </div>
         ${lead.altPhone ? `<div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent-hover); border-radius:8px;">
-          <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--accent);">${escHtml(lead.altPhone)}</span></span>
+          <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(lead.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(lead.altPhone)}</span></span>
           <button type="button" onclick="window._startTelnyxCall('${escHtml(lead.id)}', '${escHtml(lead.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
           <button type="button" onclick="window._callsAltContact('${escHtml(lead.id)}')" style="padding:6px 10px; background:transparent; color:var(--text-secondary); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px; cursor:pointer; font-family:inherit;">editar</button>
         </div>` : `<div style="margin-bottom:12px;">
@@ -7869,7 +7912,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (s === 'ads_activos' && Array.isArray(lead.adPlatforms) && lead.adPlatforms.length) {
           label = 'Corre anuncios · ' + lead.adPlatforms.join(', ');
         }
-        return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:var(--accent); background:var(--accent-medium); border:1px solid var(--accent-strong); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
+        return `<span title="Señal detectada para la apertura de la llamada" style="font-size:10.5px; color:var(--text-tertiary); background:var(--bg-elevated); border:1px solid var(--border-default); padding:3px 9px; border-radius:6px; font-weight:600;">${label}</span>`;
       }).join('');
     }
     window._signalChips = _signalChips;
@@ -8598,7 +8641,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Contacto alternativo que le pasaron al SDR (mismo bloque que el dialer)
       const _altBlock = l.altPhone ? `<div style="display:flex; gap:8px; margin:0 0 12px; flex-wrap:wrap; align-items:center; padding:9px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid var(--accent-hover); border-radius:8px;">
-        <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(l.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--accent);">${escHtml(l.altPhone)}</span></span>
+        <span style="font-size:12px; color:var(--text-secondary); min-width:0;">Contacto que te pasaron: <strong style="color:var(--text-primary);">${escHtml(l.altPhoneLabel || 'sin nombre')}</strong> <span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(l.altPhone)}</span></span>
         <button type="button" onclick="window._startTelnyxCall('${escHtml(l.id)}', '${escHtml(l.altPhone)}')" style="margin-left:auto; padding:6px 12px; background:rgba(91,185,116,0.18); color:var(--accent-hover); border:1px solid rgba(91,185,116,0.4); border-radius:7px; font-size:11.5px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap;">Llamar a este contacto</button>
       </div>` : '';
 
@@ -9023,7 +9066,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notesCount = Array.isArray(l.notes) ? l.notes.length : 0;
         const fups = l.followUps || {};
         const hasFup = ['24hs','48hs','72hs','7d','15d'].some(k => fups[k]);
-        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--accent); background:var(--accent-soft); padding:2px 7px; border-radius:6px;">${notesCount}</span>` : '';
+        const notesBadge = notesCount > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-elevated); padding:2px 7px; border-radius:6px;">${notesCount}</span>` : '';
         const fupBadge = hasFup ? '<span style="font-size:10px; color:var(--warning); background:rgba(255,179,65,0.12); padding:2px 7px; border-radius:6px;">follow-up</span>' : '';
         // Sprint 23: badge de callback programado (si está en el futuro)
         let callbackBadge = '';
@@ -9087,7 +9130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${l.phone ? `<span class="scm-phone" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary); letter-spacing:0.02em;">${escHtml(_phoneShown(l.phone))}</span>` : ''}${l.phone && (l.city || l.country) ? ' · ' : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}
               ${l.doctor && !l.doctor.includes('N/A') ? ' · ' + escHtml(l.doctor) : ''}
             </div>
-            ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--accent); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
+            ${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 160) _h = _h.slice(0, 157) + '…'; return _h ? `<div style="font-size:11.5px; color:var(--text-secondary); margin-top:3px; line-height:1.4;">${escHtml(_h)}</div>` : ''; })()}
             ${lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">Último: ${escHtml(callOutcomeLabel(lastCall.outcome))} · ${new Date(lastCall.ts).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}</div>` : ''}
             ${lastNote && !lastCall ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">${escHtml(lastNote.text).substring(0, 80)}</div>` : ''}
           </div>
@@ -10624,9 +10667,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 16: ángulo sugerido (regla) + chips. Se OCULTA si el Brief IA ya trae
       // gancho personalizado (sino repite el mismo ángulo genérico en todos los ads-leads).
       if (lead.openingAngle && lead.openingAngle.trim() && !(lead.leadBrief && _briefClean(lead).has)) {
-        rows.push(`<div style="background:linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%); border:1px solid var(--accent-strong); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
-          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--accent); margin-bottom:4px;">Ángulo sugerido</div>
-          <div style="color:#fff; font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
+        rows.push(`<div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-left:3px solid var(--accent); padding:8px 11px; border-radius:8px; margin-bottom:8px;">
+          <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-tertiary); margin-bottom:4px;">Ángulo sugerido</div>
+          <div style="color:var(--text-primary); font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
         </div>`);
       }
       if (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) {

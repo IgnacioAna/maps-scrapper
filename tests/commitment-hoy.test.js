@@ -203,6 +203,13 @@ describe("Aserciones de fuente: _hoyRenderSection gana opts.rowBadge (D-10)", ()
 });
 
 describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del prospecto' en loadHoyView (D-10)", () => {
+  // 2026-08-16 (Fase 33, plan 03, DIAL-03): la clasificación y el pintado de
+  // las 4 secciones se movieron de `loadHoyView` a `_hoyRenderFromStore`
+  // (loadHoyView pasó a ser "fetch + delegar"; el 33-03-PLAN.md lo pide
+  // explícito). Los 4 `it()` de abajo que antes extraían el cuerpo de
+  // `loadHoyView` ahora extraen el de `_hoyRenderFromStore` — el contenido y
+  // el propósito de cada assertion no cambian, solo DÓNDE vive el código que
+  // verifican. Ver "Deviations" en 33-03-SUMMARY.md.
   it("las 2 llamadas nuevas existen con los títulos LITERALES, dialerMode null y rowBadge", () => {
     expect(appJs).toContain(
       "_hoyRenderSection('Mis compromisos', misCompromisos, 'var(--warning)', 'Le prometí algo — falta cumplirlo', null, { rowBadge: _hoyCommitBadge })"
@@ -212,8 +219,8 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
     );
   });
 
-  it("las 2 llamadas nuevas aparecen ANTES que la de 'Callbacks' dentro de loadHoyView", () => {
-    const body = extractFunctionBody(appJs, "async function loadHoyView() {");
+  it("las 2 llamadas nuevas aparecen ANTES que la de 'Callbacks' dentro de _hoyRenderFromStore", () => {
+    const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
     const iMis = body.indexOf("_hoyRenderSection('Mis compromisos'");
     const iEsp = body.indexOf("_hoyRenderSection('Esperando del prospecto'");
     const iCb = body.indexOf("_hoyRenderSection('Callbacks'");
@@ -225,15 +232,15 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
   });
 
   it("misCompromisos/compromisosProspecto se derivan con _commitmentHoyBucket sobre el mismo array `leads`", () => {
-    const body = extractFunctionBody(appJs, "async function loadHoyView() {");
+    const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
     expect(body).toContain("_commitmentHoyBucket(l, nowMsHoy) === 'yo'");
     expect(body).toContain("_commitmentHoyBucket(l, nowMsHoy) === 'prospecto'");
   });
 
-  it("loadHoyView NO llama claimed.add para los leads de compromiso — el conteo global sigue en 2", () => {
+  it("_hoyRenderFromStore NO llama claimed.add para los leads de compromiso — el conteo global sigue en 2", () => {
     // Los 2 usos preexistentes son callbacks.forEach(...) e interesados.forEach(...).
     expect(countOccurrences(appJs, "claimed.add")).toBe(2);
-    const body = extractFunctionBody(appJs, "async function loadHoyView() {");
+    const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
     expect(body).not.toContain("misCompromisos.forEach(l => claimed.add");
     expect(body).not.toContain("compromisosProspecto.forEach(l => claimed.add");
   });
@@ -243,7 +250,7 @@ describe("Aserciones de fuente: secciones 'Mis compromisos' / 'Esperando del pro
   });
 
   it("totalPend se calcula con un Set de ids ÚNICOS de las 4 secciones", () => {
-    const body = extractFunctionBody(appJs, "async function loadHoyView() {");
+    const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
     const totalPendIdx = body.indexOf("const totalPend = new Set(");
     expect(totalPendIdx).toBeGreaterThan(-1);
     const line = body.slice(totalPendIdx, body.indexOf(";", totalPendIdx) + 1);
