@@ -73,4 +73,25 @@ describe('biblioteca de entrenamiento: llamadas del dueño', () => {
     const ids = r.body.calls.map((c) => c.leadId);
     expect(ids).not.toContain('del_owner');
   });
+
+  // 2026-08-16: el dueño trabaja su cartera en "Ver como SDR · Ignacio". Con la
+  // exclusión ciega por rol la biblioteca le quedaba VACÍA (se escondía a sí
+  // mismo). Nadie puede quedar sin ver su propio material.
+  it('con "Ver como SDR · Ignacio" el dueño SÍ ve sus propias llamadas', async () => {
+    const cookie = await login('owner-tv@local.test', 'ownerpass1234');
+    const r = await request(app).get('/api/training/calls?viewAs=setter&asSetterId=setter_ignacio').set('Cookie', cookie);
+    expect(r.status).toBe(200);
+    const ids = r.body.calls.map((c) => c.leadId);
+    expect(ids).toContain('del_owner');
+    // Y sigue respetando la privacidad: en modo SDR solo ve las SUYAS.
+    expect(ids).not.toContain('de_la_sdr');
+  });
+
+  // El detalle ya validaba ownership: la llamada del dueño se abre en modo SDR.
+  it('el detalle de su propia llamada se abre en modo "Ver como SDR · Ignacio"', async () => {
+    const cookie = await login('owner-tv@local.test', 'ownerpass1234');
+    const r = await request(app).get('/api/training/calls/del_owner/0?viewAs=setter&asSetterId=setter_ignacio').set('Cookie', cookie);
+    expect(r.status).toBe(200);
+    expect(r.body.segments.length).toBe(2);
+  });
 });

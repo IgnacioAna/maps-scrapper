@@ -20009,8 +20009,17 @@ JSON:`;
 const TRAINING_EXCLUDED_SETTERS = new Set(['setter_ignacio']);
 // Devuelve el set a excluir SEGÚN quién mira: para admin/supervisor no se excluye
 // nada (ven la biblioteca completa); para una SDR se mantiene el ocultamiento.
-function _trainingExcludedFor(role) {
+// 2026-08-16: la exclusión NUNCA se aplica a las llamadas de quien mira. El dueño
+// trabaja su cartera en modo "Ver como SDR · Ignacio" (rol efectivo setter) y con
+// la exclusión ciega por rol se escondía a sí mismo TODA su biblioteca.
+// Regla: nadie puede quedar sin ver su propio material.
+function _trainingExcludedFor(role, mySetterId = '') {
   if (role === 'admin' || role === 'supervisor') return new Set();
+  if (mySetterId && TRAINING_EXCLUDED_SETTERS.has(mySetterId)) {
+    const own = new Set(TRAINING_EXCLUDED_SETTERS);
+    own.delete(mySetterId);
+    return own;
+  }
   return TRAINING_EXCLUDED_SETTERS;
 }
 
@@ -20037,7 +20046,7 @@ app.get('/api/training/calls', requireAuth, (req, res) => {
   // Exclusión direccional: vacía para admin/supervisor (ven todo, incluidas las
   // llamadas del dueño), activa para las SDRs. Se usa el rol EFECTIVO, así que
   // con "Ver como SDR" el admin ve exactamente lo que ve ella.
-  const excluded = _trainingExcludedFor(eff.role);
+  const excluded = _trainingExcludedFor(eff.role, mySetterId);
   const calls = [];
   for (const [leadId, lead] of Object.entries(data.leads || {})) {
     if (!Array.isArray(lead.callLog) || !lead.callLog.length) continue;
