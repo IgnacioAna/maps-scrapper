@@ -12405,10 +12405,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const callbackIso = new Date(fecha).toISOString();
           const callbackShared = !!document.getElementById('call-cb-shared')?.checked;
+          // 2026-08-16: este era el ÚNICO call site de disposición que no
+          // adjuntaba la metadata de la llamada Telnyx (los otros tres —
+          // dropdown directo, interesado y objeción — sí). Resultado: todo
+          // "Volver a llamar" guardaba duration 0 y sin fromNumber, aunque la
+          // conversación hubiera durado minutos. Se veía en prod: entries de
+          // callback_later con duration 0 y audio de 32 a 245 segundos. Además
+          // de perder el dato, esas conversaciones no llegaban al umbral de 30s
+          // del funnel → no contaban como conversación en las métricas.
+          const telnyxMeta = _consumeTelnyxMeta(leadId);
+          const body = { outcome: 'callback_later', callbackAt: callbackIso, callbackShared, ..._dispoEnforcementBody(leadId) };
+          if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ outcome: 'callback_later', callbackAt: callbackIso, callbackShared, ..._dispoEnforcementBody(leadId) })
+            body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           const data = await resp.json().catch(() => ({}));

@@ -20322,6 +20322,47 @@ app.get('/api/telnyx/calls/:leadId/:callIdx/transcript', requireAuth, (req, res)
 // que el canal tuvo voz real: el habla de línea telefónica pobre puntúa como
 // "silencio" para Whisper y el estricto la vaciaba (caso 2026-07-23). El lax v1
 // también salteaba compression_ratio y resucitó loops de alucinación — v2 no.
+// Colapsa la repetición DENTRO del texto de un segmento, conservando el
+// contenido único en orden de aparición. Dos formas de loop:
+//   (1) frases repetidas separadas por puntuación
+//       "Buenas tardes, buenos días, buenos días, buenos días" → "Buenas tardes, buenos días."
+//   (2) n-grama repetido sin puntuación
+//       "gracias gracias gracias gracias" → "gracias"
+// Función pura. Devuelve el texto colapsado (el original si no había repetición).
+function _collapseRepeatedText(txt) {
+  const raw = String(txt || '').trim();
+  if (!raw) return '';
+  const norm = (u) => u.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  let out = raw;
+  // (1) frases repetidas
+  const units = raw.split(/[,;]+|(?<=[.!?])\s+/).map((u) => u.trim()).filter(Boolean);
+  if (units.length >= 2) {
+    const seen = new Set();
+    const keep = [];
+    for (const u of units) {
+      const n = norm(u);
+      if (!n || seen.has(n)) continue;
+      seen.add(n);
+      keep.push(u.replace(/[.!?]+$/, ''));
+    }
+    if (keep.length && keep.length < units.length) {
+      out = keep.join(', ') + (/[.!?]$/.test(raw) ? '.' : '');
+    }
+  }
+  // (2) n-grama periódico
+  const words = out.split(/\s+/).filter(Boolean);
+  if (words.length >= 4) {
+    for (let p = 1; p <= Math.floor(words.length / 2); p++) {
+      let periodic = true;
+      for (let i = p; i < words.length; i++) {
+        if (norm(words[i]) !== norm(words[i % p])) { periodic = false; break; }
+      }
+      if (periodic) { out = words.slice(0, p).join(' '); break; }
+    }
+  }
+  return out.trim();
+}
+
 function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {}) {
   const lax = !!opts.lax;
   const _normSeg = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
@@ -20357,15 +20398,33 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {})
     _nsp: typeof s.no_speech_prob === 'number' ? s.no_speech_prob : 0,
     _alp: typeof s.avg_logprob === 'number' ? s.avg_logprob : 0,
     _cr: typeof s.compression_ratio === 'number' ? s.compression_ratio : 0,
-  })).filter((s) => s.text)
+  }))
+    // 2026-08-16: COLAPSAR antes de filtrar. compression_ratio es una métrica de
+    // la VENTANA de decodificación (~30s), NO del segmento: cuando Whisper entra
+    // en loop en una parte, TODOS los segmentos de esa ventana heredan el cr alto
+    // — incluidos los de habla real. Descartar por cr mataba conversaciones
+    // enteras. Caso real de prod (2026-07-30, 86s, cliente con 33% de señal
+    // medida): los 3 segmentos de la recepcionista ("Buenas tardes." / "Sí, ¿en
+    // qué te podemos ayudar?" / "La persona está un poco ocupada") venían con el
+    // MISMO cr 4.21, nsp 0.21 y alp -0.33 heredados de la ventana → raw 18,
+    // kept 0, canal del cliente perdido entero. 35 de 217 transcripts (16%)
+    // tenían el canal del cliente vacío por esto.
+    .map((s) => ({ ...s, text: _collapseRepeatedText(s.text) }))
+    .filter((s) => s.text)
+    // El eco del prompt se evalúa sobre el texto COLAPSADO: así "un vendedor a un
+    // vendedor a un vendedor" (remix del prompt, caso 2026-07-24) colapsa a "un
+    // vendedor a" y se detecta como fragmento del prompt.
     .filter((s) => !_isPromptEchoSeg(s.text))           // eco del prompt (por segmento)
     .filter((s) => lax || !(s._nsp >= 0.6 && s._alp <= -0.4)) // silencio → alucinación (skip en lax)
-    // Repetitivo (compression_ratio alto) se filtra SIEMPRE, también en lax:
-    // un loop de decoder nunca es habla real, sin importar cuánta señal midió
-    // el browser. Caso real 2026-07-24: el lax v1 salteaba este filtro y
-    // resucitó canales enteros de "la clínica dental de la Ciudad de México es
-    // el centro de salud" ×17 (cr 7.31) que el estricto había matado bien.
-    .filter((s) => s._cr < 2.4);
+    // Loop de decoder — se filtra SIEMPRE, también en lax (nunca es habla real):
+    //   (a) cr extremo (>= 6): "Sí." ×56 (cr 8.38), "hola, hola, …" (cr 14.76),
+    //       los remixes del prompt de 2026-07-24 (cr 7.91 y 21). El habla real
+    //       más repetitiva medida en prod llegó a cr 5.2 ("Buenas tardes, buenos
+    //       días…", donde el saludo inicial SÍ es real).
+    //   (b) cr alto y lo único que queda tras colapsar es trivial (< 12 chars):
+    //       "gracias gracias gracias" → "gracias". Si lo que queda tiene
+    //       contenido, se conserva colapsado en vez de tirar el segmento.
+    .filter((s) => !(s._cr >= 6 || (s._cr >= 2.4 && s.text.length < 12)));
   // Colapsa loops: la misma frase repetida N veces (clásico de Whisper en
   // silencio) se junta en una sola extendiendo el rango temporal.
   const deduped = [];
@@ -20395,7 +20454,48 @@ function _cleanWhisperSegments(rawSegments, speakerLabel, promptText, opts = {})
   }
   return deduped.map(({ _nsp, _alp, _cr, ...rest }) => rest);
 }
-globalThis.__whisper = { cleanSegments: _cleanWhisperSegments };
+// A qué entry del callLog pertenece el audio que se acaba de transcribir.
+// Devuelve -1 si no hay candidato (el caller cae al último entry).
+//
+// 2026-08-16: `entry.ts` es el momento en que se MARCÓ la disposición
+// (call-disposition lo setea con new Date()), NO el inicio de la llamada. El
+// matching viejo comparaba `callStartedAt` contra `ts` con una ventana de 10s,
+// así que solo acertaba en llamadas de menos de 10 segundos marcadas al
+// instante; en una conversación de 3 minutos NUNCA matcheaba y caía al fallback
+// `length-1`, que apunta al entry equivocado si entre medio se creó otro.
+// Caso real de prod (2026-08-05, Franci Zuñiga): el audio de 208s quedó
+// guardado en la llamada de 11s marcada 18s después, y la conversación de 212s
+// quedó sin transcript. 30 de 140 transcripts con asrDebug (21%) tenían el
+// audio pegado al entry equivocado.
+//
+// Ahora se estima el inicio de cada entry como `ts - duration` y se elige el más
+// cercano a `callStartedAt`. Se compara también contra el `ts` crudo porque
+// `duration` puede venir en 0. La ventana es amplia (10 min = el timer del
+// buffer de audio en el browser): como se elige el MÍNIMO, el entry correcto
+// gana igual, y una ventana chica es justamente lo que rompía el matching.
+function _pickCallLogIdxForTranscript(callLog, callStartedAt) {
+  if (!callStartedAt || !Array.isArray(callLog) || !callLog.length) return -1;
+  const targetTs = new Date(callStartedAt).getTime();
+  if (!Number.isFinite(targetTs)) return -1;
+  const MATCH_WINDOW_MS = 10 * 60 * 1000;
+  let bestIdx = -1;
+  let bestDelta = Infinity;
+  for (let i = 0; i < callLog.length; i++) {
+    const c = callLog[i] || {};
+    const cTs = new Date(c.ts).getTime();
+    if (!Number.isFinite(cTs)) continue;
+    const startEst = cTs - (Number(c.duration) || 0) * 1000;
+    const delta = Math.min(Math.abs(cTs - targetTs), Math.abs(startEst - targetTs));
+    if (delta < bestDelta) { bestDelta = delta; bestIdx = i; }
+  }
+  return (bestIdx >= 0 && bestDelta <= MATCH_WINDOW_MS) ? bestIdx : -1;
+}
+
+globalThis.__whisper = {
+  cleanSegments: _cleanWhisperSegments,
+  collapseRepeatedText: _collapseRepeatedText,
+  pickCallLogIdx: _pickCallLogIdxForTranscript,
+};
 
 // POST /api/telnyx/calls/:leadId/transcribe — transcribe el audio de una
 // llamada usando OpenAI Whisper. Recibe 2 audios separados (setter + lead)

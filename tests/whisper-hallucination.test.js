@@ -237,3 +237,134 @@ describe("_cleanWhisperSegments · anti-alucinación", () => {
     expect(clean(raw, "lead", prompt, { lax: true }).map((s) => s.text)).toEqual(["¿De parte de quién, disculpe?"]);
   });
 });
+
+// 2026-08-16. compression_ratio es una métrica de la VENTANA de decodificación
+// (~30s), no del segmento: si Whisper entra en loop en una parte, todos los
+// segmentos de esa ventana heredan el cr alto. Filtrar por cr mataba
+// conversaciones reales enteras. Todos los casos de acá salieron del asrDebug
+// persistido en producción.
+describe("_cleanWhisperSegments · cr heredado de la ventana (casos reales de prod)", () => {
+  it("la conversación de la recepcionista NO se pierde por el cr heredado", () => {
+    // Caso real 2026-07-30 (86s, cliente con 33% de señal medida): los 3
+    // segmentos traían el MISMO cr/nsp/alp de la ventana → raw 18, kept 0.
+    const raw = [
+      seg({ start: 0, end: 2, text: "Buenas tardes.", no_speech_prob: 0.21, avg_logprob: -0.33, compression_ratio: 4.21 }),
+      seg({ start: 3, end: 6, text: "Sí, ¿en qué te podemos ayudar?", no_speech_prob: 0.21, avg_logprob: -0.33, compression_ratio: 4.21 }),
+      seg({ start: 7, end: 12, text: "La persona está un poco ocupada ahora.", no_speech_prob: 0.21, avg_logprob: -0.33, compression_ratio: 4.21 }),
+    ];
+    const out = clean(raw, "lead");
+    expect(out.map((s) => s.text)).toEqual([
+      "Buenas tardes.",
+      "Sí, ¿en qué te podemos ayudar?",
+      "La persona está un poco ocupada ahora.",
+    ]);
+  });
+
+  it("saludo real + loop: se conserva el saludo colapsado, no se tira el segmento", () => {
+    // Caso real 2026-08-15 17:34 (cr 5.2): la primera frase es habla real y
+    // después Whisper entra en loop.
+    const raw = [seg({
+      text: "Buenas tardes, buenos días, buenos días, buenos días, buenos días, buenos días",
+      no_speech_prob: 0.45, avg_logprob: -0.82, compression_ratio: 5.2,
+    })];
+    const out = clean(raw, "lead", "", { lax: true });
+    expect(out.length).toBe(1);
+    expect(out[0].text).toBe("Buenas tardes, buenos días");
+  });
+
+  it("loop puro de una palabra suelta se sigue descartando", () => {
+    // Caso real 2026-08-11: "Sí." ×56 segmentos con cr 8.38 heredado.
+    const raw = Array.from({ length: 6 }, (_, i) => seg({
+      start: i, end: i + 1, text: "Sí.", no_speech_prob: 0.2, avg_logprob: -0.22, compression_ratio: 8.38,
+    }));
+    expect(clean(raw, "lead")).toEqual([]);
+    expect(clean(raw, "lead", "", { lax: true })).toEqual([]);
+  });
+
+  it("loop de 'hola' con cr extremo se sigue descartando", () => {
+    // Caso real 2026-07-27 (cr 14.76).
+    const raw = [seg({
+      text: "Hola, hola, hola, hola, hola, hola, hola, hola, hola, hola",
+      no_speech_prob: 0.19, avg_logprob: -0.36, compression_ratio: 14.76,
+    })];
+    expect(clean(raw, "lead")).toEqual([]);
+  });
+});
+
+// A qué llamada del callLog se le pega el transcript. `entry.ts` es el momento
+// de MARCAR la disposición, no el inicio de la llamada — el matching viejo
+// (ventana de 10s contra ts) fallaba en toda llamada de más de 10 segundos.
+describe("_pickCallLogIdxForTranscript · a qué llamada pertenece el audio", () => {
+  const pick = globalThis.__whisper.pickCallLogIdx;
+  const at = (iso) => new Date(iso).getTime();
+
+  it("caso real Franci Zuñiga: el audio de 212s va a SU llamada, no a la de 11s", () => {
+    // La conversación empezó 20:42:42 y duró 212s; se marcó a las 20:46:14.
+    // 18s después se marcó una segunda llamada de 11s. Antes ganaba la segunda
+    // (fallback length-1) y la conversación quedaba sin transcript.
+    const callLog = [
+      { ts: "2026-08-05T19:10:00.000Z", duration: 30, outcome: "no_answer" },
+      { ts: "2026-08-05T20:46:14.339Z", duration: 212, outcome: "answered_interested" },
+      { ts: "2026-08-05T20:46:32.273Z", duration: 11, outcome: "no_answer" },
+    ];
+    expect(pick(callLog, "2026-08-05T20:42:42.000Z")).toBe(1);
+  });
+
+  it("llamada larga con un solo entry: matchea igual (antes se salvaba de casualidad)", () => {
+    const callLog = [{ ts: "2026-08-05T20:46:14.000Z", duration: 180, outcome: "answered_interested" }];
+    expect(pick(callLog, "2026-08-05T20:43:14.000Z")).toBe(0);
+  });
+
+  it("entry con duration 0 (callback sin metadata) matchea por el ts de marcado", () => {
+    const callLog = [
+      { ts: "2026-08-12T17:00:00.000Z", duration: 0, outcome: "callback_later" },
+      { ts: "2026-08-12T19:30:00.000Z", duration: 0, outcome: "callback_later" },
+    ];
+    expect(pick(callLog, "2026-08-12T16:58:00.000Z")).toBe(0);
+  });
+
+  it("sin callStartedAt o sin callLog → -1 (el caller usa el último)", () => {
+    expect(pick([{ ts: "2026-08-05T20:46:14.000Z", duration: 10 }], null)).toBe(-1);
+    expect(pick([], "2026-08-05T20:46:14.000Z")).toBe(-1);
+    expect(pick(null, "2026-08-05T20:46:14.000Z")).toBe(-1);
+  });
+
+  it("si la llamada más cercana está a más de 10 min → -1 (no inventa match)", () => {
+    const callLog = [{ ts: "2026-08-05T20:46:14.000Z", duration: 10 }];
+    expect(pick(callLog, "2026-08-05T18:00:00.000Z")).toBe(-1);
+  });
+
+  it("ignora entries con ts inválido sin romper", () => {
+    const callLog = [
+      { ts: "no-es-fecha", duration: 0 },
+      { ts: "2026-08-05T20:46:14.339Z", duration: 212 },
+    ];
+    expect(pick(callLog, "2026-08-05T20:42:42.000Z")).toBe(1);
+  });
+});
+
+describe("_collapseRepeatedText", () => {
+  const collapse = globalThis.__whisper.collapseRepeatedText;
+
+  it("colapsa frases repetidas conservando el orden de aparición", () => {
+    expect(collapse("Buenas tardes, buenos días, buenos días, buenos días"))
+      .toBe("Buenas tardes, buenos días");
+  });
+
+  it("colapsa n-gramas repetidos sin puntuación", () => {
+    expect(collapse("gracias gracias gracias gracias")).toBe("gracias");
+    expect(collapse("un vendedor a un vendedor a un vendedor")).toBe("un vendedor a");
+  });
+
+  it("deja intacto el habla real", () => {
+    const real = "Sí, mire, la doctora está atendiendo y vuelve a las tres.";
+    expect(collapse(real)).toBe(real);
+    expect(collapse("Hola, le hablo por el tema de los pacientes.")).toBe("Hola, le hablo por el tema de los pacientes.");
+  });
+
+  it("no rompe con vacío ni con una sola palabra", () => {
+    expect(collapse("")).toBe("");
+    expect(collapse(null)).toBe("");
+    expect(collapse("Aló")).toBe("Aló");
+  });
+});
