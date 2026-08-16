@@ -34,13 +34,19 @@
      El objetivo del kit es 7:1 porque la interfaz se graba en video.
      La combinación suave-sobre-elevada queda en 6.5:1 — es el único par
      por debajo del objetivo; anotado para la prueba de 60s en celular. */
-  --text-primary: #F2F4F5;    /* kit: texto */
-  --text-secondary: #A9B0B7;  /* kit: texto-suave */
-  /* Regla 5 del kit: 7:1 en TODO lo que aparezca en cámara. Por eso
-     terciario y faint NO bajan de texto-suave — un gris más apagado
-     rompería el objetivo de contraste apenas entre en pantalla. */
-  --text-tertiary: #A9B0B7;
-  --text-faint: #A9B0B7;
+  --text-primary: #F2F4F5;    /* kit: texto        · 16.4:1 base */
+  --text-secondary: #A9B0B7;  /* kit: texto-suave  ·  8.3:1 base */
+  /* CORRECCIÓN 2026-08-16. Antes terciario y faint eran IGUALES a
+     secundario, citando la regla de 7:1 del kit. Efecto no previsto: la
+     jerarquía de texto colapsó a dos escalones y **el color pasó a cumplir
+     ese rol** — ciudades, horarios y metadatos terminaron en verde porque
+     era la única forma de distinguirlos. El remedio era peor que la
+     enfermedad: el kit prohíbe el acento como texto de lectura.
+     Se restauran cuatro escalones reales, todos medidos y todos por encima
+     de AA (4.5:1). No llegan a 7:1, y es deliberado: ese objetivo es para
+     el texto que se LEE en cámara, no para un sello de fecha. */
+  --text-tertiary: #949BA2;   /* metadatos         ·  6.5:1 base · 5.7 superficie */
+  --text-faint: #7E858C;      /* sellos, fechas    ·  4.9:1 base · 4.3 superficie */
 
   /* ───── ACENTO ─────
      Regla central del kit: el acento de marca ES el verde de "número
@@ -67,12 +73,17 @@
      el verde de habilitado y el de marca son el mismo color. */
   --success: var(--accent);
   --success-soft: var(--accent-soft);
-  --warning: #FBBF24;
-  --warning-soft: rgba(251, 191, 36, 0.10);
-  --danger: #F87171;
-  --danger-soft: rgba(248, 113, 113, 0.10);
-  --info: #60A5FA;
-  --info-soft: rgba(96, 165, 250, 0.10);
+  /* Apagados el 2026-08-16. El anti-brief del kit prohíbe "rojos y azules
+     saturados sobre fondo oscuro", y estos venían del Design System viejo
+     con 54-86% de saturación: competían de frente con el acento y rompían
+     la regla de "un solo acento saturado por pantalla". Bajados a 31-55%
+     conservando o mejorando el contraste (medido contra base y superficie). */
+  --warning: #D9AE62;   /* 8.8:1 base · 7.8 superficie · sat 55% (era 86%) */
+  --warning-soft: rgba(217, 174, 98, 0.10);
+  --danger: #D98C8C;    /* 7.0:1 base · 6.2 superficie · sat 35% (era 54%) */
+  --danger-soft: rgba(217, 140, 140, 0.10);
+  --info: #8AA9C9;      /* 7.4:1 base · 6.6 superficie · sat 31% (era 62%) */
+  --info-soft: rgba(138, 169, 201, 0.10);
 
   /* ───── TYPOGRAPHY ───── */
   --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -1079,8 +1090,8 @@ body:has(#view-social.active) .global-location-panel {
   gap: 10px;
   padding: 16px 20px;
   margin: 10px 0 14px;
-  background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent-soft) 100%);
-  border: 1px solid var(--accent-medium);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
 }
 .hoy-greet {
@@ -1664,15 +1675,19 @@ td.empty-state .empty-state-content::before {
   vertical-align: middle;
 }
 
-/* Banner sutil de bienvenida con cantidad de follow-ups */
+/* Banner sutil de bienvenida con cantidad de follow-ups. 2026-08-16: era un
+   relleno completo en acento (competía con los botones reales de la pantalla,
+   ver auditoría de verde) — ahora superficie neutra + borde izquierdo como
+   única señal. */
 .followups-banner {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 8px 16px;
   margin: 8px 0 0;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-strong);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--accent);
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 12px;
@@ -1685,7 +1700,7 @@ td.empty-state .empty-state-content::before {
   flex-shrink: 0;
 }
 .followups-banner .fb-text { flex: 1; min-width: 200px; line-height: 1.4; }
-.followups-banner .fb-text strong { color: var(--accent); font-weight: 600; }
+.followups-banner .fb-text strong { color: var(--text-primary); font-weight: 600; }
 .followups-banner .fb-overdue { font-size: 11px; color: var(--text-secondary); opacity: 0.8; }
 .followups-banner .fb-cta {
   background: transparent; color: var(--accent); border: 1px solid var(--accent);
@@ -2206,15 +2221,15 @@ td.empty-state .empty-state-content::before {
   font-weight: 600;
   padding: 6px 14px;
   border-radius: 8px;
-  background: var(--accent-medium);
-  border: 1px solid var(--accent-strong);
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-secondary);
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-.tr-open-btn:hover { background: var(--accent-medium); border-color: var(--accent); }
+.tr-open-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--text-primary); }
 .training-call-body { padding: 0 16px 16px; }
 .tr-airead {
   display: flex;
@@ -2227,10 +2242,9 @@ td.empty-state .empty-state-content::before {
 }
 .tr-airead-reason { color: var(--text-secondary); }
 .tr-summary {
-  background:
-    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 50%),
-    var(--accent-soft);
-  border: 1px solid var(--accent-medium);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-left: 3px solid var(--accent);
   border-radius: 12px;
   padding: 13px 16px;
   margin-bottom: 12px;
@@ -2247,7 +2261,7 @@ td.empty-state .empty-state-content::before {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--accent);
+  color: var(--text-tertiary);
   margin-bottom: 7px;
 }
 .tr-dialog-head {
@@ -2349,10 +2363,9 @@ td.empty-state .empty-state-content::before {
 }
 .tr-coach-btn:hover { filter: brightness(1.1); }
 .tr-coach-answer {
-  background:
-    radial-gradient(120% 140% at 0% 0%, var(--accent-soft) 0%, transparent 50%),
-    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
+  background: var(--bg-surface);
   border: 1px solid rgba(255, 255, 255, 0.07);
+  border-left: 3px solid var(--accent);
   border-radius: 12px;
   padding: 15px 18px;
   color: var(--text-secondary);
@@ -2403,9 +2416,7 @@ td.empty-state .empty-state-content::before {
   margin-top: 16px;
   padding: 16px 20px;
   border-radius: 16px;
-  background:
-    radial-gradient(130% 120% at 0% 0%, var(--accent-soft) 0%, transparent 44%),
-    var(--bg-surface); /* gradiente oscuro de tarjeta aplanado */
+  background: var(--bg-surface);
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 22px rgba(0, 0, 0, 0.18);
   font-size: 13px;
@@ -2563,9 +2574,9 @@ td.empty-state .empty-state-content::before {
   font-size: var(--text-2xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-strong);
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   padding: 2px var(--space-2);
   font-weight: var(--weight-semibold);
@@ -2595,7 +2606,7 @@ td.empty-state .empty-state-content::before {
   font-size: var(--text-2xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: var(--accent);
+  color: var(--text-tertiary);
   font-weight: var(--weight-semibold);
 }
 
@@ -2860,7 +2871,7 @@ td.empty-state .empty-state-content::before {
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: var(--accent);
+  color: var(--text-tertiary);
   font-weight: var(--weight-semibold);
   margin-bottom: var(--space-1);
 }
@@ -3081,7 +3092,7 @@ td.empty-state .empty-state-content::before {
 .hidden { display: none !important; }
 
 .text-muted { color: var(--text-tertiary); }
-.text-primary-color { color: var(--accent); }
+.text-primary-color { color: var(--text-primary); }
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
 .text-warning { color: var(--warning); }
@@ -3177,7 +3188,7 @@ td.empty-state .empty-state-content::before {
 .onboarding-card-num {
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
-  color: var(--accent) !important;
+  color: var(--text-tertiary) !important;
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
@@ -3226,7 +3237,7 @@ td.empty-state .empty-state-content::before {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   margin: var(--space-2) var(--space-8);
-  background: linear-gradient(90deg, var(--accent-soft) 0%, transparent 100%);
+  background: var(--bg-surface);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
@@ -3384,7 +3395,7 @@ td.empty-state .empty-state-content::before {
   font-size: var(--text-2xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wider);
-  color: var(--accent);
+  color: var(--text-tertiary);
   font-weight: var(--weight-semibold);
   margin-bottom: var(--space-2);
 }
@@ -3935,12 +3946,14 @@ textarea:disabled {
   background: var(--accent-soft);
 }
 
+/* 2026-08-16: era relleno accent (chip de conteo por país en verde, visible
+   por defecto ya que "Todos" nace activo) — pasa a selección neutra: solo
+   peso + borde, sin competir por atención con los botones reales. */
 .calls-country-chip.is-active {
-  background: linear-gradient(135deg, var(--accent-medium) 0%, var(--accent-soft) 100%);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--bg-hover);
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
   font-weight: 600;
-  box-shadow: 0 2px 8px var(--accent-medium);
 }
 
 .calls-country-chip .chip-count {
@@ -3955,11 +3968,9 @@ textarea:disabled {
   font-variant-numeric: tabular-nums;
 }
 
-/* Activo: acento SOLIDO con label oscuro. El blanco sobre accent-strong
-   translúcido daba 2.98:1 — falla el objetivo del kit. */
 .calls-country-chip.is-active .chip-count {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--text-primary);
+  color: var(--bg-app);
 }
 
 .calls-country-chip .chip-flag {
@@ -4756,7 +4767,7 @@ textarea:disabled {
 /* Phase 20: disposición obligatoria */
 /* Banner del gate en vivo (D-01) — posicionamiento fixed lo setea el JS inline. */
 .dispo-gate-banner { align-items:center; gap:14px; background:var(--bg-surface); border:1px solid var(--accent); border-radius:10px; padding:12px 18px; box-shadow:0 8px 28px rgba(0,0,0,0.45); color:var(--text-primary); font-size:13px; max-width:min(560px, 92vw); transition:box-shadow 0.25s; }
-.dispo-gate-banner strong { color:var(--accent); font-weight:600; }
+.dispo-gate-banner strong { color:var(--text-primary); font-weight:600; }
 .dispo-gate-banner button { padding:7px 14px; background:var(--accent); border:none; border-radius:8px; color:#14121F; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; font-family:inherit; flex-shrink:0; }
 .dispo-gate-banner.dispo-flash { box-shadow:0 0 0 3px var(--accent), 0 8px 28px rgba(0,0,0,0.45); }
 /* Franja de pendientes (D-02) — recordatorio ámbar sutil, NUNCA bloquea. */

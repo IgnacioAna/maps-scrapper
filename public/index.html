@@ -272,11 +272,12 @@
         <button class="fb-dismiss" id="fb-dismiss-btn" title="Cerrar">✕</button>
       </div>
 
-      <!-- Banner sticky cuando admin esta en modo "Ver como" -->
-      <div id="view-as-banner" class="hidden" style="position:sticky; top:0; z-index:50; padding:8px 16px; background:linear-gradient(90deg, var(--accent-medium), var(--accent-soft)); border-bottom:1px solid var(--accent-strong); display:flex; align-items:center; gap:12px; font-size:13px;">
+      <!-- Banner sticky cuando admin esta en modo "Ver como". 2026-08-16: era un
+           degradé completo en acento — pasa a superficie neutra + borde izquierdo. -->
+      <div id="view-as-banner" class="hidden" style="position:sticky; top:0; z-index:50; padding:8px 16px; background:var(--bg-elevated); border-bottom:1px solid var(--border-default); border-left:3px solid var(--accent); display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text-secondary);">
         <span style="font-size:14px;">👁</span>
-        <span>Estás viendo el sistema como <strong id="view-as-label">—</strong>. Tus permisos siguen siendo de admin.</span>
-        <button id="view-as-exit" type="button" style="margin-left:auto; padding:4px 12px; background:var(--accent); color:var(--on-accent); border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Volver a admin</button>
+        <span>Estás viendo el sistema como <strong id="view-as-label" style="color:var(--text-primary);">—</strong>. Tus permisos siguen siendo de admin.</span>
+        <button id="view-as-exit" type="button" style="margin-left:auto; padding:4px 12px; background:transparent; color:var(--accent); border:1px solid var(--accent); border-radius:6px; font-size:12px; cursor:pointer; font-weight:600;">Volver a admin</button>
       </div>
       <!-- SELECTORES GLOBALES DE UBICACIÓN -->
       <div class="global-location-panel" style="padding: 16px 32px 0; border-bottom: 0px solid var(--border-color);">

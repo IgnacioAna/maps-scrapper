@@ -5818,6 +5818,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ── Vista Llamadas (Sin WSP) — rediseño con dispositions, click-to-call, agendamiento ──
     let callsLeadsCache = [];
+    // Fase 33, plan 03 (DIAL-03, D-08): frescura del cache de Llamadas. El
+    // fetch queda para la carga inicial, el refresh explícito, y para cuando
+    // los datos quedaron viejos — sin este tercer caso, una pestaña abierta
+    // todo el día nunca volvería a preguntarle al server.
+    const LEAD_STORE_STALE_MS = 5 * 60 * 1000;
+    let _callsFetchedAt = 0;
     // Sprint 37 (HOTSPOT-4): Map de id → lead para O(1) lookups. Se reconstruye
     // junto con el cache después de cada fetch o mutación.
     let _callsLeadsById = new Map();
@@ -6311,9 +6317,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Punto único de refresco tras mutar un lead desde el panel expandido: la
     // lista de Llamadas + la ficha de Hoy si está abierta sobre ese mismo lead.
+    // Fase 33, plan 03 (DIAL-03): si Hoy es la vista VISIBLE (no solo la ficha
+    // modal), repinta también la sección de Hoy desde el store — es el punto
+    // por el que pasan todas las acciones de la ficha (notas, follow-up,
+    // contacto alternativo, descarte, material).
     function _refreshLeadPanels(leadId) {
       renderCallsList();
       window._hoyRefreshFicha?.(leadId);
+      if (document.querySelector('#view-hoy:not(.hidden)')) _hoyRenderFromStore();
     }
 
     // Puntero a Llamadas para los leads nuevos. Hoy NO duplica una lista ordenada:
@@ -6431,6 +6442,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Phase 20 (D-02): franja de pendientes — fire-and-forget, no bloquea
         // el render de la lista.
         _dispoLoadPendingStrip();
+        // Fase 33, plan 03 (DIAL-03, D-08): carga exitosa completa — recién
+        // acá el cache cuenta como fresco.
+        _callsFetchedAt = Date.now();
       } catch (e) { console.error(e); }
     }
 
@@ -6898,7 +6912,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.active = false;
       document.getElementById('power-dialer').style.display = 'none';
       document.body.style.overflow = '';
-      // Refrescar la vista de origen para que se actualicen los counts
+      // Refrescar la vista de origen para que se actualicen los counts.
+      // Fase 33, plan 03 (DIAL-03): a propósito NO se cambia a un repintado
+      // sin fetch acá — salir del dialer es el momento de refresco EXPLÍCITO
+      // de la sesión de discado completa, y ahí sí conviene volver a
+      // preguntarle al server (puede haber pasado bastante entre el primer
+      // lead y el último).
       if (_pd.mode === 'hoy') loadHoyView(); else loadCallsView();
     };
     // Audit fix Sprint 36 + 37 (HOTSPOT-8): event delegation en lugar de
@@ -8319,7 +8338,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Mismo guard que usa _dispoAfterSaved para refrescar Hoy si es la
           // vista visible (un descarte fuera de una llamada puede pasar
           // igual desde ahí, ej. la ficha abierta con window._hoyOpenFicha).
-          try { if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView(); } catch {}
+          // Fase 33, plan 03 (DIAL-03): repintar desde el store, sin fetch —
+          // _leadStoreApply ya corrió un par de líneas arriba.
+          try { if (document.querySelector('#view-hoy:not(.hidden)') && typeof _hoyRenderFromStore === 'function') _hoyRenderFromStore(); } catch {}
         } catch (e) {
           window.showToast?.('Error de red descartando: ' + e.message, { type: 'error' });
         } finally {
@@ -9526,8 +9547,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // refrescarse: el lead cambia de sección o sale (un interesado que se
       // agenda, un callback que se resuelve). `_handleCallDisposition` solo
       // repinta la lista de Llamadas.
+      // Fase 33, plan 03 (DIAL-03): repintar desde el store en vez de
+      // re-fetchear — el lead ya se escribió con _leadStoreApply antes de
+      // llegar acá (por eso está en _leadStoreDirty), así que repintar es
+      // instantáneo y correcto; el fetch era un round-trip para ver algo que
+      // ya sabíamos.
       try {
-        if (document.querySelector('#view-hoy:not(.hidden)') && typeof loadHoyView === 'function') loadHoyView();
+        if (document.querySelector('#view-hoy:not(.hidden)') && typeof _hoyRenderFromStore === 'function') _hoyRenderFromStore();
       } catch {}
       _dispoAnnounce(leadId, opts);
     }
@@ -12686,10 +12712,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
+    // Fase 33, plan 03 (DIAL-03, D-08): cambiar de vista repinta desde el
+    // estado ya cargado, sin fetch — el fetch queda para la carga inicial, el
+    // refresh explícito, y para cuando los datos quedaron viejos (D-08,
+    // LEAD_STORE_STALE_MS). Ningún otro call site de loadCallsView/loadHoyView
+    // cambia (siguen pidiendo la red a propósito: bulk actions, filtros, etc).
+    function _callsShowView() {
+      if (callsLeadsCache.length && (Date.now() - _callsFetchedAt) < LEAD_STORE_STALE_MS) {
+        renderCallsList();
+        renderCallsStats?.();
+        _callsRenderCountryChips?.();
+        return;
+      }
+      loadCallsView();
+    }
+    function _hoyShowView() {
+      if (_hoyLeadIds.length && (Date.now() - _hoyFetchedAt) < LEAD_STORE_STALE_MS) {
+        _hoyRenderFromStore();
+        return;
+      }
+      loadHoyView();
+    }
+
     const callsMenuItem = document.querySelector('[data-target="view-calls"]');
-    if (callsMenuItem) callsMenuItem.addEventListener('click', () => { loadCallsView(); });
+    if (callsMenuItem) callsMenuItem.addEventListener('click', () => { _callsShowView(); });
     // Phase 13: home "Hoy"
-    document.querySelector('[data-target="view-hoy"]')?.addEventListener('click', () => { loadHoyView(); });
+    document.querySelector('[data-target="view-hoy"]')?.addEventListener('click', () => { _hoyShowView(); });
     // El filtro de SDR se PERSISTE por usuario (2026-07-31), como ya se hacía
     // con país y orden. Antes se perdía en cada recarga y volvía a "Todos": el
     // admin, que también tiene cartera propia, veía los leads de todo el equipo
@@ -16036,16 +16084,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 24px var(--accent-medium)';"
       onmouseout="this.style.borderColor='${borderColor}'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
         <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;">
-          <div style="font-size:28px; font-weight:700; color:var(--accent); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
+          <div style="font-size:28px; font-weight:700; color:var(--text-tertiary); line-height:1; letter-spacing:-0.5px;">${numStr}</div>
           ${estadoChip}
         </div>
-        <div style="height:2px; width:36px; background:linear-gradient(90deg, var(--accent), transparent); margin-bottom:12px;"></div>
+        <div style="height:2px; width:36px; background:linear-gradient(90deg, var(--border-strong), transparent); margin-bottom:12px;"></div>
         <div style="color:#E6EDF3; font-size:16px; font-weight:600; margin-bottom:4px;">${escHtml(m.title)}</div>
         <div style="color:#B8C2CC; font-size:13px; line-height:1.4; margin-bottom:14px; min-height:36px;">${escHtml(m.subtitle)}</div>
         <div style="display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--border-color);">
           <span style="font-size:11px; color:var(--text-secondary);">~${m.minutes} min</span>
           <span style="font-size:11px; color:var(--success); background:rgba(91,185,116,0.12); padding:3px 8px; border-radius:8px;">IA lo usa</span>
-          <span style="color:var(--accent); font-size:14px;">→</span>
+          <span style="color:var(--text-tertiary); font-size:14px;">→</span>
         </div>
       </a>`;
     }).join('');
