@@ -329,7 +329,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   de que él decida avanzar. *(R2)*
 - [x] **DIAL-03**: Power Dialer, Hoy y Llamadas se comportan como una sola
   herramienta: lo que marca en una se refleja en las otras sin recargar.
-- [ ] **DIAL-04**: La ficha del lead muestra al frente lo que necesita ver
+- [x] **DIAL-04**: La ficha del lead muestra al frente lo que necesita ver
   antes de que atiendan, incluido **el historial de las vendedoras** — quién
   lo trabajó, qué anotó, en qué quedó. Llamar a un lead trabajado no es una
   llamada en frío. *(R1, R6)*

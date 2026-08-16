@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T05:20:00.000Z"
+last_updated: "2026-08-16T06:00:00.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # SCM — STATE
@@ -39,9 +39,46 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 33 (dial-motor-unico): Plan 3 of 4 executed (2026-08-16)
-Plan: 3 of 4 -- 33-01, 33-02 y 33-03 con SUMMARY (33-01-SUMMARY.md,
-  33-02-SUMMARY.md, 33-03-SUMMARY.md)
+Phase: 34 (hoy-vista-diaria) -- sin plan generado todavia (0/TBD en
+  ROADMAP.md, requiere discuss-phase/plan-phase). Directorio
+  `.planning/phases/34-hoy-vista-diaria/` ya existe pero vacio de PLAN.md
+  al cierre de Phase 33.
+Plan: N/A -- ultimo trabajo cerrado es 33-04 (ver bloque "Phase 33
+  COMPLETE" mas abajo)
+Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
+  marcados [x] en REQUIREMENTS.md. ROADMAP.md actualizado a mano (Phase 33
+  Complete 4/4, gsd-sdk no disponible en este entorno -- riesgo de
+  corrupcion documentado en 24-04/29-02/29-03/29-04/31-03/31-04, edicion
+  manual + git diff antes de commitear).
+  33-04 (DIAL-04, ficha con historial de las vendedoras al frente) cerro
+  en 3 commits: ad04823 (backend, _buildUserNameMap + userNames en
+  GET /leads/sin-wsp), a43e4be (bloque [33-04] HISTORY-PURE +
+  _leadHistoryHTML cableado en _pdRender/window._leadFileHtml/
+  _callsRenderExpandedPanel), y 41636b3 (49 tests en
+  tests/dial-history.test.js + cache-buster app.js 20260816c->20260816e,
+  cierre de una sesion posterior a la que corto el proceso tras el
+  codigo). Verificado con gsd-verifier (33-VERIFICATION.md): 4/4
+  requirements con evidencia de codigo real (no solo SUMMARY), D-09
+  respetado (0 literales de suscripcion/Proxy en public/app.js,
+  _leadStoreApply sigue siendo mutador directo), npm test 1801/1801 (106
+  archivos), veredicto human_needed solo por 4 items visuales/en-vivo sin
+  browser en el entorno (ninguno bloqueante).
+  33-01 EXECUTED (DIAL-01): _pdDialHere + startAtLeadId + _pd.forced,
+  boton "Discar aca" en las 4 superficies.
+  33-02 EXECUTED (DIAL-02): _pdHold unico camino al hold + _pd.pendingSave
+  senal deterministica, elimina la heuristica stillActionable.
+  33-03 EXECUTED (DIAL-03): _hoyRenderFromStore (Hoy se pinta desde el
+  estado, no desde fetch) + _leadStoreVersion/_leadStoreDirty +
+  _callsShowView/_hoyShowView (repintar al mostrar si hay datos frescos
+  <5min, LEAD_STORE_STALE_MS) -- sin el store reactivo completo (limite
+  D-09, deliberadamente NO construido).
+  33-04 EXECUTED (DIAL-04): detalle completo en el bloque de abajo (el
+  que era "Current Position" hasta este cierre).
+
+## Phase 33 (dial-motor-unico): COMPLETE (4/4 planes, 2026-08-16)
+
+Plan: 4 of 4 -- las 4 con SUMMARY (33-01-SUMMARY.md, 33-02-SUMMARY.md,
+  33-03-SUMMARY.md, 33-04-SUMMARY.md)
 Status: 33-03 ejecutado (commits a4b8435 _hoyRenderFromStore, bf435fe
   incluye tambien el codigo de la Task 2 de este plan -- commiteado por
   una sesion PARALELA que corrio git commit sobre public/app.js al mismo
@@ -117,11 +154,43 @@ Status: 33-03 ejecutado (commits a4b8435 _hoyRenderFromStore, bf435fe
   (REQUIREMENTS.md marcado [x]). ROADMAP.md actualizado a mano (Phase 33
   3/4 planes, Wave 3 con SUMMARY).
 Resume file: None
-Last activity: 2026-08-16 -- Phase 33 Plan 3 (sincronizacion de vistas
-  Power Dialer/Hoy/Llamadas via _hoyRenderFromStore + escritura unica
-  observable) completado, DIAL-03 cerrado. Siguiente: 33-04 (DIAL-04,
-  ficha con historial de las vendedoras al frente), Wave 4 del plan de
-  la fase -- ultimo plan de Phase 33.
+Last activity: 2026-08-16 -- Phase 33 Plan 4 (DIAL-04, ficha con
+  historial de las vendedoras al frente) completado. **Fase 33 (DIAL)
+  COMPLETA (4/4 planes)**.
+  33-04 se corto a mitad de proceso: el codigo (backend
+  _buildUserNameMap+userNames, commit ad04823; bloque
+  [33-04] HISTORY-PURE + cableado en las 3 superficies, commit a43e4be)
+  quedo commiteado sin tests ni cache-buster. Una sesion posterior cerro
+  el plan (commit 41636b3, co-autor Claude Opus 5): 49 tests nuevos en
+  tests/dial-history.test.js, cache-buster app.js 20260816c->20260816e.
+  Ese mismo commit de cierre volvio a arrastrar ~15 hunks de la sesion
+  paralela de disciplina de color (var(--accent) -> tokens neutros) que
+  estaban sin commitear en el mismo working tree compartido -- mismo
+  patron de contaminacion que bf435fe en 33-03, verificado que no toca
+  nada del bloque HISTORY-PURE ni su cableado (detalle completo en
+  33-04-SUMMARY.md, seccion Deviations).
+  _buildUserNameMap(ids) (index.js, junto a _buildUserSetterMap): solo
+  los ids pedidos, solo u.name, nunca email (T-33-12).
+  GET /api/setters/leads/sin-wsp devuelve {leads, userNames} (shape
+  aditivo). Bloque [33-04] HISTORY-PURE: _leadHistoryBrief (pura, reloj
+  por parametro, D-12 sin historial no hay bloque, D-13 nunca lee
+  transcript, regla dura de 31-04 -- compromiso solo si estado ALMACENADO
+  'pendiente') + _leadHistoryHTML (builder de superficie, escHtml en toda
+  interpolacion, sin emojis) cableado en _pdRender (debajo del header),
+  window._leadFileHtml (primer row) y _callsRenderExpandedPanel (antes
+  del brief, reusado por la ficha de Hoy).
+  Cerrado con gsd-verifier: 33-VERIFICATION.md, PASSED a nivel de
+  codigo/funcionalidad (status human_needed solo por 4 items visuales en
+  vivo sin browser, ninguno bloqueante). npm test 1801/1801 (106
+  archivos) confirmado en 2 corridas limpias. D-09 verificado
+  independientemente por el verificador (grep propio, no confio en la
+  afirmacion del SUMMARY): 0 literales de suscripcion/Proxy, la escritura
+  sigue siendo un mutador directo sobre _leadStoreApply.
+  DIAL-01..04 completos (REQUIREMENTS.md marcado [x] los 4). ROADMAP.md
+  actualizado a mano (Phase 33 Complete 4/4, gsd-sdk no disponible en
+  este entorno). Siguiente: Phase 34 (hoy-vista-diaria) -- sin plan
+  generado todavia (0/TBD en ROADMAP.md, requiere discuss-phase/
+  plan-phase).
 
 Phase 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
 Plan: 4 of 4 -- las 4 con SUMMARY (32-01/32-02/32-03/32-04)

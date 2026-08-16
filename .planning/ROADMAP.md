@@ -78,7 +78,7 @@ recordarle, el milestone falló.
 | 30 | 3/3 | Complete   | 2026-08-15 |
 | 31 | COMM — Compromisos como objeto (4/4 planes, COMPLETE) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista (4/4 planes, COMPLETE) | ACT-01..05 | 29, 31 |
-| 33 | DIAL — Power Dialer como motor único (3/4 planes) | DIAL-01..04 | 29, 30, 32 |
+| 33 | DIAL — Power Dialer como motor único (4/4 planes, COMPLETE) | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
@@ -86,7 +86,7 @@ recordarle, el milestone falló.
 - [x] **Phase 30: GATE — Cierra la llamada, define el próximo paso** — no se cierra una disposición sin próximo paso o estado terminal (completed 2026-08-15)
 - [x] **Phase 31: COMM — Compromisos como objeto** — "mandame info"/"llamame en dos semanas" como objetos con dueño y fecha, no notas sueltas (completed 2026-08-15)
 - [x] **Phase 32: ACT — Acciones desde cualquier vista** — WhatsApp/descartar/número alternativo desde lista, dialer, ficha y Hoy (completed 2026-08-15)
-- [ ] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente
+- [x] **Phase 33: DIAL — Power Dialer como motor único** — lanzar sobre un lead puntual, no expulsar al marcar, ficha con historial al frente (completed 2026-08-16)
 - [ ] **Phase 34: HOY — La vista diaria** — reordenada por prioridad, filtro por país, red de seguridad de higiene
 
 > **Por qué la Phase 28 existe**: decisión del user (2026-08-13). Las dos
@@ -348,7 +348,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 33-04-PLAN.md — DIAL-04: bloque de historial de las vendedoras al frente en las 3 superficies de llamada + `userNames` en la cola
+- [x] 33-04-PLAN.md — DIAL-04: bloque de historial de las vendedoras al frente en las 3 superficies de llamada + `userNames` en la cola (completed 2026-08-16, 33-04-SUMMARY.md)
 
 ### Phase 34: HOY — La vista diaria
 
