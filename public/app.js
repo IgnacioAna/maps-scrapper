@@ -6132,22 +6132,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       const discardTitle = escHtml('Descartar: razón opcional — saca el lead de Llamadas, del Power Dialer y de Hoy de una sola vez');
       const discardChip = `<span class="scm-chip-blocked" title="Lead descartado"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Descartado</span>`;
       const isDiscardedLead = !!(lead && lead.estado === 'descartado');
+      // Fase 33, plan 01 (DIAL-01): tercer botón del mismo builder — "Discar
+      // acá". Abre (o salta, si ya está abierto) el Power Dialer posicionado
+      // sobre ESTE lead puntual. NO se emite en la variante 'pd': esa es la
+      // tarjeta ACTUAL del dialer, "discar acá" ahí no significa nada — no
+      // lo "arregles" agregándolo, es a propósito. A diferencia del botón de
+      // "Descartar" (que se reemplaza por el chip), un lead descartado NO
+      // pierde este botón: el user puede querer discarlo igual, y
+      // `_pd.forced` (Task 1) lo sostiene en pantalla.
+      const dialHereTitle = escHtml('Abre el Power Dialer arrancando en este lead, con el resto de la cola detrás');
       if (variant === 'pd') {
         const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="pd-quick-link" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
         return `<button type="button" class="pd-quick-link" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>${discardHtml}`;
       }
       if (variant === 'ficha') {
         const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="call-action-btn" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
-        return `<button type="button" class="call-action-btn is-wsp" onclick="window._actWhatsApp('${id}')" title="${title}">Mandar WhatsApp</button>${discardHtml}`;
+        const dialHereHtml = `<button type="button" class="call-action-btn" onclick="window._pdDialHere('${id}')" title="${dialHereTitle}">Discar acá</button>`;
+        return `<button type="button" class="call-action-btn is-wsp" onclick="window._actWhatsApp('${id}')" title="${title}">Mandar WhatsApp</button>${discardHtml}${dialHereHtml}`;
       }
       if (variant === 'hoy') {
         const discardHtml = isDiscardedLead ? discardChip : `<button type="button" class="hoy-ficha-btn" onclick="window._actDiscard('${id}')" title="${discardTitle}">Descartar</button>`;
-        return `<button type="button" class="hoy-ficha-btn" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>${discardHtml}`;
+        const dialHereHtml = `<button type="button" class="hoy-ficha-btn" onclick="window._pdDialHere('${id}')" title="${dialHereTitle}">Discar acá</button>`;
+        return `<button type="button" class="hoy-ficha-btn" onclick="window._actWhatsApp('${id}')" title="${title}">WhatsApp</button>${discardHtml}${dialHereHtml}`;
       }
       // 'row' (lista de Llamadas): pill chico calcado del botón "+ contacto"
       // (la fila tiene su propio manejo de click, de ahí stopPropagation).
       const discardHtml = isDiscardedLead ? discardChip : `<button type="button" onclick="event.stopPropagation(); window._actDiscard('${id}')" title="${discardTitle}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Descartar</button>`;
-      return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>${discardHtml}`;
+      const dialHereHtml = `<button type="button" onclick="event.stopPropagation(); window._pdDialHere('${id}')" title="${dialHereTitle}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:var(--accent-soft); border:1px solid var(--accent-strong); color:var(--text-primary); cursor:pointer; font-family:inherit;">Discar acá</button>`;
+      return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>${discardHtml}${dialHereHtml}`;
     }
 
     function _hoyRenderSection(title, leads, accent, hint, dialerMode, opts = {}) {
@@ -7296,12 +7308,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!l) return '';
         const f = l.country ? countryFlagHTML(l.country) : '';
         const att = l.callAttempts || 0;
-        return `<div style="display:grid; grid-template-columns:32px 22px 1fr auto auto; gap:10px; align-items:center; padding:9px 13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
+        // DIAL-01 (33-01): 4to punto de entrada de "Discar acá" — con el
+        // dialer abierto (fullscreen) es el ÚNICO alcanzable desde acá.
+        return `<div style="display:grid; grid-template-columns:32px 22px 1fr auto auto auto; gap:10px; align-items:center; padding:9px 13px; background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:8px; font-size:12.5px;">
           <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-weight:500;">${i + 2}.</span>
           <span style="display:flex; align-items:center;">${f}</span>
           <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name)}${l.city ? ' <span style="color:var(--text-tertiary);">· ' + escHtml(l.city) + '</span>' : ''}${l.doctor && !l.doctor.includes('N/A') ? ' <span style="color:var(--text-tertiary); font-size:11px;">· ' + escHtml(l.doctor) + '</span>' : ''}</span>
           ${att > 0 ? `<span style="font-size:10px; color:var(--text-tertiary); background:var(--bg-app); padding:1px 6px; border-radius:5px;">${att} int</span>` : ''}
           <span style="color:var(--text-tertiary); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11px;">${escHtml(_phoneShown(l.phone))}</span>
+          <button type="button" onclick="window._pdDialHere('${escHtml(l.id)}')" title="Discar acá — salta a este lead sin perder el resto de la cola" style="font-size:10px; padding:3px 9px; border-radius:6px; background:var(--accent-soft); border:1px solid var(--accent-strong); color:var(--text-primary); cursor:pointer; font-family:inherit; white-space:nowrap;">Discar acá</button>
         </div>`;
       }).join('');
 
