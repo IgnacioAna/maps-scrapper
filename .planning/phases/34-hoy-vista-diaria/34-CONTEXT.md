@@ -43,6 +43,20 @@ mezclado todo y es muy caótico"*.
   interesado aparece todos los días hasta agendar o descartar; el callback
   manual solo el día pactado; no_answer/voicemail nunca van a Hoy.
 
+  > **Nota aclaratoria (checker, 2026-08-16)**: existe una tensión textual
+  > entre este punto de D-03 ("no_answer/voicemail nunca van a Hoy", un
+  > carry-over literal de la nota #125, que es una regla PRE-Phase 34) y
+  > D-01 #3, que agrega explícitamente el tier "Reintentos de no-contacto
+  > que vencen hoy" — leads en `no_answer`/`voicemail` cuyo reintento
+  > automático de cadencia vence hoy. La lectura correcta, que los 3 planes
+  > de esta fase (34-01/34-02/34-03) implementan, es **D-01**: coincide con
+  > ROADMAP.md y con el texto literal de REQUIREMENTS.md (HOY-01, tier 3).
+  > D-03 sigue vigente para el resto de las reglas que no cambian
+  > (interesados visibles todos los días, callback manual solo el día
+  > pactado) — la única excepción es que Fase 34 SÍ suma no_answer/voicemail
+  > a Hoy, pero únicamente como el tier 3 nuevo (reintentos que vencen hoy),
+  > nunca mezclados con los demás tiers.
+
 ### El filtro por país (HOY-02)
 
 - **D-04 — Reusar el patrón que ya existe en Llamadas**
@@ -81,6 +95,18 @@ mezclado todo y es muy caótico"*.
   de saturación. *Si la cola de vencidos crece día a día en vez de vaciarse,
   el pipeline activo es más grande que la capacidad.* No es un número de
   vanidad, es una alarma.
+
+  > **Nota aclaratoria (checker, 2026-08-16)**: para que D-13 signifique algo
+  > (una tendencia real "vs. ayer"), los 2 números que alimentan el panel
+  > tienen que medir SIEMPRE el mismo universo — el pipeline completo del
+  > SDR, no el subconjunto que el filtro de país (D-04/D-05) esté mostrando
+  > en un instante dado. El filtro de país es una preferencia visual que se
+  > espera que cambie varias veces por día (ese es el punto de D-05); si el
+  > panel de higiene midiera sobre el array ya filtrado, cada cambio de
+  > filtro pisaría el snapshot de "hoy" con un recorte distinto y la
+  > tendencia dejaría de ser comparable. Los planes 34-02/34-03 resuelven
+  > esto manteniendo una clasificación separada, sin filtro de país, solo
+  > para los 2 números del panel de higiene.
 - **D-14 — Nada de métricas en cero.** Regla vigente del proyecto: un
   número que siempre da 0 entrena a ignorar el panel.
 
