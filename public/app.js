@@ -1491,7 +1491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="variant-block-text">${escHtml(text)}</div>
             <div class="variant-block-actions">
               <button type="button" class="copy-block-btn" data-copy-text="${escHtml(text)}">Copiar</button>
-              <button type="button" class="copy-block-btn" data-copy-human-text="${escHtml(text)}" title="Copiar para Pegar como humano (extensión Chrome)" style="color:var(--accent);">Copiar humano</button>
+              <button type="button" class="copy-block-btn" data-copy-human-text="${escHtml(text)}" title="Copiar para Pegar como humano (extensión Chrome)">Copiar humano</button>
               <button type="button" class="copy-block-btn" data-open-wa="${escHtml(text)}">Abrir WhatsApp</button>
             </div>
           </div>`;
@@ -7395,7 +7395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
               const rowInner = `
                 <span style="width:8px; height:8px; border-radius:50%; background:${dotColor};"></span>
-                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--accent);">🎤</span>' : ''}</span>
+                <span style="color:var(--text-primary); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(callOutcomeLabel(entry.outcome).replace(/^[^\w]+\s*/, ''))}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0,40)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--text-tertiary);">🎤</span>' : ''}</span>
                 <span style="color:var(--text-tertiary); font-variant-numeric:tabular-nums; font-size:10.5px; display:flex; gap:8px; align-items:center;">${costStr}${t}</span>`;
               if (!hasTr) {
                 return `<div style="display:grid; grid-template-columns:8px 1fr auto; gap:10px; align-items:center; padding:8px 12px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:7px; font-size:11.5px;">${rowInner}</div>`;
@@ -8760,7 +8760,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const hasTr = Array.isArray(segs) && segs.length > 0 && _convOutcomes.includes(entry.outcome);
             const rowHtml = `<div class="call-history-item">
               <span class="call-history-icon">${icon}</span>
-              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--accent);">🎤</span>' : ''}</span>
+              <span class="call-history-text">${escHtml(label)}${dur}${cost}${entry.notes ? ' · ' + escHtml(String(entry.notes).substring(0, 60)) : ''}${hasTr ? ' <span title="tiene transcripción — click para leer" style="color:var(--text-tertiary);">🎤</span>' : ''}</span>
               <span class="call-history-time">${time}</span>
               ${objTagsHtml}
             </div>`;
@@ -12650,7 +12650,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // la última nota, el compromiso pendiente si hay, y cuántos intentos
     // lleva. Bloque sin ninguna dependencia del navegador (nada de DOM, red
     // ni almacenamiento persistente, y el reloj SIEMPRE se recibe por
-    // parámetro, nunca Date.now() interno): el test lo extrae por estos
+    // parámetro, nunca uno tomado internamente): el test lo extrae por estos
     // marcadores y lo evalúa aislado, mismo patrón que [31-03]
     // COMMITMENT-PURE / [30-02] GATE-PURE / [32-03] ACT-PURE.
 
@@ -13321,7 +13321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           '<td class="cmd-cell-num cmd-cell-strong">' + (s.conversaciones || 0) + '</td>' +
           '<td class="cmd-cell-num">' + (s.interesados || 0) + '</td>' +
           '<td class="cmd-cell-num" style="color:var(--success); font-weight:600;">' + (s.agendados || 0) + '</td>' +
-          '<td class="cmd-cell-num" style="color:var(--accent);">' + (s.pctConversion || '0.0') + '%</td>' +
+          '<td class="cmd-cell-num" style="color:var(--text-primary);">' + (s.pctConversion || '0.0') + '%</td>' +
           '</tr>'
         ).join('');
       }
@@ -13657,7 +13657,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Boton "Rol" para cambiar entre admin/supervisor/setter.
           // Disponible para todos los roles excepto el propio user (no podes cambiarte a vos mismo).
           if (user.id !== currentUser.id) {
-            acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--text-secondary); font-size:11px;" onclick="window._changeUserRole(\'' + escHtml(user.id) + '\', \'' + escHtml(user.role || '') + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Rol</button>');
             acts.push('<button type="button" class="btn-table-action" style="color:var(--info); font-size:11px;" title="Resetear la contraseña de este usuario" onclick="window._resetUserPassword(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.email || '') + '\'))">Clave</button>');
           }
           // Supervisor: editar qué SDRs puede ver (visibleSetterIds).
@@ -13666,7 +13666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const visJson = encodeURIComponent(JSON.stringify(user.visibleSetterIds || []));
             const visCount = (user.visibleSetterIds || []).length;
             const visLabel = visCount > 0 ? ('SDRs visibles (' + visCount + ')') : 'SDRs visibles';
-            acts.push('<button type="button" class="btn-table-action" style="color:var(--accent); font-size:11px;" title="Elegir qué SDRs puede ver este supervisor (vacío = todos)" onclick="window._editVisibleSetters(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.name || user.email || '') + '\'), decodeURIComponent(\'' + visJson + '\'))">' + visLabel + '</button>');
+            acts.push('<button type="button" class="btn-table-action" style="color:var(--text-secondary); font-size:11px;" title="Elegir qué SDRs puede ver este supervisor (vacío = todos)" onclick="window._editVisibleSetters(\'' + escHtml(user.id) + '\', decodeURIComponent(\'' + encodeURIComponent(user.name || user.email || '') + '\'), decodeURIComponent(\'' + visJson + '\'))">' + visLabel + '</button>');
           }
           // Acciones especificas de SDR
           if (user.role === 'setter') {
@@ -15772,7 +15772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex;gap:6px;">
           <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--success);font-weight:600;" onclick="window._faqCopy('${escHtml(e.id)}', this)">Copiar</button>
-          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;color:var(--accent);font-weight:600;" title="Copiar para Pegar como humano (extensión Chrome)" onclick="window._faqCopyAsHuman('${escHtml(e.id)}', this)">Copiar humano</button>
+          <button class="btn-table-action" style="font-size:11px;padding:5px 12px;font-weight:600;" title="Copiar para Pegar como humano (extensión Chrome)" onclick="window._faqCopyAsHuman('${escHtml(e.id)}', this)">Copiar humano</button>
           <button class="btn-table-action" style="font-size:11px;padding:5px 12px;" onclick="window._faqFeedback('${escHtml(e.id)}', true)">Funcionó</button>
         </div>
       </div>
@@ -16572,7 +16572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <strong style="color:var(--text-primary); font-size:15px;">${escHtml(e.nombre || lead?.name || '(sin nombre)')}</strong>
             <span style="background:${sc.bg}; color:${sc.color}; padding:3px 10px; border-radius:8px; font-size:11px; font-weight:600;">${sc.label}</span>
             ${isPast && e.calendarioEstado === 'pendiente' ? '<span style="background:var(--danger-soft); color:var(--danger); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:600;">⚠️ ATRASADA</span>' : ''}
-            ${e.sourceCall ? '<span style="background:var(--accent-soft); color:var(--accent); padding:2px 8px; border-radius:6px; font-size:10px;">desde llamada</span>' : ''}
+            ${e.sourceCall ? '<span style="background:var(--bg-elevated); color:var(--text-tertiary); padding:2px 8px; border-radius:6px; font-size:10px;">desde llamada</span>' : ''}
             ${e.calendarioEstado === 'ganada' && e.valorProyecto ? `<span style="background:rgba(255,179,65,0.15); color:#FFB341; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700;">$${Number(e.valorProyecto).toLocaleString('es-AR')}</span>` : ''}
           </div>
           <div style="font-size:13px; color:var(--text-secondary); margin-bottom:3px;">📆 <strong>${escHtml(fechaStr)}</strong> · agendó: <strong>${escHtml(e.setterName || e.setterId || '?')}</strong></div>
@@ -16707,7 +16707,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     '</div>');
     const calOverdueColor = (ck.counts.calendarAtrasados || 0) > 0 ? 'var(--danger)' : 'var(--success)';
     html += card('Calendario', '<div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px;">' +
-      '<span style="color:var(--text-tertiary);">Pendientes:</span><span style="color:var(--accent); font-weight:600;">' + (ck.counts.calendarPendientes || 0) + '</span>' +
+      '<span style="color:var(--text-tertiary);">Pendientes:</span><span style="color:var(--text-primary); font-weight:600;">' + (ck.counts.calendarPendientes || 0) + '</span>' +
       '<span style="color:var(--text-tertiary);">Atrasadas:</span><span style="color:' + calOverdueColor + '; font-weight:600;">' + (ck.counts.calendarAtrasados || 0) + '</span>' +
     '</div>', calOverdueColor);
     const aiOk = ck.ai.mercury || ck.ai.qwen;
@@ -17168,7 +17168,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div style="display:flex; flex-direction:column; gap:4px; flex-shrink:0;">
           <button class="btn-table-action asst-block-copy" style="font-size:11px;">Copiar</button>
-          <button class="btn-table-action asst-block-copy-human" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:11px; color:var(--accent);">Humano</button>
+          <button class="btn-table-action asst-block-copy-human" title="Copiar para Pegar como humano (extensión Chrome)" style="font-size:11px;">Humano</button>
         </div>
       `;
       li.querySelector('.asst-block-text').textContent = b;
@@ -17234,7 +17234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="flex:1; min-width:0;">
             <div class="ej-pregunta" style="font-weight:500; color:var(--text-primary); font-size:13px;"></div>
             <div class="muted" style="font-size:10px; margin-top:3px;">
-              <span class="ej-cat" style="padding:1px 7px; background:var(--accent-soft); color:var(--accent); border-radius:6px; font-weight:500;"></span>
+              <span class="ej-cat" style="padding:1px 7px; background:var(--bg-elevated); color:var(--text-tertiary); border-radius:6px; font-weight:500;"></span>
               <span style="margin-left:6px;">score: <span class="ej-score"></span></span>
               <span style="margin-left:6px; opacity:0.7;">click para ver respuesta</span>
             </div>

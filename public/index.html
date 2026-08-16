@@ -11,7 +11,7 @@
   <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%233FA872%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20fill%3D%22none%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23141619%22%2F%3E%3Cpath%20d%3D%22M31%2022%20L72%2034%20L72%2066%20L31%2078%20Z%22%20stroke%3D%22%233FA872%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260815f">
+  <link rel="stylesheet" href="/style.css?v=20260816a">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1061,7 +1061,7 @@
             </div>
             <div class="calls-kpi">
               <div class="calls-kpi-label">Atendidas</div>
-              <div id="calls-stat-answered" class="calls-kpi-value" style="color:var(--success);">—</div>
+              <div id="calls-stat-answered" class="calls-kpi-value">—</div>
             </div>
             <div class="calls-kpi">
               <div class="calls-kpi-label">Agendadas</div>
@@ -1082,7 +1082,7 @@
         <section id="calls-callback-agenda-wrap" style="padding: 0 32px 14px; display:none;">
           <details id="calls-callback-agenda-details" open style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:0;">
             <summary style="padding:11px 16px; cursor:pointer; font-size:13px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; justify-content:space-between; list-style:none;">
-              <span><span style="color:var(--accent);">🗓️</span> Próximos callbacks programados <span id="calls-callback-agenda-count" style="font-size:11px; color:var(--text-tertiary); font-weight:500; margin-left:6px;"></span></span>
+              <span><span style="color:var(--text-secondary);">🗓️</span> Próximos callbacks programados <span id="calls-callback-agenda-count" style="font-size:11px; color:var(--text-tertiary); font-weight:500; margin-left:6px;"></span></span>
               <span style="font-size:10px; color:var(--text-tertiary); font-weight:500;">click para colapsar</span>
             </summary>
             <div id="calls-callback-agenda-body" style="padding:0 16px 14px; display:flex; flex-direction:column; gap:6px;"></div>
@@ -1128,7 +1128,7 @@
               <button id="calls-pag-first" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Primera página">⟪</button>
               <button id="calls-pag-prev" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Anterior">←</button>
               <span style="font-size:12px; color:var(--text-primary); padding:0 10px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">
-                <span id="calls-pag-current" style="font-weight:700; color:var(--accent);">1</span> / <span id="calls-pag-last" style="color:var(--text-secondary);">1</span>
+                <span id="calls-pag-current" style="font-weight:700; color:var(--text-primary);">1</span> / <span id="calls-pag-last" style="color:var(--text-secondary);">1</span>
               </span>
               <button id="calls-pag-next" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Siguiente">→</button>
               <button id="calls-pag-end" class="btn-secondary" style="padding:6px 10px; border-radius:7px; font-size:11px; font-weight:600; min-width:36px;" title="Última página">⟫</button>
@@ -1849,9 +1849,9 @@
 
         <!-- Onboarding oficial (hardcoded) -->
         <div style="padding:0 32px;">
-          <div id="onboarding-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:linear-gradient(135deg, var(--accent-soft), var(--accent-soft)); border:1px solid var(--accent-strong); border-radius:12px; margin-bottom:14px;">
+          <div id="onboarding-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; background:var(--bg-elevated); border:1px solid var(--border-default); border-left:3px solid var(--accent); border-radius:12px; margin-bottom:14px;">
             <div>
-              <div style="font-size:11px; color:var(--accent); font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Onboarding oficial del equipo</div>
+              <div style="font-size:11px; color:var(--text-tertiary); font-weight:600; letter-spacing:0.5px; text-transform:uppercase;">Onboarding oficial del equipo</div>
               <div id="onboarding-subheader" style="font-size:13px; color:var(--text-secondary); margin-top:3px;">8 módulos · ~46 min total · 0 de 8 completados</div>
             </div>
             <div id="onboarding-progress-bar" style="width:140px; height:8px; background:var(--accent-medium); border-radius:4px; overflow:hidden;">
@@ -3574,10 +3574,10 @@
   <!-- Modal Agendar reunión: iframe Google Calendar + form de confirmación -->
   <div id="agendar-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); z-index:2100; align-items:center; justify-content:center; padding:16px;">
     <div class="card" style="width:min(820px, 98vw); max-height:96vh; padding:0; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 24px 60px rgba(0,0,0,0.7);">
-      <div style="padding:18px 22px 14px; border-bottom:1px solid var(--border-color); background:linear-gradient(180deg, var(--accent-soft) 0%, transparent 100%); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <div style="padding:18px 22px 14px; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
         <div style="width:38px; height:38px; flex-shrink:0; background:linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:18px;">📅</div>
         <div style="flex:1; min-width:0;">
-          <h3 style="margin:0; font-size:17px; font-weight:700; letter-spacing:-0.3px;">Agendar reunión con <span id="agendar-lead-name" style="color:var(--accent);">—</span></h3>
+          <h3 style="margin:0; font-size:17px; font-weight:700; letter-spacing:-0.3px;">Agendar reunión con <span id="agendar-lead-name" style="color:var(--text-primary);">—</span></h3>
           <div class="muted" style="font-size:12px; margin-top:3px;">Reservá el horario en el calendario de abajo. Después confirmá la fecha en el sistema.</div>
         </div>
         <button id="agendar-close" class="btn-secondary" style="font-size:13px; padding:7px 14px; border-radius:8px;">✕</button>
@@ -3641,7 +3641,7 @@
             <button id="setter-distribute-clear" type="button" class="btn-secondary" style="font-size:11px; padding:6px 12px; border-radius:8px;">Limpiar todo</button>
           </div>
           <div style="font-size:12px; color:var(--text-secondary); white-space:nowrap;">
-            Asignados: <strong id="setter-distribute-assigned" style="color:var(--accent);">0</strong> / <strong id="setter-distribute-total">0</strong>
+            Asignados: <strong id="setter-distribute-assigned" style="color:var(--text-primary);">0</strong> / <strong id="setter-distribute-total">0</strong>
             <span id="setter-distribute-remaining-badge" style="margin-left:8px;"></span>
           </div>
         </div>
@@ -3676,7 +3676,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260816c"></script>
+  <script type="module" src="/app.js?v=20260816e"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>
