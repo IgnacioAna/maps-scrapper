@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T15:10:45.000Z"
+last_updated: "2026-08-16T15:30:00.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 25
-  completed_plans: 24
+  completed_plans: 25
   percent: 86
 ---
 
@@ -40,9 +40,88 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 ## Current Position
 
 Phase: 34 (hoy-vista-diaria) -- 3 planes generados (34-01/34-02/34-03-PLAN.md),
-  Wave 1 (34-01) EXECUTED 2026-08-16. Wave 2 (34-02) depende de 34-01
-  (ya cumplido); Wave 3 (34-03) depende de 34-02.
-Plan: 34-01 EXECUTED (HOY-04/HOY-05, backend puro). Commits: `76555d4`
+  Wave 1 (34-01) EXECUTED 2026-08-16. Wave 2 (34-02) EXECUTED 2026-08-16
+  (dependia de 34-01, ya cumplido). Wave 3 (34-03) depende de 34-02 (ya
+  cumplido) -- unico plan que falta para cerrar la Fase 34 y el milestone
+  v4.0.
+Plan: 34-02 EXECUTED (HOY-01/HOY-02/HOY-04, frontend puro, un solo commit
+  `304926d`). `_hoyRenderFromStore` reescrito de 4 buckets sueltos a la
+  cascada de 5 tiers exclusivos que pide D-01: Mis compromisos (vencen
+  hoy) -> Esperando del prospecto (plazo vencido) -> Callbacks (vencen
+  hoy) -> Interesados sin agendar (sin acotar fecha, D-03) -> Reintentos
+  de no-contacto (tier NUEVO, cadencia automatica que vence hoy) ->
+  Nuevos por score (GATEADO -- solo si los 5 tiers anteriores estan
+  vacios) -> Red de seguridad (colapsable con <details>/<summary>, SOLO
+  leads con callLog.length>0, D-10 -- el stock virgen nunca entra).
+  `claimed` paso a ser un Set UNICO compartido por los 5 tiers reclamables
+  (D-02, exclusividad real) -- Fase 31 dejaba a Mis compromisos/Esperando
+  del prospecto FUERA de `claimed` a proposito; Fase 34 invierte esa
+  decision. `terminal()` ahora excluye tambien `estado==='cerrado'`
+  (Fase 9, deals ganados). Filtro por pais (`select#hoy-country-filter`)
+  ordenado por horario habil (D-05, mismo criterio que "A que pais llamar
+  ahora" de Distribucion), persistido por usuario en localStorage.
+  `allLeadsForHygiene` -- copia de `leads` capturada ANTES del filtro de
+  pais, disponible en el scope de la funcion para que 34-03 (panel de
+  higiene, HOY-05) mida el pipeline completo sin importar el filtro
+  activo (blocker resuelto por el checker el mismo 2026-08-16, ver
+  34-02-PLAN.md). `_hoyRenderSection` gana `opts.collapsible` (extension
+  no invasiva, mismo criterio que `opts.rowBadge` de Fase 31). `_hoyState`
+  gana `retryIds`.
+  33 tests nuevos en `tests/hoy-sections.test.js` (>=21 pedidos):
+  orden de la cascada, exclusividad de `claimed`, `terminal()` con
+  'cerrado', Red de seguridad solo tocados, gate del tier Nuevos,
+  `_commitDueAt`, regresion de `opts.collapsible` ejecutando
+  `_hoyRenderSection` aislada con `new Function`, filtro de pais (orden +
+  persistencia + aplicacion antes de `claimed`), y el test anti-regresion
+  de `allLeadsForHygiene`. Verificacion por mutacion (romper la condicion
+  de fecha de `misCompromisos`) puso en rojo exactamente el test esperado
+  de `_commitDueAt`; restaurado, diff vacio confirmado.
+  Deviations (2 auto-fixed, Rule 1 -- bugs expuestos por el diseno
+  explicito del propio plan, no anticipados por las 2 rondas de
+  plan-checker): (1) `tests/dial-sync.test.js` pineaba
+  `_hoyRenderSection(` === 5 ocurrencias ("igual que antes del refactor")
+  -- el codigo literal de la Task 1 agrega 2 llamadas nuevas (Reintentos +
+  Red de seguridad), sube a 7; corregido el numero, documentado en
+  comentario. (2) `tests/act-ui-discard-material.test.js` (Fase 32,
+  ACT-04) verificaba linea-por-linea que `_commitmentHoyBucket` compartiera
+  linea con `!terminal(l)`/`notDnc(l)` -- el codigo literal del plan
+  reformatea `misCompromisos`/`compromisosProspecto` a 3 lineas (guard en
+  la 1ra, `_commitmentHoyBucket`+`_commitDueAt` en las siguientes);
+  reescritos los 2 `it()` para extraer la expresion `filter(...)` COMPLETA
+  balanceada por parentesis en vez de por linea, preservando la invariante
+  original. Los 2 tests que el plan SI anticipaba (`commitment-hoy.test.js`,
+  hints nuevos + `claimed.add` de 2 a 6) se corrigieron tal cual instruyo
+  Task 3. Ningun cambio de diseno para evitar romper tests -- se siguio el
+  codigo literal del plan en los 2 casos.
+  `_hoyPopulateCountryFilter` se ajusto respecto al snippet inicial del
+  plan (que usaba una variable `key` compartida, dando 1 sola ocurrencia
+  del literal `hoy_country_filter_`): se inlineo el literal en la lectura
+  Y la escritura para satisfacer el acceptance criteria explicito
+  (grep -c >= 2) y quedar consistente con el patron preexistente de
+  `calls_country_filter_` en `loadCallsView`.
+  Cache-buster app.js `20260816f` -> `20260816g` (style.css intacto,
+  `20260816b`, git diff vacio).
+  Suite completa: 1850/1850 (baseline 1817 de 34-01 + 33 nuevos), 0
+  regresiones. Verificado con self-check (archivos en disco + commit en
+  `git log`). HOY-01/HOY-02/HOY-04 marcados [x] en REQUIREMENTS.md
+  (HOY-04 completo: backend de 34-01 + frontend "Red de seguridad" de
+  este plan). HOY-03/HOY-05 quedan para 34-03. ROADMAP.md actualizado a
+  mano (34-02 checkbox [x], Phase 34 progreso 2/3 Executing; de paso se
+  corrigio una fila stale de la tabla "## Progress" que decia Phase 33
+  "3/4 Executing" cuando ya estaba COMPLETA 4/4 desde el cierre de
+  33-04 -- inconsistencia preexistente, no de esta sesion).
+  ⚠️ Nota de proceso: el 1er intento de `gsd-sdk query state.advance-plan`/
+  `state.update-progress`/`state.record-metric` fallo (mismo problema
+  documentado desde 33-04: "Cannot parse Current Plan..."/"Progress field
+  not found"/"phase, plan, and duration required") pero uno de esos
+  intentos SI escribio parcialmente el frontmatter de este archivo
+  (`last_activity` retrocedio de 2026-08-16 a 2026-08-15, `last_updated`
+  avanzo) sin tocar `completed_plans`. Detectado con `git diff` ANTES de
+  hacer ningun cambio propio, revertido a mano junto con el resto de la
+  edicion manual de este bloque -- gsd-sdk sigue no disponible en este
+  entorno, edicion manual + git diff antes de commitear (mismo patron que
+  33-01..34-01).
+Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
   (feat, `l.nextAction` resuelto en `GET /leads/sin-wsp` vía
   `_leadNextAction` + `POST /api/setters/hoy-hygiene-snapshot` con
   `_hoyHygieneScope`, guard 403 para setter sin setterId vinculado) y
@@ -64,12 +143,12 @@ Status: **Phase 33 (DIAL) COMPLETA (4/4 planes, 2026-08-16)**. DIAL-01..04
   Complete 4/4, gsd-sdk no disponible en este entorno -- riesgo de
   corrupcion documentado en 24-04/29-02/29-03/29-04/31-03/31-04, edicion
   manual + git diff antes de commitear). **Phase 34 (HOY) EN EJECUCION:
-  1/3 planes (34-01 EXECUTED, 34-02/34-03 pendientes).** ROADMAP.md
-  actualizado a mano (34-01 checkbox [x], progreso 1/3, Executing) por el
-  mismo motivo (gsd-sdk no disponible: `state.advance-plan` responde
-  "Cannot parse Current Plan or Total Plans in Phase from STATE.md" y
-  `state.update-progress` responde "Progress field not found" contra el
-  formato manual de este STATE.md).
+  2/3 planes (34-01 EXECUTED, 34-02 EXECUTED, 34-03 pendiente -- ultimo
+  plan del milestone v4.0).** ROADMAP.md actualizado a mano (34-01/34-02
+  checkbox [x], progreso 2/3, Executing) por el mismo motivo (gsd-sdk no
+  disponible: `state.advance-plan` responde "Cannot parse Current Plan or
+  Total Plans in Phase from STATE.md" y `state.update-progress` responde
+  "Progress field not found" contra el formato manual de este STATE.md).
   33-04 (DIAL-04, ficha con historial de las vendedoras al frente) cerro
   en 3 commits: ad04823 (backend, _buildUserNameMap + userNames en
   GET /leads/sin-wsp), a43e4be (bloque [33-04] HISTORY-PURE +

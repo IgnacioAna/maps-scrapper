@@ -338,14 +338,14 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### HOY — La vista diaria
 
-- [ ] **HOY-01**: Hoy se ordena por prioridad de trabajo: compromisos que
+- [x] **HOY-01**: Hoy se ordena por prioridad de trabajo: compromisos que
   vencen hoy → interesados con paso vencido → reintentos de no-contacto →
   nuevos por score. *(R3)*
-- [ ] **HOY-02**: Puede filtrar Hoy por país, para saber a quién puede
+- [x] **HOY-02**: Puede filtrar Hoy por país, para saber a quién puede
   llamar ahora según huso horario. *(R3)*
 - [ ] **HOY-03**: Cada sección se trabaja en modo cola (una tarjeta, marcar
   y siguiente) con contador de cuántas quedan.
-- [ ] **HOY-04**: Hay una red de seguridad visible: los leads tocados que
+- [x] **HOY-04**: Hay una red de seguridad visible: los leads tocados que
   quedaron sin próxima acción. Objetivo: vacía.
 - [ ] **HOY-05**: Un panel de higiene muestra si la cola de vencidos crece o
   se vacía — el indicador de si está por encima de su capacidad.
