@@ -330,11 +330,25 @@ el historial de las vendedoras al frente.
      antes de que atiendan — quién lo trabajó antes, qué anotó y en qué
      quedó (si tiene historial de otra vendedora); llamar a un lead
      trabajado ya no se siente ni se ve como una llamada en frío.
-**Plans**: TBD
+**Plans**: 4 plans (4 olas — punto de entrada puntual, hold universal, sincronización de vistas, historial al frente)
 
 Plans:
 
-- [ ] 33-01: TBD (definido en plan-phase)
+**Wave 1**
+
+- [ ] 33-01-PLAN.md — DIAL-01: "Discar acá" desde lista/ficha/Hoy/cola del dialer (`_pdDialHere` + `startAtLeadId` + `_pd.forced`)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 33-02-PLAN.md — DIAL-02: hold universal (`_pdHold` + `_pd.pendingSave`), todas las colas y los outcomes con modal; autopiloto intacto
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 33-03-PLAN.md — DIAL-03: `_hoyRenderFromStore` + repintado al mostrar la vista, sin el rewrite de READS (límite D-09)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 33-04-PLAN.md — DIAL-04: bloque de historial de las vendedoras al frente en las 3 superficies de llamada + `userNames` en la cola
 
 ### Phase 34: HOY — La vista diaria
 
@@ -383,7 +397,7 @@ Plans:
 | 30. GATE — Cierra la llamada, define el próximo paso | 3/3 | human_needed (UAT pendiente) | 2026-08-15 |
 | 31. COMM — Compromisos como objeto | 4/4 | Complete | 2026-08-15 |
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
-| 33. DIAL — Power Dialer como motor único | 0/TBD | Not started | - |
+| 33. DIAL — Power Dialer como motor único | 0/4 | Planned | - |
 | 34. HOY — La vista diaria | 0/TBD | Not started | - |
 
 ---
