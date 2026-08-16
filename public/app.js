@@ -6551,6 +6551,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Llamadas: el user ya decidió que quiere discarlo, el dialer no tiene
       // derecho a sacárselo de la pantalla.
       forced: new Set(),
+      // DIAL-02 (33-02): señal determinística de que una disposición se
+      // GUARDÓ de verdad — la escribe el único punto post-guardado
+      // (_dispoAfterSaved), en reemplazo de re-derivar el estado del lead
+      // para adivinarlo (la heurística stillActionable que este plan
+      // elimina). Shape: { leadId, outcome, at }.
+      pendingSave: null,
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
     // necesitan copiar el número para mandar mensajes desde el celular.
@@ -6759,6 +6765,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
       _pd.holdMeta = null;
+      _pd.pendingSave = null; // 33-02: sin esto, un pendingSave viejo podría holdear una tarjeta que nadie marcó
       _pd.forced = new Set();
       // DIAL-01: posicionar la cola sobre el lead pedido, si lo hay — el
       // resto de la cola queda detrás, en el mismo orden que ya tenía (D-02).
@@ -6925,6 +6932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
       _pd.holdMeta = null;
+      _pd.pendingSave = null; // 33-02
       _pd.autopilotArmed = _pd.autopilot; // el próximo render dispara el countdown
       _pd.currentIdx++;
       _pd.processed++;
@@ -6941,6 +6949,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
       _pdRender();
+    }
+    // DIAL-02 (33-02): único camino al hold "✓ Resultado guardado" — antes
+    // había 2 copias manuales (_pdHandleDisposition y _autoMarkNoAnswer) del
+    // mismo bloque de 4 líneas, cada una con su propio guard de tarjeta
+    // actual y su propio if de autopiloto. Ahora hay una sola definición:
+    // - guard de tarjeta actual: si el dialer no está activo o el lead ya
+    //   no es la tarjeta que se ve en pantalla (el user avanzó/volvió/saltó
+    //   mientras la disposición se guardaba), no toca nada.
+    // - D-05: con autopiloto encendido se mantiene el avance automático —
+    //   es su propósito explícito, no se toca. opts.autoAdvance === false
+    //   es el escape hatch para el llamador que necesite el hold aun con
+    //   autopiloto (ningún caller lo usa hoy; queda documentado por si
+    //   hace falta en una fase futura).
+    // - completa holdMeta con _dispoDestination cuando todavía está vacío:
+    //   cubre los caminos que avisaron con forceToast (32-03/32-04) y por
+    //   eso saltearon la rama de _dispoAnnounce que lo escribe.
+    // No se expone en window: es interna del bloque del dialer, igual que
+    // _pdRender/_pdAdvance antes de que _pdSkip/window._pdAdvance las expongan.
+    function _pdHold(leadId, outcome, opts = {}) {
+      if (!_pd.active || _pd.queue[_pd.currentIdx] !== leadId) return false;
+      if (_pd.autopilot && opts.autoAdvance !== false) { _pdAdvance(); return true; }
+      _pd.holdCurrent = true;
+      _pd.holdOutcome = outcome || null;
+      if (!_pd.holdMeta) {
+        try {
+          const l = opts.lead || _callsLeadsById.get(leadId);
+          if (l) _pd.holdMeta = _dispoDestination(l, new Date());
+        } catch {}
+      }
+      _pdRender();
+      return true;
     }
     function _pdRender() {
       _pdCancelAutopilot(); // limpiar countdown previo antes de re-renderizar
@@ -7583,6 +7622,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
       _pd.holdMeta = null;
+      _pd.pendingSave = null; // 33-02
       _pd.currentIdx--;
       if (_pd.processed > 0) _pd.processed--;
       _pdRender();
@@ -9392,6 +9432,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // fue el lead (D-05, plan 30-03). opts = { lead, outcome, manual } — se
     // reenvían tal cual a _dispoAnnounce.
     function _dispoAfterSaved(leadId, opts = {}) {
+      // DIAL-02 (33-02): señal determinística de que ESTA disposición se
+      // guardó de verdad. NO se llama _pdHold acá a propósito: este punto
+      // corre en el momento del guardado, que puede ser con un modal
+      // TODAVÍA abierto (callback/objeción/agenda/próximo paso) — avanzar
+      // acá (autopiloto) dejaría el modal huérfano flotando sobre la
+      // tarjeta siguiente. Quien sabe cuándo el flujo terminó de verdad
+      // (modal cerrado) es _pdHandleDisposition, y es quien consume esto.
+      if (_pd.active) {
+        _pd.pendingSave = { leadId, outcome: opts.outcome || '', at: Date.now() };
+      }
       _dispoGateClear(leadId);
       // 2026-08-11: despinnear el lead de la lista. Los pins de _callsForceShow
       // nunca se limpiaban: el lead recién marcado quedaba ARRIBA de la cola
@@ -9691,12 +9741,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         _refreshLeadPanels(leadId);
         renderCallsStats();
         window.showToast?.('No atendió — marcado automático. Corregilo si hubo contacto (ej. Buzón).', { type: 'info', duration: 5000 });
-        // Replicar el post-save del Power Dialer (#151): autopilot avanza,
-        // manual queda en la tarjeta con banner hasta que el SDR decida.
-        if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) {
-          if (_pd.autopilot) { _pdAdvance(); }
-          else { _pd.holdCurrent = true; _pd.holdOutcome = 'No atendió (auto)'; _pdRender(); }
-        }
+        // 33-02: mismo comportamiento (autopiloto avanza, manual queda con
+        // banner) vía el único helper del hold — antes replicaba el
+        // post-save del Power Dialer a mano (#151).
+        _pdHold(leadId, 'No atendió (auto)', { lead: data.lead });
       } catch (e) {
         // Red caída u error del server: fallback al gate manual — la llamada
         // no queda en limbo, el SDR la marca a mano.
