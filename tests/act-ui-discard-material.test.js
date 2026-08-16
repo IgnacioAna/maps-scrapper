@@ -152,13 +152,17 @@ describe("Destino y sincronización de vistas (_actDiscard)", () => {
     expect(body).toContain("if (_pd.active && _pd.queue[_pd.currentIdx] === leadId) _pdAdvance();");
   });
 
-  it("llama loadHoyView( bajo el guard de #view-hoy:not(.hidden)", () => {
+  // 2026-08-16 (Fase 33, plan 03, DIAL-03): el guard de "Hoy visible" ya NO
+  // hace un fetch completo (loadHoyView) — repinta desde el store, sin red
+  // (_hoyRenderFromStore). Mismo guard, mismo propósito, función distinta.
+  it("llama _hoyRenderFromStore( bajo el guard de #view-hoy:not(.hidden)", () => {
     const body = discardBody();
     const guardIdx = body.indexOf("document.querySelector('#view-hoy:not(.hidden)')");
     expect(guardIdx).toBeGreaterThan(-1);
-    const loadIdx = body.indexOf("loadHoyView()", guardIdx);
+    const loadIdx = body.indexOf("_hoyRenderFromStore()", guardIdx);
     expect(loadIdx).toBeGreaterThan(guardIdx);
-    expect(loadIdx - guardIdx).toBeLessThan(120);
+    expect(loadIdx - guardIdx).toBeLessThan(160);
+    expect(body).not.toContain("loadHoyView()");
   });
 
   it("_refreshLeadPanels( está dentro de un finally", () => {

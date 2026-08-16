@@ -5831,6 +5831,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       _callsLeadsById = new Map(callsLeadsCache.map(l => [l.id, l]));
     }
 
+    // Fase 33, plan 03 (DIAL-03): versión + set de ids "sucios" de la escritura
+    // única. _leadStoreVersion sube en CADA aplicación exitosa (guard
+    // anti-repintado redundante de _hoyRenderFromStore); _leadStoreDirty junta
+    // los ids escritos desde el último fetch de Hoy (población del repintado
+    // sin fetch, Task 1). window.__leadStoreVersion expuesto para diagnóstico
+    // en vivo (mismo criterio que window.__audioDebug).
+    let _leadStoreVersion = 0;
+    const _leadStoreDirty = new Set();
+    window.__leadStoreVersion = () => _leadStoreVersion;
+
     // Phase 13 (_leadStore): escritura ÚNICA de estado de lead. Mantiene los dos
     // cachés sincronizados (Map del Power Dialer + array de la lista) en cada
     // mutación, así las vistas no divergen (queja c). Centraliza lo que antes se
@@ -5853,6 +5863,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // No está en el array (ej. sólo en el Map): mutar el objeto del Map.
         try { if (_callsLeadsById?.has?.(id)) Object.assign(_callsLeadsById.get(id), patch); } catch {}
       }
+      // Fase 33, plan 03 (DIAL-03): instrumentación de la escritura única —
+      // toda aplicación exitosa bumpea versión y marca el id sucio.
+      _leadStoreVersion++; _leadStoreDirty.add(id);
     }
     window._leadStoreApply = _leadStoreApply;
 
@@ -5934,6 +5947,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // población por defecto de _hoyRenderFromStore cuando repinta sin fetch.
     let _hoyLeadIds = [];
     let _hoyFetchedAt = 0;
+    // Versión de _leadStoreVersion la última vez que se rehizo el innerHTML —
+    // guard anti-repintado redundante (Task 3). -1 fuerza el primer render.
+    let _hoyRenderedVersion = -1;
 
     // Fase 33, plan 03 (DIAL-03): Hoy se pinta desde ACÁ — tanto loadHoyView
     // (tras el fetch) como los handlers de escritura de la Task 2 (repintado
@@ -5944,6 +5960,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const secEl = document.getElementById('hoy-sections');
       const greetEl = document.getElementById('hoy-greeting');
       if (!secEl) return;
+      // Guard anti-repintado redundante (Task 3): solo aplica al camino SIN
+      // leadsArg (repintado post-escritura) — el camino CON leadsArg es el
+      // del fetch y siempre debe rehacer el innerHTML (datos nuevos).
+      if (!leadsArg && _hoyRenderedVersion === _leadStoreVersion && secEl.children.length) return;
       let leads;
       if (leadsArg) {
         leads = leadsArg;
@@ -6024,6 +6044,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         _hoyRenderSection('Callbacks', callbacks, '#5BA3F2', 'Quedaron en volver a contactar', 'hoy-callbacks') +
         _hoyRenderSection('Interesados sin agendar', interesados, 'var(--accent-hover)', 'Marcaron interés — agendar', 'hoy-interesados') +
         _hoyNewLeadsPointer(virgenesCount);
+      _hoyRenderedVersion = _leadStoreVersion;
     }
     window._hoyRenderFromStore = _hoyRenderFromStore;
 
