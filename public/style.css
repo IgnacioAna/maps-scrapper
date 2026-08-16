@@ -568,6 +568,16 @@ button.btn-primary {
 
 .btn-primary:hover { background: var(--accent-hover); }
 
+/* Botón "Llamar" de la fila de Llamadas (2026-08-16, auditoría de verde):
+   sale con borde acento + texto neutro (no relleno solido — con 50 filas
+   por página el relleno era una pared verde). Se llena sólido al pasar el
+   mouse, para que siga leyéndose como el CTA principal de la card. */
+.call-row-dial-btn:hover {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent) !important;
+}
+
 .btn-secondary {
   background: var(--bg-elevated);
   color: var(--text-primary);
@@ -1758,10 +1768,13 @@ td.empty-state .empty-state-content::before {
   color: var(--text-primary) !important; /* override de inline styles legacy */
 }
 
-/* Sólo "Agendados" puede tener el highlight (card con .stat-card-accent) */
+/* Sólo "Agendados" puede tener el highlight (card con .stat-card-accent).
+   2026-08-16: el número en sí es texto de lectura (regla 4 del kit: la
+   métrica protagonista va en --text-primary, nunca en acento) — el
+   highlight queda en el borde/fondo suave de la card, no en el dígito. */
 .stat-card-accent .stat-num,
 .stat-card.is-highlight .stat-num {
-  color: var(--accent) !important;
+  color: var(--text-primary) !important;
 }
 
 .stat-label {
@@ -2009,7 +2022,9 @@ td.empty-state .empty-state-content::before {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.4px;
 }
-.ccm-ratio-num.is-accent { color: var(--accent); }
+/* 2026-08-16: ratio "hero" (dial→appointment) — número de lectura, regla 4
+   del kit: la métrica protagonista va en --text-primary, no en acento. */
+.ccm-ratio-num.is-accent { color: var(--text-primary); }
 .ccm-ratio-label {
   font-size: 10px;
   color: var(--text-tertiary);
@@ -4320,6 +4335,9 @@ textarea:disabled {
   font-weight: 600;
   color: var(--text-primary);
 }
+/* 2026-08-16: numeración decorativa, no acción — cada sección de la guía
+   traía su propio círculo verde y, con varias secciones a la vista, sumaban
+   una fila entera de acento. Pasa a neutro. */
 .guide-section-num {
   display: inline-flex;
   align-items: center;
@@ -4327,8 +4345,9 @@ textarea:disabled {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--accent-medium);
-  color: var(--accent);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
 }
@@ -4350,8 +4369,8 @@ textarea:disabled {
 .guide-section-body li { margin-bottom: 6px; }
 .guide-section-body strong { color: var(--text-primary); font-weight: 600; }
 .guide-section-body code {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'Geist Mono', ui-monospace, monospace;
