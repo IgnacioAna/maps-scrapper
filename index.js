@@ -12439,6 +12439,32 @@ const DISQUALIFY_REASONS = new Set([
 ]);
 const DNC_REASONS = new Set(['no_contactar']);
 
+// Medición de guiones (2026-08-16): HASTA DÓNDE llegó la llamada. Es una
+// dimensión SEPARADA del outcome, no un outcome más — una llamada puede llegar
+// a 'decisor' y terminar en answered_not_interested, y una que muere en
+// 'recepcion' también puede terminar en callback_later. Hoy las dos cosas están
+// colapsadas en el outcome y no se puede distinguir "me cortó la recepcionista"
+// de "me cortó el doctor", que son problemas de guion distintos.
+// Pasar recepción es el paso con más volumen del funnel y el único con muestra
+// suficiente para comparar dos guiones entre sí. El guion oficial del equipo
+// (SCM_Cold_Call_v2.1) ya pide este registro: "Pasé recepción: sí/no".
+const CALL_STAGES = new Set(['contestador', 'recepcion', 'decisor']);
+
+// Solo se deriva lo que es definitorio: si atendió el contestador, la llamada
+// llegó al contestador y no hay nada que preguntar. El resto NO se infiere —
+// un dato inventado contamina más que un hueco (misma regla que DISP-03).
+const _deriveCallStage = (outcome) => (outcome === 'voicemail' ? 'contestador' : '');
+
+// Outcomes donde preguntar hasta dónde llegó tiene sentido: alguien atendió.
+// En no_answer/wrong_number/invalid_number no hay etapa que registrar.
+const CALL_STAGE_RELEVANT_OUTCOMES = new Set([
+  'answered_interested', 'answered_not_interested', 'hung_up',
+  'callback_later', 'scheduled_with_admin', 'placeholder_sent',
+]);
+globalThis.__voiceAgent.CALL_STAGES = CALL_STAGES;
+globalThis.__voiceAgent.CALL_STAGE_RELEVANT_OUTCOMES = CALL_STAGE_RELEVANT_OUTCOMES;
+globalThis.__voiceAgent._deriveCallStage = _deriveCallStage;
+
 app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
@@ -12457,7 +12483,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.callbackShared = false;
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction, commitment } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction, commitment, callStage } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -12537,6 +12563,22 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     logEntry.objectionTags = cleanObjectionTags;
   }
 
+  // Medición de guiones: hasta dónde llegó la llamada (dimensión separada del
+  // outcome). Whitelist-and-coerce, nunca 400 — este endpoint lo comparte el
+  // webhook del agente de voz (misma regla que cleanReason/cleanCommitment).
+  // `callStageAuto` marca lo derivado para no confundirlo con lo que registró
+  // una persona: si mañana se cambia la derivación, se sabe qué recalcular.
+  // La etapa solo se acepta en outcomes donde alguien atendió: un
+  // `no_answer` con etapa "decisor" es una contradicción, y guardarla haría
+  // que el % de paso de recepción mienta hacia arriba.
+  const _cleanStage = (typeof callStage === 'string' && CALL_STAGES.has(callStage)
+    && CALL_STAGE_RELEVANT_OUTCOMES.has(outcome)) ? callStage : '';
+  const _stage = _cleanStage || _deriveCallStage(outcome);
+  if (_stage) {
+    logEntry.callStage = _stage;
+    if (!_cleanStage) logEntry.callStageAuto = true;
+  }
+
   // Si vino metadata de llamada Telnyx, agregar al logEntry
   if (telnyxCallMeta && typeof telnyxCallMeta === 'object') {
     const dur = Math.max(0, Math.min(parseInt(telnyxCallMeta.durationSecs, 10) || 0, 3600));
@@ -12592,7 +12634,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   if (_correctedEntry) {
     logEntry.ts = _correctedEntry.ts;
     if (!(telnyxCallMeta && typeof telnyxCallMeta === 'object')) {
-      for (const f of ['duration', 'fromNumber', 'channel', 'cost', 'costCountry', 'costTariffKey', 'quickNote', 'scriptIdsUsed']) {
+      for (const f of ['duration', 'fromNumber', 'channel', 'cost', 'costCountry', 'costTariffKey', 'quickNote', 'scriptIdsUsed', 'callStage', 'callStageAuto']) {
         if (_correctedEntry[f] !== undefined) logEntry[f] = _correctedEntry[f];
       }
     }
@@ -19592,43 +19634,112 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
   const _seUserMap = visibleSet ? _buildUserSetterMap() : null;
   // Acumular stats por scriptId
   const stats = {};
-  const scheduledOutcomes = new Set(['scheduled_with_admin', 'answered_interested']);
-  const reachedOutcomes = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later']);
+  // "Interesado" es el resultado que importa para comparar guiones: agendar es
+  // el mismo camino un paso más adelante, así que cuenta como interesado.
+  const interestedOutcomes = new Set(['answered_interested', ...COLD_CALL_APPOINTMENT_OUTCOMES]);
+  // Etapa alcanzada. Solo se mide sobre llamadas del dialer (telnyx_webrtc):
+  // los entries `manual` no son una llamada — son carga a mano, y el
+  // agendamiento se registra como un entry manual aparte segundos después de
+  // la llamada real. Contarlos duplicaría la misma conversación.
+  const gl = {
+    calls: 0, withStage: 0, withScripts: 0,
+    contestador: 0, recepcion: 0, decisor: 0,
+    connects: 0, interested: 0, scheduled: 0,
+  };
+  const _blank = (scriptId) => {
+    const s = scriptsById[scriptId];
+    return {
+      scriptId, label: s?.label || '(eliminado)',
+      trigger: s?.trigger || 'general',
+      variant: s?.variant || '',
+      used: 0, staged: 0, recepcion: 0, decisor: 0,
+      reached: 0, interested: 0, scheduled: 0,
+    };
+  };
   for (const lead of Object.values(settersData.leads || {})) {
     if (!Array.isArray(lead.callLog)) continue;
     for (const c of lead.callLog) {
       if (c.channel !== 'telnyx_webrtc') continue;
       if (visibleSet && !visibleSet.has(_callSetterId(c, lead, _seUserMap))) continue;
-      if (!Array.isArray(c.scriptIdsUsed) || c.scriptIdsUsed.length === 0) continue;
       const ts = new Date(c.ts).getTime();
       if (fromTs > 0 && ts < fromTs) continue;
-      const isScheduled = scheduledOutcomes.has(c.outcome);
-      const isReached = reachedOutcomes.has(c.outcome);
+
+      const stage = CALL_STAGES.has(c.callStage) ? c.callStage : '';
+      const isConnect = COLD_CALL_CONNECT_OUTCOMES.has(c.outcome);
+      const isInterested = interestedOutcomes.has(c.outcome);
+      const isScheduled = COLD_CALL_APPOINTMENT_OUTCOMES.has(c.outcome);
+      const hasScripts = Array.isArray(c.scriptIdsUsed) && c.scriptIdsUsed.length > 0;
+
+      // Funnel global: existe aunque ningún guion esté atribuido. Sin esto el
+      // panel queda vacío mientras la captura de guiones no tenga cobertura.
+      gl.calls++;
+      if (stage) { gl.withStage++; gl[stage]++; }
+      if (hasScripts) gl.withScripts++;
+      if (isConnect) gl.connects++;
+      if (isInterested) gl.interested++;
+      if (isScheduled) gl.scheduled++;
+
+      if (!hasScripts) continue;
       // Audit fix: deduplicar scriptIds dentro de una misma llamada para no
       // inflar artificialmente stats si el setter clickea el mismo script 2 veces.
-      const uniqScriptIds = [...new Set(c.scriptIdsUsed)];
-      for (const scriptId of uniqScriptIds) {
-        if (!stats[scriptId]) {
-          const s = scriptsById[scriptId];
-          stats[scriptId] = {
-            scriptId, label: s?.label || '(eliminado)',
-            trigger: s?.trigger || 'general',
-            variant: s?.variant || '',
-            used: 0, reached: 0, scheduled: 0,
-          };
+      for (const scriptId of [...new Set(c.scriptIdsUsed)]) {
+        if (!stats[scriptId]) stats[scriptId] = _blank(scriptId);
+        const st = stats[scriptId];
+        st.used++;
+        if (stage) {
+          st.staged++;
+          if (stage === 'recepcion' || stage === 'decisor') st.recepcion++;
+          if (stage === 'decisor') st.decisor++;
         }
-        stats[scriptId].used++;
-        if (isReached) stats[scriptId].reached++;
-        if (isScheduled) stats[scriptId].scheduled++;
+        if (isConnect) st.reached++;
+        if (isInterested) st.interested++;
+        if (isScheduled) st.scheduled++;
       }
     }
   }
+  const pct = (n, d) => (d > 0 ? Math.round((n / d) * 100) : null);
   const arr = Object.values(stats).map(s => ({
     ...s,
-    reachedPct: s.used > 0 ? Math.round((s.reached / s.used) * 100) : 0,
-    scheduledPct: s.used > 0 ? Math.round((s.scheduled / s.used) * 100) : 0,
-  })).sort((a, b) => b.scheduled - a.scheduled || b.used - a.used);
-  res.json({ range, scripts: arr, totalDistinctScripts: arr.length });
+    // Denominador de "pasó recepción": las llamadas donde atendió una persona.
+    // Un contestador no es una recepción que se pueda pasar — meterlo abajo
+    // hundiría el % por calidad de la base, no por el guion.
+    recepcionPct: pct(s.decisor, s.recepcion),
+    decisorPct: pct(s.decisor, s.staged),
+    interestedPct: pct(s.interested, s.used),
+    scheduledPct: pct(s.scheduled, s.used),
+    reachedPct: pct(s.reached, s.used), // compat frontend previo
+  })).sort((a, b) => b.interested - a.interested || b.used - a.used);
+  const humanAnswered = gl.recepcion + gl.decisor;
+  res.json({
+    range,
+    scripts: arr,
+    totalDistinctScripts: arr.length,
+    // El funnel de etapa del período completo, sin depender de la atribución
+    // de guiones (que hoy tiene cobertura 0 — ver `coverage`).
+    stageFunnel: {
+      calls: gl.calls,
+      withStage: gl.withStage,
+      contestador: gl.contestador,
+      recepcion: gl.recepcion,
+      decisor: gl.decisor,
+      humanAnswered,
+      // El número del guion oficial: de las que atendió una persona, cuántas
+      // llegaron al decisor. El umbral que fija el guion es 70%.
+      pasoRecepcionPct: pct(gl.decisor, humanAnswered),
+      connects: gl.connects,
+      interested: gl.interested,
+      scheduled: gl.scheduled,
+    },
+    // Cobertura: sin esto no se sabe si un 0% es "el guion no funciona" o
+    // "nadie registró el dato". Son cosas distintas y se confunden fácil.
+    coverage: {
+      calls: gl.calls,
+      withStage: gl.withStage,
+      withStagePct: pct(gl.withStage, gl.calls),
+      withScripts: gl.withScripts,
+      withScriptsPct: pct(gl.withScripts, gl.calls),
+    },
+  });
 });
 
 // POST /api/telnyx/calls/:leadId/:callIdx/analyze — Mercury IA analiza el
@@ -20487,14 +20598,7 @@ app.post('/api/telnyx/calls/:leadId/transcribe', requireAuth, async (req, res) =
         if (!lead || !Array.isArray(lead.callLog) || lead.callLog.length === 0) {
           return { noEntry: true };
         }
-        let idx = -1;
-        if (callStartedAt) {
-          const targetTs = new Date(callStartedAt).getTime();
-          idx = lead.callLog.findIndex(c => {
-            const cTs = new Date(c.ts).getTime();
-            return Math.abs(cTs - targetTs) <= 10000;
-          });
-        }
+        let idx = _pickCallLogIdxForTranscript(lead.callLog, callStartedAt);
         if (idx < 0) idx = lead.callLog.length - 1;
         if (lead.callLog[idx]?.transcript) {
           console.log('[transcribe] entry idx=' + idx + ' ya tiene transcript, sobreescribiendo (force)');

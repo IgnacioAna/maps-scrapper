@@ -4632,6 +4632,45 @@ textarea:disabled {
 .calls-country-chip:hover svg { color: var(--accent); }
 
 /* ════════════════════════════════════════════════════════════════
+   MEDICIÓN — hasta dónde llegó la llamada (contestador/recepción/decisor)
+   Dimensión separada del resultado. Mismo control en el panel de llamada
+   (fondo oscuro propio) y en el Power Dialer.
+═════════════════════════════════════════════════════════════════ */
+
+.stage-chip {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-app);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.stage-chip:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.stage-chip.is-on {
+  background: var(--accent-medium);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+/* Dentro del panel de llamada el fondo es propio (#11131A), no los tokens. */
+.tlx-stage .stage-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.62);
+}
+.tlx-stage .stage-chip:hover { border-color: rgba(255, 255, 255, 0.2); color: #fff; }
+.tlx-stage .stage-chip.is-on {
+  background: var(--accent-medium);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ════════════════════════════════════════════════════════════════
    SPRINT 39 — Power Dialer disposition buttons grid (B2B control panel)
 ═════════════════════════════════════════════════════════════════ */
 

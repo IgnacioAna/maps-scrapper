@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SCM — Sales Closing Machine</title>
-  <!-- Favicon: SVG inline con S violeta. Mejorado con dominant-baseline=central
-       para que la S quede bien centrada en cualquier browser, y fallback a
-       PNG-style serving via data URL si SVG no soporta. -->
+  <title>Sales Closing Machine</title>
+  <!-- Favicon: el símbolo de marca (puerta) en verde sobre el base #141619.
+       SVG inline, sin fallback: Chrome/Firefox/Edge/Safari soportan SVG en
+       favicon. Había un `rel="alternate icon"` con la S vieja sobre cuadrado
+       verde y Chrome elegía ESE — por eso se veía la marca anterior en la
+       pestaña. No reintroducirlo. -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22none%22%3E%20%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2218%22%20fill%3D%22%23141619%22%2F%3E%20%3Cpath%20d%3D%22M31%2022%20L72%2034%20L72%2066%20L31%2078%20Z%22%20stroke%3D%22%233FA872%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
-  <link rel="alternate icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2714%27%20fill%3D%27%233FA872%27%2F%3E%3Ctext%20x%3D%2750%25%27%20y%3D%2754%25%27%20text-anchor%3D%27middle%27%20dominant-baseline%3D%27middle%27%20font-family%3D%27sans-serif%27%20font-weight%3D%27800%27%20font-size%3D%2742%27%20fill%3D%27%23000%27%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20fill%3D%22none%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23141619%22%2F%3E%3Cpath%20d%3D%22M31%2022%20L72%2034%20L72%2066%20L31%2078%20Z%22%20stroke%3D%22%233FA872%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260816b">
+  <link rel="stylesheet" href="/style.css?v=20260816c">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -81,7 +82,7 @@
   <div id="main-layout" class="ai-studio-layout hidden">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <button class="logo logo-toggle" type="button" aria-label="Colapsar / expandir menú" title="SCM — Sales Closing Machine">
+        <button class="logo logo-toggle" type="button" aria-label="Colapsar / expandir menú" title="Sales Closing Machine">
           <!-- marca/README regla 1: a 24px va SOLO la puerta, sin los puntos
                laterales (se empastan). Por eso la variante transparente. -->
           <span class="logo-mark" aria-hidden="true">
@@ -1419,6 +1420,22 @@
               Limpiar audio (corta zumbido grave y realza la voz)
             </label>
             <div style="font-size:10px; color:rgba(255,255,255,0.38); margin-top:6px; line-height:1.4;">Con el volumen alto usá auriculares: por parlante el cliente se escucha a sí mismo.</div>
+          </div>
+
+          <!-- Medición de guiones (2026-08-16): hasta dónde llegó la llamada.
+               Se registra ACÁ, en vivo, porque es cuando se sabe con certeza
+               quién atendió. El mismo control aparece en el Power Dialer para
+               corregirlo o cargarlo después. Es una dimensión SEPARADA del
+               resultado: se puede llegar al decisor y que igual diga que no. -->
+          <div style="margin-bottom:10px;" class="tlx-stage">
+            <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:5px;">
+              ¿Con quién hablás?
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="stage-chip" data-stage="contestador" onclick="window._setCallStage(null,'contestador')">Contestador</button>
+              <button type="button" class="stage-chip" data-stage="recepcion" onclick="window._setCallStage(null,'recepcion')">Recepción</button>
+              <button type="button" class="stage-chip" data-stage="decisor" onclick="window._setCallStage(null,'decisor')">Decisor</button>
+            </div>
           </div>
 
           <!-- Sprint 11: Nota rápida durante la llamada -->
@@ -3046,6 +3063,26 @@
           <h2>Guiones de llamada</h2>
           <span style="font-size:13px; color:var(--text-secondary);">Opener, pitch, objeciones y cierre. Los actualiza el admin y aparecen acá y durante la llamada.</span>
         </div>
+        <!-- Medición de guiones (2026-08-16): el dato guardado que nadie miraba.
+             El endpoint /api/telnyx/script-effectiveness existía desde Sprint 12
+             sin ninguna vista que lo consumiera. -->
+        <div style="padding:0 32px 18px;">
+          <div class="card" style="padding:18px 20px; border-radius:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px;">
+              <div>
+                <strong style="font-size:14px;">Qué está pasando en las llamadas</strong>
+                <div class="muted" style="font-size:12px; margin-top:4px;">Hasta dónde llega la llamada y qué guion se usó. El guion oficial fija el umbral: si pasás recepción menos del 70% de las veces, cambiá algo.</div>
+              </div>
+              <div class="seg-control" id="script-measure-period">
+                <button type="button" class="seg-btn" data-range="today">Hoy</button>
+                <button type="button" class="seg-btn active" data-range="week">7 días</button>
+                <button type="button" class="seg-btn" data-range="month">30 días</button>
+                <button type="button" class="seg-btn" data-range="all">Todo</button>
+              </div>
+            </div>
+            <div id="script-measure-body"><div class="muted" style="font-size:12.5px;">Cargando…</div></div>
+          </div>
+        </div>
         <div id="call-scripts-body" style="padding:0 32px 32px;"></div>
       </div>
 
@@ -3680,7 +3717,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260816h"></script>
+  <script type="module" src="/app.js?v=20260816i"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>

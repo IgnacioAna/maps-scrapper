@@ -7254,6 +7254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function _pdAdvance() {
       _pdCancelAutopilot();
+      _clearCallStage(); // la etapa pertenece al lead que se deja atrás
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
       _pd.holdMeta = null;
@@ -7652,6 +7653,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`}
         ${_doctorIgBlockHtml(lead)}
         <div id="pd-ai-disp-hint" style="display:none; align-items:center; gap:10px; flex-wrap:wrap; padding:9px 12px; margin-bottom:10px; background:var(--accent-soft); border:1px solid var(--accent-strong); border-radius:8px; font-size:12.5px;"></div>
+        <!-- Medición: hasta dónde llegó la llamada. Separado del resultado —
+             "me cortó la recepcionista" y "me cortó el doctor" son el mismo
+             resultado y problemas de guion distintos. -->
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:7px;">¿Hasta dónde llegaste?</div>
+          <div style="display:flex; gap:7px; max-width:430px;">
+            ${[['contestador','Contestador'],['recepcion','Recepción'],['decisor','Decisor']].map(([v, lbl]) =>
+              `<button type="button" class="stage-chip${_stageFor(lead.id) === v ? ' is-on' : ''}" data-stage="${v}" onclick="window._setCallStage('${escHtml(lead.id)}','${v}')">${lbl}</button>`
+            ).join('')}
+          </div>
+        </div>
         <div class="pd-disposition-grid">
           ${[
             { v:'answered_interested',     k:'1', label:'Interesado',      sub:'marca interés',       color:'success' },
@@ -10068,8 +10080,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // duration/fromNumber reales (la auditoría D-06 puede cruzar duración).
     // Los call sites mergean el enforcement PRIMERO y la meta fresca de
     // _consumeTelnyxMeta DESPUÉS — si hay meta fresca, pisa la del record.
+    // Medición de guiones (2026-08-16): HASTA DÓNDE llegó la llamada. Estado
+    // por lead: se marca desde el panel de llamada (en vivo, que es cuando se
+    // sabe con certeza quién atendió) o desde el Power Dialer al cerrar. Viaja
+    // en el body de la disposición desde CUALQUIER superficie porque se inyecta
+    // acá abajo, en el mismo helper que ya comparten los 6 call sites.
+    let _dispoStage = null; // { leadId, stage }
+    function _stageCurrentLeadId() {
+      return _telnyxCallState?.leadId || (_pd.active ? _pd.queue[_pd.currentIdx] : '') || '';
+    }
+    function _stageFor(leadId) {
+      return (_dispoStage && _dispoStage.leadId === leadId) ? _dispoStage.stage : '';
+    }
+    function _syncStageChips() {
+      const cur = _dispoStage?.stage || '';
+      document.querySelectorAll('.stage-chip').forEach(b => {
+        b.classList.toggle('is-on', !!cur && b.dataset.stage === cur);
+      });
+    }
+    // leadId null → el lead de la llamada activa, o la tarjeta actual del
+    // dialer. Volver a tocar el chip encendido lo apaga (se marcó por error).
+    window._setCallStage = function(leadId, stage) {
+      const id = leadId || _stageCurrentLeadId();
+      if (!id || !stage) return;
+      const same = _dispoStage && _dispoStage.leadId === id && _dispoStage.stage === stage;
+      _dispoStage = same ? null : { leadId: id, stage };
+      _syncStageChips();
+    };
+    function _clearCallStage() { _dispoStage = null; _syncStageChips(); }
+
     function _dispoEnforcementBody(leadId) {
       const body = {};
+      const _stage = _stageFor(leadId);
+      if (_stage) body.callStage = _stage;
       if (_lastAutoMark && _lastAutoMark.leadId === leadId && (Date.now() - _lastAutoMark.at) < 15 * 60 * 1000) {
         body.correctsAutoMarked = true;
       }
@@ -11203,6 +11246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Limpiar nota rápida del panel anterior
       const quickNoteEl = document.getElementById('telnyx-call-quick-note');
       if (quickNoteEl) quickNoteEl.value = '';
+      // Medición: la etapa es de ESTA llamada. Arrastrar la anterior sería
+      // registrar que llegaste al decisor en una llamada que recién empieza.
+      _clearCallStage();
       // Ficha del lead + histórico (datos scrapeados disponibles durante la llamada)
       _renderLeadFile(lead);
       _renderCallHistory(lead);
@@ -14268,7 +14314,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const url = inviteResultUrl?.value || '';
         const name = inviteResultDiv?.dataset.inviteName || '';
         if (!url) return;
-        const msg = `Hola ${name}! Te invité a SCM — Sales Closing Machine. Creá tu contraseña acá: ${url}`;
+        const msg = `Hola ${name}! Te invité a Sales Closing Machine. Creá tu contraseña acá: ${url}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
       });
     }
@@ -21499,7 +21545,85 @@ document.addEventListener('DOMContentLoaded', async () => {
       const body = document.getElementById('call-scripts-body');
       if (card && body && card.parentElement !== body) body.appendChild(card);
       try { _tlxLoadScriptsAdmin(); } catch (e) {}
+      try { _loadScriptMeasure(); } catch (e) {}
     }, 30);
+  });
+
+  // ── Medición de guiones ────────────────────────────────────────────────
+  // Cruza etapa alcanzada (contestador/recepción/decisor) con el guion usado.
+  // Muestra SIEMPRE la cobertura: un 0% puede ser "el guion no funciona" o
+  // "nadie registró el dato", y confundirlos lleva a cambiar lo que no era.
+  let _scriptMeasureRange = 'week';
+  async function _loadScriptMeasure() {
+    const body = document.getElementById('script-measure-body');
+    if (!body) return;
+    body.innerHTML = '<div class="muted" style="font-size:12.5px;">Cargando…</div>';
+    let d;
+    try {
+      const r = await fetch(apiUrl('/api/telnyx/script-effectiveness?range=' + encodeURIComponent(_scriptMeasureRange)), { credentials: 'include' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      d = await r.json();
+    } catch (e) {
+      body.innerHTML = `<div class="muted" style="font-size:12.5px;">No se pudo cargar la medición (${escHtml(e.message)}).</div>`;
+      return;
+    }
+    const f = d.stageFunnel || {};
+    const cov = d.coverage || {};
+    const num = (n) => `<span style="font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${n == null ? '—' : n}</span>`;
+    const pctTxt = (p) => (p == null ? '—' : p + '%');
+    // El umbral del guion oficial: 70% de paso de recepción.
+    const paso = f.pasoRecepcionPct;
+    const pasoColor = paso == null ? 'var(--text-tertiary)' : (paso >= 70 ? 'var(--accent)' : 'var(--warning)');
+    const tile = (label, valor, sub) => `<div style="flex:1; min-width:130px; padding:12px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-radius:10px;">
+      <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); font-weight:600;">${label}</div>
+      <div style="font-size:21px; font-weight:600; margin-top:5px; font-family:var(--font-mono); font-variant-numeric:tabular-nums;">${valor}</div>
+      ${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">${sub}</div>` : ''}
+    </div>`;
+
+    const coberturaBanner = (cov.withStagePct == null || cov.withStagePct < 100) ? `
+      <div style="padding:11px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${cov.withStage ? 'var(--warning)' : 'var(--border-strong)'}; border-radius:8px; font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.55;">
+        <strong style="color:var(--text-primary);">Cobertura: ${num(cov.withStage || 0)} de ${num(cov.calls || 0)} llamadas</strong> tienen la etapa registrada${cov.withStagePct != null ? ` (${cov.withStagePct}%)` : ''}.
+        ${!cov.withStage ? 'Todavía ninguna: se marca durante la llamada ("¿Con quién hablás?") o al cerrar en el Power Dialer. Los porcentajes de abajo se llenan solos a partir de la próxima tanda.' : 'Los porcentajes se calculan solo sobre las registradas.'}
+        ${cov.withScripts === 0 ? '<br><strong style="color:var(--text-primary);">Ningún guion atribuido</strong>: el guion se registra cuando se abre desde el panel durante la llamada. Si se lee de memoria o en papel, la llamada queda sin guion y no se puede comparar.' : ''}
+      </div>` : '';
+
+    const scripts = Array.isArray(d.scripts) ? d.scripts : [];
+    const tabla = scripts.length === 0 ? '' : `
+      <div style="overflow-x:auto; margin-top:16px;">
+        <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+          <thead><tr style="text-align:left; color:var(--text-tertiary); font-size:11px; text-transform:uppercase; letter-spacing:0.4px;">
+            <th style="padding:8px 10px;">Guion</th>
+            <th style="padding:8px 10px; text-align:right;">Llamadas</th>
+            <th style="padding:8px 10px; text-align:right;">Pasó recepción</th>
+            <th style="padding:8px 10px; text-align:right;">Llegó al decisor</th>
+            <th style="padding:8px 10px; text-align:right;">Interesados</th>
+          </tr></thead>
+          <tbody>${scripts.map(s => `<tr style="border-top:1px solid var(--border-subtle);">
+            <td style="padding:9px 10px;"><span style="color:var(--text-primary);">${escHtml(s.label)}</span>${s.variant ? ` <span style="color:var(--text-tertiary); font-size:11px;">· ${escHtml(s.variant)}</span>` : ''}<div style="color:var(--text-tertiary); font-size:11px;">${escHtml(s.trigger)}</div></td>
+            <td style="padding:9px 10px; text-align:right;">${num(s.used)}</td>
+            <td style="padding:9px 10px; text-align:right;">${pctTxt(s.recepcionPct)}</td>
+            <td style="padding:9px 10px; text-align:right;">${pctTxt(s.decisorPct)}</td>
+            <td style="padding:9px 10px; text-align:right;">${pctTxt(s.interestedPct)}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+
+    body.innerHTML = `${coberturaBanner}
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        ${tile('Llamadas', num(f.calls || 0), 'del dialer, en el período')}
+        ${tile('Atendió una persona', num(f.humanAnswered || 0), 'recepción o decisor')}
+        ${tile('Llegó al decisor', num(f.decisor || 0), 'habló con quien decide')}
+        ${tile('Pasó recepción', `<span style="color:${pasoColor};">${pctTxt(paso)}</span>`, 'umbral del guion: 70%')}
+        ${tile('Interesados', num(f.interested || 0), 'resultado interesado o agendó')}
+      </div>
+      ${tabla || (cov.withScripts === 0 ? '' : '<div class="muted" style="font-size:12.5px; margin-top:14px;">Sin guiones atribuidos en el período.</div>')}`;
+  }
+  document.getElementById('script-measure-period')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    _scriptMeasureRange = btn.dataset.range || 'week';
+    document.querySelectorAll('#script-measure-period .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    _loadScriptMeasure();
   });
 
   // Wire eventos de la vista
