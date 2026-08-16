@@ -78,7 +78,7 @@ recordarle, el milestone falló.
 | 30 | 3/3 | Complete   | 2026-08-15 |
 | 31 | COMM — Compromisos como objeto (4/4 planes, COMPLETE) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista (4/4 planes, COMPLETE) | ACT-01..05 | 29, 31 |
-| 33 | DIAL — Power Dialer como motor único (1/4 planes) | DIAL-01..04 | 29, 30, 32 |
+| 33 | DIAL — Power Dialer como motor único (2/4 planes) | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
@@ -338,9 +338,9 @@ Plans:
 
 - [x] 33-01-PLAN.md — DIAL-01: "Discar acá" desde lista/ficha/Hoy/cola del dialer (`_pdDialHere` + `startAtLeadId` + `_pd.forced`) (completed 2026-08-16, 33-01-SUMMARY.md)
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2**
 
-- [ ] 33-02-PLAN.md — DIAL-02: hold universal (`_pdHold` + `_pd.pendingSave`), todas las colas y los outcomes con modal; autopiloto intacto
+- [x] 33-02-PLAN.md — DIAL-02: hold universal (`_pdHold` + `_pd.pendingSave`), todas las colas y los outcomes con modal; autopiloto intacto (completed 2026-08-16, 33-02-SUMMARY.md)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 

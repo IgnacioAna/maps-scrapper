@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T03:35:00.000Z"
+last_updated: "2026-08-16T04:15:00.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 22
-  completed_plans: 19
-  percent: 71
+  completed_plans: 20
+  percent: 91
 ---
 
 # SCM — STATE
@@ -39,55 +39,62 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 33 (dial-motor-unico): Plan 1 of 4 executed (2026-08-16)
-Plan: 1 of 4 -- 33-01 con SUMMARY (33-01-SUMMARY.md)
-Status: 33-01 ejecutado y commiteado (commits d0b9187 punto de entrada
-  puntual + _pd.forced, 1e65f1f boton "Discar aca" en las 4 superficies,
-  5af406a suite de tests + cache-buster). window._pdDialHere(leadId,
-  mode): con el dialer cerrado lo abre posicionado en ese lead
-  (window._pdStart(mode, opts = {}) con opts.startAtLeadId; D-02: el
-  resto de la cola queda detras en su orden -- se posiciona con
-  currentIdx si ya esta en la cola, o se hace unshift + _pd.forced.add si
-  no); con el dialer YA abierto, salta a el sin cerrar ni rearmar nada.
-  _pd.forced (Set) sostiene en pantalla un lead pedido a mano
-  (interesado/callback futuro/hasta descartado) -- el guard de expulsion
-  de _pdRender (`!_pd.holdCurrent && !_pd.forced.has(currentId)`) lo
-  respeta. _pdInferDialerMode() resuelve 'hoy' vs 'calls' por la vista
-  visible, cero modos nuevos (D-03). La cola vacia de la vista ya NO
-  bloquea abrir el dialer si hay un lead puntual resoluble. Boton "Discar
-  aca" cableado en el builder unico _actButtonsHTML (variantes row/ficha/
-  hoy; NO en 'pd' a proposito) + un 4to punto de entrada en la fila de la
-  cola siguiente del propio dialer (#pd-queue). _actButtonsHTML sigue en
-  5 call sites (declaracion + 4), sin multiplicarse. Cache-buster app.js
-  20260815j -> 20260816a (style.css intacto, git diff vacio). Deviation
-  Rule 1: se invirtio el orden de reset holdMeta/holdOutcome dentro de
-  _pdDialHere para no agregar una 4ta ocurrencia del patron que
-  gate-destination.test.js (Phase 30) fija en exactamente 3 -- mismo
-  efecto, test ajeno sin editar. Verificacion por mutacion: romper el
-  guard !_pd.forced.has(currentId) puso en rojo exactamente 1/25 tests
-  nuevos; restaurado con git checkout -- public/app.js, diff vacio
-  confirmado antes de seguir. 25 tests nuevos en
-  tests/dial-start-at.test.js (>=18 pedidos). Suite completa: 1688/1688
-  (baseline 1663 de 32-04 + 25 nuevos, cero flaky esta corrida).
-  DIAL-01 completo (REQUIREMENTS.md marcado [x]). ROADMAP.md actualizado
-  a mano (Phase 33 1/4 planes). Nota operativa: gsd-sdk SI resolvio en
-  PATH esta sesion (v1.42.3, a diferencia de lo que decia config.json._
-  notes), pero `gsd-sdk query state.advance-plan` sobreescribio bloques
-  narrativos completos de este mismo archivo (los "Status:"/"Last
-  activity:" de las secciones de Phase 32 Y Phase 20 quedaron
-  reemplazados por texto generico "Phase complete — ready for
-  verification", perdiendo el detalle real) -- revertido de inmediato con
-  `git checkout -- .planning/STATE.md` y hecho a mano. Mismo patron de
-  precaucion que 24-01/24-02: este archivo tiene un formato custom que
-  las verbs genericas de gsd-sdk no entienden, no usarlas para
-  state.advance-plan/roadmap.update-plan-progress sobre STATE.md/
-  ROADMAP.md de este proyecto sin revisar el diff resultante antes de
-  dejarlo.
+Phase: 33 (dial-motor-unico): Plan 2 of 4 executed (2026-08-16)
+Plan: 2 of 4 -- 33-01 y 33-02 con SUMMARY (33-01-SUMMARY.md,
+  33-02-SUMMARY.md)
+Status: 33-02 ejecutado y commiteado (commits bc267a1 _pdHold +
+  _pd.pendingSave, 6993af9 _pdHandleDisposition universal, b635317 suite
+  de tests + cache-buster). _pdHold(leadId, outcome, opts={}) es ahora el
+  UNICO camino al banner "Resultado guardado": guard de tarjeta actual
+  (`!_pd.active || _pd.queue[_pd.currentIdx] !== leadId`), D-05 (con
+  autopiloto ON sigue avanzando solo via _pdAdvance), y completa
+  holdMeta con _dispoDestination si esta vacio (cubre los caminos que
+  avisaron con forceToast). _pd.pendingSave ({leadId,outcome,at}) es la
+  señal determinística que escribe _dispoAfterSaved cuando el dialer
+  esta activo -- reemplaza a la heuristica vieja (stillActionable) que
+  re-derivaba el estado del lead para adivinar si se habia guardado.
+  window._pdHandleDisposition: limpia pendingSave al entrar (antes del
+  await), lo consume validando leadId+at (T-33-05), rama directa con
+  polling acotado 200ms/techo 6s en vez del setTimeout ciego de 600ms
+  (T-33-06), rama con modal conserva la espera a que cierren los 4
+  modales y solo holdea si hay señal (cancelar no toca nada).
+  _autoMarkNoAnswer ya usa _pdHold en vez de replicar el hold a mano.
+  D-04 verificado leyendo el codigo: ni _pdHold ni el guard de expulsion
+  de _pdRender miraban _pd.mode/_pd.hoyFilter -- la premisa "hoy funciona
+  solo en el dialer de Llamadas" ya no aplicaba, documentado en
+  comentario. _actDiscard sin cambios de comportamiento (32-04 protegido
+  por test). Cache-buster app.js 20260816a -> 20260816b (baseline real
+  leido de disco). style.css con diff de una sesion PARALELA ajena
+  (retoque de contraste --text-tertiary/--text-faint) -- NO incluido en
+  ningun commit de este plan, dejado intacto en el working tree para esa
+  otra sesion. Verificacion por mutacion: romper el guard
+  `ps.leadId !== leadId` de _consumeSaved puso en rojo exactamente 1/30
+  tests nuevos; restaurado con git checkout -- public/app.js, diff vacio
+  confirmado. 30 tests nuevos en tests/dial-hold.test.js (>=16 pedidos).
+  Deviation (plan verification note, no bug de codigo): 2 criterios de
+  aceptacion del plan resultaron desactualizados al verificarlos -- (1)
+  el criterio de la Task 1 "grep -c holdCurrent=true debe dar 1" solo se
+  cumple DESPUES de la Task 2 (el propio <done> de la Task 1 lo advierte:
+  "los caminos con modal siguen usando la heuristica vieja hasta la Task
+  2"); verificado que dio 1 al cerrar la Task 2. (2) "_pd.pendingSave =
+  null debe dar 3 en todo el archivo" tambien era el conteo de fin-de-
+  Task-1 -- la Task 2 agrega 2 ocurrencias legitimas mas del mismo
+  literal (limpieza al entrar + consumo exitoso dentro de
+  _pdHandleDisposition), total real 5; el test de la suite nueva verifica
+  los 5 con desglose explicito (3 resets de estado + 2 del ciclo de vida
+  de pendingSave). Suite completa: 1718/1718 (baseline 1688 de 33-01 +
+  30 nuevos; 1 corrida bajo carga total tuvo 7 archivos no relacionados
+  con hook-timeout por contencion de recursos -- mismo patron que 32-04,
+  los 5 identificados pasaron 74/74 aislados y una 2da corrida completa
+  dio 1695/1718 con 23 skipped solo por el mismo motivo, tambien
+  confirmados verdes aislados). DIAL-02 completo (REQUIREMENTS.md
+  marcado [x]). ROADMAP.md actualizado a mano (Phase 33 2/4 planes).
 Resume file: None
-Last activity: 2026-08-16 -- Phase 33 Plan 1 (punto de entrada puntual al
-  Power Dialer) completado, DIAL-01 cerrado. Siguiente: 33-02 (DIAL-02,
-  hold universal via _pdHold + _pd.pendingSave), Wave 2 del plan de la
-  fase, bloqueado hasta que este plan (Wave 1) quede confirmado.
+Last activity: 2026-08-16 -- Phase 33 Plan 2 (hold universal del Power
+  Dialer via _pdHold + _pd.pendingSave) completado, DIAL-02 cerrado.
+  Siguiente: 33-03 (DIAL-03, sincronizacion de vistas Power Dialer/Hoy/
+  Llamadas via _hoyRenderFromStore), Wave 3 del plan de la fase,
+  bloqueado hasta que este plan (Wave 2) quede confirmado.
 
 Phase 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
 Plan: 4 of 4 -- las 4 con SUMMARY (32-01/32-02/32-03/32-04)

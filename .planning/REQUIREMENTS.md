@@ -325,7 +325,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 - [x] **DIAL-01**: Puede lanzar el Power Dialer sobre un lead puntual desde
   cualquier lista, sin que la cola arranque de cero. *(R2)*
-- [ ] **DIAL-02**: Marcar un resultado no expulsa el lead de la vista antes
+- [x] **DIAL-02**: Marcar un resultado no expulsa el lead de la vista antes
   de que él decida avanzar. *(R2)*
 - [ ] **DIAL-03**: Power Dialer, Hoy y Llamadas se comportan como una sola
   herramienta: lo que marca en una se refleja en las otras sin recargar.
