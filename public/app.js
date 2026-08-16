@@ -6532,6 +6532,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       holdCurrent: false,
       holdOutcome: null,    // outcome guardado, para el banner "Resultado guardado"
       holdMeta: null,       // { texto, vista, cuando, tono } — destino (30-03, D-07)
+      // DIAL-01 (33-01): ids que el user pidió discar EXPLÍCITAMENTE via
+      // window._pdDialHere('leadId') ("Discar acá") — no se expulsan aunque
+      // no pasen los filtros de la cola (interesado, callback futuro, hasta
+      // descartado). Mismo precedente que `_callsForceShow` para la lista de
+      // Llamadas: el user ya decidió que quiere discarlo, el dialer no tiene
+      // derecho a sacárselo de la pantalla.
+      forced: new Set(),
     };
     // Teléfono visible COMPLETO para todos los roles (2026-07-23): los SDRs
     // necesitan copiar el número para mandar mensajes desde el celular.
@@ -6675,12 +6682,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const interesados = filter === 'callbacks' ? [] : _hoyState.interesadoIds.map(id => _callsLeadsById.get(id)).filter(Boolean);
       return due.concat(interesados).map(l => l.id);
     }
-    window._pdStart = async function(mode) {
+    window._pdStart = async function(mode, opts = {}) {
       // 'hoy' = seguimientos completos (callbacks vencidos → interesados);
       // 'hoy-callbacks' / 'hoy-interesados' = solo esa sección (botón por sección).
       const isHoy = typeof mode === 'string' && mode.startsWith('hoy');
       _pd.mode = isHoy ? 'hoy' : 'calls';
       _pd.hoyFilter = mode === 'hoy-callbacks' ? 'callbacks' : mode === 'hoy-interesados' ? 'interesados' : null;
+      // DIAL-01 (33-01): "Discar acá" pide arrancar sobre un lead puntual.
+      // La semilla se captura ANTES del refresh — si el refresh lo deja
+      // afuera del cache (país filtrado, cambió de dueño, ya no cumple el
+      // filtro del servidor) igual la necesitamos para re-inyectarlo más
+      // abajo; sin eso _pdRender haría _pdAdvance() por `!lead` apenas se
+      // posicione la cola sobre él.
+      const seed = opts.startAtLeadId ? _callsLeadsById.get(opts.startAtLeadId) : null;
       // (2026-07-31) La cola se armaba con `callsLeadsCache`, el snapshot cargado
       // al abrir Llamadas — nunca se volvía a preguntar al servidor. Si el estado
       // del lead cambió (se descartó solo, otro SDR lo tomó, entró un callback),
@@ -6691,8 +6705,29 @@ document.addEventListener('DOMContentLoaded', async () => {
       // discar con datos viejos a no poder discar.
       if (_pd.mode === 'hoy') {
         try { await loadHoyView(); } catch (e) { console.warn('[pd] no se pudo refrescar Hoy:', e?.message); }
-        _pd.queue = _pdBuildQueueHoy(_pd.hoyFilter);
-        if (_pd.queue.length === 0) {
+      } else {
+        // DIAL-01: con un lead puntual pedido, "no hay nada cargado en
+        // Llamadas todavía" no es motivo para negarse — el lead viene de
+        // OTRA vista (Hoy, la ficha) y ya está en caché.
+        if (!opts.startAtLeadId && callsLeadsCache.length === 0) {
+          window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
+          return;
+        }
+        try { await loadCallsView(); } catch (e) { console.warn('[pd] no se pudo refrescar la cola:', e?.message); }
+      }
+      // DIAL-01: si el refresh dejó afuera al lead pedido a mano, re-inyectarlo
+      // desde la semilla capturada antes del refresh.
+      if (opts.startAtLeadId && !_callsLeadsById.get(opts.startAtLeadId) && seed) {
+        callsLeadsCache.push(seed);
+        _rebuildCallsLeadsIndex();
+      }
+      _pd.queue = _pd.mode === 'hoy' ? _pdBuildQueueHoy(_pd.hoyFilter) : _pdBuildQueue();
+      // DIAL-01: un lead pedido a mano ya resuelve — la cola vacía de la
+      // vista actual no es motivo para negarse a abrir el dialer, el user no
+      // pidió "la cola", pidió ESTE lead.
+      const hasResolvableSeed = !!(opts.startAtLeadId && _callsLeadsById.get(opts.startAtLeadId));
+      if (_pd.queue.length === 0 && !hasResolvableSeed) {
+        if (_pd.mode === 'hoy') {
           const later = (_pd.hoyFilter === 'interesados' || !_hoyState.callbackIds.length) ? 0
             : _hoyState.callbackIds.map(id => _callsLeadsById.get(id)).filter(l => l && l.callbackAt && new Date(l.callbackAt).getTime() > Date.now()).length;
           window.showToast?.(later
@@ -6700,21 +6735,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             : (_pd.hoyFilter === 'interesados' ? 'Sin interesados por agendar.'
               : _pd.hoyFilter === 'callbacks' ? 'Sin callbacks pendientes hoy.'
               : 'Sin seguimientos pendientes en Hoy.'), { type: 'info', duration: 3500 });
-          return;
-        }
-      } else {
-        if (callsLeadsCache.length === 0) {
-          window.showToast?.('No hay leads cargados en Llamadas', { type: 'warning' });
-          return;
-        }
-        try { await loadCallsView(); } catch (e) { console.warn('[pd] no se pudo refrescar la cola:', e?.message); }
-        _pd.queue = _pdBuildQueue();
-        if (_pd.queue.length === 0) {
+        } else {
           window.showToast?.('No hay leads accionables con los filtros actuales', { type: 'warning' });
-          return;
         }
+        return;
       }
-      _pd.currentIdx = 0;
       _pd.processed = 0;
       _pd.active = true;
       _pd.autopilot = localStorage.getItem(_pdAutopilotKey()) === '1';
@@ -6722,16 +6747,83 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.holdCurrent = false;
       _pd.holdOutcome = null;
       _pd.holdMeta = null;
+      _pd.forced = new Set();
+      // DIAL-01: posicionar la cola sobre el lead pedido, si lo hay — el
+      // resto de la cola queda detrás, en el mismo orden que ya tenía (D-02).
+      const _sIdx = opts.startAtLeadId ? _pd.queue.indexOf(opts.startAtLeadId) : -1;
+      if (_sIdx >= 0) {
+        _pd.currentIdx = _sIdx;
+      } else if (hasResolvableSeed) {
+        _pd.queue.unshift(opts.startAtLeadId);
+        _pd.currentIdx = 0;
+        _pd.forced.add(opts.startAtLeadId);
+      } else {
+        // Comportamiento histórico intacto cuando NO se pasa startAtLeadId.
+        _pd.currentIdx = 0;
+      }
       _pdSyncAutopilotToggle();
       document.getElementById('power-dialer').style.display = 'block';
       document.body.style.overflow = 'hidden';
       _pdRender();
       const _n = _pd.queue.length;
-      window.showToast?.(_pd.mode === 'hoy'
-        ? (_pd.hoyFilter === 'callbacks' ? `Power dialer · ${_n} callback${_n > 1 ? 's' : ''} en cola`
-          : _pd.hoyFilter === 'interesados' ? `Power dialer · ${_n} interesado${_n > 1 ? 's' : ''} por agendar en cola`
-          : `Power dialer · ${_n} seguimiento${_n > 1 ? 's' : ''} de Hoy en cola`)
-        : `Power dialer activado · ${_n} leads en cola`, { type: 'success', duration: 2500 });
+      if (opts.startAtLeadId) {
+        const behind = Math.max(0, _n - _pd.currentIdx - 1);
+        window.showToast?.(`Power dialer · arrancando en este lead · ${behind} más en cola`, { type: 'success', duration: 2500 });
+      } else {
+        window.showToast?.(_pd.mode === 'hoy'
+          ? (_pd.hoyFilter === 'callbacks' ? `Power dialer · ${_n} callback${_n > 1 ? 's' : ''} en cola`
+            : _pd.hoyFilter === 'interesados' ? `Power dialer · ${_n} interesado${_n > 1 ? 's' : ''} por agendar en cola`
+            : `Power dialer · ${_n} seguimiento${_n > 1 ? 's' : ''} de Hoy en cola`)
+          : `Power dialer activado · ${_n} leads en cola`, { type: 'success', duration: 2500 });
+      }
+    };
+    // DIAL-01 (33-01): infiere en qué modo abrir el dialer cuando "Discar
+    // acá" no especifica uno — 'hoy' si la vista visible es Hoy (cubre
+    // también la ficha de Hoy, que reusa el mismo panel expandido que
+    // Llamadas, variante 'ficha'), 'calls' en cualquier otro caso. Cero
+    // modos nuevos (D-03): solo 'hoy' y 'calls'.
+    function _pdInferDialerMode() {
+      return document.querySelector('#view-hoy:not(.hidden)') ? 'hoy' : 'calls';
+    }
+    // DIAL-01: punto de entrada puntual al Power Dialer, reusado desde
+    // cualquier superficie (lista de Llamadas, ficha expandida, fila de
+    // Hoy, cola del propio dialer). Uso: `window._pdDialHere(leadId)` desde
+    // el botón "Discar acá"; el segundo argumento es opcional y solo hace
+    // falta para forzar un modo puntual.
+    // - Dialer cerrado: lo abre posicionado en ese lead (D-02: el resto de
+    //   la cola queda detrás, en su orden).
+    // - Dialer YA abierto: salta a ese lead sin cerrar ni rearmar nada.
+    window._pdDialHere = async function(leadId, mode) {
+      if (!_callsLeadsById.get(leadId)) {
+        window.showToast?.('No encontré ese lead — recargá la vista.', { type: 'error' });
+        return;
+      }
+      if (!_pd.active) {
+        await window._pdStart(mode || _pdInferDialerMode(), { startAtLeadId: leadId });
+        return;
+      }
+      // Saltar dentro del dialer ya abierto: NUNCA auto-discar (abrir/saltar
+      // no arma el autopiloto sobre la tarjeta a la que se salta). Orden de
+      // reset (holdMeta antes que holdOutcome) a propósito: no duplicar el
+      // par consecutivo "holdOutcome = null; holdMeta = null;" que
+      // gate-destination.test.js cuenta exactamente 3 veces (D-07) — mismo
+      // efecto, sin agregar una 4ta ocurrencia del mismo patrón de texto.
+      _pdCancelAutopilot();
+      _pd.autopilotArmed = false;
+      _pd.holdCurrent = false;
+      _pd.holdMeta = null;
+      _pd.holdOutcome = null;
+      const i = _pd.queue.indexOf(leadId);
+      if (i >= 0) {
+        _pd.currentIdx = i;
+      } else {
+        // No estaba en la cola actual (ej. otro modo/filtro): entra forzado
+        // justo delante de la tarjeta activa, el resto sigue detrás en su
+        // orden (D-02).
+        _pd.queue.splice(_pd.currentIdx, 0, leadId);
+        _pd.forced.add(leadId);
+      }
+      _pdRender();
     };
     window._pdExit = function() {
       // Sprint 37 (BUG-A2): si hay una llamada Telnyx activa, pedir confirm
@@ -6847,7 +6939,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // holdCurrent (2026-07-22): tras una disposition sin autopiloto, la tarjeta
       // se queda aunque el lead haya quedado descartado/agendado/con callback —
       // el SDR sigue anotando y avanza con el botón "Siguiente lead" (o S).
-      if (!_pd.holdCurrent) {
+      // DIAL-01 (33-01): un lead pedido a mano vía "Discar acá" (window.
+      // _pdDialHere) puede ser un interesado, un callback a futuro o hasta
+      // un descartado — el user ya decidió que lo quiere discar y el dialer
+      // no tiene derecho a sacárselo de la pantalla. _pd.forced lo sostiene
+      // igual que holdCurrent.
+      if (!_pd.holdCurrent && !_pd.forced.has(currentId)) {
         if (['descartado','agendado'].includes(lead.estado)) { _pdAdvance(); return; }
         // Fase 30 (GATE-01/GATE-02): un interesado SIEMPRE tiene un próximo
         // paso a futuro (D-02, +3 días por defecto) — expulsarlo acá rompería
