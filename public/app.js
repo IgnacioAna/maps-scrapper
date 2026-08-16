@@ -6068,7 +6068,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           fetch(apiUrl('/api/setters/leads/sin-wsp?include=callable' + (hoySetter ? '&setter=' + encodeURIComponent(hoySetter) : '')), { credentials: 'include' }),
           fetch(apiUrl('/api/setters/cold-call-metrics?period=today' + (metricsSetter ? '&setter=' + encodeURIComponent(metricsSetter) : '')), { credentials: 'include' }).catch(() => null),
         ]);
-        const leads = (await leadsResp.json()).leads || [];
+        const _hoyLeadsData = await leadsResp.json();
+        const leads = _hoyLeadsData.leads || [];
+        // Plan 33-04 (DIAL-04): mapa de nombres para resolver callLog[].by en
+        // el bloque HISTORY-PURE del historial. Merge, no reemplazo — Hoy y
+        // Llamadas traen poblaciones distintas de ids.
+        if (_hoyLeadsData.userNames) window.__userNames = { ...(window.__userNames || {}), ..._hoyLeadsData.userNames };
         // Audit 2026-07 (frontend WR-03): antes Hoy sembraba SÓLO el Map, dejando
         // callsLeadsCache (la lista) con objetos distintos para el mismo lead →
         // Hoy y Llamadas podían mostrar dos verdades. Upsert en el array + rebuild
@@ -6230,6 +6235,37 @@ document.addEventListener('DOMContentLoaded', async () => {
       const discardHtml = isDiscardedLead ? discardChip : `<button type="button" onclick="event.stopPropagation(); window._actDiscard('${id}')" title="${discardTitle}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">Descartar</button>`;
       const dialHereHtml = `<button type="button" onclick="event.stopPropagation(); window._pdDialHere('${id}')" title="${dialHereTitle}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:var(--accent-soft); border:1px solid var(--accent-strong); color:var(--text-primary); cursor:pointer; font-family:inherit;">Discar acá</button>`;
       return `<button type="button" onclick="event.stopPropagation(); window._actWhatsApp('${id}')" title="${title}" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(37,211,102,0.10); border:1px solid rgba(37,211,102,0.35); color:#25D366; cursor:pointer; font-family:inherit;">WhatsApp</button>${discardHtml}${dialHereHtml}`;
+    }
+
+    // Fase 33, plan 04 (DIAL-04, R1/R6): builder de superficie del bloque
+    // HISTORY-PURE de historial — un solo componente para las 3 superficies
+    // de llamada (tarjeta del Power Dialer, ficha de la llamada activa,
+    // panel expandido), mismo criterio que _actButtonsHTML/_dispoSelectHTML
+    // de arriba: un builder, N call sites. NO es pura (usa Date.now() y
+    // window.__userNames): la parte pura vive en _leadHistoryBrief, más
+    // abajo en ese mismo bloque.
+    function _leadHistoryHTML(lead) {
+      const brief = _leadHistoryBrief(lead, Date.now(), {
+        userName: (id) => (window.__userNames || {})[id] || '',
+        commitmentLabel: _commitmentLabel,
+      });
+      if (!brief.has) return ''; // D-12: lead nunca trabajado, cero cartel vacío.
+      const lastLine = brief.last
+        ? `<strong style="color:var(--text-primary);">${escHtml(brief.last.label)}</strong>${brief.last.when ? ` <span style="opacity:0.65;">· ${escHtml(brief.last.when)}</span>` : ''}${brief.last.by ? ` <span style="opacity:0.65;">· ${escHtml(brief.last.by)}</span>` : ''}`
+        : '';
+      const noteLine = brief.note && brief.note.text
+        ? `<div style="margin-top:3px; color:var(--text-secondary); font-style:italic;">"${escHtml(brief.note.text)}"${brief.note.by ? ` <span style="opacity:0.65; font-style:normal;">— ${escHtml(brief.note.by)}</span>` : ''}</div>`
+        : '';
+      const commitLine = brief.commitment
+        ? `<div style="margin-top:5px; color:${brief.commitment.vencido ? 'var(--warning)' : 'var(--text-secondary)'};">${brief.commitment.vencido ? 'Compromiso vencido' : 'Compromiso pendiente'}: ${escHtml(brief.commitment.label)}${brief.commitment.when ? ` <span style="opacity:0.75;">· ${escHtml(brief.commitment.when)}</span>` : ''}</div>`
+        : '';
+      const attemptsTxt = brief.attempts > 0 ? `${brief.attempts} intento${brief.attempts > 1 ? 's' : ''} previo${brief.attempts > 1 ? 's' : ''}` : '';
+      return `<div style="margin-top:14px; background:var(--bg-app); border:1px solid var(--border-subtle); padding:10px 13px; border-radius:10px; font-size:12.5px; line-height:1.5;">
+        <div style="font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:5px;">Ya trabajado${attemptsTxt ? ` · ${escHtml(attemptsTxt)}` : ''}</div>
+        ${lastLine ? `<div>${lastLine}</div>` : ''}
+        ${noteLine}
+        ${commitLine}
+      </div>`;
     }
 
     function _hoyRenderSection(title, leads, accent, hint, dialerMode, opts = {}) {
@@ -6430,6 +6466,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const resp = await fetch(apiUrl(url));
         const data = await resp.json();
         callsLeadsCache = data.leads || [];
+        // Plan 33-04 (DIAL-04): mapa de nombres para resolver callLog[].by en
+        // el bloque HISTORY-PURE del historial. Merge, no reemplazo.
+        if (data.userNames) window.__userNames = { ...(window.__userNames || {}), ...data.userNames };
         _rebuildCallsLeadsIndex();
 
         // Poblar filtro de país con los países presentes en los leads
@@ -7265,6 +7304,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           </button>
         </div>
       </div>
+
+      <!-- Plan 33-04 (DIAL-04): historial de las vendedoras, arriba de todo
+           (debajo del header, el número y "Llamar" no se corren de lugar). -->
+      ${_leadHistoryHTML(lead)}
 
       <!-- Bloque 1.5: Ángulo de apertura auto-sugerido (regla). Se OCULTA si el Brief IA
            ya trae un gancho personalizado (sino se repite el mismo ángulo genérico en
@@ -8845,6 +8888,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <!-- Columna izquierda: ficha + histórico -->
         <div class="call-detail-section">
           ${_expChips.length ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">${_expChips.join('')}</div>` : ''}
+          ${_leadHistoryHTML(l)}
           ${_briefBlock}
           ${_altBlock}
           ${_doctorIgBlockHtml(l)}
@@ -10703,6 +10747,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!lead) return { body: '', links: '' };
       const interactive = opts.interactive !== false;
       const rows = [];
+      // Plan 33-04 (DIAL-04): historial de las vendedoras, PRIMERO de todo —
+      // este es el panel de la llamada ACTIVA, literalmente "antes de que
+      // atiendan". Vacío si el lead nunca fue trabajado (D-12).
+      rows.push(_leadHistoryHTML(lead));
       // Sprint 24: Nota pre-call — destacada al tope (lo que el SDR
       // preparó antes de discar). Si está vacía, no se renderiza.
       if (lead.precallNote && lead.precallNote.trim()) {
@@ -12594,6 +12642,125 @@ document.addEventListener('DOMContentLoaded', async () => {
       return null;
     }
     // ─── [31-03] COMMITMENT-PURE: FIN ───
+
+    // ─── [33-04] HISTORY-PURE: INICIO ───
+    // Fase 33, plan 04 (DIAL-04, R1/R6): el historial de las vendedoras es un
+    // activo — antes de discar y durante la llamada, la ficha del lead pone
+    // al frente qué pasó antes: última disposición y cuándo, quién la marcó,
+    // la última nota, el compromiso pendiente si hay, y cuántos intentos
+    // lleva. Bloque sin ninguna dependencia del navegador (nada de DOM, red
+    // ni almacenamiento persistente, y el reloj SIEMPRE se recibe por
+    // parámetro, nunca Date.now() interno): el test lo extrae por estos
+    // marcadores y lo evalúa aislado, mismo patrón que [31-03]
+    // COMMITMENT-PURE / [30-02] GATE-PURE / [32-03] ACT-PURE.
+
+    // MISMO diccionario que el `outcomeMap` de `_renderCallHistory` — copiado
+    // literal (no importado: el bloque tiene que quedar autocontenido para
+    // `new Function`). Un test de anti-deriva ata los dos, mismo criterio que
+    // 31-04 usó con los títulos de Hoy: si un outcome nuevo entra a uno y no
+    // al otro, el test cae.
+    const HISTORY_OUTCOME_LABELS = {
+      answered_interested: 'Interesado', answered_not_interested: 'No interesado',
+      no_answer: 'No atendió', voicemail: 'Buzón', wrong_number: 'Equivocado',
+      invalid_number: 'No existe', callback_later: 'Callback', scheduled_with_admin: 'Agendado',
+      hung_up: 'Cortó', placeholder_sent: 'Hold',
+    };
+
+    // 'hoy' / 'ayer' / 'hace Nd' — MISMA aritmética que el `fmtAgo` de
+    // _renderCallHistory (pensado para eventos PASADOS: última disposición,
+    // última nota), pero recibiendo el reloj por parámetro — los tests usan
+    // un reloj FIJO, nunca el real de la corrida.
+    function _historyWhenLabel(ts, nowMs) {
+      if (!ts) return '';
+      const d = Math.floor((nowMs - ts) / 86400000);
+      return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : `hace ${d}d`;
+    }
+
+    // Bloque puro: última disposición, última nota, compromiso pendiente y
+    // cantidad de intentos, en el orden que pide D-11. `opts` acepta
+    // resolvers opcionales `{ userName, commitmentLabel }` que por defecto
+    // devuelven '' — así el bloque queda autocontenido para `new Function` y
+    // la app real le pasa los reales.
+    function _leadHistoryBrief(lead, nowMs, opts = {}) {
+      const userName = typeof opts.userName === 'function' ? opts.userName : () => '';
+      const commitmentLabel = typeof opts.commitmentLabel === 'function' ? opts.commitmentLabel : () => '';
+      const log = (lead && Array.isArray(lead.callLog)) ? lead.callLog : [];
+      const notes = (lead && Array.isArray(lead.notes)) ? lead.notes : [];
+      // Regla dura heredada de 31-04 (Rule 1): el estado ALMACENADO manda,
+      // NUNCA el derivado (_commitmentEffectiveEstado) — el derivado devuelve
+      // 'vencido' para dos situaciones de negocio distintas. Un compromiso
+      // 'cumplido'/'vencido'/'incumplido' (cerrado explícito) NO es un
+      // pendiente, no entra acá.
+      const commitmentRaw = (lead && typeof lead.commitment === 'object' && lead.commitment) ? lead.commitment : null;
+      const commitmentPendiente = commitmentRaw && commitmentRaw.estado === 'pendiente' ? commitmentRaw : null;
+
+      // D-12: sin callLog, sin notas y sin compromiso pendiente → nunca fue
+      // trabajado, cero cartel vacío ocupando la pantalla más importante.
+      const has = log.length > 0 || notes.length > 0 || !!commitmentPendiente;
+      if (!has) return { has: false, last: null, note: null, commitment: null, attempts: 0 };
+
+      // last: la entry de MAYOR ts (nunca asumir orden del array — el
+      // backend no garantiza que callLog venga cronológico).
+      let last = null;
+      if (log.length) {
+        let lastEntry = log[0];
+        let lastTs = lastEntry && lastEntry.ts ? new Date(lastEntry.ts).getTime() : 0;
+        for (let i = 1; i < log.length; i++) {
+          const e = log[i];
+          const ts = e && e.ts ? new Date(e.ts).getTime() : 0;
+          if (ts >= lastTs) { lastEntry = e; lastTs = ts; }
+        }
+        if (lastEntry) {
+          last = {
+            outcome: lastEntry.outcome || '',
+            label: HISTORY_OUTCOME_LABELS[lastEntry.outcome] || lastEntry.outcome || '—',
+            when: _historyWhenLabel(lastTs, nowMs),
+            // Usuario borrado (nota #149 de CLAUDE.md): el resolver no
+            // encuentra el id → '' y el bloque se arma igual, sin romper.
+            by: lastEntry.by ? (userName(lastEntry.by) || '') : '',
+          };
+        }
+      }
+
+      // note: la última de lead.notes — su `by` YA es un nombre (nota #26),
+      // NO pasa por el resolver de usuarios. Truncada a 140 caracteres acá
+      // adentro, para que el HTML no tenga que decidirlo.
+      let note = null;
+      if (notes.length) {
+        const n = notes[notes.length - 1];
+        const rawText = (n && n.text) ? String(n.text) : '';
+        const text = rawText.length > 140 ? rawText.slice(0, 140) + '…' : rawText;
+        const nTs = n && (n.date || n.ts) ? new Date(n.date || n.ts).getTime() : 0;
+        note = { text, by: (n && n.by) || '', when: _historyWhenLabel(nTs, nowMs) };
+      }
+
+      // commitment: solo si quedó ABIERTO (estado almacenado 'pendiente').
+      // `when` distingue vencido (mismo idioma que last/note: hoy/ayer/hace
+      // Nd) de todavía-no-vencido (hoy/mañana/en Nd) — un compromiso que
+      // vence en 3 días no puede decir "hoy".
+      let commitment = null;
+      if (commitmentPendiente) {
+        const dueMs = commitmentPendiente.dueAt ? new Date(commitmentPendiente.dueAt).getTime() : NaN;
+        const vencido = !isNaN(dueMs) && dueMs <= nowMs;
+        let when = '';
+        if (!isNaN(dueMs)) {
+          const days = Math.floor(Math.abs(nowMs - dueMs) / 86400000);
+          if (vencido) when = days <= 0 ? 'hoy' : days === 1 ? 'ayer' : `hace ${days}d`;
+          else when = days <= 0 ? 'hoy' : days === 1 ? 'mañana' : `en ${days}d`;
+        }
+        commitment = {
+          label: commitmentLabel(commitmentPendiente.tipo) || commitmentPendiente.tipo || '',
+          when,
+          vencido,
+        };
+      }
+
+      // attempts: lead.callAttempts si es número, si no callLog.length.
+      const attempts = typeof lead.callAttempts === 'number' ? lead.callAttempts : log.length;
+
+      return { has: true, last, note, commitment, attempts };
+    }
+    // ─── [33-04] HISTORY-PURE: FIN ───
 
     // ─── [32-03] ACT-PURE: INICIO ───
     // Fase 32, plan 03 (D-06/D-08, ACT-01/02/03): catálogo de plantillas del
