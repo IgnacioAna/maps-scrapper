@@ -3913,6 +3913,12 @@ app.post('/api/admin/import-data', requireAuth, requireRole('admin'), (req, res)
 function _repairColombianPhone(phone) {
   const dg = String(phone || '').replace(/\D/g, '');
   if (dg.length !== 10) return null;                    // 12 = ya está bien
+  // Fijo con la numeración NUEVA (60X + 7) al que le falta el código de país.
+  // Va PRIMERO porque `_repairGenericPhone` lee estos 10 dígitos como área NANP
+  // (602 = Phoenix, 605 = South Dakota…) y mandaría a EE.UU. un fijo de Cali.
+  // Con country='Colombia' la lectura nacional es la correcta: 601 Bogotá,
+  // 602 Cali, 604 Medellín, 605 Barranquilla, 606 Eje Cafetero, 607 Bucaramanga.
+  if (/^60[1-8]/.test(dg)) return `+57${dg}`;
   if (dg.startsWith('57')) {                            // fijo viejo: 57 + área(1) + 7
     const nac = dg.slice(2);
     if (nac.length !== 8) return null;
@@ -4120,9 +4126,18 @@ app.post('/api/admin/repair-co-phones', requireAuth, requireRole('admin'), (req,
 // verdad: fuera descartados, agendados, cerrados y los marcados no-llamar. No
 // tiene sentido gastar validaciones en leads que nadie va a discar.
 //
+// `reactivateDiscarded` (default false) rescata los leads que la cadencia
+// descartó sola por marcar un número roto. El descarte ahí no lo decidió nadie:
+// el número no llegaba a destino, así que "no atendió" ×2 lo sacó de la cola.
+// Reparar el teléfono sin devolverlos deja el arreglo a medias — un número bueno
+// en un lead que nadie va a discar. Solo entran los que tienen llamadas y
+// NINGUNA con outcome de atendida (`COLD_CALL_CONNECT_OUTCOMES`, el canon):
+// si alguien atendió, el número llegaba a algún lado y el descarte se respeta.
+// Los descartados a mano (sin una sola llamada) tampoco se tocan.
+//
 // `unresolved` devuelve lo que quedó sin tocar, con el motivo, para revisarlo.
 app.post('/api/admin/repair-phones', requireAuth, requireRole('admin'), (req, res) => {
-  const { dryRun = true, onlyAlive = true } = req.body || {};
+  const { dryRun = true, onlyAlive = true, reactivateDiscarded = false } = req.body || {};
   const data = loadSettersData();
   const leads = data.leads || {};
   const enUso = new Set();
@@ -4148,12 +4163,24 @@ app.post('/api/admin/repair-phones', requireAuth, requireRole('admin'), (req, re
     return !(dg.startsWith(spec[0]) && spec[1].includes(dg.length));
   };
 
-  let scanned = 0, repaired = 0, collided = 0;
+  // Descarte que causó el propio número roto: hubo llamadas y ninguna llegó a
+  // ser atendida. Es lo único que el rescate revierte.
+  const _descartePorNumeroRoto = (l) => {
+    if (l.estado !== 'descartado') return false;
+    const log = Array.isArray(l.callLog) ? l.callLog : [];
+    if (!log.length) return false;                              // descarte manual: no se toca
+    return !log.some((e) => COLD_CALL_CONNECT_OUTCOMES.has(e?.outcome));
+  };
+
+  let scanned = 0, repaired = 0, collided = 0, reactivated = 0;
   const sample = [], unresolved = [], byCountry = {};
   for (const id of Object.keys(leads)) {
     const l = leads[id];
     if (!l || !l.phone) continue;
-    if (onlyAlive && !_vivo(l)) continue;
+    // Con `reactivateDiscarded` los descartados entran al scan aunque `onlyAlive`
+    // esté puesto: son justamente los que hay que rescatar.
+    const rescatable = reactivateDiscarded && _descartePorNumeroRoto(l);
+    if (onlyAlive && !_vivo(l) && !rescatable) continue;
     if (!_roto(l)) continue;
     scanned++;
     const nuevo = _repairLeadPhone(l);
@@ -4173,12 +4200,36 @@ app.post('/api/admin/repair-phones', requireAuth, requireRole('admin'), (req, re
       enUso.add(nuevo.replace(/\D/g, ''));
     }
     repaired++;
+    if (!rescatable) continue;
+    // Mismo reseteo que POST /leads/:id/reactivate, más lo que puso la cadencia
+    // al descartarlo. El histórico (callLog, notes, interactions) se conserva.
+    if (!dryRun) {
+      l.estado = 'sin_contactar';
+      l.interes = null;
+      l.phoneStatus = '';
+      l.respondio = false;
+      l.calificado = false;
+      l.cadenceStep = 0;
+      l.cadenceExhausted = false;
+      l.autoDiscardReason = '';
+      _clearNextAction(l);
+      if (l.conexion !== 'sin_wsp') l.conexion = 'sin_wsp';
+      if (!Array.isArray(l.interactions)) l.interactions = [];
+      l.interactions.push({
+        action: 'reactivated',
+        by: req.auth?.user?.id || '',
+        byName: req.auth?.user?.name || req.auth?.user?.email || 'Admin',
+        reason: 'phone_repaired',
+        createdAt: new Date().toISOString()
+      });
+    }
+    reactivated++;
   }
   if (!dryRun && repaired) {
     try { makeBackup('repair-phones'); } catch {}
     saveSettersData(data);
   }
-  res.json({ ok: true, dryRun, onlyAlive, scanned, repaired, collided, byCountry, sample, unresolved });
+  res.json({ ok: true, dryRun, onlyAlive, reactivateDiscarded, scanned, repaired, reactivated, collided, byCountry, sample, unresolved });
 });
 
 app.post('/api/admin/backfill-country', requireAuth, requireRole('admin'), (req, res) => {

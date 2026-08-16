@@ -84,6 +84,26 @@ describe("_repairColombianPhone — la regla, sin inventar números", () => {
     expect(rep("3186944802")).toBe("+573186944802");
   });
 
+  it("fijo con la numeración NUEVA sin código de país: queda en Colombia, no en EE.UU.", () => {
+    // Caso real (Cali): +6023800805. Sin esta regla lo agarraba
+    // _repairGenericPhone, que lee 602 como área NANP (Phoenix) y devolvía
+    // +16023800805 — un número de Arizona en una clínica de Cali.
+    expect(rep("+6023800805")).toBe("+576023800805");
+    expect(rep("+6011234567")).toBe("+576011234567");   // Bogotá
+    expect(rep("+6049876543")).toBe("+576049876543");   // Medellín
+    expect(rep("+6071112223")).toBe("+576071112223");   // Bucaramanga
+    // El resultado tiene la misma forma que los fijos que ya funcionan.
+    expect(rep("+6023800805")).toMatch(/^\+5760[1-8]\d{7}$/);
+    // 609/600 no son indicativos colombianos: no se tocan.
+    expect(rep("+6091234567")).toBe(null);
+    expect(rep("+6001234567")).toBe(null);
+  });
+
+  it("el fijo nuevo también se resuelve entrando por _repairLeadPhone (el que usa el endpoint)", () => {
+    const { _repairLeadPhone } = globalThis.__phoneRepair;
+    expect(_repairLeadPhone({ phone: "+6023800805", country: "Colombia", city: "Cali" })).toBe("+576023800805");
+  });
+
   it("un número YA correcto no se toca", () => {
     expect(rep("+576023928902")).toBe(null);   // 12 dígitos: está bien
     expect(rep("+573222561204")).toBe(null);
@@ -151,6 +171,110 @@ describe("POST /api/admin/repair-co-phones", () => {
     const c = (s.headers["set-cookie"] || []).find((x) => x.startsWith("gs_session=")).split(";")[0];
     expect((await request(app).post("/api/admin/repair-co-phones").set("Cookie", c)).status).toBe(403);
     expect((await request(app).post("/api/admin/repair-co-phones")).status).toBe(401);
+  });
+});
+
+// POST /api/admin/repair-phones — el reparador de TODA la base y el rescate de
+// los leads que la cadencia descartó sola por marcar un número que no existía.
+describe("POST /api/admin/repair-phones", () => {
+  const mx = (id, phone, extra = {}) => ({
+    [id]: {
+      num: 1, name: `MX-${id}`, phone, country: "México", city: "Tijuana",
+      assignedTo: "s_1", conexion: "sin_wsp", estado: "sin_contactar", callLog: [], ...extra,
+    },
+  });
+  const noAtendio = (n) => Array.from({ length: n }, () => ({ outcome: "no_answer", ts: "2026-08-01T10:00:00.000Z", by: "u_set" }));
+
+  it("un 619 de Tijuana se repara a +1 (San Diego), no a +52", async () => {
+    writeLeads({ ...mx("t1", "+6195029242"), ...mx("t2", "+6198157846") });
+    const r = await request(app).post("/api/admin/repair-phones")
+      .set("Cookie", adminCookie).send({ dryRun: false });
+    expect(r.status).toBe(200);
+    expect(r.body.repaired).toBe(2);
+    const after = read().leads;
+    expect(after.t1.phone).toBe("+16195029242");
+    expect(after.t1.phoneBroken).toBe("+6195029242");   // rollback disponible
+    expect(after.t1.lookupAt).toBe("");                  // el número cambió: lo que sabíamos no aplica
+  });
+
+  it("sin el flag NO toca los descartados y no reactiva nada", async () => {
+    writeLeads({ ...mx("d1", "+6195029242", { estado: "descartado", callLog: noAtendio(2) }) });
+    const r = await request(app).post("/api/admin/repair-phones")
+      .set("Cookie", adminCookie).send({ dryRun: false });
+    expect(r.body.repaired).toBe(0);
+    expect(r.body.reactivated).toBe(0);
+    expect(read().leads.d1.phone).toBe("+6195029242");
+  });
+
+  it("con reactivateDiscarded rescata al que se quemó contra el número roto", async () => {
+    writeLeads({
+      ...mx("d1", "+6195029242", {
+        estado: "descartado", interes: "no", cadenceStep: 2, cadenceExhausted: true,
+        autoDiscardReason: "sin_contacto_2x", callbackAt: "2026-08-02T10:00:00.000Z",
+        callLog: noAtendio(2), notes: [{ text: "histórico" }],
+      }),
+    });
+    const r = await request(app).post("/api/admin/repair-phones")
+      .set("Cookie", adminCookie).send({ dryRun: false, reactivateDiscarded: true });
+    expect(r.body.repaired).toBe(1);
+    expect(r.body.reactivated).toBe(1);
+    const l = read().leads.d1;
+    expect(l.phone).toBe("+16195029242");
+    expect(l.estado).toBe("sin_contactar");             // vuelve a la cola
+    expect(l.interes).toBe(null);
+    expect(l.cadenceStep).toBe(0);
+    expect(l.cadenceExhausted).toBe(false);
+    expect(l.autoDiscardReason).toBe("");
+    expect(l.callbackAt).toBe("");                      // el reloj viejo se consume
+    expect(l.conexion).toBe("sin_wsp");
+    expect(l.callLog).toHaveLength(2);                  // el histórico NO se borra
+    expect(l.notes).toHaveLength(1);
+    expect(l.interactions.at(-1)).toMatchObject({ action: "reactivated", reason: "phone_repaired" });
+  });
+
+  it("respeta el descarte cuando alguien SÍ atendió, y el descarte hecho a mano", async () => {
+    writeLeads({
+      // Atendieron y dijeron que no: el número llegaba a destino.
+      ...mx("hablo", "+6195029242", {
+        estado: "descartado",
+        callLog: [...noAtendio(1), { outcome: "answered_not_interested", ts: "2026-08-01T11:00:00.000Z" }],
+      }),
+      // Descartado a mano, sin una sola llamada.
+      ...mx("mano", "+6198157846", { estado: "descartado", callLog: [] }),
+    });
+    const r = await request(app).post("/api/admin/repair-phones")
+      .set("Cookie", adminCookie).send({ dryRun: false, reactivateDiscarded: true });
+    expect(r.body.reactivated).toBe(0);
+    const after = read().leads;
+    expect(after.hablo.estado).toBe("descartado");
+    expect(after.mano.estado).toBe("descartado");
+  });
+
+  it("dryRun cuenta el rescate pero no escribe", async () => {
+    writeLeads({ ...mx("d1", "+6195029242", { estado: "descartado", callLog: noAtendio(2) }) });
+    const r = await request(app).post("/api/admin/repair-phones")
+      .set("Cookie", adminCookie).send({ dryRun: true, reactivateDiscarded: true });
+    expect(r.body.repaired).toBe(1);
+    expect(r.body.reactivated).toBe(1);
+    const l = read().leads.d1;
+    expect(l.phone).toBe("+6195029242");
+    expect(l.estado).toBe("descartado");
+  });
+
+  it("es idempotente: correrlo dos veces no vuelve a tocar nada", async () => {
+    writeLeads({ ...mx("d1", "+6195029242", { estado: "descartado", callLog: noAtendio(2) }) });
+    const body = { dryRun: false, reactivateDiscarded: true };
+    await request(app).post("/api/admin/repair-phones").set("Cookie", adminCookie).send(body);
+    const r2 = await request(app).post("/api/admin/repair-phones").set("Cookie", adminCookie).send(body);
+    expect(r2.body.repaired).toBe(0);
+    expect(r2.body.reactivated).toBe(0);
+  });
+
+  it("solo admin", async () => {
+    const s = await request(app).post("/api/auth/login").send({ email: "set-pr@local.test", password: "setpass1234" });
+    const c = (s.headers["set-cookie"] || []).find((x) => x.startsWith("gs_session=")).split(";")[0];
+    expect((await request(app).post("/api/admin/repair-phones").set("Cookie", c)).status).toBe(403);
+    expect((await request(app).post("/api/admin/repair-phones")).status).toBe(401);
   });
 });
 
