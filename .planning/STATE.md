@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T04:15:00.000Z"
+last_updated: "2026-08-16T05:20:00.000Z"
 last_activity: 2026-08-16
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 22
-  completed_plans: 20
-  percent: 91
+  completed_plans: 21
+  percent: 95
 ---
 
 # SCM — STATE
@@ -39,62 +39,89 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 33 (dial-motor-unico): Plan 2 of 4 executed (2026-08-16)
-Plan: 2 of 4 -- 33-01 y 33-02 con SUMMARY (33-01-SUMMARY.md,
-  33-02-SUMMARY.md)
-Status: 33-02 ejecutado y commiteado (commits bc267a1 _pdHold +
-  _pd.pendingSave, 6993af9 _pdHandleDisposition universal, b635317 suite
-  de tests + cache-buster). _pdHold(leadId, outcome, opts={}) es ahora el
-  UNICO camino al banner "Resultado guardado": guard de tarjeta actual
-  (`!_pd.active || _pd.queue[_pd.currentIdx] !== leadId`), D-05 (con
-  autopiloto ON sigue avanzando solo via _pdAdvance), y completa
-  holdMeta con _dispoDestination si esta vacio (cubre los caminos que
-  avisaron con forceToast). _pd.pendingSave ({leadId,outcome,at}) es la
-  señal determinística que escribe _dispoAfterSaved cuando el dialer
-  esta activo -- reemplaza a la heuristica vieja (stillActionable) que
-  re-derivaba el estado del lead para adivinar si se habia guardado.
-  window._pdHandleDisposition: limpia pendingSave al entrar (antes del
-  await), lo consume validando leadId+at (T-33-05), rama directa con
-  polling acotado 200ms/techo 6s en vez del setTimeout ciego de 600ms
-  (T-33-06), rama con modal conserva la espera a que cierren los 4
-  modales y solo holdea si hay señal (cancelar no toca nada).
-  _autoMarkNoAnswer ya usa _pdHold en vez de replicar el hold a mano.
-  D-04 verificado leyendo el codigo: ni _pdHold ni el guard de expulsion
-  de _pdRender miraban _pd.mode/_pd.hoyFilter -- la premisa "hoy funciona
-  solo en el dialer de Llamadas" ya no aplicaba, documentado en
-  comentario. _actDiscard sin cambios de comportamiento (32-04 protegido
-  por test). Cache-buster app.js 20260816a -> 20260816b (baseline real
-  leido de disco). style.css con diff de una sesion PARALELA ajena
-  (retoque de contraste --text-tertiary/--text-faint) -- NO incluido en
-  ningun commit de este plan, dejado intacto en el working tree para esa
-  otra sesion. Verificacion por mutacion: romper el guard
-  `ps.leadId !== leadId` de _consumeSaved puso en rojo exactamente 1/30
-  tests nuevos; restaurado con git checkout -- public/app.js, diff vacio
-  confirmado. 30 tests nuevos en tests/dial-hold.test.js (>=16 pedidos).
-  Deviation (plan verification note, no bug de codigo): 2 criterios de
-  aceptacion del plan resultaron desactualizados al verificarlos -- (1)
-  el criterio de la Task 1 "grep -c holdCurrent=true debe dar 1" solo se
-  cumple DESPUES de la Task 2 (el propio <done> de la Task 1 lo advierte:
-  "los caminos con modal siguen usando la heuristica vieja hasta la Task
-  2"); verificado que dio 1 al cerrar la Task 2. (2) "_pd.pendingSave =
-  null debe dar 3 en todo el archivo" tambien era el conteo de fin-de-
-  Task-1 -- la Task 2 agrega 2 ocurrencias legitimas mas del mismo
-  literal (limpieza al entrar + consumo exitoso dentro de
-  _pdHandleDisposition), total real 5; el test de la suite nueva verifica
-  los 5 con desglose explicito (3 resets de estado + 2 del ciclo de vida
-  de pendingSave). Suite completa: 1718/1718 (baseline 1688 de 33-01 +
-  30 nuevos; 1 corrida bajo carga total tuvo 7 archivos no relacionados
-  con hook-timeout por contencion de recursos -- mismo patron que 32-04,
-  los 5 identificados pasaron 74/74 aislados y una 2da corrida completa
-  dio 1695/1718 con 23 skipped solo por el mismo motivo, tambien
-  confirmados verdes aislados). DIAL-02 completo (REQUIREMENTS.md
-  marcado [x]). ROADMAP.md actualizado a mano (Phase 33 2/4 planes).
+Phase: 33 (dial-motor-unico): Plan 3 of 4 executed (2026-08-16)
+Plan: 3 of 4 -- 33-01, 33-02 y 33-03 con SUMMARY (33-01-SUMMARY.md,
+  33-02-SUMMARY.md, 33-03-SUMMARY.md)
+Status: 33-03 ejecutado (commits a4b8435 _hoyRenderFromStore, bf435fe
+  incluye tambien el codigo de la Task 2 de este plan -- commiteado por
+  una sesion PARALELA que corrio git commit sobre public/app.js al mismo
+  tiempo, ver detalle abajo --, ba81ffd commit propio de la Task 2 que
+  quedo sin contenido propio pero con 2 hunks ajenos de color sin
+  relacion con DIAL-03, 7a8ddbf Task 3 suite+cache-buster). DIAL-03
+  completo: Power Dialer, Hoy y Llamadas comparten una sola escritura
+  (_leadStoreApply, ya existia desde Phase 13) y ahora tambien un solo
+  renderer para Hoy que se repinta sin fetch.
+  function _hoyRenderFromStore(leadsArg) (app.js:5959-6049): extraida de
+  loadHoyView -- clasificacion de las 4 secciones (Mis compromisos/
+  Esperando del prospecto/Callbacks/Interesados sin agendar) + el
+  secEl.innerHTML, TAL CUAL, movido fuera del fetch. Cero fetch(/await en
+  el cuerpo. Sin leadsArg, la poblacion es la union de _hoyLeadIds
+  (ultimo fetch) + _leadStoreDirty (ids escritos despues), resuelta
+  contra _callsLeadsById y respetando el filtro de SDR activo (un id
+  sucio de otro SDR no entra si hay filtro puesto). Guard anti-repintado
+  redundante: sin leadsArg, misma _leadStoreVersion que la ultima
+  pintada y seccion ya con contenido -> sale sin rehacer innerHTML.
+  loadHoyView (app.js:6051-6118) quedo como fetch+upsert+delegar: setea
+  _hoyLeadIds/_hoyFetchedAt, limpia _leadStoreDirty (fetch trae todo
+  fresco), llama _hoyRenderFromStore(leads), y recien despues pinta el
+  bloque de KPIs (el unico trozo que NO se movio -- depende de un
+  endpoint aparte). _leadStoreApply instrumentado: _leadStoreVersion++ +
+  _leadStoreDirty.add(id) al final de cada escritura exitosa;
+  window.__leadStoreVersion expuesto para diagnostico en vivo.
+  _callsShowView()/_hoyShowView(): los listeners de menu de Llamadas/Hoy
+  repintan desde el estado si hay datos frescos (< LEAD_STORE_STALE_MS,
+  5 min) y solo fetchean si no. _refreshLeadPanels/_dispoAfterSaved/
+  window._actDiscard: el guard de "Hoy visible" paso de loadHoyView()
+  (fetch) a _hoyRenderFromStore() (repintado desde el store, ya escrito
+  por _leadStoreApply unas lineas antes). _pdExit NO cambia a proposito
+  (comentario explicito: salir del dialer es el refresco EXPLICITO de la
+  sesion completa). Limite D-09 verificado con test dedicado: no aparece
+  ningun literal de suscripcion/Proxy en el archivo -- la escritura sigue
+  siendo un mutador directo, no un store reactivo multi-vista.
+  34 tests nuevos en tests/dial-sync.test.js (>=16 pedidos). Verificacion
+  por mutacion: romper un titulo literal en _hoyRenderFromStore puso en
+  rojo exactamente 3/42 tests de tests/commitment-hoy.test.js (los 3
+  anti-deriva esperados), restaurado, diff vacio confirmado (solo mi
+  linea, sin tocar hunks ajenos). Suite completa: 1752/1752 (baseline
+  1718 de 33-02 + 34 nuevos), 2 corridas completas.
+  Deviations (4 auto-fixed, Rule 1): (1) typo propio
+  (compromisosProspecto: undefined colado al mover el bloque _hoyState)
+  atrapado y corregido antes de correr ningun test; (2) _leadStoreDirty
+  se referenciaba desde la Task 1 pero nunca se declaro -- bug latente no
+  detectado por node --check (no es error de sintaxis) ni por los tests
+  de fuente de la Task 1/2 (no ejecutan _hoyRenderFromStore); cerrado en
+  la Task 3 declarandolo junto a _leadStoreApply, exactamente donde esa
+  misma task ya lo pedia; (3) y (4) 2 assertions PRE-EXISTENTES (Fase 31
+  y Fase 32, no de este plan) pineaban loadHoyView()/dentro-de-
+  loadHoyView literal para codigo que la Task 1/2 de ESTE plan mueve
+  explicitamente a _hoyRenderFromStore -- imposible satisfacer a la vez
+  "mover el codigo" y "0 diff en esos tests" tal como estaban escritos;
+  verificado empiricamente corriendo el <verify> del plan tal cual antes
+  de decidir, actualizadas las 4 assertions afectadas (3 en
+  commitment-hoy.test.js + 1 en act-ui-discard-material.test.js) al
+  minimo necesario, preservando el proposito de cada una.
+  Issue de proceso (no bug de codigo): una sesion PARALELA corrio
+  git commit sobre public/app.js (+index.html+style.css) entre mis Tasks
+  1 y 2 (commit bf435fe, "verde acento a senal") usando git add/commit
+  amplio -- arrastro de paso mis cambios sin commitear de la Task 2 al
+  mismo archivo compartido (el propio mensaje de bf435fe lo reconoce
+  explicitamente). Mi commit de la Task 2 (ba81ffd) quedo vacio de
+  contenido propio pero con 2 hunks ajenos de color bajo mi mensaje --
+  sin perdida de trabajo ni regresion, solo atribucion de commit
+  incorrecta para esos 2 hunks puntuales; no se intento revertir (nunca
+  destructivo, sesion concurrente activa). Para la Task 3, antes de cada
+  git add revise git diff completo y arme patches parciales
+  (git apply --check --cached + git apply --cached) con SOLO mis hunks
+  (5 en app.js, 1 en index.html -- el cache-buster), dejando el resto del
+  working tree intacto para la otra sesion. DIAL-03 completo
+  (REQUIREMENTS.md marcado [x]). ROADMAP.md actualizado a mano (Phase 33
+  3/4 planes, Wave 3 con SUMMARY).
 Resume file: None
-Last activity: 2026-08-16 -- Phase 33 Plan 2 (hold universal del Power
-  Dialer via _pdHold + _pd.pendingSave) completado, DIAL-02 cerrado.
-  Siguiente: 33-03 (DIAL-03, sincronizacion de vistas Power Dialer/Hoy/
-  Llamadas via _hoyRenderFromStore), Wave 3 del plan de la fase,
-  bloqueado hasta que este plan (Wave 2) quede confirmado.
+Last activity: 2026-08-16 -- Phase 33 Plan 3 (sincronizacion de vistas
+  Power Dialer/Hoy/Llamadas via _hoyRenderFromStore + escritura unica
+  observable) completado, DIAL-03 cerrado. Siguiente: 33-04 (DIAL-04,
+  ficha con historial de las vendedoras al frente), Wave 4 del plan de
+  la fase -- ultimo plan de Phase 33.
 
 Phase 32 (act-acciones): **COMPLETE** (4/4 planes, 2026-08-15)
 Plan: 4 of 4 -- las 4 con SUMMARY (32-01/32-02/32-03/32-04)

@@ -78,7 +78,7 @@ recordarle, el milestone falló.
 | 30 | 3/3 | Complete   | 2026-08-15 |
 | 31 | COMM — Compromisos como objeto (4/4 planes, COMPLETE) | COMM-01..04 | 29 |
 | 32 | ACT — Acciones desde cualquier vista (4/4 planes, COMPLETE) | ACT-01..05 | 29, 31 |
-| 33 | DIAL — Power Dialer como motor único (2/4 planes) | DIAL-01..04 | 29, 30, 32 |
+| 33 | DIAL — Power Dialer como motor único (3/4 planes) | DIAL-01..04 | 29, 30, 32 |
 | 34 | HOY — La vista diaria | HOY-01..05 | 29, 30, 33 |
 
 - [x] **Phase 28: QUICK — Alivio inmediato** — calendario real al programar fecha + panel de llamada arrastrable. Solo interfaz, cero modelo de datos (completed 2026-08-14)
@@ -342,9 +342,9 @@ Plans:
 
 - [x] 33-02-PLAN.md — DIAL-02: hold universal (`_pdHold` + `_pd.pendingSave`), todas las colas y los outcomes con modal; autopiloto intacto (completed 2026-08-16, 33-02-SUMMARY.md)
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3**
 
-- [ ] 33-03-PLAN.md — DIAL-03: `_hoyRenderFromStore` + repintado al mostrar la vista, sin el rewrite de READS (límite D-09)
+- [x] 33-03-PLAN.md — DIAL-03: `_hoyRenderFromStore` + repintado al mostrar la vista, sin el rewrite de READS (límite D-09) (completed 2026-08-16, 33-03-SUMMARY.md)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -397,7 +397,7 @@ Plans:
 | 30. GATE — Cierra la llamada, define el próximo paso | 3/3 | human_needed (UAT pendiente) | 2026-08-15 |
 | 31. COMM — Compromisos como objeto | 4/4 | Complete | 2026-08-15 |
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
-| 33. DIAL — Power Dialer como motor único | 0/4 | Planned | - |
+| 33. DIAL — Power Dialer como motor único | 3/4 | Executing | - |
 | 34. HOY — La vista diaria | 0/TBD | Not started | - |
 
 ---

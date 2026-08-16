@@ -327,7 +327,7 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   cualquier lista, sin que la cola arranque de cero. *(R2)*
 - [x] **DIAL-02**: Marcar un resultado no expulsa el lead de la vista antes
   de que él decida avanzar. *(R2)*
-- [ ] **DIAL-03**: Power Dialer, Hoy y Llamadas se comportan como una sola
+- [x] **DIAL-03**: Power Dialer, Hoy y Llamadas se comportan como una sola
   herramienta: lo que marca en una se refleja en las otras sin recargar.
 - [ ] **DIAL-04**: La ficha del lead muestra al frente lo que necesita ver
   antes de que atiendan, incluido **el historial de las vendedoras** — quién
