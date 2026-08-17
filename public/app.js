@@ -13350,21 +13350,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ninguna dependencia del navegador (nada de DOM, red ni almacenamiento
     // persistente): el test lo extrae por estos marcadores y lo evalúa
     // aislado, mismo patrón que [31-03] COMMITMENT-PURE / [30-02] GATE-PURE.
+    // 2026-08-17 — reescritas a las reglas de copy de la marca: español
+    // neutro-LATAM sin voseo, sin guion largo, sin signos de apertura, sin
+    // precio y sin declarar la pérdida (el material la calcula).
+    // Se sacó {name} del saludo: es el nombre del NEGOCIO, así que rendía
+    // "Hola Clínica Dental Sonrisa". Se sacó {city} por lo mismo — su fallback
+    // es 'la zona' y quedaba genérico.
+    // 'post_llamada' se eliminó (decisión de producto): era un mensaje que no
+    // pedía nada y dejaba un contacto que el prospecto ya tiene en su historial
+    // de llamadas. La key SIGUE en ACT_WA_TEMPLATE_IDS de index.js a propósito:
+    // hay envíos históricos registrados con ese templateId y el backend valida
+    // contra ese Set. El Set del backend es lo que se ACEPTA; este array es lo
+    // que se OFRECE. Pueden desincronizarse en esa dirección, nunca en la otra.
     const ACT_WA_TEMPLATES = [
-      {
-        key: 'post_llamada',
-        label: 'Después de la llamada',
-        body: 'Hola {name}, soy {setterName}. Te escribo después de la llamada que tuvimos recién, para dejarte mi contacto directo acá.\n\nCualquier duda que te surja mientras lo pensás, me escribís sin problema.',
-      },
       {
         key: 'envio_info',
         label: 'Envío de información',
-        body: 'Hola {name}, te paso por acá la información que hablamos por teléfono para la clínica en {city}.\n\nCualquier consulta que tengas, quedo atento. Saludos, {setterName}.',
+        body: 'Hola, soy {setterName} de Vincca. Le dejo el material que le comenté por teléfono.\n\nEs una calculadora: carga tres números de la clínica y le muestra cuántos pacientes tiene dormidos hoy y cuánto dinero representan.\n\nhttps://vincca.co\n\nToma dos minutos. En estos días le llamo para ver qué le dio.',
       },
       {
         key: 'reconfirmar_reunion',
         label: 'Reconfirmar reunión',
-        body: 'Hola {name}, te escribo para reconfirmar la reunión que coordinamos.\n\nSi surge algún cambio de horario, avisame por acá con tiempo. Nos vemos pronto — {setterName}.',
+        body: 'Hola, soy {setterName} de Vincca. Le escribo para reconfirmar la reunión que coordinamos.\n\nSi necesita mover el horario, avíseme con tiempo. Saludos.',
       },
     ];
 

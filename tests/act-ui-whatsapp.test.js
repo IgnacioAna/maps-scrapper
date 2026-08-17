@@ -100,8 +100,8 @@ describe("ACT-PURE: bloque autocontenido (sin DOM/red/localStorage)", () => {
 });
 
 describe("ACT-PURE: ACT_WA_TEMPLATES — forma y contenido (D-06/D-08)", () => {
-  it("tiene exactamente 3 entradas, cada una con key/label/body no vacíos", () => {
-    expect(act.ACT_WA_TEMPLATES.length).toBe(3);
+  it("tiene exactamente 2 entradas, cada una con key/label/body no vacíos", () => {
+    expect(act.ACT_WA_TEMPLATES.length).toBe(2);
     for (const t of act.ACT_WA_TEMPLATES) {
       expect(typeof t.key).toBe("string");
       expect(t.key.length).toBeGreaterThan(0);
@@ -112,12 +112,42 @@ describe("ACT-PURE: ACT_WA_TEMPLATES — forma y contenido (D-06/D-08)", () => {
     }
   });
 
-  it("los 3 key son exactamente post_llamada, envio_info, reconfirmar_reunion", () => {
+  it("los 2 key son exactamente envio_info y reconfirmar_reunion", () => {
+    // 2026-08-17: 'post_llamada' se eliminó del array (decisión de producto —
+    // era un mensaje que no pedía nada). Sigue en el Set del backend porque
+    // hay envíos históricos con ese templateId; ver el test de paridad.
     expect(act.ACT_WA_TEMPLATES.map((t) => t.key)).toEqual([
-      "post_llamada",
       "envio_info",
       "reconfirmar_reunion",
     ]);
+  });
+
+  it("envio_info incluye el link del material (antes se pegaba a mano)", () => {
+    const t = act.ACT_WA_TEMPLATES.find((x) => x.key === "envio_info");
+    expect(t.body).toContain("https://vincca.co");
+  });
+
+  it("ningún body usa voseo, guion largo ni signos de apertura (reglas de copy)", () => {
+    for (const t of act.ACT_WA_TEMPLATES) {
+      expect(t.body).not.toMatch(/[—–]/);              // guion largo / raya
+      expect(t.body).not.toMatch(/[¿¡]/);              // signos de apertura
+      expect(t.body).not.toMatch(/\b(avisame|pensás|tenés|querés|podés|te paso|vos)\b/i);
+      // Nunca se nombra el canal ni la tecnología.
+      expect(t.body).not.toMatch(/\bWhatsApp\b/i);
+      expect(t.body).not.toMatch(/\b(IA|automatizad\w*|automatizaci[óo]n|chatbot)\b/i);
+      // El precio no aparece nunca, ni como rango ni como "desde".
+      expect(t.body).not.toMatch(/\$|\beuros?\b|\bd[óo]lares?\b|\bdesde \d/i);
+    }
+  });
+
+  it("el nombre del negocio ya no se usa como saludo", () => {
+    // {name} es el nombre del NEGOCIO (fallback 'doctor/a'): rendía
+    // "Hola Clínica Dental Sonrisa". {city} cae en 'la zona', igual de genérico.
+    for (const t of act.ACT_WA_TEMPLATES) {
+      expect(t.body).not.toContain("{name}");
+      expect(t.body).not.toContain("{city}");
+      expect(t.body).toContain("{setterName}");
+    }
   });
 
   it("ningún body contiene la marca de la empresa (mismo criterio que _stripBrandMentions)", () => {
@@ -142,9 +172,14 @@ describe("ACT-PURE: ACT_WA_TEMPLATES — forma y contenido (D-06/D-08)", () => {
     }
   });
 
-  it("cada body tiene como máximo 2 párrafos (un solo \\n\\n)", () => {
+  // 2026-08-17 — el límite era 2 párrafos (D-06/D-08). El copy nuevo de
+  // envio_info tiene 4 y es deliberado: el link va solo en su renglón (antes
+  // se pegaba a mano), lo que obliga a un párrafo propio antes y otro después
+  // para el cierre. Sigue habiendo tope: un mensaje de más de 4 bloques en
+  // WhatsApp se lee como un correo y no se responde.
+  it("cada body tiene como máximo 4 párrafos", () => {
     for (const t of act.ACT_WA_TEMPLATES) {
-      expect(countOccurrences(t.body, "\n\n")).toBeLessThanOrEqual(1);
+      expect(countOccurrences(t.body, "\n\n")).toBeLessThanOrEqual(3);
     }
   });
 
@@ -156,7 +191,11 @@ describe("ACT-PURE: ACT_WA_TEMPLATES — forma y contenido (D-06/D-08)", () => {
 });
 
 describe("Paridad frontend ↔ backend (index.js)", () => {
-  it("los 3 key de ACT_WA_TEMPLATES aparecen literales dentro de la declaración de ACT_WA_TEMPLATE_IDS en index.js", () => {
+  // Subconjunto, no igualdad: el Set del backend es lo que se ACEPTA y el
+  // array del frontend lo que se OFRECE. Una key retirada del frontend
+  // (post_llamada) tiene que seguir en el backend, porque hay envíos
+  // históricos registrados con ese templateId.
+  it("cada key de ACT_WA_TEMPLATES existe en la declaración de ACT_WA_TEMPLATE_IDS en index.js", () => {
     const startIdx = indexJs.indexOf("const ACT_WA_TEMPLATE_IDS = new Set(");
     expect(startIdx).toBeGreaterThan(-1);
     const endIdx = indexJs.indexOf(");", startIdx);
@@ -165,6 +204,15 @@ describe("Paridad frontend ↔ backend (index.js)", () => {
     for (const t of act.ACT_WA_TEMPLATES) {
       expect(block).toContain(`'${t.key}'`);
     }
+  });
+
+  it("post_llamada sigue aceptándose en el backend aunque ya no se ofrezca", () => {
+    // Sacarla del Set invalidaría los envíos históricos que ya tienen ese
+    // templateId guardado en data/setters.json.
+    const startIdx = indexJs.indexOf("const ACT_WA_TEMPLATE_IDS = new Set(");
+    const block = indexJs.slice(startIdx, indexJs.indexOf(");", startIdx));
+    expect(block).toContain("'post_llamada'");
+    expect(act.ACT_WA_TEMPLATES.some((t) => t.key === "post_llamada")).toBe(false);
   });
 });
 
