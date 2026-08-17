@@ -757,6 +757,21 @@ function ensureLeadDefaults(lead = {}) {
   // Distinto de lead.phone (el del negocio). Permite tener 2 números a discar.
   if (typeof lead.altPhone !== 'string') lead.altPhone = '';
   if (typeof lead.altPhoneLabel !== 'string') lead.altPhoneLabel = '';
+  // 2026-08-16 — "a este ya le pasé el link". HECHO PERSISTENTE, distinto del
+  // compromiso 'enviar_info' de la Phase 31: ese es un evento con reloj que se
+  // cumple, vence y desaparece de la vista; este queda para siempre y no
+  // caduca. Tampoco es un ESTADO: convive con interesado / callback / lo que
+  // sea, sin pisarlos. Se setea solo cuando se manda desde el sistema
+  // (_actRegisterSendEvent) y a mano cuando el link se mandó desde el celular.
+  // No se deriva de interactions[] en caliente porque ese array está capeado a
+  // 200: en un lead muy trabajado el envío se perdería.
+  if (typeof lead.infoSentAt !== 'string') lead.infoSentAt = '';
+  if (typeof lead.infoSentBy !== 'string') lead.infoSentBy = '';
+  if (typeof lead.infoSentCanal !== 'string') lead.infoSentCanal = '';
+  if (typeof lead.infoSentCount !== 'number') lead.infoSentCount = 0;
+  // true = registro OPTIMISTA (se abrió el chat / el cliente de mail, sin
+  // confirmación de envío). Ver _actRegisterSendEvent.
+  if (typeof lead.infoSentAuto !== 'boolean') lead.infoSentAuto = false;
   // 2026-05-23: campos del módulo follow-ups extendido. El backend los lee
   // (_isFollowupHidden + _computeFollowupsDue) pero antes no los inicializaba,
   // así que aparecían undefined hasta que algún handler los seteaba — generaba
@@ -4308,11 +4323,27 @@ app.post('/api/admin/backfill-hangup-cap', requireAuth, requireRole('admin'), as
   let maxHungUp = parseInt(req.body?.maxHungUp, 10);
   if (!Number.isFinite(maxHungUp) || maxHungUp < 1) maxHungUp = 2;
   const TERMINAL = new Set(['descartado', 'agendado', 'cerrado']);
+  // 2026-08-16: mismo criterio que _applyCallOutcome tras la decisión del user
+  // — los interesados quedan exentos, y los cortes se cuentan por DUEÑO ACTUAL
+  // (criterio #139), no sobre todo el historial. Sin esto, un re-run de este
+  // backfill descartaría interesados y leads que su dueña nueva apenas tocó.
+  const _bhUserMap = _buildUserSetterMap();
   const scan = (leads) => {
     const hits = [];
     for (const [id, lead] of Object.entries(leads || {})) {
       if (!lead || TERMINAL.has(lead.estado) || lead.doNotCall) continue;
-      const cortes = (lead.callLog || []).filter((e) => e && e.outcome === 'hung_up').length;
+      if (lead.estado === 'interesado') continue;
+      // Retroactivo, sin un actor que compare: se agrupan los cortes por
+      // atribución y alcanza con que UNA firma llegue al tope. Equivale a la
+      // regla en vivo (dos cortes de la misma persona), sin castigar al lead
+      // por la suma de cortes de dueños distintos.
+      const _porFirma = new Map();
+      for (const e of (lead.callLog || [])) {
+        if (!e || e.outcome !== 'hung_up') continue;
+        const f = _callSetterId(e, lead, _bhUserMap);
+        _porFirma.set(f, (_porFirma.get(f) || 0) + 1);
+      }
+      const cortes = _porFirma.size ? Math.max(..._porFirma.values()) : 0;
       if (cortes >= maxHungUp) hits.push({ id, name: lead.name || '', cortes, estado: lead.estado, assignedTo: lead.assignedTo || '' });
     }
     return hits;
@@ -4335,6 +4366,48 @@ app.post('/api/admin/backfill-hangup-cap', requireAuth, requireRole('admin'), as
     }
   });
   res.json({ dryRun: false, maxHungUp, updated: hits.length, leads: hits.slice(0, 50) });
+});
+
+// 2026-08-16 — siembra la marca "info enviada" desde los envíos que YA están
+// registrados en interactions[] (action:'material_sent', Phase 32). Sin esto,
+// los envíos anteriores a la marca no muestran el chip aunque hayan ocurrido.
+// Idempotente: si el lead ya tiene infoSentAt, no se toca. dryRun reporta.
+app.post('/api/admin/backfill-info-sent', requireAuth, requireRole('admin'), async (req, res) => {
+  const { dryRun = false } = req.body || {};
+  const scan = (leads) => {
+    const hits = [];
+    for (const [id, lead] of Object.entries(leads || {})) {
+      if (!lead || lead.infoSentAt) continue;
+      const envios = (lead.interactions || []).filter((i) => i && i.action === 'material_sent');
+      if (!envios.length) continue;
+      const ultimo = envios[envios.length - 1];
+      hits.push({
+        id, name: lead.name || '', at: ultimo.createdAt || '',
+        by: ultimo.byName || '', canal: ultimo.canal || '', count: envios.length,
+      });
+    }
+    return hits;
+  };
+  if (dryRun) {
+    const hits = scan(loadSettersData().leads);
+    return res.json({ dryRun: true, matched: hits.length, leads: hits.slice(0, 50) });
+  }
+  let hits = [];
+  await mutateSettersData((data) => {
+    hits = scan(data.leads);
+    for (const h of hits) {
+      const lead = data.leads[h.id];
+      lead.infoSentAt = h.at;
+      lead.infoSentBy = h.by;
+      lead.infoSentCanal = h.canal;
+      // Los envíos históricos no guardaron si alguien confirmó nada: quedan
+      // como optimistas, que es lo honesto. Marcarlos como confirmados sería
+      // inventar evidencia que no existe.
+      lead.infoSentAuto = true;
+      lead.infoSentCount = h.count;
+    }
+  });
+  res.json({ dryRun: false, updated: hits.length, leads: hits.slice(0, 50) });
 });
 
 // Limpia callbacks CONSUMIDOS que quedaron arrastrados (2026-08-12). El fix en
@@ -11198,6 +11271,50 @@ app.put('/api/setters/leads/:id/precall-note', requireAuth, (req, res) => {
   res.json({ ok: true, precallNote: lead.precallNote });
 });
 
+// 2026-08-16 — marcar/desmarcar "ya le pasé el link" A MANO. El envío hecho
+// desde el sistema (WhatsApp o email) ya deja la marca solo vía
+// _actRegisterSendEvent; esto cubre el caso real de mandar el link desde el
+// celular, o de pactarlo y mandarlo por fuera. Body: { sent: bool, canal? }.
+// NO toca estado, compromiso ni reloj: es un hecho que convive con lo que el
+// lead tenga (interesado, callback, lo que sea).
+app.post('/api/setters/leads/:id/info-sent', requireAuth, (req, res) => {
+  if (!req.body || typeof req.body !== 'object') return res.status(400).json({ error: 'Body JSON requerido.' });
+  const data = loadSettersData();
+  const lead = data.leads[req.params.id];
+  if (!lead) return res.status(404).json({ error: 'Lead no encontrado.' });
+  if (req.auth?.user?.role === 'setter' && lead.assignedTo !== req.auth.user.setterId) {
+    return res.status(403).json({ error: 'No autorizado para este lead.' });
+  }
+  ensureLeadDefaults(lead);
+  const sent = req.body.sent !== false; // default: marcar
+  if (sent) {
+    lead.infoSentAt = new Date().toISOString();
+    lead.infoSentBy = req.auth?.user?.name || '';
+    // Whitelist-and-coerce como el resto de los campos de canal; 'manual' es
+    // el default honesto — se mandó por fuera del sistema.
+    lead.infoSentCanal = ACT_SEND_CANALES.has(req.body.canal) ? req.body.canal : 'manual';
+    // Lo afirma una persona: es el registro más confiable que hay, más que
+    // cualquier automatismo. Nunca queda como optimista.
+    lead.infoSentAuto = false;
+    lead.infoSentCount = (Number(lead.infoSentCount) || 0) + 1;
+  } else {
+    // Desmarcar (se apretó por error). El contador vuelve a 0: no tendría
+    // sentido decir "0 envíos" y a la vez conservar un historial de 3.
+    lead.infoSentAt = '';
+    lead.infoSentBy = '';
+    lead.infoSentCanal = '';
+    lead.infoSentAuto = false;
+    lead.infoSentCount = 0;
+  }
+  saveSettersData(data);
+  res.json({
+    ok: true,
+    infoSentAt: lead.infoSentAt, infoSentBy: lead.infoSentBy,
+    infoSentCanal: lead.infoSentCanal, infoSentCount: lead.infoSentCount,
+    infoSentAuto: lead.infoSentAuto,
+  });
+});
+
 // Contacto secundario del lead (ej: número del encargado que pasó la recepción).
 app.put('/api/setters/leads/:id/alt-contact', requireAuth, (req, res) => {
   if (!req.body || typeof req.body !== 'object') return res.status(400).json({ error: 'Body JSON requerido.' });
@@ -12139,6 +12256,26 @@ function _actRegisterSendEvent(lead, spec, nowIso) {
   });
   if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
 
+  // Marca persistente "a este ya le pasé el link" (ver ensureLeadDefaults). Se
+  // escribe ANTES del corte por lead terminal de abajo a propósito: el envío
+  // ocurrió, y que el lead esté agendado no lo deshace.
+  //
+  // `infoSentAuto` distingue lo OPTIMISTA de lo confirmado, mismo criterio que
+  // callStageAuto. De las tres vías, solo una confirma que algo salió:
+  //   · WhatsApp  → devuelve el link wa.me y registra en el mismo request
+  //                 (D-03: separar mandar de registrar hacía que el registro
+  //                 no ocurriera nunca). Abrir el chat y no escribir nada
+  //                 también marca → optimista.
+  //   · email vía mailto → abre el cliente del SDR; nadie sabe si mandó.
+  //   · email vía Resend → el proveedor lo aceptó: eso sí es un envío.
+  // Sin esta distinción, los clics que no mandaron nada se mezclan con los
+  // envíos reales y la marca deja de significar algo.
+  lead.infoSentAt = nowIso;
+  lead.infoSentBy = s.byName || '';
+  lead.infoSentCanal = canal;
+  lead.infoSentAuto = s.confirmed !== true;
+  lead.infoSentCount = (Number(lead.infoSentCount) || 0) + 1;
+
   // Un lead descartado/agendado/cerrado nunca lleva nextAction (regla dura de
   // la Phase 30) — el envío igual queda auditado, solo que sin compromiso.
   if (GATE_TERMINAL_ESTADOS.has(lead.estado)) {
@@ -12320,10 +12457,30 @@ function _applyCallOutcome(data, lead, logEntry, opts) {
   // recepción). Se cuenta el TOTAL de cortes, no la racha: si se contara la racha,
   // alternar corte/no-atiende volvería a dejarlo eterno, que es el bug de fondo.
   // El logEntry de esta llamada ya está en el callLog (se pushea al entrar).
+  // 2026-08-16 — dos correcciones al tope, decididas por el user tras la
+  // auditoría del manual:
+  //  (a) Los INTERESADOS quedan exentos, igual que ya pasaba con el descarte
+  //      por no-contacto (más abajo). Un interesado que corta suele estar con
+  //      un paciente en el sillón, no rechazando: perderlo solo es el peor
+  //      autodescarte posible. Sigue reintentando a +24h como cualquier corte.
+  //  (b) Se cuentan SOLO los cortes de quien está marcando, no los heredados
+  //      de una vendedora anterior. El conteo sobre todo el callLog
+  //      contradecía el criterio #139 ("arranca de cero al reasignar") que rige
+  //      todas las métricas: un lead reasignado con un corte previo se
+  //      autodescartaba al PRIMER corte de su nueva dueña.
+  //      La comparación NO usa opts.actorSetterId: cuando marca un admin, ese
+  //      campo cae al dueño del lead, pero su llamada se atribuye a '' (#149,
+  //      un user sin setter vinculado no atribuye) y no coincidiría con nada.
+  //      Se compara la atribución REAL de esta llamada contra la de las
+  //      anteriores, con la misma función que usan las métricas: sea quien sea
+  //      el actor, los cortes propios son los que resuelven a su misma firma.
   const MAX_HUNG_UP = 2;
   if (outcome === 'hung_up' && !callbackAt && !lead.doNotCall) {
-    const cortes = lead.callLog.filter((e) => e && e.outcome === 'hung_up').length;
-    if (cortes >= MAX_HUNG_UP) {
+    const _cortesMap = _buildUserSetterMap();
+    const _cortesSid = _callSetterId(logEntry, lead, _cortesMap);
+    const cortes = lead.callLog.filter((e) => e && e.outcome === 'hung_up'
+      && _callSetterId(e, lead, _cortesMap) === _cortesSid).length;
+    if (cortes >= MAX_HUNG_UP && lead.estado !== 'interesado') {
       lead.estado = 'descartado';
       _clearNextAction(lead);
       lead.autoDiscarded = true;
@@ -13108,6 +13265,10 @@ app.post('/api/setters/leads/:id/send-material', requireAuth, async (req, res) =
       to: toEmail,
       byId: u.id || '',
       byName: u.name || '',
+      // Solo la vía Resend confirma que el mail salió (`sent`). Con 'mailto'
+      // se abre el cliente del SDR y nadie sabe si terminó de mandarlo → la
+      // marca queda como optimista.
+      confirmed: sent === true,
     }, nowIso);
     return l;
   });

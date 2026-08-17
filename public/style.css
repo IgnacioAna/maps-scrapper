@@ -68,6 +68,20 @@
   --blocked: #7E858C;       /* kit: bloqueado-gris */
   --blocked-soft: rgba(126, 133, 140, 0.12);
 
+  /* ───── NEUTRO INFORMATIVO ─────
+     Agregado 2026-08-16: la auditoría de verde dejó Llamadas en 3 roles
+     verdes, todos accionables (Llamar, WhatsApp, Discar acá), con la regla
+     "máximo 3 por pantalla visible" y "prohibido en chips de conteo". Faltaba
+     el escalón para lo que se LEE y no se acciona: un hecho del lead que
+     aparece en cada fila y que en verde reventaría ese presupuesto (medido:
+     con 13 leads marcados pasaba a 5 roles).
+     Distinto de --blocked, que significa "excluido/apagado": esto es un dato
+     vivo, solo que sin acción asociada. Más claro que el bloqueado para que
+     se lea como presente y no como deshabilitado. */
+  --neutral-info: #9BA3AD;                        /* 9.1:1 base · 8.1 superficie */
+  --neutral-info-soft: rgba(155, 163, 173, 0.10);
+  --neutral-info-border: rgba(155, 163, 173, 0.30);
+
   /* ───── SEMANTIC (sólo cuando son funcionales) ───── */
   /* success COLAPSA en el acento (regla "un solo acento saturado"):
      el verde de habilitado y el de marca son el mismo color. */
@@ -2080,11 +2094,18 @@ td.empty-state .empty-state-content::before {
   flex-shrink: 0;
 }
 .hoy-section-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+/* 2026-08-16 — el contador salió del acento de la sección. Heredaba
+   --sec-accent, así que dos de las seis secciones lo mostraban en verde: un
+   chip de conteo verde es exactamente lo que el presupuesto de color prohíbe,
+   y en la pantalla que se abre todos los días los números terminaban gritando
+   igual que los botones que se pueden apretar. Neutro fijo para las seis: el
+   color de la sección lo sigue dando el punto y el borde, que es su trabajo;
+   el número solo tiene que leerse. */
 .hoy-section-count {
   font-size: 12px;
   font-weight: 700;
-  color: var(--sec-accent);
-  background: color-mix(in srgb, var(--sec-accent) 14%, transparent);
+  color: var(--neutral-info);
+  background: var(--neutral-info-soft);
   padding: 2px 9px;
   border-radius: 999px;
   font-variant-numeric: tabular-nums;
@@ -4668,6 +4689,37 @@ textarea:disabled {
   background: var(--accent-medium);
   border-color: var(--accent);
   color: #fff;
+}
+
+/* "Info enviada" (2026-08-16). Marca persistente del lead, presente en las 5
+   superficies. NEUTRO, no verde: nació en verde-WhatsApp y la medición mostró
+   que llevaba Llamadas de 3 roles verdes a 5 — y encima siendo el único no
+   accionable y con contador, las dos cosas que el presupuesto prohíbe. El
+   verde queda para lo que se puede apretar. Se distingue de los chips de
+   señal (que son del mismo neutro) por el peso y el color del texto: es un
+   hecho del lead, no una inferencia. */
+.info-sent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: var(--neutral-info);
+  background: var(--neutral-info-soft);
+  border: 1px solid var(--neutral-info-border);
+}
+/* Registro OPTIMISTA: se abrió el chat de WhatsApp (o el cliente de mail) y
+   nadie confirmó que se haya mandado algo. Mismo criterio que callStageAuto —
+   lo derivado tiene que ser distinguible de lo que afirmó una persona, o el
+   dato miente en la dirección del sistema. Borde punteado: la convención de
+   "provisorio" que no gasta color. */
+.info-sent-chip.is-auto {
+  border-style: dashed;
+  color: var(--text-tertiary);
+  background: transparent;
 }
 
 /* ════════════════════════════════════════════════════════════════

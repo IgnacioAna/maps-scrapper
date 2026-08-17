@@ -6076,7 +6076,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       // (D-01 #2): SIN acotar por fecha (D-03 protege que el interesado
       // aparezca todos los días hasta agendar/descartar), solo excluye lo ya
       // reclamado por el tier 1.
-      const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l) && l.estado === 'interesado');
+      // 2026-08-16 (decisión del user): un interesado con "volver a llamar"
+      // pactado para MÁS ADELANTE se calla hasta esa fecha. Antes aparacía
+      // igual todos los días —esta sección no filtra por fecha a propósito
+      // (D-03)— y contradecía la promesa hecha por teléfono: pactaste el
+      // viernes y te lo ponía en la cara el miércoles. El día que vence, la
+      // sección Callbacks (que corre ANTES) lo reclama y reaparece ahí.
+      // Solo silencia la promesa EXPLÍCITA: el default de seguimiento de
+      // interesado (+3 días, que también deja nextAction a futuro) no cuenta,
+      // porque no se lo prometiste a nadie — de ahí el chequeo por outcome.
+      const _promesaAFuturo = (l) => lastOutcome(l) === 'callback_later'
+        && l.callbackAt && new Date(l.callbackAt).getTime() > endTodayTs;
+      const interesados = leads.filter(l => !claimed.has(l.id) && notDnc(l) && !terminal(l)
+        && l.estado === 'interesado' && !_promesaAFuturo(l));
       interesados.forEach(l => claimed.add(l.id));
       // Tier 3 — "Reintentos de no-contacto que vencen hoy" (D-01 #3, NUEVO):
       // leads cuyo reloj es de ORIGEN cadencia (no_answer/voicemail
@@ -6235,12 +6247,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="myp-tile-foot">${conv ? `<span class="myp-conv">${conv}</span>` : '<span></span>'}</div>
                 <div class="myp-meter"><i style="width:${meterPct}%"></i></div>
               </div>`;
+            // 2026-08-16 — "Agendadas" salió del verde. Era el único KPI con
+            // el número en acento, y en la pantalla que se abre todos los días
+            // competía con los botones accionables. Que sea el dato importante
+            // se resuelve por PESO (el número grande ya es el elemento más
+            // fuerte del tile), no gastando el acento en algo que no se aprieta.
             kpisEl.innerHTML =
               '<div style="width:100%; display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px;">' +
               tile('Llamadas hoy', dials, '#8892A6', 100, 'del día') +
               tile('Conectadas', connects, '#6E8BF0', pct(connects), dials ? pct(connects) + '% de llamadas' : '') +
               tile('Conversaciones', convs, '#A97DEE', pct(convs), dials ? pct(convs) + '% de llamadas' : '') +
-              tile('Agendadas', appts, '#4ADE80', pct(appts), dials ? pct(appts) + '% de llamadas' : '', true) +
+              tile('Agendadas', appts, 'var(--neutral-info)', pct(appts), dials ? pct(appts) + '% de llamadas' : '') +
               '</div>';
           } catch {}
         }
@@ -6400,11 +6417,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       const rows = leads.map(l => {
         const sc = Math.round(_callScore(l));
         const lt = (typeof _leadLocalTime === 'function') ? _leadLocalTime(l) : null;
-        const sigs = (typeof _signalChips === 'function') ? _signalChips(l) : '';
+        // El chip de "info enviada" va PRIMERO: en Hoy la fila es angosta y es
+        // el dato que cambia cómo se arranca la llamada.
+        const sigs = ((typeof _infoSentChip === 'function') ? _infoSentChip(l, { compact: true }) : '')
+          + ((typeof _signalChips === 'function') ? _signalChips(l) : '');
         const owner = _hoyOwnerName(l);
         const cb = l.callbackAt ? new Date(l.callbackAt) : null;
         const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
-        const scColor = sc >= 70 ? 'var(--accent-hover)' : sc >= 50 ? '#FFB341' : 'var(--text-tertiary)';
+        // 2026-08-16 — el score salió del semáforo. Era el otro número verde de
+        // Hoy (score alto → acento, medio → ámbar): un valor no accionable
+        // pintado con el color de los botones. Una escala de prioridad se lee
+        // mejor como gradiente de PESO — más brillante es más prioritario — y
+        // así el ámbar queda libre para los avisos reales de la fila, como
+        // "fuera de horario", que sí piden una decisión.
+        const scColor = sc >= 70 ? 'var(--text-primary)' : sc >= 50 ? 'var(--text-secondary)' : 'var(--text-tertiary)';
         // D-10 (31-04): badge opcional por fila (hoy solo lo usan las
         // secciones de compromiso). Sin opts.rowBadge el markup queda
         // byte-idéntico al de antes de este plan.
@@ -6423,6 +6449,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="font-size:11.5px; color:var(--text-secondary); margin-top:2px; overflow:hidden; text-overflow:ellipsis;">${l.phone ? `<span class="scm-phone" style="font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--text-primary);">${escHtml(_phoneShown(l.phone))}</span> · ` : ''}${escHtml(l.city || '')}${l.city && l.country ? ' · ' : ''}${escHtml(l.country || '')}${(() => { const _bc = l.leadBrief ? _briefClean(l) : null; let _h = (_bc && (_bc.hook || _bc.brief)) || (l.openingAngle || '').trim(); if (_h.length > 120) _h = _h.slice(0, 117) + '…'; return _h ? ' · ' + escHtml(_h) : ''; })()}</div>
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
+          ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 11.5 })}
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
           ${_actButtonsHTML(l.id, { variant: 'hoy' })}
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
@@ -6472,7 +6499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <h3 style="display:flex; align-items:center; gap:8px; min-width:0;">${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escHtml(l.name || '(sin nombre)')}</span></h3>
           <button class="modal-close-btn" onclick="document.getElementById('hoy-ficha-modal')?.remove()">×</button>
         </div>
-        <div class="modal-body" style="overflow-y:auto; padding-top:6px;">${_callsRenderExpandedPanel(l)}</div>
+        <div class="modal-body" style="overflow-y:auto; padding-top:6px;">${_callsRenderExpandedPanel(l, { withDisposition: true })}</div>
       </div>`;
       ov.addEventListener('click', (e) => { if (e.target === ov) ov.remove(); });
       const escClose = (e) => { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', escClose); } };
@@ -6499,7 +6526,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const el = document.getElementById(id);
         if (el && (el.value || '').trim()) keep[id] = el.value;
       });
-      body.innerHTML = _callsRenderExpandedPanel(lead);
+      body.innerHTML = _callsRenderExpandedPanel(lead, { withDisposition: true });
       Object.entries(keep).forEach(([id, val]) => {
         const el = document.getElementById(id);
         if (el && !(el.value || '').trim()) el.value = val;
@@ -6945,6 +6972,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       ));
       // Toggle "Pauta en ads": solo leads con señal de inversión en marketing.
       if (document.getElementById('calls-ads-filter')?.checked) leads = leads.filter(_leadRunsAdsSignal);
+      // 2026-08-16 — cola de seguimiento post-envío. Igual que en la lista, este
+      // filtro se salta las exclusiones de visibilidad de abajo: casi todos los
+      // que recibieron info quedaron interesados o con callback, y son
+      // exactamente los dos grupos que el dialer descarta. Sin el bypass, el
+      // dialer armaría una cola distinta de la lista que se está mirando.
+      // Orden por antigüedad del envío (el que hace más que espera, primero),
+      // que es el mismo criterio con el que la lista los muestra.
+      if (document.getElementById('calls-info-sent-filter')?.checked) {
+        const modo = document.getElementById('calls-info-sent-mode')?.value || 'all';
+        return leads
+          .filter(l => l.infoSentAt && !['agendado', 'cerrado', 'descartado'].includes(l.estado))
+          .filter(l => modo === 'all' || (modo === 'confirmed' ? l.infoSentAuto !== true : l.infoSentAuto === true))
+          .sort((a, b) => {
+            const aAuto = a.infoSentAuto === true ? 1 : 0;
+            const bAuto = b.infoSentAuto === true ? 1 : 0;
+            return aAuto - bAuto || (new Date(a.infoSentAt || 0) - new Date(b.infoSentAt || 0));
+          })
+          .map(l => l.id);
+      }
       // 2026-07-10: los interesados tampoco entran al dialer — se agendan desde "Hoy".
       leads = leads.filter(l => !['descartado','agendado','interesado'].includes(l.estado));
       leads = leads.filter(l => !l.callbackAt || new Date(l.callbackAt).getTime() <= now);
@@ -7493,6 +7539,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${interesado ? '<span style="background:rgba(91,185,116,0.18); color:var(--success); padding:3px 9px; border-radius:6px; font-size:10.5px; font-weight:700;">✓ INTERESADO</span>' : ''}
             ${lead.rating ? `<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.1); padding:3px 9px; border-radius:6px; font-weight:600;">★ ${escHtml(String(lead.rating))}${lead.reviews ? ' · ' + lead.reviews + ' reseñas' : ''}</span>` : ''}
             ${lead.phoneStatus === 'voicemail' ? '<span style="font-size:10.5px; color:#FFB341; background:rgba(255,179,65,0.12); padding:3px 9px; border-radius:6px;">buzón</span>' : ''}
+            ${typeof _infoSentChip === 'function' ? _infoSentChip(lead) : ''}
             ${typeof _signalChips === 'function' ? _signalChips(lead) : ''}
           </div>
         </div>
@@ -7659,9 +7706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div style="margin-bottom:12px;">
           <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:7px;">¿Hasta dónde llegaste?</div>
           <div style="display:flex; gap:7px; max-width:430px;">
-            ${[['contestador','Contestador'],['recepcion','Recepción'],['decisor','Decisor']].map(([v, lbl]) =>
-              `<button type="button" class="stage-chip${_stageFor(lead.id) === v ? ' is-on' : ''}" data-stage="${v}" onclick="window._setCallStage('${escHtml(lead.id)}','${v}')">${lbl}</button>`
-            ).join('')}
+            ${_stageChipsHTML(lead.id)}
           </div>
         </div>
         <div class="pd-disposition-grid">
@@ -8214,6 +8259,68 @@ document.addEventListener('DOMContentLoaded', async () => {
       }).join('');
     }
     window._signalChips = _signalChips;
+
+    // 2026-08-16 — "a este ya le pasé el link". Chip persistente, en TODAS las
+    // superficies donde aparece el lead: discando en cadena hay que saberlo
+    // ANTES de que atiendan, porque la llamada empieza distinta. Es un hecho,
+    // no un estado: convive con interesado / callback / lo que tenga.
+    // Distinto del badge de compromiso de Hoy (_hoyCommitBadge), que muestra
+    // "info mandada" solo mientras ese compromiso puntual sigue siendo el
+    // vigente — apenas lo reemplaza otro, desaparece. Este no caduca.
+    function _infoSentChip(lead, { compact = false } = {}) {
+      const at = lead && lead.infoSentAt;
+      if (!at) return '';
+      const ts = new Date(at).getTime();
+      if (!ts || isNaN(ts)) return '';
+      const dias = Math.floor((Date.now() - ts) / 86400000);
+      const horas = Math.floor((Date.now() - ts) / 3600000);
+      const cuando = dias >= 1 ? `hace ${dias}d` : (horas >= 1 ? `hace ${horas}h` : 'recién');
+      const veces = Number(lead.infoSentCount) || 1;
+      const canal = lead.infoSentCanal === 'email' ? 'por email'
+        : (lead.infoSentCanal === 'whatsapp' ? 'por WhatsApp' : 'a mano');
+      // Registro optimista: se abrió el chat / el cliente de mail y nadie
+      // confirmó que se mandara algo. Se distingue SIEMPRE, porque la marca a
+      // mano es la que vale y no puede quedar mezclada con clics vacíos.
+      const auto = lead.infoSentAuto === true;
+      const explicacion = auto
+        ? (lead.infoSentCanal === 'whatsapp'
+            ? 'Se abrió el chat de WhatsApp — nadie confirmó que se haya mandado'
+            : 'Se abrió el cliente de mail — nadie confirmó que se haya mandado')
+        : `Confirmado ${canal}`;
+      const title = escHtml(`${explicacion}${lead.infoSentBy ? ' · ' + lead.infoSentBy : ''} · ${new Date(at).toLocaleString('es-AR')}${veces > 1 ? ` · ${veces} registros` : ''}`);
+      const marca = auto ? ' · sin confirmar' : '';
+      const texto = compact
+        ? `Info · ${cuando}${auto ? ' ?' : ''}`
+        : `Info enviada · ${cuando}${veces > 1 ? ` · ${veces}×` : ''}${marca}`;
+      return `<span class="info-sent-chip${auto ? ' is-auto' : ''}" title="${title}">${escHtml(texto)}</span>`;
+    }
+    window._infoSentChip = _infoSentChip;
+
+    // Marcar/desmarcar a mano desde la ficha. El envío hecho desde el sistema
+    // ya la deja solo; esto es para el link mandado desde el celular.
+    window._toggleInfoSent = async function(leadId, sent) {
+      try {
+        const r = await fetch(apiUrl('/api/setters/leads/' + leadId + '/info-sent'), {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', body: JSON.stringify({ sent: !!sent }),
+        });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({}));
+          throw new Error(e.error || ('HTTP ' + r.status));
+        }
+        const d = await r.json();
+        // _leadStore: mantiene sincronizados los dos cachés (lista + dialer).
+        _leadStoreApply(leadId, {
+          infoSentAt: d.infoSentAt, infoSentBy: d.infoSentBy,
+          infoSentCanal: d.infoSentCanal, infoSentCount: d.infoSentCount,
+          infoSentAuto: d.infoSentAuto,
+        });
+        _refreshLeadPanels(leadId);
+        window.showToast?.(sent ? 'Marcado: ya le pasaste la info.' : 'Marca de info enviada quitada.', { type: 'success' });
+      } catch (e) {
+        window.showToast?.('No pude guardarlo: ' + e.message, { type: 'error' });
+      }
+    };
 
     // Sprint 21: Render de chips de filtro por país (con bandera + count)
     function _callsRenderCountryChips() {
@@ -8819,7 +8926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Sprint 21: Renderiza el panel expandido de un lead en Llamadas.
     // Devuelve HTML que se inserta debajo de la row.
-    function _callsRenderExpandedPanel(l) {
+    function _callsRenderExpandedPanel(l, opts = {}) {
       const notes = Array.isArray(l.notes) ? l.notes : [];
       const callLog = Array.isArray(l.callLog) ? l.callLog : [];
       const fups = l.followUps || {};
@@ -9099,9 +9206,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         commitmentBlockHtml = _commitFormHtml(true);
       }
 
+      // 2026-08-16: la ficha abierta como MODAL (desde Hoy) es la única
+      // superficie donde el lead se ve entero sin la fila que trae el selector
+      // de resultado — así que ahí los controles van adentro. En la lista de
+      // Llamadas se omiten a propósito: la fila de arriba ya los tiene y
+      // duplicarlos daría dos controles del mismo estado en pantalla.
+      const _dispoBlock = opts.withDisposition ? `
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border-subtle);">
+            <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); width:100%;">Cerrar la llamada</span>
+            ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 12 })}
+            ${_dispoSelectHTML(l.id, { minWidth: 190, fontSize: 12 })}
+          </div>` : '';
+
       return `<div class="call-detail-panel">
         <!-- Columna izquierda: ficha + histórico -->
         <div class="call-detail-section">
+          ${_dispoBlock}
           ${_expChips.length ? `<div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">${_expChips.join('')}</div>` : ''}
           ${_leadHistoryHTML(l)}
           ${_briefBlock}
@@ -9125,6 +9245,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                  sin lead.email): el overlay permite tipear el
                  destinatario. -->
             <button type="button" class="call-action-btn" onclick="window._actSendMaterial('${escHtml(l.id)}')">Mandar material</button>
+            <!-- 2026-08-16: marcar el hecho sin pasar por el sistema. El envío
+                 desde acá ya deja la marca solo; esto es para el link mandado
+                 desde el celular, que es como pasa la mitad de las veces. -->
+            ${l.infoSentAt
+              ? `<button type="button" class="call-action-btn" onclick="window._toggleInfoSent('${escHtml(l.id)}', false)" title="Quitar la marca de info enviada (se apretó por error)">Quitar "info enviada"</button>`
+              : `<button type="button" class="call-action-btn" onclick="window._toggleInfoSent('${escHtml(l.id)}', true)" title="Dejar registrado que ya le pasaste el link, aunque lo hayas mandado desde el celular">Marcar info enviada</button>`}
             ${(() => {
               const safeW = safeUrl(l.website || '');
               return safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="call-action-btn">Abrir web</a>` : '';
@@ -9189,7 +9315,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       // encontrar para volverlo a llamar". Los chips que la card ya tiene
       // (INTERESADO / DESCARTADO / fecha de callback / auto #N) dicen dónde vive.
       // El Power Dialer NO cambia: _pdBuildQueue mantiene sus filtros propios.
-      const searching = !!search;
+      // 2026-08-16: cola de seguimiento post-envío. Se comporta como el
+      // buscador global (bypassa los filtros de visibilidad de más abajo)
+      // porque los leads a los que se les mandó info casi siempre quedaron
+      // interesados o con callback — justo los dos grupos que esta lista
+      // esconde. Sin el bypass, el filtro que más se va a usar saldría vacío.
+      const infoSentOnly = !!document.getElementById('calls-info-sent-filter')?.checked;
+      // Sub-filtro confirmadas / sin confirmar. Son dos listas distintas: a la
+      // confirmada se la abre con "te mandé la info el martes"; a la optimista
+      // no, porque puede que se haya abierto el chat y nunca se haya escrito.
+      const infoSentMode = document.getElementById('calls-info-sent-mode')?.value || 'all';
+      if (infoSentOnly) {
+        leads = leads.filter(l => l.infoSentAt && l.estado !== 'agendado' && l.estado !== 'cerrado' && l.estado !== 'descartado');
+        if (infoSentMode === 'confirmed') leads = leads.filter(l => l.infoSentAuto !== true);
+        else if (infoSentMode === 'auto') leads = leads.filter(l => l.infoSentAuto === true);
+      }
+      const searching = !!search || infoSentOnly;
       if (country && !searching) leads = leads.filter(l => (l.country || '').trim() === country);
       if (search) leads = leads.filter(l => (
         // Audit Sprint 37: matchear universalmente como el buscador de Setteo
@@ -9250,6 +9391,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Sort configurable según el dropdown
+      // Con la cola de "info enviada" el orden lo manda el envío, no el sort
+      // elegido: la urgencia es cuánto hace que esa persona tiene el material
+      // sin respuesta. El más viejo primero.
+      if (infoSentOnly) {
+        // Confirmadas primero (son las que se pueden abrir con "te mandé la
+        // info el martes"), y dentro de cada grupo el más viejo arriba.
+        leads.sort((a, b) => {
+          const aAuto = a.infoSentAuto === true ? 1 : 0;
+          const bAuto = b.infoSentAuto === true ? 1 : 0;
+          return aAuto - bAuto || (new Date(a.infoSentAt || 0) - new Date(b.infoSentAt || 0));
+        });
+      } else
       switch (sortMode) {
         case 'score':
           leads.sort((a, b) => _callScore(b) - _callScore(a)
@@ -9349,10 +9502,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Búsqueda global activa: avisar que se está viendo TODO (incluye leads
       // que normalmente no viven en esta lista) para que el estado de cada
       // card no sorprenda.
-      const searchBanner = searching ? `<div style="display:flex; align-items:center; gap:8px; padding:8px 14px; margin-bottom:4px; border:1px dashed var(--border-subtle); border-radius:10px; font-size:11.5px; color:var(--text-tertiary);">
+      const _infoBannerTxt = infoSentMode === 'confirmed'
+        ? 'Solo las <strong style="color:var(--text-secondary);">confirmadas</strong> — las mandaste vos o el proveedor de mail las aceptó. Se pueden abrir con "te mandé la info".'
+        : (infoSentMode === 'auto'
+            ? 'Solo las <strong style="color:var(--text-secondary);">sin confirmar</strong> — se abrió el chat o el cliente de mail, pero nadie sabe si salió. No las abras dando por hecho que la recibieron.'
+            : '<strong style="color:var(--text-secondary);">Ya recibieron la info y no agendaron</strong> — primero las confirmadas, después las que quedaron sin confirmar. Toda tu cartera, sin filtro de país.');
+      const searchBanner = (infoSentOnly && !search)
+        ? `<div style="display:flex; align-items:center; gap:8px; padding:8px 14px; margin-bottom:4px; border:1px dashed var(--border-subtle); border-radius:10px; font-size:11.5px; color:var(--text-tertiary);">
+        <span style="opacity:0.8;">📨</span>
+        <span>${_infoBannerTxt}</span>
+      </div>`
+        : (searching ? `<div style="display:flex; align-items:center; gap:8px; padding:8px 14px; margin-bottom:4px; border:1px dashed var(--border-subtle); border-radius:10px; font-size:11.5px; color:var(--text-tertiary);">
         <span style="opacity:0.8;">🔎</span>
         <span>Búsqueda en <strong style="color:var(--text-secondary);">todos tus leads</strong> — incluye interesados (viven en Hoy), descartados y callbacks a futuro. Los chips de cada card dicen dónde está.</span>
-      </div>` : '';
+      </div>` : '');
 
       list.innerHTML = searchBanner + leads.map(l => {
         const tel = buildTelLink(l.phone, l.country);
@@ -9420,8 +9583,9 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${notesBadge}
               ${fupBadge}
               ${callbackBadge}
+              ${typeof _infoSentChip === 'function' ? _infoSentChip(l) : ''}
               ${typeof _signalChips === 'function' ? _signalChips(l) : ''}
-              ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:var(--text-secondary); background:rgba(37,211,102,0.10); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
+              ${l.contactedAt ? `<a href="https://wa.me/${escHtml((l.phone||'').replace(/\\D/g,''))}" onclick="return window._waBtnClick(this, event, '${escHtml(l.id)}');" style="font-size:10px; color:var(--text-secondary); background:var(--neutral-info-soft); border:1px solid var(--neutral-info-border); padding:2px 7px; border-radius:6px; text-decoration:none; cursor:pointer;" title="Abrir la conversación en ${l.contactedFromPhone ? escHtml(l.contactedFromPhone) : 'WAMULTI'} · contactado ${new Date(l.contactedAt).toLocaleString('es-AR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}">ver chat</a>` : ''}
               ${currentUser?.realRole === 'admin' && !l.leadBrief && (parseInt(l.reviews, 10) || 0) >= 10 ? `<button type="button" onclick="event.stopPropagation(); window._genLeadBrief('${escHtml(l.id)}', this)" title="Generar Brief IA solo para este lead (${escHtml(String(l.reviews || 0))} reseñas) — admin only, cuesta SerpApi + LLM" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(255,179,65,0.12); border:1px solid rgba(255,179,65,0.35); color:#FFB341; cursor:pointer; font-family:inherit;">brief IA</button>` : ''}
               ${l.altPhone ? `<span style="font-size:10px; color:#79B8FF; background:rgba(121,184,255,0.10); padding:2px 7px; border-radius:6px;" title="Contacto secundario">${escHtml(l.altPhoneLabel || 'alt')}: ${escHtml(l.altPhone)}</span> <button type="button" onclick="event.stopPropagation(); window._startTelnyxCall('${escHtml(l.id)}','${escHtml(l.altPhone)}')" title="Llamar al contacto secundario" style="font-size:10px; padding:2px 8px; border-radius:6px; background:rgba(91,185,116,0.15); border:1px solid rgba(91,185,116,0.4); color:var(--accent-hover); cursor:pointer; font-family:inherit;">Llamar</button>` : ''}
               <button type="button" onclick="event.stopPropagation(); window._callsAltContact('${escHtml(l.id)}')" title="Agregar/editar el contacto que pasa la recepción (encargado/decisor)" style="font-size:10px; padding:2px 8px; border-radius:6px; background:transparent; border:1px solid var(--border-subtle); color:var(--text-secondary); cursor:pointer; font-family:inherit;">${l.altPhone ? 'editar' : '+ contacto'}</button>
@@ -9468,6 +9632,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                   Llamar${lastBadge}
                 </a>`;
           })()}
+
+          ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 12 })}
 
           ${_dispoSelectHTML(l.id)}
 
@@ -9825,6 +9991,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // los "ya trabajados" se apilaban mezclados con los pendientes (reporte
       // del user 2026-08-11). Con el resultado marcado, el pin ya cumplió.
       try { _callsForceShow.delete(leadId); } catch {}
+      // La etapa es de UNA llamada: guardada la disposición, se apaga. Sin
+      // esto quedaba encendida en pantalla después de marcar, y el próximo
+      // resultado de ESE mismo lead (una corrección, o una llamada posterior
+      // desde otra vista) la reenviaría como si fuera nueva.
+      if (_dispoStage && _dispoStage.leadId === leadId) _clearCallStage();
       if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
       if (_dispoStripPending && _dispoStripPending.leadId === leadId) _dispoStripPending = null;
       if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
@@ -10092,21 +10263,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     function _stageFor(leadId) {
       return (_dispoStage && _dispoStage.leadId === leadId) ? _dispoStage.stage : '';
     }
+    // Sincroniza TODOS los controles de etapa que haya en pantalla. Cada uno
+    // declara de qué lead es (data-lead); sin ese atributo, es el de la
+    // llamada activa / la tarjeta del dialer.
+    // 2026-08-16: antes comparaba solo contra `_dispoStage.stage`, sin mirar el
+    // lead. Con los controles en una LISTA (abajo) eso habría prendido el chip
+    // "decisor" en todas las filas a la vez apenas se marcara uno.
     function _syncStageChips() {
-      const cur = _dispoStage?.stage || '';
       document.querySelectorAll('.stage-chip').forEach(b => {
-        b.classList.toggle('is-on', !!cur && b.dataset.stage === cur);
+        const id = b.dataset.lead || _stageCurrentLeadId();
+        b.classList.toggle('is-on', !!id && _stageFor(id) === b.dataset.stage);
+      });
+      document.querySelectorAll('select.stage-select').forEach(s => {
+        const id = s.dataset.lead || _stageCurrentLeadId();
+        s.value = id ? _stageFor(id) : '';
       });
     }
     // leadId null → el lead de la llamada activa, o la tarjeta actual del
-    // dialer. Volver a tocar el chip encendido lo apaga (se marcó por error).
-    window._setCallStage = function(leadId, stage) {
+    // dialer. Volver a tocar el chip encendido lo apaga (se marcó por error);
+    // desde un <select> la asignación es directa (toggle:false) y '' limpia.
+    window._setCallStage = function(leadId, stage, opts) {
       const id = leadId || _stageCurrentLeadId();
-      if (!id || !stage) return;
+      if (!id) return;
+      if (!stage) {
+        if (_dispoStage && _dispoStage.leadId === id) _dispoStage = null;
+        _syncStageChips();
+        return;
+      }
+      const toggle = !opts || opts.toggle !== false;
       const same = _dispoStage && _dispoStage.leadId === id && _dispoStage.stage === stage;
-      _dispoStage = same ? null : { leadId: id, stage };
+      _dispoStage = (toggle && same) ? null : { leadId: id, stage };
       _syncStageChips();
     };
+
+    // Control de etapa — FUENTE ÚNICA, mismo criterio que _dispoSelectHTML y
+    // _actButtonsHTML (un builder, N superficies). Hasta 2026-08-16 la etapa
+    // solo se podía cargar en el panel de llamada (en vivo) y en el Power
+    // Dialer: quien marcaba el resultado desde la lista, desde Hoy o desde la
+    // ficha no tenía dónde ponerla, y esa llamada nacía sin dato — sin
+    // recuperación posible, porque nadie vuelve a marcar un resultado ya
+    // marcado. Dos presentaciones del MISMO estado: 'chips' donde hay lugar
+    // (panel, dialer) y 'select' en las filas densas, que ya cargan botón de
+    // llamar, resultado, WhatsApp, descartar y expandir.
+    function _stageChipsHTML(leadId, { variant = 'chips', fontSize = 12 } = {}) {
+      const id = escHtml(leadId || '');
+      const opciones = [['contestador', 'Contestador'], ['recepcion', 'Recepción'], ['decisor', 'Decisor']];
+      const title = escHtml('Hasta dónde llegó la llamada. Es una dimensión separada del resultado: podés llegar al decisor y que igual diga que no.');
+      if (variant === 'select') {
+        return `<select class="stage-select" data-lead="${id}" title="${title}" onchange="window._setCallStage('${id}', this.value, {toggle:false})" style="padding:9px 10px; border-radius:8px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:${fontSize}px; min-width:132px; cursor:pointer; font-family:inherit;">
+            <option value="">— ¿Con quién? —</option>
+            ${opciones.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
+          </select>`;
+      }
+      return opciones.map(([v, l]) =>
+        `<button type="button" class="stage-chip${_stageFor(leadId) === v ? ' is-on' : ''}" data-lead="${id}" data-stage="${v}" title="${title}" onclick="window._setCallStage('${id}','${v}')">${l}</button>`
+      ).join('');
+    }
     function _clearCallStage() { _dispoStage = null; _syncStageChips(); }
 
     function _dispoEnforcementBody(leadId) {
@@ -11041,8 +11253,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="color:var(--text-primary); font-size:12px; line-height:1.45;">${escHtml(lead.openingAngle)}</div>
         </div>`);
       }
-      if (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) {
-        rows.push(`<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${_signalChips(lead)}</div>`);
+      const _infoChipLive = (typeof _infoSentChip === 'function') ? _infoSentChip(lead) : '';
+      const _sigChipsLive = (typeof _signalChips === 'function' && Array.isArray(lead.signals) && lead.signals.length) ? _signalChips(lead) : '';
+      if (_infoChipLive || _sigChipsLive) {
+        rows.push(`<div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">${_infoChipLive}${_sigChipsLive}</div>`);
       }
       // Contacto secundario (encargado/decisor que te pasa la recepción). Siempre
       // visible para cargarlo en el momento de la llamada.
@@ -13236,6 +13450,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('calls-show-dnc')?.addEventListener('change', () => { _callsCurrentPage = 1; loadCallsView(); });
     // PASO 5: toggle "Pauta en ads" — solo re-render (los campos ya vienen en el lead).
     document.getElementById('calls-ads-filter')?.addEventListener('change', () => { _callsCurrentPage = 1; _callsRenderCountryChips?.(); renderCallsList(); });
+    document.getElementById('calls-info-sent-filter')?.addEventListener('change', (e) => {
+      // El sub-filtro solo tiene sentido con el toggle puesto.
+      document.getElementById('calls-info-sent-mode')?.classList.toggle('hidden', !e.target.checked);
+      _callsCurrentPage = 1; _callsRenderCountryChips?.(); renderCallsList();
+    });
+    document.getElementById('calls-info-sent-mode')?.addEventListener('change', () => { _callsCurrentPage = 1; renderCallsList(); });
     // Quitar DNC de un lead (bulk clear_dnc) y refrescar.
     window._callsClearDnc = async (leadId) => {
       try {

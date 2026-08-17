@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22none%22%3E%20%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2218%22%20fill%3D%22%23141619%22%2F%3E%20%3Cpath%20d%3D%22M31%2022%20L72%2034%20L72%2066%20L31%2078%20Z%22%20stroke%3D%22%233FA872%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%20%3C%2Fsvg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%20fill%3D%22none%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22%23141619%22%2F%3E%3Cpath%20d%3D%22M31%2022%20L72%2034%20L72%2066%20L31%2078%20Z%22%20stroke%3D%22%233FA872%22%20stroke-width%3D%2211%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E">
   <meta name="theme-color" content="#0F1115">
-  <link rel="stylesheet" href="/style.css?v=20260816c">
+  <link rel="stylesheet" href="/style.css?v=20260816f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -990,6 +990,24 @@
               <input type="checkbox" id="calls-ads-filter">
               <span>Pauta en ads</span>
             </label>
+            <!-- 2026-08-16: la cola de seguimiento post-envío. Muestra los leads
+                 con info enviada que todavía no agendaron, vengan de donde
+                 vengan: la mayoría quedó interesada o con callback, y esos no
+                 viven en esta lista. Por eso el toggle ignora los filtros de
+                 visibilidad, igual que el buscador global. -->
+            <label data-roles="setter,admin,supervisor" class="calls-toggle-discarded" title="Los que ya recibieron la info y todavía no agendaron — incluye interesados y callbacks, que normalmente no se ven en esta lista. Primero las confirmadas.">
+              <input type="checkbox" id="calls-info-sent-filter">
+              <span>Info enviada, sin agendar</span>
+            </label>
+            <!-- Sub-filtro: aparece solo con el toggle puesto. Son dos listas
+                 distintas y se llaman distinto — a la confirmada se la abre con
+                 "te mandé la info el martes"; a la optimista no, porque capaz
+                 se abrió el chat y nunca se escribió. -->
+            <select id="calls-info-sent-mode" class="hidden" title="Confirmada = lo mandaste vos o el proveedor de mail lo aceptó. Sin confirmar = se abrió el chat o el cliente de mail, sin garantía de que haya salido." style="padding:4px 8px; border-radius:7px; border:1px solid var(--border-default); background:var(--bg-input); color:var(--text-primary); font-size:11.5px; font-family:inherit; cursor:pointer;">
+              <option value="all">Todas</option>
+              <option value="confirmed">Solo confirmadas</option>
+              <option value="auto">Solo sin confirmar</option>
+            </select>
           </div>
         </section>
 
@@ -3717,7 +3735,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260816k"></script>
+  <script type="module" src="/app.js?v=20260816r"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>

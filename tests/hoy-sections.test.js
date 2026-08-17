@@ -67,6 +67,7 @@ function buildIsolatedHoyRenderSection() {
     function _briefClean(l) { return null; }
     function _dispoSelectHTML(id, o) { return '<select></select>'; }
     function _actButtonsHTML(id, o) { return '<button></button>'; }
+    function _stageChipsHTML(id, o) { return '<select class="stage-select"></select>'; }
     ${body}
     return _hoyRenderSection;
   `;

@@ -27,7 +27,12 @@ function pwd(plain) {
   return { salt, hash: crypto.scryptSync(plain, salt, 64).toString('hex') };
 }
 fs.writeFileSync(path.join(tmpData, 'auth.json'), JSON.stringify({
-  users: [{ id: 'u', email: 'admin-hc@local.test', name: 'AdminHC', role: 'admin', status: 'active', setterId: '', password: pwd('hcpass1234') }],
+  users: [
+    { id: 'u', email: 'admin-hc@local.test', name: 'AdminHC', role: 'admin', status: 'active', setterId: '', password: pwd('hcpass1234') },
+    // Vendedora anterior: sus llamadas quedan firmadas con OTRO setterId, para
+    // probar que los cortes heredados no cuentan contra la dueña nueva.
+    { id: 'u_old', email: 'vieja-hc@local.test', name: 'Vieja', role: 'setter', status: 'active', setterId: 's_old', password: pwd('hcpass1234') },
+  ],
   invites: [], sessions: [],
 }, null, 2));
 const lead = (n) => ({ num: n, name: 'L' + n, phone: '+521555000000' + n, assignedTo: 's_x', conexion: 'sin_wsp', estado: 'sin_contactar' });
@@ -229,5 +234,90 @@ describe('tope de cortes ("Me cortó")', () => {
     // Idempotente.
     const otra = await request(app).post('/api/admin/backfill-consumed-callbacks').set('Cookie', cookie).send({});
     expect(otra.body.updated).toBe(0);
+  });
+});
+
+// 2026-08-16 — dos correcciones al tope, decididas por el user tras auditar el
+// manual. Antes: un interesado que cortaba dos veces se descartaba solo, y los
+// cortes de una vendedora anterior contaban contra la nueva dueña.
+describe('tope de cortes — excepciones', () => {
+  it('un INTERESADO no se autodescarta por cortes: sigue vivo con reintento', async () => {
+    // El doctor que corta suele estar con un paciente en el sillón, no
+    // rechazando. Mismo criterio que ya protegía a los interesados del
+    // descarte por no-contacto.
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    d.leads.caliente = {
+      num: 30, name: 'Interesado que corta', phone: '+5215552222222', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar', callLog: [],
+    };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    const marcado = await disp('caliente', { outcome: 'answered_interested' });
+    expect(marcado.body.lead.estado).toBe('interesado');
+
+    await disp('caliente', { outcome: 'hung_up' });
+    const r = await disp('caliente', { outcome: 'hung_up' }); // 2do corte
+    expect(r.body.lead.estado).toBe('interesado');            // NO se descarta
+    expect(r.body.lead.autoDiscarded).toBeFalsy();
+    // Y queda con reintento a +24h, no flotando sin próximo paso.
+    const hs = (new Date(r.body.lead.callbackAt).getTime() - Date.now()) / 3600000;
+    expect(hs).toBeGreaterThan(23);
+    expect(hs).toBeLessThan(25);
+  });
+
+  it('los cortes HEREDADOS de otra vendedora no cuentan contra la dueña nueva', async () => {
+    // Criterio #139 ("arranca de cero al reasignar"): la redistribución conserva
+    // el callLog como contexto, pero ese trabajo no es de la dueña nueva. Antes,
+    // un lead con un corte previo se autodescartaba en su PRIMER corte.
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    d.leads.heredado = {
+      num: 31, name: 'Con corte heredado', phone: '+5215553333333', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callLog: [{ ts: new Date(Date.now() - 20 * 24 * 3600000).toISOString(), outcome: 'hung_up', by: 'u_old' }],
+    };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    // 1er corte propio (el heredado no suma): sigue vivo.
+    const r1 = await disp('heredado', { outcome: 'hung_up' });
+    expect(r1.body.lead.estado).not.toBe('descartado');
+    // 2do corte propio: ahora sí.
+    const r2 = await disp('heredado', { outcome: 'hung_up' });
+    expect(r2.body.lead.estado).toBe('descartado');
+    expect(r2.body.lead.autoDiscardReason).toBe('cortes_2x');
+    // El historial completo queda intacto: 1 heredado + 2 propios.
+    expect(r2.body.lead.callLog.filter((e) => e.outcome === 'hung_up').length).toBe(3);
+  });
+
+  it('el backfill respeta las dos excepciones', async () => {
+    const p = path.join(tmpData, 'setters.json');
+    const d = JSON.parse(fs.readFileSync(p, 'utf8'));
+    const viejo = (o, by) => ({ ts: new Date(Date.now() - 10 * 24 * 3600000).toISOString(), outcome: o, ...(by ? { by } : {}) });
+    // Interesado con 3 cortes: exento.
+    d.leads.bf_interesado = {
+      num: 32, name: 'Interesado con cortes', phone: '+5215554444444', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'interesado',
+      callLog: [viejo('hung_up'), viejo('hung_up'), viejo('hung_up')],
+    };
+    // Un corte de cada dueño: ninguna firma llega al tope.
+    d.leads.bf_repartido = {
+      num: 33, name: 'Cortes repartidos', phone: '+5215555555555', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callLog: [viejo('hung_up', 'u_old'), viejo('hung_up')],
+    };
+    // Dos cortes de la MISMA firma: sí entra.
+    d.leads.bf_mismo = {
+      num: 34, name: 'Dos de la misma', phone: '+5215556000000', assignedTo: 's_x',
+      conexion: 'sin_wsp', estado: 'sin_contactar',
+      callLog: [viejo('hung_up', 'u_old'), viejo('hung_up', 'u_old')],
+    };
+    fs.writeFileSync(p, JSON.stringify(d, null, 2));
+
+    const dry = await request(app).post('/api/admin/backfill-hangup-cap').set('Cookie', cookie).send({ dryRun: true });
+    const ids = (dry.body.leads || []).map((l) => l.id);
+    expect(ids).not.toContain('bf_interesado');
+    expect(ids).not.toContain('bf_repartido');
+    expect(ids).toContain('bf_mismo');
   });
 });

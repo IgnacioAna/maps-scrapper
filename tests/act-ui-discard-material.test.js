@@ -84,7 +84,7 @@ describe("Descarte en las 4 superficies (ACT-04/D-12)", () => {
   });
 
   it("_callsRenderExpandedPanel sigue llamando a _actButtonsHTML(", () => {
-    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l) {");
+    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l, opts = {}) {");
     expect(body).toContain("_actButtonsHTML(");
   });
 
@@ -331,7 +331,7 @@ describe("Ficha: el link mailto viejo se reemplaza por el botón Mandar material
   });
 
   it("el botón vive dentro de _callsRenderExpandedPanel", () => {
-    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l) {");
+    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l, opts = {}) {");
     expect(body).toContain("window._actSendMaterial(");
   });
 });

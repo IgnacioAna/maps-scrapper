@@ -188,7 +188,7 @@ describe("Aserciones de fuente: _actButtonsHTML — declaración única, 4 call 
   });
 
   it("_callsRenderExpandedPanel llama a _actButtonsHTML con variant:'ficha'", () => {
-    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l) {");
+    const body = extractFunctionBody(appJs, "function _callsRenderExpandedPanel(l, opts = {}) {");
     expect(body).toContain("_actButtonsHTML(l.id, { variant: 'ficha' })");
   });
 
