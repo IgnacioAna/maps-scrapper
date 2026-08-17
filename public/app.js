@@ -10451,11 +10451,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // así que ya no subimos a Whisper al colgar (transcribía buzones al pedo).
     // Al colgar solo BUFFEREAMOS los blobs; el upload real lo dispara la
     // disposition (_flushPendingTranscription) y solo si hubo conversación.
-    let _pendingTranscribe = null; // { leadId, setterBlob, leadBlob, callStartedAtIso, timer }
+    // 2026-08-16: COLA, no un slot único. Antes era una sola variable y
+    // `_stopCallRecordingAndBuffer` descartaba lo pendiente antes de guardar el
+    // audio nuevo: si el SDR volvía a discar ANTES de marcar el resultado de la
+    // llamada anterior (te cortan y redisás en el acto, o marcás las dos
+    // juntas), el audio de la primera se tiraba. Medido en prod: de 40 pares de
+    // llamadas al mismo lead a menos de 5 minutos, 10 tenían la primera con
+    // conversación (>=20s) y sin transcript — incluidas de 212s, 219s y 224s.
+    // Cada entrada lleva su propio callStartedAtIso, así que el backend la pega
+    // a la llamada correcta del callLog (_pickCallLogIdxForTranscript).
+    const _MAX_PENDING_TRANSCRIBE = 3; // ~2MB de audio en el peor caso
+    let _pendingTranscribes = []; // [{ leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer }]
 
+    // Saca UNA entrada de la cola (la consumida o la vencida).
+    function _dropPendingTranscription(p) {
+      if (!p) return;
+      if (p.timer) clearTimeout(p.timer);
+      _pendingTranscribes = _pendingTranscribes.filter((x) => x !== p);
+    }
+    // Vacía la cola entera.
     function _discardPendingTranscription() {
-      if (_pendingTranscribe?.timer) clearTimeout(_pendingTranscribe.timer);
-      _pendingTranscribe = null;
+      _pendingTranscribes.forEach((p) => { if (p.timer) clearTimeout(p.timer); });
+      _pendingTranscribes = [];
     }
 
     async function _stopCallRecordingAndBuffer(leadId, callStartedAtIso) {
@@ -10510,14 +10527,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[transcribe] Audio muy corto (<5KB), saltando');
         return;
       }
-      _discardPendingTranscription();
+      // Encolar SIN pisar lo anterior (ver el comentario de _pendingTranscribes).
+      const entry = { leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer: null };
       // Auto-descarte a los 10 min: si el SDR nunca marca disposition, no
       // retener los blobs en memoria indefinidamente.
-      const timer = setTimeout(() => {
-        if (_pendingTranscribe?.leadId === leadId) _discardPendingTranscription();
-      }, 10 * 60 * 1000);
-      _pendingTranscribe = { leadId, setterBlob, leadBlob, callStartedAtIso, recMeta, timer };
-      console.log('[transcribe] Audio buffereado (' + Math.round(totalBytes / 1024) + 'KB) — se transcribe al marcar resultado');
+      entry.timer = setTimeout(() => _dropPendingTranscription(entry), 10 * 60 * 1000);
+      _pendingTranscribes.push(entry);
+      while (_pendingTranscribes.length > _MAX_PENDING_TRANSCRIBE) {
+        const viejo = _pendingTranscribes[0];
+        console.warn('[transcribe] cola llena — se descarta el audio más viejo (lead ' + viejo.leadId + ')');
+        _dropPendingTranscription(viejo);
+      }
+      console.log('[transcribe] Audio buffereado (' + Math.round(totalBytes / 1024) + 'KB, ' + _pendingTranscribes.length + ' en cola) — se transcribe al marcar resultado');
     }
 
     // Outcomes donde tiene sentido gastar Whisper: alguien atendió y habló.
@@ -10525,9 +10546,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const _TRANSCRIBE_OUTCOMES = new Set(['answered_interested', 'answered_not_interested', 'scheduled_with_admin', 'callback_later', 'hung_up']);
 
     async function _flushPendingTranscription(leadId, outcome) {
-      const pending = _pendingTranscribe;
-      if (!pending || pending.leadId !== leadId) return;
-      _discardPendingTranscription(); // consumir el buffer pase lo que pase
+      // El MÁS VIEJO de ese lead: el SDR marca los resultados en el orden en que
+      // hizo las llamadas, así que FIFO empareja bien cuando hay dos pendientes.
+      const pending = _pendingTranscribes.find((p) => p.leadId === leadId);
+      if (!pending) return;
+      _dropPendingTranscription(pending); // consumir el buffer pase lo que pase
       if (!_TRANSCRIBE_OUTCOMES.has(outcome)) {
         console.log('[transcribe] Outcome "' + outcome + '" sin conversación — audio descartado, no se gasta Whisper');
         return;
