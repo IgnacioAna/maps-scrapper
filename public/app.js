@@ -5992,6 +5992,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     // sin red). Cero fetch/await en este cuerpo a propósito: repintar no toca
     // la red (D-09 — esto NO es un store reactivo, es un renderer que se
     // vuelve a llamar en los puntos donde antes se hacía un fetch completo).
+    // ─── [34-06] DUEAT-PURE: INICIO ───
+    // D-06: la fecha VIGENTE para decidir "vence hoy" de un compromiso es la
+    // del reloj único (lead.nextAction), cuando ese reloj sigue siendo el que
+    // puso el compromiso — cubre 'esperando del prospecto' (cumplido: el dueAt
+    // del compromiso original ya quedó en el pasado, lo que importa es cuándo
+    // vence la ESPERA). Fallback a commitment.dueAt si el reloj fue pisado por
+    // otra cosa. Vivía dentro de _hoyRenderFromStore; se sube a scope
+    // compartido para que la cola del dialer lea el MISMO reloj que la vista.
+    function _commitDueAt(l) {
+      if (!l) return null;
+      return (l.nextAction && l.nextAction.origen === 'compromiso' && l.nextAction.dueAt)
+        ? l.nextAction.dueAt
+        : (l.commitment ? l.commitment.dueAt : null);
+    }
+    // Reloj EFECTIVO del lead, en ms. Precedencia: callbackAt → nextAction →
+    // compromiso → null (sin reloj = siempre elegible).
+    //
+    // 2026-08-17 — existe porque la cola del Power Dialer sobre Hoy miraba solo
+    // `callbackAt`, y Hoy tiene cinco tiers con TRES relojes distintos: un
+    // compromiso que vence hoy a las 17:00 y sin callbackAt evaluaba
+    // `!l.callbackAt` como true y entraba a la cola a las 11 de la mañana. El
+    // SDR lo discaba sin darse cuenta y rompía lo que había pactado por
+    // teléfono. Un solo helper para que no se vuelvan a desincronizar.
+    function _leadDueAt(l) {
+      if (!l) return null;
+      const raw = l.callbackAt
+        || (l.nextAction && l.nextAction.dueAt)
+        || _commitDueAt(l);
+      if (!raw) return null;
+      const ts = new Date(raw).getTime();
+      return Number.isFinite(ts) ? ts : null;
+    }
+    // ─── [34-06] DUEAT-PURE: FIN ───
+
     function _hoyRenderFromStore(leadsArg) {
       const secEl = document.getElementById('hoy-sections');
       const greetEl = document.getElementById('hoy-greeting');
@@ -6039,15 +6073,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // como si le faltara un próximo paso, cuando ya no necesita ninguno.
       const terminal = (l) => l.estado === 'descartado' || l.estado === 'agendado' || l.estado === 'cerrado';
       const lastOutcome = (l) => (Array.isArray(l.callLog) && l.callLog.length) ? l.callLog[l.callLog.length - 1].outcome : null;
-      // D-06: la fecha VIGENTE para decidir "vence hoy" de un compromiso es la
-      // del reloj único (lead.nextAction), cuando ese reloj sigue siendo el
-      // que puso el compromiso — cubre 'esperando del prospecto' (cumplido:
-      // el dueAt del compromiso original ya quedó en el pasado, lo que
-      // importa es cuándo vence la ESPERA). Fallback a commitment.dueAt si el
-      // reloj fue pisado por otra cosa.
-      const _commitDueAt = (l) => (l.nextAction && l.nextAction.origen === 'compromiso' && l.nextAction.dueAt)
-        ? l.nextAction.dueAt
-        : (l.commitment ? l.commitment.dueAt : null);
+      // _commitDueAt vive ahora en scope compartido (bloque DUEAT-PURE, arriba):
+      // la cola del Power Dialer necesita leer el MISMO reloj que esta vista.
       // Tier 1 — "Compromisos que vencen hoy" (D-01 #1): 3 tarjetas con UN
       // `claimed` compartido (D-02, exclusividad real — Fase 31 dejó a Mis
       // compromisos/Esperando del prospecto FUERA de `claimed` a propósito;
@@ -6266,6 +6293,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         secEl.innerHTML = '<div style="color:var(--danger); padding:20px;">Error cargando. Reintentá.</div>';
       }
     }
+    // 2026-08-17 — la lista de Hoy muestra el día COMPLETO a propósito (es la
+    // agenda, no la cola accionable), así que el botón Llamar de una fila que
+    // todavía no vence queda igual de habilitado que el de una vencida. Antes
+    // de discar, avisa: llamar a las 11 algo que se pactó para las 17 rompe lo
+    // que se prometió por teléfono. Confirma y disca normal.
+    window._hoyCallGuard = function(leadId) {
+      const lead = _callsLeadsById.get(leadId);
+      const due = _leadDueAt(lead);
+      const now = Date.now();
+      if (due !== null && due > now) {
+        const d = new Date(due);
+        const hora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const mins = Math.round((due - now) / 60000);
+        const falta = mins < 60 ? `${mins} min` : `${Math.round(mins / 60)}h`;
+        if (!confirm(`Lo pactaste para las ${hora}. Faltan ${falta}. Llamar igual?`)) return;
+      }
+      window._startTelnyxCall(leadId);
+    };
+
     // Nombre del SDR dueño del lead (para el chip de dueño en cada card).
     function _hoyOwnerName(l) {
       const id = l && l.assignedTo;
@@ -6422,8 +6468,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const sigs = ((typeof _infoSentChip === 'function') ? _infoSentChip(l, { compact: true }) : '')
           + ((typeof _signalChips === 'function') ? _signalChips(l) : '');
         const owner = _hoyOwnerName(l);
-        const cb = l.callbackAt ? new Date(l.callbackAt) : null;
-        const cbStr = cb ? `${String(cb.getDate()).padStart(2,'0')}/${cb.getMonth()+1} ${String(cb.getHours()).padStart(2,'0')}:${String(cb.getMinutes()).padStart(2,'0')}` : '';
         // 2026-08-16 — el score salió del semáforo. Era el otro número verde de
         // Hoy (score alto → acento, medio → ámbar): un valor no accionable
         // pintado con el color de los botones. Una escala de prioridad se lee
@@ -6435,12 +6479,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         // secciones de compromiso). Sin opts.rowBadge el markup queda
         // byte-idéntico al de antes de este plan.
         const badgeHtml = (typeof opts.rowBadge === 'function') ? (opts.rowBadge(l) || '') : '';
+        // 2026-08-17 — el chip de hora sale del reloj EFECTIVO (callback,
+        // próximo paso o compromiso), no solo de callbackAt: los reintentos de
+        // cadencia no mostraban ninguna hora. Y distingue lo que YA venció de
+        // lo que todavía no: la lista sigue mostrando el día completo a
+        // propósito (es la agenda, no la cola accionable), así que sin esta
+        // señal "venció hace 3 horas" y "recién a las 17:00" se veían igual.
+        // Se omite si la fila ya trae badge de compromiso, que muestra su
+        // propia fecha y su propio estado de vencimiento.
+        const _dueTs = _leadDueAt(l);
+        const _dueDate = _dueTs !== null ? new Date(_dueTs) : null;
+        const _dueFuturo = _dueTs !== null && _dueTs > Date.now();
+        const _dueHora = _dueDate ? `${String(_dueDate.getHours()).padStart(2, '0')}:${String(_dueDate.getMinutes()).padStart(2, '0')}` : '';
+        const cbStr = (_dueDate && !badgeHtml)
+          ? `${String(_dueDate.getDate()).padStart(2, '0')}/${_dueDate.getMonth() + 1} ${_dueHora}`
+          : '';
+        const cbTitle = _dueFuturo
+          ? `Todavía no vence: lo pactaste para las ${_dueHora}`
+          : 'Ya vencido';
         return `<div class="hoy-row" data-id="${escHtml(l.id)}">
           <div style="flex:1; min-width:0;">
             <div style="display:flex; align-items:center; gap:7px; flex-wrap:wrap;">
               ${typeof countryFlagHTML === 'function' ? countryFlagHTML(l.country) : ''}
               <strong style="color:var(--text-primary); font-size:13px;">${escHtml(l.name || '')}</strong>
-              ${cbStr ? `<span style="font-size:10px; color:var(--text-secondary); font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
+              ${cbStr ? `<span title="${escHtml(cbTitle)}" style="font-size:10px; color:${_dueFuturo ? '#FFB341' : 'var(--text-secondary)'}; font-variant-numeric:tabular-nums;">${cbStr}</span>` : ''}
               ${badgeHtml}
               ${lt ? `<span style="font-size:10px; color:${lt.ok ? 'var(--text-tertiary)' : '#FFB341'};">${lt.time}${lt.ok ? '' : ' · fuera de horario'}</span>` : ''}
               <span title="SDR dueño del lead" style="font-size:10px; color:var(--text-secondary); background:var(--bg-elevated); border:1px solid var(--border-default); padding:1px 8px; border-radius:999px; white-space:nowrap;">${escHtml(owner)}</span>
@@ -6453,7 +6515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
           ${_actButtonsHTML(l.id, { variant: 'hoy' })}
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
-          <button class="hoy-call-btn" onclick="window._startTelnyxCall('${escHtml(l.id)}')">Llamar</button>
+          <button class="hoy-call-btn" onclick="window._hoyCallGuard('${escHtml(l.id)}')">Llamar</button>
         </div>`;
       }).join('');
       // Power dialer POR SECCIÓN (2026-08-10, pedido del user): cada cola se
@@ -7041,8 +7103,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 'reintentos' | null (las 5, en orden D-01).
     function _pdBuildQueueHoy(filter) {
       const now = Date.now();
+      // 2026-08-17 — mira el reloj EFECTIVO (_leadDueAt), no solo el callback.
+      // De los cinco tiers de Hoy, tres cuelgan de nextAction/commitment: un
+      // compromiso para las 17:00 pasaba el filtro viejo (que solo preguntaba
+      // por el callback) y se discaba a la mañana, rompiendo lo pactado.
+      // Sin reloj (null) sigue siendo elegible: es lo que ya pasaba.
       const dueNow = (ids) => ids.map(id => _callsLeadsById.get(id))
-        .filter(l => l && (!l.callbackAt || new Date(l.callbackAt).getTime() <= now));
+        .filter(l => { const d = _leadDueAt(l); return l && (d === null || d <= now); });
       const parts = [];
       if (!filter || filter === 'compromisos') parts.push(...dueNow(_hoyState.commitYoIds));
       if (!filter || filter === 'esperando') parts.push(...dueNow(_hoyState.commitProspectoIds));

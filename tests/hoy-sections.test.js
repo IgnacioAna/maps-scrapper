@@ -68,6 +68,7 @@ function buildIsolatedHoyRenderSection() {
     function _dispoSelectHTML(id, o) { return '<select></select>'; }
     function _actButtonsHTML(id, o) { return '<button></button>'; }
     function _stageChipsHTML(id, o) { return '<select class="stage-select"></select>'; }
+    function _leadDueAt(l) { return l && l.callbackAt ? new Date(l.callbackAt).getTime() : null; }
     ${body}
     return _hoyRenderSection;
   `;
@@ -196,11 +197,18 @@ describe("HOY-01/D-01 #4: gate del tier 'Nuevos por score'", () => {
 });
 
 describe("D-06: _commitDueAt — fecha vigente del compromiso (nextAction o commitment)", () => {
-  it("existe como closure dentro de _hoyRenderFromStore, con fallback a commitment.dueAt", () => {
-    const body = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
-    expect(body).toContain("const _commitDueAt = (l) => (l.nextAction && l.nextAction.origen === 'compromiso' && l.nextAction.dueAt)");
+  it("vive en scope compartido, con la misma precedencia y fallback a commitment.dueAt", () => {
+    // 2026-08-17: era un closure dentro de _hoyRenderFromStore. Se subió a
+    // scope de módulo (bloque DUEAT-PURE) para que la cola del Power Dialer
+    // lea el MISMO reloj que esta vista — el bug que originó el cambio fue
+    // justamente que miraban relojes distintos. La lógica no cambió.
+    const body = extractFunctionBody(appJs, "function _commitDueAt(l) {");
+    expect(body).toContain("l.nextAction && l.nextAction.origen === 'compromiso' && l.nextAction.dueAt");
     expect(body).toContain("? l.nextAction.dueAt");
     expect(body).toContain(": (l.commitment ? l.commitment.dueAt : null);");
+    // Y _hoyRenderFromStore lo sigue usando (no se quedó con una copia).
+    const render = extractFunctionBody(appJs, "function _hoyRenderFromStore(leadsArg) {");
+    expect(render).toContain("_commitDueAt(l)");
   });
 
   it("misCompromisos filtra y ordena con _commitDueAt (vence hoy)", () => {

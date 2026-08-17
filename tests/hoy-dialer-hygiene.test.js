@@ -62,11 +62,22 @@ function countOccurrences(str, sub) {
 
 // Ejecuta _pdBuildQueueHoy en aislamiento — depende solo de `_hoyState` y
 // `_callsLeadsById`, ambas inyectables por closure.
+// 2026-08-17: se inyecta el bloque DUEAT-PURE REAL (no un stub) — desde que
+// _pdBuildQueueHoy filtra por el reloj efectivo del lead, stubearlo dejaría el
+// test verificando una réplica en vez de la lógica de producción.
+function dueAtBlock() {
+  const start = appJs.indexOf("// ─── [34-06] DUEAT-PURE: INICIO ───");
+  const end = appJs.indexOf("// ─── [34-06] DUEAT-PURE: FIN ───");
+  if (start === -1 || end === -1) throw new Error("No encontré los marcadores DUEAT-PURE");
+  return appJs.slice(start, end);
+}
+
 function buildIsolatedPdBuildQueueHoy() {
   const body = extractFunctionBody(appJs, "function _pdBuildQueueHoy(filter) {");
   const factory = new Function(`
     let _hoyState = {};
     let _callsLeadsById = new Map();
+    ${dueAtBlock()}
     ${body}
     return {
       run(filter, state, leadsMap) {
@@ -100,6 +111,7 @@ function buildIsolatedHoyRenderFromStore() {
     const _leadStoreDirty = new Set();
     const _callsLeadsById = new Map();
     let __countryFilter = '';
+    ${dueAtBlock()}
     function _hoySelectedSetter() { return ''; }
     function _hoySelectedCountry() { return __countryFilter; }
     function _commitmentHoyBucket(l, now) { return null; }
