@@ -13366,7 +13366,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       {
         key: 'envio_info',
         label: 'Envío de información',
-        body: 'Hola, soy {setterName} de Vincca. Le dejo el material que le comenté por teléfono.\n\nEs una calculadora: carga tres números de la clínica y le muestra cuántos pacientes tiene dormidos hoy y cuánto dinero representan.\n\nhttps://vincca.co\n\nToma dos minutos. En estos días le llamo para ver qué le dio.',
+        body: 'Hola, soy {setterName} de Vincca. Le dejo el material que le comenté por teléfono.\n\nEs una calculadora: carga dos números de la clínica y le muestra cuántos pacientes tiene dormidos hoy y cuánto dinero representan.\n\nhttps://vincca.co\n\nToma dos minutos. En estos días le llamo para ver qué le dio.',
       },
       {
         key: 'reconfirmar_reunion',
