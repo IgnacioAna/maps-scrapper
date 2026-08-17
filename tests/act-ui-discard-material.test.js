@@ -140,11 +140,47 @@ describe("Destino y sincronización de vistas (_actDiscard)", () => {
     return extractFunctionBody(appJs, "window._actDiscard = (leadId) => {");
   }
 
-  it("llama _dispoAnnounce( con forceToast y NO llama _dispoAfterSaved( (no toca el gate de la Phase 20)", () => {
+  it("llama _dispoAnnounce( con forceToast y NO llama _dispoAfterSaved( entero", () => {
     const body = discardBody();
     expect(body).toContain("_dispoAnnounce(");
     expect(body).toContain("forceToast");
+    // Sigue sin llamarse el helper completo: arrastraría el hold del Power
+    // Dialer ("✓ Resultado guardado"), y un descarte no es una disposición de
+    // llamada. Decisión de 32-04, vigente.
     expect(body).not.toContain("_dispoAfterSaved(");
+    expect(body).not.toContain("_pdHold(");
+  });
+
+  // 2026-08-17 — el bug que esto cubre: el gate de disposición (Fase 20) se
+  // arma al colgar una llamada y su ÚNICA limpieza vivía en _dispoAfterSaved,
+  // que _actDiscard no invoca a propósito. Descartar dejaba el gate armado y
+  // el sistema seguía exigiendo "marcá el resultado" de un lead ya muerto,
+  // bloqueando todos los puntos de discado. Descartar es más terminal que
+  // cualquier disposición: no corresponde pedir el resultado después.
+  it("limpia el gate de disposición del lead descartado", () => {
+    const body = discardBody();
+    expect(body).toContain("_dispoGateClear(leadId)");
+  });
+
+  it("limpia el gate DESPUÉS de aplicar el lead al store y ANTES de anunciar", () => {
+    const body = discardBody();
+    const store = body.indexOf("_leadStoreApply(leadId, d.lead)");
+    const gate = body.indexOf("_dispoGateClear(leadId)");
+    const announce = body.indexOf("_dispoAnnounce(");
+    expect(store).toBeGreaterThan(-1);
+    expect(gate).toBeGreaterThan(store);
+    expect(announce).toBeGreaterThan(gate);
+  });
+
+  it("el gate se limpia dentro del try, no en el finally (solo si el descarte salió bien)", () => {
+    // Si el POST falla, el lead sigue vivo y el gate tiene que seguir armado:
+    // esa llamada sin marcar es real.
+    const body = discardBody();
+    const gate = body.indexOf("_dispoGateClear(leadId)");
+    const finallyIdx = body.indexOf("} finally {");
+    expect(gate).toBeGreaterThan(-1);
+    expect(finallyIdx).toBeGreaterThan(-1);
+    expect(gate).toBeLessThan(finallyIdx);
   });
 
   it("llama _pdAdvance( dentro de un guard que compara _pd.queue[_pd.currentIdx] con el leadId", () => {

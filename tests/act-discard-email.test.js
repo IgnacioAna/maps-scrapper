@@ -57,6 +57,10 @@ fs.writeFileSync(settersFile, JSON.stringify({
     l_discard_dnc_reason: lead(3),
     l_discard_dnc_manual: lead(4),
     l_discard_badreason: lead(5),
+    // 2026-08-17: para el caso de la llamada sin marcar (ver el test al final
+    // del bloque de descarte).
+    l_discard_pending: lead(50),
+    l_discard_pending_otro: lead(51),
     l_discard_commitment: lead(6),
     // Nota: trae un nextAction MANUAL (no de compromiso — origen:'compromiso'
     // es lo único que _closeCommitment apaga por su cuenta) para que el test
@@ -206,6 +210,47 @@ describe('Descarte (ACT-04)', () => {
     expect(r.status).toBe(200);
     callable = (await request(app).get('/api/setters/leads/sin-wsp?include=callable').set('Cookie', setterACookie)).body.leads.map((l) => l.id);
     expect(callable).not.toContain('l_discard_dnc_queue');
+  });
+
+  // 2026-08-17 — el bug: descartar dejaba viva la "llamada sin marcar" del
+  // lead, y la traba de disposición la usa para bloquear TODOS los puntos de
+  // discado. Nadie le va a marcar el resultado a un lead muerto, así que ese
+  // pendiente quedaba huérfano para siempre. El frontend limpia su gate, pero
+  // sin esto el pendiente sobrevivía en el server y la traba volvía al primer
+  // refresh. Mismo remedio que ya usa transfer-portfolio.
+  const armarPendiente = (leadId, cookie) => request(app)
+    .post('/api/setters/pending-calls').set('Cookie', cookie)
+    .send({ leadId, startedAt: new Date(Date.now() - 120000).toISOString(), endedAt: new Date().toISOString(), durationSecs: 45 });
+  const pendientesDe = async (cookie) => ((await request(app).get('/api/setters/pending-calls').set('Cookie', cookie)).body.pending || []).map((p) => p.leadId);
+
+  it('9c. descartar resuelve la llamada sin marcar de ESE lead', async () => {
+    expect((await armarPendiente('l_discard_pending', setterACookie)).status).toBe(200);
+    expect(await pendientesDe(setterACookie)).toContain('l_discard_pending');
+
+    const r = await discard('l_discard_pending', { reason: 'no_es_icp' }, setterACookie);
+    expect(r.status).toBe(200);
+    expect(r.body.pendientesLimpiados).toBe(1);
+    expect(await pendientesDe(setterACookie)).not.toContain('l_discard_pending');
+  });
+
+  it('9d. no toca los pendientes de otros leads', async () => {
+    await armarPendiente('l_discard_pending_otro', setterACookie);
+    await armarPendiente('l_discard_commitment', setterACookie);
+    const antes = await pendientesDe(setterACookie);
+    expect(antes).toContain('l_discard_pending_otro');
+    expect(antes).toContain('l_discard_commitment');
+
+    const r = await discard('l_discard_pending_otro', undefined, setterACookie);
+    expect(r.body.pendientesLimpiados).toBe(1);
+    const despues = await pendientesDe(setterACookie);
+    expect(despues).not.toContain('l_discard_pending_otro');
+    expect(despues).toContain('l_discard_commitment'); // el ajeno sigue vivo
+  });
+
+  it('9e. descartar un lead sin llamadas pendientes no rompe ni reporta de más', async () => {
+    const r = await discard('l_discard_badreason', { reason: 'no_existe_esta_razon' }, setterACookie);
+    expect(r.status).toBe(200);
+    expect(r.body.pendientesLimpiados).toBe(0);
   });
 });
 

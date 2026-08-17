@@ -8777,6 +8777,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
           }
           if (d.lead) _leadStoreApply(leadId, d.lead);
+          // 2026-08-17 — el gate de disposición (Fase 20) se arma al colgar una
+          // llamada y SOLO lo limpia _dispoAfterSaved, que este camino nunca
+          // invoca. Resultado: descartabas el lead y el sistema seguía pidiendo
+          // "marcá el resultado" de un lead ya muerto, bloqueando todos los
+          // puntos de discado. Descartar es MÁS terminal que cualquier
+          // disposición del dropdown: pedir después el resultado de la llamada
+          // es pedirle estado a algo que ya se cerró.
+          // Se limpia SOLO el gate: ni _dispoAfterSaved entero ni _pdHold —
+          // ver la decisión de acá abajo sobre "✓ Resultado guardado".
+          _dispoGateClear(leadId);
           _dispoAnnounce(leadId, { lead: d.lead, forceToast: true });
           _callsRenderCountryChips?.();
           renderCallsStats?.();

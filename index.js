@@ -11241,11 +11241,31 @@ app.post('/api/setters/leads/:id/discard', requireAuth, (req, res) => {
   if (lead.interactions.length > 200) lead.interactions = lead.interactions.slice(-200);
 
   saveSettersData(data);
+
+  // 2026-08-17 — llamadas sin marcar de un lead que se acaba de descartar.
+  // Mismo problema y mismo remedio que en transfer-portfolio (más arriba): ese
+  // pendiente ya no se puede resolver nunca —nadie le va a marcar el resultado
+  // a un lead muerto— y la traba de disposición lo usa para bloquear TODOS los
+  // puntos de discado. El frontend limpia su gate al descartar, pero sin esto
+  // el pendiente sobrevive del lado del servidor y la traba vuelve en el
+  // próximo refresh. Descartar es más terminal que cualquier disposición: la
+  // llamada previa queda registrada en el callLog si se marcó, y si no se
+  // marcó, ya no hay nada que marcar.
+  let pendientesLimpiados = 0;
+  try {
+    const pc = loadPendingCalls();
+    const antes = (pc.pending || []).length;
+    pc.pending = (pc.pending || []).filter((p) => p.leadId !== req.params.id);
+    pendientesLimpiados = antes - pc.pending.length;
+    if (pendientesLimpiados) savePendingCalls(pc);
+  } catch {}
+
   res.json({
     ok: true,
     lead: { id: req.params.id, ...lead },
     commitmentClosed,
     doNotCall: !!lead.doNotCall,
+    pendientesLimpiados,
   });
 });
 
