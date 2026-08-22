@@ -6214,6 +6214,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const secEl = document.getElementById('hoy-sections');
       if (!secEl) return;
       secEl.innerHTML = '<div style="color:var(--text-tertiary); padding:20px;">Cargando…</div>';
+      // SCR-01/35-03: cargar el banco de guiones al abrir la vista (fire-and-forget,
+      // no bloquea el render) — sin esto el selector de guion de cada fila aparece
+      // vacío hasta la primera llamada de la sesión.
+      _ensureCallScripts();
       try {
         // Asegurar settersList ANTES de armar las URLs (el dropdown filtra la carga).
         if (!(window.__settersList && window.__settersList.length)) {
@@ -6512,6 +6516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <span class="hoy-score" title="Prioridad" style="color:${scColor};">${sc}</span>
           ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 11.5 })}
+          ${_scriptSelectHTML(l.id, { variant: 'row', fontSize: 11.5, minWidth: 130 })}
           ${_dispoSelectHTML(l.id, { minWidth: 150, fontSize: 12 })}
           ${_actButtonsHTML(l.id, { variant: 'hoy' })}
           <button class="hoy-ficha-btn" onclick="window._hoyOpenFicha('${escHtml(l.id)}')" title="Ver toda la información del lead">Ficha</button>
@@ -6669,6 +6674,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.loadHoyView = loadHoyView;
 
     async function loadCallsView() {
+      // SCR-01/35-03: cargar el banco de guiones al abrir la vista (fire-and-forget,
+      // no bloquea el render) — sin esto el selector de guion de cada fila aparece
+      // vacío hasta la primera llamada de la sesión.
+      _ensureCallScripts();
       // Phase 20: restore del gate tras refresh (one-shot, valida contra el server).
       if (!_dispoGateRestoreDone) {
         _dispoGateRestoreDone = true;
@@ -7774,6 +7783,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:7px;">¿Hasta dónde llegaste?</div>
           <div style="display:flex; gap:7px; max-width:430px;">
             ${_stageChipsHTML(lead.id)}
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:7px;">Guion</div>
+          <div style="display:flex; gap:7px; max-width:430px;">
+            ${_scriptSelectHTML(lead.id, { variant: 'row', fontSize: 12.5, minWidth: 220 })}
           </div>
         </div>
         <div class="pd-disposition-grid">
@@ -9292,6 +9307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border-subtle);">
             <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); width:100%;">Cerrar la llamada</span>
             ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 12 })}
+            ${_scriptSelectHTML(l.id, { variant: 'row', fontSize: 12 })}
             ${_dispoSelectHTML(l.id, { minWidth: 190, fontSize: 12 })}
           </div>` : '';
 
@@ -9711,6 +9727,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           })()}
 
           ${_stageChipsHTML(l.id, { variant: 'select', fontSize: 12 })}
+
+          ${_scriptSelectHTML(l.id, { variant: 'row', fontSize: 12 })}
 
           ${_dispoSelectHTML(l.id)}
 
