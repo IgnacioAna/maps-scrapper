@@ -367,8 +367,11 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   cerrada la llamada, desde la ficha y desde la lista. *(La segunda
   oportunidad fue lo que llevó `callStage` a 62% el primer día.)* —
   Completo en 35-03: mismo builder, misma segunda oportunidad.
-- [ ] **SCR-04**: Existe `npm run coverage:script -- --days 7`, con el
-  split entre lo sembrado por default y lo cargado por una persona.
+- [x] **SCR-04**: Existe `npm run coverage:script -- --days 7`, con el
+  split entre lo sembrado por default y lo cargado por una persona. —
+  Completo en 35-04: `scripts/coverage-script.mjs` (molde
+  `coverage-callstage.mjs`), ventana default 7 días recortada al deploy de
+  35-02 (D-01), desglose dialer vs resto de canales y reparto por guion.
 
 ### RESP — La disposición responde *(Phase 36)*
 

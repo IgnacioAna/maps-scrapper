@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-22T22:10:00.000Z"
+last_updated: "2026-08-22T22:20:00.000Z"
 last_activity: 2026-08-22
 progress:
   total_phases: 10
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 36
-  completed_plans: 28
-  percent: 78
+  completed_plans: 29
+  percent: 81
 ---
 
 # SCM — STATE
@@ -39,17 +39,18 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 35 (scr-atribucion-guion) -- EXECUTING (2/4 planes ejecutados).
-  Milestone v4.0 (Phases 28-34) quedo completo a nivel de ejecucion
-  (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
+Phase: 35 (scr-atribucion-guion) -- COMPLETE (4/4 planes ejecutados,
+  2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de
+  ejecucion (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
   milestone/fase nueva (35-37: atribucion de guion, disposicion que
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 3 of 4 -- 35-01, 35-02 y 35-03 EXECUTED (ver `35-01-SUMMARY.md`,
-  `35-02-SUMMARY.md` y `35-03-SUMMARY.md`).
-Status: Executing Phase 35. 35-01 (contrato de atribucion de guion en
+Plan: 4 of 4 -- 35-01, 35-02, 35-03 y 35-04 EXECUTED (ver
+  `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
+  `35-04-SUMMARY.md`).
+Status: Phase 35 COMPLETA. 35-01 (contrato de atribucion de guion en
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
   `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
@@ -59,10 +60,16 @@ Status: Executing Phase 35. 35-01 (contrato de atribucion de guion en
   3 superficies -- Hoy, Power Dialer, ficha en modal, lista de Llamadas
   -- + banco cargado al abrir Hoy/Llamadas + banner de cobertura
   reescrito) completo y verificado (suite completa 2036/2036, baseline
-  pre-plan 2025/2025 -- detalle en `35-03-SUMMARY.md`). SCR-01/SCR-02/
-  SCR-03 cerrados. Solo queda 35-04 (SCR-04, script de cobertura).
-Last activity: 2026-08-22 -- Phase 35 Plan 3 (SCR-01/SCR-03, selector de
-  guion en las 4 superficies + banner reescrito) ejecutado y verificado.
+  pre-plan 2025/2025 -- detalle en `35-03-SUMMARY.md`). 35-04
+  (scripts/coverage-script.mjs + npm run coverage:script -- --days 7,
+  backend/CLI puro, sin tocar public/) completo y verificado (suite
+  completa 2054/2054 x2 corridas limpias, baseline pre-plan 2036/2036 --
+  detalle en `35-04-SUMMARY.md`). SCR-01..SCR-04 cerrados. **Fase 35
+  (SCR) COMPLETA (4/4 planes).**
+Last activity: 2026-08-22 -- Phase 35 Plan 4 (SCR-04, script de cobertura
+  de atribucion de guion) ejecutado y verificado. Siguiente: Phase 36
+  (RESP -- la disposicion responde) -- sin plan generado todavia (0/3 en
+  ROADMAP.md, requiere discuss-phase/plan-phase).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
