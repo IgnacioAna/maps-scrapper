@@ -12693,6 +12693,66 @@ globalThis.__voiceAgent.CALL_STAGES = CALL_STAGES;
 globalThis.__voiceAgent.CALL_STAGE_RELEVANT_OUTCOMES = CALL_STAGE_RELEVANT_OUTCOMES;
 globalThis.__voiceAgent._deriveCallStage = _deriveCallStage;
 
+// Atribución de guion (Phase 35, 2026-08-22): QUÉ guion(es) se usaron
+// durante la llamada. Es una dimensión SEPARADA del resultado y de la etapa
+// (D-02 del CONTEXT de la Fase 35) — un mismo guion puede terminar en
+// cualquier outcome. Si la llamada usó más de un guion se guardan TODOS,
+// deduplicados y en orden de aparición (D-03): `scriptIdsUsed` ya es array,
+// no se fuerza a uno solo.
+//
+// `SCRIPT_RELEVANT_OUTCOMES` es un Set PROPIO, NO un alias/referencia de
+// `CALL_STAGE_RELEVANT_OUTCOMES`: hoy coinciden (los mismos seis outcomes
+// donde alguien atendió), pero son preguntas distintas — "¿hasta dónde
+// llegó la llamada?" vs "¿qué guion se usó?" — y el día que exista, por
+// ejemplo, un guion de buzón, pueden divergir. El gate de outcome es el
+// mismo que el de la etapa por la misma razón que ahí: en un `no_answer`
+// nadie escuchó ningún guion, y contarlo inflaría el denominador de la
+// vista de efectividad hacia abajo (un 0% que en realidad es "nadie
+// atendió" se confundiría con "el guion no funciona").
+const SCRIPT_RELEVANT_OUTCOMES = new Set([
+  'answered_interested', 'answered_not_interested', 'hung_up',
+  'callback_later', 'scheduled_with_admin', 'placeholder_sent',
+]);
+const MAX_SCRIPT_IDS_PER_CALL = 20;
+const MAX_SCRIPT_ID_LEN = 80;
+
+// Set de ids válidos contra el banco REAL de guiones (data/call_scripts.json)
+// — el admin lo edita desde Centralita, así que la whitelist es contra eso y
+// no contra una lista hardcodeada. Lo ACEPTADO es superset de lo OFRECIDO:
+// los guiones `trigger: 'rules'` no se ofrecen en el panel de flow pero se
+// aceptan si existen en el banco (mismo patrón que `ACT_WA_TEMPLATE_IDS`).
+// Nunca lanza (`loadCallScripts` ya es defensivo). Se llama SOLO en tiempo
+// de request y SOLO cuando hay candidatos — `CALL_SCRIPTS_FILE` es un
+// `const` declarado más abajo (línea ~19540 en el momento de escribir esto):
+// invocar `loadCallScripts()` durante la evaluación del módulo sería TDZ.
+function _knownScriptIds() {
+  try {
+    const data = loadCallScripts();
+    return new Set((data.scripts || []).map((s) => s.id));
+  } catch { return new Set(); }
+}
+
+// Pura: filtra a strings no vacíos, recorta a MAX_SCRIPT_ID_LEN, descarta
+// los que no estén en `knownIds`, deduplica preservando el orden de
+// aparición y corta en MAX_SCRIPT_IDS_PER_CALL.
+function _sanitizeScriptIds(candidates, knownIds) {
+  const out = [];
+  const seen = new Set();
+  if (!Array.isArray(candidates)) return out;
+  for (const raw of candidates) {
+    if (typeof raw !== 'string') continue;
+    const id = raw.substring(0, MAX_SCRIPT_ID_LEN);
+    if (!id || !knownIds.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+    if (out.length >= MAX_SCRIPT_IDS_PER_CALL) break;
+  }
+  return out;
+}
+globalThis.__scriptAttr = Object.assign(globalThis.__scriptAttr || {}, {
+  SCRIPT_RELEVANT_OUTCOMES, MAX_SCRIPT_IDS_PER_CALL, _sanitizeScriptIds,
+});
+
 app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   const data = loadSettersData();
   const lead = data.leads[req.params.id];
@@ -12711,7 +12771,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     lead.callbackShared = false;
   }
 
-  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction, commitment, callStage } = req.body || {};
+  const { outcome, notes, callbackAt, scheduled, telnyxCallMeta, objectionTags, disqualifyReason, doNotCall, callbackShared, autoMarked, correctsAutoMarked, pendingCallId, nextAction, commitment, callStage, scriptIdsUsed, scriptIdsAuto } = req.body || {};
   if (!CALL_OUTCOMES.has(outcome)) {
     return res.status(400).json({ error: `outcome inválido. Esperado uno de: ${[...CALL_OUTCOMES].join(', ')}` });
   }
@@ -12807,6 +12867,39 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     if (!_cleanStage) logEntry.callStageAuto = true;
   }
 
+  // Atribución de guion (Phase 35): candidatos = telnyxCallMeta.scriptIdsUsed
+  // (lo que pasó durante la llamada, si fue WebRTC) seguido de scriptIdsUsed
+  // del NIVEL SUPERIOR del body (lo que registra CUALQUIER superficie, con o
+  // sin telnyxCallMeta — SCR-01/SCR-03). El orden importa poco porque se
+  // deduplica en _sanitizeScriptIds. Antes de este plan, la única puerta de
+  // entrada era telnyxCallMeta.scriptIdsUsed (index.js Sprint 12) — dio 0 de
+  // 199 llamadas porque exigía WebRTC + abrir el panel + clickear un guion,
+  // las tres opcionales.
+  const _scriptCandidates = [
+    ...((telnyxCallMeta && typeof telnyxCallMeta === 'object' && Array.isArray(telnyxCallMeta.scriptIdsUsed)) ? telnyxCallMeta.scriptIdsUsed : []),
+    ...(Array.isArray(scriptIdsUsed) ? scriptIdsUsed : []),
+  ];
+  if (_scriptCandidates.length > 0 && SCRIPT_RELEVANT_OUTCOMES.has(outcome)) {
+    // _knownScriptIds() lee call_scripts.json de disco — se llama SOLO
+    // dentro de esta rama, para no tocar el archivo en cada disposición que
+    // no atribuye guion.
+    const _cleanScripts = _sanitizeScriptIds(_scriptCandidates, _knownScriptIds());
+    if (_cleanScripts.length > 0) {
+      logEntry.scriptIdsUsed = _cleanScripts;
+      // Resolución del flag scriptIdsAuto: si el body trae scriptIdsUsed en
+      // el nivel superior, manda scriptIdsAuto DEL BODY (esa superficie es
+      // la más nueva y, en la segunda oportunidad de SCR-03, la que tiene
+      // que ganar); si no vino nada por el nivel superior, manda
+      // telnyxCallMeta.scriptIdsAuto. Solo el booleano estricto `true`
+      // cuenta como automático — campo ausente = lo eligió una persona,
+      // mismo idioma que callStageAuto.
+      const _scriptAutoSrc = (Array.isArray(scriptIdsUsed) && scriptIdsUsed.length > 0)
+        ? scriptIdsAuto
+        : (telnyxCallMeta && typeof telnyxCallMeta === 'object' ? telnyxCallMeta.scriptIdsAuto : undefined);
+      if (_scriptAutoSrc === true) logEntry.scriptIdsAuto = true;
+    }
+  }
+
   // Si vino metadata de llamada Telnyx, agregar al logEntry
   if (telnyxCallMeta && typeof telnyxCallMeta === 'object') {
     const dur = Math.max(0, Math.min(parseInt(telnyxCallMeta.durationSecs, 10) || 0, 3600));
@@ -12821,13 +12914,11 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
     if (typeof telnyxCallMeta.quickNote === 'string' && telnyxCallMeta.quickNote.trim()) {
       logEntry.quickNote = telnyxCallMeta.quickNote.trim().slice(0, 1000);
     }
-    // Sprint 12: tracking de scripts usados en la llamada para A/B testing
-    if (Array.isArray(telnyxCallMeta.scriptIdsUsed) && telnyxCallMeta.scriptIdsUsed.length > 0) {
-      logEntry.scriptIdsUsed = telnyxCallMeta.scriptIdsUsed
-        .filter(id => typeof id === 'string')
-        .slice(0, 20)
-        .map(id => id.substring(0, 80));
-    }
+    // La atribución de guiones (antes Sprint 12) se mudó al bloque unificado
+    // de arriba, inmediatamente después de callStage — una sola puerta de
+    // entrada, cruzada con scriptIdsUsed del nivel superior del body y
+    // saneada contra el banco real (nota #156 de CLAUDE.md sobre builders
+    // duplicados aplica igual a la persistencia).
   } else {
     logEntry.channel = 'manual';
   }
@@ -12862,7 +12953,7 @@ app.post('/api/setters/leads/:id/call-disposition', requireAuth, (req, res) => {
   if (_correctedEntry) {
     logEntry.ts = _correctedEntry.ts;
     if (!(telnyxCallMeta && typeof telnyxCallMeta === 'object')) {
-      for (const f of ['duration', 'fromNumber', 'channel', 'cost', 'costCountry', 'costTariffKey', 'quickNote', 'scriptIdsUsed', 'callStage', 'callStageAuto']) {
+      for (const f of ['duration', 'fromNumber', 'channel', 'cost', 'costCountry', 'costTariffKey', 'quickNote', 'scriptIdsUsed', 'scriptIdsAuto', 'callStage', 'callStageAuto']) {
         if (_correctedEntry[f] !== undefined) logEntry[f] = _correctedEntry[f];
       }
     }
