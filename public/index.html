@@ -1456,6 +1456,18 @@
             </div>
           </div>
 
+          <!-- Medición de guiones (2026-08-22, Fase 35 SCR-02): el guion se
+               atribuye SOLO al empezar a discar (siembra automática en
+               _startTelnyxCall) — este selector es la segunda oportunidad
+               para corregirlo en vivo, sin abrir el panel de guiones.
+               El <select> lo pinta el JS: las opciones salen del banco. -->
+          <div style="margin-bottom:10px;">
+            <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:5px;">
+              Guion que estás usando
+            </div>
+            <div id="telnyx-call-script-wrap"></div>
+          </div>
+
           <!-- Sprint 11: Nota rápida durante la llamada -->
           <div style="margin-bottom:10px;">
             <div style="font-size:9.5px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:0.7px; font-weight:600; margin-bottom:5px; display:flex; align-items:center; gap:5px;">
@@ -3735,7 +3747,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
   <!-- Phase 6: Telnyx WebRTC SDK (cargado lazy desde CDN, sin npm dep) -->
   <script src="https://cdn.jsdelivr.net/npm/@telnyx/webrtc@2/lib/bundle.js" crossorigin="anonymous"></script>
-  <script type="module" src="/app.js?v=20260817d"></script>
+  <script type="module" src="/app.js?v=20260822a"></script>
   <script type="module" src="/wa.js?v=20260815c"></script>
 </body>
 </html>

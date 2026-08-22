@@ -9916,7 +9916,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ── Phase 6: Telnyx call handlers ─────────────────────────────────
     // Estado de la llamada activa actual (UI). Persistir leadId para luego
     // disparar disposition automática al colgar.
-    let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false, scriptIdsUsed: [] };
+    // Fase 35 (SCR-02): scriptIdsUsed vivía acá (Sprint 12) y ahora vive
+    // solo en _dispoScript ([35-02] SCR-ATTR) — un solo estado de atribución.
+    let _telnyxCallState = { leadId: null, fromNumber: null, startedAt: 0, timerInterval: null, muted: false };
 
     // ───────────────────────────────────────────────────────────────
     // Phase 20: disposición obligatoria (D-01/D-02/D-03)
@@ -10442,8 +10444,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // preselección vieja de _renderScriptPanel.
     const _SCRIPT_META_TRIGGERS = new Set(['rules', 'before_call']);
 
-    // Estado único de atribución — reemplaza a _telnyxCallState.scriptIdsUsed
-    // (Sprint 12), que solo se llenaba desde el panel de guiones en vivo.
+    // Estado único de atribución — reemplaza al array que vivía en el estado
+    // de la llamada (Sprint 12), que solo se llenaba desde el panel de
+    // guiones en vivo.
     let _dispoScript = null; // { leadId, ids: string[], auto: boolean }
     function _scriptIdsFor(leadId) {
       return (_dispoScript && _dispoScript.leadId === leadId) ? _dispoScript.ids.slice() : [];
@@ -11520,7 +11523,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       _telnyxCallState.ended = false;
       _telnyxCallState.muted = false;
       _telnyxCallState.statusState = null;
-      _telnyxCallState.scriptIdsUsed = [];
+      // El selector de guion del panel es propio de ESTA llamada — vaciarlo
+      // evita que quede mostrando el guion de la llamada que se acaba de
+      // cerrar mientras se abre la próxima.
+      const _scriptWrap = document.getElementById('telnyx-call-script-wrap');
+      if (_scriptWrap) _scriptWrap.innerHTML = '';
       _currentCallLead = null;
     }
 
@@ -11807,10 +11814,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 20: reset ANTES del try — si ensureClient falla, el catch no debe
       // cancelar un pendiente que quedó de una llamada anterior.
       _telnyxCallState.pendingRegistered = false;
-      _telnyxCallState.scriptIdsUsed = []; // Sprint 12: tracking A/B
+      // Medición de guiones (SCR-02, Fase 35): la llamada NACE con guion
+      // atribuido — antes la única vía de captura exigía abrir el panel de
+      // guiones y clickear uno DURANTE la llamada, y 0 de 199 llamadas lo
+      // hizo. _clearCallScript apaga la atribución de la llamada anterior
+      // (es de UNA llamada, mismo motivo que _clearCallStage arriba) y se
+      // siembra el default con auto:true para que la cobertura no se lea
+      // como si alguien lo hubiera elegido a mano.
+      _clearCallScript();
+      window._setCallScript(leadId, _scriptDefaultId(), { auto: true });
       _currentCallLead = lead;
-      // Pre-cargar scripts si no están en cache (no bloquea la llamada)
-      if (_callScriptsCache.length === 0) _loadCallScripts();
+      // Selector de guion visible durante la llamada, poblado con lo recién
+      // sembrado (o con la sola opción vacía si el banco todavía no cargó).
+      const _scriptWrapEl = document.getElementById('telnyx-call-script-wrap');
+      if (_scriptWrapEl) {
+        _scriptWrapEl.innerHTML = _scriptSelectHTML(leadId, { variant: 'call', fontSize: 12.5, minWidth: 220 });
+        _syncScriptControls();
+      }
+      // Pre-cargar scripts si no están en cache (no bloquea la llamada). Si
+      // el banco todavía no estaba cargado (primera llamada de la sesión),
+      // re-sembrar cuando llegue — pero SOLO si el lead sigue sin
+      // atribución, para no pisar una elección que el SDR haya hecho
+      // mientras cargaba (_setCallScript ya resincroniza el selector).
+      _ensureCallScripts().then(() => {
+        if (_telnyxCallState.leadId === leadId && !_scriptIdsFor(leadId).length) {
+          window._setCallScript(leadId, _scriptDefaultId(), { auto: true });
+        }
+      });
 
       try {
         // Pedir permiso de mic upfront (mejor UX que esperar a Telnyx). NO mantenemos
@@ -12032,13 +12062,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           // leadId:startedAt para que dos llamadas seguidas al mismo lead no pisen el
           // registro y el backend pueda matchear por callStartedAt.
           const _metaStartedAt = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
+          // Esta meta se persiste en localStorage (_telnyxMetaPersist) y
+          // sobrevive un F5, así que es la red de seguridad de la
+          // atribución cuando _dispoScript se pierde por recarga antes de
+          // marcar el resultado (Fase 35, SCR-02).
           const _metaObj = {
             durationSecs,
             fromNumber: _telnyxCallState.fromNumber,
             startedAt: _metaStartedAt,
             endedAt: new Date().toISOString(),
             quickNote: quickNoteText || null,
-            scriptIdsUsed: _telnyxCallState.scriptIdsUsed.slice(), // Sprint 12: A/B tracking
+            scriptIdsUsed: _scriptIdsFor(leadId),
+            scriptIdsAuto: _scriptIsAuto(leadId),
           };
           _pendingTelnyxCallMetadata[leadId] = _metaObj;
           if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
@@ -12272,10 +12307,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // Cache para filtrado por buscador (lo usa el listener del input)
       _renderScriptButtons(_callScriptsCache, '');
-      // Pre-cargar primer script no-meta. Saltea 'rules' (son referencia, no
-      // se "lee" durante una llamada — están en la PACE card sticky).
-      const firstActionable = _callScriptsCache.find(s => s.trigger !== 'rules') || _callScriptsCache[0];
-      if (firstActionable) _selectScript(firstActionable.id);
+      // Preselección honesta (Fase 35, SCR-02): preseleccionar NO es elegir
+      // — antes caía en el primer no-'rules' del banco, que en la práctica
+      // era casi siempre el checklist "Antes de llamar" (before_call). Si se
+      // marcara como elección humana, la cobertura manual mentiría al 100%.
+      // _scriptDefaultId() ya cae al primer guion no-meta si no hay último
+      // elegido ni opener; solo devuelve '' si el banco es puro meta.
+      const _defaultScriptId = _scriptDefaultId();
+      if (_defaultScriptId) _selectScript(_defaultScriptId, { auto: true });
     }
 
     // Render solo los botones (factorizado para que el buscador pueda re-render).
@@ -12293,29 +12332,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           (Array.isArray(s.tags) && s.tags.some(t => (t || '').toLowerCase().includes(q)))
         );
       }
-      // Orden del flow de llamada
-      const triggerOrder = [
-        'before_call', 'gatekeeper', 'opener', 'pitch',
-        'ask_meeting', 'confirm',
-        'objection_brushoff', 'objection_real',
-        'callback', 'whatsapp_msg', 'email_template',
-        'first_call', 'objection', 'scheduling', 'voicemail', 'general',
-      ];
+      // Orden y etiquetas del flow de llamada — fuente única [35-02]
+      // SCR-ATTR (_SCRIPT_TRIGGER_ORDER/_SCRIPT_TRIGGER_LABELS), compartida
+      // con el selector de guion: si divergían, el mismo guion aparecía con
+      // dos nombres en dos pantallas.
       const grouped = {};
       for (const s of pool) {
         const t = s.trigger || 'general';
         if (!grouped[t]) grouped[t] = [];
         grouped[t].push(s);
       }
-      const triggerLabels = {
-        before_call: 'Pre-call', gatekeeper: 'Recepción',
-        opener: 'Apertura', pitch: 'Pitch',
-        ask_meeting: 'Pedir reunión', confirm: 'Confirmar',
-        objection_brushoff: 'Brush-off', objection_real: 'Real',
-        callback: 'Callback', whatsapp_msg: 'WhatsApp', email_template: 'Email',
-        first_call: 'Apertura', objection: 'Objeción',
-        scheduling: 'Cerrar', voicemail: 'Buzón', general: 'General',
-      };
       const triggerColors = {
         before_call: '#7dd3fc',
         gatekeeper: 'var(--accent-hover)', opener: 'var(--accent-hover)', pitch: 'var(--accent-hover)',
@@ -12326,7 +12352,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduling: '#FFB341', voicemail: '#7dd3fc', general: 'rgba(255,255,255,0.5)',
       };
       const sortedTriggers = Object.keys(grouped).sort((a, b) => {
-        const ai = triggerOrder.indexOf(a); const bi = triggerOrder.indexOf(b);
+        const ai = _SCRIPT_TRIGGER_ORDER.indexOf(a); const bi = _SCRIPT_TRIGGER_ORDER.indexOf(b);
         return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
       });
       if (sortedTriggers.length === 0) {
@@ -12338,7 +12364,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const color = triggerColors[trigger] || 'rgba(255,255,255,0.5)';
         return list.map(s => `
           <button class="tlx-script-btn" data-script-id="${escHtml(s.id)}" style="font-size:10.5px; padding:5px 10px; background:rgba(255,255,255,0.03); border:1px solid ${color}40; border-radius:7px; cursor:pointer; color:${color}; transition:all 0.15s; font-weight:500;">
-            ${triggerLabels[trigger] || s.trigger} · ${escHtml(s.label)}
+            ${_SCRIPT_TRIGGER_LABELS[trigger] || s.trigger} · ${escHtml(s.label)}
           </button>
         `).join('');
       }).join('');
@@ -12348,15 +12374,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
 
-    function _selectScript(scriptId) {
+    function _selectScript(scriptId, opts) {
       const s = _callScriptsCache.find(x => x.id === scriptId);
       const textEl = document.getElementById('telnyx-script-text');
       if (!s || !textEl) return;
       textEl.textContent = _interpolateScript(s.text, _currentCallLead);
       textEl.dataset.scriptId = scriptId;
-      // Sprint 12: trackear scripts usados en la llamada activa (solo si hay llamada)
-      if (_telnyx.activeCall && _telnyxCallState.startedAt > 0 && !_telnyxCallState.scriptIdsUsed.includes(scriptId)) {
-        _telnyxCallState.scriptIdsUsed.push(scriptId);
+      // Fase 35 (SCR-02): el panel de guiones escribe en el estado único
+      // (_dispoScript), en modo append — abrir un segundo guion durante la
+      // llamada significa que se usaron los dos (D-03). El wire de clicks
+      // de _renderScriptButtons llama esto SIN opts → elección humana; la
+      // preselección de _renderScriptPanel manda { auto: true }.
+      if (_telnyx.activeCall && _telnyxCallState.startedAt > 0) {
+        const _leadEnFoco = _stageCurrentLeadId();
+        if (_leadEnFoco) window._setCallScript(_leadEnFoco, scriptId, { append: true, auto: (opts && opts.auto === true) });
       }
       // Marcar botón activo (compat con el nuevo styling del panel rediseñado)
       document.querySelectorAll('.tlx-script-btn').forEach(btn => {
