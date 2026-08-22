@@ -68,6 +68,9 @@ function buildIsolatedHoyRenderSection() {
     function _dispoSelectHTML(id, o) { return '<select></select>'; }
     function _actButtonsHTML(id, o) { return '<button></button>'; }
     function _stageChipsHTML(id, o) { return '<select class="stage-select"></select>'; }
+    // 35-03 (SCR-01): _hoyRenderSection ahora también ofrece el selector de
+    // guion en cada fila — mismo criterio de stub que _stageChipsHTML.
+    function _scriptSelectHTML(id, o) { return '<select class="script-select"></select>'; }
     function _leadDueAt(l) { return l && l.callbackAt ? new Date(l.callbackAt).getTime() : null; }
     ${body}
     return _hoyRenderSection;
