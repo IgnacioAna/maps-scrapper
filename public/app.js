@@ -10073,6 +10073,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // resultado de ESE mismo lead (una corrección, o una llamada posterior
       // desde otra vista) la reenviaría como si fuera nueva.
       if (_dispoStage && _dispoStage.leadId === leadId) _clearCallStage();
+      // El guion es de UNA llamada: si queda encendido, la próxima
+      // disposición de ESE lead lo reenvía como si fuera nueva (mismo motivo
+      // que la etapa, arriba — Fase 35, SCR-02).
+      if (_dispoScript && _dispoScript.leadId === leadId) _clearCallScript();
       if (_lastAutoMark && _lastAutoMark.leadId === leadId) _lastAutoMark = null;
       if (_dispoStripPending && _dispoStripPending.leadId === leadId) _dispoStripPending = null;
       if (typeof _dispoLoadPendingStrip === 'function') { try { _dispoLoadPendingStrip(); } catch {} }
@@ -10398,10 +10402,234 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     function _clearCallStage() { _dispoStage = null; _syncStageChips(); }
 
+    // ─── [35-02] SCR-ATTR: INICIO ───
+    // Fase 35, plan 02 (SCR-02): atribución de guion. El diagnóstico del
+    // 21/08 midió que la única vía de captura que existía (abrir el panel de
+    // guiones + clickear uno DURANTE una llamada WebRTC activa) no capturó
+    // NINGUNA de 199 llamadas — el mismo patrón de fuga que callStage el
+    // 16/08 (ver [30-03] DISPO-DEST arriba y CONTEXT.md de la fase). Este
+    // bloque replica esa solución: la llamada NACE con guion atribuido
+    // (siembra automática en _startTelnyxCall) y hay un builder único
+    // (_scriptSelectHTML) para la segunda oportunidad de corregirlo.
+    // Bloque evaluable aislado: sus únicas dependencias externas permitidas
+    // son escHtml, _callScriptsCache, _loadCallScripts, _stageCurrentLeadId,
+    // document, window y localStorage (mismo criterio que [28-01]
+    // DTPICKER-PURE — agregar otra dependencia rompe el test de fuente).
+
+    // Orden y etiquetas de trigger — FUENTE ÚNICA para el panel de guiones
+    // (_renderScriptButtons) y para el selector nuevo (_scriptOptionsHTML).
+    // Antes cada uno tenía su propia copia: si divergían, el mismo guion
+    // aparecía con dos nombres en dos pantallas.
+    const _SCRIPT_TRIGGER_ORDER = [
+      'before_call', 'gatekeeper', 'opener', 'pitch',
+      'ask_meeting', 'confirm',
+      'objection_brushoff', 'objection_real',
+      'callback', 'whatsapp_msg', 'email_template',
+      'first_call', 'objection', 'scheduling', 'voicemail', 'general',
+    ];
+    const _SCRIPT_TRIGGER_LABELS = {
+      before_call: 'Pre-call', gatekeeper: 'Recepción',
+      opener: 'Apertura', pitch: 'Pitch',
+      ask_meeting: 'Pedir reunión', confirm: 'Confirmar',
+      objection_brushoff: 'Brush-off', objection_real: 'Real',
+      callback: 'Callback', whatsapp_msg: 'WhatsApp', email_template: 'Email',
+      first_call: 'Apertura', objection: 'Objeción',
+      scheduling: 'Cerrar', voicemail: 'Buzón', general: 'General',
+    };
+    // 'rules' (meta, PACE) y 'before_call' (checklist previo a discar) no son
+    // guiones que se le hablan a nadie — atribuir el checklist a una
+    // conversación sería un dato falso, que es justo lo que hacía la
+    // preselección vieja de _renderScriptPanel.
+    const _SCRIPT_META_TRIGGERS = new Set(['rules', 'before_call']);
+
+    // Estado único de atribución — reemplaza a _telnyxCallState.scriptIdsUsed
+    // (Sprint 12), que solo se llenaba desde el panel de guiones en vivo.
+    let _dispoScript = null; // { leadId, ids: string[], auto: boolean }
+    function _scriptIdsFor(leadId) {
+      return (_dispoScript && _dispoScript.leadId === leadId) ? _dispoScript.ids.slice() : [];
+    }
+    // El selector muestra el ÚLTIMO id (la corrección más reciente gana).
+    function _scriptPrimaryFor(leadId) {
+      const ids = _scriptIdsFor(leadId);
+      return ids.length ? ids[ids.length - 1] : '';
+    }
+    function _scriptIsAuto(leadId) {
+      return !!(_dispoScript && _dispoScript.leadId === leadId && _dispoScript.auto === true);
+    }
+
+    // leadId falsy → el lead de la llamada activa / la tarjeta del dialer
+    // (_stageCurrentLeadId, mismo resolver que callStage — no duplicar).
+    // scriptId vacío → limpia SOLO ese lead. Si el estado actual es de OTRO
+    // lead, se descarta (la atribución es por lead).
+    // Dos modos, decisión central del plan: por defecto REEMPLAZA (un
+    // selector afirma CUÁL fue el guion — es una corrección, no un segundo
+    // guion); con opts.append===true SUMA si no estaba, que es lo que
+    // corresponde al panel de guiones durante la llamada (abrir un segundo
+    // guion ahí significa que se usaron los dos, D-03).
+    // auto: queda true solo con opts.auto===true; CUALQUIER elección humana
+    // (cualquier llamada sin auto:true) lo baja a false de forma definitiva
+    // para esta llamada, incluso si después se agrega otro guion en append
+    // con auto:true (ej. la re-siembra tardía de _startTelnyxCall).
+    window._setCallScript = function(leadId, scriptId, opts) {
+      opts = opts || {};
+      const id = leadId || _stageCurrentLeadId();
+      if (!id) return;
+      if (!scriptId) {
+        if (_dispoScript && _dispoScript.leadId === id) _dispoScript = null;
+        _syncScriptControls();
+        return;
+      }
+      const isAutoCall = opts.auto === true;
+      const append = opts.append === true;
+      if (!_dispoScript || _dispoScript.leadId !== id) {
+        _dispoScript = { leadId: id, ids: [], auto: isAutoCall };
+      }
+      if (append) {
+        if (!_dispoScript.ids.includes(scriptId)) _dispoScript.ids.push(scriptId);
+      } else {
+        _dispoScript.ids = [scriptId];
+      }
+      if (!isAutoCall) {
+        _dispoScript.auto = false;
+        // Insumo de _scriptDefaultId: la elección humana más reciente de
+        // ESTE SDR. Solo se persiste la elección de una persona — sembrar el
+        // default con lo que sembró el propio default sería circular.
+        try {
+          const uid = (window.__CURRENT_USER__ && window.__CURRENT_USER__.id) || '';
+          localStorage.setItem('scm_last_script_' + uid, scriptId);
+        } catch {}
+      }
+      _syncScriptControls();
+    };
+
+    function _clearCallScript() { _dispoScript = null; _syncScriptControls(); }
+
+    // Id a sembrar al iniciar una llamada, o '' si no hay nada sembrable.
+    // Precedencia: (a) el último guion que ESTE SDR eligió a mano, si sigue
+    // existiendo en el banco y no es meta — la mejor predicción disponible;
+    // (b) el primer guion con trigger==='opener' — toda llamada abre con el
+    // opener, es el default honesto; (c) el primer guion no-meta del banco;
+    // (d) '' si el banco está vacío (o solo tiene meta). Nunca inventa un id
+    // que no esté en el cache: el backend lo descartaría igual (whitelist
+    // de 35-01).
+    function _scriptDefaultId() {
+      let lastId = '';
+      try {
+        const uid = (window.__CURRENT_USER__ && window.__CURRENT_USER__.id) || '';
+        lastId = localStorage.getItem('scm_last_script_' + uid) || '';
+      } catch {}
+      if (lastId) {
+        const found = _callScriptsCache.find(s => s.id === lastId && !_SCRIPT_META_TRIGGERS.has(s.trigger));
+        if (found) return found.id;
+      }
+      const opener = _callScriptsCache.find(s => s.trigger === 'opener');
+      if (opener) return opener.id;
+      const firstNonMeta = _callScriptsCache.find(s => !_SCRIPT_META_TRIGGERS.has(s.trigger));
+      if (firstNonMeta) return firstNonMeta.id;
+      return '';
+    }
+
+    // <option> agrupadas por trigger, en el orden de _SCRIPT_TRIGGER_ORDER,
+    // excluyendo los triggers meta. label e id del guion los edita el admin
+    // desde Centralita — texto no confiable dentro de atributos/onchange
+    // inline, todo pasa por escHtml (T-35-05).
+    function _scriptOptionsHTML(selectedId) {
+      const sel = selectedId || '';
+      const grouped = {};
+      for (const s of _callScriptsCache) {
+        if (_SCRIPT_META_TRIGGERS.has(s.trigger)) continue;
+        const t = s.trigger || 'general';
+        if (!grouped[t]) grouped[t] = [];
+        grouped[t].push(s);
+      }
+      const sortedTriggers = Object.keys(grouped).sort((a, b) => {
+        const ai = _SCRIPT_TRIGGER_ORDER.indexOf(a);
+        const bi = _SCRIPT_TRIGGER_ORDER.indexOf(b);
+        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+      });
+      let html = '<option value="">— Guion —</option>';
+      for (const trigger of sortedTriggers) {
+        const groupLabel = escHtml(_SCRIPT_TRIGGER_LABELS[trigger] || trigger);
+        html += `<optgroup label="${groupLabel}">`;
+        for (const s of grouped[trigger]) {
+          const id = escHtml(s.id);
+          const selAttr = s.id === sel ? ' selected' : '';
+          html += `<option value="${id}"${selAttr}>${escHtml(s.label)}</option>`;
+        }
+        html += '</optgroup>';
+      }
+      return html;
+    }
+
+    // Builder ÚNICO del selector de guion — mismo criterio que
+    // _stageChipsHTML/_dispoSelectHTML/_actButtonsHTML (un builder, N call
+    // sites). Sin `append`: desde un selector siempre reemplaza. id y label
+    // interpolados con escHtml, incluido dentro del onchange inline (T-35-05).
+    // variant 'row' = paleta de la app; 'call' = paleta oscura del panel de
+    // llamada (no romper ese fondo).
+    function _scriptSelectHTML(leadId, { variant = 'row', fontSize = 12, minWidth = 150 } = {}) {
+      const id = escHtml(leadId || '');
+      const selected = _scriptPrimaryFor(leadId);
+      const title = escHtml('Guion usado en esta llamada — se atribuye solo al empezar a discar, corregilo acá si no fue el que se usó.');
+      const palette = variant === 'call'
+        ? 'background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); color:#fff;'
+        : 'background:var(--bg-input); border:1px solid var(--border-default); color:var(--text-primary);';
+      return `<select class="script-select" data-lead="${id}" data-optsig="" title="${title}" onchange="window._setCallScript('${id}', this.value)" style="padding:9px 10px; border-radius:8px; ${palette} font-size:${fontSize}px; min-width:${minWidth}px; cursor:pointer; font-family:inherit;">
+        ${_scriptOptionsHTML(selected)}
+      </select>`;
+    }
+
+    // Sincroniza TODOS los <select> de guion en pantalla. Cada uno declara
+    // de qué lead es (data-lead); sin ese atributo, el de la llamada activa
+    // / la tarjeta del dialer. Repuebla las <option> solo si la firma del
+    // banco cambió (data-optsig), y RECIÉN DESPUÉS asigna el value — asignar
+    // un value que todavía no existe como option lo deja vacío. Mismo
+    // criterio que _syncStageChips: mirar el lead de CADA control, nunca un
+    // valor global (con 50 filas en pantalla, comparar solo contra un id
+    // fijo prendería el mismo guion en todas).
+    function _syncScriptControls() {
+      const sig = _callScriptsCache.length + ':' + (_callScriptsCache[0] ? _callScriptsCache[0].id : '');
+      document.querySelectorAll('select.script-select').forEach(sel => {
+        const id = sel.dataset.lead || _stageCurrentLeadId();
+        if (sel.dataset.optsig !== sig) {
+          sel.innerHTML = _scriptOptionsHTML(id ? _scriptPrimaryFor(id) : '');
+          sel.dataset.optsig = sig;
+        }
+        sel.value = id ? _scriptPrimaryFor(id) : '';
+      });
+    }
+
+    // Carga el banco una sola vez por sesión (promesa en vuelo compartida:
+    // N llamadas concurrentes a esto NO disparan N fetch, T-35-08). Devuelve
+    // una promesa siempre; al resolver, repuebla los selectores ya
+    // renderizados. OJO TDZ: no invocar durante la evaluación del módulo —
+    // _callScriptsCache es un `let` declarado más abajo (línea ~11990); solo
+    // se llama desde paths de render o de llamada, después de que el módulo
+    // terminó de evaluarse.
+    let _ensureCallScriptsPromise = null;
+    function _ensureCallScripts() {
+      if (_callScriptsCache.length > 0) return Promise.resolve();
+      if (!_ensureCallScriptsPromise) {
+        _ensureCallScriptsPromise = _loadCallScripts()
+          .then(() => { _syncScriptControls(); })
+          .finally(() => { _ensureCallScriptsPromise = null; });
+      }
+      return _ensureCallScriptsPromise;
+    }
+    // ─── [35-02] SCR-ATTR: FIN ───
+
     function _dispoEnforcementBody(leadId) {
       const body = {};
       const _stage = _stageFor(leadId);
       if (_stage) body.callStage = _stage;
+      // Medición de guiones (35-02): mismo criterio que la etapa — viaja
+      // desde CUALQUIER superficie porque se inyecta acá, en el helper que
+      // ya comparten los 6 call sites de call-disposition.
+      const _scriptIds = _scriptIdsFor(leadId);
+      if (_scriptIds.length) {
+        body.scriptIdsUsed = _scriptIds;
+        if (_scriptIsAuto(leadId)) body.scriptIdsAuto = true;
+      }
       if (_lastAutoMark && _lastAutoMark.leadId === leadId && (Date.now() - _lastAutoMark.at) < 15 * 60 * 1000) {
         body.correctsAutoMarked = true;
       }
