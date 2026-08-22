@@ -22195,11 +22195,32 @@ document.addEventListener('DOMContentLoaded', async () => {
       ${sub ? `<div style="font-size:11px; color:var(--text-tertiary); margin-top:3px;">${sub}</div>` : ''}
     </div>`;
 
-    const coberturaBanner = (cov.withStagePct == null || cov.withStagePct < 100) ? `
-      <div style="padding:11px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${cov.withStage ? 'var(--warning)' : 'var(--border-strong)'}; border-radius:8px; font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.55;">
+    // Línea de etapa: se esconde sola cuando llega al 100% (ya cumplió su
+    // propósito de avisar que falta marcar).
+    const stageLine = (cov.withStagePct == null || cov.withStagePct < 100) ? `
         <strong style="color:var(--text-primary);">Cobertura: ${num(cov.withStage || 0)} de ${num(cov.calls || 0)} llamadas</strong> tienen la etapa registrada${cov.withStagePct != null ? ` (${cov.withStagePct}%)` : ''}.
-        ${!cov.withStage ? 'Todavía ninguna: se marca durante la llamada ("¿Con quién hablás?") o al cerrar en el Power Dialer. Los porcentajes de abajo se llenan solos a partir de la próxima tanda.' : 'Los porcentajes se calculan solo sobre las registradas.'}
-        ${cov.withScripts === 0 ? '<br><strong style="color:var(--text-primary);">Ningún guion atribuido</strong>: el guion se registra cuando se abre desde el panel durante la llamada. Si se lee de memoria o en papel, la llamada queda sin guion y no se puede comparar.' : ''}
+        ${!cov.withStage ? 'Todavía ninguna: se marca durante la llamada ("¿Con quién hablás?") o al cerrar en el Power Dialer. Los porcentajes de abajo se llenan solos a partir de la próxima tanda.' : 'Los porcentajes se calculan solo sobre las registradas.'}` : '';
+
+    // Línea de guion (35-03/SCR-03): desde que la llamada nace con guion
+    // atribuido solo (35-02), la cobertura total va a llegar a ~100% casi
+    // enseguida — lo que importa a partir de ahí es cuánto es MANUAL. Por eso
+    // este bloque NO se apaga cuando cov.withStagePct llega a 100 (a
+    // diferencia de stageLine): se muestra siempre que haya llamadas en el
+    // período. Sin llamadas (cov.calls === 0) no se muestran porcentajes
+    // inventados; sin ningún guion atribuido todavía, mensaje propio.
+    const scriptLine = !cov.calls ? '' : (!cov.withScripts ? `
+        <strong style="color:var(--text-primary);">Ningún guion atribuido</strong> todavía en este período.` : (() => {
+      const manual = cov.withScriptsManual || 0;
+      const auto = Math.max(0, cov.withScripts - manual);
+      return `
+        <strong style="color:var(--text-primary);">Guion: ${num(cov.withScripts)} de ${num(cov.calls)} llamadas</strong>${cov.withScriptsPct != null ? ` (${cov.withScriptsPct}%)` : ''} tienen guion atribuido.
+        De esas, ${num(manual)} las eligió una persona; las otras ${num(auto)} son el guion por defecto que se atribuye solo al empezar a discar.
+        Para comparar dos guiones entre sí hacen falta elecciones, no defaults — con todo en default, la tabla de abajo compara el guion oficial contra sí mismo.`;
+    })());
+
+    const coberturaBanner = (stageLine || scriptLine) ? `
+      <div style="padding:11px 14px; background:var(--bg-app); border:1px solid var(--border-subtle); border-left:3px solid ${cov.withStage ? 'var(--warning)' : 'var(--border-strong)'}; border-radius:8px; font-size:12.5px; color:var(--text-secondary); margin-bottom:14px; line-height:1.55;">
+        ${stageLine}${stageLine && scriptLine ? '<br>' : ''}${scriptLine}
       </div>` : '';
 
     const scripts = Array.isArray(d.scripts) ? d.scripts : [];
