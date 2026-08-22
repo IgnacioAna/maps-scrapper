@@ -19965,7 +19965,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
   // agendamiento se registra como un entry manual aparte segundos después de
   // la llamada real. Contarlos duplicaría la misma conversación.
   const gl = {
-    calls: 0, withStage: 0, withScripts: 0,
+    calls: 0, withStage: 0, withScripts: 0, withScriptsManual: 0,
     contestador: 0, recepcion: 0, decisor: 0,
     connects: 0, interested: 0, scheduled: 0,
   };
@@ -19975,7 +19975,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
       scriptId, label: s?.label || '(eliminado)',
       trigger: s?.trigger || 'general',
       variant: s?.variant || '',
-      used: 0, staged: 0, recepcion: 0, decisor: 0,
+      used: 0, usedManual: 0, staged: 0, recepcion: 0, decisor: 0,
       reached: 0, interested: 0, scheduled: 0,
     };
   };
@@ -19992,12 +19992,20 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
       const isInterested = interestedOutcomes.has(c.outcome);
       const isScheduled = COLD_CALL_APPOINTMENT_OUTCOMES.has(c.outcome);
       const hasScripts = Array.isArray(c.scriptIdsUsed) && c.scriptIdsUsed.length > 0;
+      // Phase 35: con el default automático la cobertura TOTAL puede saltar a
+      // casi 100% de golpe (una llamada nace con guion atribuido sin que
+      // nadie toque nada). El número que dice si el equipo está midiendo de
+      // verdad es el MANUAL — solo lo que registró una persona.
+      // gl.withScripts sigue contando TODAS (auto incluidas): son dos
+      // números distintos y los dos hacen falta.
+      const scriptsManual = hasScripts && c.scriptIdsAuto !== true;
 
       // Funnel global: existe aunque ningún guion esté atribuido. Sin esto el
       // panel queda vacío mientras la captura de guiones no tenga cobertura.
       gl.calls++;
       if (stage) { gl.withStage++; gl[stage]++; }
       if (hasScripts) gl.withScripts++;
+      if (scriptsManual) gl.withScriptsManual++;
       if (isConnect) gl.connects++;
       if (isInterested) gl.interested++;
       if (isScheduled) gl.scheduled++;
@@ -20009,6 +20017,7 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
         if (!stats[scriptId]) stats[scriptId] = _blank(scriptId);
         const st = stats[scriptId];
         st.used++;
+        if (scriptsManual) st.usedManual++;
         if (stage) {
           st.staged++;
           if (stage === 'recepcion' || stage === 'decisor') st.recepcion++;
@@ -20055,12 +20064,20 @@ app.get('/api/telnyx/script-effectiveness', requireAuth, (req, res) => {
     },
     // Cobertura: sin esto no se sabe si un 0% es "el guion no funciona" o
     // "nadie registró el dato". Son cosas distintas y se confunden fácil.
+    // Phase 35: con el default automático, withScripts va a saltar a casi
+    // 100% de golpe — un 100% total con 0% manual significa "todos los
+    // guiones atribuidos son el que estaba puesto por defecto", que sirve
+    // para comparar el guion oficial contra sí mismo pero NO para comparar
+    // dos guiones entre sí. withScriptsManual es el número que dice si el
+    // equipo está eligiendo guion de verdad.
     coverage: {
       calls: gl.calls,
       withStage: gl.withStage,
       withStagePct: pct(gl.withStage, gl.calls),
       withScripts: gl.withScripts,
       withScriptsPct: pct(gl.withScripts, gl.calls),
+      withScriptsManual: gl.withScriptsManual,
+      withScriptsManualPct: pct(gl.withScriptsManual, gl.calls),
     },
   });
 });
