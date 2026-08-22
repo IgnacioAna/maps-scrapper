@@ -396,9 +396,226 @@ Plans:
 
 ---
 
+### Phase 35: SCR — Atribución de guion
+
+**Goal**: Toda llamada queda asociada al guion que se usó, sin depender de
+que el SDR se acuerde de abrir un panel, y corregible después. Sin esto la
+vista "Guiones de llamada" sigue vacía (0 de 199 llamadas atribuidas al
+17/08) y el ciclo de prueba del guion nuevo no puede distinguir un guion de
+otro.
+**Depends on**: Phase 30, Phase 33
+**Requirements**: SCR-01, SCR-02, SCR-03, SCR-04
+**Success Criteria** (what must be TRUE):
+
+  1. **SCR-01** — El guion usado se puede marcar en las cuatro superficies
+     donde ya se marca la etapa: panel de llamada en vivo, Power Dialer,
+     fila de la lista de Llamadas y ficha en modal. Un solo builder
+     compartido, mismo patrón que `_stageChipsHTML` — no cuatro copias.
+
+  2. **SCR-02** — La llamada nace con un guion atribuido SIN que el SDR
+     toque nada (el guion oficial del trigger que corresponda, o el último
+     usado), y tocar otro lo corrige.
+     *Verificado 21/08*: la captura ya existe y es más fuerte de lo que
+     parecía — `_selectScript` (public/app.js:12123) agrega solo cada guion
+     tocado durante una llamada activa y lo manda en `telnyxCallMeta`
+     (app.js:11813). El problema no es que falte dónde marcar: la única vía
+     de captura exige tres acciones opcionales — que la llamada sea por
+     WebRTC (`_telnyx.activeCall`), que el SDR abra el panel (arranca
+     cerrado, hay que apretar "Guion") y que clickee un guion adentro. Cero
+     de 199 llamadas completaron esa cadena. Este criterio es el default
+     que elimina las tres.
+
+  3. **SCR-03** — La atribución se puede cargar o corregir después de
+     cerrada la llamada, desde la ficha y desde la lista. El diagnóstico
+     del 16/08 sobre `callStage` fue que la fuga no era la captura en vivo
+     sino la segunda oportunidad; con esa segunda oportunidad, `callStage`
+     llegó a 62% de cobertura el primer día. No repetir el error.
+
+  4. **SCR-04** — Existe `npm run coverage:script -- --days 7`, análogo a
+     `coverage:callstage`: devuelve cuántas llamadas del período traen
+     guion atribuido y cuántas lo tienen cargado por una persona. Corre
+     sobre `data/`, así que documenta que necesita `pre-deploy` antes.
+
+**Decisiones ya tomadas** (no re-abrir):
+
+- **D-01** — La ventana por defecto del comando es **7 días, no 30**. Los
+  30 días arrastran las llamadas de las setters de julio: la cobertura da
+  0% para siempre y no significa nada.
+- **D-02** — La atribución es una **dimensión separada del resultado y de
+  la etapa**, igual que `callStage`. Un mismo guion puede terminar en
+  cualquier outcome.
+- **D-03** — Si una llamada usó más de un guion, se guardan todos
+  (`scriptIdsUsed` ya es array). No forzar uno solo.
+
+**Non-goals**: no rehacer la vista de efectividad por guion — existe y
+funciona, lo que le falta es dato. No agregar guiones nuevos.
+**Plans**: 4 plans (3 olas — contrato backend, captura automática en vivo,
+segunda oportunidad en las 4 superficies + medición)
+
+Plans:
+
+**Wave 1**
+
+- [ ] 35-01-PLAN.md — SCR-01/SCR-03/SCR-04 (backend): `call-disposition` acepta `scriptIdsUsed`/`scriptIdsAuto` en el nivel superior del body, whitelist contra el banco de guiones, gate por outcome; `script-effectiveness` publica cobertura auto vs manual
+
+**Wave 2** *(depende de 35-01)*
+
+- [ ] 35-02-PLAN.md — SCR-02: bloque `[35-02] SCR-ATTR` en `public/app.js` (estado único + builder + default), siembra automática del guion al iniciar la llamada y selector visible en el panel de llamada
+
+**Wave 3** *(depende de 35-02; 35-03 y 35-04 en paralelo, no comparten archivos)*
+
+- [ ] 35-03-PLAN.md — SCR-01/SCR-03: el selector en las 4 superficies (Power Dialer, lista de Llamadas, Hoy, ficha en modal) + banner de cobertura reescrito
+- [ ] 35-04-PLAN.md — SCR-04: `npm run coverage:script -- --days 7` (ventana de 7 días recortada al deploy, desglose auto vs elegido a mano)
+
+---
+
+### Phase 36: DISP — La disposición responde
+
+**Goal**: Marcar un resultado deja de sentirse como que el sistema no lo
+tomó. Hoy puede tardar hasta ~10 segundos sin decir nada en pantalla, y el
+SDR marca de nuevo o cree que se perdió.
+**Depends on**: Phase 33
+**Requirements**: RESP-01, RESP-02, RESP-03
+**Success Criteria** (what must be TRUE):
+
+  1. **RESP-01** — Al apretar cualquier resultado, la pantalla lo acusa al
+     instante (spinner o estado "guardando…" en el botón o la tarjeta), no
+     recién cuando termina.
+     *Verificado 21/08*: `_finalizeActiveCallBeforeDisposition`
+     (public/app.js:11970) cuelga la llamada y espera **4.500 ms + 250 ms
+     de respiro = 4,75 s** a que se arme el audio antes de mandar el POST;
+     después `_pdHandleDisposition` (app.js:7950) hace polling con **techo
+     duro de 6 s** (`_deadline = Date.now() + 6000`) en los outcomes
+     directos — con el botón deshabilitado y sin ningún feedback.
+
+  2. **RESP-02** — El guardado del outcome no espera al audio. Evaluar
+     mandar el POST primero y adjuntar la metadata de Telnyx cuando esté
+     lista (o en una segunda escritura), de modo que el resultado quede
+     persistido en cuanto se aprieta. Requisito duro: **no se puede perder
+     el `telnyxCallMeta`** ni romper el flujo de transcripción diferida —
+     si no hay forma segura de desacoplarlo, se documenta por qué y queda
+     solo RESP-01.
+
+  3. **RESP-03** — El pad DTMF (public/index.html:1477) arranca visible o
+     recuerda el último estado.
+     *Verificado 21/08*: el panel ya se abre en `Conectando…`
+     (app.js:11558), así que el pad está disponible desde el arranque, pero
+     nace con `display:none` y su toggle (app.js:12474) no persiste nada:
+     en una central que tira el menú en los primeros segundos son dos
+     clics de más.
+
+**Decisiones ya tomadas** (no re-abrir):
+
+- **D-01** — El **hold no se toca**. Que la tarjeta se quede con el banner
+  "✓ Resultado guardado" después de marcar es el comportamiento correcto
+  desde el 22/07 (`_pdHold`, app.js:7409): el que quiere avance automático
+  prende el autopiloto con la tecla A. El problema no es el hold, es que
+  no se ve que guardó.
+- **D-02** — No cambiar los atajos de teclado ni el orden del grid de
+  disposición: `_pdKeyOutcomes` (app.js:8110) y el grid coinciden 1 a 1 —
+  verificado 21/08, los nueve outcomes en el mismo orden.
+
+**Non-goals**: no tocar `MAX_HUNG_UP` ni `MAX_NO_CONTACT` en esta fase (ver
+la nota de umbrales en .planning/).
+**Plans**: 3 plans
+
+Plans:
+- [ ] 36-01-PLAN.md — RESP-01: acuse inmediato al marcar (grid del dialer, lista de Llamadas y tarjetas de Hoy), con apagado en guardado/error/modal y techo de 15s
+- [ ] 36-02-PLAN.md — RESP-02: el POST del resultado deja de esperar al audio — la metadata se arma al colgar (sincrónica) y la espera del audio se muda al flush de transcripción
+- [ ] 36-03-PLAN.md — RESP-03: el teclado DTMF arranca visible y recuerda el último estado por navegador
+
+---
+
+### Phase 37: SES — La sesión de discado como partida
+
+**Goal**: Una sesión de discado empieza, termina y devuelve un marcador
+propio. Hoy no existe como objeto: se sale con Esc y no queda rastro de que
+ocurrió.
+**Depends on**: Phase 33, Phase 35
+**Requirements**: SES-01, SES-02, SES-03, SES-04, SES-05
+**Success Criteria** (what must be TRUE):
+
+  1. **SES-01** — Existe una entidad **`dialSession` persistida** con
+     `startedAt`, `endedAt`, `by`, `mode` (`calls` / `hoy` + `hoyFilter`),
+     el filtro con el que se armó la cola, el tamaño de la cola y los
+     contadores por resultado.
+     *Verificado 21/08*: `_pd` (public/app.js:6915) es estado efímero de
+     cliente — `queue`, `currentIdx`, `processed` — y `_pdExit()`
+     (app.js:7280) esconde el panel y refetchea sin guardar nada. No hay
+     ninguna entidad de sesión en `index.js`, `public/app.js` ni `src/`.
+
+  2. **SES-02** — **Siempre hay pantalla de cierre**, no solo al vaciar la
+     cola. Al salir del Power Dialer se muestra el resultado de **esa**
+     sesión — marcadas, atendieron, conversaciones, desglose por resultado
+     — antes de cerrar.
+     *Verificado 21/08*: el resumen (app.js:7378-7387) vive dentro de
+     `if (_pd.currentIdx >= _pd.queue.length)` y dice solo "Procesaste N
+     leads"; con colas de decenas de leads no se llega nunca.
+
+  3. **SES-03** — Existe **historial de sesiones**: fecha, duración,
+     marcadas, atendieron, conversaciones. Alcanza con una tabla; lo que
+     importa es poder ver la de hoy contra la de ayer.
+
+  4. **SES-04** — Al cerrar la sesión se hace **una sola pregunta sobre el
+     estado del que marcó** (3-4 chips: `bien` / `normal` / `costó` /
+     `pésimo`), guardada en la `dialSession`. **Al cierre, una vez, nunca
+     por llamada.**
+     *Verificado 21/08*: no hay ningún campo de estado del operador en las
+     26 claves de `callLog`, y el volumen registrado varía **8× entre
+     semanas** con el mismo guion, producto y base: sin esa columna,
+     cualquier ciclo de prueba mide el día y no el guion.
+
+  5. **SES-05** — Los contadores de la sesión **derivan del CALL METRICS
+     CORE** (`globalThis.__callCore`, index.js:8292), no se re-implementan
+     inline. Las definiciones de marcadas / atendieron / conversaciones /
+     agendadas son las del motor, sin excepción.
+     `tests/metrics-consistency.test.js` tiene que seguir verde.
+
+**Decisiones ya tomadas** (no re-abrir):
+
+- **D-01 — La victoria definida es marcar**, no cerrar ni que atiendan
+  (regla fijada por el user el 25/07). La pantalla de cierre tiene que
+  devolver un número que suba aunque el resultado comercial haya sido cero.
+  El desglose comercial va abajo, no arriba.
+- **D-02 — El marcador vive adentro de la actividad.** Un tablero por día y
+  por semana ya existe (Mi rendimiento / Equipo) y no cumple esta función:
+  lo que falta es la partida, con principio, final y resultado propio.
+- **D-03 — La pregunta de estado es opcional de responder pero siempre se
+  ofrece.** Si se saltea, la sesión se guarda igual con el campo vacío. No
+  bloquear el cierre.
+- **D-04 — No hay meta diaria ni racha en esta fase.** Primero que exista
+  el registro; las metas se deciden con datos, no antes. (Las apariciones
+  de `racha` en index.js:12457+ son cadencia del lead, no del operador —
+  verificado 21/08, no reusar ese concepto.)
+
+**Non-goals**: no tocar el hold, el autopiloto ni los atajos. No dialer
+automático: la llamada la dispara siempre una persona (restricción de
+compliance vigente).
+**Plans**: 4 plans (4 olas, secuenciales — el backend y el frontend comparten archivo por ola)
+
+Plans:
+
+**Wave 1**
+
+- [ ] 37-01-PLAN.md — SES-01/SES-05 (backend): entidad `dialSessions` dentro de `setters.json` + abrir/cerrar sesión con contadores derivados del CALL METRICS CORE
+
+**Wave 2** *(depende de 37-01)*
+
+- [ ] 37-02-PLAN.md — SES-03/SES-04 (backend): `GET /dial-sessions` (historial con RBAC por scope) + `PATCH /dial-sessions/:id` (estado del que marcó)
+
+**Wave 3** *(depende de 37-01 y 37-02)*
+
+- [ ] 37-03-PLAN.md — SES-02/SES-04 (dialer): ciclo de vida de la sesión en `_pdStart`/`_pdExit`, pantalla de cierre ÚNICA (también al agotar la cola) y chips de estado
+
+**Wave 4** *(depende de 37-02 y 37-03)*
+
+- [ ] 37-04-PLAN.md — SES-03 (Mi rendimiento): tabla "Sesiones de discado" — hoy contra ayer, con la respuesta de estado a la vista
+
+---
+
 ## Progress
 
-**Execution Order:** Phases execute in numeric order: 28 → 29 → 30 → 31 → 32 → 33 → 34
+**Execution Order:** Phases execute in numeric order: 28 → 29 → 30 → 31 → 32 → 33 → 34 → 35 → 36 → 37
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -409,8 +626,10 @@ Plans:
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
+| 35. SCR — Atribución de guion | 0/4 | Planned | — |
+| 36. DISP — La disposición responde | 0/3 | Planned | — |
+| 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
 
----
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
 

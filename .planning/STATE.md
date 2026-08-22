@@ -760,6 +760,21 @@ Contra HEAD `a9e4886`:
 
 ### Roadmap Evolution
 
+- 2026-08-21 — **Phases 35-37 agregadas** tras verificar el brief contra el
+  código (10/10 números exactos, todas las referencias de línea correctas).
+  35 SCR (atribución de guion), 36 DISP (la disposición responde), 37 SES
+  (la sesión de discado como partida). Orden de valor: 35 → 36 → 37.
+  Hallazgo que cambió el brief: la captura de guion YA existe y es
+  automática (`_selectScript`, app.js:12123), pero exige tres acciones
+  opcionales — llamada por WebRTC, abrir el panel (arranca cerrado) y
+  clickear un guion. Cero de 199 llamadas la completaron. SCR-02 se
+  reescribió de "queda propuesto por defecto" (ya cumplido) a "la llamada
+  nace con guion atribuido sin tocar nada".
+  Nota operativa: `gsd-sdk query phase.add` numeró 100 porque toma el
+  directorio más alto de `.planning/phases/` y existe `99-auditoria-integral`
+  fuera de secuencia; las tres fases se escribieron a mano con la numeración
+  correcta.
+
 - 2026-07-25 — **Milestone v2.0 iniciado**. Roadmap v1 (phases 1–18)
   archivado en MILESTONES.md. Numeración continúa: 19–23. Decisiones del
   user: canal = grupo WhatsApp (email fallback), disposición obligatoria

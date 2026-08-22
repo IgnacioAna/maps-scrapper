@@ -350,6 +350,45 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 - [x] **HOY-05**: Un panel de higiene muestra si la cola de vencidos crece o
   se vacía — el indicador de si está por encima de su capacidad.
 
+### SCR — Atribución de guion *(Phase 35)*
+
+- [ ] **SCR-01**: El guion usado se puede marcar en las cuatro superficies
+  donde ya se marca la etapa (panel de llamada, Power Dialer, fila de la
+  lista, ficha en modal), con un builder único.
+- [ ] **SCR-02**: La llamada nace con un guion atribuido sin que el SDR
+  toque nada, y tocar otro lo corrige. *(La captura ya existía —
+  `_selectScript` — pero exigía tres acciones opcionales: 0 de 199 llamadas
+  la completaron.)*
+- [ ] **SCR-03**: La atribución se puede cargar o corregir después de
+  cerrada la llamada, desde la ficha y desde la lista. *(La segunda
+  oportunidad fue lo que llevó `callStage` a 62% el primer día.)*
+- [ ] **SCR-04**: Existe `npm run coverage:script -- --days 7`, con el
+  split entre lo sembrado por default y lo cargado por una persona.
+
+### RESP — La disposición responde *(Phase 36)*
+
+> Renombrados de DISP a RESP el 2026-08-21: los IDs DISP-01/02/03 ya estaban
+> tomados por la Phase 20 (disposición obligatoria), que es otro requisito.
+
+- [ ] **RESP-01**: Al apretar cualquier resultado la pantalla lo acusa al
+  instante, no recién cuando termina de guardar. *(Hoy: hasta ~10 s sin
+  feedback — 4,75 s en el finalize + 6 s de polling.)*
+- [ ] **RESP-02**: El guardado del outcome no espera al audio, sin perder el
+  `telnyxCallMeta` ni romper la transcripción diferida. Si no hay forma
+  segura de desacoplarlo, se documenta por qué.
+- [ ] **RESP-03**: El pad DTMF arranca visible o recuerda el último estado.
+
+### SES — La sesión de discado como partida *(Phase 37)*
+
+- [ ] **SES-01**: Existe una entidad `dialSession` persistida con inicio,
+  fin, quién, modo, filtro, tamaño de cola y contadores por resultado.
+- [ ] **SES-02**: Siempre hay pantalla de cierre, no solo al vaciar la cola.
+- [ ] **SES-03**: Existe historial de sesiones (la de hoy contra la de ayer).
+- [ ] **SES-04**: Al cerrar se hace una sola pregunta sobre el estado del que
+  marcó, opcional de responder y nunca por llamada.
+- [ ] **SES-05**: Los contadores derivan del CALL METRICS CORE, no se
+  re-implementan inline. `tests/metrics-consistency.test.js` sigue verde.
+
 ---
 
 ## Future Requirements (deferred)
@@ -402,6 +441,9 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 | COACH-01, COACH-02, COACH-03, COACH-04, COACH-05, COACH-06 | 22 (DIFERIDA) |
 | ALERT-01, ALERT-02, ALERT-03 | 23 (DIFERIDA) |
 | VOICE-01, VOICE-02, VOICE-03, VOICE-04, VOICE-05, VOICE-06 | 24 |
+| SCR-01, SCR-02, SCR-03, SCR-04 | 35 |
+| RESP-01, RESP-02, RESP-03 | 36 |
+| SES-01, SES-02, SES-03, SES-04, SES-05 | 37 |
 | VOICE-07 | 25 |
 | VOICE-08, VOICE-09 | 26 |
 | VOICE-10 | 27 |
