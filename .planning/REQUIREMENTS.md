@@ -352,18 +352,21 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 
 ### SCR — Atribución de guion *(Phase 35)*
 
-- [ ] **SCR-01**: El guion usado se puede marcar en las cuatro superficies
+- [x] **SCR-01**: El guion usado se puede marcar en las cuatro superficies
   donde ya se marca la etapa (panel de llamada, Power Dialer, fila de la
-  lista, ficha en modal), con un builder único.
+  lista, ficha en modal), con un builder único. — Completo en 35-03:
+  `_scriptSelectHTML` (35-02) cableado a Hoy, Power Dialer, ficha en modal
+  y lista de Llamadas, siempre antes del selector de resultado.
 - [x] **SCR-02**: La llamada nace con un guion atribuido sin que el SDR
   toque nada, y tocar otro lo corrige. *(La captura ya existía —
   `_selectScript` — pero exigía tres acciones opcionales: 0 de 199 llamadas
   la completaron.)* — Completo en 35-02: `_startTelnyxCall` siembra
   `_scriptDefaultId()` con `auto:true`, y el selector del panel de llamada
   corrige en vivo (reemplaza) o el panel de guiones suma (D-03).
-- [ ] **SCR-03**: La atribución se puede cargar o corregir después de
+- [x] **SCR-03**: La atribución se puede cargar o corregir después de
   cerrada la llamada, desde la ficha y desde la lista. *(La segunda
-  oportunidad fue lo que llevó `callStage` a 62% el primer día.)*
+  oportunidad fue lo que llevó `callStage` a 62% el primer día.)* —
+  Completo en 35-03: mismo builder, misma segunda oportunidad.
 - [ ] **SCR-04**: Existe `npm run coverage:script -- --days 7`, con el
   split entre lo sembrado por default y lo cargado por una persona.
 

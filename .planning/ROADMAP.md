@@ -464,7 +464,7 @@ Plans:
 
 **Wave 3** *(depende de 35-02; 35-03 y 35-04 en paralelo, no comparten archivos)*
 
-- [ ] 35-03-PLAN.md — SCR-01/SCR-03: el selector en las 4 superficies (Power Dialer, lista de Llamadas, Hoy, ficha en modal) + banner de cobertura reescrito
+- [x] 35-03-PLAN.md — SCR-01/SCR-03: el selector en las 4 superficies (Power Dialer, lista de Llamadas, Hoy, ficha en modal) + banner de cobertura reescrito (completed 2026-08-22, 35-03-SUMMARY.md — SCR-01/SCR-03 cerrados; queda solo 35-04 para SCR-04)
 - [ ] 35-04-PLAN.md — SCR-04: `npm run coverage:script -- --days 7` (ventana de 7 días recortada al deploy, desglose auto vs elegido a mano)
 
 ---
@@ -626,7 +626,7 @@ Plans:
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
-| 35. SCR — Atribución de guion | 2/4 | Executing | — |
+| 35. SCR — Atribución de guion | 3/4 | Executing | — |
 | 36. DISP — La disposición responde | 0/3 | Planned | — |
 | 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
 
