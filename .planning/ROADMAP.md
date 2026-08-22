@@ -460,7 +460,7 @@ Plans:
 
 **Wave 2** *(depende de 35-01)*
 
-- [ ] 35-02-PLAN.md — SCR-02: bloque `[35-02] SCR-ATTR` en `public/app.js` (estado único + builder + default), siembra automática del guion al iniciar la llamada y selector visible en el panel de llamada
+- [x] 35-02-PLAN.md — SCR-02: bloque `[35-02] SCR-ATTR` en `public/app.js` (estado único + builder + default), siembra automática del guion al iniciar la llamada y selector visible en el panel de llamada (completed 2026-08-22, 35-02-SUMMARY.md — SCR-02 cerrado; el selector en las otras 3 superficies queda para 35-03)
 
 **Wave 3** *(depende de 35-02; 35-03 y 35-04 en paralelo, no comparten archivos)*
 
@@ -626,7 +626,7 @@ Plans:
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
-| 35. SCR — Atribución de guion | 1/4 | Executing | — |
+| 35. SCR — Atribución de guion | 2/4 | Executing | — |
 | 36. DISP — La disposición responde | 0/3 | Planned | — |
 | 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
 

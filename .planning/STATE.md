@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-22T21:30:00.000Z"
+last_updated: "2026-08-22T21:35:31.000Z"
 last_activity: 2026-08-22
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 36
-  completed_plans: 26
-  percent: 72
+  completed_plans: 27
+  percent: 75
 ---
 
 # SCM — STATE
@@ -39,7 +39,7 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 35 (scr-atribucion-guion) -- EXECUTING (1/4 planes ejecutados).
+Phase: 35 (scr-atribucion-guion) -- EXECUTING (2/4 planes ejecutados).
   Milestone v4.0 (Phases 28-34) quedo completo a nivel de ejecucion
   (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
@@ -47,13 +47,17 @@ Phase: 35 (scr-atribucion-guion) -- EXECUTING (1/4 planes ejecutados).
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 1 of 4 -- 35-01 EXECUTED (ver `35-01-SUMMARY.md`).
+Plan: 2 of 4 -- 35-01 y 35-02 EXECUTED (ver `35-01-SUMMARY.md` y
+  `35-02-SUMMARY.md`).
 Status: Executing Phase 35. 35-01 (contrato de atribucion de guion en
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
-  `35-01-SUMMARY.md`). Siguen 35-02/35-03/35-04.
-Last activity: 2026-08-22 -- Phase 35 Plan 1 (SCR-01/03/04, contrato de
-  atribucion de guion) ejecutado y verificado.
+  `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
+  llamada + selector en el panel de llamada, frontend) completo y
+  verificado (suite completa 2025/2025, baseline pre-plan 1998/1998 --
+  detalle en `35-02-SUMMARY.md`). SCR-02 cerrado. Siguen 35-03/35-04.
+Last activity: 2026-08-22 -- Phase 35 Plan 2 (SCR-02, siembra automatica
+  de guion + selector en vivo) ejecutado y verificado.
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
