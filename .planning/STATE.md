@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-16T16:10:00.000Z"
-last_activity: 2026-08-16
+last_updated: "2026-08-22T21:30:00.000Z"
+last_activity: 2026-08-22
 progress:
-  total_phases: 7
+  total_phases: 10
   completed_phases: 7
-  total_plans: 25
-  completed_plans: 25
-  percent: 100
+  total_plans: 36
+  completed_plans: 26
+  percent: 72
 ---
 
 # SCM — STATE
@@ -39,21 +39,21 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 34 (hoy-vista-diaria) -- **COMPLETE, 3/3 planes ejecutados**
-  (34-01/34-02/34-03), cierra el milestone v4.0 (7/7 phases, 25/25 planes).
-Plan: N/A -- ultimo trabajo cerrado es 34-03 (ver bloque "Phase 34
-  (hoy-vista-diaria): COMPLETE" mas abajo para el detalle completo, y
-  `34-03-SUMMARY.md`).
-Status: **Milestone v4.0 "Seguimiento bajo control" completo a nivel de
-  ejecucion (7/7 phases, 25/25 planes, 2026-08-16)**. HOY-01..05 marcados
-  [x] en REQUIREMENTS.md (27/27 requirements del milestone mapeados y
-  completos). Pendiente: verificacion/cierre formal del milestone --
-  fuera del scope de este executor (lo maneja el orquestador por fuera de
-  esta sesion, ver "Next Phase Readiness" en `34-03-SUMMARY.md`).
-Last activity: 2026-08-16 -- Phase 34 Plan 3 (HOY-03/HOY-05: Power Dialer
-  por seccion extendido a las 5 tiers reclamables D-07/D-08 + panel de
-  higiene invariante al filtro de pais D-12/D-13/D-14) completado.
-  **Fase 34 (HOY) COMPLETA (3/3 planes). Milestone v4.0 completo.**
+Phase: 35 (scr-atribucion-guion) -- EXECUTING (1/4 planes ejecutados).
+  Milestone v4.0 (Phases 28-34) quedo completo a nivel de ejecucion
+  (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
+  (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
+  milestone/fase nueva (35-37: atribucion de guion, disposicion que
+  responde, sesion de discado) sin que este archivo llegara a reflejar
+  formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
+  scope de este executor.
+Plan: 1 of 4 -- 35-01 EXECUTED (ver `35-01-SUMMARY.md`).
+Status: Executing Phase 35. 35-01 (contrato de atribucion de guion en
+  call-disposition + script-effectiveness) completo y verificado
+  (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
+  `35-01-SUMMARY.md`). Siguen 35-02/35-03/35-04.
+Last activity: 2026-08-22 -- Phase 35 Plan 1 (SCR-01/03/04, contrato de
+  atribucion de guion) ejecutado y verificado.
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 

@@ -456,7 +456,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 35-01-PLAN.md — SCR-01/SCR-03/SCR-04 (backend): `call-disposition` acepta `scriptIdsUsed`/`scriptIdsAuto` en el nivel superior del body, whitelist contra el banco de guiones, gate por outcome; `script-effectiveness` publica cobertura auto vs manual
+- [x] 35-01-PLAN.md — SCR-01/SCR-03/SCR-04 (backend): `call-disposition` acepta `scriptIdsUsed`/`scriptIdsAuto` en el nivel superior del body, whitelist contra el banco de guiones, gate por outcome; `script-effectiveness` publica cobertura auto vs manual (completed 2026-08-22, 35-01-SUMMARY.md — solo el contrato backend; SCR-01/SCR-03/SCR-04 NO cierran todavía, quedan para 35-03/35-04 per el propio texto del plan)
 
 **Wave 2** *(depende de 35-01)*
 
@@ -626,7 +626,7 @@ Plans:
 | 32. ACT — Acciones desde cualquier vista | 4/4 | Complete | 2026-08-15 |
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
-| 35. SCR — Atribución de guion | 0/4 | Planned | — |
+| 35. SCR — Atribución de guion | 1/4 | Executing | — |
 | 36. DISP — La disposición responde | 0/3 | Planned | — |
 | 37. SES — La sesión de discado como partida | 0/4 | Planned | — |
 
