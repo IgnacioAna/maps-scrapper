@@ -43,6 +43,14 @@ for (let i = 1; i <= 12; i++) leads['l' + i] = lead(i);
 fs.writeFileSync(path.join(tmpData, 'setters.json'), JSON.stringify({
   setters: [{ id: 's_x', name: 'X' }], variants: [], leads, calendar: [], sessions: [],
 }, null, 2));
+// Phase 35 (atribución de guion): desde 35-01 scriptIdsUsed se whitelistea
+// contra el banco REAL (data/call_scripts.json) — un id que el test manda
+// pero que no existe en ningún banco ya no se persiste. 'sc_opener_a' tiene
+// que estar registrado para que este archivo siga probando lo que probaba
+// (la atribución de callStage a un guion), no la whitelist en sí.
+fs.writeFileSync(path.join(tmpData, 'call_scripts.json'), JSON.stringify({
+  scripts: [{ id: 'sc_opener_a', label: 'Opener A', trigger: 'opener', text: 'texto', tags: [], createdAt: new Date().toISOString(), createdBy: 'test' }],
+}, null, 2));
 
 const { app } = await import('../index.js');
 let cookie = '';
