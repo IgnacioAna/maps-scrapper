@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-23T07:20:15.000Z"
+last_updated: "2026-08-23T15:45:00.000Z"
 last_activity: 2026-08-23
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 36
-  completed_plans: 30
-  percent: 83
+  completed_plans: 31
+  percent: 86
 ---
 
 # SCM — STATE
@@ -47,9 +47,9 @@ Phase: 36 (disp-disposicion-responde) — EXECUTING
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 2 of 3
+Plan: 3 of 3
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
-  `35-04-SUMMARY.md`). 36-01 EXECUTED (ver detalle abajo).
+  `35-04-SUMMARY.md`). 36-01 y 36-02 EXECUTED (ver detalle abajo).
 Status: Executing Phase 36
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
@@ -85,9 +85,42 @@ Status: Executing Phase 36
   2054/2054 (117 archivos) -- 0 regresiones. Detalle en
   `36-01-SUMMARY.md`. Commits: `7f8cb37` (feat), `7f03212` (fix menor
   encontrado al preparar tests), `5b46cf4` (test).
-Last activity: 2026-08-23 -- Phase 36 Plan 01 (RESP-01) ejecutado y
-  verificado. Siguiente: Plan 36-02 (tiempos de disposicion) -- sin plan
-  generado todavia (requiere plan-phase).
+  36-02 EXECUTED (2026-08-23, RESP-02 -- el POST del resultado deja de
+  esperar al audio): veredicto -- SI se desacoplo, pero NO mandando el
+  POST primero y adjuntando la metadata despues (esa variante se
+  descarto: no hay endpoint para adjuntar telnyxCallMeta a un callLog
+  entry ya creado, el matching por ts ya mordio en el bug #188, y la
+  ventana con duration:0 mentiria en el funnel). El camino real:
+  `_metaObj` (duration/fromNumber/startedAt/endedAt/quickNote/
+  scriptIdsUsed/scriptIdsAuto) se arma SINCRONICAMENTE en
+  `_onTelnyxCallEnded`, afuera del `setTimeout(...,500)` de siempre --
+  todo lo que necesita ya esta vivo en el instante del cuelgue.
+  `_finalizeActiveCallBeforeDisposition` reescrita sin ningun `await`
+  adentro (antes: while de 4500ms + respiro de 250ms = hasta 4,75s):
+  marca `_telnyxCallState.dispoInitiated=true`, cuelga, y llama
+  `_onTelnyxCallEnded('disposition_hangup')` en el acto (seguro por el
+  guard idempotente `if (_telnyxCallState.ended) return;`). Nueva rama
+  `if (_dispoInitiated)` corta la auto-marca no_answer y el armado del
+  gate cuando el cuelgue lo inicio la disposicion manual (evita
+  fantasmas/trabas huerfanas). `_audioInFlight` (Map) muda la espera del
+  audio a `_flushPendingTranscription` (ya fire-and-forget, techo 8s) --
+  la transcripcion diferida sigue llegando. El agendado (modal
+  call-sched-confirm) ahora consume `_consumeTelnyxMeta` -- era el unico
+  de los 6 caminos de disposicion que no lo hacia, guardaba
+  `duration:0`. Cierra de paso el bug preexistente de la ventana de
+  500ms post-cuelgue (`channel:'manual'`, `duration:0` si se marcaba
+  ahi). Cache-buster app.js `20260822c`->`20260822d`; style.css SIN
+  tocar (`20260822a`, ya bumpeado por 36-01). 27 tests nuevos en
+  `tests/dispo-async-meta.test.js`, verificados por mutacion (2 rondas,
+  cada una tumba exactamente los tests esperados, restaurado con
+  `git checkout --`). Suite completa 2107/2107 (119 archivos), baseline
+  pre-plan real 2080/2080 (118 archivos) -- 0 regresiones, corrida 2
+  veces. Detalle en `36-02-SUMMARY.md`. Commits: `c90c3f8` (feat, red de
+  seguridad del audio), `507cbc4` (feat, metadata sincronica + finalize
+  sin esperas + meta en el agendado), `05d2172` (test).
+Last activity: 2026-08-23 -- Phase 36 Plan 02 (RESP-02) ejecutado y
+  verificado. Siguiente: Plan 36-03 (RESP-03, pad DTMF visible/
+  persistente) -- sin plan generado todavia (requiere plan-phase).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 

@@ -385,9 +385,20 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
   clic (grid del Power Dialer + select de Llamadas/Hoy), apagan en
   guardado/error/modal + techo de 15s. 26 tests nuevos, verificado por
   mutación. Ver `.planning/phases/36-disp-disposicion-responde/36-01-SUMMARY.md`.
-- [ ] **RESP-02**: El guardado del outcome no espera al audio, sin perder el
+- [x] **RESP-02**: El guardado del outcome no espera al audio, sin perder el
   `telnyxCallMeta` ni romper la transcripción diferida. Si no hay forma
-  segura de desacoplarlo, se documenta por qué.
+  segura de desacoplarlo, se documenta por qué. — Completo en 36-02: se
+  descartó la variante "POST primero, meta después" (sin endpoint para
+  adjuntarla, mismo problema de matching por `ts` que el bug #188, y una
+  ventana con `duration:0` mentiría en el funnel). En su lugar, la
+  metadata se arma SINCRÓNICAMENTE en `_onTelnyxCallEnded` (afuera del
+  `setTimeout` de 500ms) y `_finalizeActiveCallBeforeDisposition` quedó
+  sin ningún `await`. La espera del audio se mudó a
+  `_flushPendingTranscription` vía `_audioInFlight` (techo 8s,
+  fire-and-forget). El agendado ahora consume `telnyxCallMeta` (era el
+  único de los 6 caminos que no lo hacía). 27 tests nuevos, verificado
+  por mutación. Ver
+  `.planning/phases/36-disp-disposicion-responde/36-02-SUMMARY.md`.
 - [ ] **RESP-03**: El pad DTMF arranca visible o recuerda el último estado.
 
 ### SES — La sesión de discado como partida *(Phase 37)*

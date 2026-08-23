@@ -154,3 +154,13 @@ None — no requiere configuración externa. Los cambios son 100% frontend está
 ---
 *Phase: 36-disp-disposicion-responde*
 *Completed: 2026-08-23*
+
+## Self-Check: PASSED
+
+- FOUND: `tests/dispo-async-meta.test.js`
+- FOUND: `public/app.js`
+- FOUND: `public/index.html`
+- FOUND commit `c90c3f8` (Task 1: feat)
+- FOUND commit `507cbc4` (Task 2: feat)
+- FOUND commit `05d2172` (Task 3: test)
+- FOUND commit `656dc24` (docs: SUMMARY)
