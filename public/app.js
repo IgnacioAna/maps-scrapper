@@ -8201,13 +8201,18 @@ document.addEventListener('DOMContentLoaded', async () => {
            comportamientos distintos en la misma tarjeta es peor que uno. Su
            handler y el badge "ver chat" de renderCallsList no se tocan —
            ese badge es otra cosa (abrir una conversación YA existente). -->
-      ${(mapsUrl || safeW || igUrl || validEmail) ? `<div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+      <!-- Fase 38 (EDGE-04): el contenedor YA NO depende de los quick-links —
+           _actButtonsHTML (variant 'pd') SIEMPRE devuelve algo (WhatsApp +
+           Descartar/chip), así que un lead sin Maps/web/IG/email no debe
+           perder sus botones de acción. Sin quick-links, el div igual tiene
+           contenido real (nunca queda vacío con margen colgado). -->
+      <div style="margin-top:14px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
         ${mapsUrl ? `<a href="${escHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Maps</a>` : ''}
         ${safeW ? `<a href="${escHtml(safeW)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Sitio web</a>` : ''}
         ${igUrl ? `<a href="${escHtml(igUrl)}" target="_blank" rel="noopener noreferrer" class="pd-quick-link">Instagram</a>` : ''}
         ${validEmail ? `<a href="mailto:${escHtml(safeEmail)}" class="pd-quick-link">Email</a>` : ''}
         ${_actButtonsHTML(lead.id, { variant: 'pd' })}
-      </div>` : ''}
+      </div>
 
       <!-- Bloque 5: Histórico + última nota — sin emojis, dots de color como cue -->
       ${(lastCalls.length > 0 || lastNote) ? `<div style="margin-top:18px; display:grid; grid-template-columns:${lastCalls.length > 0 && lastNote ? '1fr 1fr' : '1fr'}; gap:14px;">
