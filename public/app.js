@@ -10103,10 +10103,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       // objeto no tiene querySelector.
       try {
         if (selectEl && typeof selectEl.querySelector === 'function') {
+          state.selectEl = selectEl;
           selectEl.classList.add('is-saving');
           const opt0 = selectEl.options?.[0];
           if (opt0) {
-            state.selectEl = selectEl;
             state.prevOpt = opt0.textContent;
             opt0.textContent = 'Guardando…';
           }
