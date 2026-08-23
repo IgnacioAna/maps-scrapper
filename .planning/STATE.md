@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Seguimiento bajo control
 status: executing
-last_updated: "2026-08-22T22:20:00.000Z"
-last_activity: 2026-08-22
+last_updated: "2026-08-23T07:20:15.000Z"
+last_activity: 2026-08-23
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 36
-  completed_plans: 29
-  percent: 81
+  completed_plans: 30
+  percent: 83
 ---
 
 # SCM — STATE
@@ -39,7 +39,7 @@ acción, 3 leads con `followUps` viejo. La métrica de higiene arranca en
 
 ## Current Position
 
-Phase: 35 (scr-atribucion-guion) -- COMPLETE (4/4 planes ejecutados,
+Phase: 36 (disp-disposicion-responde) — EXECUTING
   2026-08-22). Milestone v4.0 (Phases 28-34) quedo completo a nivel de
   ejecucion (7/7 phases, 25/25 planes, 2026-08-16 -- ver bloque "Phase 34
   (hoy-vista-diaria): COMPLETE" mas abajo). El orquestador arranco un
@@ -47,10 +47,10 @@ Phase: 35 (scr-atribucion-guion) -- COMPLETE (4/4 planes ejecutados,
   responde, sesion de discado) sin que este archivo llegara a reflejar
   formalmente el cierre v4.0 -- pendiente para el orquestador, fuera del
   scope de este executor.
-Plan: 4 of 4 -- 35-01, 35-02, 35-03 y 35-04 EXECUTED (ver
+Plan: 2 of 3
   `35-01-SUMMARY.md`, `35-02-SUMMARY.md`, `35-03-SUMMARY.md` y
-  `35-04-SUMMARY.md`).
-Status: Phase 35 COMPLETA. 35-01 (contrato de atribucion de guion en
+  `35-04-SUMMARY.md`). 36-01 EXECUTED (ver detalle abajo).
+Status: Executing Phase 36
   call-disposition + script-effectiveness) completo y verificado
   (suite completa 1998/1998, baseline pre-plan 1984/1984 -- detalle en
   `35-01-SUMMARY.md`). 35-02 (siembra automatica del guion al iniciar la
@@ -66,10 +66,28 @@ Status: Phase 35 COMPLETA. 35-01 (contrato de atribucion de guion en
   completa 2054/2054 x2 corridas limpias, baseline pre-plan 2036/2036 --
   detalle en `35-04-SUMMARY.md`). SCR-01..SCR-04 cerrados. **Fase 35
   (SCR) COMPLETA (4/4 planes).**
-Last activity: 2026-08-22 -- Phase 35 Plan 4 (SCR-04, script de cobertura
-  de atribucion de guion) ejecutado y verificado. Siguiente: Phase 36
-  (RESP -- la disposicion responde) -- sin plan generado todavia (0/3 en
-  ROADMAP.md, requiere discuss-phase/plan-phase).
+  36-01 EXECUTED (2026-08-23, RESP-01 -- acuse inmediato al marcar
+  disposicion): `_dispoBusyOn`/`_dispoBusyOff` (fuente unica del estado
+  "Guardando...") cableadas en `window._handleCallDisposition` (prende
+  ANTES del await de `_finalizeActiveCallBeforeDisposition`, que puede
+  tardar hasta 4,75s) y en `_dispoAfterSaved` (apaga, punto unico
+  post-guardado); se apaga tambien al abrir modal
+  (`_DISPO_MODAL_OUTCOMES`) y en el catch, mas un techo de 15s. Grid del
+  Power Dialer gana `data-outcome` en los 9 botones; CSS nuevo
+  `.is-busy`/`.is-saving` + `@keyframes dispoSavingPulse` en style.css.
+  `_pdHold`/autopiloto/atajos 1-9/orden del grid intactos (D-01/D-02),
+  verificado sin editar los 7 suites que pinean ese tramo. Cache-buster
+  app.js `20260822b`->`20260822c`, style.css `20260816f`->`20260822a`.
+  26 tests nuevos en `tests/dispo-feedback.test.js` (>=14 pedidos),
+  verificados por mutacion (2 rondas, cada una tumba exactamente el test
+  esperado y ningun otro, restaurado con `git checkout --` cada vez).
+  Suite completa 2080/2080 (118 archivos), baseline pre-plan real
+  2054/2054 (117 archivos) -- 0 regresiones. Detalle en
+  `36-01-SUMMARY.md`. Commits: `7f8cb37` (feat), `7f03212` (fix menor
+  encontrado al preparar tests), `5b46cf4` (test).
+Last activity: 2026-08-23 -- Phase 36 Plan 01 (RESP-01) ejecutado y
+  verificado. Siguiente: Plan 36-02 (tiempos de disposicion) -- sin plan
+  generado todavia (requiere plan-phase).
 
 ## Phase 34 (hoy-vista-diaria): COMPLETE (3/3 planes, 2026-08-16)
 
@@ -558,13 +576,13 @@ modelo que v4.0 rediseña — integrarlo antes obligaría a rehacerlo.
   WR-01, meta consumida ante red caída WR-02, ghost ad-hoc y gate sin row
   WR-03, cancel race WR-04).
 
-- **Status:** Executing Phase 30
+- **Status:** Executing Phase 36
   todo lo automatizable verificado (endpoints, guard, bifurcación
   enteredActive||committedRemote, D-04 intacto por diff, suite
   **864/864**); quedan 3 ítems humanos en `20-HUMAN-UAT.md` (llamada
   Telnyx real, % marcada tras 1 semana en prod, feedback SDRs).
 
-- **Last activity:** 2026-08-15
+- **Last activity:** 2026-08-23
   preview checklist, review + fix CR-01, verificación) y **DEPLOYADA**:
   push de 30 commits a `main` (`060013c`), `/api/version` en prod devuelve
   `20260725c`, los 3 endpoints nuevos responden 401 (vivos). ⚠️ El push

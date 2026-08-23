@@ -378,9 +378,13 @@ inline. `tests/metrics-consistency.test.js` es la garantía.
 > Renombrados de DISP a RESP el 2026-08-21: los IDs DISP-01/02/03 ya estaban
 > tomados por la Phase 20 (disposición obligatoria), que es otro requisito.
 
-- [ ] **RESP-01**: Al apretar cualquier resultado la pantalla lo acusa al
+- [x] **RESP-01**: Al apretar cualquier resultado la pantalla lo acusa al
   instante, no recién cuando termina de guardar. *(Hoy: hasta ~10 s sin
-  feedback — 4,75 s en el finalize + 6 s de polling.)*
+  feedback — 4,75 s en el finalize + 6 s de polling.)* — Completo en 36-01:
+  `_dispoBusyOn`/`_dispoBusyOff` prenden "Guardando…" en el mismo frame del
+  clic (grid del Power Dialer + select de Llamadas/Hoy), apagan en
+  guardado/error/modal + techo de 15s. 26 tests nuevos, verificado por
+  mutación. Ver `.planning/phases/36-disp-disposicion-responde/36-01-SUMMARY.md`.
 - [ ] **RESP-02**: El guardado del outcome no espera al audio, sin perder el
   `telnyxCallMeta` ni romper la transcripción diferida. Si no hay forma
   segura de desacoplarlo, se documenta por qué.
