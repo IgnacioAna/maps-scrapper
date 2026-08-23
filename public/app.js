@@ -11940,6 +11940,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Phase 20: reset ANTES del try — si ensureClient falla, el catch no debe
       // cancelar un pendiente que quedó de una llamada anterior.
       _telnyxCallState.pendingRegistered = false;
+      // [36-02] RESP-02: reset por llamada, mismo criterio y mismo lugar que
+      // pendingRegistered. Lo prende _finalizeActiveCallBeforeDisposition
+      // cuando ES la disposición quien fuerza el cuelgue — así _onTelnyxCallEnded
+      // sabe que no tiene que auto-marcar ni armar el gate detrás suyo.
+      _telnyxCallState.dispoInitiated = false;
       // Medición de guiones (SCR-02, Fase 35): la llamada NACE con guion
       // atribuido — antes la única vía de captura exigía abrir el panel de
       // guiones y clickear uno DURANTE la llamada, y 0 de 199 llamadas lo
@@ -12141,6 +12146,51 @@ document.addEventListener('DOMContentLoaded', async () => {
       const reachedContact = !!(_telnyxCallState.enteredActive || _telnyxCallState.committedRemote);
       const _dispoStartedAtIso = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
       const _dispoWasRegistered = !!_telnyxCallState.pendingRegistered;
+      // [36-02] RESP-02: "este cuelgue lo inició la disposición manual"
+      // (_finalizeActiveCallBeforeDisposition). Capturado ACÁ, en el cuerpo
+      // sincrónico, y NO adentro del setTimeout de más abajo — para cuando
+      // ese setTimeout corre, _closeTelnyxCallPanel() ya se ejecutó primero
+      // y el reingreso a este handler (evento del SDK que llega tarde) deja
+      // startedAt en 0, así que leer el flag tarde puede leer un estado que
+      // ya no es el de ESTA llamada.
+      const _dispoInitiated = !!_telnyxCallState.dispoInitiated;
+      // [36-02] RESP-02: metadata SINCRÓNICA — se arma ACÁ, en el instante
+      // del cuelgue, no adentro del setTimeout(…, 500) de más abajo. Dos
+      // motivos:
+      // (1) hasta este plan, si el SDR marcaba el resultado dentro de los
+      //     primeros 500ms de haber colgado (clic en la grilla del dialer
+      //     apenas cuelga), _finalizeActiveCallBeforeDisposition cortaba en
+      //     el guard `!_telnyx?.activeCall` (ya null) y _consumeTelnyxMeta
+      //     devolvía null: esa llamada quedaba en el callLog como
+      //     channel:'manual' con duration:0 — el mismo daño que documentó la
+      //     nota #189 de CLAUDE.md para callback_later, acá en la ventana de
+      //     500ms.
+      // (2) sin esto, la disposición no tiene de qué colgarse para no
+      //     esperar: todo lo que el _metaObj necesita ya está vivo ACÁ —
+      //     _telnyxCallState.startedAt/.fromNumber, ANTES de que
+      //     _closeTelnyxCallPanel() (dentro del setTimeout) resetee el estado.
+      let _metaObj = null;
+      if (leadId && attemptedSecs >= 1) {
+        const quickNoteText = document.getElementById('telnyx-call-quick-note')?.value?.trim() || '';
+        // Audit 2026-07-06 (B2): además de la clave simple (última llamada
+        // gana — es la que el disposition va a describir), se guarda bajo
+        // clave compuesta leadId:startedAt para que dos llamadas seguidas al
+        // mismo lead no pisen el registro y el backend pueda matchear por
+        // callStartedAt (bug #188 de CLAUDE.md — el matching por ts es
+        // frágil, perder esta clave rompería el pegado del transcript).
+        _metaObj = {
+          durationSecs,
+          fromNumber: _telnyxCallState.fromNumber,
+          startedAt: _dispoStartedAtIso,
+          endedAt: new Date().toISOString(),
+          quickNote: quickNoteText || null,
+          scriptIdsUsed: _scriptIdsFor(leadId),
+          scriptIdsAuto: _scriptIsAuto(leadId),
+        };
+        _pendingTelnyxCallMetadata[leadId] = _metaObj;
+        if (_dispoStartedAtIso) _pendingTelnyxCallMetadata[`${leadId}:${_dispoStartedAtIso}`] = _metaObj;
+        _telnyxMetaPersist();   // sobrevive un F5 antes de marcar el resultado
+      }
       _setTelnyxCallStatus('Finalizando…', 'ending');
       _stopRingbackTone(); // safety: si llegamos acá sin pasar por los listeners
       _telnyx.activeCall = null;
@@ -12187,30 +12237,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // usaba durationSecs, que ahora es talk-time y sería 0 en no-contacto.)
         if (leadId && attemptedSecs >= 1) {
           window.showToast?.(`Llamada finalizada · ${Math.floor(durationSecs/60)}:${String(durationSecs%60).padStart(2,'0')} · Marcá el resultado abajo ↓`, { type: 'info', duration: 5000 });
-          // Capturar la nota rápida ANTES de cerrar el panel
-          const quickNoteText = document.getElementById('telnyx-call-quick-note')?.value?.trim() || '';
-          // Guardar metadata pendiente para que el próximo handleCallDisposition la incluya.
-          // Audit 2026-07-06 (B2): además de la clave simple (última llamada gana — es la
-          // que el disposition va a describir), se guarda bajo clave compuesta
-          // leadId:startedAt para que dos llamadas seguidas al mismo lead no pisen el
-          // registro y el backend pueda matchear por callStartedAt.
-          const _metaStartedAt = _telnyxCallState.startedAt ? new Date(_telnyxCallState.startedAt).toISOString() : null;
-          // Esta meta se persiste en localStorage (_telnyxMetaPersist) y
-          // sobrevive un F5, así que es la red de seguridad de la
-          // atribución cuando _dispoScript se pierde por recarga antes de
-          // marcar el resultado (Fase 35, SCR-02).
-          const _metaObj = {
-            durationSecs,
-            fromNumber: _telnyxCallState.fromNumber,
-            startedAt: _metaStartedAt,
-            endedAt: new Date().toISOString(),
-            quickNote: quickNoteText || null,
-            scriptIdsUsed: _scriptIdsFor(leadId),
-            scriptIdsAuto: _scriptIsAuto(leadId),
-          };
-          _pendingTelnyxCallMetadata[leadId] = _metaObj;
-          if (_metaStartedAt) _pendingTelnyxCallMetadata[`${leadId}:${_metaStartedAt}`] = _metaObj;
-          _telnyxMetaPersist();   // sobrevive un F5 antes de marcar el resultado
+          // [36-02] RESP-02: la metadata (_metaObj) ya se armó y publicó en
+          // _pendingTelnyxCallMetadata ARRIBA, en el cuerpo sincrónico —
+          // acá solo queda el upsert del pendiente (usa _metaObj.endedAt) y
+          // la bifurcación auto-marca/gate.
           // Phase 20: upsert del pendiente con los datos de cierre reales y
           // bifurcación — sin contacto → auto-marca (D-03); con contacto →
           // gate hasta que el SDR marque a mano (D-01).
@@ -12223,7 +12253,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 body: JSON.stringify({ leadId, startedAt: _dispoStartedAtIso, endedAt: _metaObj.endedAt, durationSecs, reachedActive: reachedContact }),
               }).catch(() => {});
             }
-            if (!reachedContact) {
+            // [36-02] RESP-02: si ESTE cuelgue lo inició la disposición manual
+            // (_finalizeActiveCallBeforeDisposition), el resultado real ya
+            // está en vuelo o guardado — auto-marcar acá agregaría un
+            // no_answer FANTASMA detrás del resultado real, y armar el gate
+            // lo dejaría pegado justo después de que _dispoAfterSaved ya lo
+            // liberó (la misma clase de carrera que dejó pendientes huérfanos,
+            // nota #174 de CLAUDE.md). El upsert de pending-calls de arriba SÍ
+            // se mantiene: el backend ya lo protege con el guard
+            // already_dispositioned.
+            if (_dispoInitiated) {
+              // no-op: la disposición manual ya se hace cargo de este cuelgue.
+            } else if (!reachedContact) {
               _autoMarkNoAnswer(leadId);
             } else {
               // Hubo contacto real: el SDR marca a mano y hasta que marque no
@@ -12359,26 +12400,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2026-07-12: si el SDR marca el resultado SIN colgar primero (la llamada sigue
     // activa), la metadata + el audio nunca se capturaban → la llamada quedaba como
     // 'manual' sin transcripción. Este helper se llama al inicio de la disposition:
-    // si hay una llamada Telnyx activa de ESTE lead, la cuelga y espera a que
-    // _onTelnyxCallEnded arme la metadata (que se setea 500ms post-cuelgue) + buffere
-    // el audio. Defensivo: si no hay llamada activa o es de otro lead, es no-op; ante
-    // cualquier error cae al comportamiento de siempre.
+    // si hay una llamada Telnyx activa de ESTE lead, la cuelga y deja que
+    // _onTelnyxCallEnded se haga cargo. Defensivo: si no hay llamada activa o es de
+    // otro lead, es no-op; ante cualquier error cae al comportamiento de siempre.
+    //
+    // [36-02] RESP-02: SIN esperas. Hasta este plan, acá vivían un `while` de
+    // 4.500ms + un `await` de 250ms de "respiro" esperando a que
+    // _onTelnyxCallEnded armara la metadata dentro de su setTimeout(…, 500) —
+    // eso era TODO el problema de esta fase (el POST del resultado se quedaba
+    // girando hasta 4,75s sin decir nada en pantalla). Ya no hace falta
+    // esperar nada: la metadata ahora se arma SINCRÓNICAMENTE en el cuerpo de
+    // _onTelnyxCallEnded (ver el bloque [36-02] ahí), así que llamarlo EN EL
+    // ACTO ya deja _pendingTelnyxCallMetadata[leadId] listo cuando esta
+    // función retorna.
+    //
+    // Por qué es seguro llamar al handler de golpe (sin esperar el evento del
+    // SDK): _onTelnyxCallEnded arranca con el guard
+    // `if (_telnyxCallState.ended) return;`, así que el evento real del SDK
+    // que llegue después de este llamado explícito es un no-op. Y si el SDK
+    // dispara el handler ANTES que este código (rarísimo pero posible), el
+    // guard `_pendingTelnyxCallMetadata[leadId]` de arriba ya corta acá sin
+    // duplicar nada. Un reingreso posterior al _closeTelnyxCallPanel() (que
+    // pone `ended = false` y `startedAt = 0`) tampoco hace nada, porque con
+    // `startedAt` en 0 todas las ramas de adentro de _onTelnyxCallEnded
+    // quedan en falso — comportamiento que ya existía antes de este plan, no
+    // se introduce acá.
+    //
+    // La función sigue siendo `async` (los 6 call sites la esperan con
+    // `await`) pero NO tiene ningún `await` adentro — no "arreglar" esto
+    // sacándole el `async`, rompería esos call sites.
     async function _finalizeActiveCallBeforeDisposition(leadId) {
       try {
         if (!_telnyx?.activeCall) return;                 // no hay llamada en curso → nada que finalizar
         if (_telnyxCallState?.leadId && _telnyxCallState.leadId !== leadId) return; // llamada de otro lead
         if (_pendingTelnyxCallMetadata[leadId]) return;   // ya está capturada (colgó manual antes)
+        // [36-02] RESP-02: marca que ESTE cuelgue lo inició la disposición —
+        // _onTelnyxCallEnded lo lee para no auto-marcar ni armar el gate
+        // detrás de un resultado que ya está en vuelo.
+        _telnyxCallState.dispoInitiated = true;
         try { _telnyx.activeCall.hangup?.(); } catch {}
-        // safety: forzar el end handler si el SDK no emite el evento hangup
-        setTimeout(() => { try { if (_telnyxCallState.startedAt && !_telnyxCallState.ended) _onTelnyxCallEnded('disposition_hangup'); } catch {} }, 1200);
-        // esperar a que la metadata quede seteada (end handler + su setTimeout de 500ms)
-        const t0 = Date.now();
-        while (Date.now() - t0 < 4500) {
-          if (_pendingTelnyxCallMetadata[leadId]) break;
-          await new Promise((r) => setTimeout(r, 150));
-        }
-        // respiro extra para que _stopCallRecordingAndBuffer termine de armar el audio
-        await new Promise((r) => setTimeout(r, 250));
+        _onTelnyxCallEnded('disposition_hangup');
       } catch (e) { console.warn('[transcribe] finalize-before-disposition falló:', e?.message); }
     }
 
@@ -13834,15 +13895,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         const notas = document.getElementById('call-sched-notas').value.trim();
         if (!fecha) { alert('Elegí fecha y hora'); return; }
         try {
+          // [36-02] RESP-02: este era el ÚNICO de los 6 call sites de
+          // disposición que no consumía la metadata Telnyx (dropdown directo,
+          // callback, interesado y objeción sí lo hacían — nota #189 de
+          // CLAUDE.md). Resultado: la llamada que termina en reunión agendada
+          // se guardaba con duration:0 y además dejaba la metadata colgada en
+          // el map hasta su TTL de 30 min, donde podía pegarse a la siguiente
+          // disposición de ese mismo lead.
+          const telnyxMeta = _consumeTelnyxMeta(leadId);
+          const body = {
+            outcome: 'scheduled_with_admin',
+            notes: notas,
+            scheduled: { fecha: new Date(fecha).toISOString(), nombre },
+            ..._dispoEnforcementBody(leadId)
+          };
+          if (telnyxMeta) body.telnyxCallMeta = telnyxMeta;
           const resp = await fetch(apiUrl('/api/setters/leads/' + leadId + '/call-disposition'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              outcome: 'scheduled_with_admin',
-              notes: notas,
-              scheduled: { fecha: new Date(fecha).toISOString(), nombre },
-              ..._dispoEnforcementBody(leadId)
-            })
+            body: JSON.stringify(body)
           });
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
           const data = await resp.json().catch(() => ({}));
