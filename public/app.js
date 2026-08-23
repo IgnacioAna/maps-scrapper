@@ -7236,6 +7236,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       _pd.holdMeta = null;
       _pd.pendingSave = null; // 33-02: sin esto, un pendingSave viejo podría holdear una tarjeta que nadie marcó
       _pd.forced = new Set();
+      // Fase 38 (EDGE-02): descartar el canon de una sesión anterior (puede
+      // ser de otro día si la pestaña quedó abierta) — el chip arranca con el
+      // fallback local hasta que el fetch de abajo resuelva.
+      _pdTodayCanon = null;
+      _pdFetchTodayCanon();
       // DIAL-01: posicionar la cola sobre el lead pedido, si lo hay — el
       // resto de la cola queda detrás, en el mismo orden que ya tenía (D-02).
       const _sIdx = opts.startAtLeadId ? _pd.queue.indexOf(opts.startAtLeadId) : -1;
@@ -7374,10 +7379,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
+    // Fase 38 (EDGE-02): dato canónico de HOY, traído del servidor (CALL
+    // METRICS CORE vía /api/setters/cold-call-metrics). Cuando está presente,
+    // _pdTodayStats lo devuelve tal cual — el cálculo local de más abajo
+    // (re-implementación del funnel con SU PROPIA definición de "conversación"
+    // y corte a la medianoche del navegador, la misma nota #157 de CLAUDE.md
+    // prohíbe reimplementar) queda solo como fallback mientras el fetch no
+    // resolvió o si falla. Null = "todavía no hay canon, usar el local".
+    let _pdTodayCanon = null;
+    // Trae el funnel de HOY del servidor y lo cachea en _pdTodayCanon. Se
+    // llama al abrir el dialer (_pdStart) y después de cada disposición
+    // guardada (_pdHold) — fire-and-forget, nunca bloquea el render: si falla
+    // (sin red, 403, lo que sea) _pdTodayCanon queda como estaba y el chip
+    // sigue con el último dato canónico conocido o cae al cálculo local si
+    // todavía no hubo ninguno. Reglas #135/#146: en modo "Ver como SDR" hay
+    // que pasar el setter explícito — el backend ve la cookie del admin y sin
+    // esto devolvería el agregado del equipo entero.
+    async function _pdFetchTodayCanon() {
+      try {
+        const u = currentUser;
+        const isViewAsSetter = u?.realRole === 'admin' && u?.role === 'setter' && u?.setterId;
+        const params = new URLSearchParams();
+        params.set('period', 'today');
+        if (isViewAsSetter) params.set('setter', u.setterId);
+        const r = await fetch(apiUrl(`/api/setters/cold-call-metrics?${params.toString()}`), { credentials: 'include' });
+        if (!r.ok) throw new Error('http ' + r.status);
+        const d = await r.json();
+        const m = d.metrics || {};
+        _pdTodayCanon = {
+          dials: Number(m.dials) || 0,
+          conversations: Number(m.conversations) || 0,
+          // El funnel canónico no aísla "interesados" (solo dials/connects/
+          // conversations/appointments/deals) — no re-implementarlo para
+          // rellenar este número (nota #157). El chip simplemente no lo
+          // muestra cuando viene del canon (ver _pdRenderToday).
+          interesados: 0,
+          agendados: Number(m.appointments) || 0,
+        };
+        _pdRenderToday();
+      } catch (e) {
+        // Sin cambios — se conserva el último dato canónico conocido (o se
+        // sigue con el fallback local si nunca hubo uno).
+      }
+    }
     // Contador del día: deriva de callLog real (no de un contador suelto que se
     // pierde al recargar). Cuenta cada entry de hoy en la cola visible. "Hoy" =
     // desde las 00:00 hora local. interesados/agendados = outcomes valiosos.
+    // Fase 38 (EDGE-02): FALLBACK — solo se usa mientras _pdTodayCanon es null.
     function _pdTodayStats() {
+      if (_pdTodayCanon) return _pdTodayCanon;
       const start = new Date(); start.setHours(0, 0, 0, 0);
       const startMs = start.getTime();
       // conversations = atendieron y hablaste (no cuenta no_answer/voicemail/
@@ -7872,6 +7922,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // _pdRender/_pdAdvance antes de que _pdSkip/window._pdAdvance las expongan.
     function _pdHold(leadId, outcome, opts = {}) {
       if (!_pd.active || _pd.queue[_pd.currentIdx] !== leadId) return false;
+      // Fase 38 (EDGE-02): la disposición se acaba de confirmar — refrescar el
+      // canon de HOY (fire-and-forget, cubre tanto el hold como el avance
+      // automático de abajo con autopiloto ON).
+      _pdFetchTodayCanon();
       if (_pd.autopilot && opts.autoAdvance !== false) { _pdAdvance(); return true; }
       _pd.holdCurrent = true;
       _pd.holdOutcome = outcome || null;
