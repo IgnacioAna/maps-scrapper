@@ -11932,6 +11932,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (backdrop) backdrop.style.display = 'block';
       panel.style.display = 'flex'; // flex column: header fijo + medio scrolleable + footer fijo
       _tlxApplyPos('call'); // Fase 28 (D-10): reaplicar la posición que el user le dejó, si hay
+      // [36-03] RESP-03: el panel se reusa entre llamadas y el style.display del
+      // pad DTMF queda pegado al último uso — reaplicar la preferencia acá (y no
+      // solo al bootear el módulo) es lo que hace que se sienta igual en la
+      // llamada 1 y en la 40, sin importar cómo quedó la anterior.
+      _applyDtmfPadPref(_dtmfPadPrefOpen());
       // Sprint 15: indicador visual en el sidebar logo (pulse) que hay llamada activa
       document.body.classList.add('has-active-call');
       _telnyxCallState.leadId = leadId;
@@ -12923,11 +12928,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     })();
 
+    // ─── [36-03] RESP-03: el teclado DTMF arranca visible y recuerda ───
+    // Por defecto ABIERTO (misma central que corta el menú a los 10s no da
+    // tiempo a un clic de más). Quien lo cierra una vez no lo vuelve a ver
+    // abierto — mismo idioma "prendido salvo que lo apaguen" que
+    // _audioCfg.micChainEnabled() (scm_audio_micChain, !== '0').
+    function _dtmfPadPrefOpen() {
+      try {
+        return localStorage.getItem('scm_dtmf_pad') !== '0';
+      } catch (e) {
+        return true; // localStorage restringido: el default (abierto) gana.
+      }
+    }
+    function _applyDtmfPadPref(open) {
+      const pad = document.getElementById('telnyx-dtmf-pad');
+      const toggle = document.getElementById('telnyx-call-dtmf-toggle');
+      if (pad) pad.style.display = open ? 'grid' : 'none';
+      if (toggle) {
+        toggle.setAttribute('aria-pressed', open ? 'true' : 'false');
+        if (open) {
+          toggle.style.background = 'rgba(157,133,242,0.16)';
+          toggle.style.borderColor = 'rgba(157,133,242,0.4)';
+          toggle.style.color = '#fff';
+        } else {
+          toggle.style.background = 'rgba(255,255,255,0.05)';
+          toggle.style.borderColor = 'rgba(255,255,255,0.08)';
+          toggle.style.color = 'rgba(255,255,255,0.9)';
+        }
+      }
+    }
+    function _setDtmfPadPref(open) {
+      try {
+        localStorage.setItem('scm_dtmf_pad', open ? '1' : '0');
+      } catch (e) { /* modo restringido: no persiste, pero igual se aplica */ }
+      _applyDtmfPadPref(open);
+    }
+
     // Phase 13: DTMF — toggle del pad + envío de tonos al call activo (IVRs/centrales).
     document.getElementById('telnyx-call-dtmf-toggle')?.addEventListener('click', () => {
-      const pad = document.getElementById('telnyx-dtmf-pad');
-      if (!pad) return;
-      pad.style.display = pad.style.display === 'grid' ? 'none' : 'grid';
+      _setDtmfPadPref(!_dtmfPadPrefOpen());
     });
     document.querySelectorAll('#telnyx-dtmf-pad .dtmf-key').forEach((btn) => {
       btn.addEventListener('click', () => {
