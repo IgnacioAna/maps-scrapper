@@ -627,8 +627,8 @@ Plans:
 | 33. DIAL — Power Dialer como motor único | 4/4 | Complete | 2026-08-16 |
 | 34. HOY — La vista diaria | 3/3 | Complete | 2026-08-16 |
 | 35. SCR — Atribución de guion | 4/4 | human_needed (UAT pendiente) | 2026-08-22 |
-| 36. DISP — La disposición responde | 3/3 | Complete | 2026-08-23 |
-| 37. SES — La sesión de discado como partida | 4/4 | Complete | 2026-08-23 |
+| 36. DISP — La disposición responde | 3/3 | human_needed (UAT pendiente) | 2026-08-23 |
+| 37. SES — La sesión de discado como partida | 4/4 | human_needed (UAT pendiente) | 2026-08-23 |
 
 
 ## Milestone v3.0 "Agente de voz" — estado al parkear (2026-08-13)
