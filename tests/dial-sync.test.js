@@ -260,10 +260,19 @@ describe("Repintado tras escribir, con la vista abierta: _dispoAfterSaved / _act
     expect(body).toContain("if (document.querySelector('#view-hoy:not(.hidden)')) _hoyRenderFromStore();");
   });
 
-  it("window._pdExit sigue haciendo fetch completo al salir (refresco explícito de la sesión de discado)", () => {
-    const body = extractFunctionBody(appJs, "window._pdExit = function() {");
-    expect(body).toContain("loadHoyView()");
-    expect(body).toContain("loadCallsView()");
+  // Fase 37, plan 03 (SES-02): window._pdExit pasó a tener 2 fases (primera
+  // salida muestra la pantalla de cierre de la sesión de discado, segunda
+  // cierra de verdad) — el refresco explícito que este test protege se
+  // extrajo, TAL CUAL, a _pdExitFinal() (que window._pdExit invoca en la
+  // salida real). El invariante que importa (salir del dialer sigue
+  // refrescando con fetch completo, no un repintado sin red) sigue intacto,
+  // solo cambió DÓNDE vive el literal.
+  it("window._pdExit sigue haciendo fetch completo al salir, ahora vía _pdExitFinal() (refresco explícito de la sesión de discado)", () => {
+    const exitBody = extractFunctionBody(appJs, "window._pdExit = function() {");
+    expect(exitBody).toContain("_pdExitFinal();");
+    const finalBody = extractFunctionBody(appJs, "function _pdExitFinal() {");
+    expect(finalBody).toContain("loadHoyView()");
+    expect(finalBody).toContain("loadCallsView()");
   });
 });
 
